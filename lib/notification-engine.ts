@@ -1,0 +1,582 @@
+import {
+  Notification,
+  AutomationRule,
+  User,
+  Lead,
+  Deal,
+  Activity,
+} from "@/models";
+import { Op } from "sequelize";
+
+export interface NotificationData {
+  userId: string;
+  type: string;
+  title: string;
+  message: string;
+  priority?: "low" | "medium" | "high" | "urgent";
+  channel?: "in_app" | "email" | "slack" | "sms";
+  actionUrl?: string;
+  actionLabel?: string;
+  relatedType?: "lead" | "deal" | "task" | "activity" | "user";
+  relatedId?: string;
+  organizationId: string;
+  expiresAt?: Date;
+  metadata?: any;
+}
+
+export interface AutomationContext {
+  trigger: string;
+  relatedType?: string;
+  relatedId?: string;
+  data: any;
+  organizationId: string;
+  userId?: string;
+}
+
+export class NotificationEngine {
+  /**
+   * Send a notification to a user
+   */
+  static async sendNotification(data: NotificationData): Promise<any> {
+    try {
+      const notification = await Notification.create({
+        ...data,
+        sentAt: new Date(),
+      });
+
+      // Send via different channels
+      await this.dispatchNotification(notification, data.channel || "in_app");
+
+      return notification;
+    } catch (error) {
+      console.error("Error sending notification:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send bulk notifications to multiple users
+   */
+  static async sendBulkNotifications(
+    notifications: NotificationData[]
+  ): Promise<void> {
+    try {
+      const createdNotifications = await Notification.bulkCreate(
+        notifications.map((n) => ({
+          ...n,
+          sentAt: new Date(),
+        }))
+      );
+
+      // Dispatch each notification
+      for (const notification of createdNotifications) {
+        await this.dispatchNotification(notification, notification.channel);
+      }
+    } catch (error) {
+      console.error("Error sending bulk notifications:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process automation rules based on context
+   */
+  static async processAutomation(context: AutomationContext): Promise<void> {
+    try {
+      // Get active automation rules for this trigger and organization
+      const rules = await AutomationRule.findAll({
+        where: {
+          trigger: context.trigger,
+          organizationId: context.organizationId,
+          isActive: true,
+        },
+        order: [["priority", "ASC"]],
+      });
+
+      for (const rule of rules) {
+        try {
+          // Check if conditions are met
+          if (await this.evaluateConditions(rule.conditions, context)) {
+            // Execute actions
+            await this.executeActions(rule.actions, context, rule);
+
+            // Update rule statistics
+            await rule.update({
+              lastTriggered: new Date(),
+              triggerCount: rule.triggerCount + 1,
+            });
+          }
+        } catch (error) {
+          console.error(
+            `Error processing automation rule ${rule.ruleId}:`,
+            error
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Error processing automation:", error);
+    }
+  }
+
+  /**
+   * Mark notification as read
+   */
+  static async markAsRead(
+    notificationId: string,
+    userId: string
+  ): Promise<void> {
+    await Notification.update(
+      {
+        isRead: true,
+        readAt: new Date(),
+      },
+      {
+        where: {
+          notificationId,
+          userId,
+        },
+      }
+    );
+  }
+
+  /**
+   * Get notifications for a user
+   */
+  static async getUserNotifications(
+    userId: string,
+    options: {
+      limit?: number;
+      offset?: number;
+      unreadOnly?: boolean;
+      types?: string[];
+    } = {}
+  ): Promise<{ notifications: any[]; unreadCount: number }> {
+    const whereClause: any = { userId };
+
+    if (options.unreadOnly) {
+      whereClause.isRead = false;
+    }
+
+    if (options.types && options.types.length > 0) {
+      whereClause.type = { [Op.in]: options.types };
+    }
+
+    // Remove expired notifications
+    whereClause[Op.or] = [
+      { expiresAt: { [Op.is]: null } },
+      { expiresAt: { [Op.gt]: new Date() } },
+    ];
+
+    const notifications = await Notification.findAll({
+      where: whereClause,
+      order: [["createdAt", "DESC"]],
+      limit: options.limit || 50,
+      offset: options.offset || 0,
+    });
+
+    const unreadCount = await Notification.count({
+      where: {
+        userId,
+        isRead: false,
+        [Op.or]: [
+          { expiresAt: { [Op.is]: null } },
+          { expiresAt: { [Op.gt]: new Date() } },
+        ],
+      },
+    });
+
+    return { notifications, unreadCount };
+  }
+
+  /**
+   * Clean up expired notifications
+   */
+  static async cleanupExpiredNotifications(): Promise<void> {
+    await Notification.destroy({
+      where: {
+        expiresAt: {
+          [Op.lt]: new Date(),
+        },
+      },
+    });
+  }
+
+  /**
+   * Send system-wide notifications
+   */
+  static async sendSystemNotification(
+    organizationId: string,
+    notification: Omit<NotificationData, "userId" | "organizationId">
+  ): Promise<void> {
+    // Get all users in the organization
+    const users = await User.findAll({
+      // Note: You'll need to join with UserOrganization table
+      // This is a simplified version
+      attributes: ["userId"],
+    });
+
+    const notifications = users.map((user) => ({
+      ...notification,
+      userId: user.userId,
+      organizationId,
+    }));
+
+    await this.sendBulkNotifications(notifications);
+  }
+
+  /**
+   * Create default automation rules for an organization
+   */
+  static async createDefaultAutomationRules(
+    organizationId: string,
+    createdBy: string
+  ): Promise<void> {
+    const defaultRules = [
+      {
+        name: "High Score Lead Alert",
+        description: "Notify when a lead scores 60 or higher",
+        trigger: "lead_score_changed",
+        conditions: {
+          score: { gte: 60 },
+        },
+        actions: [
+          {
+            type: "notification",
+            target: "assigned_user",
+            template: "high_score_lead",
+            priority: "high",
+          },
+        ],
+      },
+      {
+        name: "Stale Lead Reminder",
+        description: "Notify when a lead hasn't been contacted in 7 days",
+        trigger: "lead_stale",
+        conditions: {
+          daysSinceLastActivity: { gte: 7 },
+          status: { neq: "qualified" },
+        },
+        actions: [
+          {
+            type: "notification",
+            target: "assigned_user",
+            template: "stale_lead_reminder",
+            priority: "medium",
+          },
+        ],
+      },
+      {
+        name: "Deal Stuck Alert",
+        description: "Alert when deal stays in same stage for 14+ days",
+        trigger: "deal_stuck",
+        conditions: {
+          daysInStage: { gte: 14 },
+          stage: { nin: ["closed_won", "closed_lost"] },
+        },
+        actions: [
+          {
+            type: "notification",
+            target: "assigned_user",
+            template: "deal_stuck_alert",
+            priority: "high",
+          },
+          {
+            type: "notification",
+            target: "manager",
+            template: "deal_stuck_manager",
+            priority: "medium",
+          },
+        ],
+      },
+      {
+        name: "Follow-up Due Reminder",
+        description: "Daily reminder for due follow-ups",
+        trigger: "follow_up_due",
+        conditions: {
+          dueDate: { eq: "today" },
+        },
+        actions: [
+          {
+            type: "notification",
+            target: "assigned_user",
+            template: "follow_up_due",
+            priority: "high",
+          },
+        ],
+      },
+    ];
+
+    for (const [index, rule] of defaultRules.entries()) {
+      await AutomationRule.create({
+        ...rule,
+        organizationId,
+        createdBy,
+        priority: index + 1,
+      });
+    }
+  }
+
+  /**
+   * Evaluate conditions against context
+   */
+  private static async evaluateConditions(
+    conditions: any,
+    context: AutomationContext
+  ): Promise<boolean> {
+    try {
+      // Simple condition evaluation - can be expanded
+      const data = context.data;
+
+      for (const [key, condition] of Object.entries(conditions)) {
+        const value = data[key];
+
+        if (typeof condition === "object" && condition !== null) {
+          const operators = condition as any;
+
+          for (const [op, expected] of Object.entries(operators)) {
+            switch (op) {
+              case "eq":
+                if (value !== expected) return false;
+                break;
+              case "neq":
+                if (value === expected) return false;
+                break;
+              case "gt":
+                if (!(value > expected)) return false;
+                break;
+              case "gte":
+                if (!(value >= expected)) return false;
+                break;
+              case "lt":
+                if (!(value < expected)) return false;
+                break;
+              case "lte":
+                if (!(value <= expected)) return false;
+                break;
+              case "in":
+                if (!Array.isArray(expected) || !expected.includes(value))
+                  return false;
+                break;
+              case "nin":
+                if (Array.isArray(expected) && expected.includes(value))
+                  return false;
+                break;
+              default:
+                console.warn(`Unknown operator: ${op}`);
+            }
+          }
+        } else {
+          // Direct value comparison
+          if (value !== condition) return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error evaluating conditions:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Execute actions from automation rule
+   */
+  private static async executeActions(
+    actions: any[],
+    context: AutomationContext,
+    rule: any
+  ): Promise<void> {
+    for (const action of actions) {
+      try {
+        switch (action.type) {
+          case "notification":
+            await this.executeNotificationAction(action, context);
+            break;
+          case "email":
+            await this.executeEmailAction(action, context);
+            break;
+          case "task":
+            await this.executeTaskAction(action, context);
+            break;
+          case "webhook":
+            await this.executeWebhookAction(action, context);
+            break;
+          default:
+            console.warn(`Unknown action type: ${action.type}`);
+        }
+      } catch (error) {
+        console.error(`Error executing action ${action.type}:`, error);
+      }
+    }
+  }
+
+  /**
+   * Execute notification action
+   */
+  private static async executeNotificationAction(
+    action: any,
+    context: AutomationContext
+  ): Promise<void> {
+    const template = this.getNotificationTemplate(action.template, context);
+
+    let targetUserId = context.userId;
+
+    // Determine target user based on action configuration
+    if (
+      action.target === "assigned_user" &&
+      context.relatedType &&
+      context.relatedId
+    ) {
+      targetUserId = await this.getAssignedUser(
+        context.relatedType,
+        context.relatedId
+      );
+    }
+
+    if (targetUserId) {
+      await this.sendNotification({
+        userId: targetUserId,
+        organizationId: context.organizationId,
+        type: action.template,
+        title: template.title,
+        message: template.message,
+        priority: action.priority || "medium",
+        actionUrl: template.actionUrl,
+        actionLabel: template.actionLabel,
+        relatedType: context.relatedType,
+        relatedId: context.relatedId,
+      });
+    }
+  }
+
+  /**
+   * Execute email action
+   */
+  private static async executeEmailAction(
+    action: any,
+    context: AutomationContext
+  ): Promise<void> {
+    // Implement email sending logic
+    console.log("Executing email action:", action);
+  }
+
+  /**
+   * Execute task creation action
+   */
+  private static async executeTaskAction(
+    action: any,
+    context: AutomationContext
+  ): Promise<void> {
+    // Implement task creation logic
+    console.log("Executing task action:", action);
+  }
+
+  /**
+   * Execute webhook action
+   */
+  private static async executeWebhookAction(
+    action: any,
+    context: AutomationContext
+  ): Promise<void> {
+    // Implement webhook calling logic
+    console.log("Executing webhook action:", action);
+  }
+
+  /**
+   * Get notification templates
+   */
+  private static getNotificationTemplate(
+    templateName: string,
+    context: AutomationContext
+  ): any {
+    const templates = {
+      high_score_lead: {
+        title: "🔥 High-Value Lead Alert",
+        message: `Lead ${context.data.name} scored ${context.data.score} points - high conversion potential!`,
+        actionUrl: `/pages/leads/${context.relatedId}`,
+        actionLabel: "View Lead",
+      },
+      stale_lead_reminder: {
+        title: "⏰ Lead Needs Attention",
+        message: `Lead ${context.data.name} hasn't been contacted in ${context.data.daysSinceLastActivity} days`,
+        actionUrl: `/pages/leads/${context.relatedId}`,
+        actionLabel: "Contact Lead",
+      },
+      deal_stuck_alert: {
+        title: "🚨 Deal Stuck in Pipeline",
+        message: `Deal "${context.data.title}" has been in ${context.data.stage} for ${context.data.daysInStage} days`,
+        actionUrl: `/deals/${context.relatedId}`,
+        actionLabel: "Review Deal",
+      },
+      follow_up_due: {
+        title: "📅 Follow-up Due Today",
+        message: `Follow-up scheduled for ${context.data.leadName} is due today`,
+        actionUrl: `/pages/leads/${context.relatedId}`,
+        actionLabel: "Complete Follow-up",
+      },
+    };
+
+    return (
+      templates[templateName as keyof typeof templates] || {
+        title: "Notification",
+        message: "You have a new notification",
+        actionUrl: "/",
+        actionLabel: "View",
+      }
+    );
+  }
+
+  /**
+   * Get assigned user for a related entity
+   */
+  private static async getAssignedUser(
+    entityType: string,
+    entityId: string
+  ): Promise<string | null> {
+    try {
+      switch (entityType) {
+        case "lead":
+          const lead = await Lead.findByPk(entityId, {
+            attributes: ["createdBy"],
+          });
+          return lead?.createdBy || null;
+        case "deal":
+          const deal = await Deal.findByPk(entityId, {
+            attributes: ["userId"],
+          });
+          return deal?.userId || null;
+        default:
+          return null;
+      }
+    } catch (error) {
+      console.error("Error getting assigned user:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Dispatch notification via different channels
+   */
+  private static async dispatchNotification(
+    notification: any,
+    channel: string
+  ): Promise<void> {
+    switch (channel) {
+      case "in_app":
+        // Already stored in database
+        break;
+      case "email":
+        // Send email (implement with your email service)
+        console.log("Sending email notification:", notification.title);
+        break;
+      case "slack":
+        // Send to Slack (implement with Slack API)
+        console.log("Sending Slack notification:", notification.title);
+        break;
+      case "sms":
+        // Send SMS (implement with SMS service)
+        console.log("Sending SMS notification:", notification.title);
+        break;
+    }
+  }
+}

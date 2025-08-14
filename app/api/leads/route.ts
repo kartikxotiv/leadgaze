@@ -1,0 +1,370 @@
+import { NextRequest, NextResponse } from "next/server";
+import {
+  Lead,
+  LeadConfig,
+  User,
+  Organization,
+  LeadScore,
+  Activity,
+} from "@/models";
+import { Op } from "sequelize";
+import { LeadScoringEngine } from "@/lib/lead-scoring-engine";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const organizationId = searchParams.get("organizationId");
+    const status = searchParams.get("status");
+    const source = searchParams.get("source");
+    const assignedTo = searchParams.get("assignedTo");
+    const workspaceId = searchParams.get("workspaceId");
+    const search = searchParams.get("search");
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const offset = parseInt(searchParams.get("offset") || "0");
+
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: "Organization ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // AuthZ: Ensure requester belongs to this organization
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+    try {
+      const decoded: any = jwt.verify(authHeader.substring(7), JWT_SECRET);
+      const hasOrgAccess = Array.isArray(decoded?.availableOrganizations)
+        ? decoded.availableOrganizations.some(
+            (o: any) => o.id === organizationId
+          )
+        : decoded?.currentOrganizationId === organizationId;
+      if (!hasOrgAccess) {
+        return NextResponse.json(
+          { success: false, error: "Access denied to this organization" },
+          { status: 403 }
+        );
+      }
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Invalid or expired token" },
+        { status: 401 }
+      );
+    }
+
+    // Build where clause
+    const whereClause: any = {
+      organizationId: organizationId,
+    };
+
+    // Add filters
+    if (status) {
+      const statusConfig = await LeadConfig.findOne({
+        where: { entityType: "status", entityValue: status },
+      });
+      if (statusConfig) {
+        whereClause.statusId = (statusConfig as any).id;
+      }
+    }
+
+    // Filter by workspace (JSONB meta_data contains { workspaceId }) when provided
+    if (workspaceId) {
+      whereClause.metaData = { [Op.contains]: { workspaceId } } as any;
+    }
+
+    if (source) {
+      const sourceConfig = await LeadConfig.findOne({
+        where: { entityType: "source", entityValue: source },
+      });
+      if (sourceConfig) {
+        whereClause.sourceId = (sourceConfig as any).id;
+      }
+    }
+
+    if (assignedTo) {
+      whereClause.assignedTo = assignedTo;
+    }
+
+    // Add search
+    if (search) {
+      whereClause[Op.or] = [
+        { firstName: { [Op.iLike]: `%${search}%` } },
+        { lastName: { [Op.iLike]: `%${search}%` } },
+        { email: { [Op.iLike]: `%${search}%` } },
+        { businessName: { [Op.iLike]: `%${search}%` } },
+      ];
+    }
+
+    const { count, rows: leads } = await Lead.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: LeadConfig,
+          as: "status",
+          attributes: ["entityValue", "description"],
+        },
+        {
+          model: LeadConfig,
+          as: "source",
+          attributes: ["entityValue", "description"],
+        },
+        {
+          model: LeadConfig,
+          as: "industry",
+          attributes: ["entityValue", "description"],
+        },
+        {
+          model: LeadConfig,
+          as: "companySize",
+          attributes: ["entityValue", "description"],
+        },
+        {
+          model: LeadConfig,
+          as: "scoreGrade",
+          attributes: ["entityValue", "description", "metadata"],
+        },
+        {
+          model: User,
+          as: "assignedUser",
+          attributes: ["firstName", "lastName", "email"],
+        },
+        {
+          model: User,
+          as: "createdUser",
+          attributes: ["firstName", "lastName"],
+        },
+        {
+          model: LeadScore,
+          as: "scoreData",
+          attributes: ["totalScore", "tier", "lastCalculated"],
+          required: false, // Left join - lead might not have score yet
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+      limit: limit,
+      offset: offset,
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        leads,
+        pagination: {
+          total: count,
+          limit,
+          offset,
+          pages: Math.ceil(count / limit),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching leads:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to fetch leads",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    // Permission check: require JWT and ensure creator matches or has edit rights
+    let requesterUserId: string | undefined;
+    let canEditAllData = false;
+    const authHeader = request.headers.get("authorization");
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.substring(7);
+      try {
+        const decoded: any = jwt.verify(token, JWT_SECRET);
+        requesterUserId = decoded?.userId;
+        // Permissions object may contain can_edit_all_data
+        canEditAllData = Boolean(
+          decoded?.availableOrganizations?.find(
+            (o: any) => o.id === body.organizationId
+          )?.permissions?.can_edit_all_data ||
+            decoded?.permissions?.can_edit_all_data
+        );
+      } catch {
+        // If JWT invalid, deny
+        return NextResponse.json(
+          { success: false, error: "Invalid or expired token" },
+          { status: 401 }
+        );
+      }
+    }
+
+    if (!requesterUserId) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Validate required fields
+    const requiredFields = [
+      "firstName",
+      "lastName",
+      "organizationId",
+      "sourceId",
+      "createdBy",
+    ];
+    for (const field of requiredFields) {
+      if (!body[field]) {
+        return NextResponse.json(
+          { success: false, error: `Missing required field: ${field}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate source exists and is active
+    const sourceConfig = await LeadConfig.findByPk(body.sourceId);
+    if (!sourceConfig || !(sourceConfig as any).isActive) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid or inactive source configuration",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate optional config references
+    if (body.industryId) {
+      const industryConfig = await LeadConfig.findByPk(body.industryId);
+      if (!industryConfig || !(industryConfig as any).isActive) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Invalid or inactive industry configuration",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (body.companySizeId) {
+      const companySizeConfig = await LeadConfig.findByPk(body.companySizeId);
+      if (!companySizeConfig || !(companySizeConfig as any).isActive) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Invalid or inactive company size configuration",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate email uniqueness per organization if provided
+    if (body.email) {
+      const existingLead = await Lead.findOne({
+        where: {
+          email: body.email.toLowerCase(),
+          organizationId: body.organizationId,
+        },
+      });
+
+      if (existingLead) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Lead with this email already exists in your organization",
+          },
+          { status: 409 }
+        );
+      }
+    }
+
+    // Get default status (new)
+    let statusId = body.statusId;
+    if (!statusId) {
+      const defaultStatus = await LeadConfig.findOne({
+        where: { entityType: "status", entityValue: "new" },
+      });
+      if (!defaultStatus) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Default 'new' status not found in configuration",
+          },
+          { status: 500 }
+        );
+      }
+      statusId = (defaultStatus as any).id;
+    }
+
+    // Create lead
+    const lead = await Lead.create({
+      ...body,
+      email: body.email?.toLowerCase(),
+      statusId: statusId,
+      leadScore: 0, // Start with 0 score
+    });
+
+    // Log activity: lead created
+    try {
+      await (Activity as any).create({
+        activityType: "lead_created",
+        relatedType: "lead",
+        relatedId: (lead as any).leadId,
+        subject: `Lead created by user ${(requesterUserId as string).slice(
+          0,
+          8
+        )}`,
+        userId: requesterUserId,
+        description: body?.qualificationNotes || null,
+        metadata: { sourceId: body.sourceId },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    } catch (e) {
+      console.error("Failed to log lead_created activity", e);
+    }
+
+    // Fetch created lead without associations for now
+    const createdLead = await Lead.findByPk((lead as any).leadId);
+
+    // Calculate initial lead score
+    try {
+      await LeadScoringEngine.calculateLeadScore(
+        lead.leadId,
+        body.organizationId
+      );
+      console.log(`✅ Lead score calculated for lead: ${lead.leadId}`);
+    } catch (scoringError) {
+      console.error("Error calculating lead score:", scoringError);
+      // Don't fail the lead creation if scoring fails
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: createdLead,
+      message: "Lead created successfully",
+    });
+  } catch (error) {
+    console.error("Error creating lead:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to create lead",
+        details: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : "No stack trace",
+      },
+      { status: 500 }
+    );
+  }
+}
