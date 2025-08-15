@@ -1,9 +1,31 @@
 import { createClient } from "@supabase/supabase-js"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Check if Supabase is properly configured
+const isSupabaseConfigured = supabaseUrl && 
+  supabaseAnonKey && 
+  supabaseUrl !== 'your-supabase-project-url' && 
+  supabaseAnonKey !== 'your-supabase-anonymous-key' &&
+  supabaseUrl.startsWith('https://');
+
+// Create a dummy client for build-time or when Supabase is not configured
+const createDummyClient = () => {
+  return {
+    from: () => ({
+      select: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }),
+      insert: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }),
+      update: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }),
+      delete: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }),
+      upsert: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }),
+    }),
+  } as any;
+};
+
+export const supabase = isSupabaseConfigured 
+  ? createClient(supabaseUrl!, supabaseAnonKey!)
+  : createDummyClient();
 
 export type Database = {
   public: {

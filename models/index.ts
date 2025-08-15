@@ -112,6 +112,7 @@ const models = {
 (AutomationRuleModel as any).associate(models);
 
 export {
+  sequelize,
   UserModel as User,
   OrganizationModel as Organization,
   UserOrganizationModel as UserOrganization,
