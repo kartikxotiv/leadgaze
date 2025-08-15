@@ -4,6 +4,7 @@ const { Sequelize } = require("sequelize");
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || 
   `postgres://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'password'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'crm'}`;
 
+  console.log(DATABASE_URL)
 const sequelize = new Sequelize(DATABASE_URL, {
   dialect: "postgres",
   logging: false,
