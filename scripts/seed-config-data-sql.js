@@ -2,7 +2,7 @@ const { Sequelize } = require("sequelize");
 const pg = require("pg");
 
 // Database connection
-const sequelize = new Sequelize("postgres://sidharthverma@localhost/crm", {
+const sequelize = new Sequelize("postgres://crm_user:Xotiv%40123@89.116.134.1:5432/crm_db", {
   dialect: "postgres",
   dialectModule: pg,
   logging: false,
@@ -78,18 +78,18 @@ async function seedConfigDataSQL() {
       },
     ];
 
-    for (const config of userConfigData) {
-      await sequelize.query(
-        `
-        INSERT INTO users_config (entity_type, entity_value, display_name, description, is_active, sort_order)
-        VALUES (:entityType, :entityValue, :displayName, :description, true, 0)
-        ON CONFLICT (entity_type, entity_value) DO NOTHING;
-      `,
-        {
-          replacements: config,
-        }
-      );
-    }
+    // for (const config of userConfigData) {
+    //   await sequelize.query(
+    //     `
+    //     INSERT INTO users_config (entity_type, entity_value, display_name, description, is_active, sort_order)
+    //     VALUES (:entityType, :entityValue, :displayName, :description, true, 0)
+    //     ON CONFLICT (entity_type, entity_value) DO NOTHING;
+    //   `,
+    //     {
+    //       replacements: config,
+    //     }
+    //   );
+    // }
 
     // Seed OrganizationConfig data
     console.log("📋 Seeding OrganizationConfig data...");
@@ -101,7 +101,6 @@ async function seedConfigDataSQL() {
         entityValue: "solo",
         displayName: "Just me (1)",
         description: "Solo entrepreneur or freelancer",
-        numericValue: 1,
         sortOrder: 1,
       },
       {
@@ -109,7 +108,6 @@ async function seedConfigDataSQL() {
         entityValue: "small",
         displayName: "Small (2-10)",
         description: "Small business with 2-10 employees",
-        numericValue: 10,
         sortOrder: 2,
       },
       {
@@ -117,7 +115,6 @@ async function seedConfigDataSQL() {
         entityValue: "medium",
         displayName: "Medium (11-50)",
         description: "Growing business with 11-50 employees",
-        numericValue: 50,
         sortOrder: 3,
       },
       {
@@ -125,7 +122,6 @@ async function seedConfigDataSQL() {
         entityValue: "large",
         displayName: "Large (51-200)",
         description: "Large business with 51-200 employees",
-        numericValue: 200,
         sortOrder: 4,
       },
       {
@@ -133,7 +129,6 @@ async function seedConfigDataSQL() {
         entityValue: "enterprise",
         displayName: "Enterprise (201-1000)",
         description: "Enterprise with 201-1000 employees",
-        numericValue: 1000,
         sortOrder: 5,
       },
       {
@@ -141,7 +136,6 @@ async function seedConfigDataSQL() {
         entityValue: "mega_enterprise",
         displayName: "Mega Enterprise (1000+)",
         description: "Large enterprise with 1000+ employees",
-        numericValue: 10000,
         sortOrder: 6,
       },
 
@@ -239,8 +233,8 @@ async function seedConfigDataSQL() {
     for (const config of organizationConfigData) {
       await sequelize.query(
         `
-        INSERT INTO organization_config (entity_type, entity_value, display_name, description, numeric_value, is_active, sort_order)
-        VALUES (:entityType, :entityValue, :displayName, :description, :numericValue, true, :sortOrder)
+        INSERT INTO organization_config (entity_type, entity_value, display_name, description, is_active, sort_order)
+        VALUES (:entityType, :entityValue, :displayName, :description, true, :sortOrder)
         ON CONFLICT (entity_type, entity_value) DO NOTHING;
       `,
         {

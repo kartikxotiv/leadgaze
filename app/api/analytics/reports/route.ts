@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { User, Lead, Deal, Task, PipelineStage, LeadConfig } from "@/models";
+import { Op } from "sequelize";
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,59 +33,70 @@ async function getTeamPerformanceReport(
   dateFrom?: string | null,
   dateTo?: string | null
 ) {
-  const { data: users } = await supabase.from("users").select("*");
+  const users = await User.findAll({
+    attributes: ["userId", "firstName", "lastName", "email"],
+  });
 
   const performanceData = await Promise.all(
-    (users || []).map(async (user) => {
+    users.map(async (user) => {
+      // Build date filter
+      const dateFilter: any = {};
+      if (dateFrom) dateFilter[Op.gte] = new Date(dateFrom);
+      if (dateTo) dateFilter[Op.lte] = new Date(dateTo);
+
       // Get user's leads
-      let leadsQuery = supabase
-        .from("leads")
-        .select("*")
-        .eq("assigned_to", user.id);
-
-      if (dateFrom) leadsQuery = leadsQuery.gte("created_at", dateFrom);
-      if (dateTo) leadsQuery = leadsQuery.lte("created_at", dateTo);
-
-      const { data: userLeads } = await leadsQuery;
+      const userLeads = await Lead.findAll({
+        where: {
+          assignedTo: (user as any).userId,
+          ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
+        },
+      });
 
       // Get user's deals
-      let dealsQuery = supabase
-        .from("deals")
-        .select("*")
-        .eq("assigned_to", user.id);
-
-      if (dateFrom) dealsQuery = dealsQuery.gte("created_at", dateFrom);
-      if (dateTo) dealsQuery = dealsQuery.lte("created_at", dateTo);
-
-      const { data: userDeals } = await dealsQuery;
+      const userDeals = await Deal.findAll({
+        where: {
+          userId: (user as any).userId,
+          ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
+        },
+      });
 
       // Get completed tasks
-      let tasksQuery = supabase
-        .from("tasks")
-        .select("*")
-        .eq("assigned_to", user.id)
-        .eq("completed", true);
+      const completedTasks = await Task.findAll({
+        where: {
+          assignedTo: (user as any).userId,
+          status: "Completed",
+          ...(Object.keys(dateFilter).length > 0 && {
+            completedAt: dateFilter,
+          }),
+        },
+      });
 
-      if (dateFrom) tasksQuery = tasksQuery.gte("completed_at", dateFrom);
-      if (dateTo) tasksQuery = tasksQuery.lte("completed_at", dateTo);
+      // Get qualified status ID for conversion calculation
+      const qualifiedStatus = await LeadConfig.findOne({
+        where: { entityType: "status", entityValue: "qualified" },
+      });
 
-      const { data: completedTasks } = await tasksQuery;
+      const convertedLeads = qualifiedStatus
+        ? userLeads.filter(
+            (lead: any) => lead.statusId === (qualifiedStatus as any).id
+          )
+        : [];
 
-      const convertedLeads =
-        userLeads?.filter((lead) => lead.status === "Converted") || [];
-      const totalDealValue =
-        userDeals?.reduce((sum, deal) => sum + deal.value, 0) || 0;
+      const totalDealValue = userDeals.reduce(
+        (sum: number, deal: any) => sum + (deal.value || 0),
+        0
+      );
 
       return {
-        user: user.name,
-        userId: user.id,
-        leadsAdded: userLeads?.length || 0,
+        user: `${(user as any).firstName} ${(user as any).lastName}`,
+        userId: (user as any).userId,
+        leadsAdded: userLeads.length,
         leadsConverted: convertedLeads.length,
-        conversionRate: userLeads?.length
+        conversionRate: userLeads.length
           ? (convertedLeads.length / userLeads.length) * 100
           : 0,
         dealValue: totalDealValue,
-        tasksCompleted: completedTasks?.length || 0,
+        tasksCompleted: completedTasks.length,
       };
     })
   );
@@ -99,30 +111,49 @@ async function getLeadSourcesReport(
   dateFrom?: string | null,
   dateTo?: string | null
 ) {
-  let query = supabase.from("leads").select("source, status, deal_value");
+  // Build date filter
+  const dateFilter: any = {};
+  if (dateFrom) dateFilter[Op.gte] = new Date(dateFrom);
+  if (dateTo) dateFilter[Op.lte] = new Date(dateTo);
 
-  if (dateFrom) query = query.gte("created_at", dateFrom);
-  if (dateTo) query = query.lte("created_at", dateTo);
-
-  const { data: leads } = await query;
+  const leads = await Lead.findAll({
+    where: {
+      ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
+    },
+    include: [
+      {
+        model: LeadConfig,
+        as: "sourceConfig",
+        attributes: ["entityValue"],
+      },
+      {
+        model: LeadConfig,
+        as: "statusConfig",
+        attributes: ["entityValue"],
+      },
+    ],
+  });
 
   const sourceMap = new Map();
 
-  leads?.forEach((lead) => {
-    if (!sourceMap.has(lead.source)) {
-      sourceMap.set(lead.source, {
-        source: lead.source,
+  leads.forEach((lead: any) => {
+    const source = lead.sourceConfig?.entityValue || "unknown";
+    const status = lead.statusConfig?.entityValue || "new";
+
+    if (!sourceMap.has(source)) {
+      sourceMap.set(source, {
+        source,
         leads: 0,
         converted: 0,
         totalValue: 0,
       });
     }
 
-    const sourceData = sourceMap.get(lead.source);
+    const sourceData = sourceMap.get(source);
     sourceData.leads++;
-    sourceData.totalValue += lead.deal_value;
+    sourceData.totalValue += lead.dealValue || 0;
 
-    if (lead.status === "Converted") {
+    if (status === "qualified") {
       sourceData.converted++;
     }
   });
@@ -139,27 +170,42 @@ async function getLeadSourcesReport(
 }
 
 async function getPipelineAnalysisReport() {
-  const { data: stages } = await supabase
-    .from("pipeline_stages")
-    .select("*")
-    .order("position");
+  // Note: This system doesn't use pipeline_stages table, deals have direct stage enum
+  const stageNames = [
+    "qualification",
+    "proposal",
+    "negotiation",
+    "decision",
+    "closed_won",
+    "closed_lost",
+  ];
 
   const pipelineData = await Promise.all(
-    (stages || []).map(async (stage) => {
-      const { data: stageDeals } = await supabase
-        .from("deals")
-        .select("*")
-        .eq("stage_id", stage.id);
+    stageNames.map(async (stageName) => {
+      const stageDeals = await Deal.findAll({
+        where: { stage: stageName },
+      });
+
+      const totalValue = stageDeals.reduce(
+        (sum: number, deal: any) => sum + (deal.value || 0),
+        0
+      );
+
+      const avgProbability = stageDeals.length
+        ? stageDeals.reduce(
+            (sum: number, deal: any) => sum + (deal.probability || 0),
+            0
+          ) / stageDeals.length
+        : 0;
 
       return {
-        stage: stage.name,
-        stageId: stage.id,
-        count: stageDeals?.length || 0,
-        totalValue: stageDeals?.reduce((sum, deal) => sum + deal.value, 0) || 0,
-        avgProbability: stageDeals?.length
-          ? stageDeals.reduce((sum, deal) => sum + deal.probability, 0) /
-            stageDeals.length
-          : 0,
+        stage:
+          stageName.charAt(0).toUpperCase() +
+          stageName.slice(1).replace("_", " "),
+        stageId: stageName,
+        count: stageDeals.length,
+        totalValue,
+        avgProbability,
       };
     })
   );
@@ -174,31 +220,43 @@ async function getConversionFunnelReport(
   dateFrom?: string | null,
   dateTo?: string | null
 ) {
-  let query = supabase.from("leads").select("status");
+  // Build date filter
+  const dateFilter: any = {};
+  if (dateFrom) dateFilter[Op.gte] = new Date(dateFrom);
+  if (dateTo) dateFilter[Op.lte] = new Date(dateTo);
 
-  if (dateFrom) query = query.gte("created_at", dateFrom);
-  if (dateTo) query = query.lte("created_at", dateTo);
-
-  const { data: leads } = await query;
+  const leads = await Lead.findAll({
+    where: {
+      ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
+    },
+    include: [
+      {
+        model: LeadConfig,
+        as: "statusConfig",
+        attributes: ["entityValue"],
+      },
+    ],
+  });
 
   const statusCounts = {
-    New: 0,
-    Qualified: 0,
-    "In Progress": 0,
-    Converted: 0,
-    Disqualified: 0,
+    new: 0,
+    contact_attempted: 0,
+    in_conversation: 0,
+    qualified: 0,
+    disqualified: 0,
   };
 
-  leads?.forEach((lead) => {
-    if (statusCounts.hasOwnProperty(lead.status)) {
-      statusCounts[lead.status as keyof typeof statusCounts]++;
+  leads.forEach((lead: any) => {
+    const status = lead.statusConfig?.entityValue || "new";
+    if (statusCounts.hasOwnProperty(status)) {
+      statusCounts[status as keyof typeof statusCounts]++;
     }
   });
 
   const funnelData = Object.entries(statusCounts).map(([status, count]) => ({
-    stage: status,
+    stage: status.charAt(0).toUpperCase() + status.slice(1).replace("_", " "),
     count,
-    percentage: leads?.length ? (count / leads.length) * 100 : 0,
+    percentage: leads.length ? (count / leads.length) * 100 : 0,
   }));
 
   return NextResponse.json({
