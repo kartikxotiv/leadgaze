@@ -32,7 +32,7 @@ async function initDatabase() {
     console.log("\n📋 Next steps:")
     console.log("1. Start your Next.js development server: npm run dev")
     console.log("2. Open pgAdmin to view your database tables")
-    console.log("3. Access the CRM at http://localhost:3000")
+    console.log(`3. Access the CRM at ${process.env.APP_URL}`)
   } catch (error) {
     console.error("❌ Database initialization failed:", error)
     process.exit(1)

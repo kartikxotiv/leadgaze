@@ -2,7 +2,7 @@
 // Run with: node test-activity-api.js
 
 const testSimpleAPI = async () => {
-  const baseUrl = "http://localhost:3000";
+  const baseUrl = process.env.APP_URL;
 
   try {
     console.log("=== Testing Simple API Route ===");
@@ -27,7 +27,7 @@ const testSimpleAPI = async () => {
 };
 
 const testActivityAPI = async () => {
-  const baseUrl = "http://localhost:3000";
+  const baseUrl = process.env.APP_URL;
 
   try {
     console.log("\n=== Testing Activities API ===");
