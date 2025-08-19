@@ -24,7 +24,7 @@ let DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
   const dbUser = process.env.DB_USER || 'sidharthverma';
   const dbPassword = process.env.DB_PASSWORD ? `:${process.env.DB_PASSWORD}` : '';
-  const dbHost = process.env.DB_HOST || 'localhost';
+  const dbHost = process.env.DB_HOST ;
   const dbPort = process.env.DB_PORT ? `:${process.env.DB_PORT}` : '';
   const dbName = process.env.DB_NAME || 'crm';
   

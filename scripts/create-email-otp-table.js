@@ -1,7 +1,7 @@
 const { Sequelize } = require("sequelize");
 
 // Same connection as your database.ts
-const sequelize = new Sequelize("postgres://sidharthverma@localhost/crm", {
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: "postgres",
   logging: console.log,
 });

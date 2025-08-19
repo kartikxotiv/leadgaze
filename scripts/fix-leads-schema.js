@@ -3,7 +3,7 @@ const path = require("path");
 const fs = require("fs");
 
 // Database configuration - using the same config as lib/database.ts
-const sequelize = new Sequelize("postgres://sidharthverma@localhost/crm", {
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: "postgres",
   logging: console.log,
 });
