@@ -105,8 +105,7 @@ export async function POST(request: NextRequest) {
     try {
       const baseUrl =
         process.env.NEXTAUTH_URL ||
-        process.env.APP_URL ||
-        "http://localhost:3000";
+        process.env.APP_URL;
       const inviteUrl = `${baseUrl}/auth/accept-invitation?token=${
         (invitation as any).invitationToken
       }`;

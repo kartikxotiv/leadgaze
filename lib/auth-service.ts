@@ -1463,8 +1463,7 @@ export class AuthService {
       // Generate reset URL
       const baseUrl =
         process.env.NEXTAUTH_URL ||
-        process.env.APP_URL ||
-        "http://localhost:3000";
+        process.env.APP_URL;
       const resetUrl = `${baseUrl}/pages/auth/reset-password?token=${resetToken.token}`;
 
       // Get user's current organization for branding
