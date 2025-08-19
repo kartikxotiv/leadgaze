@@ -1,7 +1,16 @@
+// Load environment variables from .env.local (prioritize local over default)
+require('dotenv').config({ path: '.env.local' });
+// Fallback to .env if .env.local doesn't exist
+require('dotenv').config();
+
 const { Sequelize } = require("sequelize");
 
-// Database connection
-const sequelize = new Sequelize("postgres://sidharthverma@localhost/crm", {
+// Database connection using environment variables
+const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || 
+  `postgres://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'password'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'crm'}`;
+
+console.log("🔗 Using DATABASE_URL:", DATABASE_URL.replace(/:([^:]*@)/, ':***@'));
+const sequelize = new Sequelize(DATABASE_URL, {
   dialect: "postgres",
   logging: false,
   define: {
