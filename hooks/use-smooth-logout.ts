@@ -14,30 +14,26 @@ export function useSmoothLogout() {
   const logout = () => {
     // Set logging out state
     setIsLoggingOut(true);
-    
+
     // Start logout process
     try {
       // Immediate navigation to prevent flash of empty content
-      if (typeof window !== "undefined") {
-        // Add a slight delay to show loading state
-        setTimeout(() => {
-          window.location.href = "/pages/welcome";
-        }, 300);
-      }
-      
+
       // Clear auth state after navigation starts
       setTimeout(() => {
         authLogout();
-        setIsLoggingOut(false);
+
+        window.location.href = "/pages/welcome";
       }, 200);
-      
     } catch (error) {
       console.error("Logout error:", error);
-      setIsLoggingOut(false);
+
       // Fallback navigation
       if (typeof window !== "undefined") {
         window.location.href = "/pages/welcome";
       }
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
