@@ -3,7 +3,7 @@ import pg from "pg";
 
 // Use environment variables for database connection
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || 
-  `postgres://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'password'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'crm'}`;
+  `postgres://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'password'}@${process.env.DB_HOST }:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'crm'}`;
 
 const sequelize = new Sequelize(DATABASE_URL, {
   dialect: "postgres",
@@ -39,11 +39,11 @@ export const testConnection = async () => {
   try {
     await sequelize.authenticate();
     console.log("✅ Database connection established successfully.");
-    console.log(`📍 Connected to: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'crm'}`);
+    console.log(`📍 Connected to: ${process.env.DB_HOST }:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'crm'}`);
     return true;
   } catch (error) {
     console.error("❌ Unable to connect to the database:", error);
-    console.error(`🔗 Attempted connection: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'crm'}`);
+    console.error(`🔗 Attempted connection: ${process.env.DB_HOST }:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'crm'}`);
     return false;
   }
 };

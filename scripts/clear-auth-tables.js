@@ -2,7 +2,7 @@ const { Sequelize } = require("sequelize");
 const pg = require("pg");
 
 // Database connection
-const sequelize = new Sequelize("postgres://sidharthverma@localhost/crm", {
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: "postgres",
   dialectModule: pg,
   logging: false, // Set to console.log if you want to see SQL queries
