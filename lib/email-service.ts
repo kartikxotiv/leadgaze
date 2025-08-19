@@ -159,6 +159,8 @@ class EmailService {
       text: options.text,
     };
 
+    console.log("mailOptions", mailOptions);
+
     try {
       const info = await this.transporter.sendMail(mailOptions);
       console.log(
