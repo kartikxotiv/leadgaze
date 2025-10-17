@@ -21,19 +21,19 @@ import {
 import Link from "next/link";
 
 export default function WelcomePage() {
-  // Note: Auth protection is handled by middleware
-  // This page only renders for unauthenticated users
+ 
+ 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">
-      {/* Background decoration */}
+      {}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse animation-delay-2000"></div>
       </div>
 
       <div className="relative z-10 container mx-auto px-4 py-16">
-        {/* Header */}
+        {}
         <div className="text-center mb-16">
           <div className="flex justify-center mb-8">
             <div className="flex aspect-square size-20 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 text-white shadow-2xl">
@@ -65,7 +65,7 @@ export default function WelcomePage() {
           </div>
         </div>
 
-        {/* Features Grid */}
+        {}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
           <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 hover:scale-105">
             <CardHeader>
@@ -143,7 +143,7 @@ export default function WelcomePage() {
           </Card>
         </div>
 
-        {/* CTA Section */}
+        {}
         <div className="text-center">
           <Card className="border-0 shadow-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
             <CardContent className="p-12">

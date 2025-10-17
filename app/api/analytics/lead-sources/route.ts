@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Build date filter
+   
     const dateFilter: any = {};
     if (dateFrom) {
       dateFilter[Op.gte] = new Date(dateFrom);
@@ -25,13 +25,13 @@ export async function GET(request: NextRequest) {
       dateFilter[Op.lte] = new Date(dateTo);
     }
 
-    // Get all lead sources
+   
     const leadSources = await LeadConfig.findAll({
       where: { entityType: "source", isActive: true },
       order: [["entityValue", "ASC"]],
     });
 
-    // Get lead counts by source
+   
     const sourceStats = [];
 
     for (const source of leadSources) {
@@ -53,19 +53,19 @@ export async function GET(request: NextRequest) {
           sourceLabel:
             (source as any).description || (source as any).entityValue,
           count,
-          percentage: 0, // Will calculate after getting total
+          percentage: 0,
         });
       }
     }
 
-    // Calculate percentages
+   
     const totalLeads = sourceStats.reduce((sum, stat) => sum + stat.count, 0);
     sourceStats.forEach((stat) => {
       stat.percentage =
         totalLeads > 0 ? Math.round((stat.count / totalLeads) * 100) : 0;
     });
 
-    // Sort by count descending
+   
     sourceStats.sort((a, b) => b.count - a.count);
 
     return NextResponse.json({

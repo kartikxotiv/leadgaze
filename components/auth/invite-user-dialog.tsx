@@ -46,7 +46,7 @@ export function InviteUserDialog({
     message: "",
   });
 
-  // Check if user can invite users
+ 
   const canInvite = PermissionManager.canInviteUsers(currentUserOrganization);
 
   if (!canInvite) {
@@ -65,7 +65,7 @@ export function InviteUserDialog({
       return;
     }
 
-    // Validate email format
+   
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       toast.error("Please enter a valid email address");

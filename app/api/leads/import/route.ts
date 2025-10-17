@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     let duplicates = 0;
     const errors: string[] = [];
 
-    // Preload configs for mapping
+   
     const activeSources = await LeadConfig.findAll({
       where: { entityType: "source" },
       attributes: ["id", "entityValue"],
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Duplicate per organization by email
+     
       const existing = await Lead.findOne({
         where: { email, organizationId },
         attributes: ["leadId"],
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Resolve source
+     
       let sourceId: string | undefined = row.sourceId;
       if (!sourceId && row.source) {
         const match = activeSources.find(
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
         sourceId = (match as any)?.id;
       }
       if (!sourceId) {
-        // fallback to "unknown" if configured
+       
         const unknown = activeSources.find(
           (s: any) => normalize((s as any).entityValue) === "unknown"
         );
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
           statusId: defaultStatusId,
           createdBy: requesterUserId,
           metaData: workspaceId ? { workspaceId } : undefined,
-          // Set default status via config if needed in model layer/route
+         
         });
         successful++;
       } catch (e: any) {

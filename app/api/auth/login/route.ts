@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Validate required fields
+   
     if (!body.email || !body.password) {
       return NextResponse.json(
         {
@@ -16,11 +16,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Optional org context
+   
     const organizationSlug = body.organizationSlug || body.orgSlug;
     const organizationId = body.organizationId;
 
-    // Login user (org-scoped if provided)
+   
     const result = await AuthService.loginUser(
       body.email,
       body.password,

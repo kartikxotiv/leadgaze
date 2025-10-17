@@ -1,9 +1,9 @@
---
--- PostgreSQL database dump
---
 
--- Dumped from database version 14.18 (Homebrew)
--- Dumped by pg_dump version 15.13 (Homebrew)
+
+
+
+
+
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -16,27 +16,27 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
---
--- Name: public; Type: SCHEMA; Schema: -; Owner: sidharthverma
---
 
---
--- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
---
+
+
+
+
+
+
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
 
 
---
--- Name: EXTENSION pgcrypto; Type: COMMENT; Schema: -; Owner: 
---
+
+
+
 
 COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
 
 
---
--- Name: activity_related_type; Type: TYPE; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE TYPE public.activity_related_type AS ENUM (
     'lead',
@@ -48,9 +48,9 @@ CREATE TYPE public.activity_related_type AS ENUM (
 
 ALTER TYPE public.activity_related_type OWNER TO postgres;
 
---
--- Name: activity_type; Type: TYPE; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE TYPE public.activity_type AS ENUM (
     'call',
@@ -75,9 +75,9 @@ CREATE TYPE public.activity_type AS ENUM (
 
 ALTER TYPE public.activity_type OWNER TO postgres;
 
---
--- Name: deal_priority; Type: TYPE; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE TYPE public.deal_priority AS ENUM (
     'low',
@@ -89,9 +89,9 @@ CREATE TYPE public.deal_priority AS ENUM (
 
 ALTER TYPE public.deal_priority OWNER TO postgres;
 
---
--- Name: deal_stage; Type: TYPE; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE TYPE public.deal_stage AS ENUM (
     'qualification',
@@ -105,9 +105,9 @@ CREATE TYPE public.deal_stage AS ENUM (
 
 ALTER TYPE public.deal_stage OWNER TO postgres;
 
---
--- Name: enum_activities_outcome; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_activities_outcome AS ENUM (
     'positive',
@@ -119,9 +119,9 @@ CREATE TYPE public.enum_activities_outcome AS ENUM (
 
 ALTER TYPE public.enum_activities_outcome OWNER TO crm_user;
 
---
--- Name: enum_activities_type; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_activities_type AS ENUM (
     'call',
@@ -135,9 +135,9 @@ CREATE TYPE public.enum_activities_type AS ENUM (
 
 ALTER TYPE public.enum_activities_type OWNER TO crm_user;
 
---
--- Name: enum_deals_deal_status; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_deals_deal_status AS ENUM (
     'open',
@@ -149,9 +149,9 @@ CREATE TYPE public.enum_deals_deal_status AS ENUM (
 
 ALTER TYPE public.enum_deals_deal_status OWNER TO crm_user;
 
---
--- Name: enum_deals_status; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_deals_status AS ENUM (
     'open',
@@ -163,9 +163,9 @@ CREATE TYPE public.enum_deals_status AS ENUM (
 
 ALTER TYPE public.enum_deals_status OWNER TO crm_user;
 
---
--- Name: enum_email_otps_purpose; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_email_otps_purpose AS ENUM (
     'signup',
@@ -176,9 +176,9 @@ CREATE TYPE public.enum_email_otps_purpose AS ENUM (
 
 ALTER TYPE public.enum_email_otps_purpose OWNER TO crm_user;
 
---
--- Name: enum_leads_company_size; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_leads_company_size AS ENUM (
     '1-10',
@@ -191,9 +191,9 @@ CREATE TYPE public.enum_leads_company_size AS ENUM (
 
 ALTER TYPE public.enum_leads_company_size OWNER TO crm_user;
 
---
--- Name: enum_leads_priority; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_leads_priority AS ENUM (
     'High',
@@ -204,9 +204,9 @@ CREATE TYPE public.enum_leads_priority AS ENUM (
 
 ALTER TYPE public.enum_leads_priority OWNER TO crm_user;
 
---
--- Name: enum_leads_source; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_leads_source AS ENUM (
     'Website',
@@ -221,9 +221,9 @@ CREATE TYPE public.enum_leads_source AS ENUM (
 
 ALTER TYPE public.enum_leads_source OWNER TO crm_user;
 
---
--- Name: enum_leads_status; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_leads_status AS ENUM (
     'New',
@@ -236,9 +236,9 @@ CREATE TYPE public.enum_leads_status AS ENUM (
 
 ALTER TYPE public.enum_leads_status OWNER TO crm_user;
 
---
--- Name: enum_leads_type; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_leads_type AS ENUM (
     'Hot',
@@ -249,9 +249,9 @@ CREATE TYPE public.enum_leads_type AS ENUM (
 
 ALTER TYPE public.enum_leads_type OWNER TO crm_user;
 
---
--- Name: enum_organizations_company_size; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_organizations_company_size AS ENUM (
     'solo',
@@ -264,9 +264,9 @@ CREATE TYPE public.enum_organizations_company_size AS ENUM (
 
 ALTER TYPE public.enum_organizations_company_size OWNER TO crm_user;
 
---
--- Name: enum_organizations_plan_type; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_organizations_plan_type AS ENUM (
     'trial',
@@ -278,9 +278,9 @@ CREATE TYPE public.enum_organizations_plan_type AS ENUM (
 
 ALTER TYPE public.enum_organizations_plan_type OWNER TO crm_user;
 
---
--- Name: enum_organizations_status; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_organizations_status AS ENUM (
     'active',
@@ -291,9 +291,9 @@ CREATE TYPE public.enum_organizations_status AS ENUM (
 
 ALTER TYPE public.enum_organizations_status OWNER TO crm_user;
 
---
--- Name: enum_organizations_subscription_status; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_organizations_subscription_status AS ENUM (
     'trial',
@@ -306,9 +306,9 @@ CREATE TYPE public.enum_organizations_subscription_status AS ENUM (
 
 ALTER TYPE public.enum_organizations_subscription_status OWNER TO crm_user;
 
---
--- Name: enum_tasks_priority; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_tasks_priority AS ENUM (
     'Low',
@@ -320,9 +320,9 @@ CREATE TYPE public.enum_tasks_priority AS ENUM (
 
 ALTER TYPE public.enum_tasks_priority OWNER TO crm_user;
 
---
--- Name: enum_tasks_status; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_tasks_status AS ENUM (
     'Pending',
@@ -334,9 +334,9 @@ CREATE TYPE public.enum_tasks_status AS ENUM (
 
 ALTER TYPE public.enum_tasks_status OWNER TO crm_user;
 
---
--- Name: enum_tasks_type; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_tasks_type AS ENUM (
     'Call',
@@ -349,9 +349,9 @@ CREATE TYPE public.enum_tasks_type AS ENUM (
 
 ALTER TYPE public.enum_tasks_type OWNER TO crm_user;
 
---
--- Name: enum_user_organizations_role; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_user_organizations_role AS ENUM (
     'owner',
@@ -363,9 +363,9 @@ CREATE TYPE public.enum_user_organizations_role AS ENUM (
 
 ALTER TYPE public.enum_user_organizations_role OWNER TO crm_user;
 
---
--- Name: enum_user_organizations_status; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_user_organizations_status AS ENUM (
     'active',
@@ -376,9 +376,9 @@ CREATE TYPE public.enum_user_organizations_status AS ENUM (
 
 ALTER TYPE public.enum_user_organizations_status OWNER TO crm_user;
 
---
--- Name: enum_users_status; Type: TYPE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TYPE public.enum_users_status AS ENUM (
     'active',
@@ -389,9 +389,9 @@ CREATE TYPE public.enum_users_status AS ENUM (
 
 ALTER TYPE public.enum_users_status OWNER TO crm_user;
 
---
--- Name: task_priority; Type: TYPE; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE TYPE public.task_priority AS ENUM (
     'Low',
@@ -403,9 +403,9 @@ CREATE TYPE public.task_priority AS ENUM (
 
 ALTER TYPE public.task_priority OWNER TO postgres;
 
---
--- Name: task_status; Type: TYPE; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE TYPE public.task_status AS ENUM (
     'Pending',
@@ -417,9 +417,9 @@ CREATE TYPE public.task_status AS ENUM (
 
 ALTER TYPE public.task_status OWNER TO postgres;
 
---
--- Name: task_type; Type: TYPE; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE TYPE public.task_type AS ENUM (
     'Task',
@@ -432,9 +432,9 @@ CREATE TYPE public.task_type AS ENUM (
 
 ALTER TYPE public.task_type OWNER TO postgres;
 
---
--- Name: prt_sync_reset_token(); Type: FUNCTION; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE FUNCTION public.prt_sync_reset_token() RETURNS trigger
     LANGUAGE plpgsql
@@ -449,9 +449,9 @@ END$$;
 
 ALTER FUNCTION public.prt_sync_reset_token() OWNER TO postgres;
 
---
--- Name: update_updated_at_column(); Type: FUNCTION; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE FUNCTION public.update_updated_at_column() RETURNS trigger
     LANGUAGE plpgsql
@@ -469,9 +469,9 @@ SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
---
--- Name: activities; Type: TABLE; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE TABLE public.activities (
     activity_id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -502,9 +502,9 @@ CREATE TABLE public.activities (
 
 ALTER TABLE public.activities OWNER TO postgres;
 
---
--- Name: automation_rules; Type: TABLE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TABLE public.automation_rules (
     rule_id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -527,9 +527,9 @@ CREATE TABLE public.automation_rules (
 
 ALTER TABLE public.automation_rules OWNER TO crm_user;
 
---
--- Name: deals; Type: TABLE; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE TABLE public.deals (
     deal_id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -556,9 +556,9 @@ CREATE TABLE public.deals (
 
 ALTER TABLE public.deals OWNER TO postgres;
 
---
--- Name: email_otps; Type: TABLE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TABLE public.email_otps (
     id uuid NOT NULL,
@@ -575,9 +575,9 @@ CREATE TABLE public.email_otps (
 
 ALTER TABLE public.email_otps OWNER TO crm_user;
 
---
--- Name: email_verifications; Type: TABLE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TABLE public.email_verifications (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -594,9 +594,9 @@ CREATE TABLE public.email_verifications (
 
 ALTER TABLE public.email_verifications OWNER TO crm_user;
 
---
--- Name: lead_scores; Type: TABLE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TABLE public.lead_scores (
     score_id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -615,9 +615,9 @@ CREATE TABLE public.lead_scores (
 
 ALTER TABLE public.lead_scores OWNER TO crm_user;
 
---
--- Name: leads; Type: TABLE; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE TABLE public.leads (
     lead_id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -654,9 +654,9 @@ CREATE TABLE public.leads (
 
 ALTER TABLE public.leads OWNER TO postgres;
 
---
--- Name: leads_config; Type: TABLE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TABLE public.leads_config (
     id uuid NOT NULL,
@@ -673,9 +673,9 @@ CREATE TABLE public.leads_config (
 
 ALTER TABLE public.leads_config OWNER TO crm_user;
 
---
--- Name: notifications; Type: TABLE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TABLE public.notifications (
     notification_id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -706,9 +706,9 @@ CREATE TABLE public.notifications (
 
 ALTER TABLE public.notifications OWNER TO crm_user;
 
---
--- Name: org_user_accounts; Type: TABLE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TABLE public.org_user_accounts (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -726,9 +726,9 @@ CREATE TABLE public.org_user_accounts (
 
 ALTER TABLE public.org_user_accounts OWNER TO crm_user;
 
---
--- Name: organization_config; Type: TABLE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TABLE public.organization_config (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -746,9 +746,9 @@ CREATE TABLE public.organization_config (
 
 ALTER TABLE public.organization_config OWNER TO crm_user;
 
---
--- Name: organization_roles; Type: TABLE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TABLE public.organization_roles (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -766,9 +766,9 @@ CREATE TABLE public.organization_roles (
 
 ALTER TABLE public.organization_roles OWNER TO crm_user;
 
---
--- Name: organization_workspaces; Type: TABLE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TABLE public.organization_workspaces (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -786,9 +786,9 @@ CREATE TABLE public.organization_workspaces (
 
 ALTER TABLE public.organization_workspaces OWNER TO crm_user;
 
---
--- Name: organizations; Type: TABLE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TABLE public.organizations (
     organization_id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -828,9 +828,9 @@ CREATE TABLE public.organizations (
 
 ALTER TABLE public.organizations OWNER TO crm_user;
 
---
--- Name: password_reset_tokens; Type: TABLE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TABLE public.password_reset_tokens (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -847,9 +847,9 @@ CREATE TABLE public.password_reset_tokens (
 
 ALTER TABLE public.password_reset_tokens OWNER TO crm_user;
 
---
--- Name: scoring_rules; Type: TABLE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TABLE public.scoring_rules (
     rule_id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -871,9 +871,9 @@ CREATE TABLE public.scoring_rules (
 
 ALTER TABLE public.scoring_rules OWNER TO crm_user;
 
---
--- Name: tasks; Type: TABLE; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE TABLE public.tasks (
     task_id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -895,9 +895,9 @@ CREATE TABLE public.tasks (
 
 ALTER TABLE public.tasks OWNER TO postgres;
 
---
--- Name: user_invitations; Type: TABLE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TABLE public.user_invitations (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -918,9 +918,9 @@ CREATE TABLE public.user_invitations (
 
 ALTER TABLE public.user_invitations OWNER TO crm_user;
 
---
--- Name: user_organizations; Type: TABLE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TABLE public.user_organizations (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -937,9 +937,9 @@ CREATE TABLE public.user_organizations (
 
 ALTER TABLE public.user_organizations OWNER TO crm_user;
 
---
--- Name: user_sessions; Type: TABLE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TABLE public.user_sessions (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -960,9 +960,9 @@ CREATE TABLE public.user_sessions (
 
 ALTER TABLE public.user_sessions OWNER TO crm_user;
 
---
--- Name: users; Type: TABLE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TABLE public.users (
     user_id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -987,9 +987,9 @@ CREATE TABLE public.users (
 
 ALTER TABLE public.users OWNER TO crm_user;
 
---
--- Name: users_config; Type: TABLE; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TABLE public.users_config (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -1006,1061 +1006,1061 @@ CREATE TABLE public.users_config (
 
 ALTER TABLE public.users_config OWNER TO crm_user;
 
---
--- Name: activities activities_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.activities
     ADD CONSTRAINT activities_pkey PRIMARY KEY (activity_id);
 
 
---
--- Name: automation_rules automation_rules_pkey; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.automation_rules
     ADD CONSTRAINT automation_rules_pkey PRIMARY KEY (rule_id);
 
 
---
--- Name: deals deals_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.deals
     ADD CONSTRAINT deals_pkey PRIMARY KEY (deal_id);
 
 
---
--- Name: email_otps email_otps_pkey; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.email_otps
     ADD CONSTRAINT email_otps_pkey PRIMARY KEY (id);
 
 
---
--- Name: email_verifications email_verifications_pkey; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.email_verifications
     ADD CONSTRAINT email_verifications_pkey PRIMARY KEY (id);
 
 
---
--- Name: email_verifications email_verifications_verification_token_key; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.email_verifications
     ADD CONSTRAINT email_verifications_verification_token_key UNIQUE (verification_token);
 
 
---
--- Name: lead_scores lead_scores_lead_id_key; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.lead_scores
     ADD CONSTRAINT lead_scores_lead_id_key UNIQUE (lead_id);
 
 
---
--- Name: lead_scores lead_scores_pkey; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.lead_scores
     ADD CONSTRAINT lead_scores_pkey PRIMARY KEY (score_id);
 
 
---
--- Name: leads_config leads_config_pkey; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.leads_config
     ADD CONSTRAINT leads_config_pkey PRIMARY KEY (id);
 
 
---
--- Name: leads leads_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.leads
     ADD CONSTRAINT leads_pkey PRIMARY KEY (lead_id);
 
 
---
--- Name: notifications notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.notifications
     ADD CONSTRAINT notifications_pkey PRIMARY KEY (notification_id);
 
 
---
--- Name: org_user_accounts org_user_accounts_org_email_unique; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.org_user_accounts
     ADD CONSTRAINT org_user_accounts_org_email_unique UNIQUE (organization_id, email);
 
 
---
--- Name: org_user_accounts org_user_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.org_user_accounts
     ADD CONSTRAINT org_user_accounts_pkey PRIMARY KEY (id);
 
 
---
--- Name: organization_config organization_config_entity_type_entity_value_key; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.organization_config
     ADD CONSTRAINT organization_config_entity_type_entity_value_key UNIQUE (entity_type, entity_value);
 
 
---
--- Name: organization_config organization_config_pkey; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.organization_config
     ADD CONSTRAINT organization_config_pkey PRIMARY KEY (id);
 
 
---
--- Name: organization_roles organization_roles_pkey; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.organization_roles
     ADD CONSTRAINT organization_roles_pkey PRIMARY KEY (id);
 
 
---
--- Name: organization_roles organization_roles_role_key; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.organization_roles
     ADD CONSTRAINT organization_roles_role_key UNIQUE (role);
 
 
---
--- Name: organization_workspaces organization_workspaces_organization_id_slug_key; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.organization_workspaces
     ADD CONSTRAINT organization_workspaces_organization_id_slug_key UNIQUE (organization_id, slug);
 
 
---
--- Name: organization_workspaces organization_workspaces_pkey; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.organization_workspaces
     ADD CONSTRAINT organization_workspaces_pkey PRIMARY KEY (id);
 
 
---
--- Name: organizations organizations_pkey; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.organizations
     ADD CONSTRAINT organizations_pkey PRIMARY KEY (organization_id);
 
 
---
--- Name: organizations organizations_slug_key; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.organizations
     ADD CONSTRAINT organizations_slug_key UNIQUE (slug);
 
 
---
--- Name: password_reset_tokens password_reset_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.password_reset_tokens
     ADD CONSTRAINT password_reset_tokens_pkey PRIMARY KEY (id);
 
 
---
--- Name: password_reset_tokens password_reset_tokens_reset_token_key; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.password_reset_tokens
     ADD CONSTRAINT password_reset_tokens_reset_token_key UNIQUE (reset_token);
 
 
---
--- Name: scoring_rules scoring_rules_pkey; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.scoring_rules
     ADD CONSTRAINT scoring_rules_pkey PRIMARY KEY (rule_id);
 
 
---
--- Name: tasks tasks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.tasks
     ADD CONSTRAINT tasks_pkey PRIMARY KEY (task_id);
 
 
---
--- Name: user_invitations user_invitations_invitation_token_key; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.user_invitations
     ADD CONSTRAINT user_invitations_invitation_token_key UNIQUE (invitation_token);
 
 
---
--- Name: user_invitations user_invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.user_invitations
     ADD CONSTRAINT user_invitations_pkey PRIMARY KEY (id);
 
 
---
--- Name: user_organizations user_organizations_pkey; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.user_organizations
     ADD CONSTRAINT user_organizations_pkey PRIMARY KEY (id);
 
 
---
--- Name: user_organizations user_organizations_user_id_organization_id_key; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.user_organizations
     ADD CONSTRAINT user_organizations_user_id_organization_id_key UNIQUE (user_id, organization_id);
 
 
---
--- Name: user_sessions user_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.user_sessions
     ADD CONSTRAINT user_sessions_pkey PRIMARY KEY (id);
 
 
---
--- Name: users_config users_config_entity_type_entity_value_key; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.users_config
     ADD CONSTRAINT users_config_entity_type_entity_value_key UNIQUE (entity_type, entity_value);
 
 
---
--- Name: users_config users_config_pkey; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.users_config
     ADD CONSTRAINT users_config_pkey PRIMARY KEY (id);
 
 
---
--- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_email_key UNIQUE (email);
 
 
---
--- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (user_id);
 
 
---
--- Name: activities_created_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX activities_created_idx ON public.activities USING btree (created_at);
 
 
---
--- Name: activities_due_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX activities_due_idx ON public.activities USING btree (due_date);
 
 
---
--- Name: activities_related_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX activities_related_idx ON public.activities USING btree (related_type, related_id);
 
 
---
--- Name: activities_sched_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX activities_sched_idx ON public.activities USING btree (scheduled_at);
 
 
---
--- Name: activities_type_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX activities_type_idx ON public.activities USING btree (activity_type);
 
 
---
--- Name: activities_user_id_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX activities_user_id_idx ON public.activities USING btree (user_id);
 
 
---
--- Name: deals_created_at_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX deals_created_at_idx ON public.deals USING btree (created_at);
 
 
---
--- Name: deals_expected_close_date_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX deals_expected_close_date_idx ON public.deals USING btree (expected_close_date);
 
 
---
--- Name: deals_lead_id_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX deals_lead_id_idx ON public.deals USING btree (lead_id);
 
 
---
--- Name: deals_organization_id_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX deals_organization_id_idx ON public.deals USING btree (organization_id);
 
 
---
--- Name: deals_stage_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX deals_stage_idx ON public.deals USING btree (stage);
 
 
---
--- Name: deals_user_id_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX deals_user_id_idx ON public.deals USING btree (user_id);
 
 
---
--- Name: email_otps_email; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX email_otps_email ON public.email_otps USING btree (email);
 
 
---
--- Name: email_otps_email_otp_purpose; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE UNIQUE INDEX email_otps_email_otp_purpose ON public.email_otps USING btree (email, otp, purpose);
 
 
---
--- Name: email_otps_email_purpose; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX email_otps_email_purpose ON public.email_otps USING btree (email, purpose);
 
 
---
--- Name: email_otps_expires_at; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX email_otps_expires_at ON public.email_otps USING btree (expires_at);
 
 
---
--- Name: idx_automation_rules_active; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_automation_rules_active ON public.automation_rules USING btree (is_active);
 
 
---
--- Name: idx_automation_rules_org; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_automation_rules_org ON public.automation_rules USING btree (organization_id);
 
 
---
--- Name: idx_automation_rules_priority; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_automation_rules_priority ON public.automation_rules USING btree (priority);
 
 
---
--- Name: idx_automation_rules_trigger; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_automation_rules_trigger ON public.automation_rules USING btree (trigger);
 
 
---
--- Name: idx_automation_rules_triggered; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_automation_rules_triggered ON public.automation_rules USING btree (last_triggered);
 
 
---
--- Name: idx_lead_scores_calculated; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_lead_scores_calculated ON public.lead_scores USING btree (last_calculated);
 
 
---
--- Name: idx_lead_scores_lead; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_lead_scores_lead ON public.lead_scores USING btree (lead_id);
 
 
---
--- Name: idx_lead_scores_org; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_lead_scores_org ON public.lead_scores USING btree (organization_id);
 
 
---
--- Name: idx_lead_scores_score; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_lead_scores_score ON public.lead_scores USING btree (total_score);
 
 
---
--- Name: idx_lead_scores_tier; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_lead_scores_tier ON public.lead_scores USING btree (tier);
 
 
---
--- Name: idx_notifications_created; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_notifications_created ON public.notifications USING btree (created_at);
 
 
---
--- Name: idx_notifications_expires; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_notifications_expires ON public.notifications USING btree (expires_at);
 
 
---
--- Name: idx_notifications_org; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_notifications_org ON public.notifications USING btree (organization_id);
 
 
---
--- Name: idx_notifications_priority; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_notifications_priority ON public.notifications USING btree (priority);
 
 
---
--- Name: idx_notifications_read; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_notifications_read ON public.notifications USING btree (is_read);
 
 
---
--- Name: idx_notifications_related; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_notifications_related ON public.notifications USING btree (related_type, related_id);
 
 
---
--- Name: idx_notifications_type; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_notifications_type ON public.notifications USING btree (type);
 
 
---
--- Name: idx_notifications_user; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_notifications_user ON public.notifications USING btree (user_id);
 
 
---
--- Name: idx_org_user_accounts_email; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_org_user_accounts_email ON public.org_user_accounts USING btree (email);
 
 
---
--- Name: idx_org_user_accounts_org; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_org_user_accounts_org ON public.org_user_accounts USING btree (organization_id);
 
 
---
--- Name: idx_scoring_rules_active; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_scoring_rules_active ON public.scoring_rules USING btree (is_active);
 
 
---
--- Name: idx_scoring_rules_org; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_scoring_rules_org ON public.scoring_rules USING btree (organization_id);
 
 
---
--- Name: idx_scoring_rules_priority; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_scoring_rules_priority ON public.scoring_rules USING btree (priority);
 
 
---
--- Name: idx_scoring_rules_type; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX idx_scoring_rules_type ON public.scoring_rules USING btree (rule_type);
 
 
---
--- Name: leads_assigned_to_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX leads_assigned_to_idx ON public.leads USING btree (assigned_to);
 
 
---
--- Name: leads_config_display_order; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX leads_config_display_order ON public.leads_config USING btree (display_order);
 
 
---
--- Name: leads_config_entity_type; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX leads_config_entity_type ON public.leads_config USING btree (entity_type);
 
 
---
--- Name: leads_config_entity_type_entity_value; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE UNIQUE INDEX leads_config_entity_type_entity_value ON public.leads_config USING btree (entity_type, entity_value);
 
 
---
--- Name: leads_config_is_active; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX leads_config_is_active ON public.leads_config USING btree (is_active);
 
 
---
--- Name: leads_created_at_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX leads_created_at_idx ON public.leads USING btree (created_at);
 
 
---
--- Name: leads_created_by_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX leads_created_by_idx ON public.leads USING btree (created_by);
 
 
---
--- Name: leads_email_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX leads_email_idx ON public.leads USING btree (email);
 
 
---
--- Name: leads_industry_id_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX leads_industry_id_idx ON public.leads USING btree (industry_id);
 
 
---
--- Name: leads_lead_score_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX leads_lead_score_idx ON public.leads USING btree (lead_score);
 
 
---
--- Name: leads_next_followup_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX leads_next_followup_idx ON public.leads USING btree (next_followup_date);
 
 
---
--- Name: leads_org_email_uniq; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE UNIQUE INDEX leads_org_email_uniq ON public.leads USING btree (organization_id, email);
 
 
---
--- Name: leads_org_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX leads_org_idx ON public.leads USING btree (organization_id);
 
 
---
--- Name: leads_score_grade_id_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX leads_score_grade_id_idx ON public.leads USING btree (score_grade_id);
 
 
---
--- Name: leads_source_id_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX leads_source_id_idx ON public.leads USING btree (source_id);
 
 
---
--- Name: leads_status_id_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX leads_status_id_idx ON public.leads USING btree (status_id);
 
 
---
--- Name: prt_expires_at_idx; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX prt_expires_at_idx ON public.password_reset_tokens USING btree (expires_at);
 
 
---
--- Name: prt_token_uq; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE UNIQUE INDEX prt_token_uq ON public.password_reset_tokens USING btree (token);
 
 
---
--- Name: prt_user_id_idx; Type: INDEX; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE INDEX prt_user_id_idx ON public.password_reset_tokens USING btree (user_id);
 
 
---
--- Name: tasks_assigned_to_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX tasks_assigned_to_idx ON public.tasks USING btree (assigned_to);
 
 
---
--- Name: tasks_deal_id_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX tasks_deal_id_idx ON public.tasks USING btree (deal_id);
 
 
---
--- Name: tasks_due_date_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX tasks_due_date_idx ON public.tasks USING btree (due_date);
 
 
---
--- Name: tasks_lead_id_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX tasks_lead_id_idx ON public.tasks USING btree (lead_id);
 
 
---
--- Name: tasks_priority_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX tasks_priority_idx ON public.tasks USING btree (priority);
 
 
---
--- Name: tasks_status_idx; Type: INDEX; Schema: public; Owner: postgres
---
+
+
+
 
 CREATE INDEX tasks_status_idx ON public.tasks USING btree (status);
 
 
---
--- Name: password_reset_tokens prt_sync_reset_token_trg; Type: TRIGGER; Schema: public; Owner: sidharthverma
---
+
+
+
 
 CREATE TRIGGER prt_sync_reset_token_trg BEFORE INSERT OR UPDATE ON public.password_reset_tokens FOR EACH ROW EXECUTE FUNCTION public.prt_sync_reset_token();
 
 
---
--- Name: activities activities_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.activities
     ADD CONSTRAINT activities_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id);
 
 
---
--- Name: deals deals_lead_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.deals
     ADD CONSTRAINT deals_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES public.leads(lead_id);
 
 
---
--- Name: deals deals_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.deals
     ADD CONSTRAINT deals_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(organization_id);
 
 
---
--- Name: deals deals_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.deals
     ADD CONSTRAINT deals_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id);
 
 
---
--- Name: email_verifications email_verifications_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.email_verifications
     ADD CONSTRAINT email_verifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
 
 
---
--- Name: leads leads_assigned_to_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.leads
     ADD CONSTRAINT leads_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES public.users(user_id);
 
 
---
--- Name: leads leads_company_size_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.leads
     ADD CONSTRAINT leads_company_size_id_fkey FOREIGN KEY (company_size_id) REFERENCES public.leads_config(id);
 
 
---
--- Name: leads leads_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.leads
     ADD CONSTRAINT leads_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id);
 
 
---
--- Name: leads leads_industry_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.leads
     ADD CONSTRAINT leads_industry_id_fkey FOREIGN KEY (industry_id) REFERENCES public.leads_config(id);
 
 
---
--- Name: leads leads_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.leads
     ADD CONSTRAINT leads_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(organization_id);
 
 
---
--- Name: leads leads_score_grade_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.leads
     ADD CONSTRAINT leads_score_grade_id_fkey FOREIGN KEY (score_grade_id) REFERENCES public.leads_config(id);
 
 
---
--- Name: leads leads_source_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.leads
     ADD CONSTRAINT leads_source_id_fkey FOREIGN KEY (source_id) REFERENCES public.leads_config(id);
 
 
---
--- Name: leads leads_status_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.leads
     ADD CONSTRAINT leads_status_id_fkey FOREIGN KEY (status_id) REFERENCES public.leads_config(id);
 
 
---
--- Name: organization_workspaces organization_workspaces_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.organization_workspaces
     ADD CONSTRAINT organization_workspaces_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id);
 
 
---
--- Name: organization_workspaces organization_workspaces_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.organization_workspaces
     ADD CONSTRAINT organization_workspaces_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(organization_id) ON DELETE CASCADE;
 
 
---
--- Name: organization_workspaces organization_workspaces_status_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.organization_workspaces
     ADD CONSTRAINT organization_workspaces_status_id_fkey FOREIGN KEY (status_id) REFERENCES public.organization_config(id);
 
 
---
--- Name: organizations organizations_company_size_config_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.organizations
     ADD CONSTRAINT organizations_company_size_config_id_fkey FOREIGN KEY (company_size_config_id) REFERENCES public.organization_config(id);
 
 
---
--- Name: organizations organizations_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.organizations
     ADD CONSTRAINT organizations_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id);
 
 
---
--- Name: organizations organizations_plan_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.organizations
     ADD CONSTRAINT organizations_plan_type_id_fkey FOREIGN KEY (plan_type_id) REFERENCES public.organization_config(id);
 
 
---
--- Name: organizations organizations_status_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.organizations
     ADD CONSTRAINT organizations_status_id_fkey FOREIGN KEY (status_id) REFERENCES public.organization_config(id);
 
 
---
--- Name: organizations organizations_subscription_status_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.organizations
     ADD CONSTRAINT organizations_subscription_status_id_fkey FOREIGN KEY (subscription_status_id) REFERENCES public.organization_config(id);
 
 
---
--- Name: password_reset_tokens password_reset_tokens_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.password_reset_tokens
     ADD CONSTRAINT password_reset_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
 
 
---
--- Name: tasks tasks_assigned_to_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.tasks
     ADD CONSTRAINT tasks_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES public.users(user_id);
 
 
---
--- Name: tasks tasks_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.tasks
     ADD CONSTRAINT tasks_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id);
 
 
---
--- Name: tasks tasks_deal_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.tasks
     ADD CONSTRAINT tasks_deal_id_fkey FOREIGN KEY (deal_id) REFERENCES public.deals(deal_id);
 
 
---
--- Name: tasks tasks_lead_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
+
+
+
 
 ALTER TABLE ONLY public.tasks
     ADD CONSTRAINT tasks_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES public.leads(lead_id);
 
 
---
--- Name: user_invitations user_invitations_accepted_by_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.user_invitations
     ADD CONSTRAINT user_invitations_accepted_by_user_id_fkey FOREIGN KEY (accepted_by_user_id) REFERENCES public.users(user_id);
 
 
---
--- Name: user_invitations user_invitations_invited_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.user_invitations
     ADD CONSTRAINT user_invitations_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES public.users(user_id);
 
 
---
--- Name: user_invitations user_invitations_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.user_invitations
     ADD CONSTRAINT user_invitations_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(organization_id) ON DELETE CASCADE;
 
 
---
--- Name: user_invitations user_invitations_role_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.user_invitations
     ADD CONSTRAINT user_invitations_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.organization_roles(id);
 
 
---
--- Name: user_invitations user_invitations_status_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.user_invitations
     ADD CONSTRAINT user_invitations_status_id_fkey FOREIGN KEY (status_id) REFERENCES public.users_config(id);
 
 
---
--- Name: user_organizations user_organizations_invited_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.user_organizations
     ADD CONSTRAINT user_organizations_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES public.users(user_id);
 
 
---
--- Name: user_organizations user_organizations_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.user_organizations
     ADD CONSTRAINT user_organizations_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(organization_id) ON DELETE CASCADE;
 
 
---
--- Name: user_organizations user_organizations_role_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.user_organizations
     ADD CONSTRAINT user_organizations_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.organization_roles(id);
 
 
---
--- Name: user_organizations user_organizations_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.user_organizations
     ADD CONSTRAINT user_organizations_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
 
 
---
--- Name: user_sessions user_sessions_current_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.user_sessions
     ADD CONSTRAINT user_sessions_current_organization_id_fkey FOREIGN KEY (current_organization_id) REFERENCES public.organizations(organization_id);
 
 
---
--- Name: user_sessions user_sessions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.user_sessions
     ADD CONSTRAINT user_sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
 
 
---
--- Name: users users_last_visited_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_last_visited_organization_id_fkey FOREIGN KEY (last_visited_organization_id) REFERENCES public.organizations(organization_id);
 
 
---
--- Name: users users_status_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: sidharthverma
---
+
+
+
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_status_id_fkey FOREIGN KEY (status_id) REFERENCES public.users_config(id);
 
 
---
--- Name: SCHEMA public; Type: ACL; Schema: -; Owner: sidharthverma
---
+
+
+
 
 REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 GRANT ALL ON SCHEMA public TO PUBLIC;
 
 
---
--- PostgreSQL database dump complete
---
+
+
+
 

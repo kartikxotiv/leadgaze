@@ -1,11 +1,9 @@
 import { Sequelize } from "sequelize";
 import pg from "pg";
 
-// Use environment variables for database connection
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || 
       `postgres://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'password'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'crm'}`;
 
-// Singleton pattern to prevent multiple database connections
 let sequelizeInstance: Sequelize | null = null;
 
 const getSequelizeInstance = (): Sequelize => {
@@ -14,16 +12,16 @@ const getSequelizeInstance = (): Sequelize => {
       dialect: "postgres",
       dialectModule: pg,
       pool: {
-        max: parseInt(process.env.DB_POOL_MAX || "3"), // Very conservative - only 3 connections
-        min: parseInt(process.env.DB_POOL_MIN || "1"),  // Minimum 1 connection
-        acquire: parseInt(process.env.DB_POOL_ACQUIRE || "10000"), // Shorter timeout
-        idle: parseInt(process.env.DB_POOL_IDLE || "2000"), // Very short idle time
-        evict: parseInt(process.env.DB_POOL_EVICT || "500"), // Quick eviction
-        handleDisconnects: true, // Handle disconnections gracefully
+        max: parseInt(process.env.DB_POOL_MAX || "3"),
+        min: parseInt(process.env.DB_POOL_MIN || "1"), 
+        acquire: parseInt(process.env.DB_POOL_ACQUIRE || "10000"),
+        idle: parseInt(process.env.DB_POOL_IDLE || "2000"),
+        evict: parseInt(process.env.DB_POOL_EVICT || "500"),
+        handleDisconnects: true,
       },
       logging: process.env.NODE_ENV === "development" ? console.log : false,
       dialectOptions: {
-        // Enable SSL for production if needed
+       
         ...(process.env.NODE_ENV === "production" && process.env.DB_SSL === "true" ? {
           ssl: {
             require: true,
@@ -46,7 +44,6 @@ const sequelize = getSequelizeInstance();
 
 export default sequelize;
 
-// Test database connection with retry mechanism
 export const testConnection = async (retries = 3) => {
   for (let i = 0; i < retries; i++) {
     try {
@@ -62,7 +59,7 @@ export const testConnection = async (retries = 3) => {
         return false;
       }
       
-      // Wait before retry
+     
       console.log(`⏳ Waiting 2 seconds before retry...`);
       await new Promise(resolve => setTimeout(resolve, 2000));
     }
@@ -70,7 +67,6 @@ export const testConnection = async (retries = 3) => {
   return false;
 };
 
-// Close database connection
 export const closeConnection = async () => {
   if (sequelizeInstance) {
     await sequelizeInstance.close();
@@ -79,7 +75,6 @@ export const closeConnection = async () => {
   }
 };
 
-// Get connection pool status
 export const getPoolStatus = () => {
   if (sequelizeInstance) {
     const pool = (sequelizeInstance.connectionManager as any).pool;
@@ -93,7 +88,6 @@ export const getPoolStatus = () => {
   return null;
 };
 
-// Auto-test connection in development
 if (process.env.NODE_ENV === "development") {
   testConnection().then((success) => {
     if (!success) {

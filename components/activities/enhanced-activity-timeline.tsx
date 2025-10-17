@@ -83,7 +83,7 @@ const getActivityColor = (
   activityType: Activity["activityType"],
   outcome?: string
 ) => {
-  // Color based on outcome first
+ 
   if (outcome) {
     if (
       outcome.toLowerCase().includes("positive") ||
@@ -105,7 +105,7 @@ const getActivityColor = (
     }
   }
 
-  // Default colors by activity type
+ 
   switch (activityType) {
     case "call":
       return "bg-blue-100 text-blue-800 border-blue-200";
@@ -163,7 +163,7 @@ const groupActivitiesByDate = (activities: Activity[]) => {
     groups[key].push(activity);
   });
 
-  // Sort activities within each group by timestamp (newest first)
+ 
   Object.keys(groups).forEach((key) => {
     groups[key].sort(
       (a, b) =>
@@ -289,12 +289,12 @@ export function EnhancedActivityTimeline({
                         key={activity.activityId}
                         className="relative flex items-start gap-4"
                       >
-                        {/* Timeline line */}
+                        {}
                         {!isLast && (
                           <div className="absolute left-6 top-12 w-px h-16 bg-gray-200 dark:bg-gray-700" />
                         )}
 
-                        {/* Activity icon */}
+                        {}
                         <div
                           className={cn(
                             "w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 border-2",
@@ -307,7 +307,7 @@ export function EnhancedActivityTimeline({
                           <Icon className="h-5 w-5" />
                         </div>
 
-                        {/* Activity content */}
+                        {}
                         <div className="flex-1 min-w-0 pb-6">
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-3">

@@ -63,7 +63,7 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Static methods
+ 
   (UserSession as any).findByUser = function (userId: string) {
     return this.findOne({
       where: { userId },
@@ -108,7 +108,7 @@ export default (sequelize: Sequelize) => {
     return session;
   };
 
-  // Helper functions (not attached to prototype to avoid TypeScript issues)
+ 
   (UserSession as any).updateActivity = async function (session: any) {
     return session.update({
       lastActivityAt: new Date(),
@@ -150,7 +150,7 @@ export default (sequelize: Sequelize) => {
     };
   };
 
-  // Associations
+ 
   (UserSession as any).associate = (models: any) => {
     UserSession.belongsTo(models.User, {
       foreignKey: "user_id",

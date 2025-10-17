@@ -1,12 +1,10 @@
 const { Sequelize } = require("sequelize");
 
-// Same connection as your database.ts
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: "postgres",
   logging: console.log,
 });
 
-// Define EmailOTP model directly
 const EmailOTP = sequelize.define("EmailOTP", {
   id: {
     type: Sequelize.UUID,
@@ -76,11 +74,11 @@ async function createEmailOTPTable() {
   try {
     console.log("🔄 Creating EmailOTP table...");
     
-    // Test connection
+   
     await sequelize.authenticate();
     console.log("✅ Database connection established.");
     
-    // Create the table
+   
     await EmailOTP.sync({ force: false });
     console.log("✅ EmailOTP table created successfully!");
     

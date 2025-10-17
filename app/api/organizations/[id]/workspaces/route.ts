@@ -5,7 +5,6 @@ import { OrganizationWorkspace, User, Organization } from "@/models";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
-// GET /api/organizations/[id]/workspaces - Get all workspaces for an organization
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -14,7 +13,7 @@ export async function GET(
     const { id } = await params;
     const organizationId = id;
 
-    // Get JWT token from Authorization header
+   
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
@@ -25,7 +24,7 @@ export async function GET(
 
     const token = authHeader.substring(7);
 
-    // Verify JWT token
+   
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET) as any;
@@ -36,7 +35,7 @@ export async function GET(
       );
     }
 
-    // Verify user has access to this organization
+   
     const userId = (decoded as any).userId || (decoded as any).user_id;
     const hasAccess = await AuthService.userHasAccessToOrganization(
       userId,
@@ -50,7 +49,7 @@ export async function GET(
       );
     }
 
-    // Get workspaces for the organization
+   
     const workspaces = await OrganizationWorkspace.findAll({
       where: {
         organizationId: organizationId,
@@ -65,14 +64,14 @@ export async function GET(
       order: [["createdAt", "DESC"]],
     });
 
-    // Format the response
+   
     const formattedWorkspaces = workspaces.map((workspace: any) => ({
       id: workspace.id,
       organizationId: workspace.organizationId,
       name: workspace.name,
       slug: workspace.slug,
       description: workspace.description,
-      // Back-compat: expose string status expected by UI
+     
       status: "active",
       createdBy: workspace.createdBy,
       createdAt: workspace.createdAt,
@@ -103,7 +102,6 @@ export async function GET(
   }
 }
 
-// POST /api/organizations/[id]/workspaces - Create a new workspace
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -113,7 +111,7 @@ export async function POST(
     const organizationId = id;
     const body = await request.json();
 
-    // Get JWT token from Authorization header
+   
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
@@ -124,7 +122,7 @@ export async function POST(
 
     const token = authHeader.substring(7);
 
-    // Verify JWT token
+   
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET) as any;
@@ -135,7 +133,7 @@ export async function POST(
       );
     }
 
-    // Verify user has admin access to this organization
+   
     const userId = (decoded as any).userId || (decoded as any).user_id;
     console.log("🔍 Workspace creation - Debug info:");
     console.log("- User ID from JWT:", userId);
@@ -148,7 +146,7 @@ export async function POST(
 
     console.log("- User role found:", userRole);
 
-    // TEMPORARY: Skip permission check for debugging
+   
     if (!userRole || !["owner", "admin"].includes(userRole.toLowerCase())) {
       console.log(
         "❌ Permission denied - Role:",
@@ -156,19 +154,19 @@ export async function POST(
         "Required: owner or admin"
       );
       console.log("🔧 BYPASSING permission check for debugging...");
-      // return NextResponse.json(
-      //   {
-      //     success: false,
-      //     error: "Insufficient permissions to create workspaces",
-      //     debug: { userId, organizationId, userRole }, // Temporary debug info
-      //   },
-      //   { status: 403 }
-      // );
+     
+     
+     
+     
+     
+     
+     
+     
     }
 
     console.log("✅ Permission granted for workspace creation");
 
-    // Validate required fields
+   
     if (!body.name || !body.name.trim()) {
       return NextResponse.json(
         { success: false, error: "Workspace name is required" },
@@ -176,7 +174,7 @@ export async function POST(
       );
     }
 
-    // Check if organization exists and get its limits
+   
     const organization = await Organization.findOne({
       where: { organizationId },
       attributes: ["organizationId", "name", "slug", "maxWorkspaces"],
@@ -189,7 +187,7 @@ export async function POST(
       );
     }
 
-    // Check workspace limit
+   
     const currentWorkspaceCount = await OrganizationWorkspace.count({
       where: {
         organizationId: organizationId,
@@ -208,7 +206,7 @@ export async function POST(
       );
     }
 
-    // Generate unique slug
+   
     const generateSlug = (name: string): string => {
       return name
         .toLowerCase()
@@ -220,7 +218,7 @@ export async function POST(
     let slug = generateSlug(body.name.trim());
     let counter = 1;
 
-    // Check for unique slug within organization
+   
     while (
       await OrganizationWorkspace.findOne({
         where: { organizationId, slug },
@@ -230,7 +228,7 @@ export async function POST(
       counter++;
     }
 
-    // Create the workspace
+   
     const workspace = await OrganizationWorkspace.create({
       organizationId: organizationId,
       name: body.name.trim(),
@@ -240,7 +238,7 @@ export async function POST(
       createdBy: userId,
     });
 
-    // Return the created workspace
+   
     return NextResponse.json({
       success: true,
       message: "Workspace created successfully",

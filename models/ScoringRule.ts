@@ -103,7 +103,7 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Associations
+ 
   (ScoringRule as any).associate = (models: any) => {
     ScoringRule.belongsTo(models.Organization, {
       foreignKey: "organization_id",

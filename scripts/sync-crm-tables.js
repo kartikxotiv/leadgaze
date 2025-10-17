@@ -1,7 +1,4 @@
-/*
-  Dev-only helper to create missing CRM tables without dropping existing data.
-  It will create tables if they don't exist; it will not alter or force-drop.
-*/
+
 
 const { Deal, Activity, Task } = require("../models");
 

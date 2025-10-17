@@ -33,7 +33,7 @@ export default function SettingsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Breadcrumb */}
+        {}
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -46,7 +46,7 @@ export default function SettingsPage() {
           </BreadcrumbList>
         </Breadcrumb>
 
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
@@ -56,7 +56,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Settings Tabs */}
+        {}
         <Tabs defaultValue="profile" className="w-full">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="profile" className="flex items-center gap-2">
@@ -128,7 +128,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="website">Website</Label>
-                  <Input id="website" placeholder="https://acme.com" />
+                  <Input id="website" placeholder="https
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="industry">Industry</Label>

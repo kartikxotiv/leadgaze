@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user with this email already exists
+   
     const emailExists = await AuthService.checkEmailExists(email);
 
     return NextResponse.json({

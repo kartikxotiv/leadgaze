@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 
 export async function POST() {
   try {
-    // Create a test user
+   
     const hashedPassword = await bcrypt.hash("password123", 12);
 
     const user = await User.create({

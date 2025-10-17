@@ -1,9 +1,9 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Activities indexes
+   
     await queryInterface.addIndex('activities', ['created_at'], { name: 'activities_created_idx' });
     await queryInterface.addIndex('activities', ['due_date'], { name: 'activities_due_idx' });
     await queryInterface.addIndex('activities', ['related_type', 'related_id'], { name: 'activities_related_idx' });
@@ -11,7 +11,7 @@ module.exports = {
     await queryInterface.addIndex('activities', ['activity_type'], { name: 'activities_type_idx' });
     await queryInterface.addIndex('activities', ['user_id'], { name: 'activities_user_id_idx' });
 
-    // Deals indexes
+   
     await queryInterface.addIndex('deals', ['created_at'], { name: 'deals_created_at_idx' });
     await queryInterface.addIndex('deals', ['expected_close_date'], { name: 'deals_expected_close_date_idx' });
     await queryInterface.addIndex('deals', ['lead_id'], { name: 'deals_lead_id_idx' });
@@ -19,7 +19,7 @@ module.exports = {
     await queryInterface.addIndex('deals', ['stage'], { name: 'deals_stage_idx' });
     await queryInterface.addIndex('deals', ['user_id'], { name: 'deals_user_id_idx' });
 
-    // Email OTPs indexes
+   
     await queryInterface.addIndex('email_otps', ['email'], { name: 'email_otps_email' });
     await queryInterface.addIndex('email_otps', ['email', 'otp', 'purpose'], { 
       name: 'email_otps_email_otp_purpose', 
@@ -28,21 +28,21 @@ module.exports = {
     await queryInterface.addIndex('email_otps', ['email', 'purpose'], { name: 'email_otps_email_purpose' });
     await queryInterface.addIndex('email_otps', ['expires_at'], { name: 'email_otps_expires_at' });
 
-    // Automation rules indexes
+   
     await queryInterface.addIndex('automation_rules', ['is_active'], { name: 'idx_automation_rules_active' });
     await queryInterface.addIndex('automation_rules', ['organization_id'], { name: 'idx_automation_rules_org' });
     await queryInterface.addIndex('automation_rules', ['priority'], { name: 'idx_automation_rules_priority' });
     await queryInterface.addIndex('automation_rules', ['trigger'], { name: 'idx_automation_rules_trigger' });
     await queryInterface.addIndex('automation_rules', ['last_triggered'], { name: 'idx_automation_rules_triggered' });
 
-    // Lead scores indexes
+   
     await queryInterface.addIndex('lead_scores', ['last_calculated'], { name: 'idx_lead_scores_calculated' });
     await queryInterface.addIndex('lead_scores', ['lead_id'], { name: 'idx_lead_scores_lead' });
     await queryInterface.addIndex('lead_scores', ['organization_id'], { name: 'idx_lead_scores_org' });
     await queryInterface.addIndex('lead_scores', ['total_score'], { name: 'idx_lead_scores_score' });
     await queryInterface.addIndex('lead_scores', ['tier'], { name: 'idx_lead_scores_tier' });
 
-    // Notifications indexes
+   
     await queryInterface.addIndex('notifications', ['created_at'], { name: 'idx_notifications_created' });
     await queryInterface.addIndex('notifications', ['expires_at'], { name: 'idx_notifications_expires' });
     await queryInterface.addIndex('notifications', ['organization_id'], { name: 'idx_notifications_org' });
@@ -52,17 +52,17 @@ module.exports = {
     await queryInterface.addIndex('notifications', ['type'], { name: 'idx_notifications_type' });
     await queryInterface.addIndex('notifications', ['user_id'], { name: 'idx_notifications_user' });
 
-    // Org user accounts indexes
+   
     await queryInterface.addIndex('org_user_accounts', ['email'], { name: 'idx_org_user_accounts_email' });
     await queryInterface.addIndex('org_user_accounts', ['organization_id'], { name: 'idx_org_user_accounts_org' });
 
-    // Scoring rules indexes
+   
     await queryInterface.addIndex('scoring_rules', ['is_active'], { name: 'idx_scoring_rules_active' });
     await queryInterface.addIndex('scoring_rules', ['organization_id'], { name: 'idx_scoring_rules_org' });
     await queryInterface.addIndex('scoring_rules', ['priority'], { name: 'idx_scoring_rules_priority' });
     await queryInterface.addIndex('scoring_rules', ['rule_type'], { name: 'idx_scoring_rules_type' });
 
-    // Leads indexes
+   
     await queryInterface.addIndex('leads', ['assigned_to'], { name: 'leads_assigned_to_idx' });
     await queryInterface.addIndex('leads', ['created_at'], { name: 'leads_created_at_idx' });
     await queryInterface.addIndex('leads', ['created_by'], { name: 'leads_created_by_idx' });
@@ -75,17 +75,17 @@ module.exports = {
     await queryInterface.addIndex('leads', ['source_id'], { name: 'leads_source_id_idx' });
     await queryInterface.addIndex('leads', ['status_id'], { name: 'leads_status_id_idx' });
 
-    // Leads config indexes
+   
     await queryInterface.addIndex('leads_config', ['display_order'], { name: 'leads_config_display_order' });
     await queryInterface.addIndex('leads_config', ['entity_type'], { name: 'leads_config_entity_type' });
     await queryInterface.addIndex('leads_config', ['is_active'], { name: 'leads_config_is_active' });
 
-    // Password reset tokens indexes
+   
     await queryInterface.addIndex('password_reset_tokens', ['expires_at'], { name: 'prt_expires_at_idx' });
     await queryInterface.addIndex('password_reset_tokens', ['token'], { name: 'prt_token_uq', unique: true });
     await queryInterface.addIndex('password_reset_tokens', ['user_id'], { name: 'prt_user_id_idx' });
 
-    // Tasks indexes
+   
     await queryInterface.addIndex('tasks', ['assigned_to'], { name: 'tasks_assigned_to_idx' });
     await queryInterface.addIndex('tasks', ['deal_id'], { name: 'tasks_deal_id_idx' });
     await queryInterface.addIndex('tasks', ['due_date'], { name: 'tasks_due_date_idx' });
@@ -95,7 +95,7 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    // Remove all indexes (Sequelize handles this automatically when dropping tables, but for safety)
+   
     const indexes = [
       'activities_created_idx', 'activities_due_idx', 'activities_related_idx', 
       'activities_sched_idx', 'activities_type_idx', 'activities_user_id_idx',

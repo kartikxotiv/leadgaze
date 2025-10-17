@@ -1,6 +1,5 @@
 const { Sequelize } = require("sequelize");
 
-// Database connection
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: "postgres",
   logging: false,
@@ -10,13 +9,11 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
   },
 });
 
-// Import models in order
 const User = require("../models/User")(sequelize);
 const Organization = require("../models/Organization")(sequelize);
 const UserOrganization = require("../models/UserOrganization")(sequelize);
 const UserSession = require("../models/UserSession")(sequelize);
 
-// Setup associations after all models are loaded
 const models = {
   User,
   Organization,
@@ -24,7 +21,6 @@ const models = {
   UserSession,
 };
 
-// Call associate methods
 Object.values(models).forEach((model) => {
   if (model.associate) {
     model.associate(models);
@@ -35,11 +31,11 @@ async function setupDatabase() {
   try {
     console.log("🚀 Setting up clean database...");
 
-    // Test connection
+   
     await sequelize.authenticate();
     console.log("✅ Database connected!");
 
-    // Sync all tables
+   
     await sequelize.sync({ force: true });
     console.log("✅ All tables created!");
 

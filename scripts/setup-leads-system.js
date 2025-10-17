@@ -1,6 +1,5 @@
 const { Sequelize } = require("sequelize");
 
-// Database connection
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: "postgres",
   logging: false,
@@ -10,7 +9,6 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
   },
 });
 
-// Define LeadConfig model directly in script
 const LeadConfig = sequelize.define(
   "LeadConfig",
   {
@@ -85,7 +83,6 @@ const LeadConfig = sequelize.define(
   }
 );
 
-// Define Lead model directly in script
 const Lead = sequelize.define(
   "Lead",
   {
@@ -251,15 +248,15 @@ async function setupLeadsSystem() {
   console.log("🚀 Setting up Leads System...");
 
   try {
-    // Test connection
+   
     await sequelize.authenticate();
     console.log("✅ Database connected!");
 
-    // 1. Create LeadConfig table and seed default values
+   
     await LeadConfig.sync({ force: true });
     console.log("✅ LeadConfig table created");
 
-    // 2. Seed Lead Status Configuration
+   
     const leadStatuses = [
       {
         entityType: "status",
@@ -299,7 +296,7 @@ async function setupLeadsSystem() {
       },
     ];
 
-    // 3. Seed Lead Source Configuration
+   
     const leadSources = [
       {
         entityType: "source",
@@ -351,7 +348,7 @@ async function setupLeadsSystem() {
       },
     ];
 
-    // 4. Seed Industry Configuration
+   
     const industries = [
       {
         entityType: "industry",
@@ -405,7 +402,7 @@ async function setupLeadsSystem() {
       },
     ];
 
-    // 5. Seed Company Size Configuration
+   
     const companySizes = [
       {
         entityType: "company_size",
@@ -445,7 +442,7 @@ async function setupLeadsSystem() {
       },
     ];
 
-    // 6. Seed Score Grade Configuration
+   
     const scoreGrades = [
       {
         entityType: "score_grade",
@@ -470,7 +467,7 @@ async function setupLeadsSystem() {
       },
     ];
 
-    // 7. Seed Product Interest Configuration
+   
     const productInterests = [
       {
         entityType: "product_interest",
@@ -504,7 +501,7 @@ async function setupLeadsSystem() {
       },
     ];
 
-    // Insert all configurations
+   
     const allConfigs = [
       ...leadStatuses,
       ...leadSources,
@@ -517,7 +514,7 @@ async function setupLeadsSystem() {
     await LeadConfig.bulkCreate(allConfigs);
     console.log("✅ Lead configuration data seeded");
 
-    // 8. Create Leads table
+   
     await Lead.sync({ force: true });
     console.log("✅ Leads table created");
 
@@ -535,7 +532,6 @@ async function setupLeadsSystem() {
   }
 }
 
-// Run if called directly
 if (require.main === module) {
   setupLeadsSystem()
     .then(() => {

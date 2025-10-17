@@ -20,7 +20,7 @@ export default (sequelize: Sequelize) => {
         },
       },
 
-      // Basic Contact Information
+     
       firstName: {
         type: DataTypes.STRING(100),
         allowNull: false,
@@ -66,13 +66,13 @@ export default (sequelize: Sequelize) => {
         allowNull: true,
         field: "linkedin_profile",
       },
-      // altLinkedinProfile: {
-      //   type: DataTypes.STRING(500),
-      //   allowNull: true,
-      //   field: "alt_linkedin_profile",
-      // },
+     
+     
+     
+     
+     
 
-      // Company Information
+     
       businessName: {
         type: DataTypes.STRING(255),
         allowNull: true,
@@ -84,7 +84,7 @@ export default (sequelize: Sequelize) => {
         field: "company_website",
       },
 
-      // Contact Job Title
+     
       jobTitle: {
         type: DataTypes.STRING(100),
         allowNull: true,
@@ -97,7 +97,7 @@ export default (sequelize: Sequelize) => {
         field: "meta_data",
       },
 
-      // Lead Details - Using config references (following your pattern)
+     
       sourceId: {
         type: DataTypes.UUID,
         allowNull: false,
@@ -128,7 +128,7 @@ export default (sequelize: Sequelize) => {
       productInterest: {
         type: DataTypes.TEXT,
         allowNull: true,
-        field: "product_interest", // change it to option
+        field: "product_interest",
       },
       tags: {
         type: DataTypes.JSONB,
@@ -136,14 +136,14 @@ export default (sequelize: Sequelize) => {
         defaultValue: [],
       },
 
-      // Status & Assignment - Using config reference for status
+     
       statusId: {
         type: DataTypes.UUID,
         allowNull: false,
         field: "status_id",
         references: {
           model: "leads_config",
-          key: "id", // should be default value
+          key: "id",
         },
       },
       assignedTo: {
@@ -165,7 +165,7 @@ export default (sequelize: Sequelize) => {
         },
       },
 
-      // Scoring & Qualification
+     
       leadScore: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -190,7 +190,7 @@ export default (sequelize: Sequelize) => {
         field: "qualification_notes",
       },
 
-      // Timeline
+     
       lastContactDate: {
         type: DataTypes.DATE,
         allowNull: true,
@@ -202,7 +202,7 @@ export default (sequelize: Sequelize) => {
         field: "next_followup_date",
       },
 
-      // Audit
+     
       createdAt: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
@@ -220,7 +220,7 @@ export default (sequelize: Sequelize) => {
       createdAt: "created_at",
       updatedAt: "updated_at",
       indexes: [
-        // Unique email per organization (as per Phase 7 spec)
+       
         { unique: true, fields: ["organization_id", "email"] },
         { fields: ["organization_id"] },
         { fields: ["assigned_to"] },
@@ -236,7 +236,7 @@ export default (sequelize: Sequelize) => {
       ],
       hooks: {
         beforeSave: async (lead: any) => {
-          // Auto-update score grade based on score
+         
           if (lead.changed("leadScore")) {
             const LeadConfig = sequelize.models.LeadConfig as any;
             let scoreGrade;
@@ -267,7 +267,7 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Static methods for common queries
+ 
   (Lead as any).findByEmail = function (email: string, organizationId: string) {
     return this.findOne({
       where: {
@@ -339,15 +339,15 @@ export default (sequelize: Sequelize) => {
     });
   };
 
-  // Associations
+ 
   (Lead as any).associate = (models: any) => {
-    // Organization relationship
+   
     Lead.belongsTo(models.Organization, {
       foreignKey: "organization_id",
       as: "organization",
     });
 
-    // User relationships
+   
     Lead.belongsTo(models.User, {
       foreignKey: "assigned_to",
       as: "assignedUser",
@@ -357,7 +357,7 @@ export default (sequelize: Sequelize) => {
       as: "createdUser",
     });
 
-    // Config relationships (following your pattern)
+   
     Lead.belongsTo(models.LeadConfig, {
       foreignKey: "status_id",
       as: "status",
@@ -379,7 +379,7 @@ export default (sequelize: Sequelize) => {
       as: "scoreGrade",
     });
 
-    // Activity relationship
+   
     Lead.hasMany(models.Activity, {
       foreignKey: "related_id",
       as: "activities",
@@ -388,13 +388,13 @@ export default (sequelize: Sequelize) => {
       },
     });
 
-    // Deal relationship (fixing the existing Deal model reference)
+   
     Lead.hasMany(models.Deal, {
       foreignKey: "lead_id",
       as: "opportunities",
     });
 
-    // Lead Score relationship
+   
     Lead.hasOne(models.LeadScore, {
       foreignKey: "lead_id",
       as: "scoreData",

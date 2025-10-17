@@ -18,7 +18,7 @@ export interface LeadScoreResult {
 }
 
 export class LeadScoringEngine {
-  // Score tier thresholds
+ 
   private static readonly TIER_THRESHOLDS = {
     cold: { min: -100, max: 19 },
     warm: { min: 20, max: 49 },
@@ -26,7 +26,7 @@ export class LeadScoringEngine {
     burning: { min: 80, max: 100 },
   };
 
-  // Default scoring rules
+ 
   private static readonly DEFAULT_RULES = [
     {
       ruleName: "Responded to Outreach",
@@ -101,15 +101,13 @@ export class LeadScoringEngine {
     },
   ];
 
-  /**
-   * Calculate score for a single lead
-   */
+  
   static async calculateLeadScore(
     leadId: string,
     organizationId: string
   ): Promise<LeadScoreResult> {
     try {
-      // Get lead with related data
+     
       const lead = await Lead.findByPk(leadId, {
         include: [
           {
@@ -126,7 +124,7 @@ export class LeadScoringEngine {
         throw new Error(`Lead not found: ${leadId}`);
       }
 
-      // Get active scoring rules for organization
+     
       const rules = await ScoringRule.findAll({
         where: {
           organizationId,
@@ -135,12 +133,12 @@ export class LeadScoringEngine {
         order: [["priority", "ASC"]],
       });
 
-      // Get previous score if exists
+     
       const previousScore = await LeadScore.findOne({
         where: { leadId },
       });
 
-      // Calculate score using rules
+     
       const breakdown: ScoreBreakdown[] = [];
       let totalScore = 0;
 
@@ -157,10 +155,10 @@ export class LeadScoringEngine {
         }
       }
 
-      // Ensure score stays within bounds
+     
       totalScore = Math.max(-100, Math.min(100, totalScore));
 
-      // Determine tier
+     
       const tier = this.calculateTier(totalScore);
 
       const result: LeadScoreResult = {
@@ -174,7 +172,7 @@ export class LeadScoringEngine {
           : undefined,
       };
 
-      // Save/update score in database
+     
       await this.saveScore(result, lead.userId, organizationId);
 
       return result;
@@ -184,9 +182,7 @@ export class LeadScoringEngine {
     }
   }
 
-  /**
-   * Batch calculate scores for multiple leads
-   */
+  
   static async calculateBatchScores(
     leadIds: string[],
     organizationId: string
@@ -205,9 +201,7 @@ export class LeadScoringEngine {
     return results;
   }
 
-  /**
-   * Initialize default scoring rules for an organization
-   */
+  
   static async initializeDefaultRules(
     organizationId: string,
     createdBy: string
@@ -223,9 +217,7 @@ export class LeadScoringEngine {
     }
   }
 
-  /**
-   * Evaluate a single rule against a lead
-   */
+  
   private static async evaluateRule(
     rule: any,
     lead: any
@@ -339,7 +331,7 @@ export class LeadScoringEngine {
       return { applies: false, points: 0, reason: "No activities to evaluate" };
     }
 
-    const lastActivity = activities[0]; // Activities are ordered by createdAt DESC
+    const lastActivity = activities[0];
     const daysSinceLastActivity = Math.floor(
       (Date.now() - new Date(lastActivity.createdAt).getTime()) /
         (1000 * 60 * 60 * 24)
@@ -383,7 +375,7 @@ export class LeadScoringEngine {
     }
 
     if (condition.values) {
-      // Check if lead value matches any of the target values
+     
       const matches = condition.values.some((targetValue: string) =>
         leadValue.toLowerCase().includes(targetValue.toLowerCase())
       );
@@ -398,7 +390,7 @@ export class LeadScoringEngine {
     }
 
     if (condition.operator && condition.value) {
-      // Numeric comparison
+     
       const numericValue = parseInt(leadValue);
       if (!isNaN(numericValue)) {
         switch (condition.operator) {

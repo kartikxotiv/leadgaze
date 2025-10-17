@@ -15,7 +15,7 @@ const ScrollArea = React.forwardRef<
     setIsClient(true);
   }, []);
 
-  // During SSR or before mounting, use simple overflow
+ 
   if (!isClient) {
     return (
       <div
@@ -28,7 +28,7 @@ const ScrollArea = React.forwardRef<
     );
   }
 
-  // Client-side: use full ScrollArea with proper error boundaries
+ 
   try {
     return (
       <ScrollAreaPrimitive.Root

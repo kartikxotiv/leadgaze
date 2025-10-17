@@ -1,6 +1,5 @@
 const { Sequelize } = require("sequelize");
 
-// Database connection
 const sequelize = new Sequelize(
   process.env.DB_NAME || "crm",
   process.env.DB_USER || "sidharthverma",
@@ -19,11 +18,11 @@ async function setupActivitiesTable() {
     await sequelize.authenticate();
     console.log("✅ Database connection established successfully.");
 
-    // Drop existing table if it exists to recreate with new structure
+   
     await sequelize.query(`DROP TABLE IF EXISTS activities CASCADE;`);
     console.log("✅ Dropped existing activities table");
 
-    // Create activities table with enhanced structure
+   
     await sequelize.query(`
       CREATE TABLE activities (
         activity_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -56,7 +55,7 @@ async function setupActivitiesTable() {
     `);
     console.log("✅ Created activities table with enhanced structure");
 
-    // Create indexes for performance
+   
     await sequelize.query(`
       CREATE INDEX idx_activities_user_id ON activities(user_id);
       CREATE INDEX idx_activities_related ON activities(related_type, related_id);
@@ -68,7 +67,7 @@ async function setupActivitiesTable() {
     `);
     console.log("✅ Created performance indexes");
 
-    // Insert sample activities for testing
+   
     await sequelize.query(`
       INSERT INTO activities (
         activity_type, related_type, related_id, subject, description, outcome,
@@ -139,7 +138,6 @@ async function setupActivitiesTable() {
   }
 }
 
-// Run the setup
 if (require.main === module) {
   setupActivitiesTable()
     .then(() => {

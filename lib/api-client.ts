@@ -1,4 +1,4 @@
-// API client for frontend to interact with backend
+
 class ApiClient {
   private baseUrl: string;
 
@@ -7,7 +7,7 @@ class ApiClient {
   }
 
   private getAuthHeaders(): Record<string, string> {
-    // Try to get token from localStorage (client-side)
+   
     if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
       try {
         const token = localStorage.getItem("auth_token");
@@ -35,7 +35,7 @@ class ApiClient {
         ...authHeaders,
         ...options.headers,
       },
-      credentials: "include", // Include cookies in requests
+      credentials: "include",
       ...options,
     };
 
@@ -46,7 +46,7 @@ class ApiClient {
       let errorText = "";
 
       try {
-        // First try to get the response as text to see what we're getting
+       
         errorText = await response.text();
         console.error("Raw API Error Response:", {
           status: response.status,
@@ -56,14 +56,14 @@ class ApiClient {
           body: errorText,
         });
 
-        // Try to parse as JSON if possible
+       
         if (errorText) {
           try {
             errorData = JSON.parse(errorText);
             console.error("Parsed API Error Response:", errorData);
           } catch (jsonError) {
             console.error("Failed to parse error response as JSON:", jsonError);
-            // Check if it's an HTML response (likely a Next.js error page)
+           
             if (
               errorText.trim().startsWith("<!DOCTYPE") ||
               errorText.trim().startsWith("<html")
@@ -81,7 +81,7 @@ class ApiClient {
                 htmlPreview: errorText.substring(0, 500),
               };
             } else {
-              // If JSON parse fails, treat as plain text error
+             
               errorData = { message: errorText || `HTTP ${response.status}` };
             }
           }
@@ -97,7 +97,7 @@ class ApiClient {
         };
       }
 
-      // Use the detailed error message from the API
+     
       const errorMessage =
         errorData.error ||
         errorData.message ||
@@ -118,7 +118,7 @@ class ApiClient {
     return response.json();
   }
 
-  // Generic HTTP methods
+ 
   async get<T>(endpoint: string): Promise<T> {
     return this.request(endpoint, { method: "GET" });
   }
@@ -148,7 +148,7 @@ class ApiClient {
     });
   }
 
-  // Leads API
+ 
   async getLeads(params?: Record<string, string>) {
     const query = params ? `?${new URLSearchParams(params)}` : "";
     return this.request(`/leads${query}`);
@@ -178,7 +178,7 @@ class ApiClient {
     });
   }
 
-  // Deals API
+ 
   async getDeals(params?: Record<string, string>) {
     const query = params ? `?${new URLSearchParams(params)}` : "";
     return this.request(`/deals${query}`);
@@ -198,7 +198,7 @@ class ApiClient {
     });
   }
 
-  // Tasks API
+ 
   async getTasks(params?: Record<string, string>) {
     const query = params ? `?${new URLSearchParams(params)}` : "";
     return this.request(`/tasks${query}`);
@@ -218,12 +218,12 @@ class ApiClient {
     });
   }
 
-  // Pipeline API
+ 
   async getPipelineStages() {
     return this.request("/pipeline/stages");
   }
 
-  // Analytics API
+ 
   async getDashboardStats(params?: Record<string, string>) {
     const query = params ? `?${new URLSearchParams(params)}` : "";
     return this.request(`/analytics/dashboard${query}`);

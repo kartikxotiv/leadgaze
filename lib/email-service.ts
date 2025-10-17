@@ -1,7 +1,6 @@
 import nodemailer from "nodemailer";
 import { createTransport, Transporter } from "nodemailer";
 
-// Email configuration interface
 interface EmailConfig {
   host: string;
   port: number;
@@ -12,7 +11,6 @@ interface EmailConfig {
   };
 }
 
-// Email template data interfaces
 export interface PasswordResetEmailData {
   firstName: string;
   lastName: string;
@@ -40,21 +38,17 @@ class EmailService {
   private isConfigured = false;
 
   constructor() {
-    // Don't initialize in constructor to avoid race conditions
+   
   }
 
-  /**
-   * Public method to ensure email service is initialized
-   */
+  
   async ensureInitialized(): Promise<void> {
     if (!this.isConfigured && !this.transporter) {
       await this.initializeTransporter();
     }
   }
 
-  /**
-   * Initialize email transporter based on environment
-   */
+  
   private async initializeTransporter(): Promise<void> {
     try {
       const emailConfig = this.getEmailConfig();
@@ -68,7 +62,7 @@ class EmailService {
 
       this.transporter = createTransport(emailConfig);
 
-      // Verify connection configuration
+     
       await this.transporter.verify();
       this.isConfigured = true;
 
@@ -79,9 +73,7 @@ class EmailService {
     }
   }
 
-  /**
-   * Get email configuration from environment variables
-   */
+  
   private getEmailConfig(): EmailConfig | null {
     const {
       EMAIL_HOST,
@@ -89,14 +81,14 @@ class EmailService {
       EMAIL_SECURE,
       EMAIL_USER,
       EMAIL_PASS,
-      // Gmail specific
+     
       GMAIL_USER,
       GMAIL_PASS,
-      // SendGrid specific
+     
       SENDGRID_API_KEY,
     } = process.env;
 
-    // SendGrid configuration
+   
     if (SENDGRID_API_KEY) {
       return {
         host: "smtp.sendgrid.net",
@@ -109,7 +101,7 @@ class EmailService {
       };
     }
 
-    // Gmail configuration
+   
     if (GMAIL_USER && GMAIL_PASS) {
       return {
         host: "smtp.gmail.com",
@@ -117,12 +109,12 @@ class EmailService {
         secure: false,
         auth: {
           user: GMAIL_USER,
-          pass: GMAIL_PASS, // Should be App Password
+          pass: GMAIL_PASS,
         },
       };
     }
 
-    // Custom SMTP configuration
+   
     if (EMAIL_HOST && EMAIL_USER && EMAIL_PASS) {
       return {
         host: EMAIL_HOST,
@@ -138,9 +130,7 @@ class EmailService {
     return null;
   }
 
-  /**
-   * Send email with error handling and retry logic
-   */
+  
   async sendEmail(options: EmailOptions): Promise<boolean> {
     if (!this.isConfigured || !this.transporter) {
       console.error("Email service not configured. Cannot send email.");
@@ -174,16 +164,12 @@ class EmailService {
     }
   }
 
-  /**
-   * Send raw email (alias for sendEmail for backward compatibility)
-   */
+  
   async sendRawEmail(options: EmailOptions): Promise<boolean> {
     return this.sendEmail(options);
   }
 
-  /**
-   * Send invitation email
-   */
+  
   async sendInvitationEmail(
     email: string,
     invitationData: {
@@ -210,9 +196,7 @@ class EmailService {
     });
   }
 
-  /**
-   * Generate password reset email HTML template
-   */
+  
   private generatePasswordResetHTML(data: PasswordResetEmailData): string {
     const { firstName, lastName, resetUrl, expiresInHours, organizationName } =
       data;
@@ -368,9 +352,7 @@ class EmailService {
 </html>`;
   }
 
-  /**
-   * Generate password reset email plain text version
-   */
+  
   private generatePasswordResetText(data: PasswordResetEmailData): string {
     const { firstName, lastName, resetUrl, expiresInHours, organizationName } =
       data;
@@ -402,9 +384,7 @@ This email was sent from your CRM system. Please do not reply to this email.
 `;
   }
 
-  /**
-   * Send password reset email
-   */
+  
   async sendPasswordResetEmail(
     email: string,
     resetData: PasswordResetEmailData
@@ -424,9 +404,7 @@ This email was sent from your CRM system. Please do not reply to this email.
     });
   }
 
-  /**
-   * Send password changed confirmation email
-   */
+  
   async sendPasswordChangedEmail(
     email: string,
     firstName: string,
@@ -488,9 +466,7 @@ Thank you for keeping your account secure!
     });
   }
 
-  /**
-   * Generate OTP verification email HTML template
-   */
+  
   private generateOTPHTML(data: OTPEmailData): string {
     const { email, otp, purpose, expiresInMinutes } = data;
 
@@ -657,9 +633,7 @@ Thank you for keeping your account secure!
 </html>`;
   }
 
-  /**
-   * Generate OTP verification email text template
-   */
+  
   private generateOTPText(data: OTPEmailData): string {
     const { email, otp, purpose, expiresInMinutes } = data;
 
@@ -698,9 +672,7 @@ Sent to: ${email}
 `;
   }
 
-  /**
-   * Send OTP verification email
-   */
+  
   async sendOTPEmail(data: OTPEmailData): Promise<boolean> {
     await this.ensureInitialized();
 
@@ -723,9 +695,7 @@ Sent to: ${email}
     });
   }
 
-  /**
-   * Test email configuration
-   */
+  
   async testEmailConfiguration(): Promise<boolean> {
     if (!this.isConfigured || !this.transporter) {
       return false;
@@ -741,6 +711,5 @@ Sent to: ${email}
   }
 }
 
-// Export singleton instance
 export const emailService = new EmailService();
 export default emailService;

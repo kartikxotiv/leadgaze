@@ -131,7 +131,7 @@ export function BulkImportDialog({
           setCsvData(results.data);
           setCsvHeaders(results.meta.fields || []);
 
-          // Auto-map fields (normalize headers and labels for robust matching)
+         
           const normalize = (s: string) =>
             (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
@@ -205,7 +205,7 @@ export function BulkImportDialog({
       }
     });
 
-    // Check for duplicate mappings
+   
     const usedFields = fieldMappings.filter((m) => m.selected && m.csvField);
     const duplicates = usedFields.filter(
       (field, index) =>
@@ -252,7 +252,7 @@ export function BulkImportDialog({
     setStep("importing");
     setImportProgress(0);
 
-    // Build rows from CSV + mappings
+   
     const rows: ParsedLead[] = csvData.map((row) => {
       const lead: ParsedLead = {
         firstName: "",
@@ -339,7 +339,7 @@ export function BulkImportDialog({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Progress Indicators */}
+          {}
           <div className="flex items-center justify-between text-sm">
             {["upload", "mapping", "preview", "importing", "complete"].map(
               (stepName, index) => (
@@ -393,7 +393,7 @@ export function BulkImportDialog({
             )}
           </div>
 
-          {/* Step Content */}
+          {}
           {step === "upload" && (
             <div className="space-y-6">
               <div

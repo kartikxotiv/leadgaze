@@ -1,6 +1,5 @@
 const { Sequelize } = require("sequelize");
 
-// Database connection
 const sequelize = new Sequelize(
   process.env.DB_NAME || "crm",
   process.env.DB_USER || "sidharthverma",
@@ -19,12 +18,12 @@ async function setupLeadScoringTables() {
     await sequelize.authenticate();
     console.log("✅ Database connection established successfully.");
 
-    // Drop existing tables if they exist
+   
     await sequelize.query(`DROP TABLE IF EXISTS lead_scores CASCADE;`);
     await sequelize.query(`DROP TABLE IF EXISTS scoring_rules CASCADE;`);
     console.log("✅ Dropped existing scoring tables");
 
-    // Create scoring_rules table
+   
     await sequelize.query(`
       CREATE TABLE scoring_rules (
         rule_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -47,7 +46,7 @@ async function setupLeadScoringTables() {
     `);
     console.log("✅ Created scoring_rules table");
 
-    // Create lead_scores table
+   
     await sequelize.query(`
       CREATE TABLE lead_scores (
         score_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -64,7 +63,7 @@ async function setupLeadScoringTables() {
     `);
     console.log("✅ Created lead_scores table");
 
-    // Create indexes for performance
+   
     await sequelize.query(`
       CREATE INDEX idx_scoring_rules_org ON scoring_rules(organization_id);
       CREATE INDEX idx_scoring_rules_type ON scoring_rules(rule_type);
@@ -79,7 +78,7 @@ async function setupLeadScoringTables() {
     `);
     console.log("✅ Created performance indexes");
 
-    // Get first user and organization for sample data
+   
     const firstUser = await sequelize.query(
       `SELECT user_id FROM users LIMIT 1;`
     );
@@ -97,7 +96,7 @@ async function setupLeadScoringTables() {
     const userId = firstUser[0][0].user_id;
     const orgId = firstOrg[0][0].organization_id;
 
-    // Insert default scoring rules
+   
     await sequelize.query(`
       INSERT INTO scoring_rules (
         rule_name, rule_type, condition, points, priority, description, 
@@ -115,7 +114,7 @@ async function setupLeadScoringTables() {
       );
     `);
 
-    // Add other default rules using VALUES
+   
     await sequelize.query(`
       INSERT INTO scoring_rules (
         rule_name, rule_type, condition, points, priority, description, 
@@ -175,7 +174,7 @@ async function setupLeadScoringTables() {
 
     console.log("✅ Inserted default scoring rules");
 
-    // Calculate initial scores for existing leads
+   
     await sequelize.query(`
       INSERT INTO lead_scores (
         lead_id, total_score, tier, user_id, organization_id, score_breakdown
@@ -212,7 +211,6 @@ async function setupLeadScoringTables() {
   }
 }
 
-// Run the setup
 if (require.main === module) {
   setupLeadScoringTables()
     .then(() => {

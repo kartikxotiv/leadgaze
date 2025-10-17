@@ -27,7 +27,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 interface SignupFormData {
-  // Step 1: Personal Information
+ 
   firstName: string;
   lastName: string;
   email: string;
@@ -35,24 +35,24 @@ interface SignupFormData {
   confirmPassword: string;
   phoneNumber?: string;
 
-  // Step 2: Organization Details
+ 
   organizationName: string;
   organizationDescription?: string;
 
-  // Step 3: Setup Questions
+ 
   companySize: string;
   industryType: string;
   primaryUseCase: string;
 
-  // Step 4: Current Tools
+ 
   currentTool: string;
   dataImport: boolean;
 
-  // Step 5: Features & Plan
+ 
   selectedFeatures: string[];
   planType: string;
 
-  // Step 6: Terms & Verification
+ 
   agreeToTerms: boolean;
   emailVerification: boolean;
 }
@@ -254,7 +254,7 @@ export function MultiStepSignup({ onSuccess }: MultiStepSignupProps) {
       if (data.success) {
         toast.success("Account created successfully! Welcome to your CRM!");
 
-        // Store auth data
+       
         if (typeof window !== "undefined") {
           localStorage.setItem("auth_token", data.token);
           localStorage.setItem("user", JSON.stringify(data.user));
@@ -269,11 +269,11 @@ export function MultiStepSignup({ onSuccess }: MultiStepSignupProps) {
         }
 
         onSuccess?.();
-        // Wait a brief moment for auth state to update and cookie to be set
+       
         setTimeout(() => {
-          // Clear all browser history and force navigation to dashboard
+         
           if (typeof window !== "undefined") {
-            // Clear the entire history stack and navigate to dashboard
+           
             window.history.replaceState(null, "", "/pages/dashboard");
             window.location.replace("/pages/dashboard");
           }

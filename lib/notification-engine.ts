@@ -34,9 +34,7 @@ export interface AutomationContext {
 }
 
 export class NotificationEngine {
-  /**
-   * Send a notification to a user
-   */
+  
   static async sendNotification(data: NotificationData): Promise<any> {
     try {
       const notification = await Notification.create({
@@ -44,7 +42,7 @@ export class NotificationEngine {
         sentAt: new Date(),
       });
 
-      // Send via different channels
+     
       await this.dispatchNotification(notification, data.channel || "in_app");
 
       return notification;
@@ -54,9 +52,7 @@ export class NotificationEngine {
     }
   }
 
-  /**
-   * Send bulk notifications to multiple users
-   */
+  
   static async sendBulkNotifications(
     notifications: NotificationData[]
   ): Promise<void> {
@@ -68,7 +64,7 @@ export class NotificationEngine {
         }))
       );
 
-      // Dispatch each notification
+     
       for (const notification of createdNotifications) {
         await this.dispatchNotification(notification, notification.channel);
       }
@@ -78,12 +74,10 @@ export class NotificationEngine {
     }
   }
 
-  /**
-   * Process automation rules based on context
-   */
+  
   static async processAutomation(context: AutomationContext): Promise<void> {
     try {
-      // Get active automation rules for this trigger and organization
+     
       const rules = await AutomationRule.findAll({
         where: {
           trigger: context.trigger,
@@ -95,12 +89,12 @@ export class NotificationEngine {
 
       for (const rule of rules) {
         try {
-          // Check if conditions are met
+         
           if (await this.evaluateConditions(rule.conditions, context)) {
-            // Execute actions
+           
             await this.executeActions(rule.actions, context, rule);
 
-            // Update rule statistics
+           
             await rule.update({
               lastTriggered: new Date(),
               triggerCount: rule.triggerCount + 1,
@@ -118,9 +112,7 @@ export class NotificationEngine {
     }
   }
 
-  /**
-   * Mark notification as read
-   */
+  
   static async markAsRead(
     notificationId: string,
     userId: string
@@ -139,9 +131,7 @@ export class NotificationEngine {
     );
   }
 
-  /**
-   * Get notifications for a user
-   */
+  
   static async getUserNotifications(
     userId: string,
     options: {
@@ -161,7 +151,7 @@ export class NotificationEngine {
       whereClause.type = { [Op.in]: options.types };
     }
 
-    // Remove expired notifications
+   
     whereClause[Op.or] = [
       { expiresAt: { [Op.is]: null } },
       { expiresAt: { [Op.gt]: new Date() } },
@@ -188,9 +178,7 @@ export class NotificationEngine {
     return { notifications, unreadCount };
   }
 
-  /**
-   * Clean up expired notifications
-   */
+  
   static async cleanupExpiredNotifications(): Promise<void> {
     await Notification.destroy({
       where: {
@@ -201,17 +189,15 @@ export class NotificationEngine {
     });
   }
 
-  /**
-   * Send system-wide notifications
-   */
+  
   static async sendSystemNotification(
     organizationId: string,
     notification: Omit<NotificationData, "userId" | "organizationId">
   ): Promise<void> {
-    // Get all users in the organization
+   
     const users = await User.findAll({
-      // Note: You'll need to join with UserOrganization table
-      // This is a simplified version
+     
+     
       attributes: ["userId"],
     });
 
@@ -224,9 +210,7 @@ export class NotificationEngine {
     await this.sendBulkNotifications(notifications);
   }
 
-  /**
-   * Create default automation rules for an organization
-   */
+  
   static async createDefaultAutomationRules(
     organizationId: string,
     createdBy: string
@@ -316,15 +300,13 @@ export class NotificationEngine {
     }
   }
 
-  /**
-   * Evaluate conditions against context
-   */
+  
   private static async evaluateConditions(
     conditions: any,
     context: AutomationContext
   ): Promise<boolean> {
     try {
-      // Simple condition evaluation - can be expanded
+     
       const data = context.data;
 
       for (const [key, condition] of Object.entries(conditions)) {
@@ -366,7 +348,7 @@ export class NotificationEngine {
             }
           }
         } else {
-          // Direct value comparison
+         
           if (value !== condition) return false;
         }
       }
@@ -378,9 +360,7 @@ export class NotificationEngine {
     }
   }
 
-  /**
-   * Execute actions from automation rule
-   */
+  
   private static async executeActions(
     actions: any[],
     context: AutomationContext,
@@ -410,9 +390,7 @@ export class NotificationEngine {
     }
   }
 
-  /**
-   * Execute notification action
-   */
+  
   private static async executeNotificationAction(
     action: any,
     context: AutomationContext
@@ -421,7 +399,7 @@ export class NotificationEngine {
 
     let targetUserId = context.userId;
 
-    // Determine target user based on action configuration
+   
     if (
       action.target === "assigned_user" &&
       context.relatedType &&
@@ -449,42 +427,34 @@ export class NotificationEngine {
     }
   }
 
-  /**
-   * Execute email action
-   */
+  
   private static async executeEmailAction(
     action: any,
     context: AutomationContext
   ): Promise<void> {
-    // Implement email sending logic
+   
     console.log("Executing email action:", action);
   }
 
-  /**
-   * Execute task creation action
-   */
+  
   private static async executeTaskAction(
     action: any,
     context: AutomationContext
   ): Promise<void> {
-    // Implement task creation logic
+   
     console.log("Executing task action:", action);
   }
 
-  /**
-   * Execute webhook action
-   */
+  
   private static async executeWebhookAction(
     action: any,
     context: AutomationContext
   ): Promise<void> {
-    // Implement webhook calling logic
+   
     console.log("Executing webhook action:", action);
   }
 
-  /**
-   * Get notification templates
-   */
+  
   private static getNotificationTemplate(
     templateName: string,
     context: AutomationContext
@@ -526,9 +496,7 @@ export class NotificationEngine {
     );
   }
 
-  /**
-   * Get assigned user for a related entity
-   */
+  
   private static async getAssignedUser(
     entityType: string,
     entityId: string
@@ -554,27 +522,25 @@ export class NotificationEngine {
     }
   }
 
-  /**
-   * Dispatch notification via different channels
-   */
+  
   private static async dispatchNotification(
     notification: any,
     channel: string
   ): Promise<void> {
     switch (channel) {
       case "in_app":
-        // Already stored in database
+       
         break;
       case "email":
-        // Send email (implement with your email service)
+       
         console.log("Sending email notification:", notification.title);
         break;
       case "slack":
-        // Send to Slack (implement with Slack API)
+       
         console.log("Sending Slack notification:", notification.title);
         break;
       case "sms":
-        // Send SMS (implement with SMS service)
+       
         console.log("Sending SMS notification:", notification.title);
         break;
     }

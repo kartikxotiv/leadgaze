@@ -75,7 +75,6 @@ export function FormActions({
   );
 }
 
-// Common button groups for different contexts
 export function CRMFormActions({
   onCancel,
   actionText,

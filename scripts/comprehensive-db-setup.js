@@ -1,13 +1,11 @@
-// Load environment variables from .env.local (prioritize local over default)
+
 require('dotenv').config({ path: '.env.local' });
-// Fallback to .env if .env.local doesn't exist
 require('dotenv').config();
 
 const { Sequelize } = require("sequelize");
 
-// Database connection using environment variables
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || 
-  `postgres://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'password'}@${process.env.DB_HOST }:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'crm'}`;
+  `postgres
 
 console.log("🔗 Using DATABASE_URL:", DATABASE_URL.replace(/:([^:]*@)/, ':***@'));
 const sequelize = new Sequelize(DATABASE_URL, {
@@ -23,11 +21,11 @@ async function setupDatabase() {
   try {
     console.log("🚀 Setting up comprehensive database...");
 
-    // Test connection
+   
     await sequelize.authenticate();
     console.log("✅ Database connected!");
 
-    // Define all models
+   
     const User = sequelize.define(
       "User",
       {
@@ -457,7 +455,7 @@ async function setupDatabase() {
           allowNull: true,
         },
         duration: {
-          type: Sequelize.INTEGER, // in minutes
+          type: Sequelize.INTEGER,
           allowNull: true,
         },
         outcome: {
@@ -534,7 +532,7 @@ async function setupDatabase() {
           allowNull: true,
         },
         color: {
-          type: Sequelize.STRING(7), // hex color code
+          type: Sequelize.STRING(7),
           allowNull: true,
           defaultValue: "#3B82F6",
         },
@@ -549,7 +547,7 @@ async function setupDatabase() {
           field: "is_active",
         },
         probability: {
-          type: Sequelize.INTEGER, // percentage
+          type: Sequelize.INTEGER,
           allowNull: true,
           defaultValue: 0,
         },
@@ -765,7 +763,7 @@ async function setupDatabase() {
           field: "stage_id",
         },
         probability: {
-          type: Sequelize.INTEGER, // percentage
+          type: Sequelize.INTEGER,
           allowNull: false,
           defaultValue: 0,
         },
@@ -819,7 +817,7 @@ async function setupDatabase() {
       }
     );
 
-    // Setup associations
+   
     User.hasMany(Organization, {
       foreignKey: "created_by",
       as: "createdOrganizations",
@@ -1050,7 +1048,7 @@ async function setupDatabase() {
       as: "activities",
     });
 
-    // Sync all tables
+   
     await sequelize.sync({ force: true });
     console.log("✅ All tables created!");
 

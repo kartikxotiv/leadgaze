@@ -1,9 +1,9 @@
---
--- PostgreSQL database dump
---
 
--- Dumped from database version 14.18 (Homebrew)
--- Dumped by pg_dump version 15.13 (Homebrew)
+
+
+
+
+
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -16,9 +16,9 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
---
--- Data for Name: users_config; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.users_config (id, entity_type, entity_value, display_name, description, is_active, sort_order, created_at, updated_at) FROM stdin;
 473987c4-290b-411e-9725-489bce78a2d2	status	active	Active	User account is active and can access the system	t	1	2025-08-13 12:43:07.177463+05:30	2025-08-13 12:43:07.177463+05:30
@@ -32,9 +32,9 @@ COPY public.users_config (id, entity_type, entity_value, display_name, descripti
 \.
 
 
---
--- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.users (user_id, email, password, first_name, last_name, phone_number, email_verified, status_id, last_visited_organization_id, last_login, login_attempts, lock_until, password_reset_token, password_reset_expires, password_changed_at, created_at, updated_at) FROM stdin;
 1b604d5a-b896-4bc4-8c40-60d3afef32ea	jack@gmail.com	$2b$12$Z6DyWLrs1m0Xv/y.CVgl8OeEp4YL25h8XXxzW72MGLo6nwZSj5RTq	jack	brahma	\N	t	\N	\N	2025-08-13 17:43:38.603+05:30	0	\N	\N	\N	\N	2025-08-13 17:43:04.082+05:30	2025-08-13 17:43:38.604+05:30
@@ -42,9 +42,9 @@ fbf0fd57-6a07-480f-bef9-871e97b518df	sidharth.verma@xotiv.com	$2b$12$IB7DGsRCqfB
 \.
 
 
---
--- Data for Name: activities; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.activities (activity_id, activity_type, related_type, related_id, subject, description, outcome, direction, duration_minutes, scheduled_at, completed_at, due_date, priority, user_id, next_followup_date, file_url, file_name, file_type, metadata, created_at, updated_at) FROM stdin;
 cafa4d4a-6486-41e3-932d-eec36e1e78bb	call	lead	7e39b650-edd5-4455-82c9-cb168d237e4f	Initial Contact Follow-up		Connected - Positive	outbound	5	\N	2025-08-13 16:28:13.73+05:30	\N	high	fbf0fd57-6a07-480f-bef9-871e97b518df	2025-08-15 16:27:00+05:30	\N	\N	\N	\N	2025-08-13 16:28:14.397+05:30	2025-08-13 16:28:14.397+05:30
@@ -54,9 +54,9 @@ cafa4d4a-6486-41e3-932d-eec36e1e78bb	call	lead	7e39b650-edd5-4455-82c9-cb168d237
 \.
 
 
---
--- Data for Name: automation_rules; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.automation_rules (rule_id, name, description, trigger, conditions, actions, is_active, priority, last_triggered, trigger_count, organization_id, created_by, created_at, updated_at) FROM stdin;
 b3849e31-8a0c-43ff-9ab5-6b82d1a90250	High Score Lead Alert	Notify when a lead scores 60 or higher	lead_score_changed	{"score": {"gte": 60}}	[{"type": "notification", "target": "assigned_user", "priority": "high", "template": "high_score_lead"}]	t	1	\N	0	ec3e6730-ab57-4633-8f82-490a04ff8123	7c526086-2137-4067-a25c-e7b142fd7bd9	2025-08-07 18:33:42.085649+05:30	2025-08-07 18:33:42.085649+05:30
@@ -67,9 +67,9 @@ e0665cef-9c57-450d-ab0a-5495d6a9dc46	Follow-up Due Reminder	Daily reminder for d
 \.
 
 
---
--- Data for Name: leads_config; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.leads_config (id, entity_type, entity_value, description, display_order, metadata, is_active, created_at, updated_at) FROM stdin;
 d76f8b63-b095-452f-b34d-4104107ab946	status	new	New lead, not yet contacted	1	\N	t	2025-08-07 09:48:01.025+05:30	2025-08-07 09:48:01.025+05:30
@@ -114,9 +114,9 @@ b8c30167-dcc9-49c0-ba23-46179e15255e	product_interest	integration_services	Integ
 \.
 
 
---
--- Data for Name: organization_config; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.organization_config (id, entity_type, entity_value, display_name, description, config_data, is_active, sort_order, created_at, updated_at) FROM stdin;
 06139b4b-be45-4572-8c6b-a51880cff973	status	active	Active	Organization is active	\N	t	1	2025-08-13 12:43:20.566661+05:30	2025-08-13 12:43:20.566661+05:30
@@ -138,9 +138,9 @@ c07c1c79-a9ee-453a-8061-fbd73c5488d0	company_size	small	Small	Small business (2-
 \.
 
 
---
--- Data for Name: organizations; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.organizations (organization_id, name, slug, description, industry_type, company_size_config_id, primary_use_case, current_tool, logo_url, website, address, city, state, postal_code, country, phone, created_by, status_id, subscription_status_id, plan_type_id, trial_starts_at, trial_ends_at, subscription_starts_at, subscription_ends_at, billing_email, max_users, max_workspaces, max_storage_gb, features_enabled, settings, created_at, updated_at) FROM stdin;
 20555d4b-df2c-4f63-8491-b1f8e88b3ade	Xotiv Technologies	xotiv-technologies-97b518df	Organization for Xotiv Sid	sales-pipeline	8d63f6b5-1dbb-4432-aeaa-28a446903942	sales-pipeline	business-development	\N	\N	\N	\N	\N	\N	\N	\N	fbf0fd57-6a07-480f-bef9-871e97b518df	06139b4b-be45-4572-8c6b-a51880cff973	bd5a4ba2-b086-4424-8d00-79eb67251aa8	f6291fc3-870e-4e28-b2be-348a2188db4b	2025-08-13 15:20:24.801+05:30	2025-08-27 15:20:24.801+05:30	\N	\N	\N	5	3	10	["contacts", "leads", "basic_reports"]	{}	2025-08-13 15:20:24.818+05:30	2025-08-13 15:20:24.818+05:30
@@ -148,9 +148,9 @@ COPY public.organizations (organization_id, name, slug, description, industry_ty
 \.
 
 
---
--- Data for Name: leads; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.leads (lead_id, organization_id, first_name, last_name, email, alt_email, phone, alt_phone, linkedin_profile, business_name, company_website, meta_data, source_id, industry_id, company_size_id, product_interest, tags, status_id, assigned_to, created_by, lead_score, score_grade_id, qualification_notes, last_contact_date, next_followup_date, created_at, updated_at, job_title) FROM stdin;
 7da16960-ec25-4e54-897f-03aa5b2a6468	489f6216-6ba4-43af-888c-237a5f87f8d6	Priyank	Sharma	priank@gmail.com	\N	+918744098062	\N	\N	Priyank Corporation	http://aalsi.co	\N	a7757fc2-6712-4667-bf25-2056373bc808	\N	\N	\N	[]	d76f8b63-b095-452f-b34d-4104107ab946	\N	fbf0fd57-6a07-480f-bef9-871e97b518df	0	c23d1bb6-5781-4c5c-850b-15afd1258a19	\N	\N	\N	2025-08-13 15:58:17.284+05:30	2025-08-13 15:58:17.284+05:30	BDM
@@ -163,35 +163,35 @@ aed67242-bd19-4b25-b272-20f3e86dad8b	489f6216-6ba4-43af-888c-237a5f87f8d6	Jane	S
 \.
 
 
---
--- Data for Name: deals; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.deals (deal_id, lead_id, title, description, value, currency, stage, probability, source, priority, expected_close_date, actual_close_date, lost_reason, user_id, organization_id, metadata, created_at, updated_at) FROM stdin;
 1429f873-77cf-4442-bb7a-7741d80c411e	7e39b650-edd5-4455-82c9-cb168d237e4f	software Build SNT		10.00	USD	qualification	20	\N	medium	2025-08-20 05:30:00+05:30	\N	\N	fbf0fd57-6a07-480f-bef9-871e97b518df	489f6216-6ba4-43af-888c-237a5f87f8d6	\N	2025-08-13 16:47:31.866+05:30	2025-08-13 16:47:31.866+05:30
 \.
 
 
---
--- Data for Name: email_otps; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.email_otps (id, email, otp, purpose, attempts, expires_at, verified_at, created_at, updated_at) FROM stdin;
 feecc768-6d53-4214-8c9b-a3afc4bfbe93	sidharth.verma@xotiv.com	962854	signup	2	2025-08-13 15:23:55.157+05:30	2025-08-13 15:15:12.062+05:30	2025-08-13 15:13:55.158+05:30	2025-08-13 15:15:12.062+05:30
 \.
 
 
---
--- Data for Name: email_verifications; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.email_verifications (id, user_id, email, verification_token, expires_at, verified_at, attempts, created_at, updated_at) FROM stdin;
 \.
 
 
---
--- Data for Name: lead_scores; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.lead_scores (score_id, lead_id, total_score, tier, last_calculated, score_breakdown, user_id, organization_id, created_at, updated_at) FROM stdin;
 1f4baeab-206a-44c0-8fb1-1388fb213585	cad9aa3b-9387-4c71-bba3-a8e449093930	12	warm	2025-08-12 09:52:36.873594+05:30	[{"points": 10, "reason": "Base score from lead quality", "ruleName": "Initial Assessment"}]	7c526086-2137-4067-a25c-e7b142fd7bd9	ec3e6730-ab57-4633-8f82-490a04ff8123	2025-08-12 09:52:36.873594+05:30	2025-08-12 09:52:36.873594+05:30
@@ -200,9 +200,9 @@ bc3cdeb3-63d5-4b27-80f3-416cde7eb8f1	833ca831-8ce2-48ea-bfa9-674e0ae8f388	39	col
 \.
 
 
---
--- Data for Name: notifications; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.notifications (notification_id, user_id, type, title, message, priority, channel, is_read, read_at, action_url, action_label, related_type, related_id, organization_id, sent_at, expires_at, metadata, created_at, updated_at) FROM stdin;
 76a755e9-fa71-4112-8158-4198b71935dd	7c526086-2137-4067-a25c-e7b142fd7bd9	lead_scored_high	🔥 High-Value Lead Alert	John Doe scored 85 points - high conversion potential!	high	in_app	f	\N	/pages/leads/sample	View Lead	\N	\N	ec3e6730-ab57-4633-8f82-490a04ff8123	2025-08-07 18:33:42.07732+05:30	\N	\N	2025-08-07 18:33:42.07732+05:30	2025-08-07 18:33:42.07732+05:30
@@ -213,18 +213,18 @@ d84cc557-56ee-4d21-9211-9b0079dd312c	7c526086-2137-4067-a25c-e7b142fd7bd9	lead_s
 \.
 
 
---
--- Data for Name: org_user_accounts; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.org_user_accounts (id, organization_id, email, password_hash, first_name, last_name, status, last_login, created_at, updated_at) FROM stdin;
 947042ce-0329-4e36-a5a3-54c2f7562cc1	489f6216-6ba4-43af-888c-237a5f87f8d6	jack@gmail.com	$2b$10$FPIQtgGEhUqEC.SYwYSIbeFkU/vFK6JFAlJ/M4Wed3FIg8eDnqC2C	jack	brahma	active	2025-08-13 17:43:04.668+05:30	2025-08-13 17:43:04.668+05:30	2025-08-13 17:43:04.668+05:30
 \.
 
 
---
--- Data for Name: organization_roles; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.organization_roles (id, role, display_name, description, permissions, hierarchy_level, is_system_role, is_active, created_at, updated_at) FROM stdin;
 e3e496e6-24a9-4e8d-afff-8fba9baabd26	owner	Owner	Organization owner with full control	{"can_invite_users": true, "can_remove_users": true, "can_edit_all_data": true, "can_view_all_data": true, "can_delete_all_data": true, "can_change_user_roles": true, "can_create_workspaces": true, "can_delete_workspaces": true, "can_manage_workspaces": true, "can_delete_organization": true, "can_manage_organization": true, "can_manage_subscription": true}	4	t	t	2025-08-13 12:43:37.163808+05:30	2025-08-13 12:43:37.163808+05:30
@@ -234,9 +234,9 @@ d84db119-6277-4027-9b26-db71b2be44d1	viewer	Viewer	Read-only access	{"can_invite
 \.
 
 
---
--- Data for Name: organization_workspaces; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.organization_workspaces (id, organization_id, name, slug, description, status_id, created_by, settings, created_at, updated_at) FROM stdin;
 d8e28923-48f1-4ea8-9a82-d5ab24734aa2	489f6216-6ba4-43af-888c-237a5f87f8d6	SMB	smb	\N	\N	fbf0fd57-6a07-480f-bef9-871e97b518df	{}	2025-08-14 08:32:40.381+05:30	2025-08-14 08:32:40.381+05:30
@@ -244,17 +244,17 @@ d8e28923-48f1-4ea8-9a82-d5ab24734aa2	489f6216-6ba4-43af-888c-237a5f87f8d6	SMB	sm
 \.
 
 
---
--- Data for Name: password_reset_tokens; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.password_reset_tokens (id, user_id, reset_token, expires_at, used_at, created_at, updated_at, reseted_at, token) FROM stdin;
 \.
 
 
---
--- Data for Name: scoring_rules; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.scoring_rules (rule_id, rule_name, rule_type, condition, points, is_active, priority, description, organization_id, created_by, created_at, updated_at) FROM stdin;
 7f79d380-9b9f-49f3-83d7-c14118adfb6d	Responded to Outreach	activity_response	{"outcome": ["positive", "connected"], "activityType": ["call", "email"]}	15	t	1	Lead responded positively to call or email outreach	ec3e6730-ab57-4633-8f82-490a04ff8123	1c139f48-def9-4019-a0ea-f08763e021d3	2025-08-12 09:52:36.864086+05:30	2025-08-12 09:52:36.864086+05:30
@@ -267,26 +267,26 @@ a4ad023e-4f0a-4f5d-84d9-9cf5548242ff	Email Engagement	email_interaction	{"outcom
 \.
 
 
---
--- Data for Name: tasks; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.tasks (task_id, title, description, type, priority, status, due_date, completed_at, lead_id, deal_id, assigned_to, created_by, created_at, updated_at) FROM stdin;
 \.
 
 
---
--- Data for Name: user_invitations; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.user_invitations (id, organization_id, email, role_id, invited_by, status_id, invitation_token, message, expires_at, accepted_at, accepted_by_user_id, created_at, updated_at) FROM stdin;
 1ef1bc68-d401-4dd9-878c-11091c624ca7	489f6216-6ba4-43af-888c-237a5f87f8d6	jack@gmail.com	d84db119-6277-4027-9b26-db71b2be44d1	fbf0fd57-6a07-480f-bef9-871e97b518df	9c1517cf-4652-4772-a139-10861ac1fd8a	f47a32e92ebd5b284613c7c9c1a8117b77156b8320ead8e870359792e62b6eba683d0fbe89754786985507edc990add907e173be45c64fbb5db577739294de26	\N	2025-08-20 17:00:13.686+05:30	2025-08-13 17:43:04.677+05:30	1b604d5a-b896-4bc4-8c40-60d3afef32ea	2025-08-13 17:00:13.687+05:30	2025-08-13 17:43:04.677+05:30
 \.
 
 
---
--- Data for Name: user_organizations; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.user_organizations (id, user_id, organization_id, role_id, status, joined_at, invited_by, created_at, updated_at) FROM stdin;
 623c5352-d8a1-42b2-8d5b-2c3e8c92a26c	fbf0fd57-6a07-480f-bef9-871e97b518df	20555d4b-df2c-4f63-8491-b1f8e88b3ade	e3e496e6-24a9-4e8d-afff-8fba9baabd26	active	2025-08-13 15:20:24.833+05:30	\N	2025-08-13 15:20:24.833+05:30	2025-08-13 15:20:24.833+05:30
@@ -295,9 +295,9 @@ c44d9d70-94ac-4bbe-ba0a-8be46a348596	1b604d5a-b896-4bc4-8c40-60d3afef32ea	489f62
 \.
 
 
---
--- Data for Name: user_sessions; Type: TABLE DATA; Schema: public; Owner: postgres
---
+
+
+
 
 COPY public.user_sessions (id, user_id, current_organization_id, session_token, refresh_token, expires_at, last_activity_at, ip_address, user_agent, device_info, is_active, created_at, updated_at) FROM stdin;
 cee94629-62dd-469c-b534-0ba709db8db5	1b604d5a-b896-4bc4-8c40-60d3afef32ea	489f6216-6ba4-43af-888c-237a5f87f8d6	\N	\N	\N	2025-08-13 17:43:04.683+05:30	\N	\N	\N	t	2025-08-13 17:43:04.683+05:30	2025-08-13 17:43:04.683+05:30
@@ -305,7 +305,7 @@ db36e97e-7511-4fc7-b65c-f62db4224c19	fbf0fd57-6a07-480f-bef9-871e97b518df	489f62
 \.
 
 
---
--- PostgreSQL database dump complete
---
+
+
+
 

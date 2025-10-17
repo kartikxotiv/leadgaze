@@ -3,9 +3,8 @@ require('dotenv').config();
 
 
 
-// Database connection using environment variables
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || 
-  `postgres://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'password'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'crm'}`;
+  `postgres
 
 
   console.log(DATABASE_URL, "database url");
@@ -24,11 +23,11 @@ async function seedConfigData() {
   try {
     console.log("🌱 Starting config data seeding...");
 
-    // Test connection
+   
     await sequelize.authenticate();
     console.log("✅ Database connected!");
 
-    // Import models (simplified for seeding)
+   
     const UserConfig = sequelize.define(
       "UserConfig",
       {
@@ -146,9 +145,9 @@ async function seedConfigData() {
 
     console.log("📋 Seeding UserConfig data...");
 
-    // Seed UserConfig data
+   
     const userConfigData = [
-      // User statuses
+     
       {
         entityType: "status",
         entityValue: "active",
@@ -170,7 +169,7 @@ async function seedConfigData() {
         description: "User account is suspended due to policy violation",
         isActive: true,
       },
-      // Invitation statuses
+     
       {
         entityType: "invitation_status",
         entityValue: "pending",
@@ -220,9 +219,9 @@ async function seedConfigData() {
 
     console.log("📋 Seeding OrganizationConfig data...");
 
-    // Seed OrganizationConfig data
+   
     const organizationConfigData = [
-      // Company sizes (with sort order for UI)
+     
       {
         entityType: "company_size",
         entityValue: "solo",
@@ -272,7 +271,7 @@ async function seedConfigData() {
         sortOrder: 6,
       },
 
-      // Organization statuses
+     
       {
         entityType: "status",
         entityValue: "active",
@@ -295,7 +294,7 @@ async function seedConfigData() {
         sortOrder: 3,
       },
 
-      // Subscription statuses
+     
       {
         entityType: "subscription_status",
         entityValue: "trial",
@@ -332,7 +331,7 @@ async function seedConfigData() {
         sortOrder: 5,
       },
 
-      // Plan types
+     
       {
         entityType: "plan_type",
         entityValue: "trial",
@@ -362,7 +361,7 @@ async function seedConfigData() {
         sortOrder: 4,
       },
 
-      // User limits for different plans
+     
       {
         entityType: "max_users",
         entityValue: "trial_limit",
@@ -396,7 +395,7 @@ async function seedConfigData() {
         sortOrder: 4,
       },
 
-      // Workspace limits
+     
       {
         entityType: "max_workspaces",
         entityValue: "trial_limit",
@@ -443,89 +442,89 @@ async function seedConfigData() {
 
     console.log("📋 Seeding OrganizationRole data...");
 
-    // Seed OrganizationRole data (from Phase 1 spec)
+   
     const rolePermissions = {
       owner: {
-        // Organization Management
+       
         can_manage_organization: true,
         can_delete_organization: true,
         can_manage_subscription: true,
-        // User Management
+       
         can_invite_users: true,
         can_remove_users: true,
         can_change_user_roles: true,
-        // Workspace Management
+       
         can_create_workspaces: true,
         can_delete_workspaces: true,
         can_manage_workspaces: true,
-        // Data Access
+       
         can_view_all_data: true,
         can_edit_all_data: true,
         can_delete_all_data: true,
-        // Reports
+       
         can_view_reports: true,
         can_export_data: true,
       },
       admin: {
-        // Organization Management
+       
         can_manage_organization: true,
         can_delete_organization: false,
         can_manage_subscription: false,
-        // User Management
+       
         can_invite_users: true,
         can_remove_users: true,
         can_change_user_roles: true,
-        // Workspace Management
+       
         can_create_workspaces: true,
         can_delete_workspaces: true,
         can_manage_workspaces: true,
-        // Data Access
+       
         can_view_all_data: true,
         can_edit_all_data: true,
         can_delete_all_data: true,
-        // Reports
+       
         can_view_reports: true,
         can_export_data: true,
       },
       manager: {
-        // Organization Management
+       
         can_manage_organization: false,
         can_delete_organization: false,
         can_manage_subscription: false,
-        // User Management
+       
         can_invite_users: true,
         can_remove_users: false,
         can_change_user_roles: false,
-        // Workspace Management
+       
         can_create_workspaces: true,
         can_delete_workspaces: false,
         can_manage_workspaces: true,
-        // Data Access
+       
         can_view_all_data: true,
         can_edit_all_data: true,
         can_delete_all_data: false,
-        // Reports
+       
         can_view_reports: true,
         can_export_data: false,
       },
       viewer: {
-        // Organization Management
+       
         can_manage_organization: false,
         can_delete_organization: false,
         can_manage_subscription: false,
-        // User Management
+       
         can_invite_users: false,
         can_remove_users: false,
         can_change_user_roles: false,
-        // Workspace Management
+       
         can_create_workspaces: false,
         can_delete_workspaces: false,
         can_manage_workspaces: false,
-        // Data Access
+       
         can_view_all_data: true,
         can_edit_all_data: false,
         can_delete_all_data: false,
-        // Reports
+       
         can_view_reports: false,
         can_export_data: false,
       },
@@ -602,7 +601,6 @@ async function seedConfigData() {
   }
 }
 
-// Run the seeding if this file is executed directly
 if (require.main === module) {
   seedConfigData();
 }

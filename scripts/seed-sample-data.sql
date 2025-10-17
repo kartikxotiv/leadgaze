@@ -1,4 +1,4 @@
--- Insert sample leads
+
 INSERT INTO leads (company_name, contact_person, email, phone, website, linkedin_company, status, type, source, deal_value, industry, priority, notes, assigned_to, created_by) VALUES
 ('Acme Corporation', 'John Smith', 'john@acme.com', '+1 (555) 123-4567', 'acme.com', 'linkedin.com/company/acme', 'New', 'Hot', 'Website', 50000, 'Technology', 'High', 'Interested in enterprise solution', (SELECT id FROM users WHERE email = 'sarah.johnson@company.com'), (SELECT id FROM users WHERE email = 'sarah.johnson@company.com')),
 ('Tech Solutions Inc', 'Emily Davis', 'emily@techsolutions.com', '+1 (555) 987-6543', 'techsolutions.com', 'linkedin.com/company/techsolutions', 'Qualified', 'Warm', 'Referral', 75000, 'Software', 'Medium', 'Referred by existing client', (SELECT id FROM users WHERE email = 'mike.brown@company.com'), (SELECT id FROM users WHERE email = 'mike.brown@company.com')),
@@ -6,7 +6,7 @@ INSERT INTO leads (company_name, contact_person, email, phone, website, linkedin
 ('StartupXYZ', 'Lisa Davis', 'lisa@startupxyz.com', '+1 (555) 321-9876', 'startupxyz.com', 'linkedin.com/company/startupxyz', 'Qualified', 'Warm', 'LinkedIn', 30000, 'Startup', 'Medium', 'Growing startup with potential', (SELECT id FROM users WHERE email = 'lisa.davis@company.com'), (SELECT id FROM users WHERE email = 'lisa.davis@company.com')),
 ('Enterprise Corp', 'David Lee', 'david@enterprise.com', '+1 (555) 654-3210', 'enterprise.com', 'linkedin.com/company/enterprise', 'New', 'Cold', 'Email', 200000, 'Enterprise', 'High', 'Large potential deal', (SELECT id FROM users WHERE email = 'sarah.johnson@company.com'), (SELECT id FROM users WHERE email = 'sarah.johnson@company.com'));
 
--- Insert sample deals
+
 INSERT INTO deals (lead_id, stage_id, value, probability, expected_close_date, notes, assigned_to) VALUES
 ((SELECT id FROM leads WHERE company_name = 'Acme Corporation'), (SELECT id FROM pipeline_stages WHERE name = 'New'), 50000, 10, '2024-03-15', 'Initial contact made', (SELECT id FROM users WHERE email = 'sarah.johnson@company.com')),
 ((SELECT id FROM leads WHERE company_name = 'Tech Solutions Inc'), (SELECT id FROM pipeline_stages WHERE name = 'Qualified'), 75000, 60, '2024-02-28', 'Budget confirmed', (SELECT id FROM users WHERE email = 'mike.brown@company.com')),
@@ -14,7 +14,7 @@ INSERT INTO deals (lead_id, stage_id, value, probability, expected_close_date, n
 ((SELECT id FROM leads WHERE company_name = 'StartupXYZ'), (SELECT id FROM pipeline_stages WHERE name = 'Proposal Sent'), 30000, 80, '2024-02-25', 'Proposal under review', (SELECT id FROM users WHERE email = 'lisa.davis@company.com')),
 ((SELECT id FROM leads WHERE company_name = 'Enterprise Corp'), (SELECT id FROM pipeline_stages WHERE name = 'Negotiation'), 200000, 90, '2024-03-01', 'Final pricing discussion', (SELECT id FROM users WHERE email = 'sarah.johnson@company.com'));
 
--- Insert sample tasks
+
 INSERT INTO tasks (title, description, type, priority, status, due_date, lead_id, assigned_to, created_by) VALUES
 ('Follow up with Acme Corp', 'Call to discuss proposal feedback', 'Call', 'High', 'Pending', '2024-01-17 14:00:00', (SELECT id FROM leads WHERE company_name = 'Acme Corporation'), (SELECT id FROM users WHERE email = 'sarah.johnson@company.com'), (SELECT id FROM users WHERE email = 'sarah.johnson@company.com')),
 ('Demo call with Tech Solutions', 'Product demonstration for enterprise features', 'Meeting', 'Medium', 'Scheduled', '2024-01-18 10:00:00', (SELECT id FROM leads WHERE company_name = 'Tech Solutions Inc'), (SELECT id FROM users WHERE email = 'mike.brown@company.com'), (SELECT id FROM users WHERE email = 'mike.brown@company.com')),

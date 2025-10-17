@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sequelize, Lead, Deal, Activity, Task } from "@/models";
 
-// POST /api/leads/merge
-// Body: { organizationId: string, primaryLeadId: string, duplicateLeadIds: string[] }
 export async function POST(request: NextRequest) {
   const t = await (sequelize as any).transaction();
   try {
@@ -25,7 +23,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prevent self-merge and sanitize duplicate list
+   
     const sanitizedDuplicates: string[] = Array.isArray(duplicateLeadIds)
       ? duplicateLeadIds.filter((id: string) => id && id !== primaryLeadId)
       : [];
@@ -50,7 +48,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify duplicates exist and belong to same org
+   
     const duplicatesExisting = await (Lead as any).findAll({
       where: { leadId: sanitizedDuplicates, organizationId },
       attributes: [
@@ -77,13 +75,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Reassign Deals
+   
     await (Deal as any).update(
       { leadId: primaryLeadId },
       { where: { leadId: sanitizedDuplicates }, transaction: t }
     );
 
-    // Reassign Activities
+   
     await (Activity as any).update(
       { relatedId: primaryLeadId },
       {
@@ -92,13 +90,13 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    // Reassign Tasks
+   
     await (Task as any).update(
       { leadId: primaryLeadId },
       { where: { leadId: sanitizedDuplicates }, transaction: t }
     );
 
-    // Consolidate fields (keep non-empty fields from primary; fill missing from duplicates)
+   
     const duplicates = duplicatesExisting;
     const consolidated: any = {};
     const fillIfEmpty = (key: string, extractor: (l: any) => any) => {
@@ -120,7 +118,7 @@ export async function POST(request: NextRequest) {
     fillIfEmpty("jobTitle", (l) => l.jobTitle);
     fillIfEmpty("qualificationNotes", (l) => l.qualificationNotes);
 
-    // Merge tags uniquely
+   
     try {
       const primaryTags: string[] = Array.isArray((primary as any).tags)
         ? ((primary as any).tags as string[])
@@ -139,7 +137,7 @@ export async function POST(request: NextRequest) {
       }
     } catch {}
 
-    // Shallow-merge metadata (preserve primary; fill missing from duplicates)
+   
     try {
       const mergedMeta: any = { ...((primary as any).metaData || {}) };
       for (const dup of duplicates) {
@@ -163,13 +161,13 @@ export async function POST(request: NextRequest) {
       await primary.update(consolidated, { transaction: t });
     }
 
-    // Delete duplicates
+   
     await (Lead as any).destroy({
       where: { leadId: sanitizedDuplicates, organizationId },
       transaction: t,
     });
 
-    // Reload and return primary lead (optionally include associations if needed by UI)
+   
     const updatedPrimary = await (Lead as any).findByPk(
       (primary as any).leadId,
       { transaction: t }

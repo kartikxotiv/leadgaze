@@ -19,7 +19,7 @@ export function AuthGuard({
   const router = useRouter();
 
   useEffect(() => {
-    if (isLoading) return; // Wait for auth state to load
+    if (isLoading) return;
 
     if (requireAuth && !isAuthenticated) {
       router.replace("/pages/welcome");
@@ -39,7 +39,7 @@ export function AuthGuard({
     router,
   ]);
 
-  // Show loading while checking auth
+ 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -51,7 +51,7 @@ export function AuthGuard({
     );
   }
 
-  // Don't render children if auth requirements not met
+ 
   if (requireAuth && !isAuthenticated) {
     return null;
   }

@@ -47,12 +47,12 @@ export function CreateWorkspaceDialog({
         description: description.trim() || undefined,
       });
 
-      // Reset form and close dialog
+     
       setName("");
       setDescription("");
       onOpenChange(false);
     } catch (error) {
-      // Error handling is done in the mutation
+     
     }
   };
 

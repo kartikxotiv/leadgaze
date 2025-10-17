@@ -93,7 +93,7 @@ export function TeamMembersList({
 
   const fetchMembers = async () => {
     try {
-      // Use token from auth store instead of localStorage
+     
       if (!token) {
         console.warn("No auth token found in store for team members");
         toast.error("Authentication required to view team members");

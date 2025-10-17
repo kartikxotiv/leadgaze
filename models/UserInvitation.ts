@@ -106,12 +106,12 @@ export default (sequelize: Sequelize) => {
         { fields: ["invited_by"] },
         { fields: ["status_id"] },
         { fields: ["expires_at"] },
-        { unique: true, fields: ["organization_id", "email"] }, // Prevent duplicate invitations
+        { unique: true, fields: ["organization_id", "email"] },
       ],
     }
   );
 
-  // Instance methods
+ 
   (UserInvitation as any).prototype.isExpired = function () {
     return new Date() > this.expiresAt;
   };
@@ -131,7 +131,7 @@ export default (sequelize: Sequelize) => {
     return this.save();
   };
 
-  // Static methods
+ 
   (UserInvitation as any).createInvitation = function (
     organizationId: string,
     email: string,
@@ -142,7 +142,7 @@ export default (sequelize: Sequelize) => {
   ) {
     const token = crypto.randomBytes(64).toString("hex");
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiration
+    expiresAt.setDate(expiresAt.getDate() + 7);
 
     return this.create({
       organizationId,
@@ -238,7 +238,7 @@ export default (sequelize: Sequelize) => {
     });
   };
 
-  // Associations
+ 
   (UserInvitation as any).associate = (models: any) => {
     UserInvitation.belongsTo(models.Organization, {
       foreignKey: "organization_id",

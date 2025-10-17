@@ -21,7 +21,7 @@ export default function MyTasksPage() {
   const { tasks, updateTask } = useTasks();
   const { currentUser } = useUsers();
 
-  // Filter tasks for current user
+ 
   const myTasks = tasks.filter((task) => task.assigned_to === currentUser?.id);
   const pendingTasks = myTasks.filter((task) => !task.completed);
   const completedTasks = myTasks.filter((task) => task.completed);
@@ -89,7 +89,7 @@ export default function MyTasksPage() {
       }
     >
       <div className="space-y-6">
-        {/* Task Summary */}
+        {}
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
@@ -142,7 +142,7 @@ export default function MyTasksPage() {
           </Card>
         </div>
 
-        {/* Today's Tasks */}
+        {}
         {todayTasks.length > 0 && (
           <Card>
             <CardHeader>
@@ -195,7 +195,7 @@ export default function MyTasksPage() {
           </Card>
         )}
 
-        {/* Overdue Tasks */}
+        {}
         {overdueTasks.length > 0 && (
           <Card>
             <CardHeader>
@@ -255,7 +255,7 @@ export default function MyTasksPage() {
           </Card>
         )}
 
-        {/* All Pending Tasks */}
+        {}
         <Card>
           <CardHeader>
             <CardTitle>All Pending Tasks</CardTitle>
@@ -323,7 +323,7 @@ export default function MyTasksPage() {
           </CardContent>
         </Card>
 
-        {/* Completed Tasks */}
+        {}
         {completedTasks.length > 0 && (
           <Card>
             <CardHeader>

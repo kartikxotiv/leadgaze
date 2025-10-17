@@ -62,12 +62,12 @@ function NotificationItem({
       )}
     >
       <div className="flex items-start gap-3">
-        {/* Icon */}
+        {}
         <div className="flex-shrink-0 text-lg">
           {getNotificationIcon(notification.type)}
         </div>
 
-        {/* Content */}
+        {}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -83,7 +83,7 @@ function NotificationItem({
                 {notification.message}
               </p>
 
-              {/* Priority Badge */}
+              {}
               <div className="flex items-center gap-2 mt-2">
                 <Badge
                   variant="outline"
@@ -100,7 +100,7 @@ function NotificationItem({
               </div>
             </div>
 
-            {/* Actions */}
+            {}
             <div className="flex items-center gap-1 ml-2">
               {!notification.isRead && (
                 <Button
@@ -131,7 +131,7 @@ function NotificationItem({
             </div>
           </div>
 
-          {/* Action Button */}
+          {}
           {notification.actionUrl && notification.actionLabel && (
             <div className="mt-3">
               <Button
@@ -157,7 +157,7 @@ export function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
 
-  // Mock data for now (hooks will work once API is set up)
+ 
   const mockNotifications = [
     {
       notificationId: "1",
@@ -177,7 +177,7 @@ export function NotificationCenter() {
       message: "Follow-up scheduled for Jane Smith is due today",
       priority: "urgent" as const,
       isRead: false,
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
       actionUrl: "/pages/leads/2",
       actionLabel: "Complete Follow-up",
     },
@@ -188,18 +188,18 @@ export function NotificationCenter() {
       message: "Acme Corp deal moved to Negotiation stage",
       priority: "medium" as const,
       isRead: true,
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
       actionUrl: "/deals/3",
       actionLabel: "View Deal",
     },
   ];
 
-  // Use mock data for now
+ 
   const notifications = mockNotifications;
   const unreadCount = notifications.filter((n) => !n.isRead).length;
   const isLoading = false;
 
-  // Filter notifications by tab
+ 
   const filteredNotifications = notifications.filter((notification) => {
     switch (activeTab) {
       case "unread":
@@ -242,7 +242,7 @@ export function NotificationCenter() {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-96 p-0" align="end">
-        {/* Header */}
+        {}
         <div className="border-b px-4 py-3 flex items-center justify-between">
           <div>
             <h3 className="font-semibold text-sm">Notifications</h3>
@@ -267,7 +267,7 @@ export function NotificationCenter() {
           </div>
         </div>
 
-        {/* Tabs */}
+        {}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="border-b px-4 py-2">
             <TabsList className="grid w-full grid-cols-3 h-8">
@@ -283,7 +283,7 @@ export function NotificationCenter() {
             </TabsList>
           </div>
 
-          {/* Content */}
+          {}
           <TabsContent value={activeTab} className="mt-0">
             <SafeScrollArea className="h-80">
               <div className="space-y-2 p-3">
@@ -317,7 +317,7 @@ export function NotificationCenter() {
           </TabsContent>
         </Tabs>
 
-        {/* Footer Actions */}
+        {}
         {notifications.length > 0 && (
           <div className="border-t px-4 py-2 flex gap-2">
             {unreadCount > 0 && (

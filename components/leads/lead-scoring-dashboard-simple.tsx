@@ -48,7 +48,7 @@ export function SimpleLeadScoringDashboard({
     try {
       console.log("Manually initializing scoring rules...");
 
-      // For now, just simulate successful initialization
+     
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       setSetupStatus("ready");
@@ -68,7 +68,7 @@ export function SimpleLeadScoringDashboard({
     try {
       console.log("Testing score calculation...");
 
-      // Simulate scoring calculation
+     
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       toast.success("Test scoring completed! (Simulated)");

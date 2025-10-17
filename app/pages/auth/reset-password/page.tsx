@@ -31,13 +31,13 @@ export default function ResetPasswordPage() {
   const router = useRouter();
   const token = searchParams.get("token");
 
-  // Form state
+ 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // UI state
+ 
   const [isLoading, setIsLoading] = useState(false);
   const [isValidating, setIsValidating] = useState(true);
   const [error, setError] = useState("");
@@ -49,7 +49,7 @@ export default function ResetPasswordPage() {
     email?: string;
   }>({});
 
-  // Password strength validation
+ 
   const [passwordStrength, setPasswordStrength] = useState({
     length: false,
     uppercase: false,
@@ -58,7 +58,7 @@ export default function ResetPasswordPage() {
     special: false,
   });
 
-  // Validate token on component mount
+ 
   useEffect(() => {
     if (!token) {
       setError("Invalid reset link. Please request a new password reset.");
@@ -69,7 +69,7 @@ export default function ResetPasswordPage() {
     validateToken();
   }, [token]);
 
-  // Update password strength indicator
+ 
   useEffect(() => {
     setPasswordStrength({
       length: password.length >= 8,
@@ -107,7 +107,7 @@ export default function ResetPasswordPage() {
     setIsLoading(true);
     setError("");
 
-    // Validation
+   
     if (!password) {
       setError("Please enter a new password");
       setIsLoading(false);
@@ -144,7 +144,7 @@ export default function ResetPasswordPage() {
 
       if (data.success) {
         setSuccess(true);
-        // Redirect to login page after 3 seconds
+       
         setTimeout(() => {
           router.replace("/pages/auth/sign-in");
         }, 3000);
@@ -161,15 +161,15 @@ export default function ResetPasswordPage() {
 
   const handlePasswordChange = (value: string) => {
     setPassword(value);
-    if (error) setError(""); // Clear error when user starts typing
+    if (error) setError("");
   };
 
   const handleConfirmPasswordChange = (value: string) => {
     setConfirmPassword(value);
-    if (error) setError(""); // Clear error when user starts typing
+    if (error) setError("");
   };
 
-  // Loading state while validating token
+ 
   if (isValidating) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 flex items-center justify-center p-4">
@@ -185,7 +185,7 @@ export default function ResetPasswordPage() {
     );
   }
 
-  // Success state
+ 
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-800 dark:to-green-900 flex items-center justify-center p-4">
@@ -216,7 +216,7 @@ export default function ResetPasswordPage() {
     );
   }
 
-  // Error state (invalid token)
+ 
   if (!tokenValid) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-rose-50 dark:from-gray-900 dark:via-gray-800 dark:to-red-900 flex items-center justify-center p-4">
@@ -254,10 +254,10 @@ export default function ResetPasswordPage() {
     );
   }
 
-  // Main reset password form
+ 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 flex items-center justify-center p-4">
-      {/* Background decoration */}
+      {}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-4 -right-4 w-24 h-24 bg-blue-100 dark:bg-blue-900/20 rounded-full blur-xl"></div>
         <div className="absolute top-1/3 -left-8 w-32 h-32 bg-indigo-100 dark:bg-indigo-900/20 rounded-full blur-xl"></div>
@@ -265,7 +265,7 @@ export default function ResetPasswordPage() {
       </div>
 
       <div className="w-full max-w-md relative z-10">
-        {/* Header */}
+        {}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-4">
             <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
@@ -285,7 +285,7 @@ export default function ResetPasswordPage() {
           </Link>
         </div>
 
-        {/* Reset Password Form */}
+        {}
         <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <CardHeader className="text-center pb-6">
             <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -313,7 +313,7 @@ export default function ResetPasswordPage() {
                 </Alert>
               )}
 
-              {/* New Password Field */}
+              {}
               <div className="space-y-2">
                 <Label
                   htmlFor="password"
@@ -345,7 +345,7 @@ export default function ResetPasswordPage() {
                 </div>
               </div>
 
-              {/* Password Strength Indicator */}
+              {}
               {password && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
@@ -423,7 +423,7 @@ export default function ResetPasswordPage() {
                 </div>
               )}
 
-              {/* Confirm Password Field */}
+              {}
               <div className="space-y-2">
                 <Label
                   htmlFor="confirmPassword"
@@ -457,7 +457,7 @@ export default function ResetPasswordPage() {
                 </div>
               </div>
 
-              {/* Password Match Indicator */}
+              {}
               {confirmPassword && (
                 <div
                   className={`flex items-center gap-2 text-sm ${
@@ -479,7 +479,7 @@ export default function ResetPasswordPage() {
                 </div>
               )}
 
-              {/* Submit Button */}
+              {}
               <Button
                 type="submit"
                 disabled={isLoading || !password || !confirmPassword}
@@ -498,7 +498,7 @@ export default function ResetPasswordPage() {
           </CardContent>
         </Card>
 
-        {/* Footer */}
+        {}
         <div className="text-center mt-6">
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Remembered your password?{" "}

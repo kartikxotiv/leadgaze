@@ -1,11 +1,9 @@
-#!/bin/bash
 
-# Script to monitor PostgreSQL connections
+
 
 echo "📊 PostgreSQL Connection Monitor"
 echo "================================"
 
-# Check if PostgreSQL is running
 if systemctl is-active --quiet postgresql@16-main; then
     echo "✅ PostgreSQL is running"
 else
@@ -13,11 +11,9 @@ else
     exit 1
 fi
 
-# Try to connect and check connections
 echo ""
 echo "🔍 Checking active connections..."
 
-# This will fail if too many connections, but we can try
 PGPASSWORD=admin@123 psql -h localhost -U postgres -d crm -c "
 SELECT 
     count(*) as total_connections,

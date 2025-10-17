@@ -16,7 +16,7 @@ export default function HomePage() {
         router.replace("/pages/auth/sign-in");
       }
     }
-  }, [isAuthenticated, isLoading]); // Removed router from dependency
+  }, [isAuthenticated, isLoading]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">

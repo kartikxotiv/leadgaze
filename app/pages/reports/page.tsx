@@ -28,7 +28,7 @@ export default function ReportsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Breadcrumb */}
+        {}
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -41,7 +41,7 @@ export default function ReportsPage() {
           </BreadcrumbList>
         </Breadcrumb>
 
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Reports & Analytics</h1>
@@ -66,7 +66,7 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Report Categories */}
+        {}
         <Tabs defaultValue="sales" className="w-full">
          
 

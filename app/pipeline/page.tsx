@@ -162,7 +162,7 @@ function DroppableStage({
               />
             ))}
 
-            {/* Empty state */}
+            {}
             {deals.length === 0 && (
               <div className="flex items-center justify-center h-32 text-muted-foreground text-sm border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
                 Drop deals here
@@ -258,7 +258,7 @@ export default function PipelinePage() {
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    // Find the containers
+   
     const activeContainer = findContainer(activeId);
     const overContainer = findContainer(overId) || overId;
 
@@ -270,7 +270,7 @@ export default function PipelinePage() {
       return;
     }
 
-    // Move deal to new stage
+   
     updateDeal(activeId, { stage_id: overContainer });
   }
 
@@ -285,7 +285,7 @@ export default function PipelinePage() {
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    // Find the containers
+   
     const activeContainer = findContainer(activeId);
     const overContainer = findContainer(overId) || overId;
 
@@ -295,7 +295,7 @@ export default function PipelinePage() {
     }
 
     if (activeContainer !== overContainer) {
-      // Move deal to new stage
+     
       updateDeal(activeId, { stage_id: overContainer });
     }
 
@@ -303,12 +303,12 @@ export default function PipelinePage() {
   }
 
   function findContainer(id: string) {
-    // Check if it's a stage
+   
     if (stages.find((stage) => stage.id === id)) {
       return id;
     }
 
-    // Find which stage contains this deal
+   
     for (const stage of stages) {
       if (deals.find((deal) => deal.id === id && deal.stage_id === stage.id)) {
         return stage.id;
@@ -332,7 +332,7 @@ export default function PipelinePage() {
       }
     >
       <div className="space-y-6">
-        {/* Pipeline Stats */}
+        {}
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -386,7 +386,7 @@ export default function PipelinePage() {
           </Card>
         </div>
 
-        {/* Kanban Pipeline */}
+        {}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Pipeline Kanban Board</h2>
@@ -432,7 +432,7 @@ export default function PipelinePage() {
           </DndContext>
         </div>
 
-        {/* Recent Pipeline Activity */}
+        {}
         <Card>
           <CardHeader>
             <CardTitle>Recent Pipeline Activity</CardTitle>

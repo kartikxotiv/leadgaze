@@ -1,9 +1,9 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Create email_otps table
+   
     await queryInterface.createTable('email_otps', {
       id: {
         type: Sequelize.UUID,
@@ -47,7 +47,7 @@ module.exports = {
       }
     });
 
-    // Create email_verifications table
+   
     await queryInterface.createTable('email_verifications', {
       id: {
         type: Sequelize.UUID,
@@ -99,7 +99,7 @@ module.exports = {
       }
     });
 
-    // Create password_reset_tokens table
+   
     await queryInterface.createTable('password_reset_tokens', {
       id: {
         type: Sequelize.UUID,
@@ -150,7 +150,7 @@ module.exports = {
       }
     });
 
-    // Create user_sessions table
+   
     await queryInterface.createTable('user_sessions', {
       id: {
         type: Sequelize.UUID,
@@ -224,7 +224,7 @@ module.exports = {
       }
     });
 
-    // Create trigger for password_reset_tokens
+   
     await queryInterface.sequelize.query(`
       CREATE TRIGGER prt_sync_reset_token_trg 
         BEFORE INSERT OR UPDATE ON password_reset_tokens 
@@ -233,10 +233,10 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    // Drop trigger
+   
     await queryInterface.sequelize.query('DROP TRIGGER IF EXISTS prt_sync_reset_token_trg ON password_reset_tokens;');
     
-    // Drop tables in reverse order
+   
     await queryInterface.dropTable('user_sessions');
     await queryInterface.dropTable('password_reset_tokens');
     await queryInterface.dropTable('email_verifications');

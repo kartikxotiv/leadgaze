@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
     console.log("Testing OTP generation for:", email);
 
-    // Test: Create OTP without sending email
+   
     const otpRecord = await EmailOTP.createOTP(email, purpose, 10);
     
     console.log("OTP created:", {
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: "OTP generated successfully (test mode)",
       email,
-      otp: (otpRecord as any).otp, // Only for testing - never expose in production!
+      otp: (otpRecord as any).otp,
       expiresAt: (otpRecord as any).expiresAt
     });
 

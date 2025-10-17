@@ -84,7 +84,6 @@ export interface ActivityFilters {
   offset?: number;
 }
 
-// Hook to fetch activities with filters
 export function useActivities(filters: ActivityFilters = {}) {
   const { currentOrganization, token } = useAuthStore();
   const { isReady, isAuthenticated } = useAuthReady();
@@ -114,7 +113,6 @@ export function useActivities(filters: ActivityFilters = {}) {
   });
 }
 
-// Hook to fetch single activity
 export function useActivity(activityId: string) {
   return useQuery({
     queryKey: ["activity", activityId],
@@ -126,7 +124,6 @@ export function useActivity(activityId: string) {
   });
 }
 
-// Hook to create activity
 export function useCreateActivity() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -149,10 +146,10 @@ export function useCreateActivity() {
       return (response as any).data;
     },
     onSuccess: (data, variables) => {
-      // Invalidate activities queries
+     
       queryClient.invalidateQueries({ queryKey: ["activities"] });
 
-      // If it's a lead-related activity, invalidate lead activities
+     
       if (variables.relatedType === "lead") {
         queryClient.invalidateQueries({
           queryKey: [
@@ -165,7 +162,6 @@ export function useCreateActivity() {
   });
 }
 
-// Hook to update activity
 export function useUpdateActivity() {
   const queryClient = useQueryClient();
 
@@ -181,18 +177,17 @@ export function useUpdateActivity() {
       return (response as any).data;
     },
     onSuccess: (data, variables) => {
-      // Invalidate specific activity
+     
       queryClient.invalidateQueries({
         queryKey: ["activity", variables.activityId],
       });
 
-      // Invalidate activities list
+     
       queryClient.invalidateQueries({ queryKey: ["activities"] });
     },
   });
 }
 
-// Hook to delete activity
 export function useDeleteActivity() {
   const queryClient = useQueryClient();
 
@@ -202,16 +197,15 @@ export function useDeleteActivity() {
       return (response as any).data;
     },
     onSuccess: (data, activityId) => {
-      // Remove from cache
+     
       queryClient.removeQueries({ queryKey: ["activity", activityId] });
 
-      // Invalidate activities list
+     
       queryClient.invalidateQueries({ queryKey: ["activities"] });
     },
   });
 }
 
-// Hook to get activities for a specific lead
 export function useLeadActivities(leadId: string) {
   return useActivities({
     relatedType: "lead",
@@ -220,7 +214,6 @@ export function useLeadActivities(leadId: string) {
   });
 }
 
-// Hook to get today's follow-ups
 export function useTodaysFollowUps() {
   const { user } = useAuthStore();
   const { isReady, isAuthenticated } = useAuthReady();
@@ -249,7 +242,7 @@ export function useTodaysFollowUps() {
 
       const response = await apiClient.get(`/activities?${params.toString()}`);
 
-      // Filter for today's follow-ups on the client side
+     
       const activities = (response as any).data?.activities || [];
       return activities.filter((activity: Activity) => {
         if (!activity.dueDate) return false;
@@ -261,12 +254,11 @@ export function useTodaysFollowUps() {
   });
 }
 
-// Hook to get upcoming follow-ups (next 7 days)
 export function useUpcomingFollowUps() {
   const { user } = useAuthStore();
   const { isReady, isAuthenticated } = useAuthReady();
   const today = new Date();
-  today.setHours(23, 59, 59, 999); // End of today
+  today.setHours(23, 59, 59, 999);
   const nextWeek = new Date();
   nextWeek.setDate(today.getDate() + 7);
   nextWeek.setHours(23, 59, 59, 999);
@@ -291,7 +283,7 @@ export function useUpcomingFollowUps() {
 
       const response = await apiClient.get(`/activities?${params.toString()}`);
 
-      // Filter for upcoming follow-ups (tomorrow to next 7 days)
+     
       const activities = (response as any).data?.activities || [];
       return activities.filter((activity: Activity) => {
         if (!activity.dueDate || activity.completedAt) return false;
@@ -303,7 +295,6 @@ export function useUpcomingFollowUps() {
   });
 }
 
-// Hook to get overdue follow-ups
 export function useOverdueFollowUps() {
   const { user } = useAuthStore();
   const { isReady, isAuthenticated } = useAuthReady();
@@ -330,7 +321,7 @@ export function useOverdueFollowUps() {
 
       const response = await apiClient.get(`/activities?${params.toString()}`);
 
-      // Filter for overdue follow-ups on the client side
+     
       const activities = (response as any).data?.activities || [];
       return activities.filter((activity: Activity) => {
         if (!activity.dueDate || activity.completedAt) return false;

@@ -46,7 +46,7 @@ export default function ReportsPage() {
     const stage = stages.find((s) => s.id === deal.stage_id);
     if (!stage) return "Unknown";
 
-    // Map stage names to simple status
+   
     if (
       stage.name.toLowerCase().includes("closed won") ||
       stage.name.toLowerCase().includes("won")
@@ -86,7 +86,7 @@ export default function ReportsPage() {
       description="Comprehensive insights into your sales performance and metrics"
     >
       <div className="space-y-6">
-        {/* Key Metrics */}
+        {}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -144,7 +144,7 @@ export default function ReportsPage() {
           </Card>
         </div>
 
-        {/* Performance Metrics */}
+        {}
         <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardHeader>
@@ -250,7 +250,7 @@ export default function ReportsPage() {
           </Card>
         </div>
 
-        {/* Pipeline Analysis */}
+        {}
         <Card>
           <CardHeader>
             <CardTitle>Pipeline Stage Analysis</CardTitle>
@@ -306,7 +306,7 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
 
-        {/* Activity Summary */}
+        {}
         <Card>
           <CardHeader>
             <CardTitle>Activity Summary</CardTitle>

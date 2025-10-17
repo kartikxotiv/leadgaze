@@ -1,6 +1,6 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('users_config', {
@@ -48,7 +48,7 @@ module.exports = {
       }
     });
 
-    // Add unique constraint
+   
     await queryInterface.addConstraint('users_config', {
       fields: ['entity_type', 'entity_value'],
       type: 'unique',

@@ -29,7 +29,7 @@ export default function MarketingPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Breadcrumb */}
+        {}
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -42,7 +42,7 @@ export default function MarketingPage() {
           </BreadcrumbList>
         </Breadcrumb>
 
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Marketing</h1>
@@ -56,7 +56,7 @@ export default function MarketingPage() {
           </Button>
         </div>
 
-        {/* Stats Cards */}
+        {}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
             <CardContent className="p-6">
@@ -115,7 +115,7 @@ export default function MarketingPage() {
           </Card>
         </div>
 
-        {/* Marketing Tools */}
+        {}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>

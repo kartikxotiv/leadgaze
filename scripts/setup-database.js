@@ -4,13 +4,13 @@ async function setupDatabase() {
   try {
     console.log("🚀 Setting up CRM Database with Multi-Organization Tables...");
 
-    // Import and run database sync
+   
     const { syncDatabase, testConnection } = require("../lib/database-sync.ts");
 
-    // Test connection first
+   
     await testConnection();
 
-    // Ask user if they want to reset the database
+   
     const readline = require("readline");
     const rl = readline.createInterface({
       input: process.stdin,
@@ -35,7 +35,7 @@ async function setupDatabase() {
       console.log("📝 Creating new tables (keeping existing data)...");
     }
 
-    // Sync database with all models
+   
     await syncDatabase(shouldReset);
 
     console.log("✅ Database setup completed!");

@@ -1,9 +1,8 @@
 const { Sequelize } = require("sequelize");
 const pg = require("pg");
 
-// Create sequelize instance using environment variables
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || 
-  `postgres://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'password'}@${process.env.DB_HOST }:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'crm'}`;
+  `postgres
 
 const sequelize = new Sequelize(DATABASE_URL, {
   dialect: "postgres",
@@ -17,7 +16,6 @@ const sequelize = new Sequelize(DATABASE_URL, {
   },
 });
 
-// Import models
 const User = require("../models/User").default;
 const Organization = require("../models/Organization").default;
 const UserOrganization = require("../models/UserOrganization").default;
@@ -28,7 +26,6 @@ const PipelineStage = require("../models/PipelineStage").default;
 const Lead = require("../models/Lead").default;
 const Deal = require("../models/Deal").default;
 
-// Initialize models
 const UserModel = User(sequelize);
 const OrganizationModel = Organization(sequelize);
 const UserOrganizationModel = UserOrganization(sequelize);
@@ -39,7 +36,6 @@ const PipelineStageModel = PipelineStage(sequelize);
 const LeadModel = Lead(sequelize);
 const DealModel = Deal(sequelize);
 
-// Create models object for associations
 const models = {
   User: UserModel,
   Organization: OrganizationModel,
@@ -52,7 +48,6 @@ const models = {
   Deal: DealModel,
 };
 
-// Setup associations
 UserModel.associate(models);
 OrganizationModel.associate(models);
 UserOrganizationModel.associate(models);
@@ -67,11 +62,11 @@ async function syncDatabase() {
   try {
     console.log("🔄 Starting database sync...");
     
-    // Test connection
+   
     await sequelize.authenticate();
     console.log("✅ Database connection established successfully.");
     
-    // Sync all models (create tables)
+   
     await sequelize.sync({ force: true });
     console.log("✅ All tables created successfully!");
     

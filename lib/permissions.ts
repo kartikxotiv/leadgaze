@@ -1,26 +1,26 @@
-// Permission system for role-based access control
+
 export interface RolePermissions {
-  // Organization Management
+ 
   can_manage_organization?: boolean;
   can_delete_organization?: boolean;
   can_manage_subscription?: boolean;
 
-  // User Management
+ 
   can_invite_users?: boolean;
   can_remove_users?: boolean;
   can_change_user_roles?: boolean;
 
-  // Workspace Management
+ 
   can_create_workspaces?: boolean;
   can_delete_workspaces?: boolean;
   can_manage_workspaces?: boolean;
 
-  // Data Access
+ 
   can_view_all_data?: boolean;
   can_edit_all_data?: boolean;
   can_delete_all_data?: boolean;
 
-  // Reports
+ 
   can_view_reports?: boolean;
   can_export_data?: boolean;
 }
@@ -46,9 +46,7 @@ export interface UserOrganization {
 }
 
 export class PermissionManager {
-  /**
-   * Check if user has a specific permission
-   */
+  
   static hasPermission(
     userOrganization: UserOrganization | null,
     permission: keyof RolePermissions
@@ -60,9 +58,7 @@ export class PermissionManager {
     return userOrganization.permissions[permission] === true;
   }
 
-  /**
-   * Check if user has any of the specified permissions
-   */
+  
   static hasAnyPermission(
     userOrganization: UserOrganization | null,
     permissions: (keyof RolePermissions)[]
@@ -72,9 +68,7 @@ export class PermissionManager {
     );
   }
 
-  /**
-   * Check if user has all of the specified permissions
-   */
+  
   static hasAllPermissions(
     userOrganization: UserOrganization | null,
     permissions: (keyof RolePermissions)[]
@@ -84,9 +78,7 @@ export class PermissionManager {
     );
   }
 
-  /**
-   * Role hierarchy checks
-   */
+  
   static isOwner(userOrganization: UserOrganization | null): boolean {
     return userOrganization?.role === "owner";
   }
@@ -105,9 +97,7 @@ export class PermissionManager {
     return userOrganization?.role === "viewer";
   }
 
-  /**
-   * Feature-specific permission checks
-   */
+  
   static canInviteUsers(userOrganization: UserOrganization | null): boolean {
     return this.hasPermission(userOrganization, "can_invite_users");
   }
@@ -154,9 +144,7 @@ export class PermissionManager {
     return this.hasPermission(userOrganization, "can_export_data");
   }
 
-  /**
-   * Get user's effective permissions as an array
-   */
+  
   static getEffectivePermissions(
     userOrganization: UserOrganization | null
   ): string[] {
@@ -169,16 +157,14 @@ export class PermissionManager {
       .map(([permission, _]) => permission);
   }
 
-  /**
-   * Check if user can perform action on target user role
-   */
+  
   static canManageRole(
     currentUserOrg: UserOrganization | null,
     targetRole: string
   ): boolean {
     if (!currentUserOrg) return false;
 
-    // Define role hierarchy levels
+   
     const roleLevels: Record<string, number> = {
       viewer: 20,
       manager: 60,
@@ -189,13 +175,11 @@ export class PermissionManager {
     const currentLevel = roleLevels[currentUserOrg.role] || 0;
     const targetLevel = roleLevels[targetRole] || 0;
 
-    // Can only manage roles below your level
+   
     return currentLevel > targetLevel;
   }
 
-  /**
-   * Get available roles that user can assign
-   */
+  
   static getAssignableRoles(currentUserOrg: UserOrganization | null): string[] {
     if (!currentUserOrg) return [];
 
@@ -204,17 +188,15 @@ export class PermissionManager {
     return allRoles.filter((role) => this.canManageRole(currentUserOrg, role));
   }
 
-  /**
-   * Check subscription-based limits
-   */
+  
   static checkSubscriptionLimit(
     userOrganization: UserOrganization | null,
     feature: string
   ): boolean {
     if (!userOrganization) return false;
 
-    // Implementation depends on your subscription logic
-    // This is a placeholder for subscription-based feature access
+   
+   
     const planLimits: Record<string, string[]> = {
       trial: ["basic_features"],
       basic: ["basic_features", "advanced_reports"],
@@ -233,9 +215,7 @@ export class PermissionManager {
     return allowedFeatures.includes(feature);
   }
 
-  /**
-   * Role display utilities
-   */
+  
   static getRoleDisplayName(role: string): string {
     const roleNames: Record<string, string> = {
       owner: "Owner",

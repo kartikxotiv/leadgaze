@@ -1,18 +1,15 @@
-#!/bin/bash
 
-# Aggressive Database Connection Cleanup Script
-# This script tries multiple methods to clear database connections
+
+
 
 echo "🔧 Aggressive Database Connection Cleanup"
 echo "========================================"
 echo ""
 
-# Method 1: Kill all Node.js processes
 echo "🔄 Method 1: Killing all Node.js processes..."
 pkill -f node
 sleep 2
 
-# Method 2: Try to connect and terminate idle connections
 echo "🔄 Method 2: Attempting to terminate idle connections..."
 PGPASSWORD=admin@123 psql -h localhost -U postgres -d crm -c "
 SELECT pg_terminate_backend(pid) 
@@ -22,11 +19,9 @@ AND state = 'idle'
 AND pid <> pg_backend_pid();
 " 2>/dev/null || echo "❌ Cannot connect to terminate connections"
 
-# Method 3: Wait for connections to timeout
 echo "🔄 Method 3: Waiting for connections to timeout..."
 sleep 5
 
-# Method 4: Test connection
 echo "🔄 Method 4: Testing database connection..."
 PGPASSWORD=admin@123 psql -h localhost -U postgres -d crm -c "SELECT 1;" 2>/dev/null
 

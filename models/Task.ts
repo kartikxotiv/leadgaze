@@ -125,7 +125,7 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Associations
+ 
   (Task as any).associate = (models: any) => {
     Task.belongsTo(models.User, {
       foreignKey: "assigned_to",
@@ -135,11 +135,11 @@ export default (sequelize: Sequelize) => {
       foreignKey: "created_by",
       as: "createdUser",
     });
-    // Lead model was removed - commenting out this association
-    // Task.belongsTo(models.Lead, {
-    //   foreignKey: "lead_id",
-    //   as: "lead",
-    // });
+   
+   
+   
+   
+   
     Task.belongsTo(models.Deal, {
       foreignKey: "deal_id",
       as: "deal",

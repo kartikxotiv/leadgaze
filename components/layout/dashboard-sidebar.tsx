@@ -56,7 +56,7 @@ const defaultMenuItems: SidebarItem[] = [
     label: "Leads",
     href: "/pages/leads",
     icon: Users,
-    // badge: "42",  
+   
     badgeVariant: "secondary",
   },
   {
@@ -64,7 +64,7 @@ const defaultMenuItems: SidebarItem[] = [
     label: "Deals",
     href: "/deals",
     icon: Target,
-    // badge: "8",
+   
     
     badgeVariant: "default",
   },
@@ -73,7 +73,7 @@ const defaultMenuItems: SidebarItem[] = [
     label: "Tasks",
     href: "/tasks",
     icon: CheckSquare,
-    // badge: "8",
+   
     badgeVariant: "destructive",
   },
   {
@@ -180,16 +180,16 @@ export function DashboardSidebar({
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [openDropdowns, setOpenDropdowns] = useState<Set<string>>(new Set());
 
-  // Load saved menu order from localStorage
+ 
   useEffect(() => {
-    // Clear any corrupted data and start fresh
+   
     localStorage.removeItem("sidebar-menu-order");
     setMenuItems(defaultMenuItems);
   }, []);
 
-  // Save menu order to localStorage
+ 
   const saveMenuOrder = useCallback((items: SidebarItem[]) => {
-    // Only save the order and basic properties, not the icon functions
+   
     const itemsToSave = items.map((item) => ({
       id: item.id,
       label: item.label,
@@ -200,7 +200,7 @@ export function DashboardSidebar({
     localStorage.setItem("sidebar-menu-order", JSON.stringify(itemsToSave));
   }, []);
 
-  // Drag and drop handlers
+ 
   const handleDragStart = useCallback((e: React.DragEvent, itemId: string) => {
     setDraggedItem(itemId);
     e.dataTransfer.effectAllowed = "move";
@@ -263,15 +263,15 @@ export function DashboardSidebar({
     });
   }, []);
 
-  // Recursive component for rendering menu items
+ 
   const renderMenuItem = useCallback((item: SidebarItem, level: number = 0) => {
     const hasChildren = item.children && item.children.length > 0;
     const isOpen = openDropdowns.has(item.id);
-    const marginLeft = level * 24; // 24px per level
+    const marginLeft = level * 24;
 
     return (
       <div key={item.id} className="group relative">
-        {/* Main Menu Item */}
+        {}
         <div
           draggable={!collapsed && !hasChildren}
           onDragStart={(e) => handleDragStart(e, item.id)}
@@ -289,14 +289,14 @@ export function DashboardSidebar({
               }`}
               style={{ marginLeft: `${marginLeft}px` }}
             >
-              {/* Drag Handle */}
+              {}
               {!collapsed && level === 0 && (
 
                 <GripVertical className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
               
               )}
 
-              {/* Icon */}
+              {}
               {(() => {
                 const Icon = item.icon as React.ElementType;
                 return (
@@ -306,7 +306,7 @@ export function DashboardSidebar({
                 );
               })()}
 
-              {/* Label and Badge */}
+              {}
               {!collapsed && (
                 <div className="flex items-center justify-between flex-1">
                   <span>{item.label}</span>
@@ -338,12 +338,12 @@ export function DashboardSidebar({
               }`}
               style={{ marginLeft: `${marginLeft}px` }}
             >
-              {/* Drag Handle */}
+              {}
               {!collapsed && level === 0 && (
                 <GripVertical className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
               )}
 
-              {/* Icon */}
+              {}
               {(() => {
                 const Icon = item.icon as React.ElementType;
                 return (
@@ -353,7 +353,7 @@ export function DashboardSidebar({
                 );
               })()}
 
-              {/* Label and Badge */}
+              {}
               {!collapsed && (
                 <div className="flex items-center justify-between flex-1">
                   <span>{item.label}</span>
@@ -370,7 +370,7 @@ export function DashboardSidebar({
             </Link>
           )}
 
-          {/* Tooltip for collapsed state */}
+          {}
           {collapsed && (
             <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
               {item.label}
@@ -379,7 +379,7 @@ export function DashboardSidebar({
           )}
         </div>
 
-        {/* Render Children */}
+        {}
         {hasChildren && !collapsed && isOpen && (
           <div className="space-y-1">
             {item.children!.map((child) => renderMenuItem(child, level + 1))}
@@ -395,7 +395,7 @@ export function DashboardSidebar({
         collapsed ? "w-16" : "w-64"
       }`}
     >
-      {/* Sidebar Header */}
+      {}
       <div className="flex items-center justify-center p-4 border-b border-gray-200 dark:border-gray-700">
         {!collapsed && (
           <div className="flex items-center gap-2">
@@ -414,16 +414,10 @@ export function DashboardSidebar({
         )}
       </div>
 
-      {/* Organization Switcher */}
-      {/* {!collapsed && (
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col gap-2">
-          <OrganizationSwitcher />
+      {}
+      {}
 
-          <WorkspaceSwitcher />
-        </div>
-      )} */}
-
-      {/* Navigation Menu */}
+      {}
       <div className="flex-1 overflow-hidden">
         <SafeScrollArea className="h-full px-3 py-4">
           <nav className="space-y-1">
@@ -432,14 +426,8 @@ export function DashboardSidebar({
         </SafeScrollArea>
       </div>
 
-      {/* Sidebar Footer */}
-      {/* {!collapsed && (
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-            Drag items to reorder menu
-          </div>
-        </div>
-      )} */}
+      {}
+      {}
     </div>
   );
 }

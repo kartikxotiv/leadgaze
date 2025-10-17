@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // AuthZ: Ensure requester belongs to this organization
+   
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
@@ -60,12 +60,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Build where clause
+   
     const whereClause: any = {
       organizationId: organizationId,
     };
 
-    // Add filters
+   
     if (status) {
       const statusConfig = await LeadConfig.findOne({
         where: { entityType: "status", entityValue: status },
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Filter by workspace (JSONB meta_data contains { workspaceId }) when provided
+   
     if (workspaceId) {
       whereClause.metaData = { [Op.contains]: { workspaceId } } as any;
     }
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
       whereClause.assignedTo = assignedTo;
     }
 
-    // Add search
+   
     if (search) {
       whereClause[Op.or] = [
         { firstName: { [Op.iLike]: `%${search}%` } },
@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
           model: LeadScore,
           as: "scoreData",
           attributes: ["totalScore", "tier", "lastCalculated"],
-          required: false, // Left join - lead might not have score yet
+          required: false,
         },
       ],
       order: [["createdAt", "DESC"]],
@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    // Permission check: require JWT and ensure creator matches or has edit rights
+   
     let requesterUserId: string | undefined;
     let canEditAllData = false;
     const authHeader = request.headers.get("authorization");
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
       try {
         const decoded: any = jwt.verify(token, JWT_SECRET);
         requesterUserId = decoded?.userId;
-        // Permissions object may contain can_edit_all_data
+       
         canEditAllData = Boolean(
           decoded?.availableOrganizations?.find(
             (o: any) => o.id === body.organizationId
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
             decoded?.permissions?.can_edit_all_data
         );
       } catch {
-        // If JWT invalid, deny
+       
         return NextResponse.json(
           { success: false, error: "Invalid or expired token" },
           { status: 401 }
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate required fields
+   
     const requiredFields = [
       "firstName",
       "lastName",
@@ -230,7 +230,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Validate source exists and is active
+   
     const sourceConfig = await LeadConfig.findByPk(body.sourceId);
     if (!sourceConfig || !(sourceConfig as any).isActive) {
       return NextResponse.json(
@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate optional config references
+   
     if (body.industryId) {
       const industryConfig = await LeadConfig.findByPk(body.industryId);
       if (!industryConfig || !(industryConfig as any).isActive) {
@@ -269,7 +269,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Validate email uniqueness per organization if provided
+   
     if (body.email) {
       const existingLead = await Lead.findOne({
         where: {
@@ -289,7 +289,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get default status (new)
+   
     let statusId = body.statusId;
     if (!statusId) {
       const defaultStatus = await LeadConfig.findOne({
@@ -307,15 +307,15 @@ export async function POST(request: NextRequest) {
       statusId = (defaultStatus as any).id;
     }
 
-    // Create lead
+   
     const lead = await Lead.create({
       ...body,
       email: body.email?.toLowerCase(),
       statusId: statusId,
-      leadScore: 0, // Start with 0 score
+      leadScore: 0,
     });
 
-    // Log activity: lead created
+   
     try {
       await (Activity as any).create({
         activityType: "lead_created",
@@ -335,10 +335,10 @@ export async function POST(request: NextRequest) {
       console.error("Failed to log lead_created activity", e);
     }
 
-    // Fetch created lead without associations for now
+   
     const createdLead = await Lead.findByPk((lead as any).leadId);
 
-    // Calculate initial lead score
+   
     try {
       await LeadScoringEngine.calculateLeadScore(
         lead.leadId,
@@ -347,7 +347,7 @@ export async function POST(request: NextRequest) {
       console.log(`✅ Lead score calculated for lead: ${lead.leadId}`);
     } catch (scoringError) {
       console.error("Error calculating lead score:", scoringError);
-      // Don't fail the lead creation if scoring fails
+     
     }
 
     return NextResponse.json({

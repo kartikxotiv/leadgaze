@@ -45,7 +45,7 @@ export default function PipelinePage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Breadcrumb */}
+        {}
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -58,11 +58,11 @@ export default function PipelinePage() {
           </BreadcrumbList>
         </Breadcrumb>
 
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Sales Pipeline</h1>
-            <p className="text-muted-foreground mt-2">
+            <h1 className="text-2xl font-bold tracking-tight">Sales Pipeline</h1>
+            <p className="text-muted-foreground mt-2 text-xs">
               Track deals through your sales process
             </p>
           </div>
@@ -82,18 +82,18 @@ export default function PipelinePage() {
           </div>
         </div>
 
-        {/* Pipeline Overview */}
+        {}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-xs font-medium text-muted-foreground">
                     Total Pipeline Value
                   </p>
-                  <p className="text-2xl font-bold">{formatCurrency(615000)}</p>
+                  <p className="text-xl font-bold mt-2">{formatCurrency(615000)}</p>
                 </div>
-                <DollarSign className="h-8 w-8 text-green-600" />
+                <DollarSign className="h-5 w-5 text-green-600" />
               </div>
             </CardContent>
           </Card>
@@ -102,12 +102,12 @@ export default function PipelinePage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-xs font-medium text-muted-foreground">
                     Active Deals
                   </p>
-                  <p className="text-2xl font-bold">28</p>
+                  <p className="text-xl font-bold mt-2">28</p>
                 </div>
-                <Target className="h-8 w-8 text-blue-600" />
+                <Target className="h-5 w-5 text-blue-600" />
               </div>
             </CardContent>
           </Card>
@@ -116,27 +116,27 @@ export default function PipelinePage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-xs font-medium text-muted-foreground">
                     Win Rate
                   </p>
-                  <p className="text-2xl font-bold">65%</p>
+                  <p className="text-xl font-bold mt-2">65%</p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-purple-600" />
+                <TrendingUp className="h-5 w-5 text-purple-600" />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Pipeline Stages */}
+        {}
 
 
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> 
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6"> 
           <div className="col-span-1">
           
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-[18px]">
               <BarChart3 className="h-5 w-5" />
               Pipeline Stages
             </CardTitle>
@@ -148,13 +148,13 @@ export default function PipelinePage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className={`w-3 h-3 rounded-full ${stage.color}`} />
-                      <span className="font-medium">{stage.name}</span>
+                      <span className="font-regluar text-sm">{stage.name}</span>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         {stage.deals} deals
                       </span>
-                      <span className="font-medium">
+                      <span className="font-medium text-sm">
                         {formatCurrency(stage.value)}
                       </span>
                     </div>
@@ -170,20 +170,20 @@ export default function PipelinePage() {
         </Card>
         </div>
         <div className="col-span-1">
-        {/* Recent Activity */}
+        {}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-[18px]">
               <Calendar className="h-5 w-5" />
               Recent Pipeline Activity
-            </CardTitle>
+            </CardTitle> 
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-3 border rounded-lg">
                 <div>
-                  <p className="font-medium">ACME Corp Deal</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="font-medium text-sm">ACME Corp Deal</p>
+                  <p className="text-xs text-muted-foreground">
                     Moved to Proposal stage
                   </p>
                 </div>
@@ -191,8 +191,8 @@ export default function PipelinePage() {
               </div>
               <div className="flex items-center justify-between p-3 border rounded-lg">
                 <div>
-                  <p className="font-medium">Tech Solutions</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="font-medium text-sm">Tech Solutions</p>
+                  <p className="text-xs text-muted-foreground">
                     Deal closed won - $50,000
                   </p>
                 </div>
@@ -200,8 +200,8 @@ export default function PipelinePage() {
               </div>
               <div className="flex items-center justify-between p-3 border rounded-lg">
                 <div>
-                  <p className="font-medium">Global Industries</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="font-medium text-sm">Global Industries</p>
+                  <p className="text-xs text-muted-foreground">
                     New deal added to Qualification
                   </p>
                 </div>

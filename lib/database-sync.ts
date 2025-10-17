@@ -16,12 +16,12 @@ export const syncDatabase = async (force = false) => {
   try {
     console.log("🔄 Syncing database...");
 
-    // Sync all models
+   
     await sequelize.sync({ force, alter: !force });
 
     console.log("✅ Database synced successfully");
 
-    // Seed initial data if force is true (fresh database)
+   
     if (force) {
       await seedInitialData();
     }
@@ -35,7 +35,7 @@ const seedInitialData = async () => {
   try {
     console.log("🌱 Seeding initial data...");
 
-    // Create default users
+   
     const users = await User.bulkCreate([
       {
         email: "sarah.johnson@company.com",
@@ -67,7 +67,7 @@ const seedInitialData = async () => {
       },
     ]);
 
-    // Create default pipeline stages
+   
     const stages = await PipelineStage.bulkCreate([
       { name: "New", position: 1, color: "bg-blue-500" },
       { name: "Contacted", position: 2, color: "bg-yellow-500" },
@@ -79,7 +79,7 @@ const seedInitialData = async () => {
       { name: "Lost", position: 8, color: "bg-gray-500" },
     ]);
 
-    // Create sample deals
+   
     await Deal.bulkCreate([
       {
         stage_id: stages[0].id,
@@ -107,7 +107,7 @@ const seedInitialData = async () => {
       },
     ]);
 
-    // Create sample tasks
+   
     await Task.bulkCreate([
       {
         title: "Follow up with potential client",

@@ -1,8 +1,7 @@
 const { Sequelize } = require("sequelize");
 const pg = require("pg");
 
-// Database connection
-const sequelize = new Sequelize("postgres://crm_user:Xotiv%40123@89.116.134.1:5432/crm_db", {
+const sequelize = new Sequelize("postgres
   dialect: "postgres",
   dialectModule: pg,
   logging: false,
@@ -15,17 +14,17 @@ async function seedConfigDataSQL() {
     await sequelize.authenticate();
     console.log("✅ Database connected!");
 
-    // Clear existing config data
+   
     console.log("🗑️  Clearing existing config data...");
     await sequelize.query("DELETE FROM organization_roles;");
     await sequelize.query("DELETE FROM organization_config;");
     await sequelize.query("DELETE FROM users_config;");
 
-    // Seed UserConfig data
+   
     console.log("📋 Seeding UserConfig data...");
 
     const userConfigData = [
-      // User statuses
+     
       {
         entityType: "status",
         entityValue: "active",
@@ -45,7 +44,7 @@ async function seedConfigDataSQL() {
         description: "User account is suspended due to policy violation",
       },
 
-      // Invitation statuses
+     
       {
         entityType: "invitation_status",
         entityValue: "pending",
@@ -78,24 +77,24 @@ async function seedConfigDataSQL() {
       },
     ];
 
-    // for (const config of userConfigData) {
-    //   await sequelize.query(
-    //     `
-    //     INSERT INTO users_config (entity_type, entity_value, display_name, description, is_active, sort_order)
-    //     VALUES (:entityType, :entityValue, :displayName, :description, true, 0)
-    //     ON CONFLICT (entity_type, entity_value) DO NOTHING;
-    //   `,
-    //     {
-    //       replacements: config,
-    //     }
-    //   );
-    // }
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
 
-    // Seed OrganizationConfig data
+   
     console.log("📋 Seeding OrganizationConfig data...");
 
     const organizationConfigData = [
-      // Company sizes (with numeric values for limits)
+     
       {
         entityType: "company_size",
         entityValue: "solo",
@@ -139,7 +138,7 @@ async function seedConfigDataSQL() {
         sortOrder: 6,
       },
 
-      // Organization statuses
+     
       {
         entityType: "status",
         entityValue: "active",
@@ -162,7 +161,7 @@ async function seedConfigDataSQL() {
         sortOrder: 3,
       },
 
-      // Subscription statuses
+     
       {
         entityType: "subscription_status",
         entityValue: "trial",
@@ -199,7 +198,7 @@ async function seedConfigDataSQL() {
         sortOrder: 5,
       },
 
-      // Plan types
+     
       {
         entityType: "plan_type",
         entityValue: "trial",
@@ -243,7 +242,7 @@ async function seedConfigDataSQL() {
       );
     }
 
-    // Seed OrganizationRoles data
+   
     console.log("📋 Seeding OrganizationRoles data...");
 
     const rolesData = [
@@ -365,7 +364,6 @@ async function seedConfigDataSQL() {
   }
 }
 
-// Run the seeding if this file is executed directly
 if (require.main === module) {
   seedConfigDataSQL()
     .then(() => {

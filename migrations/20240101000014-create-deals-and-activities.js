@@ -1,9 +1,9 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Create deals table
+   
     await queryInterface.createTable('deals', {
       deal_id: {
         type: Sequelize.UUID,
@@ -106,7 +106,7 @@ module.exports = {
       }
     });
 
-    // Add check constraint for deals probability
+   
     await queryInterface.addConstraint('deals', {
       fields: ['probability'],
       type: 'check',
@@ -119,7 +119,7 @@ module.exports = {
       }
     });
 
-    // Create activities table
+   
     await queryInterface.createTable('activities', {
       activity_id: {
         type: Sequelize.UUID,
@@ -218,7 +218,7 @@ module.exports = {
       }
     });
 
-    // Add check constraints for activities
+   
     await queryInterface.addConstraint('activities', {
       fields: ['direction'],
       type: 'check',

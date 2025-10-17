@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (initializeDefaults) {
-      // Initialize default rules for the organization
+     
       await LeadScoringEngine.initializeDefaultRules(organizationId, createdBy);
 
       return NextResponse.json({
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Create a custom rule
+   
     const requiredFields = ["ruleName", "ruleType", "condition", "points"];
     for (const field of requiredFields) {
       if (!ruleData[field]) {

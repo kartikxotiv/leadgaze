@@ -13,7 +13,6 @@ import LeadScore from "./LeadScore";
 import ScoringRule from "./ScoringRule";
 import Notification from "./Notification";
 import AutomationRule from "./AutomationRule";
-// Config-based models - enabled for config-based schema
 import UserConfig from "./UserConfig";
 import OrganizationConfig from "./OrganizationConfig";
 import OrganizationRole from "./OrganizationRole";
@@ -24,10 +23,8 @@ import PasswordResetToken from "./PasswordResetToken";
 import OrganizationWorkspace from "./OrganizationWorkspace";
 import { initOrgUserAccount } from "./OrgUserAccount";
 
-// Import sequelize instance
 import sequelize from "@/lib/database";
 
-// Initialize all models
 const UserModel = User(sequelize);
 const OrganizationModel = Organization(sequelize);
 const UserOrganizationModel = UserOrganization(sequelize);
@@ -43,7 +40,6 @@ const LeadScoreModel = LeadScore(sequelize);
 const ScoringRuleModel = ScoringRule(sequelize);
 const NotificationModel = Notification(sequelize);
 const AutomationRuleModel = AutomationRule(sequelize);
-// Config-based models - enabled for config-based schema
 const UserConfigModel = UserConfig(sequelize);
 const OrganizationConfigModel = OrganizationConfig(sequelize);
 const OrganizationRoleModel = OrganizationRole(sequelize);
@@ -54,7 +50,6 @@ const PasswordResetTokenModel = PasswordResetToken(sequelize);
 const OrganizationWorkspaceModel = OrganizationWorkspace(sequelize);
 const OrgUserAccountModel = initOrgUserAccount(sequelize);
 
-// Create models object for associations
 const models = {
   User: UserModel,
   Organization: OrganizationModel,
@@ -71,7 +66,7 @@ const models = {
   ScoringRule: ScoringRuleModel,
   Notification: NotificationModel,
   AutomationRule: AutomationRuleModel,
-  // Config-based models - enabled for config-based schema
+ 
   UserConfig: UserConfigModel,
   OrganizationConfig: OrganizationConfigModel,
   OrganizationRole: OrganizationRoleModel,
@@ -83,13 +78,11 @@ const models = {
   OrgUserAccount: OrgUserAccountModel,
 };
 
-// Setup associations with type assertions
 (UserModel as any).associate(models);
 (OrganizationModel as any).associate(models);
 (UserOrganizationModel as any).associate(models);
 (UserSessionModel as any).associate(models);
 
-// Auth config associations - enabled for config-based schema
 (UserConfigModel as any).associate(models);
 (OrganizationConfigModel as any).associate(models);
 (OrganizationRoleModel as any).associate(models);
@@ -98,7 +91,6 @@ const models = {
 (PasswordResetTokenModel as any).associate(models);
 (OrganizationWorkspaceModel as any).associate(models);
 
-// CRM associations
 (TaskModel as any).associate(models);
 (ActivityModel as any).associate(models);
 (PipelineStageModel as any).associate(models);
@@ -127,7 +119,7 @@ export {
   ScoringRuleModel as ScoringRule,
   NotificationModel as Notification,
   AutomationRuleModel as AutomationRule,
-  // Config-based models - enabled for config-based schema
+ 
   UserConfigModel as UserConfig,
   OrganizationConfigModel as OrganizationConfig,
   OrganizationRoleModel as OrganizationRole,

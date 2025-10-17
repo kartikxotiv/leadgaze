@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { email } = body;
 
-    // Validate required fields
+   
     if (!email) {
       return NextResponse.json(
         {
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate email format
+   
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
@@ -29,37 +29,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get client IP for rate limiting
+   
     const clientIP =
       request.headers.get("x-forwarded-for") ||
       request.headers.get("x-real-ip") ||
       "unknown";
 
-    // Check rate limiting - DISABLED FOR NOW
-    // const rateLimit = await AuthService.checkPasswordResetRateLimit(
-    //   email.toLowerCase(),
-    //   clientIP
-    // );
+   
+   
+   
+   
+   
 
-    // if (!rateLimit.allowed) {
-    //   const resetTimeString = rateLimit.resetTime
-    //     ? new Date(rateLimit.resetTime).toLocaleTimeString()
-    //     : "later";
+   
+   
+   
+   
 
-    //   return NextResponse.json(
-    //     {
-    //       success: false,
-    //       error: `Too many password reset attempts. Please try again after ${resetTimeString}.`,
-    //       retryAfter: rateLimit.resetTime,
-    //     },
-    //     { status: 429 }
-    //   );
-    // }
+   
+   
+   
+   
+   
+   
+   
+   
+   
 
-    // Initiate password reset
+   
     const result = await AuthService.initiatePasswordReset(email.toLowerCase());
 
-    // Log the attempt for security monitoring
+   
     console.log(`Password reset requested for: ${email} from IP: ${clientIP}`);
 
     return NextResponse.json({
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Forgot password error:", error);
 
-    // Don't expose internal errors to client for security
+   
     return NextResponse.json(
       {
         success: false,
@@ -81,7 +81,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Prevent other HTTP methods
 export async function GET() {
   return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
 }

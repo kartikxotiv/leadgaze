@@ -3,7 +3,7 @@ import sequelize from "@/lib/database";
 
 export async function GET(request: NextRequest) {
   try {
-    // Get table schema for users_config table
+   
     const [usersConfigColumns] = await sequelize.query(`
       SELECT column_name, data_type, is_nullable, column_default
       FROM information_schema.columns 

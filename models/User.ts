@@ -52,7 +52,7 @@ export default (sequelize: Sequelize) => {
         defaultValue: false,
         field: "email_verified",
       },
-      // Config-based status reference
+     
       statusId: {
         type: DataTypes.UUID,
         allowNull: true,
@@ -129,7 +129,7 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Static methods
+ 
   (User as any).findByEmail = function (email: string) {
     return this.findOne({
       where: {
@@ -154,7 +154,7 @@ export default (sequelize: Sequelize) => {
     });
   };
 
-  // Helper functions (not attached to prototype to avoid TypeScript issues)
+ 
   (User as any).validatePassword = async function (
     user: any,
     password: string
@@ -168,9 +168,9 @@ export default (sequelize: Sequelize) => {
 
   (User as any).incrementLoginAttempts = async function (user: any) {
     const maxAttempts = 5;
-    const lockTime = 2 * 60 * 60 * 1000; // 2 hours
+    const lockTime = 2 * 60 * 60 * 1000;
 
-    // If we have a previous lock that has expired, restart at 1
+   
     if (user.lockUntil && user.lockUntil < new Date()) {
       await user.update({
         loginAttempts: 1,
@@ -183,7 +183,7 @@ export default (sequelize: Sequelize) => {
       loginAttempts: user.loginAttempts + 1,
     };
 
-    // If we just hit max attempts and it's not locked already, lock the account
+   
     if (updates.loginAttempts >= maxAttempts && !(User as any).isLocked(user)) {
       updates.lockUntil = new Date(Date.now() + lockTime);
     }
@@ -213,7 +213,7 @@ export default (sequelize: Sequelize) => {
     };
   };
 
-  // Associations
+ 
   (User as any).associate = (models: any) => {
     User.hasMany(models.Organization, {
       foreignKey: "created_by",
@@ -228,7 +228,7 @@ export default (sequelize: Sequelize) => {
       as: "session",
     });
 
-    // Config-based models - enabled for config-based schema
+   
     User.hasMany(models.UserInvitation, {
       foreignKey: "invited_by",
       as: "sentInvitations",
@@ -242,7 +242,7 @@ export default (sequelize: Sequelize) => {
       as: "passwordResetTokens",
     });
 
-    // Config-based associations
+   
     User.belongsTo(models.UserConfig, {
       foreignKey: "status_id",
       as: "statusConfig",

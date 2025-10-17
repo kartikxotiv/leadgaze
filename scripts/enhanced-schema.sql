@@ -1,6 +1,6 @@
--- Enhanced database schema with additional fields and constraints
 
--- Add missing columns to existing tables
+
+
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100);
@@ -14,7 +14,7 @@ ALTER TABLE deals ADD COLUMN IF NOT EXISTS deal_id UUID REFERENCES deals(id);
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS deal_id UUID REFERENCES deals(id);
 
--- Create indexes for better performance
+
 CREATE INDEX IF NOT EXISTS idx_leads_assigned_to ON leads(assigned_to);
 CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
 CREATE INDEX IF NOT EXISTS idx_leads_source ON leads(source);
@@ -33,12 +33,12 @@ CREATE INDEX IF NOT EXISTS idx_activities_lead_id ON activities(lead_id);
 CREATE INDEX IF NOT EXISTS idx_activities_user_id ON activities(user_id);
 CREATE INDEX IF NOT EXISTS idx_activities_created_at ON activities(created_at);
 
--- Add constraints
+
 ALTER TABLE leads ADD CONSTRAINT check_deal_value_positive CHECK (deal_value >= 0);
 ALTER TABLE deals ADD CONSTRAINT check_deal_value_positive CHECK (value > 0);
 ALTER TABLE deals ADD CONSTRAINT check_probability_range CHECK (probability >= 0 AND probability <= 100);
 
--- Create views for common queries
+
 CREATE OR REPLACE VIEW lead_summary AS
 SELECT 
   l.*,
@@ -69,7 +69,7 @@ WHERE ps.is_active = true
 GROUP BY ps.id, ps.name, ps.position, ps.color
 ORDER BY ps.position;
 
--- Create functions for common operations
+
 CREATE OR REPLACE FUNCTION update_lead_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -97,7 +97,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create triggers
+
 DROP TRIGGER IF EXISTS trigger_update_lead_timestamp ON leads;
 CREATE TRIGGER trigger_update_lead_timestamp
   BEFORE UPDATE ON leads

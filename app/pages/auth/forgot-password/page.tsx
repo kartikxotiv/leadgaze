@@ -34,7 +34,7 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
     setError("");
 
-    // Basic validation
+   
     if (!email) {
       setError("Please enter your email address");
       setIsLoading(false);
@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
     }
 
     try {
-      // Call real forgot password API
+     
       const response = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: {
@@ -62,7 +62,7 @@ export default function ForgotPasswordPage() {
       if (data.success) {
         setSuccess(true);
       } else {
-        // Handle specific error cases
+       
         if (response.status === 429) {
           setError(
             data.error || "Too many attempts. Please wait before trying again."
@@ -83,20 +83,20 @@ export default function ForgotPasswordPage() {
 
   const handleInputChange = (value: string) => {
     setEmail(value);
-    if (error) setError(""); // Clear error when user starts typing
+    if (error) setError("");
   };
 
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 flex items-center justify-center p-4">
-        {/* Background decoration */}
+        {}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse"></div>
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse animation-delay-2000"></div>
         </div>
 
         <div className="w-full max-w-md relative z-10">
-          {/* Header */}
+          {}
           <div className="text-center mb-8">
             <Link
               href="/pages/welcome"
@@ -116,7 +116,7 @@ export default function ForgotPasswordPage() {
             </Link>
           </div>
 
-          {/* Success Card */}
+          {}
           <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-center">
             <CardContent className="p-8">
               <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -191,14 +191,14 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 flex items-center justify-center p-4">
-      {/* Background decoration */}
+      {}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse animation-delay-2000"></div>
       </div>
 
       <div className="w-full max-w-md relative z-10">
-        {/* Header */}
+        {}
         <div className="text-center mb-8">
           <Link
             href="/pages/welcome"
@@ -218,7 +218,7 @@ export default function ForgotPasswordPage() {
           </Link>
         </div>
 
-        {/* Forgot Password Form */}
+        {}
         <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <CardHeader className="text-center pb-6">
             <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -242,7 +242,7 @@ export default function ForgotPasswordPage() {
                 </Alert>
               )}
 
-              {/* Email Field */}
+              {}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
                   Email Address
@@ -266,7 +266,7 @@ export default function ForgotPasswordPage() {
                 </p>
               </div>
 
-              {/* Submit Button */}
+              {}
               <Button
                 type="submit"
                 className="w-full h-12 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-300"
@@ -286,7 +286,7 @@ export default function ForgotPasswordPage() {
               </Button>
             </form>
 
-            {/* Help Text */}
+            {}
             <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
               <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
                 Need help?
@@ -299,7 +299,7 @@ export default function ForgotPasswordPage() {
               </ul>
             </div>
 
-            {/* Divider */}
+            {}
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
@@ -311,7 +311,7 @@ export default function ForgotPasswordPage() {
               </div>
             </div>
 
-            {/* Back to Sign In */}
+            {}
             <div className="text-center">
               <Link
                 href="/pages/auth/sign-in"
@@ -324,7 +324,7 @@ export default function ForgotPasswordPage() {
           </CardContent>
         </Card>
 
-        {/* Additional Help */}
+        {}
         <Card className="mt-4 border-0 bg-amber-50 dark:bg-amber-900/20">
           <CardContent className="p-4">
             <div className="flex items-start gap-2">
@@ -347,7 +347,7 @@ export default function ForgotPasswordPage() {
           </CardContent>
         </Card>
 
-        {/* Footer */}
+        {}
         <div className="text-center mt-8 text-sm text-gray-500 dark:text-gray-400">
           <p>
             Need immediate help?{" "}

@@ -6,7 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
 export async function GET(request: NextRequest) {
   try {
-    // Get JWT token from Authorization header
+   
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     const token = authHeader.substring(7);
 
-    // Verify JWT token
+   
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET) as any;
@@ -30,10 +30,10 @@ export async function GET(request: NextRequest) {
 
     const userId = decoded.user_id;
 
-    // Get user's organizations
+   
     const organizations = await AuthService.getUserOrganizations(userId);
 
-    // Get current organization from session (first one if not set)
+   
     const currentOrganization = organizations[0] || null;
 
     return NextResponse.json({

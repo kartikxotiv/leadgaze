@@ -1,6 +1,5 @@
 const { Sequelize } = require("sequelize");
 
-// Database connection
 const sequelize = new Sequelize(
   process.env.DB_NAME || "crm",
   process.env.DB_USER || "sidharthverma",
@@ -19,11 +18,11 @@ async function setupDealsTable() {
     await sequelize.authenticate();
     console.log("✅ Database connection established successfully.");
 
-    // Drop existing table if it exists to recreate with new structure
+   
     await sequelize.query(`DROP TABLE IF EXISTS deals CASCADE;`);
     console.log("✅ Dropped existing deals table");
 
-    // Create deals table
+   
     await sequelize.query(`
       CREATE TABLE deals (
         deal_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -50,7 +49,7 @@ async function setupDealsTable() {
     `);
     console.log("✅ Created deals table");
 
-    // Create indexes for performance
+   
     await sequelize.query(`
       CREATE INDEX idx_deals_user_id ON deals(user_id);
       CREATE INDEX idx_deals_organization_id ON deals(organization_id);
@@ -62,7 +61,7 @@ async function setupDealsTable() {
     `);
     console.log("✅ Created performance indexes");
 
-    // Insert sample deals for testing
+   
     await sequelize.query(`
       INSERT INTO deals (
         lead_id, title, description, value, stage, probability, priority, 
@@ -155,7 +154,6 @@ async function setupDealsTable() {
   }
 }
 
-// Run the setup
 if (require.main === module) {
   setupDealsTable()
     .then(() => {

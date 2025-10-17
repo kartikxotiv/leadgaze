@@ -34,7 +34,7 @@ export default (sequelize: Sequelize) => {
         allowNull: true,
         field: "industry_type",
       },
-      // Config-based company size reference
+     
       companySizeConfigId: {
         type: DataTypes.UUID,
         allowNull: true,
@@ -54,7 +54,7 @@ export default (sequelize: Sequelize) => {
         allowNull: true,
         field: "current_tool",
       },
-      // Config-based status reference
+     
       statusId: {
         type: DataTypes.UUID,
         allowNull: true,
@@ -64,7 +64,7 @@ export default (sequelize: Sequelize) => {
           key: "id",
         },
       },
-      // Config-based subscription status reference
+     
       subscriptionStatusId: {
         type: DataTypes.UUID,
         allowNull: true,
@@ -74,7 +74,7 @@ export default (sequelize: Sequelize) => {
           key: "id",
         },
       },
-      // Config-based plan type reference
+     
       planTypeId: {
         type: DataTypes.UUID,
         allowNull: true,
@@ -153,14 +153,14 @@ export default (sequelize: Sequelize) => {
             org.trialStartsAt = new Date();
           }
           if (!org.trialEndsAt) {
-            org.trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
+            org.trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
           }
         },
       },
     }
   );
 
-  // Static methods
+ 
   (Organization as any).findBySlug = function (slug: string) {
     return this.findOne({
       where: {
@@ -193,7 +193,7 @@ export default (sequelize: Sequelize) => {
     });
   };
 
-  // Helper functions (not attached to prototype to avoid TypeScript issues)
+ 
   (Organization as any).getTrialDaysRemaining = function (org: any) {
     if (!org.trialEndsAt) return null;
     const now = new Date();
@@ -247,7 +247,7 @@ export default (sequelize: Sequelize) => {
     };
   };
 
-  // Associations
+ 
   (Organization as any).associate = (models: any) => {
     Organization.belongsTo(models.User, {
       foreignKey: "created_by",
@@ -258,13 +258,13 @@ export default (sequelize: Sequelize) => {
       as: "userOrganizations",
     });
 
-    // Config-based models - enabled for config-based schema
+   
     Organization.hasMany(models.UserInvitation, {
       foreignKey: "organization_id",
       as: "invitations",
     });
 
-    // Config-based associations
+   
     Organization.belongsTo(models.OrganizationConfig, {
       foreignKey: "status_id",
       as: "statusConfig",
@@ -290,7 +290,6 @@ export default (sequelize: Sequelize) => {
   return Organization;
 };
 
-// Helper function
 function generateSlug(name: string): string {
   return name
     .toLowerCase()

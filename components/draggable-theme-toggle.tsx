@@ -19,11 +19,11 @@ export function DraggableThemeToggle() {
   const [mounted, setMounted] = useState(false);
   const visibilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Simple mount detection
+ 
   useEffect(() => {
     setMounted(true);
 
-    // Load saved position
+   
     try {
       const saved = localStorage.getItem("theme-toggle-position");
       if (saved) {
@@ -37,7 +37,7 @@ export function DraggableThemeToggle() {
     setIsVisible(true);
   }, []);
 
-  // Save position when dragging ends
+ 
   const savePosition = (newPosition: Position) => {
     setLocalPosition(newPosition);
     try {
@@ -113,7 +113,7 @@ export function DraggableThemeToggle() {
       }
     };
 
-    // Add event listeners
+   
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleEnd);
     document.addEventListener("touchmove", handleTouchMove, { passive: false });
@@ -127,7 +127,7 @@ export function DraggableThemeToggle() {
     };
   }, [isDragging, dragOffset, localPosition]);
 
-  // Auto-hide functionality
+ 
   useEffect(() => {
     const handleUserActivity = () => {
       setIsVisible(true);
@@ -143,12 +143,12 @@ export function DraggableThemeToggle() {
       }, 3000);
     };
 
-    // Show on mouse movement or touch
+   
     document.addEventListener("mousemove", handleUserActivity);
     document.addEventListener("touchstart", handleUserActivity);
     document.addEventListener("scroll", handleUserActivity);
 
-    // Initial trigger
+   
     handleUserActivity();
 
     return () => {
@@ -162,7 +162,7 @@ export function DraggableThemeToggle() {
     };
   }, [isDragging]);
 
-  // Don't render until position is loaded to prevent hydration mismatch
+ 
   if (!isPositionLoaded) {
     return null;
   }

@@ -65,7 +65,6 @@ export interface DealFilters {
   offset?: number;
 }
 
-// Hook to fetch deals with filters
 export function useDeals(filters: DealFilters = {}) {
   const { currentOrganization } = useAuthStore();
   const { currentWorkspace } = useWorkspaceContext();
@@ -97,7 +96,7 @@ export function useDeals(filters: DealFilters = {}) {
       const response = await apiClient.get(`/deals?${params.toString()}`);
       const result = (response as any).data;
 
-      // Client-side filter by current workspace if set
+     
       const workspaceId = currentWorkspace?.id;
       if (workspaceId && result && Array.isArray(result.deals)) {
         return {
@@ -114,7 +113,6 @@ export function useDeals(filters: DealFilters = {}) {
   });
 }
 
-// Hook to fetch single deal
 export function useDeal(dealId: string) {
   return useQuery({
     queryKey: ["deal", dealId],
@@ -126,7 +124,6 @@ export function useDeal(dealId: string) {
   });
 }
 
-// Hook to create deal
 export function useCreateDeal() {
   const queryClient = useQueryClient();
   const { user, currentOrganization } = useAuthStore();
@@ -142,7 +139,7 @@ export function useCreateDeal() {
         ...data,
         userId: user.userId,
         organizationId: currentOrganization.organizationId,
-        // Store workspace in JSONB metadata (models/Deal.ts)
+       
         metadata:
           currentWorkspace?.id || data.metadata
             ? { ...(data.metadata || {}), workspaceId: currentWorkspace?.id }
@@ -153,13 +150,12 @@ export function useCreateDeal() {
       return (response as any).data;
     },
     onSuccess: () => {
-      // Invalidate deals queries
+     
       queryClient.invalidateQueries({ queryKey: ["deals"] });
     },
   });
 }
 
-// Hook to update deal
 export function useUpdateDeal() {
   const queryClient = useQueryClient();
 
@@ -175,16 +171,15 @@ export function useUpdateDeal() {
       return (response as any).data;
     },
     onSuccess: (data, variables) => {
-      // Invalidate specific deal
+     
       queryClient.invalidateQueries({ queryKey: ["deal", variables.dealId] });
 
-      // Invalidate deals list
+     
       queryClient.invalidateQueries({ queryKey: ["deals"] });
     },
   });
 }
 
-// Hook to delete deal
 export function useDeleteDeal() {
   const queryClient = useQueryClient();
 
@@ -194,16 +189,15 @@ export function useDeleteDeal() {
       return (response as any).data;
     },
     onSuccess: (data, dealId) => {
-      // Remove from cache
+     
       queryClient.removeQueries({ queryKey: ["deal", dealId] });
 
-      // Invalidate deals list
+     
       queryClient.invalidateQueries({ queryKey: ["deals"] });
     },
   });
 }
 
-// Hook to get deals by stage for pipeline view
 export function useDealsByStage() {
   const { currentOrganization } = useAuthStore();
   const { currentWorkspace } = useWorkspaceContext();
@@ -229,7 +223,7 @@ export function useDealsByStage() {
       const response = await apiClient.get(`/deals?${params.toString()}`);
       const deals = (response as any).data.deals || [];
 
-      // Initialize with all expected stages to prevent "Unknown" sections
+     
       const dealsByStage: Record<string, Deal[]> = {
         qualification: [],
         proposal: [],
@@ -239,12 +233,12 @@ export function useDealsByStage() {
         closed_lost: [],
       };
 
-      // Group deals by stage
+     
       deals.forEach((deal: Deal) => {
         if (dealsByStage[deal.stage]) {
           dealsByStage[deal.stage].push(deal);
         } else {
-          // Handle unexpected stage values by logging them
+         
           console.warn(
             `Unknown deal stage: "${deal.stage}" for deal ${deal.dealId}. Available stages:`,
             Object.keys(dealsByStage)
@@ -266,7 +260,6 @@ export function useDealsByStage() {
   });
 }
 
-// Hook to get deal pipeline stats
 export function useDealStats() {
   const { currentOrganization } = useAuthStore();
   const { currentWorkspace } = useWorkspaceContext();

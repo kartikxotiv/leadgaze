@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       ],
     });
 
-    // Group by entity type for easier frontend consumption
+   
     const groupedConfigs = configs.reduce((acc: any, config: any) => {
       const type = config.entityType;
       if (!acc[type]) {

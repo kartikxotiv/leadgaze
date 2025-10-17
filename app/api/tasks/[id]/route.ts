@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Task, User } from "@/models";
 
-// GET single task (optional convenience)
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -37,7 +36,6 @@ export async function GET(
   }
 }
 
-// PUT update task
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -99,7 +97,6 @@ export async function PUT(
   }
 }
 
-// DELETE task
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

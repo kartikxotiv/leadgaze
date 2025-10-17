@@ -1,9 +1,9 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Add foreign key constraint for last_visited_organization_id in users table
+   
     await queryInterface.addConstraint('users', {
       fields: ['last_visited_organization_id'],
       type: 'foreign key',
@@ -25,7 +25,7 @@ module.exports = {
       console.log('users_last_visited_organization_id_fkey constraint may not exist:', error.message);
     }
 
-    // Alternative approach: Drop constraints by SQL if the above doesn't work
+   
     try {
       await queryInterface.sequelize.query('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_last_visited_organization_id_fkey;');
     } catch (error) {

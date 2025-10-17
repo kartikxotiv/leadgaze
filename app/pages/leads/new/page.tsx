@@ -81,14 +81,14 @@ export default function NewLeadPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Get configurations (note: API returns data grouped by entity type)
+ 
   const statuses = configs?.status || [];
   const sources = configs?.source || [];
   const industries = configs?.industry || [];
   const companySizes = configs?.company_size || [];
   const scoreGrades = configs?.score_grade || [];
 
-  // Real-time validation for better UX
+ 
   const validateField = useCallback(
     (fieldName: string, value: string): string => {
       switch (fieldName) {
@@ -112,13 +112,13 @@ export default function NewLeadPage() {
   const validateForm = useCallback((): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // Only validate required fields for submission
+   
     newErrors.firstName = validateField("firstName", formData.firstName);
     newErrors.lastName = validateField("lastName", formData.lastName);
     newErrors.email = validateField("email", formData.email);
     newErrors.company = validateField("company", formData.company);
 
-    // Filter out empty errors
+   
     const filteredErrors = Object.fromEntries(
       Object.entries(newErrors).filter(([_, value]) => value !== "")
     );
@@ -133,13 +133,13 @@ export default function NewLeadPage() {
     validateField,
   ]);
 
-  // Simplified form handlers
+ 
   const handleFormChange = useCallback(
     (field: string, value: string) => {
       setFormData((prev) => ({ ...prev, [field]: value }));
       setIsDirty(true);
 
-      // Clear field error on change
+     
       if (errors[field]) {
         setErrors((prev) => ({ ...prev, [field]: "" }));
       }
@@ -154,7 +154,7 @@ export default function NewLeadPage() {
         return;
       }
 
-      // Check auth requirements
+     
       if (!currentOrganization?.organizationId && !currentOrganization?.id) {
         toast.error("Organization not found. Please log in again.");
         return;
@@ -166,8 +166,8 @@ export default function NewLeadPage() {
       }
 
       try {
-        // Clean the data - convert empty strings to null for UUID fields
-        // Map to the CreateLeadData interface expected by the API
+       
+       
         const leadData = {
           firstName: formData.firstName.trim(),
           lastName: formData.lastName.trim(),
@@ -175,23 +175,23 @@ export default function NewLeadPage() {
           phone: formData.phone.trim() || undefined,
           businessName: formData.company.trim(),
           companyWebsite: formData.website.trim() || undefined,
-          // Required fields for API
+         
           organizationId: currentOrganization?.organizationId || currentOrganization?.id,
           createdBy: currentUser?.userId,
-          // UUID fields - convert empty strings to undefined to avoid UUID errors
+         
           sourceId: formData.sourceId || undefined,
           industryId: formData.industryId || undefined,
           companySizeId: formData.companySizeId || undefined,
-          productInterest: undefined, // Not implemented in form yet
-          tags: [], // Default empty array instead of undefined
+          productInterest: undefined,
+          tags: [],
           assignedTo: formData.assignedTo || undefined,
           notes: formData.notes.trim() || undefined,
         };
 
-        // Remove undefined fields to keep payload clean
+       
         const cleanedData = Object.fromEntries(
           Object.entries(leadData).filter(([_, value]) => value !== undefined)
-        ) as any; // Type assertion since we know required fields are present
+        ) as any;
 
         await createLeadMutation.mutateAsync(cleanedData);
 
@@ -200,7 +200,7 @@ export default function NewLeadPage() {
         if (saveAndExit) {
           router.push("/pages/leads");
         } else {
-          // Reset form for creating another lead
+         
           setFormData({
             firstName: "",
             lastName: "",
@@ -231,11 +231,11 @@ export default function NewLeadPage() {
     [validateForm, formData, createLeadMutation, router]
   );
 
-  // Simple, focused form rendering
+ 
   const renderForm = () => {
     return (
       <div className="space-y-8">
-        {/* Essential Information */}
+        {}
         <div className="space-y-6">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-50 rounded-lg">
@@ -337,7 +337,7 @@ export default function NewLeadPage() {
           </div>
         </div>
 
-        {/* Optional Fields Toggle */}
+        {}
         <div className="border-t pt-6">
           <Button
             type="button"
@@ -356,7 +356,7 @@ export default function NewLeadPage() {
           </Button>
         </div>
 
-        {/* Optional Fields */}
+        {}
         {showOptionalFields && (
           <div className="space-y-6 animate-in slide-in-from-top-2 duration-200">
             <div className="flex items-center gap-3">
@@ -408,7 +408,7 @@ export default function NewLeadPage() {
                     onChange={(e) =>
                       handleFormChange("website", e.target.value)
                     }
-                    placeholder="https://company.com"
+                    placeholder="https
                     className="pl-10"
                   />
                 </div>
@@ -471,7 +471,7 @@ export default function NewLeadPage() {
     );
   };
 
-  // Show loading state while configs are being fetched
+ 
   if (configsLoading) {
     return (
       <DashboardLayout>
@@ -505,7 +505,7 @@ export default function NewLeadPage() {
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" asChild>
@@ -531,12 +531,12 @@ export default function NewLeadPage() {
           )}
         </div>
 
-        {/* Simplified Form */}
+        {}
         <Card>
           <CardContent className="pt-6">{renderForm()}</CardContent>
         </Card>
 
-        {/* Action Buttons */}
+        {}
         <div className="flex items-center justify-between">
           <Button variant="outline" asChild>
             <Link href="/pages/leads">

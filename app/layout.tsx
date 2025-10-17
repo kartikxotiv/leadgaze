@@ -28,7 +28,7 @@ export default function RootLayout({
           <ThemeProvider>
             <AuthHydrationProvider>
               {children}
-              {/* <SimpleThemeToggle /> */}
+              {}
               <SonnerToaster />
             </AuthHydrationProvider>
           </ThemeProvider>

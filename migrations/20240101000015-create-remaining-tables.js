@@ -1,9 +1,9 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Create tasks table
+   
     await queryInterface.createTable('tasks', {
       task_id: {
         type: Sequelize.UUID,
@@ -86,7 +86,7 @@ module.exports = {
       }
     });
 
-    // Create lead_scores table
+   
     await queryInterface.createTable('lead_scores', {
       score_id: {
         type: Sequelize.UUID,
@@ -142,7 +142,7 @@ module.exports = {
       }
     });
 
-    // Add constraint to lead_scores
+   
     await queryInterface.addConstraint('lead_scores', {
       fields: ['tier'],
       type: 'check',
@@ -154,7 +154,7 @@ module.exports = {
       }
     });
 
-    // Create notifications table
+   
     await queryInterface.createTable('notifications', {
       notification_id: {
         type: Sequelize.UUID,
@@ -241,7 +241,7 @@ module.exports = {
       }
     });
 
-    // Create automation_rules table
+   
     await queryInterface.createTable('automation_rules', {
       rule_id: {
         type: Sequelize.UUID,
@@ -308,7 +308,7 @@ module.exports = {
       }
     });
 
-    // Create scoring_rules table
+   
     await queryInterface.createTable('scoring_rules', {
       rule_id: {
         type: Sequelize.UUID,
@@ -366,7 +366,7 @@ module.exports = {
       }
     });
 
-    // Create org_user_accounts table
+   
     await queryInterface.createTable('org_user_accounts', {
       id: {
         type: Sequelize.UUID,
@@ -415,7 +415,7 @@ module.exports = {
       }
     });
 
-    // Create organization_workspaces table
+   
     await queryInterface.createTable('organization_workspaces', {
       id: {
         type: Sequelize.UUID,
@@ -478,14 +478,14 @@ module.exports = {
       }
     });
 
-    // Add unique constraint to organization_workspaces
+   
     await queryInterface.addConstraint('organization_workspaces', {
       fields: ['organization_id', 'slug'],
       type: 'unique',
       name: 'organization_workspaces_organization_id_slug_key'
     });
 
-    // Add unique constraint to org_user_accounts
+   
     await queryInterface.addConstraint('org_user_accounts', {
       fields: ['organization_id', 'email'],
       type: 'unique',

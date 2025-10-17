@@ -3,9 +3,8 @@ import { apiClient as ApiClient } from "@/lib/api-client";
 import { Workspace } from "@/lib/types";
 import { toast } from "sonner";
 
-// API functions
 const workspaceApi = {
-  // Get all workspaces for an organization
+ 
   getWorkspaces: async (organizationId: string): Promise<Workspace[]> => {
     const response = (await ApiClient.get(
       `/organizations/${organizationId}/workspaces`
@@ -13,7 +12,7 @@ const workspaceApi = {
     return response.workspaces;
   },
 
-  // Get specific workspace
+ 
   getWorkspace: async (
     organizationId: string,
     workspaceId: string
@@ -24,7 +23,7 @@ const workspaceApi = {
     return response.workspace;
   },
 
-  // Create new workspace
+ 
   createWorkspace: async (
     organizationId: string,
     data: { name: string; description?: string }
@@ -36,7 +35,7 @@ const workspaceApi = {
     return response.workspace;
   },
 
-  // Update workspace
+ 
   updateWorkspace: async (
     organizationId: string,
     workspaceId: string,
@@ -53,7 +52,7 @@ const workspaceApi = {
     return response.workspace;
   },
 
-  // Delete workspace (archive)
+ 
   deleteWorkspace: async (
     organizationId: string,
     workspaceId: string
@@ -64,7 +63,6 @@ const workspaceApi = {
   },
 };
 
-// Hooks
 export function useWorkspaces(
   organizationId: string,
   options?: { enabled?: boolean }
@@ -73,7 +71,7 @@ export function useWorkspaces(
     queryKey: ["workspaces", organizationId],
     queryFn: () => workspaceApi.getWorkspaces(organizationId),
     enabled: !!organizationId && options?.enabled !== false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -82,7 +80,7 @@ export function useWorkspace(organizationId: string, workspaceId: string) {
     queryKey: ["workspace", organizationId, workspaceId],
     queryFn: () => workspaceApi.getWorkspace(organizationId, workspaceId),
     enabled: !!organizationId && !!workspaceId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -93,7 +91,7 @@ export function useCreateWorkspace(organizationId: string) {
     mutationFn: (data: { name: string; description?: string }) =>
       workspaceApi.createWorkspace(organizationId, data),
     onSuccess: (newWorkspace) => {
-      // Update the workspaces list in cache
+     
       queryClient.setQueryData(
         ["workspaces", organizationId],
         (oldData: Workspace[] | undefined) => {
@@ -102,7 +100,7 @@ export function useCreateWorkspace(organizationId: string) {
         }
       );
 
-      // Invalidate to ensure fresh data
+     
       queryClient.invalidateQueries({
         queryKey: ["workspaces", organizationId],
       });
@@ -131,13 +129,13 @@ export function useUpdateWorkspace(
       status?: "active" | "inactive" | "archived";
     }) => workspaceApi.updateWorkspace(organizationId, workspaceId, data),
     onSuccess: (updatedWorkspace) => {
-      // Update the workspace in cache
+     
       queryClient.setQueryData(
         ["workspace", organizationId, workspaceId],
         updatedWorkspace
       );
 
-      // Update the workspaces list in cache
+     
       queryClient.setQueryData(
         ["workspaces", organizationId],
         (oldData: Workspace[] | undefined) => {
@@ -168,7 +166,7 @@ export function useDeleteWorkspace(organizationId: string) {
     mutationFn: (workspaceId: string) =>
       workspaceApi.deleteWorkspace(organizationId, workspaceId),
     onSuccess: (_, workspaceId) => {
-      // Remove workspace from cache
+     
       queryClient.setQueryData(
         ["workspaces", organizationId],
         (oldData: Workspace[] | undefined) => {
@@ -177,7 +175,7 @@ export function useDeleteWorkspace(organizationId: string) {
         }
       );
 
-      // Invalidate to ensure fresh data
+     
       queryClient.invalidateQueries({
         queryKey: ["workspaces", organizationId],
       });

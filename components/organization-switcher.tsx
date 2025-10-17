@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
-// Lazy load the heavy CreateOrganizationSheet component
 const CreateOrganizationSheetLazy = dynamic(
   () =>
     import("./create-organization-sheet").then((mod) => ({
@@ -35,7 +34,7 @@ const CreateOrganizationSheetLazy = dynamic(
         <div className="text-gray-500">Loading organization form...</div>
       </div>
     ),
-    ssr: false, // Don't render on server
+    ssr: false,
   }
 );
 
@@ -54,50 +53,50 @@ export function OrganizationSwitcher() {
   const [error, setError] = useState<string | null>(null);
 
   const handleOrganizationSwitch = async (orgId: string) => {
-    // Clear any previous errors
+   
     setError(null);
 
-    // Check if user is authenticated and has a valid token
+   
     if (!isAuthenticated || !token) {
       setError("Your session has expired. Logging out...");
       autoLogout();
       return;
     }
 
-    // Validate organization ID
+   
     if (!orgId || typeof orgId !== "string") {
       setError("Invalid organization selected");
       return;
     }
 
-    // Check if already switching to this organization
+   
     if (switchingToOrgId === orgId) {
       return;
     }
 
-    // Check if already on this organization
+   
     const currentOrgId =
       currentOrganization?.organizationId || currentOrganization?.id;
     if (orgId === currentOrgId) {
       return;
     }
 
-    // Prevent race conditions - only allow one switch at a time
+   
     if (isLoading || switchingToOrgId) {
       return;
     }
 
-    // Set loading states
+   
     setIsLoading(true);
     setSwitchingToOrgId(orgId);
 
     try {
       await switchOrganization(orgId);
 
-      // Success - clear any errors
+     
       setError(null);
     } catch (error) {
-      // Handle specific error types
+     
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -131,16 +130,16 @@ export function OrganizationSwitcher() {
     }
   };
 
-  // Don't render if not authenticated
+ 
   if (!isAuthenticated || !token) {
-    return null; // Simply don't render instead of auto-logout to prevent loops
+    return null;
   }
 
   if (!currentOrganization) return null;
 
   return (
     <>
-      {/* Error Alert */}
+      {}
       {error && (
         <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4" />
@@ -249,7 +248,7 @@ export function OrganizationSwitcher() {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Create Organization Sheet */}
+      {}
       {showCreateSheet && (
         <CreateOrganizationSheetLazy
           open={showCreateSheet}

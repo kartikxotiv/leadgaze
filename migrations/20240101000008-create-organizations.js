@@ -1,6 +1,6 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('organizations', {
@@ -166,7 +166,7 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    // Remove any remaining foreign key constraints that might reference organizations
+   
     try {
       await queryInterface.sequelize.query('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_last_visited_organization_id_fkey;');
       await queryInterface.sequelize.query('ALTER TABLE user_sessions DROP CONSTRAINT IF EXISTS user_sessions_current_organization_id_fkey;');

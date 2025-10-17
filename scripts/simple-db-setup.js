@@ -1,8 +1,7 @@
 const { Sequelize } = require("sequelize");
 
-// Database connection using environment variables
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || 
-  `postgres://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'password'}@${process.env.DB_HOST }:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'crm'}`;
+  `postgres
 
 const sequelize = new Sequelize(DATABASE_URL, {
   dialect: "postgres",
@@ -17,11 +16,11 @@ async function setupDatabase() {
   try {
     console.log("🚀 Setting up simplified database...");
 
-    // Test connection
+   
     await sequelize.authenticate();
     console.log("✅ Database connected!");
 
-    // Define models directly in the script for simplicity
+   
     const User = sequelize.define(
       "User",
       {
@@ -586,14 +585,14 @@ async function setupDatabase() {
         ],
         hooks: {
           beforeSave: async (deal) => {
-            // Calculate weighted value
+           
             deal.weightedValue = (deal.dealValue * deal.probability) / 100;
           },
         },
       }
     );
 
-    // Setup associations
+   
     User.hasMany(Organization, {
       foreignKey: "created_by",
       as: "createdOrganizations",
@@ -664,7 +663,7 @@ async function setupDatabase() {
       as: "createdUser",
     });
 
-    // Sync all tables
+   
     await sequelize.sync({ force: true });
     console.log("✅ All tables created!");
 

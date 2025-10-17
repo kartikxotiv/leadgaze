@@ -1,12 +1,12 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Create pgcrypto extension
+   
     await queryInterface.sequelize.query('CREATE EXTENSION IF NOT EXISTS pgcrypto;');
 
-    // Create all ENUM types
+   
     await queryInterface.sequelize.query(`
       CREATE TYPE activity_related_type AS ENUM (
         'lead', 'deal', 'contact', 'company'
@@ -175,7 +175,7 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    // Drop all ENUM types in reverse order
+   
     const enums = [
       'task_type', 'task_status', 'task_priority', 'enum_users_status',
       'enum_user_organizations_status', 'enum_user_organizations_role',
@@ -193,7 +193,7 @@ module.exports = {
       await queryInterface.sequelize.query(`DROP TYPE IF EXISTS ${enumName} CASCADE;`);
     }
 
-    // Drop extension
+   
     await queryInterface.sequelize.query('DROP EXTENSION IF EXISTS pgcrypto;');
   }
 }; 

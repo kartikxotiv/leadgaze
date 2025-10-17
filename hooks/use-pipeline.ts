@@ -126,12 +126,12 @@ export function usePipeline() {
     }
   }, []);
 
-  // Debounced localStorage saves to improve performance
+ 
   useEffect(() => {
     if (deals.length > 0) {
       const timeoutId = setTimeout(() => {
         localStorage.setItem("crm-deals", JSON.stringify(deals));
-      }, 500); // 500ms debounce
+      }, 500);
       return () => clearTimeout(timeoutId);
     }
   }, [deals]);
@@ -140,7 +140,7 @@ export function usePipeline() {
     if (stages.length > 0) {
       const timeoutId = setTimeout(() => {
         localStorage.setItem("crm-stages", JSON.stringify(stages));
-      }, 500); // 500ms debounce
+      }, 500);
       return () => clearTimeout(timeoutId);
     }
   }, [stages]);

@@ -75,7 +75,7 @@ export default function OverdueTasksPage() {
       description={`${overdueTasks.length} tasks are past their due date and need immediate attention`}
     >
       <div className="space-y-6">
-        {/* Alert Card */}
+        {}
         {overdueTasks.length > 0 && (
           <Card className="border-red-200 bg-red-50">
             <CardHeader>
@@ -91,7 +91,7 @@ export default function OverdueTasksPage() {
           </Card>
         )}
 
-        {/* Overdue Tasks */}
+        {}
         {overdueTasks.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
@@ -174,7 +174,7 @@ export default function OverdueTasksPage() {
           </Card>
         )}
 
-        {/* Quick Actions */}
+        {}
         <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>

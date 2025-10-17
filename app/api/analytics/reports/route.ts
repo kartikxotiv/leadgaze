@@ -39,12 +39,12 @@ async function getTeamPerformanceReport(
 
   const performanceData = await Promise.all(
     users.map(async (user) => {
-      // Build date filter
+     
       const dateFilter: any = {};
       if (dateFrom) dateFilter[Op.gte] = new Date(dateFrom);
       if (dateTo) dateFilter[Op.lte] = new Date(dateTo);
 
-      // Get user's leads
+     
       const userLeads = await Lead.findAll({
         where: {
           assignedTo: (user as any).userId,
@@ -52,7 +52,7 @@ async function getTeamPerformanceReport(
         },
       });
 
-      // Get user's deals
+     
       const userDeals = await Deal.findAll({
         where: {
           userId: (user as any).userId,
@@ -60,7 +60,7 @@ async function getTeamPerformanceReport(
         },
       });
 
-      // Get completed tasks
+     
       const completedTasks = await Task.findAll({
         where: {
           assignedTo: (user as any).userId,
@@ -71,7 +71,7 @@ async function getTeamPerformanceReport(
         },
       });
 
-      // Get qualified status ID for conversion calculation
+     
       const qualifiedStatus = await LeadConfig.findOne({
         where: { entityType: "status", entityValue: "qualified" },
       });
@@ -111,7 +111,7 @@ async function getLeadSourcesReport(
   dateFrom?: string | null,
   dateTo?: string | null
 ) {
-  // Build date filter
+ 
   const dateFilter: any = {};
   if (dateFrom) dateFilter[Op.gte] = new Date(dateFrom);
   if (dateTo) dateFilter[Op.lte] = new Date(dateTo);
@@ -170,7 +170,7 @@ async function getLeadSourcesReport(
 }
 
 async function getPipelineAnalysisReport() {
-  // Note: This system doesn't use pipeline_stages table, deals have direct stage enum
+ 
   const stageNames = [
     "qualification",
     "proposal",
@@ -220,7 +220,7 @@ async function getConversionFunnelReport(
   dateFrom?: string | null,
   dateTo?: string | null
 ) {
-  // Build date filter
+ 
   const dateFilter: any = {};
   if (dateFrom) dateFilter[Op.gte] = new Date(dateFrom);
   if (dateTo) dateFilter[Op.lte] = new Date(dateTo);
@@ -269,7 +269,7 @@ async function getOverviewReport(
   dateFrom?: string | null,
   dateTo?: string | null
 ) {
-  // This combines multiple report types for a comprehensive overview
+ 
   const [teamPerf, leadSources, pipeline, funnel] = await Promise.all([
     getTeamPerformanceReport(dateFrom, dateTo),
     getLeadSourcesReport(dateFrom, dateTo),

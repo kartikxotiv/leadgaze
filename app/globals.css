@@ -86,7 +86,7 @@
   }
 }
 
-/* Custom animations for signup page */
+
 @layer utilities {
   @keyframes fade-in {
     from {
@@ -155,7 +155,7 @@
     animation: scale-in 0.3s ease-out;
   }
 
-  /* Fix for Radix Dialog pointer-events bug */
+  
   body:not([data-radix-scroll-area-viewport]):not([data-modal-open]) {
     pointer-events: auto !important;
   }

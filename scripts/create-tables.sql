@@ -1,4 +1,4 @@
--- Create users table
+
 CREATE TABLE IF NOT EXISTS users (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create leads table
+
 CREATE TABLE IF NOT EXISTS leads (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     company_name VARCHAR(255) NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS leads (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create pipeline_stages table
+
 CREATE TABLE IF NOT EXISTS pipeline_stages (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS pipeline_stages (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create deals table
+
 CREATE TABLE IF NOT EXISTS deals (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS deals (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create tasks table
+
 CREATE TABLE IF NOT EXISTS tasks (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create activities table for audit trail
+
 CREATE TABLE IF NOT EXISTS activities (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS activities (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Insert default pipeline stages
+
 INSERT INTO pipeline_stages (name, position, color) VALUES
 ('New', 1, 'bg-blue-500'),
 ('Contacted', 2, 'bg-yellow-500'),
@@ -95,7 +95,7 @@ INSERT INTO pipeline_stages (name, position, color) VALUES
 ('Won', 7, 'bg-emerald-500'),
 ('Lost', 8, 'bg-gray-500');
 
--- Insert sample users
+
 INSERT INTO users (email, name, role) VALUES
 ('sarah.johnson@company.com', 'Sarah Johnson', 'BDM'),
 ('mike.brown@company.com', 'Mike Brown', 'SDR'),

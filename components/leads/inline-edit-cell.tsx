@@ -194,7 +194,6 @@ export function InlineEditCell({
   );
 }
 
-// Specialized components for common use cases
 export function InlineEditText({
   value,
   onSave,
@@ -307,7 +306,6 @@ export function InlineEditScore({
   );
 }
 
-// Direct Dropdown Select - NO edit mode, saves immediately on selection
 export function DirectSelect({
   value,
   options,
@@ -383,7 +381,6 @@ export function DirectSelect({
   );
 }
 
-// Direct Score Input - saves automatically when you finish typing
 export function DirectScore({
   value,
   onSave,
@@ -405,7 +402,7 @@ export function DirectScore({
 
   const handleSave = async (newValue: string) => {
     const numValue = parseInt(newValue) || 0;
-    const clampedValue = Math.max(0, Math.min(100, numValue)); // Clamp between 0-100
+    const clampedValue = Math.max(0, Math.min(100, numValue));
 
     if (clampedValue === value) return;
 
@@ -416,7 +413,7 @@ export function DirectScore({
       toast.success("Score updated!");
     } catch (error) {
       toast.error("Failed to update score");
-      setLocalValue(String(value || 0)); // Revert on error
+      setLocalValue(String(value || 0));
     } finally {
       setIsLoading(false);
     }
@@ -426,19 +423,19 @@ export function DirectScore({
     const newValue = e.target.value;
     setLocalValue(newValue);
 
-    // Clear existing timeout
+   
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
-    // Set new timeout to save after 1 second of no typing
+   
     timeoutRef.current = setTimeout(() => {
       handleSave(newValue);
     }, 1000);
   };
 
   const handleBlur = () => {
-    // Save immediately when user clicks away
+   
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -478,7 +475,6 @@ export function DirectScore({
   );
 }
 
-// Direct Text Input - saves automatically when you finish typing
 export function DirectText({
   value,
   onSave,
@@ -510,7 +506,7 @@ export function DirectText({
       toast.success("Updated successfully!");
     } catch (error) {
       toast.error("Failed to update");
-      setLocalValue(value || ""); // Revert on error
+      setLocalValue(value || "");
     } finally {
       setIsLoading(false);
     }
@@ -520,19 +516,19 @@ export function DirectText({
     const newValue = e.target.value;
     setLocalValue(newValue);
 
-    // Clear existing timeout
+   
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
-    // Set new timeout to save after 1.5 seconds of no typing
+   
     timeoutRef.current = setTimeout(() => {
       handleSave(newValue);
     }, 1500);
   };
 
   const handleBlur = () => {
-    // Save immediately when user clicks away
+   
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }

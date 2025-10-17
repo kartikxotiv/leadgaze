@@ -113,7 +113,7 @@ export default function EmailHistoryPage() {
       }
     >
       <div className="space-y-6">
-        {/* Stats Cards */}
+        {}
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
@@ -157,7 +157,7 @@ export default function EmailHistoryPage() {
           </Card>
         </div>
 
-        {/* Email History Table */}
+        {}
         <Card>
           <CardHeader>
             <CardTitle>Email Communications</CardTitle>

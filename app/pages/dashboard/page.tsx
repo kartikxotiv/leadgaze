@@ -77,22 +77,22 @@ import {
 import Link from "next/link";
 
 export default function DashboardPage() {
-  // State first
+ 
   const [selectedTimeRange, setSelectedTimeRange] = useState("7d");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Note: Auth protection is handled by middleware
-  // This page only renders for authenticated users
+ 
+ 
   const { user, currentOrganization } = useAuth();
   const { data: stats, isLoading: statsLoading } =
     useDashboardStats(selectedTimeRange);
   const { data: activities, isLoading: activitiesLoading } =
     useRecentActivities(6);
 
-  // Prevent navigation back to auth pages
+ 
   usePreventAuthBack();
 
-  // Chart colors
+ 
   const COLORS = {
     primary: "#3b82f6",
     secondary: "#10b981",
@@ -102,7 +102,7 @@ export default function DashboardPage() {
     muted: "#6b7280",
   };
 
-  // Pipeline data for charts
+ 
   const pipelineData = useMemo(() => {
     if (!stats?.byStage) return [];
     return [
@@ -135,7 +135,7 @@ export default function DashboardPage() {
     ];
   }, [stats]);
 
-  // Use real trend data from API or fallback to mock data
+ 
   const trendData = stats?.trendData || [
     { month: "Jan", leads: 45, deals: 12, revenue: 24000 },
     { month: "Feb", leads: 52, deals: 18, revenue: 32000 },
@@ -147,10 +147,10 @@ export default function DashboardPage() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    // Trigger refetch of dashboard data
+   
     try {
-      // You can add queryClient.invalidateQueries here if you have access to it
-      window.location.reload(); // Simple refresh for now
+     
+      window.location.reload();
     } catch (error) {
       console.error("Failed to refresh:", error);
     } finally {
@@ -158,7 +158,7 @@ export default function DashboardPage() {
     }
   };
 
-  // Format currency
+ 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -170,7 +170,7 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* Breadcrumb */}
+        {}
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -179,7 +179,7 @@ export default function DashboardPage() {
           </BreadcrumbList>
         </Breadcrumb>
 
-        {/* Clean Header with Welcome */}
+        {}
         <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6">
           <div className="relative z-10">
             <div className="flex items-center justify-between">
@@ -198,15 +198,7 @@ export default function DashboardPage() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                {/* {currentOrganization?.subscriptionStatus === "trial" && (
-                  <Button
-                    size="sm"
-                    className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-                  >
-                    <Star className="h-4 w-4 mr-2" />
-                    Upgrade Plan
-                  </Button>
-                )} */}
+                {}
                 <Badge
                   variant="secondary"
                   className="bg-gray-100 text-gray-700"
@@ -219,73 +211,12 @@ export default function DashboardPage() {
           <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-blue-400/10 to-indigo-600/10 rounded-full blur-2xl"></div>
         </div>
 
-        {/* Dashboard Controls */}
-        {/* <div className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Analytics Overview
-            </h2>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={selectedTimeRange === "7d" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedTimeRange("7d")}
-              >
-                7 Days
-              </Button>
-              <Button
-                variant={selectedTimeRange === "30d" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedTimeRange("30d")}
-              >
-                30 Days
-              </Button>
-              <Button
-                variant={selectedTimeRange === "90d" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedTimeRange("90d")}
-              >
-                90 Days
-              </Button>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-              />
-              Refresh
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export as PDF
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export as CSV
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div> */}
+        {}
+        {}
 
-        {/* Key Metrics Cards */}
+        {}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          {/* Total Leads */}
+          {}
           <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 group">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -307,7 +238,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Pipeline Value */}
+          {}
           <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 group">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -331,7 +262,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Active Deals */}
+          {}
           <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 group">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -351,7 +282,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Win Rate */}
+          {}
           <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 group">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -373,7 +304,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Conversion Rate */}
+          {}
           <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 group">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -396,9 +327,9 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Charts and Analytics Section */}
+        {}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Pipeline Distribution Chart */}
+          {}
           <Card className="shadow-lg border-0">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div>
@@ -463,7 +394,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Performance Trends Chart */}
+          {}
           <Card className="shadow-lg border-0">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div>
@@ -532,9 +463,9 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Activity Feed and Quick Actions in 2 columns */}
+        {}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Recent Activities - Takes 3 columns */}
+          {}
           <Card className="lg:col-span-3 shadow-lg border-0">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <div>
@@ -633,7 +564,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Quick Actions - Takes 1 column */}
+          {}
           <Card className="shadow-lg border-0">
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">

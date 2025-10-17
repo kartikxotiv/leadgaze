@@ -80,7 +80,7 @@ export function useUsers() {
     return users.filter((user) => user.role === role);
   };
 
-  // Mock current user - in a real app this would come from auth
+ 
   const currentUser = users.find((user) => user.role === "Admin") || users[0];
 
   return {

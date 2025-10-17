@@ -3,7 +3,7 @@ import { User } from "@/models";
 
 export async function GET() {
   try {
-    // Test database connection by counting users
+   
     const userCount = await User.count();
 
     return NextResponse.json({

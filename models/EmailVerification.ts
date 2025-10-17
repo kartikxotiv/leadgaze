@@ -42,7 +42,7 @@ export default (sequelize: Sequelize) => {
     },
     {
       tableName: "email_verifications",
-      timestamps: false, // We handle timestamps manually
+      timestamps: false,
       indexes: [
         { unique: true, fields: ["token"] },
         { fields: ["user_id"] },
@@ -51,7 +51,7 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Instance methods
+ 
   (EmailVerification as any).prototype.isExpired = function () {
     return new Date() > this.expiresAt;
   };
@@ -65,11 +65,11 @@ export default (sequelize: Sequelize) => {
     return this.save();
   };
 
-  // Static methods
+ 
   (EmailVerification as any).createVerification = function (userId: string) {
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours expiration
+    expiresAt.setHours(expiresAt.getHours() + 24);
 
     return this.create({
       userId,
@@ -114,7 +114,7 @@ export default (sequelize: Sequelize) => {
     });
   };
 
-  // Associations
+ 
   (EmailVerification as any).associate = (models: any) => {
     EmailVerification.belongsTo(models.User, {
       foreignKey: "user_id",

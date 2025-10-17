@@ -168,7 +168,7 @@ export function ActivityLogForm({
 
       toast.success(`${selectedActivityType?.label} logged successfully!`);
 
-      // Reset form
+     
       setFormData({
         activityType: activeTab,
         relatedType,
@@ -221,7 +221,7 @@ export function ActivityLogForm({
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Activity Type Tabs */}
+            {}
             <Tabs value={activeTab} onValueChange={handleTabChange}>
               <TabsList className="grid w-full grid-cols-5">
                 {activityTypes.map((type) => {
@@ -246,9 +246,9 @@ export function ActivityLogForm({
                   className="space-y-4 mt-6"
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Left Column */}
+                    {}
                     <div className="space-y-4">
-                      {/* Subject */}
+                      {}
                       <div>
                         <Label htmlFor="subject">Subject *</Label>
                         <Input
@@ -265,7 +265,7 @@ export function ActivityLogForm({
                         />
                       </div>
 
-                      {/* Outcome */}
+                      {}
                       {type.outcomes.length > 0 && (
                         <div>
                           <Label htmlFor="outcome">Outcome</Label>
@@ -292,7 +292,7 @@ export function ActivityLogForm({
                         </div>
                       )}
 
-                      {/* Direction (for calls/emails) */}
+                      {}
                       {(type.type === "call" || type.type === "email") && (
                         <div>
                           <Label htmlFor="direction">Direction</Label>
@@ -316,7 +316,7 @@ export function ActivityLogForm({
                         </div>
                       )}
 
-                      {/* Duration (for calls/meetings) */}
+                      {}
                       {(type.type === "call" || type.type === "meeting") && (
                         <div>
                           <Label htmlFor="duration">Duration (minutes)</Label>
@@ -339,9 +339,9 @@ export function ActivityLogForm({
                       )}
                     </div>
 
-                    {/* Right Column */}
+                    {}
                     <div className="space-y-4">
-                      {/* Priority */}
+                      {}
                       <div>
                         <Label htmlFor="priority">Priority</Label>
                         <Select
@@ -385,7 +385,7 @@ export function ActivityLogForm({
                         </Select>
                       </div>
 
-                      {/* Next Follow-up Date */}
+                      {}
                       <div>
                         <Label htmlFor="followup">Next Follow-up Date</Label>
                         <Input
@@ -401,7 +401,7 @@ export function ActivityLogForm({
                         />
                       </div>
 
-                      {/* File Upload Placeholder */}
+                      {}
                       <div>
                         <Label>Attachments</Label>
                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
@@ -417,7 +417,7 @@ export function ActivityLogForm({
                     </div>
                   </div>
 
-                  {/* Description */}
+                  {}
                   <div>
                     <Label htmlFor="description">Details & Notes</Label>
                     <Textarea
@@ -437,7 +437,7 @@ export function ActivityLogForm({
               ))}
             </Tabs>
 
-            {/* Actions */}
+            {}
             <div className="flex items-center justify-end gap-3 pt-4 border-t">
               {onCancel && (
                 <Button type="button" variant="outline" onClick={onCancel}>

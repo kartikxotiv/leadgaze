@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import dynamic from "next/dynamic";
 
-// Dynamic import for heavy DealsPipeline
 const DealsPipeline = dynamic(
   () =>
     import("@/components/deals/deals-pipeline").then((mod) => ({
@@ -74,7 +73,7 @@ export default function DealsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Breadcrumb */}
+        {}
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -87,11 +86,11 @@ export default function DealsPage() {
           </BreadcrumbList>
         </Breadcrumb>
 
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              {/* Sales Pipeline  */}
+              {}
               Deals
             </h1>
             <p className="text-muted-foreground mt-2">
@@ -100,7 +99,7 @@ export default function DealsPage() {
           </div>
         </div>
 
-        {/* Stats Overview */}
+        {}
         {statsLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (
@@ -227,7 +226,7 @@ export default function DealsPage() {
           </div>
         ) : null}
 
-        {/* Main Content */}
+        {}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         
         

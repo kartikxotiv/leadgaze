@@ -42,7 +42,6 @@ import { useLeads, useLeadConfigs, useUpdateLead } from "@/hooks/use-leads";
 import dynamic from "next/dynamic";
 import { Switch } from "@/components/ui/switch";
 
-// Dynamic import for heavy KanbanPipeline
 const KanbanPipeline = dynamic(
   () =>
     import("@/components/leads/kanban-pipeline").then((mod) => ({
@@ -80,7 +79,6 @@ import {
 import { ActivityLogForm } from "@/components/activities/activity-log-form";
 import { FollowUpScheduler } from "@/components/tasks/follow-up-scheduler";
 import { CreateDealForm } from "@/components/deals/create-deal-form";
-// Lead scoring dashboard temporarily disabled due to API issues
 import { BulkImportDialog } from "@/components/leads/bulk-import-dialog";
 import {
   Plus,
@@ -127,10 +125,10 @@ export default function LeadsPage() {
   const { data: configs } = useLeadConfigs();
   const updateLeadMutation = useUpdateLead();
 
-  // Prevent navigation back to auth pages
+ 
   usePreventAuthBack();
 
-  // Extract leads array from the response data structure
+ 
   const leads = leadsData?.leads || [];
   const safeLeads = Array.isArray(leads) ? leads : [];
 
@@ -157,7 +155,7 @@ export default function LeadsPage() {
   }>({ open: false });
   const [bulkImportDialog, setBulkImportDialog] = useState(false);
 
-  // Column customization state
+ 
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
     'name', 
     'email',
@@ -167,10 +165,10 @@ export default function LeadsPage() {
     'grade', 
     'score',
     'source',
-    // 'lastActivity'
+   
   ]);
 
-  // Define table columns
+ 
   const tableColumns = [
     { id: 'name', label: 'Lead Name' },
     { id: 'email', label: 'Email' },
@@ -180,10 +178,10 @@ export default function LeadsPage() {
     { id: 'grade', label: 'Grade' },
     { id: 'score', label: 'Score' },
     { id: 'source', label: 'Source' },
-    // { id: 'lastActivity', label: 'Last Activity' },
+   
   ];
 
-  // Column toggle handlers
+ 
   const handleToggleColumn = (columnId: string) => {
     setVisibleColumns(prev => 
       prev.includes(columnId) 
@@ -193,17 +191,17 @@ export default function LeadsPage() {
   };
 
   const handleApplyColumns = () => {
-    // Columns are already updated via handleToggleColumn
-    // This function can be used for additional logic if needed
+   
+   
     console.log('Applied columns:', visibleColumns);
   };
 
-  // Get configurations (note: API returns data grouped by entity type)
+ 
   const statuses = configs?.status || [];
   const sources = configs?.source || [];
   const grades = configs?.score_grade || [];
 
-  // Status color mapping (moved above useMemo)
+ 
   const getStatusColor = (statusName: string) => {
     switch (statusName?.toLowerCase()) {
       case "new":
@@ -223,7 +221,7 @@ export default function LeadsPage() {
     }
   };
 
-  // Grade color mapping (moved above useMemo)
+ 
   const getGradeColor = (gradeName: string) => {
     switch (gradeName?.toLowerCase()) {
       case "hot":
@@ -237,7 +235,7 @@ export default function LeadsPage() {
     }
   };
 
-  // Helper function to get short, clean status names
+ 
   const getShortStatusName = (entityValue: string) => {
     const statusMap: Record<string, string> = {
       new: "New",
@@ -256,7 +254,7 @@ export default function LeadsPage() {
     );
   };
 
-  // Create filter configurations for enhanced filters (Status removed - handled by tabs)
+ 
   const filterConfigs: FilterConfig[] = useMemo(
     () => [
       {
@@ -304,10 +302,10 @@ export default function LeadsPage() {
     [statuses, sources, grades, safeLeads]
   );
 
-  // Filter and sort leads
+ 
   const filteredLeads = useMemo(() => {
     let filtered = safeLeads.filter((lead) => {
-      // Search filter
+     
       const matchesSearch =
         lead.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -316,7 +314,7 @@ export default function LeadsPage() {
 
       if (!matchesSearch) return false;
 
-      // Enhanced filters (Status filtering handled by tabs)
+     
       const sourceFilter = activeFilters.find((f) => f.filterId === "source");
       const gradeFilter = activeFilters.find((f) => f.filterId === "grade");
 
@@ -327,7 +325,7 @@ export default function LeadsPage() {
         !gradeFilter?.values.length ||
         gradeFilter.values.includes(lead.scoreGradeId || "");
 
-      // Tab filtering
+     
       const statusConfig = statuses.find((s: any) => s.id === lead.statusId);
       const gradeConfig = grades.find((g: any) => g.id === lead.scoreGradeId);
 
@@ -358,7 +356,7 @@ export default function LeadsPage() {
       return matchesSource && matchesGrade && matchesTab;
     });
 
-    // Sorting
+   
     if (sortBy) {
       filtered.sort((a, b) => {
         let aValue: any;
@@ -406,7 +404,7 @@ export default function LeadsPage() {
     grades,
   ]);
 
-  // Quick stats
+ 
   const stats = useMemo(() => {
     const total = safeLeads.length;
     const newLeads = safeLeads.filter((lead) => {
@@ -425,7 +423,7 @@ export default function LeadsPage() {
     return { total, newLeads, qualified, hotLeads };
   }, [safeLeads, statuses, grades]);
 
-  // Quick status update
+ 
   const handleQuickStatusUpdate = async (
     leadId: string,
     newStatusId: string
@@ -441,7 +439,7 @@ export default function LeadsPage() {
     }
   };
 
-  // Handle inline field updates
+ 
   const handleFieldUpdate = async (
     leadId: string,
     field: string,
@@ -450,7 +448,7 @@ export default function LeadsPage() {
     try {
       const updateData: Record<string, any> = {};
 
-      // Handle different field types
+     
       if (field === "leadScore") {
         updateData[field] = parseInt(value) || 0;
       } else {
@@ -466,7 +464,7 @@ export default function LeadsPage() {
     }
   };
 
-  // Enhanced filter handlers
+ 
   const handleFilterChange = (filterId: string, values: string[]) => {
     const filterConfig = filterConfigs.find((f) => f.id === filterId);
     if (!filterConfig) return;
@@ -484,7 +482,7 @@ export default function LeadsPage() {
       };
 
       if (existingIndex >= 0) {
-        // Update existing filter
+       
         if (values.length === 0) {
           return prev.filter((_, index) => index !== existingIndex);
         }
@@ -492,12 +490,12 @@ export default function LeadsPage() {
         newFilters[existingIndex] = newFilter;
         return newFilters;
       } else {
-        // Add new filter
+       
         return values.length > 0 ? [...prev, newFilter] : prev;
       }
     });
 
-    // Update legacy filter states for backward compatibility
+   
     if (filterId === "source") {
       setSourceFilter(values.length === 1 ? values[0] : "all");
     } else if (filterId === "grade") {
@@ -551,7 +549,7 @@ export default function LeadsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Breadcrumb */}
+        {}
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -564,105 +562,31 @@ export default function LeadsPage() {
           </BreadcrumbList>
         </Breadcrumb>
 
-        {/* Enhanced Header with Actions */}
+        {}
         <div className="relative overflow-hidden p-0">
           <div className="relative z-10">
             <div className="flex flex-col gap-6 md:flex-row  md:justify-between ">
               <div className="">
-                {/* <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
-                  Lead Management
-                </h1> */}
+                {}
 
 
-                {/* <p className="text-lg text-gray-600 dark:text-gray-300 mt-2">
-                  Track and nurture your sales prospects through the pipeline
-                </p> */}
-                {/* <div className="flex flex-col sm:flex-row gap-2 mt-2 overflow-x-auto">
-                  <StatCard
-                    icon={Target}
-                    iconColor="text-blue-600"
-                    bgColor="bg-blue-500/20"
-                    value={safeLeads.length}
-                    label="Total Leads"
-                  />
-
-                  <StatCard
-                    icon={Zap}
-                    iconColor="text-red-600"
-                    bgColor="bg-red-500/20"
-                    value={
-                      filteredLeads.filter(
-                        (lead) => lead.scoreGrade?.entityValue === "hot"
-                      ).length
-                    }
-                    label="Hot Leads"
-                  />
-
-                  <StatCard
-                    icon={UserPlus}
-                    iconColor="text-green-600"
-                    bgColor="bg-green-500/20"
-                    value={
-                      filteredLeads.filter(
-                        (lead) => lead.status?.entityValue === "New"
-                      ).length
-                    }
-                    label="New Leads"
-                  />
-
-                  <StatCard
-                    icon={CheckCircle2}
-                    iconColor="text-purple-600"
-                    bgColor="bg-purple-500/20"
-                    value={
-                      filteredLeads.filter(
-                        (lead) => lead.status?.entityValue === "Qualified"
-                      ).length
-                    }
-                    label="Qualified"
-                  />
-                </div> */}
+                {}
+                {}
               </div>
               <div className="flex  flex-row  gap-3   ">
-                {/* <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-white/50 backdrop-blur-sm border-gray-200/50 hover:bg-white/80 transition-all duration-200"
-                >
-                  <Download className="h-4 w-4" />
-                  Export
-                </Button> */}
+                {}
                 <div className="flex gap-2">
-                  {/* <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setBulkImportDialog(true)}
-                    className="flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Bulk Import
-                  </Button> */}
-                  {/* <Button
-                    asChild
-                    size="sm"
-                    className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-                  >
-                    <Link href="/pages/leads/new">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Lead
-                    </Link>
-                  </Button> */}
+                  {}
+                  {}
                 </div>
               </div>
             </div>
           </div>
-          {/* Background decoration */}
-          {/* <div className="absolute top-0 right-0 -translate-y-12 translate-x-12">
-            <div className="w-96 h-96 bg-gradient-to-br from-indigo-400/20 to-blue-600/20 rounded-full blur-3xl"></div>
-          </div> */}
+          {}
+          {}
         </div>
 
-        {/* Filters and Tabs */}
+        {}
         <Card>
           <CardContent className="pt-6">
             <Tabs
@@ -670,58 +594,10 @@ export default function LeadsPage() {
               onValueChange={setActiveTab}
               className="space-y-4"
             >
-              {/* <TabsList className="grid w-full grid-cols-6">
-                <TabsTrigger value="all">All Leads</TabsTrigger>
-                <TabsTrigger value="new">New</TabsTrigger>
-                <TabsTrigger value="active">Active</TabsTrigger>
-                <TabsTrigger value="qualified">Qualified</TabsTrigger>
-                <TabsTrigger value="hot">Hot Prospects</TabsTrigger>
-                <TabsTrigger
-                  value="scoring"
-                  className="flex items-center gap-2"
-                >
-                  <Target className="h-4 w-4" />
-                  Lead Scoring
-                </TabsTrigger>
-              </TabsList>
+              {}
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 bg-white dark:bg-gray-900 rounded-lg p-1 border border-gray-200 dark:border-gray-700">
-                  <Button
-                    variant={viewMode === "table" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setViewMode("table")}
-                    className="flex items-center gap-2"
-                  >
-                    <List className="h-4 w-4" />
-                    Table View
-                  </Button>
-                  <Button
-                    variant={viewMode === "kanban" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setViewMode("kanban")}
-                    className="flex items-center gap-2"
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                    kanban View
-                  </Button>
-                </div>
-              </div> */}
-
-              {/* Enhanced Filters */}
-              {/* <EnhancedFilters
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-                filters={filterConfigs}
-                activeFilters={activeFilters}
-                onFilterChange={handleFilterChange}
-                onClearFilters={handleClearFilters}
-                sortBy={sortBy}
-                sortOrder={sortOrder}
-                onSortChange={handleSortChange}
-                resultCount={filteredLeads.length}
-                totalCount={safeLeads.length}
-              /> */}
+              {}
+              {}
 
               <div className="flex gap-4 justify-between">
                 <div className="">
@@ -744,7 +620,7 @@ export default function LeadsPage() {
                 
 
 
-                  {/* Columns Customizer Dropdown */}
+                  {}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -798,7 +674,7 @@ export default function LeadsPage() {
 
 
               <TabsContent value={activeTab} className="space-y-4">
-                {/* Conditional View Rendering */}
+                {}
                 {viewMode === "kanban" ? (
                   <div className="h-[calc(100vh-300px)] min-h-[600px]">
                     <KanbanPipeline
@@ -806,13 +682,13 @@ export default function LeadsPage() {
                       statuses={statuses}
                       onLeadUpdate={handleQuickStatusUpdate}
                       onLeadClick={(lead) => {
-                        // You can implement a quick edit modal here
+                       
                         console.log("Quick edit lead:", lead);
                       }}
                     />
                   </div>
                 ) : (
-                  /* Leads Table */
+                  
                   <div className="border rounded-lg">
                     <Table>
                       <TableHeader>
@@ -826,7 +702,7 @@ export default function LeadsPage() {
                           {visibleColumns.includes('grade') && <TableHead>Grade</TableHead>}
                           {visibleColumns.includes('score') && <TableHead>Score</TableHead>}
                           {visibleColumns.includes('source') && <TableHead>Source</TableHead>}
-                          {/* {visibleColumns.includes('lastActivity') && <TableHead>Last Activity</TableHead>} */}
+                          {}
 
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -875,14 +751,7 @@ export default function LeadsPage() {
                                 <TableCell>
                                   <div className="flex items-center gap-3">
                                     
-                                    {/* <Avatar className="h-8 w-8">
-                                      <AvatarFallback>
-                                        {(
-                                          lead.firstName?.[0] +
-                                          lead.lastName?.[0]
-                                        ).toUpperCase()}
-                                      </AvatarFallback>
-                                    </Avatar> */}
+                                    {}
 
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-2">
@@ -966,18 +835,7 @@ export default function LeadsPage() {
                                       placeholder="Enter company name..."
                                       className="font-medium"
                                     />
-                                    {/* <DirectText
-                                      value={lead.jobTitle}
-                                      onSave={(value) =>
-                                        handleFieldUpdate(
-                                          lead.leadId,
-                                          "jobTitle",
-                                          value
-                                        )
-                                      }
-                                      placeholder="Enter job title..."
-                                      className="text-sm text-muted-foreground"
-                                    /> */}
+                                    {}
                                   </div>
                                 </TableCell>
                                 )}
@@ -1030,26 +888,7 @@ export default function LeadsPage() {
                                         lead.leadScore ||
                                         0}
                                     </span>
-                                    {/* {lead.scoreData?.tier && (
-                                      <Badge
-                                        variant="outline"
-                                        className={`text-xs ${
-                                          lead.scoreData.tier === "burning"
-                                            ? "bg-red-100 text-red-800"
-                                            : lead.scoreData.tier === "hot"
-                                            ? "bg-orange-100 text-orange-800"
-                                            : lead.scoreData.tier === "warm"
-                                            ? "bg-yellow-100 text-yellow-800"
-                                            : "bg-blue-100 text-blue-800"
-                                        }`}
-                                      >
-                                        {lead.scoreData.tier === "burning" &&
-                                          "🔥"}
-                                        {lead.scoreData.tier === "hot" && "🌶️"}
-                                        {lead.scoreData.tier === "warm" && "🟡"}
-                                        {lead.scoreData.tier === "cold" && "🧊"}
-                                      </Badge>
-                                    )} */}
+                                    {}
                                   </div>
                                 </TableCell>
                                 )}
@@ -1060,15 +899,7 @@ export default function LeadsPage() {
                                   </Badge>
                                 </TableCell>
                                 )}
-                                {/* {visibleColumns.includes('lastActivity') && (
-                                <TableCell>
-                                  <span className="text-sm text-muted-foreground">
-                                    {new Date(
-                                      lead.updatedAt
-                                    ).toLocaleDateString()}
-                                  </span>
-                                </TableCell>
-                                )} */}
+                                {}
                                 <TableCell className="text-right">
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -1225,7 +1056,7 @@ export default function LeadsPage() {
         </Card>
       </div>
 
-      {/* Activity Log Dialog */}
+      {}
       <Dialog
         open={activityDialog.open}
         onOpenChange={(open) =>
@@ -1250,7 +1081,7 @@ export default function LeadsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Follow-Up Scheduler Dialog */}
+      {}
       <Dialog
         open={followUpDialog.open}
         onOpenChange={(open) =>
@@ -1279,7 +1110,7 @@ export default function LeadsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Create Deal Dialog */}
+      {}
       <Dialog
         open={createDealDialog.open}
         onOpenChange={(open) =>
@@ -1303,14 +1134,14 @@ export default function LeadsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Bulk Import Dialog */}
+      {}
       <BulkImportDialog
         open={bulkImportDialog}
         onOpenChange={setBulkImportDialog}
         onImportComplete={(results) => {
           console.log("Import completed:", results);
-          // Refetch leads data to show new imports
-          // You can add a refetch function here
+         
+         
         }}
       />
     </DashboardLayout>

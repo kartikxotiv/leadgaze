@@ -4,10 +4,7 @@ import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
-/**
- * Hook to prevent navigation back to auth pages when user is authenticated
- * This provides additional client-side protection beyond middleware
- */
+
 export function usePreventAuthBack() {
   const router = useRouter();
   const pathname = usePathname();
@@ -16,7 +13,7 @@ export function usePreventAuthBack() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    // Auth-related routes that should be blocked for authenticated users
+   
     const blockedRoutes = [
       "/pages/welcome",
       "/pages/auth/sign-in",
@@ -25,7 +22,7 @@ export function usePreventAuthBack() {
       "/pages/auth/reset-password",
     ];
 
-    // Check if current path is a blocked route
+   
     const isBlockedRoute = blockedRoutes.some((route) =>
       pathname.startsWith(route)
     );
@@ -36,9 +33,9 @@ export function usePreventAuthBack() {
       return;
     }
 
-    // Handle browser back/forward navigation
+   
     const handlePopState = (event: PopStateEvent) => {
-      // Get the current pathname after navigation
+     
       setTimeout(() => {
         const currentPath = window.location.pathname;
         const isNavigatingToBlockedRoute = blockedRoutes.some((route) =>
@@ -47,22 +44,22 @@ export function usePreventAuthBack() {
 
         if (isNavigatingToBlockedRoute) {
           console.log("🚫 Blocking back navigation to auth page");
-          // Push dashboard route to history and navigate
+         
           window.history.pushState(null, "", "/pages/dashboard");
           router.replace("/pages/dashboard");
         }
       }, 0);
     };
 
-    // Add event listener for browser navigation
+   
     window.addEventListener("popstate", handlePopState);
 
-    // Push current state to history to prevent direct back navigation
+   
     if (pathname === "/pages/dashboard") {
       window.history.pushState(null, "", pathname);
     }
 
-    // Cleanup
+   
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };

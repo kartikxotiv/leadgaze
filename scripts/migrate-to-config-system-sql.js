@@ -1,7 +1,6 @@
 const { Sequelize } = require("sequelize");
 const pg = require("pg");
 
-// Database connection
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: "postgres",
   dialectModule: pg,
@@ -12,13 +11,13 @@ async function migrateToConfigSystemSQL() {
   try {
     console.log("🔄 Starting migration to config-based system...");
 
-    // Test connection
+   
     await sequelize.authenticate();
     console.log("✅ Database connected!");
 
     console.log("🗑️  Dropping existing tables with foreign key constraints...");
 
-    // Drop tables in reverse dependency order
+   
     const tablesToDrop = [
       "deals",
       "leads",
@@ -29,7 +28,7 @@ async function migrateToConfigSystemSQL() {
       "user_organizations",
       "organizations",
       "users",
-      // Config tables (if they exist)
+     
       "user_invitations",
       "email_verifications",
       "password_reset_tokens",
@@ -50,7 +49,7 @@ async function migrateToConfigSystemSQL() {
 
     console.log("\n📋 Creating new config-based tables...");
 
-    // Create users_config table
+   
     console.log("   Creating users_config...");
     await sequelize.query(`
       CREATE TABLE "users_config" (
@@ -67,7 +66,7 @@ async function migrateToConfigSystemSQL() {
       );
     `);
 
-    // Create organization_config table
+   
     console.log("   Creating organization_config...");
     await sequelize.query(`
       CREATE TABLE "organization_config" (
@@ -85,7 +84,7 @@ async function migrateToConfigSystemSQL() {
       );
     `);
 
-    // Create organization_roles table
+   
     console.log("   Creating organization_roles...");
     await sequelize.query(`
       CREATE TABLE "organization_roles" (
@@ -102,7 +101,7 @@ async function migrateToConfigSystemSQL() {
       );
     `);
 
-    // Create users table with new schema
+   
     console.log("   Creating users...");
     await sequelize.query(`
       CREATE TABLE "users" (
@@ -127,7 +126,7 @@ async function migrateToConfigSystemSQL() {
       );
     `);
 
-    // Create organizations table with new schema
+   
     console.log("   Creating organizations...");
     await sequelize.query(`
       CREATE TABLE "organizations" (
@@ -166,7 +165,7 @@ async function migrateToConfigSystemSQL() {
       );
     `);
 
-    // Add foreign key constraint for last_visited_organization_id
+   
     await sequelize.query(`
       ALTER TABLE "users" 
       ADD CONSTRAINT "users_last_visited_organization_id_fkey" 
@@ -174,7 +173,7 @@ async function migrateToConfigSystemSQL() {
       REFERENCES "organizations"("organization_id");
     `);
 
-    // Create user_organizations table with new schema
+   
     console.log("   Creating user_organizations...");
     await sequelize.query(`
       CREATE TABLE "user_organizations" (
@@ -191,7 +190,7 @@ async function migrateToConfigSystemSQL() {
       );
     `);
 
-    // Create user_sessions table
+   
     console.log("   Creating user_sessions...");
     await sequelize.query(`
       CREATE TABLE "user_sessions" (
@@ -211,7 +210,7 @@ async function migrateToConfigSystemSQL() {
       );
     `);
 
-    // Create additional tables
+   
     console.log("   Creating user_invitations...");
     await sequelize.query(`
       CREATE TABLE "user_invitations" (
@@ -278,7 +277,7 @@ async function migrateToConfigSystemSQL() {
 
     console.log("\n✅ All tables created successfully!");
 
-    // Now seed the config data
+   
     console.log("\n🌱 Seeding configuration data...");
     const { seedConfigData } = require("./seed-config-data");
     await seedConfigData();
@@ -293,7 +292,6 @@ async function migrateToConfigSystemSQL() {
   }
 }
 
-// Run the migration if this file is executed directly
 if (require.main === module) {
   migrateToConfigSystemSQL()
     .then(() => {
