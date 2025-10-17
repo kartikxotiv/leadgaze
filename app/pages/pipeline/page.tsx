@@ -1,142 +1,220 @@
 "use client";
-import React, { useCallback, useMemo, useState } from "react";
+
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { useDealsByStage, useUpdateDeal } from "@/hooks/use-deals";
-
-type StageKey =
-  | "qualification"
-  | "proposal"
-  | "negotiation"
-  | "decision"
-  | "closed_won"
-  | "closed_lost";
-
-const STAGE_TITLES: Record<StageKey, string> = {
-  qualification: "Qualification",
-  proposal: "Proposal",
-  negotiation: "Negotiation",
-  decision: "Decision",
-  closed_won: "Closed Won",
-  closed_lost: "Closed Lost",
-};
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import {
+  BarChart3,
+  Target,
+  DollarSign,
+  TrendingUp,
+  Users,
+  Calendar,
+  Plus,
+  Filter,
+  Download,
+} from "lucide-react";
 
 export default function PipelinePage() {
-  const { data: dealsByStage = {}, isLoading } = useDealsByStage();
-  const updateDeal = useUpdateDeal();
-  const [draggingDealId, setDraggingDealId] = useState<string | null>(null);
+  const pipelineStages = [
+    { name: "Qualification", deals: 12, value: 240000, color: "bg-blue-500" },
+    { name: "Proposal", deals: 8, value: 180000, color: "bg-green-500" },
+    { name: "Negotiation", deals: 5, value: 120000, color: "bg-yellow-500" },
+    { name: "Decision", deals: 3, value: 75000, color: "bg-orange-500" },
+    { name: "Closed Won", deals: 15, value: 450000, color: "bg-emerald-500" },
+  ];
 
-  const stages = useMemo<StageKey[]>(
-    () => [
-      "qualification",
-      "proposal",
-      "negotiation",
-      "decision",
-      "closed_won",
-      "closed_lost",
-    ],
-    []
-  );
-
-  const handleDragStart = useCallback((dealId: string) => {
-    setDraggingDealId(dealId);
-  }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-  }, []);
-
-  const handleDrop = useCallback(
-    async (stage: StageKey) => {
-      if (!draggingDealId) return;
-      let payload: any = { stage };
-      if (stage === "closed_lost") {
-        const reason = window.prompt("Lost reason (optional):", "");
-        if (reason !== null && reason !== undefined) {
-          payload.lostReason = reason;
-        }
-      }
-      updateDeal.mutate({ dealId: draggingDealId, data: payload });
-      setDraggingDealId(null);
-    },
-    [draggingDealId, updateDeal]
-  );
-
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat(undefined, {
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
-    }).format(Number.isFinite(value) ? value : 0);
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
   return (
     <DashboardLayout>
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold">Pipeline</h1>
-          <div className="text-sm text-gray-600">
-            {isLoading ? "Loading…" : "Drag a deal to change its stage"}
+      <div className="space-y-6">
+        {/* Breadcrumb */}
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/pages/dashboard">Dashboard</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Pipeline</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Sales Pipeline</h1>
+            <p className="text-muted-foreground mt-2">
+              Track deals through your sales process
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline">
+              <Filter className="h-4 w-4 mr-2" />
+              Filter
+            </Button>
+            <Button variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Deal
+            </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4">
-          {stages.map((stageKey) => {
-            const list = (dealsByStage as any)[stageKey] || [];
-            const totalValue = list.reduce(
-              (sum: number, d: any) => sum + parseFloat(String(d.value || 0)),
-              0
-            );
-            return (
-              <div
-                key={stageKey}
-                className="bg-gray-50 dark:bg-gray-900/40 rounded-lg border border-gray-200 dark:border-gray-700 flex flex-col min-h-[60vh]"
-                onDragOver={handleDragOver}
-                onDrop={() => handleDrop(stageKey)}
-              >
-                <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                  <div className="font-semibold text-sm">
-                    {STAGE_TITLES[stageKey]}
-                  </div>
-                  <div className="text-xs text-gray-500 flex items-center gap-2">
-                    <span>{list.length}</span>
-                    <span>•</span>
-                    <span>{formatCurrency(totalValue)}</span>
-                  </div>
+        {/* Pipeline Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Total Pipeline Value
+                  </p>
+                  <p className="text-2xl font-bold">{formatCurrency(615000)}</p>
                 </div>
-                <div className="flex-1 p-2 space-y-2 overflow-auto">
-                  {list.map((deal: any) => (
-                    <div
-                      key={deal.dealId}
-                      draggable
-                      onDragStart={() => handleDragStart(deal.dealId)}
-                      className="bg-white dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700 p-3 shadow-sm hover:shadow transition-shadow cursor-move"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="font-medium truncate">
-                          {deal.title || "Untitled Deal"}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {formatCurrency(parseFloat(String(deal.value || 0)))}
-                        </div>
-                      </div>
-                      <div className="mt-1 text-xs text-gray-500 flex items-center gap-3">
-                        <span>Prob: {Number(deal.probability || 0)}%</span>
-                        {deal.lead ? (
-                          <span className="truncate">
-                            {deal.lead.firstName} {deal.lead.lastName}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  ))}
-                  {!list.length && (
-                    <div className="text-xs text-gray-500 text-center py-6">
-                      No deals
-                    </div>
-                  )}
-                </div>
+                <DollarSign className="h-8 w-8 text-green-600" />
               </div>
-            );
-          })}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Active Deals
+                  </p>
+                  <p className="text-2xl font-bold">28</p>
+                </div>
+                <Target className="h-8 w-8 text-blue-600" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Win Rate
+                  </p>
+                  <p className="text-2xl font-bold">65%</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-purple-600" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Pipeline Stages */}
+
+
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> 
+          <div className="col-span-1">
+          
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Pipeline Stages
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {pipelineStages.map((stage, index) => (
+                <div key={stage.name} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${stage.color}`} />
+                      <span className="font-medium">{stage.name}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm text-muted-foreground">
+                        {stage.deals} deals
+                      </span>
+                      <span className="font-medium">
+                        {formatCurrency(stage.value)}
+                      </span>
+                    </div>
+                  </div>
+                  <Progress
+                    value={(stage.deals / 20) * 100}
+                    className="h-2"
+                  />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        </div>
+        <div className="col-span-1">
+        {/* Recent Activity */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Recent Pipeline Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <p className="font-medium">ACME Corp Deal</p>
+                  <p className="text-sm text-muted-foreground">
+                    Moved to Proposal stage
+                  </p>
+                </div>
+                <Badge variant="secondary">2 hours ago</Badge>
+              </div>
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <p className="font-medium">Tech Solutions</p>
+                  <p className="text-sm text-muted-foreground">
+                    Deal closed won - $50,000
+                  </p>
+                </div>
+                <Badge variant="secondary">1 day ago</Badge>
+              </div>
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <p className="font-medium">Global Industries</p>
+                  <p className="text-sm text-muted-foreground">
+                    New deal added to Qualification
+                  </p>
+                </div>
+                <Badge variant="secondary">3 days ago</Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        </div>
+        </div>
+
+
+
       </div>
     </DashboardLayout>
   );

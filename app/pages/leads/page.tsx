@@ -40,6 +40,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatCard } from "@/components/ui/stat-card";
 import { useLeads, useLeadConfigs, useUpdateLead } from "@/hooks/use-leads";
 import dynamic from "next/dynamic";
+import { Switch } from "@/components/ui/switch";
 
 // Dynamic import for heavy KanbanPipeline
 const KanbanPipeline = dynamic(
@@ -111,6 +112,14 @@ import {
   RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { toast } from "sonner";
 
 export default function LeadsPage() {
@@ -147,6 +156,47 @@ export default function LeadsPage() {
     leadId?: string;
   }>({ open: false });
   const [bulkImportDialog, setBulkImportDialog] = useState(false);
+
+  // Column customization state
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([
+    'name', 
+    'email',
+    'company', 
+    'contact', 
+    'status', 
+    'grade', 
+    'score',
+    'source',
+    // 'lastActivity'
+  ]);
+
+  // Define table columns
+  const tableColumns = [
+    { id: 'name', label: 'Lead Name' },
+    { id: 'email', label: 'Email' },
+    { id: 'company', label: 'Company' },
+    { id: 'contact', label: 'Contact' },
+    { id: 'status', label: 'Status' },
+    { id: 'grade', label: 'Grade' },
+    { id: 'score', label: 'Score' },
+    { id: 'source', label: 'Source' },
+    // { id: 'lastActivity', label: 'Last Activity' },
+  ];
+
+  // Column toggle handlers
+  const handleToggleColumn = (columnId: string) => {
+    setVisibleColumns(prev => 
+      prev.includes(columnId) 
+        ? prev.filter(id => id !== columnId)
+        : [...prev, columnId]
+    );
+  };
+
+  const handleApplyColumns = () => {
+    // Columns are already updated via handleToggleColumn
+    // This function can be used for additional logic if needed
+    console.log('Applied columns:', visibleColumns);
+  };
 
   // Get configurations (note: API returns data grouped by entity type)
   const statuses = configs?.status || [];
@@ -501,18 +551,33 @@ export default function LeadsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Breadcrumb */}
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/pages/dashboard">Dashboard</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Leads</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
         {/* Enhanced Header with Actions */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-8">
+        <div className="relative overflow-hidden p-0">
           <div className="relative z-10">
             <div className="flex flex-col gap-6 md:flex-row  md:justify-between ">
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
+              <div className="">
+                {/* <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
                   Lead Management
-                </h1>
-                <p className="text-lg text-gray-600 dark:text-gray-300 mt-2">
+                </h1> */}
+
+
+                {/* <p className="text-lg text-gray-600 dark:text-gray-300 mt-2">
                   Track and nurture your sales prospects through the pipeline
-                </p>
-                <div className="flex flex-col sm:flex-row gap-2 mt-2 overflow-x-auto">
+                </p> */}
+                {/* <div className="flex flex-col sm:flex-row gap-2 mt-2 overflow-x-auto">
                   <StatCard
                     icon={Target}
                     iconColor="text-blue-600"
@@ -556,19 +621,19 @@ export default function LeadsPage() {
                     }
                     label="Qualified"
                   />
-                </div>
+                </div> */}
               </div>
               <div className="flex  flex-row  gap-3   ">
-                <Button
+                {/* <Button
                   variant="outline"
                   size="sm"
                   className="bg-white/50 backdrop-blur-sm border-gray-200/50 hover:bg-white/80 transition-all duration-200"
                 >
                   <Download className="h-4 w-4" />
                   Export
-                </Button>
+                </Button> */}
                 <div className="flex gap-2">
-                  <Button
+                  {/* <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setBulkImportDialog(true)}
@@ -576,8 +641,8 @@ export default function LeadsPage() {
                   >
                     <Upload className="h-4 w-4" />
                     Bulk Import
-                  </Button>
-                  <Button
+                  </Button> */}
+                  {/* <Button
                     asChild
                     size="sm"
                     className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
@@ -586,15 +651,15 @@ export default function LeadsPage() {
                       <Plus className="h-4 w-4 mr-2" />
                       Add Lead
                     </Link>
-                  </Button>
+                  </Button> */}
                 </div>
               </div>
             </div>
           </div>
           {/* Background decoration */}
-          <div className="absolute top-0 right-0 -translate-y-12 translate-x-12">
+          {/* <div className="absolute top-0 right-0 -translate-y-12 translate-x-12">
             <div className="w-96 h-96 bg-gradient-to-br from-indigo-400/20 to-blue-600/20 rounded-full blur-3xl"></div>
-          </div>
+          </div> */}
         </div>
 
         {/* Filters and Tabs */}
@@ -605,7 +670,7 @@ export default function LeadsPage() {
               onValueChange={setActiveTab}
               className="space-y-4"
             >
-              <TabsList className="grid w-full grid-cols-6">
+              {/* <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="all">All Leads</TabsTrigger>
                 <TabsTrigger value="new">New</TabsTrigger>
                 <TabsTrigger value="active">Active</TabsTrigger>
@@ -620,7 +685,6 @@ export default function LeadsPage() {
                 </TabsTrigger>
               </TabsList>
 
-              {/* View Toggle */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 bg-white dark:bg-gray-900 rounded-lg p-1 border border-gray-200 dark:border-gray-700">
                   <Button
@@ -642,10 +706,26 @@ export default function LeadsPage() {
                     kanban View
                   </Button>
                 </div>
-              </div>
+              </div> */}
 
               {/* Enhanced Filters */}
-              <EnhancedFilters
+              {/* <EnhancedFilters
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+                filters={filterConfigs}
+                activeFilters={activeFilters}
+                onFilterChange={handleFilterChange}
+                onClearFilters={handleClearFilters}
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSortChange={handleSortChange}
+                resultCount={filteredLeads.length}
+                totalCount={safeLeads.length}
+              /> */}
+
+              <div className="flex gap-4 justify-between">
+                <div className="">
+                <EnhancedFilters
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
                 filters={filterConfigs}
@@ -658,6 +738,64 @@ export default function LeadsPage() {
                 resultCount={filteredLeads.length}
                 totalCount={safeLeads.length}
               />
+                </div>
+                <div className="flex gap-2 items-center">
+
+                
+
+
+                  {/* Columns Customizer Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
+                        <LayoutGrid className="h-4 w-4" />
+                        Customize Columns
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent side="bottom" align="end" className="w-64 p-2">
+                      <p className="text-sm font-semibold px-2 pb-2">Customize Columns</p>
+                      <div className="flex flex-col gap-2">
+                        {tableColumns.map((col, idx) => (
+                          <div key={col.id} className="flex items-center justify-between px-2 py-1 hover:bg-accent rounded">
+                            <span className="text-sm">{col.label}</span>
+                            <Switch
+                              checked={visibleColumns.includes(col.id)}
+                              onCheckedChange={() => handleToggleColumn(col.id)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex justify-end mt-2">
+                        <Button size="sm" onClick={handleApplyColumns}>
+                          Apply
+                        </Button>
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+
+
+
+                <Button
+                    asChild
+                    size="sm"
+                    className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                  >
+                    <Link href="/pages/leads/new">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Lead
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+
+
+
+
 
               <TabsContent value={activeTab} className="space-y-4">
                 {/* Conditional View Rendering */}
@@ -678,21 +816,25 @@ export default function LeadsPage() {
                   <div className="border rounded-lg">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead>Lead</TableHead>
-                          <TableHead>Company</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Grade</TableHead>
-                          <TableHead>Score</TableHead>
-                          <TableHead>Source</TableHead>
-                          <TableHead>Last Activity</TableHead>
+                        <TableRow className="bg-[#f1f5f980]">
+                          <TableHead>S.no</TableHead>
+                          {visibleColumns.includes('name') && <TableHead>Name</TableHead>}
+                          {visibleColumns.includes('email') && <TableHead>Email</TableHead>}
+                          {visibleColumns.includes('contact') && <TableHead>Contact</TableHead>}
+                          {visibleColumns.includes('company') && <TableHead>Company</TableHead>}
+                          {visibleColumns.includes('status') && <TableHead>Status</TableHead>}
+                          {visibleColumns.includes('grade') && <TableHead>Grade</TableHead>}
+                          {visibleColumns.includes('score') && <TableHead>Score</TableHead>}
+                          {visibleColumns.includes('source') && <TableHead>Source</TableHead>}
+                          {/* {visibleColumns.includes('lastActivity') && <TableHead>Last Activity</TableHead>} */}
+
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredLeads.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={8} className="text-center py-8">
+                            <TableCell colSpan={visibleColumns.length + 2} className="text-center py-8">
                               <div className="flex flex-col items-center gap-2">
                                 <Users className="h-8 w-8 text-muted-foreground" />
                                 <p className="text-muted-foreground">
@@ -719,20 +861,29 @@ export default function LeadsPage() {
                             );
 
                             return (
+
+
                               <TableRow
                                 key={lead.leadId}
                                 className="hover:bg-muted/50"
                               >
+                              <TableCell>
+                                {filteredLeads.findIndex((l) => l.leadId === lead.leadId) + 1}
+                              </TableCell>
+
+                                {visibleColumns.includes('name') && (
                                 <TableCell>
                                   <div className="flex items-center gap-3">
-                                    <Avatar className="h-8 w-8">
+                                    
+                                    {/* <Avatar className="h-8 w-8">
                                       <AvatarFallback>
                                         {(
                                           lead.firstName?.[0] +
                                           lead.lastName?.[0]
                                         ).toUpperCase()}
                                       </AvatarFallback>
-                                    </Avatar>
+                                    </Avatar> */}
+
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-2">
                                         <DirectText
@@ -760,8 +911,22 @@ export default function LeadsPage() {
                                           placeholder="Enter full name..."
                                           className="font-medium"
                                         />
+
+
                                       </div>
-                                      <InlineEditEmail
+
+
+                                          
+
+
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                )}
+                                {visibleColumns.includes('email') && (
+                                <TableCell>
+                                  
+                                  <InlineEditEmail
                                         value={lead.email}
                                         onSave={(value) =>
                                           handleFieldUpdate(
@@ -772,9 +937,21 @@ export default function LeadsPage() {
                                         }
                                         placeholder="Enter email..."
                                       />
-                                    </div>
-                                  </div>
+
+
                                 </TableCell>
+                                )}
+
+
+                                  {visibleColumns.includes('contact') && (
+                                    <TableCell>
+                                      {lead.phone}
+                                    </TableCell>
+                                  )}
+
+
+
+                                {visibleColumns.includes('company') && (
                                 <TableCell>
                                   <div className="space-y-1">
                                     <DirectText
@@ -789,7 +966,7 @@ export default function LeadsPage() {
                                       placeholder="Enter company name..."
                                       className="font-medium"
                                     />
-                                    <DirectText
+                                    {/* <DirectText
                                       value={lead.jobTitle}
                                       onSave={(value) =>
                                         handleFieldUpdate(
@@ -800,9 +977,11 @@ export default function LeadsPage() {
                                       }
                                       placeholder="Enter job title..."
                                       className="text-sm text-muted-foreground"
-                                    />
+                                    /> */}
                                   </div>
                                 </TableCell>
+                                )}
+                                {visibleColumns.includes('status') && (
                                 <TableCell>
                                   <DirectSelect
                                     value={lead.statusId}
@@ -828,6 +1007,8 @@ export default function LeadsPage() {
                                     )}
                                   />
                                 </TableCell>
+                                )}
+                                {visibleColumns.includes('grade') && (
                                 <TableCell>
                                   <div className="flex items-center gap-2">
                                     <div
@@ -840,6 +1021,8 @@ export default function LeadsPage() {
                                     </span>
                                   </div>
                                 </TableCell>
+                                )}
+                                {visibleColumns.includes('score') && (
                                 <TableCell>
                                   <div className="flex items-center gap-2">
                                     <span className="text-lg font-bold">
@@ -847,7 +1030,7 @@ export default function LeadsPage() {
                                         lead.leadScore ||
                                         0}
                                     </span>
-                                    {lead.scoreData?.tier && (
+                                    {/* {lead.scoreData?.tier && (
                                       <Badge
                                         variant="outline"
                                         className={`text-xs ${
@@ -866,14 +1049,18 @@ export default function LeadsPage() {
                                         {lead.scoreData.tier === "warm" && "🟡"}
                                         {lead.scoreData.tier === "cold" && "🧊"}
                                       </Badge>
-                                    )}
+                                    )} */}
                                   </div>
                                 </TableCell>
+                                )}
+                                {visibleColumns.includes('source') && (
                                 <TableCell>
                                   <Badge variant="secondary">
                                     {source?.entityValue || "Unknown"}
                                   </Badge>
                                 </TableCell>
+                                )}
+                                {/* {visibleColumns.includes('lastActivity') && (
                                 <TableCell>
                                   <span className="text-sm text-muted-foreground">
                                     {new Date(
@@ -881,6 +1068,7 @@ export default function LeadsPage() {
                                     ).toLocaleDateString()}
                                   </span>
                                 </TableCell>
+                                )} */}
                                 <TableCell className="text-right">
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>

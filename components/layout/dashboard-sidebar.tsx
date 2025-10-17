@@ -18,10 +18,15 @@ import {
   BarChart3,
   Settings,
   GripVertical,
+  Building,
+  Zap,
+  CreditCard,
   ChevronLeft,
   ChevronRight,
-  Zap,
   Megaphone,
+  ChevronDown,
+  Plus,
+  UserPlus,
 } from "lucide-react";
 
 interface SidebarItem {
@@ -31,6 +36,7 @@ interface SidebarItem {
   icon: React.ElementType;
   badge?: string;
   badgeVariant?: "default" | "secondary" | "destructive" | "outline";
+  children?: SidebarItem[];
 }
 
 interface DashboardSidebarProps {
@@ -50,7 +56,7 @@ const defaultMenuItems: SidebarItem[] = [
     label: "Leads",
     href: "/pages/leads",
     icon: Users,
-    badge: "42",
+    // badge: "42",  
     badgeVariant: "secondary",
   },
   {
@@ -58,7 +64,8 @@ const defaultMenuItems: SidebarItem[] = [
     label: "Deals",
     href: "/deals",
     icon: Target,
-    badge: "8",
+    // badge: "8",
+    
     badgeVariant: "default",
   },
   {
@@ -66,7 +73,7 @@ const defaultMenuItems: SidebarItem[] = [
     label: "Tasks",
     href: "/tasks",
     icon: CheckSquare,
-    badge: "8",
+    // badge: "8",
     badgeVariant: "destructive",
   },
   {
@@ -75,6 +82,20 @@ const defaultMenuItems: SidebarItem[] = [
     href: "/pages/pipeline",
     icon: BarChart3,
   },
+  {
+    id: "sales",
+    label: "sales",
+    href: "/pages/sales",
+    icon: BarChart3,
+  },
+  {
+    id: "Marketing",
+    label: "Marketing",
+    href: "/pages/Marketing",
+    icon: BarChart3,
+    
+  },
+
   {
     id: "communications",
     label: "Communications",
@@ -104,6 +125,49 @@ const defaultMenuItems: SidebarItem[] = [
     label: "Settings",
     href: "/pages/settings",
     icon: Settings,
+    children: [
+        {
+          id: "team-management",
+          label: "Sales Team",
+          href: "#",
+          icon: Users,
+          children: [
+            {
+              id: "create-organization",
+              label: "Create New Organization",
+              href: "/pages/settings/create-organization",
+              icon: Plus,
+            },
+            {
+              id: "manage-team",
+              label: "Manage Team",
+              href: "/pages/settings/manage-team",
+              icon: UserPlus,
+            },
+            
+          ],
+        },
+        {
+          id: "select-workspace",
+          label: "Select Workspace" ,
+          href: "#",
+          icon: Users,
+          children: [
+            {
+              id: "Create-Workspace",
+              label: "Create a Organization",
+              href: "/pages/settings/create-organization",
+              icon: Plus,
+            },
+            {
+              id: "manage-workspace",
+              label: "Manage Workspaces",
+              href: "/pages/settings/manage-team",
+              icon: UserPlus,
+            },           
+          ],
+        },
+    ],  
   },
 ];
 
@@ -114,6 +178,7 @@ export function DashboardSidebar({
   const pathname = usePathname();
   const [menuItems, setMenuItems] = useState<SidebarItem[]>(defaultMenuItems);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [openDropdowns, setOpenDropdowns] = useState<Set<string>>(new Set());
 
   // Load saved menu order from localStorage
   useEffect(() => {
@@ -186,6 +251,144 @@ export function DashboardSidebar({
     [pathname]
   );
 
+  const toggleDropdown = useCallback((itemId: string) => {
+    setOpenDropdowns(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  // Recursive component for rendering menu items
+  const renderMenuItem = useCallback((item: SidebarItem, level: number = 0) => {
+    const hasChildren = item.children && item.children.length > 0;
+    const isOpen = openDropdowns.has(item.id);
+    const marginLeft = level * 24; // 24px per level
+
+    return (
+      <div key={item.id} className="group relative">
+        {/* Main Menu Item */}
+        <div
+          draggable={!collapsed && !hasChildren}
+          onDragStart={(e) => handleDragStart(e, item.id)}
+          onDragOver={handleDragOver}
+          onDrop={(e) => handleDrop(e, item.id)}
+          className="group relative"
+        >
+          {hasChildren ? (
+            <button
+              onClick={() => toggleDropdown(item.id)}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full ${
+                isActive(item.href)
+                  ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              }`}
+              style={{ marginLeft: `${marginLeft}px` }}
+            >
+              {/* Drag Handle */}
+              {!collapsed && level === 0 && (
+
+                <GripVertical className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
+              
+              )}
+
+              {/* Icon */}
+              {(() => {
+                const Icon = item.icon as React.ElementType;
+                return (
+                  <Icon
+                    className={`w-5 h-5 ${collapsed ? "mx-auto" : ""}`}
+                  />
+                );
+              })()}
+
+              {/* Label and Badge */}
+              {!collapsed && (
+                <div className="flex items-center justify-between flex-1">
+                  <span>{item.label}</span>
+                  <div className="flex items-center gap-2">
+                    {item.badge && (
+                      <Badge
+                        variant={item.badgeVariant || "secondary"}
+                        className="text-xs"
+                      >
+                        {item.badge}
+                      </Badge>
+                    )}
+                    <ChevronDown 
+                      className={`w-4 h-4 transition-transform ${
+                        isOpen ? "rotate-180" : ""
+                      }`} 
+                    />
+                  </div>
+                </div>
+              )}
+            </button>
+          ) : (
+            <Link
+              href={item.href}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive(item.href)
+                  ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              }`}
+              style={{ marginLeft: `${marginLeft}px` }}
+            >
+              {/* Drag Handle */}
+              {!collapsed && level === 0 && (
+                <GripVertical className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
+              )}
+
+              {/* Icon */}
+              {(() => {
+                const Icon = item.icon as React.ElementType;
+                return (
+                  <Icon
+                    className={`w-5 h-5 ${collapsed ? "mx-auto" : ""}`}
+                  />
+                );
+              })()}
+
+              {/* Label and Badge */}
+              {!collapsed && (
+                <div className="flex items-center justify-between flex-1">
+                  <span>{item.label}</span>
+                  {item.badge && (
+                    <Badge
+                      variant={item.badgeVariant || "secondary"}
+                      className="ml-auto text-xs"
+                    >
+                      {item.badge}
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </Link>
+          )}
+
+          {/* Tooltip for collapsed state */}
+          {collapsed && (
+            <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+              {item.label}
+              {item.badge && ` (${item.badge})`}
+            </div>
+          )}
+        </div>
+
+        {/* Render Children */}
+        {hasChildren && !collapsed && isOpen && (
+          <div className="space-y-1">
+            {item.children!.map((child) => renderMenuItem(child, level + 1))}
+          </div>
+        )}
+      </div>
+    );
+  }, [collapsed, openDropdowns, isActive, toggleDropdown, handleDragStart, handleDragOver, handleDrop]);
+
   return (
     <div
       className={`fixed left-0 top-0 z-40 h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ${
@@ -193,114 +396,50 @@ export function DashboardSidebar({
       }`}
     >
       {/* Sidebar Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-center p-4 border-b border-gray-200 dark:border-gray-700">
         {!collapsed && (
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
             <span className="font-bold text-lg text-gray-900 dark:text-white">
-              MyCRM
+              MyCRM  
             </span>
           </div>
         )}
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onCollapsedChange(!collapsed)}
-          className="p-1.5"
-        >
-          {collapsed ? (
-            <ChevronRight className="w-4 h-4" />
-          ) : (
-            <ChevronLeft className="w-4 h-4" />
-          )}
-        </Button>
+        {collapsed && (
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <Zap className="w-5 h-5 text-white" />
+          </div>
+        )}
       </div>
 
       {/* Organization Switcher */}
-      {!collapsed && (
+      {/* {!collapsed && (
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col gap-2">
           <OrganizationSwitcher />
 
           <WorkspaceSwitcher />
         </div>
-      )}
+      )} */}
 
       {/* Navigation Menu */}
       <div className="flex-1 overflow-hidden">
         <SafeScrollArea className="h-full px-3 py-4">
           <nav className="space-y-1">
-            {menuItems.map((item) => (
-              <div
-                key={item.id}
-                draggable={!collapsed}
-                onDragStart={(e) => handleDragStart(e, item.id)}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, item.id)}
-                className="group relative"
-              >
-                <Link
-                  href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive(item.href)
-                      ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  }`}
-                >
-                  {/* Drag Handle */}
-                  {!collapsed && (
-                    <GripVertical className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
-                  )}
-
-                  {/* Icon */}
-                  {(() => {
-                    const Icon = item.icon as React.ElementType;
-                    return (
-                      <Icon
-                        className={`w-5 h-5 ${collapsed ? "mx-auto" : ""}`}
-                      />
-                    );
-                  })()}
-
-                  {/* Label and Badge */}
-                  {!collapsed && (
-                    <div className="flex items-center justify-between flex-1">
-                      <span>{item.label}</span>
-                      {item.badge && (
-                        <Badge
-                          variant={item.badgeVariant || "secondary"}
-                          className="ml-auto text-xs"
-                        >
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                </Link>
-
-                {/* Tooltip for collapsed state */}
-                {collapsed && (
-                  <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-                    {item.label}
-                    {item.badge && ` (${item.badge})`}
-                  </div>
-                )}
-              </div>
-            ))}
+            {menuItems.map((item) => renderMenuItem(item))}
           </nav>
         </SafeScrollArea>
       </div>
 
       {/* Sidebar Footer */}
-      {!collapsed && (
+      {/* {!collapsed && (
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
             Drag items to reorder menu
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

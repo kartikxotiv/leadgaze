@@ -126,7 +126,7 @@ export default function SignInPage() {
               Welcome Back
             </CardTitle>
             <CardDescription className="text-base text-gray-600 dark:text-gray-300">
-              Sign in to your account to continue
+              Sign in to your account to continue 
             </CardDescription>
           </CardHeader>
 
@@ -267,7 +267,7 @@ export default function SignInPage() {
         </Card>
 
         {/* Demo Credentials */}
-        <Card className="mt-4 border-0 bg-blue-50 dark:bg-blue-900/20">
+        {/* <Card className="mt-4 border-0 bg-blue-50 dark:bg-blue-900/20">
           <CardContent className="p-4">
             <div className="flex items-start gap-2">
               <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
@@ -281,10 +281,10 @@ export default function SignInPage() {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Footer */}
-        <div className="text-center mt-8 text-sm text-gray-500 dark:text-gray-400">
+        {/* <div className="text-center mt-8 text-sm text-gray-500 dark:text-gray-400">
           <p>
             By signing in, you agree to our{" "}
             <Link
@@ -301,7 +301,7 @@ export default function SignInPage() {
               Privacy Policy
             </Link>
           </p>
-        </div>
+        </div> */}
       </div>
     </div>
   );

@@ -464,13 +464,14 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
               <Bell className="h-5 w-5" />
               Follow-up Tasks
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="mt-2">
               Stay on top of your pipeline with scheduled follow-ups and
-              reminders
+              reminders 
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <Button
+            
+            {/* <Button
               variant="outline"
               size="sm"
               onClick={() => {
@@ -486,7 +487,9 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
                 <RefreshCcw className="h-4 w-4 mr-2" />
               )}
               Refresh
-            </Button>
+            </Button> */}
+
+
             <Dialog open={showScheduler} onOpenChange={setShowScheduler}>
               <DialogTrigger asChild>
                 <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
@@ -519,7 +522,7 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
                     ))}
                   </select>
                   {!selectedLeadId && (
-                    <p className="text-sm text-red-600 mt-1">
+                    <p className="text-sm text-red-600 ">
                       Please select a lead to create a follow-up task
                     </p>
                   )}
@@ -544,20 +547,26 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="today" className="w-full">
+            
+            
+          <div className="lg:w-1/3 md:w-1/2 w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="today" className="flex items-center gap-2">
+              <TabsTrigger value="today" className="flex items-center gap-2 py-3">
                 <Clock className="h-4 w-4" />
                 Today ({totalToday})
               </TabsTrigger>
-              <TabsTrigger value="overdue" className="flex items-center gap-2">
+              <TabsTrigger value="overdue" className="flex items-center gap-2 py-3">
                 <AlertTriangle className="h-4 w-4" />
                 Overdue ({totalOverdue})
               </TabsTrigger>
-              <TabsTrigger value="upcoming" className="flex items-center gap-2">
+              <TabsTrigger value="upcoming" className="flex items-center gap-2 py-3">
                 <Calendar className="h-4 w-4" />
                 Upcoming ({totalUpcoming})
               </TabsTrigger>
             </TabsList>
+          </div>
+
+
 
             <TabsContent value="today" className="mt-6">
               {loadingToday ? (

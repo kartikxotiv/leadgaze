@@ -48,14 +48,14 @@ export default function TeamPage() {
               <TabsList className="grid w-full max-w-[400px] grid-cols-2">
                 <TabsTrigger
                   value="members"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 py-3"
                 >
                   <Users className="h-4 w-4" />
                   Members
                 </TabsTrigger>
                 <TabsTrigger
                   value="invitations"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 py-3"
                 >
                   <UserPlus className="h-4 w-4" />
                   Invitations

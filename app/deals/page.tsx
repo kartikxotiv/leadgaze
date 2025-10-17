@@ -29,6 +29,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   TrendingUp,
   DollarSign,
   Target,
@@ -66,11 +74,25 @@ export default function DealsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Breadcrumb */}
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/pages/dashboard">Dashboard</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Deals</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Sales Pipeline
+              {/* Sales Pipeline  */}
+              Deals
             </h1>
             <p className="text-muted-foreground mt-2">
               Manage your deals and track revenue opportunities
@@ -207,20 +229,45 @@ export default function DealsPage() {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="pipeline" className="flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              Kanban View
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="flex items-center gap-2">
-              <PieChart className="h-4 w-4" />
-              Reports
-            </TabsTrigger>
-          </TabsList>
+        
+        
+
+
+
+
+
+
+          <div className="md:w-1/2 w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="pipeline" className="flex items-center gap-2 py-4">
+                  <Target className="h-4 w-4" />
+                  Kanban View
+                </TabsTrigger>
+                <TabsTrigger value="analytics" className="flex items-center gap-2 py-4">
+                  <BarChart3 className="h-4 w-4" />
+                  Analytics
+                </TabsTrigger>
+                <TabsTrigger value="reports" className="flex items-center gap-2 py-4">
+                  <PieChart className="h-4 w-4" />
+                  Reports
+                </TabsTrigger>
+              </TabsList>
+          </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
           <TabsContent value="pipeline" className="mt-6">
             <DealsPipeline />
@@ -254,7 +301,7 @@ export default function DealsPage() {
                           </div>
                           <div className="flex items-center gap-3">
                             <span className="text-sm text-muted-foreground">
-                              {count} deals
+                              {count as number} deals
                             </span>
                             <span className="text-sm font-medium">
                               {formatCurrency(stats.valueByStage[stage] || 0)}

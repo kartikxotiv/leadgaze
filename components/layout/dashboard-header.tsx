@@ -30,13 +30,17 @@ import {
   HelpCircle,
   Shield,
   UserPlus,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 interface DashboardHeaderProps {
   onMenuClick: () => void;
+  collapsed: boolean;
+  onCollapsedChange: (collapsed: boolean) => void;
 }
 
-export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
+export function DashboardHeader({ onMenuClick, collapsed, onCollapsedChange }: DashboardHeaderProps) {
   const { user, currentOrganization } = useAuth();
   const { currentOrganization: orgFromStore } = useAuthStore();
   const { logout, isLoggingOut } = useSmoothLogout();
@@ -78,9 +82,23 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
       )}
 
       <header className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between px-6 py-[14px]">
+        <div className="flex items-center justify-between px-6 py-[12px]">
           {/* Left Section */}
           <div className="flex items-center gap-4">
+            {/* Sidebar Toggle Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onCollapsedChange(!collapsed)}
+              className="p-1.5"
+            >
+              {collapsed ? (
+                <ChevronRight className="w-4 h-4" />
+              ) : (
+                <ChevronLeft className="w-4 h-4" />
+              )}
+            </Button>
+
             {/* Mobile Menu Button */}
             <Button
               variant="ghost"
@@ -91,8 +109,8 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
               <Menu className="w-5 h-5" />
             </Button>
 
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="hidden md:block">
+            {/* Search Form */}
+            {/* <form onSubmit={handleSearch} className="hidden md:block">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
@@ -102,7 +120,7 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
                   className="pl-10 w-80 bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
                 />
               </div>
-            </form>
+            </form> */}
           </div>
 
           {/* Right Section */}
@@ -126,17 +144,17 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
               />
             )}
             {/* Trial Status Badge */}
-            {currentOrganization?.subscriptionStatus === "trial" && (
+            {/* {currentOrganization?.subscriptionStatus === "trial" && (
               <Badge variant="outline" className="hidden sm:flex">
                 Trial: {(currentOrganization as any)?.trialDaysRemaining || 14}{" "}
                 days left
               </Badge>
-            )}
+            )} */}
 
             {/* Notifications */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="relative">
+                <Button variant="ghost" size="sm" className="relative bg-[#f1f5f9]">
                   <Bell className="w-5 h-5" />
                   {/* Notification Badge */}
                   <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">
@@ -190,7 +208,7 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
                 >
                   <Avatar className="w-8 h-8">
                     <AvatarImage
-                      src={user?.avatar}
+                      src={undefined}
                       alt={getUserDisplayName()}
                     />
                     <AvatarFallback className="bg-blue-600 text-white text-sm">
@@ -202,7 +220,9 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
                       {getUserDisplayName()}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
+                      
                       {currentOrganization?.name}
+
                     </div>
                   </div>
                 </Button>

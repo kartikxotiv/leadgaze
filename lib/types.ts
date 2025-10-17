@@ -36,6 +36,18 @@ export interface Organization {
   updatedAt?: string;
 }
 
+export interface Workspace {
+  id: string;
+  organizationId: string;
+  name: string;
+  slug: string;
+  description?: string;
+  status: "active" | "inactive" | "archived";
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface PipelineStage {
   id: string;
   name: string;

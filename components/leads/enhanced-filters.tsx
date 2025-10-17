@@ -326,12 +326,13 @@ export function EnhancedFilters({
 
   return (
     <Card className={cn(className)}>
-      <CardContent className="p-4 space-y-4">
+      <CardContent className="px-0 py-0 space-y-4">
+      {/* <CardContent className=""> */}
         {/* Search Bar */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search leads by name, email, company..."
+            placeholder="Search leads by name, email"
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-10 h-10"
@@ -339,13 +340,13 @@ export function EnhancedFilters({
         </div>
 
         {/* Filters Row */}
-        <div className="flex items-center gap-3 flex-wrap">
+        {/* <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Filter className="h-4 w-4" />
             <span>Filter by:</span>
           </div>
 
-          {/* Filter Dropdowns */}
+          
           {filters.map((filter) => {
             const activeFilter = activeFilters.find(
               (f) => f.filterId === filter.id
@@ -360,7 +361,7 @@ export function EnhancedFilters({
             );
           })}
 
-          {/* Sort Dropdown */}
+          
           {onSortChange && (
             <SortDropdown
               sortBy={sortBy}
@@ -369,7 +370,7 @@ export function EnhancedFilters({
             />
           )}
 
-          {/* Clear Filters */}
+          
           {hasActiveFilters && (
             <Button
               variant="ghost"
@@ -381,7 +382,7 @@ export function EnhancedFilters({
               Clear filters
             </Button>
           )}
-        </div>
+        </div> */}
 
         {/* Active Filters */}
         {hasActiveFilters && (
@@ -422,7 +423,8 @@ export function EnhancedFilters({
         )}
 
         {/* Results Count */}
-        {(resultCount !== undefined || totalCount !== undefined) && (
+        
+        {/* {(resultCount !== undefined || totalCount !== undefined) && (
           <div className="flex items-center justify-between text-sm text-gray-500">
             <div>
               {resultCount !== undefined && totalCount !== undefined ? (
@@ -437,7 +439,10 @@ export function EnhancedFilters({
               )}
             </div>
           </div>
-        )}
+        )} */}
+
+
+
       </CardContent>
     </Card>
   );

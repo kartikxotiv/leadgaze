@@ -26,7 +26,7 @@ const authRoutes = [
   "/pages/auth/reset-password",
 ];
 const publicRoutes = ["/auth/accept-invitation"];
-const welcomeRoutes = ["/pages/welcome"]; // Special handling for welcome page
+const welcomeRoutes = ["/pages/auth/sign-in"]; // Special handling for welcome page
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -46,7 +46,7 @@ export function middleware(request: NextRequest) {
   if (pathname === "/") {
     return NextResponse.redirect(
       new URL(
-        isAuthenticated ? "/pages/dashboard" : "/pages/welcome",
+        isAuthenticated ? "/pages/dashboard" : "/pages/auth/sign-in",
         request.url
       )
     );

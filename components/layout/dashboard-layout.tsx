@@ -28,6 +28,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Header */}
         <DashboardHeader 
           onMenuClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          collapsed={sidebarCollapsed}
+          onCollapsedChange={setSidebarCollapsed}
         />
         
         {/* Page Content */}

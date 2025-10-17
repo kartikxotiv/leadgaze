@@ -245,110 +245,125 @@ export default function SignUpPage() {
   };
 
   const handleNext = async () => {
-    setValidationErrors({});
+ setOtpSent(true);
+  setShowOTPStep(false);
+  setOtpVerified(true);
 
-    // Step-specific validation
-    if (currentStep === 1) {
-      if (!showOTPStep) {
-        // Step 1A: Email validation and OTP sending
-        if (!formData.email) {
-          setValidationErrors({ email: "Please enter your email address" });
-          return;
-        }
-        if (!formData.email.includes("@") || !formData.email.includes(".")) {
-          setValidationErrors({ email: "Please enter a valid email address" });
-          return;
-        }
+  // Proceed to next step immediately
+  setCurrentStep(currentStep + 1);
+    // setValidationErrors({});
+    // // Step-specific validation
+    // if (currentStep === 1) {
+    //   if (!showOTPStep) {
+    //     // Step 1A: Email validation and OTP sending
+    //     if (!formData.email) {
+    //       setValidationErrors({ email: "Please enter your email address" });
+    //       return;
+    //     }
+    //     if (!formData.email.includes("@") || !formData.email.includes(".")) {
+    //       setValidationErrors({ email: "Please enter a valid email address" });
+    //       return;
+    //     }
 
-        // Check email availability before proceeding
-        const emailAvailable = await checkEmailAvailability(formData.email);
-        if (!emailAvailable) {
-          return; // Email exists or error occurred
-        }
+    //     // Check email availability before proceeding
+    //     const emailAvailable = await checkEmailAvailability(formData.email);
+    //     if (!emailAvailable) {
+    //       return; // Email exists or error occurred
+    //     }
 
-        // Send OTP
-        const otpSent = await sendOTP(formData.email);
-        if (!otpSent) {
-          return; // OTP sending failed
-        }
+    //     // Send OTP
+    //     const otpSent = await sendOTP(formData.email);
+    //     if (!otpSent) {
+    //       return; // OTP sending failed
+    //     }
 
-        // Don't advance step, just show OTP verification UI
-        return;
-      } else {
-        // Step 1B: OTP verification
-        if (!otpValue) {
-          setOtpError("Please enter the verification code");
-          return;
-        }
-        if (!/^\d{6}$/.test(otpValue)) {
-          setOtpError("Please enter a valid 6-digit code");
-          return;
-        }
+    //     // Don't advance step, just show OTP verification UI
+    //     return;
+    //   } else {
+    //     // Step 1B: OTP verification
+    //     if (!otpValue) {
+    //       setOtpError("Please enter the verification code");
+    //       return;
+    //     }
+    //     if (!/^\d{6}$/.test(otpValue)) {
+    //       setOtpError("Please enter a valid 6-digit code");
+    //       return;
+    //     }
 
-        // Verify OTP
-        const otpValid = await verifyOTP(formData.email, otpValue);
-        if (!otpValid) {
-          return; // OTP verification failed
-        }
+    //     // Verify OTP
+    //     const otpValid = await verifyOTP(formData.email, otpValue);
+    //     if (!otpValid) {
+    //       return; // OTP verification failed
+    //     }
 
-        // OTP verified, proceed to step 2
-      }
-    }
+    //     // OTP verified, proceed to step 2
+    //   }
+    // }
 
-    if (currentStep === 2) {
-      if (
-        !formData.firstName ||
-        !formData.lastName ||
-        !formData.password ||
-        !formData.confirmPassword ||
-        !formData.accountName
-      ) {
-        setValidationErrors({ general: "Please fill in all required fields" });
-        return;
-      }
-      if (formData.password.length < 8) {
-        setValidationErrors({
-          password: "Password must be at least 8 characters long",
-        });
-        return;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        setValidationErrors({ confirmPassword: "Passwords do not match" });
-        return;
-      }
-    }
+    // if (currentStep === 2) {
+    //   if (
+    //     !formData.firstName ||
+    //     !formData.lastName ||
+    //     !formData.password ||
+    //     !formData.confirmPassword ||
+    //     !formData.accountName
+    //   ) {
+    //     setValidationErrors({ general: "Please fill in all required fields" });
+    //     return;
+    //   }
+    //   if (formData.password.length < 8) {
+    //     setValidationErrors({
+    //       password: "Password must be at least 8 characters long",
+    //     });
+    //     return;
+    //   }
+    //   if (formData.password !== formData.confirmPassword) {
+    //     setValidationErrors({ confirmPassword: "Passwords do not match" });
+    //     return;
+    //   }
+    // }
 
-    if (currentStep === 3) {
-      if (!formData.whatBringsYou) {
-        setValidationErrors({
-          general: "Please select what brings you here",
-        });
-        return;
-      }
-    }
+    // if (currentStep === 3) {
+    //   if (!formData.whatBringsYou) {
+    //     setValidationErrors({
+    //       general: "Please select what brings you here",
+    //     });
+    //     return;
+    //   }
+    // }
 
-    if (currentStep === 4 && !formData.currentRole) {
-      setValidationErrors({
-        general: "Please select your current role",
-      });
-      return;
-    }
+    // if (currentStep === 4 && !formData.currentRole) {
+    //   setValidationErrors({
+    //     general: "Please select your current role",
+    //   });
+    //   return;
+    // }
 
-    if (currentStep === 5 && !formData.teamSize) {
-      setValidationErrors({
-        general: "Please select your team size",
-      });
-      return;
-    }
+    // if (currentStep === 5 && !formData.teamSize) {
+    //   setValidationErrors({
+    //     general: "Please select your team size",
+    //   });
+    //   return;
+    // }
 
-    if (currentStep < totalSteps) {
-      setIsSliding(true);
-      setSlideDirection("forward");
-      setTimeout(() => {
-        setCurrentStep(currentStep + 1);
-        setIsSliding(false);
-      }, 300);
-    }
+    // if (currentStep < totalSteps) {
+    //   setIsSliding(true);
+    //   setSlideDirection("forward");
+    //   setTimeout(() => {
+    //     setCurrentStep(currentStep + 1);
+    //     setIsSliding(false);
+    //   }, 300);
+    // }
+
+
+
+
+
+
+
+
+
+
   };
 
   const handleBack = () => {

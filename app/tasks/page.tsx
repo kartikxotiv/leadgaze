@@ -14,7 +14,7 @@ export default function TasksPage() {
             <h1 className="text-3xl font-bold tracking-tight">
               Tasks & Follow-ups
             </h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground mt-2 text-sm" >
               Stay on top of your pipeline with smart follow-up management
             </p>
           </div>

@@ -1,8 +1,15 @@
 const { Sequelize } = require("sequelize");
+require('dotenv').config();
+
+
 
 // Database connection using environment variables
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || 
-  `postgres://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'password'}@${process.env.DB_HOST }:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'crm'}`;
+  `postgres://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'password'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'crm'}`;
+
+
+  console.log(DATABASE_URL, "database url");
+
 
 const sequelize = new Sequelize(DATABASE_URL, {
   dialect: "postgres",
@@ -40,6 +47,11 @@ async function seedConfigData() {
           allowNull: false,
           field: "entity_value",
         },
+        displayName: {
+          type: Sequelize.STRING(100),
+          allowNull: false,
+          field: "display_name",
+        },
         description: { type: Sequelize.TEXT, allowNull: true },
         isActive: {
           type: Sequelize.BOOLEAN,
@@ -67,6 +79,11 @@ async function seedConfigData() {
           type: Sequelize.STRING(100),
           allowNull: false,
           field: "entity_value",
+        },
+        displayName: {
+          type: Sequelize.STRING(100),
+          allowNull: false,
+          field: "display_name",
         },
         numericValue: {
           type: Sequelize.INTEGER,

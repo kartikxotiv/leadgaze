@@ -66,6 +66,14 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import Link from "next/link";
 
 export default function DashboardPage() {
@@ -162,6 +170,15 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
+        {/* Breadcrumb */}
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbPage>Dashboard</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
         {/* Clean Header with Welcome */}
         <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6">
           <div className="relative z-10">
@@ -176,12 +193,12 @@ export default function DashboardPage() {
                     : "evening"}
                   , {user?.firstName}!
                 </h1>
-                <p className="text-gray-600 dark:text-gray-300 mt-1">
+                <p className="text-gray-600 dark:text-gray-300 mt-1 text-sm">
                   Here's your business overview at a glance
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                {currentOrganization?.subscriptionStatus === "trial" && (
+                {/* {currentOrganization?.subscriptionStatus === "trial" && (
                   <Button
                     size="sm"
                     className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
@@ -189,7 +206,7 @@ export default function DashboardPage() {
                     <Star className="h-4 w-4 mr-2" />
                     Upgrade Plan
                   </Button>
-                )}
+                )} */}
                 <Badge
                   variant="secondary"
                   className="bg-gray-100 text-gray-700"
@@ -203,7 +220,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Dashboard Controls */}
-        <div className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+        {/* <div className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-4">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Analytics Overview
@@ -264,7 +281,7 @@ export default function DashboardPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </div>
+        </div> */}
 
         {/* Key Metrics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">

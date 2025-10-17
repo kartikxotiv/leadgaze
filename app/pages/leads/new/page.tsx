@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCreateLead, useLeadConfigs } from "@/hooks/use-leads";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -55,6 +56,7 @@ export default function NewLeadPage() {
   const router = useRouter();
   const createLeadMutation = useCreateLead();
   const { data: configs, isLoading: configsLoading } = useLeadConfigs();
+  const { user: currentUser, currentOrganization } = useAuth();
 
   const [showOptionalFields, setShowOptionalFields] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -152,6 +154,17 @@ export default function NewLeadPage() {
         return;
       }
 
+      // Check auth requirements
+      if (!currentOrganization?.organizationId && !currentOrganization?.id) {
+        toast.error("Organization not found. Please log in again.");
+        return;
+      }
+
+      if (!currentUser?.userId) {
+        toast.error("User not found. Please log in again.");
+        return;
+      }
+
       try {
         // Clean the data - convert empty strings to null for UUID fields
         // Map to the CreateLeadData interface expected by the API
@@ -162,12 +175,15 @@ export default function NewLeadPage() {
           phone: formData.phone.trim() || undefined,
           businessName: formData.company.trim(),
           companyWebsite: formData.website.trim() || undefined,
+          // Required fields for API
+          organizationId: currentOrganization?.organizationId || currentOrganization?.id,
+          createdBy: currentUser?.userId,
           // UUID fields - convert empty strings to undefined to avoid UUID errors
           sourceId: formData.sourceId || undefined,
           industryId: formData.industryId || undefined,
           companySizeId: formData.companySizeId || undefined,
           productInterest: undefined, // Not implemented in form yet
-          tags: undefined, // Not implemented in form yet
+          tags: [], // Default empty array instead of undefined
           assignedTo: formData.assignedTo || undefined,
           notes: formData.notes.trim() || undefined,
         };

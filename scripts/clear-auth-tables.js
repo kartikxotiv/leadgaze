@@ -74,7 +74,7 @@ async function clearAuthTables() {
       console.log("\n💡 It looks like some tables don't exist yet.");
       console.log("   This is normal if you haven't run the migration yet.");
       console.log("   Run this command to create tables first:");
-      console.log("   node scripts/migrate-to-config-system.js");
+      console.log("   node scripts/migrate-to-config-system.js");                                                                                                                                                                                                       
     }
   } finally {
     await sequelize.close();
