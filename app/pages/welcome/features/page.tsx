@@ -472,7 +472,7 @@ export default function FeaturesPage() {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                    MyCRM
+                    Leadgaze CRM
                   </h1>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Sales Platform
@@ -514,7 +514,7 @@ export default function FeaturesPage() {
               </span>
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Discover how MyCRM's powerful features can transform your sales
+              Discover how Leadgaze CRM's powerful features can transform your sales
               process, increase productivity, and drive revenue growth for your
               team.
             </p>
@@ -624,7 +624,7 @@ export default function FeaturesPage() {
               Seamless Integrations
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Connect MyCRM with your favorite tools and create a unified
+              Connect Leadgaze CRM with your favorite tools and create a unified
               workflow
             </p>
           </div>
@@ -749,7 +749,7 @@ export default function FeaturesPage() {
               </h2>
               <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
                 Join thousands of sales teams who have already revolutionized
-                their workflow with MyCRM. Start your free trial today and
+                their workflow with Leadgaze CRM. Start your free trial today and
                 experience the difference.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -801,7 +801,7 @@ export default function FeaturesPage() {
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 text-white">
                   <Building2 className="size-4 text-white" />
                 </div>
-                <span className="text-xl font-bold">MyCRM</span>
+                <span className="text-xl font-bold">Leadgaze CRM</span>
               </div>
               <p className="text-gray-400 text-sm">
                 The modern CRM platform for sales teams who want to close more
@@ -898,7 +898,7 @@ export default function FeaturesPage() {
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
             <p>
-              &copy; 2024 MyCRM. All rights reserved. Built with ❤️ for sales
+              &copy; 2024 Leadgaze CRM. All rights reserved. Built with ❤️ for sales
               teams worldwide.
             </p>
           </div>

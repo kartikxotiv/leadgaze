@@ -73,33 +73,20 @@ export default function DealsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {}
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/pages/dashboard">Dashboard</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Deals</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-
-        {}
+      
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl font-bold tracking-tight">
               {}
               Deals
             </h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground mt-2 text-[13px] font-regular">
               Manage your deals and track revenue opportunities
             </p>
           </div>
         </div>
 
-        {}
+      
         {statsLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (
@@ -236,17 +223,17 @@ export default function DealsPage() {
 
 
 
-          <div className="md:w-1/2 w-full">
+          <div className="lg:w-1/3 md:w-1/2 w-full">
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="pipeline" className="flex items-center gap-2 py-4">
+                <TabsTrigger value="pipeline" className="flex items-center gap-2 py-3">
                   <Target className="h-4 w-4" />
                   Kanban View
                 </TabsTrigger>
-                <TabsTrigger value="analytics" className="flex items-center gap-2 py-4">
+                  <TabsTrigger value="analytics" className="flex items-center gap-2 py-3">
                   <BarChart3 className="h-4 w-4" />
                   Analytics
                 </TabsTrigger>
-                <TabsTrigger value="reports" className="flex items-center gap-2 py-4">
+                <TabsTrigger value="reports" className="flex items-center gap-2 py-3">
                   <PieChart className="h-4 w-4" />
                   Reports
                 </TabsTrigger>

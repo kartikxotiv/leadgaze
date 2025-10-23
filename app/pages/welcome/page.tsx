@@ -41,7 +41,7 @@ export default function WelcomePage() {
             </div>
           </div>
           <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-6">
-            Welcome to MyCRM
+            Welcome to Leadgaze CRM
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-8">
             The complete sales platform for modern businesses. Manage leads,
@@ -151,7 +151,7 @@ export default function WelcomePage() {
                 Ready to Transform Your Sales?
               </h2>
               <p className="text-xl mb-8 opacity-90">
-                Join thousands of businesses using MyCRM to grow their revenue.
+                Join thousands of businesses using Leadgaze CRM to grow their revenue.
               </p>
               <Link href="/pages/auth/sign-up">
                 <Button

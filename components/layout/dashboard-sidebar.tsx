@@ -3,6 +3,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
+
+
 import { OrganizationSwitcher } from "@/components/organization-switcher";
 import { WorkspaceSwitcher } from "@/components/workspaces/workspace-switcher";
 import { Button } from "@/components/ui/button";
@@ -27,7 +30,10 @@ import {
   ChevronDown,
   Plus,
   UserPlus,
-} from "lucide-react";
+  } from "lucide-react";
+// import Image from "next/image";
+
+
 
 interface SidebarItem {
   id: string;
@@ -43,6 +49,9 @@ interface DashboardSidebarProps {
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
 }
+
+const logo = "/image/leadgaze.png";
+const logoicon = "/image/leadgaze_icon.png";
 
 const defaultMenuItems: SidebarItem[] = [
   {
@@ -290,11 +299,11 @@ export function DashboardSidebar({
               style={{ marginLeft: `${marginLeft}px` }}
             >
               {}
-              {!collapsed && level === 0 && (
+              {/* {!collapsed && level === 0 && (
 
                 <GripVertical className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
               
-              )}
+              )} */}
 
               {}
               {(() => {
@@ -339,9 +348,9 @@ export function DashboardSidebar({
               style={{ marginLeft: `${marginLeft}px` }}
             >
               {}
-              {!collapsed && level === 0 && (
+              {/* {!collapsed && level === 0 && (
                 <GripVertical className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
-              )}
+              )} */}
 
               {}
               {(() => {
@@ -396,20 +405,23 @@ export function DashboardSidebar({
       }`}
     >
       {}
-      <div className="flex items-center justify-center p-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex  p-4 border-b border-gray-200 dark:border-gray-700">
         {!collapsed && (
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+          <div className="flex gap-2">
+            {/* <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
             <span className="font-bold text-lg text-gray-900 dark:text-white">
               MyCRM  
-            </span>
+            </span> */}
+               <Image src={logo} alt="Leadgaze CRM" width={150} height={45} />
           </div>
-        )}
+        )}  
         {collapsed && (
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <Zap className="w-5 h-5 text-white" />
+            {/* <Zap className="w-5 h-5 text-white" /> */}
+            <Image src={logoicon} alt="Leadgaze CRM" width={150} height={45} />
+            
           </div>
         )}
       </div>

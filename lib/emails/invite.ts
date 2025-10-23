@@ -15,7 +15,7 @@ export function renderInviteEmail(params: {
     expiryDays = 7,
   } = params;
 
-  const subject = `You’ve been invited to join ${organizationName} on MyCRM`;
+  const subject = `You've been invited to join ${organizationName} on Leadgaze CRM`;
   const preview = `${inviterName} invited you as ${roleDisplay}. Finish setup to get started.`;
 
   const text = [
@@ -27,7 +27,7 @@ export function renderInviteEmail(params: {
     `This link expires in ${expiryDays} days.`,
     "",
     "If you didn’t expect this email, you can ignore it.",
-    "— MyCRM",
+    "— Leadgaze CRM",
   ].join("\n");
 
   const html = `
@@ -63,7 +63,7 @@ export function renderInviteEmail(params: {
     <div class="wrap">
       <div class="card">
         <div class="hdr">
-          <div class="logo"><span>🚀</span><strong>MyCRM</strong></div>
+          <div class="logo"><span>🚀</span><strong>Leadgaze CRM</strong></div>
           <h1 class="title">Invite to ${organizationName} <span class="pill">${roleDisplay}</span></h1>
         </div>
         <div class="body">
@@ -78,7 +78,7 @@ export function renderInviteEmail(params: {
           <p><a class="cta" href="${inviteUrl}" target="_blank" rel="noopener">Accept invitation</a></p>
           <p class="muted">This link expires in ${expiryDays} days. If you didn’t expect this email, you can safely ignore it.</p>
         </div>
-        <div class="foot">© ${new Date().getFullYear()} MyCRM • Secure invitation</div>
+        <div class="foot">© ${new Date().getFullYear()} Leadgaze CRM • Secure invitation</div>
       </div>
     </div>
   </body>

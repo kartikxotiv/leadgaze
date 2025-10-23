@@ -29,22 +29,12 @@ export default function ReportsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         {}
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/pages/dashboard">Dashboard</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Reports</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+       
 
         {}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Reports & Analytics</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Reports & Analytics</h1>
             <p className="text-muted-foreground mt-2 text-sm">
               Comprehensive insights into your business performance
             </p>

@@ -107,7 +107,7 @@ export default function ForgotPasswordPage() {
               </div>
               <div className="text-left">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  MyCRM
+                  Leadgaze CRM
                 </h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Sales Platform
@@ -209,7 +209,7 @@ export default function ForgotPasswordPage() {
             </div>
             <div className="text-left">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                MyCRM
+                Leadgaze CRM
               </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Sales Platform
@@ -261,7 +261,7 @@ export default function ForgotPasswordPage() {
                   />
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  This should be the email address associated with your MyCRM
+                  This should be the email address associated with your Leadgaze CRM
                   account.
                 </p>
               </div>
@@ -338,7 +338,7 @@ export default function ForgotPasswordPage() {
                     href="/pages/auth/sign-up"
                     className="underline hover:no-underline"
                   >
-                    Create your free MyCRM account
+                    Create your free Leadgaze CRM account
                   </Link>{" "}
                   to get started with our sales platform.
                 </p>

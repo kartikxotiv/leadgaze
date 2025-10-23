@@ -11,7 +11,7 @@ export default function TasksPage() {
         {}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">
+            <h1 className="text-2xl font-bold tracking-tight ">
               Tasks & Follow-ups
             </h1>
             <p className="text-muted-foreground mt-2 text-xs" >

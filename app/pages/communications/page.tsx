@@ -64,8 +64,8 @@ export default function CommunicationsPage() {
           <h1 className="text-2xl font-bold">Communications</h1>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <Plus className="h-4 w-4" /> Log Activity
+              <Button className="flex items-center gap-2 bg-[#45a2ff]">
+                <Plus className="h-4 w-4" /> Log Activity 
               </Button>
             </SheetTrigger>
             <SheetContent
@@ -179,7 +179,9 @@ export default function CommunicationsPage() {
               );
             })
           ) : (
+            <>
             <div className="text-sm text-gray-600">No activities found.</div>
+            </>
           )}
         </div>
       </div>

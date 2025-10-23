@@ -75,7 +75,7 @@ export default function PipelinePage() {
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white">
+            <Button className="bg-[#45a2ff] from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white">
               <Plus className="h-4 w-4 mr-2" />
               Add Deal
             </Button>

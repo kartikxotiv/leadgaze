@@ -20,14 +20,14 @@ export function useSmoothLogout() {
       setTimeout(() => {
         authLogout();
 
-        window.location.href = "/pages/welcome";
+        window.location.href = "/pages/auth/sign-in";
       }, 200);
     } catch (error) {
       console.error("Logout error:", error);
 
      
       if (typeof window !== "undefined") {
-        window.location.href = "/pages/welcome";
+        window.location.href = "/pages/auth/sign-in";
       }
     } finally {
       setIsLoggingOut(false);

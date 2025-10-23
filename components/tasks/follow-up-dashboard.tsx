@@ -476,7 +476,7 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
 
             <Dialog open={showScheduler} onOpenChange={setShowScheduler}>
               <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                <Button className="bg-[#45a2ff] from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
                   <Plus className="h-4 w-4 mr-2" />
                   Schedule Follow-up
                 </Button>

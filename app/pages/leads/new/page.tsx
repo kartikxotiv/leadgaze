@@ -59,7 +59,6 @@ export default function NewLeadPage() {
   const { user: currentUser, currentOrganization } = useAuth();
 
   const [showOptionalFields, setShowOptionalFields] = useState(false);
-  const [isDirty, setIsDirty] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
     lastName: "",
@@ -137,7 +136,6 @@ export default function NewLeadPage() {
   const handleFormChange = useCallback(
     (field: string, value: string) => {
       setFormData((prev) => ({ ...prev, [field]: value }));
-      setIsDirty(true);
 
      
       if (errors[field]) {
@@ -220,7 +218,6 @@ export default function NewLeadPage() {
             notes: "",
             leadScore: 0,
           });
-          setIsDirty(false);
           setErrors({});
           toast.success("Ready to add another lead!");
         }
@@ -234,17 +231,18 @@ export default function NewLeadPage() {
  
   const renderForm = () => {
     return (
-      <div className="space-y-8">
-        {}
-        <div className="space-y-6">
+        <div className="space-y-8">
+          <div className="space-y-6">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-50 rounded-lg">
               <User className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold">Essential Information</h3>
-              <p className="text-sm text-gray-600">
+              <h3 className="text-lg font-medium">Essential Information</h3>
+              <p className="text-sm text-gray-600 font-regular">
+                
                 Required fields to create the lead
+
               </p>
             </div>
           </div>
@@ -408,7 +406,7 @@ export default function NewLeadPage() {
                     onChange={(e) =>
                       handleFormChange("website", e.target.value)
                     }
-                    placeholder="https
+                    placeholder="https://example.com"
                     className="pl-10"
                   />
                 </div>
@@ -507,28 +505,14 @@ export default function NewLeadPage() {
       <div className="max-w-4xl mx-auto space-y-6">
         {}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/pages/leads">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Leads
-              </Link>
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">
-                Add New Lead
-              </h1>
-              <p className="text-gray-600">
-                Fill in the essential information to create a new lead
-              </p>
+            <div className="flex items-center gap-4">
+              <div>
+                <h1 className="text-2xl font-medium tracking-tight">
+                  Add New Lead
+                </h1>
+              
+              </div>
             </div>
-          </div>
-          {isDirty && (
-            <div className="text-sm text-orange-600 flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
-              Unsaved changes
-            </div>
-          )}
         </div>
 
         {}
@@ -537,13 +521,13 @@ export default function NewLeadPage() {
         </Card>
 
         {}
-        <div className="flex items-center justify-between">
-          <Button variant="outline" asChild>
-            <Link href="/pages/leads">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Cancel
-            </Link>
-          </Button>
+          <div className="flex items-center justify-between">
+            <Button variant="outline" asChild>
+              <Link href="/pages/leads">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Cancel
+              </Link>
+            </Button>
 
           <div className="flex items-center gap-3">
             <Button

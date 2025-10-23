@@ -231,7 +231,7 @@ export function InlineEditEmail({
       type="email"
       onSave={onSave}
       placeholder={placeholder}
-      className="text-blue-600 hover:underline"
+      className="text-blue-600 hover:underline text-[13px]"
     />
   );
 }

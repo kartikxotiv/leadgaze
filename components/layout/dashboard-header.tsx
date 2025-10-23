@@ -196,7 +196,7 @@ export function DashboardHeader({ onMenuClick, collapsed, onCollapsedChange }: D
                       src={undefined}
                       alt={getUserDisplayName()}
                     />
-                    <AvatarFallback className="bg-blue-600 text-white text-sm">
+                    <AvatarFallback className="bg-[#45a2ff] text-white text-sm">
                       {getUserInitials()}
                     </AvatarFallback>
                   </Avatar>

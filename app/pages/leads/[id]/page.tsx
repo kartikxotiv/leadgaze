@@ -122,11 +122,11 @@ export default function LeadDetailPage() {
   }
 
  
-  const status = statuses.find((s) => s.id === lead.statusId);
-  const source = sources.find((s) => s.id === lead.sourceId);
-  const industry = industries.find((i) => i.id === lead.industryId);
-  const companySize = companySizes.find((c) => c.id === lead.companySizeId);
-  const grade = scoreGrades.find((g) => g.id === lead.scoreGradeId);
+  const status = statuses.find((s:any) => s.id === lead.statusId);
+  const source = sources.find((s:any) => s.id === lead.sourceId);
+  const industry = industries.find((i:any) => i.id === lead.industryId);
+  const companySize = companySizes.find((c:any) => c.id === lead.companySizeId);
+  const grade = scoreGrades.find((g:any) => g.id === lead.scoreGradeId);
 
  
   const getStatusColor = (statusName: string) => {
@@ -299,15 +299,15 @@ export default function LeadDetailPage() {
                     >
                       {status?.entityValue
                         ?.replace("_", " ")
-                        .replace(/\b\w/g, (l) => l.toUpperCase()) || "Unknown"}
+                        .replace(/\b\w/g, (l:any) => l.toUpperCase()) || "Unknown"}
                     </Badge>
                   </SelectTrigger>
                   <SelectContent>
-                    {statuses.map((s) => (
+                    {statuses.map((s:any) => (
                       <SelectItem key={s.id} value={s.id}>
                         {s.entityValue
                           ?.replace("_", " ")
-                          .replace(/\b\w/g, (l) => l.toUpperCase())}
+                          .replace(/\b\w/g, (l:any) => l.toUpperCase())}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -540,7 +540,7 @@ export default function LeadDetailPage() {
                       >
                         {status?.entityValue
                           ?.replace("_", " ")
-                          .replace(/\b\w/g, (l) => l.toUpperCase()) ||
+                          .replace(/\b\w/g, (l:any) => l.toUpperCase()) ||
                           "Unknown"}
                       </Badge>
                     </div>

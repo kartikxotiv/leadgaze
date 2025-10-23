@@ -625,7 +625,7 @@ Thank you for keeping your account secure!
         </div>
         
         <div class="footer">
-            <p>This is an automated message from MyCRM System.</p>
+            <p>This is an automated message from Leadgaze CRM System.</p>
             <p>Sent to: ${email}</p>
         </div>
     </div>
@@ -667,7 +667,7 @@ Important: This code will expire in ${expiresInMinutes} minutes for your securit
 If you didn't request this verification, please ignore this email.
 
 --
-This is an automated message from MyCRM System.
+This is an automated message from Leadgaze CRM System.
 Sent to: ${email}
 `;
   }

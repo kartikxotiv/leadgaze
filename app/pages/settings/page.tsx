@@ -128,7 +128,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="website">Website</Label>
-                  <Input id="website" placeholder="https
+                  <Input id="website" placeholder="https://example.com" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="industry">Industry</Label>
