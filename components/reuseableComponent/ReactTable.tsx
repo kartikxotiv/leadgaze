@@ -32,6 +32,8 @@ const customStyles: any = {
         textAlign: "left",
         cursor: "pointer",
         transition: "all 0.2s ease",
+        minHeight: "35px", // Decreased from default 33px
+        height: "35px", // Set fixed height
         "&:hover": {
           backgroundColor: "#F9FAFB !important",
           boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
@@ -41,10 +43,11 @@ const customStyles: any = {
     },
     headRow: {
       style: {
-        background: "#F2F4F7",
+        background: "#f8fafc",
         borderBottom: "1px solid #EAECF0",
         fontFamily: "'Satoshi_Regular', 'Zoho_Puvi_SemiBold', Arial, sans-serif",
         fontSize: "12px",
+        minHeight: "40px",
       },
     },
     headCells: {
@@ -64,23 +67,67 @@ const customStyles: any = {
       style: {
         fontSize: "13px",
         color: "#000000",
-        maxheight: "50px",
+        maxHeight: "35px", // Match row height
         textAlign: "left",
         whiteSpace: "nowrap",
         textOverflow: "ellipsis",
-        paddingTop: "8px",
-        paddingBottom: "8px",
+        paddingTop: "4px", // Reduced from 8px
+        paddingBottom: "4px", // Reduced from 8px
+        paddingLeft: "8px", // Reduced from 12px
+        paddingRight: "8px", // Reduced from 12px
         cursor: "pointer",
+        borderBottom: "none",
+        transition: "all 0.2s ease",
+        "&:hover": {
+          backgroundColor: "#F9FAFB",
+        },
         h6: {
           whiteSpace: "normal",
           margin: 0,
         },
       },
     },
+    // Additional cell styling options
+    cellRow: {
+      style: {
+        fontSize: "13px",
+        color: "#374151",
+        padding: "4px 8px", // Reduced padding
+        borderBottom: "1px solid #E5E7EB",
+        backgroundColor: "#FFFFFF",
+        minHeight: "35px", // Match row height
+        height: "25px", // Set fixed height
+        transition: "background-color 0.2s ease",
+        "&:hover": {
+          backgroundColor: "#F3F4F6",
+        },
+        "&:nth-child(even)": {
+          backgroundColor: "#FAFAFA",
+        },
+      },
+    },
+    // Conditional row styling
+    conditionalRowStyles: [
+      {
+        when: (row: any) => row.status === 'active',
+        style: {
+          backgroundColor: '#F0FDF4',
+          color: '#166534',
+        },
+      },
+      {
+        when: (row: any) => row.status === 'inactive',
+        style: {
+          backgroundColor: '#FEF2F2',
+          color: '#DC2626',
+        },
+      },
+    ],
     pagination: {
       pagination: {
         style: {
-          borderTop: "1px solid #e5e7eb",
+          borderTop: "none !important",
+          borderTopWidth: "0px !important",
           justifyContent: "center",
         },
         pageButtonsStyle: {
@@ -100,6 +147,13 @@ const customStyles: any = {
           },
         },
       },
+      rdt_Pagination: {
+        style: {
+          borderTop: "none !important",
+          borderTopWidth: "0px !important",
+          justifyContent: "center",
+        },
+      },
     },
   };
 interface UserData {
@@ -109,16 +163,19 @@ interface UserData {
     phone: string;
 }
 
-export const ReactTable = ({columns, data}: {columns: any, data: any}) => {
+export const ReactTable = ({columns, data,}: {columns: any, data: any, }) => {
+    console.log("columns", columns);
+    console.log("data", data);
+    
     return (
        <>
        
        <DataTable
-        title="User List"
         columns={columns}
         data={data}
         pagination
         customStyles={customStyles}
+        conditionalRowStyles={customStyles.conditionalRowStyles}
         />
        
        </>

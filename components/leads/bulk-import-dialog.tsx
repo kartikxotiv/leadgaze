@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import Papa from "papaparse";
+import * as XLSX from 'xlsx';
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -115,60 +116,103 @@ export function BulkImportDialog({
   const { currentOrganization, token, user } = useAuthStore();
   const { currentWorkspace } = useWorkspaceContext();
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const csvFile = acceptedFiles[0];
-    if (csvFile) {
-      setFile(csvFile);
-
-      Papa.parse(csvFile, {
+  const parseFile = async (file: File) => {
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    
+    if (fileExtension === 'csv') {
+      // Parse CSV file using Papa Parse
+      Papa.parse(file, {
         header: true,
         complete: (results) => {
           if (results.errors.length > 0) {
             toast.error("Error parsing CSV file");
             return;
           }
-
-          setCsvData(results.data);
-          setCsvHeaders(results.meta.fields || []);
-
-         
-          const normalize = (s: string) =>
-            (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-
-          const headers = (results.meta.fields || []).map((h) => ({
-            raw: h,
-            norm: normalize(h),
-          }));
-
-          const mappings: FieldMapping[] = LEAD_FIELDS.map((field) => {
-            const normKey = normalize(field.key);
-            const normLabel = normalize(field.label);
-
-            const match = headers.find(
-              (h) =>
-                h.norm.includes(normKey) ||
-                h.norm.includes(normLabel) ||
-                normKey.includes(h.norm) ||
-                normLabel.includes(h.norm)
-            );
-
-            const csvField = match?.raw || "";
-
-            return {
-              csvField,
-              leadField: field.key,
-              required: field.required,
-              selected: !!csvField,
-            };
-          });
-
-          setFieldMappings(mappings);
-          setStep("mapping");
+          processParsedData(results.data, results.meta.fields || []);
         },
         error: (error) => {
-          toast.error(`Error reading file: ${error.message}`);
+          toast.error(`Error reading CSV file: ${error.message}`);
         },
       });
+    } else if (['xls', 'xlsx'].includes(fileExtension || '')) {
+      // Parse Excel file using XLSX
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        
+        if (jsonData.length === 0) {
+          toast.error("Excel file appears to be empty");
+          return;
+        }
+        
+        // Convert to CSV-like format
+        const headers = jsonData[0] as string[];
+        const rows = jsonData.slice(1) as any[][];
+        
+        const csvData = rows.map(row => {
+          const obj: any = {};
+          headers.forEach((header, index) => {
+            obj[header] = row[index] || '';
+          });
+          return obj;
+        });
+        
+        processParsedData(csvData, headers);
+      } catch (error) {
+        toast.error(`Error reading Excel file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    } else {
+      toast.error("Unsupported file format. Please upload CSV or Excel files.");
+    }
+  };
+
+  const processParsedData = (data: any[], headers: string[]) => {
+    setCsvData(data);
+    setCsvHeaders(headers);
+
+    // Auto-map fields
+    const normalize = (s: string) =>
+      (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+    const normalizedHeaders = headers.map((h) => ({
+      raw: h,
+      norm: normalize(h),
+    }));
+
+    const mappings: FieldMapping[] = LEAD_FIELDS.map((field) => {
+      const normKey = normalize(field.key);
+      const normLabel = normalize(field.label);
+
+      const match = normalizedHeaders.find(
+        (h) =>
+          h.norm.includes(normKey) ||
+          h.norm.includes(normLabel) ||
+          normKey.includes(h.norm) ||
+          normLabel.includes(h.norm)
+      );
+
+      const csvField = match?.raw || "";
+
+      return {
+        csvField,
+        leadField: field.key,
+        required: field.required,
+        selected: !!csvField,
+      };
+    });
+
+    setFieldMappings(mappings);
+    setStep("mapping");
+  };
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      setFile(file);
+      parseFile(file);
     }
   }, []);
 
@@ -375,7 +419,7 @@ export function BulkImportDialog({
                   {index < 4 && (
                     <div
                       className={cn(
-                        "w-12 h-0.5 mx-2",
+                        "w-[9rem] h-0.5 mx-2",
                         [
                           "upload",
                           "mapping",
@@ -412,7 +456,7 @@ export function BulkImportDialog({
                 ) : (
                   <div>
                     <p className="text-lg font-medium mb-2">
-                      Drag & drop your CSV file here
+                      Drag & drop your CSV or Excel file here
                     </p>
                     <p className="text-gray-500 mb-4">
                       or click to browse files

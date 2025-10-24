@@ -160,3 +160,6 @@
     pointer-events: auto !important;
   }
 }
+.cocSnr.rdt_Pagination{
+  border-top: none !important;
+  }

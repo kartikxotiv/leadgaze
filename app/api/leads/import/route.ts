@@ -133,6 +133,26 @@ export async function POST(request: NextRequest) {
       }
 
       try {
+        // Get the source enum value from the sourceId
+        let sourceEnumValue = "Website"; // default value
+        if (sourceId) {
+          const sourceConfig = activeSources.find((s: any) => s.id === sourceId);
+          if (sourceConfig) {
+            const sourceValue = (sourceConfig as any).entityValue;
+            // Map the source value to the enum value
+            switch (sourceValue) {
+              case "website": sourceEnumValue = "Website"; break;
+              case "referral": sourceEnumValue = "Referral"; break;
+              case "cold_call": sourceEnumValue = "Cold Call"; break;
+              case "linkedin": sourceEnumValue = "LinkedIn"; break;
+              case "email": sourceEnumValue = "Email"; break;
+              case "trade_show": sourceEnumValue = "Trade Show"; break;
+              case "advertisement": sourceEnumValue = "Advertisement"; break;
+              default: sourceEnumValue = "Website";
+            }
+          }
+        }
+
         await Lead.create({
           firstName,
           lastName,
@@ -145,7 +165,11 @@ export async function POST(request: NextRequest) {
           sourceId,
           statusId: defaultStatusId,
           createdBy: requesterUserId,
-          metaData: workspaceId ? { workspaceId } : undefined,
+          contactPerson: `${firstName} ${lastName}`.trim(), // Add contactPerson field
+          source: sourceEnumValue, // Add source enum field
+          leadScore: 0, // Add leadScore field (required)
+          metaData: workspaceId ? { workspaceId } : null, // Fix: use null instead of undefined
+          tags: null, // Fix: explicitly set tags to null to avoid array literal error
          
         });
         successful++;
