@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Check, X, Edit3 } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
 interface InlineEditCellProps {
@@ -131,7 +132,7 @@ export function InlineEditCell({
         onChange={(e) => setEditValue(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="h-8 text-sm"
+        className="text-sm !h-[20px]"
         disabled={isLoading}
       />
     );
@@ -231,7 +232,7 @@ export function InlineEditEmail({
       type="email"
       onSave={onSave}
       placeholder={placeholder}
-      className="text-blue-600 hover:underline text-[13px]"
+      className="text-blue-600 hover:underline text-[13px] !h-[20px] !rounded-[0px]"
     />
   );
 }
@@ -354,21 +355,24 @@ export function DirectSelect({
       onValueChange={handleValueChange}
       disabled={disabled || isLoading}
     >
-      <SelectTrigger className="h-auto min-h-[2rem] border-none shadow-none p-1 hover:bg-muted/50 transition-colors">
-        {badge ? (
-          <Badge
-            variant={badgeVariant}
-            className={`text-xs ${badgeClassName} ${
-              isLoading ? "opacity-50" : ""
-            }`}
-          >
-            {displayValue}
-          </Badge>
-        ) : (
-          <span className={`text-sm ${isLoading ? "opacity-50" : ""}`}>
-            {displayValue}
-          </span>
-        )}
+      <SelectTrigger className="h-auto min-h-[20px] border-none shadow-none p-0 hover:bg-muted/50 transition-colors group">
+        <div className="flex items-center justify-between w-full">
+          {badge ? (
+            <Badge
+              variant={badgeVariant}
+              className={`text-xs ${badgeClassName} ${
+                isLoading ? "opacity-50" : ""
+              }`}
+            >
+              {displayValue} 
+            </Badge>
+          ) : (
+            <span className={`text-sm ${isLoading ? "opacity-50" : ""}`}>
+              {displayValue}
+            </span>
+          )}
+          <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-70 transition-opacity ml-1" />
+        </div>
       </SelectTrigger>
       <SelectContent>
         {options.map((option) => (
@@ -553,7 +557,7 @@ export function DirectText({
       onKeyDown={handleKeyDown}
       placeholder={placeholder}
       disabled={disabled || isLoading}
-      className={`border-none shadow-none p-1 hover:bg-muted/50 focus:bg-background transition-colors ${className} ${
+      className={`border-none shadow-none p-1 hover:bg-muted/50 focus:bg-background transition-colors rounded-[2px] ${className} ${
         isLoading ? "opacity-50" : ""
       }`}
     />

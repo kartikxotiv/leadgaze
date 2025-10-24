@@ -25,12 +25,13 @@ import {
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token");
-
+  const logo = "/image/leadgaze.png";
  
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -267,14 +268,15 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-md relative z-10">
         {}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-3 mb-4">
+          {/* <div className="inline-flex items-center gap-3 mb-4">
             <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
               <Building2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               CRM System
             </h1>
-          </div>
+          </div> */}
+          <Image src={logo} loading="lazy" width={250} height={80} alt="Leadgaze logo" />
 
           <Link
             href="/pages/auth/sign-in"

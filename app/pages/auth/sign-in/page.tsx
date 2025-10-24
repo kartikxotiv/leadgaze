@@ -26,8 +26,15 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLogin, useAuth } from "@/lib/hooks/use-auth";
+import Image from "next/image";
 
 export default function SignInPage() {
+
+
+  const logo = "/image/leadgaze.png";
+
+
+
   const router = useRouter();
   const { error, isLoading } = useAuth();
   const loginMutation = useLogin();
@@ -105,7 +112,9 @@ export default function SignInPage() {
             href="/pages/welcome"
             className="inline-flex items-center gap-3 mb-6 group"
           >
-            <div className="flex aspect-square size-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 text-white shadow-lg group-hover:scale-105 transition-transform duration-300">
+            <Image src={logo} loading="lazy" width={250} height={80} alt="Leadgaze logo" />
+            
+            {/* <div className="flex aspect-square size-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 text-white shadow-lg group-hover:scale-105 transition-transform duration-300">
               <Building2 className="size-7 text-white" />
             </div>
             <div className="text-left">
@@ -115,7 +124,7 @@ export default function SignInPage() {
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Sales Platform
               </p>
-            </div>
+            </div> */}
           </Link>
         </div>
 
@@ -125,9 +134,9 @@ export default function SignInPage() {
             <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
               Welcome Back
             </CardTitle>
-            <CardDescription className="text-base text-gray-600 dark:text-gray-300">
+            {/* <CardDescription className="text-base text-gray-600 dark:text-gray-300">
               Sign in to your account to continue 
-            </CardDescription>
+            </CardDescription> */}
           </CardHeader>
 
           <CardContent>
@@ -144,7 +153,7 @@ export default function SignInPage() {
                 </Alert>
               )}
 
-              {}
+              
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
                   Email Address
@@ -162,8 +171,7 @@ export default function SignInPage() {
                   />
                 </div>
               </div>
-
-              {}
+              
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-medium">
                   Password
@@ -225,7 +233,7 @@ export default function SignInPage() {
               {}
               <Button
                 type="submit"
-                className="w-full h-12 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-300"
+                className="w-full h-12 text-base font-medium bg-[#46a3ff] from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-300"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -265,15 +273,7 @@ export default function SignInPage() {
             </div>
 
           </CardContent>
-
-          
         </Card>
-
-        {}
-        {}
-
-        {}
-        {}
       </div>
     </div>
   );

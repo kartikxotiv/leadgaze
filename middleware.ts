@@ -11,6 +11,7 @@ const protectedRoutes = [
   "/pages/pipeline",
   "/pages/communications",
   "/pages/reports",
+  "/pages/testtable",
   // Legacy routes for backward compatibility
   "/dashboard",
   "/deals",

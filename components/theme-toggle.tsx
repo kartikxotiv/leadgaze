@@ -13,14 +13,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function ThemeToggle() {
-  const { setTheme, theme } = useTheme();
+  const { setTheme, theme } = useTheme(); // Use 'theme' instead of 'resolvedTheme'
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
 
- 
+  // Don't render anything on server
   if (!mounted) {
     return null;
   }
@@ -37,6 +37,7 @@ export function ThemeToggle() {
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
+      
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => setTheme("light")}>
           <Sun className="mr-2 h-4 w-4" />
@@ -51,6 +52,7 @@ export function ThemeToggle() {
           <span>System</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
+      
     </DropdownMenu>
   );
 }

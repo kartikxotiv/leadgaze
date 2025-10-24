@@ -18,7 +18,7 @@ export async function GET(
         },
         {
           model: LeadConfig,
-          as: "source",
+          as: "sourceConfig",
           attributes: ["entityValue", "description"],
         },
         {
@@ -152,7 +152,7 @@ export async function PUT(
         },
         {
           model: LeadConfig,
-          as: "source",
+          as: "sourceConfig",
           attributes: ["entityValue", "description"],
         },
         {

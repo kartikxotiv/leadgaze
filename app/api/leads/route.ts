@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
         },
         {
           model: LeadConfig,
-          as: "source",
+          as: "sourceConfig",
           attributes: ["entityValue", "description"],
         },
         {
@@ -307,12 +307,72 @@ export async function POST(request: NextRequest) {
       statusId = (defaultStatus as any).id;
     }
 
-   
+    console.log("Creating lead with data:", {
+      firstName: body.firstName,
+      lastName: body.lastName,
+      businessName: body.businessName,
+      organizationId: body.organizationId,
+      sourceId: body.sourceId,
+      createdBy: body.createdBy,
+    });
+
+    // Get the source enum value from the sourceId
+    let sourceEnumValue = "Website"; // default value
+    if (body.sourceId) {
+      const sourceConfig = await LeadConfig.findByPk(body.sourceId);
+      if (sourceConfig) {
+        const sourceValue = (sourceConfig as any).entityValue;
+        // Map the source value to the enum value
+        switch (sourceValue) {
+          case "website":
+            sourceEnumValue = "Website";
+            break;
+          case "referral":
+            sourceEnumValue = "Referral";
+            break;
+          case "cold_call":
+            sourceEnumValue = "Cold Call";
+            break;
+          case "linkedin":
+            sourceEnumValue = "LinkedIn";
+            break;
+          case "email":
+            sourceEnumValue = "Email";
+            break;
+          case "trade_show":
+            sourceEnumValue = "Trade Show";
+            break;
+          case "advertisement":
+            sourceEnumValue = "Advertisement";
+            break;
+          default:
+            sourceEnumValue = "Website";
+        }
+      }
+    }
+
     const lead = await Lead.create({
-      ...body,
+      firstName: body.firstName,
+      lastName: body.lastName,
       email: body.email?.toLowerCase(),
+      phone: body.phone,
+      businessName: body.businessName || body.company || "Unknown Company",
+      companyWebsite: body.companyWebsite,
+      jobTitle: body.jobTitle,
+      linkedinProfile: body.linkedinProfile,
+      organizationId: body.organizationId,
+      sourceId: body.sourceId,
+      industryId: body.industryId,
+      companySizeId: body.companySizeId,
+      productInterest: body.productInterest,
+      tags: body.tags || null,
       statusId: statusId,
+      assignedTo: body.assignedTo,
+      createdBy: body.createdBy,
+      qualificationNotes: body.qualificationNotes || body.notes,
       leadScore: 0,
+      contactPerson: body.contactPerson || `${body.firstName} ${body.lastName}`,
+      source: sourceEnumValue,
     });
 
    

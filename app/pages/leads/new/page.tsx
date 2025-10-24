@@ -13,10 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCreateLead, useLeadConfigs } from "@/hooks/use-leads";
+import { useCreateLead, useLeadConfigs, useLead, useUpdateLead } from "@/hooks/use-leads";
 import { useAuth } from "@/lib/hooks/use-auth";
-import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useCallback, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -54,8 +54,14 @@ interface FormData {
 
 export default function NewLeadPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editLeadId = searchParams.get('edit');
+  const isEditMode = !!editLeadId;
+  
   const createLeadMutation = useCreateLead();
+  const updateLeadMutation = useUpdateLead();
   const { data: configs, isLoading: configsLoading } = useLeadConfigs();
+  const { data: leadData, isLoading: leadLoading } = useLead(editLeadId || '');
   const { user: currentUser, currentOrganization } = useAuth();
 
   const [showOptionalFields, setShowOptionalFields] = useState(false);
@@ -80,6 +86,31 @@ export default function NewLeadPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Populate form data when editing
+  useEffect(() => {
+    if (isEditMode && leadData) {
+      setFormData({
+        firstName: leadData.firstName || "",
+        lastName: leadData.lastName || "",
+        email: leadData.email || "",
+        phone: leadData.phone || "",
+        company: leadData.businessName || "",
+        jobTitle: leadData.jobTitle || "",
+        website: leadData.companyWebsite || "",
+        linkedinUrl: leadData.linkedinProfile || "",
+        statusId: leadData.statusId || "",
+        sourceId: leadData.sourceId || "",
+        industryId: leadData.industryId || "",
+        companySizeId: leadData.companySizeId || "",
+        scoreGradeId: leadData.scoreGradeId || "",
+        productInterestIds: [],
+        assignedTo: leadData.assignedTo || "",
+        notes: leadData.qualificationNotes || "",
+        leadScore: leadData.leadScore || 0,
+      });
+    }
+  }, [isEditMode, leadData]);
+
  
   const statuses = configs?.status || [];
   const sources = configs?.source || [];
@@ -101,6 +132,8 @@ export default function NewLeadPage() {
           return "";
         case "company":
           return !value.trim() ? "Required" : "";
+        case "sourceId":
+          return !value.trim() ? "Required" : "";
         default:
           return "";
       }
@@ -116,6 +149,7 @@ export default function NewLeadPage() {
     newErrors.lastName = validateField("lastName", formData.lastName);
     newErrors.email = validateField("email", formData.email);
     newErrors.company = validateField("company", formData.company);
+    newErrors.sourceId = validateField("sourceId", formData.sourceId);
 
    
     const filteredErrors = Object.fromEntries(
@@ -129,6 +163,7 @@ export default function NewLeadPage() {
     formData.lastName,
     formData.email,
     formData.company,
+    formData.sourceId,
     validateField,
   ]);
 
@@ -171,8 +206,9 @@ export default function NewLeadPage() {
           lastName: formData.lastName.trim(),
           email: formData.email.trim() || undefined,
           phone: formData.phone.trim() || undefined,
-          businessName: formData.company.trim(),
+          businessName: formData.company.trim() || "Unknown Company",
           companyWebsite: formData.website.trim() || undefined,
+          contactPerson: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
          
           organizationId: currentOrganization?.organizationId || currentOrganization?.id,
           createdBy: currentUser?.userId,
@@ -181,19 +217,32 @@ export default function NewLeadPage() {
           industryId: formData.industryId || undefined,
           companySizeId: formData.companySizeId || undefined,
           productInterest: undefined,
-          tags: [],
+          tags: undefined,
           assignedTo: formData.assignedTo || undefined,
           notes: formData.notes.trim() || undefined,
         };
 
        
         const cleanedData = Object.fromEntries(
-          Object.entries(leadData).filter(([_, value]) => value !== undefined)
+          Object.entries(leadData).filter(([key, value]) => {
+            if (key === 'businessName') return true;
+            return value !== undefined;
+          })
         ) as any;
 
-        await createLeadMutation.mutateAsync(cleanedData);
+        console.log("Frontend sending data:", cleanedData);
+        console.log("BusinessName value:", cleanedData.businessName);
 
-        toast.success("Lead created successfully!");
+        if (isEditMode && editLeadId) {
+          await updateLeadMutation.mutateAsync({
+            leadId: editLeadId,
+            data: cleanedData,
+          });
+          toast.success("Lead updated successfully!");
+        } else {
+          await createLeadMutation.mutateAsync(cleanedData);
+          toast.success("Lead created successfully!");
+        }
 
         if (saveAndExit) {
           router.push("/pages/leads");
@@ -380,6 +429,7 @@ export default function NewLeadPage() {
                     onChange={(e) => handleFormChange("phone", e.target.value)}
                     placeholder="+1 (555) 123-4567"
                     className="pl-10"
+                    maxLength={10}
                   />
                 </div>
               </div>
@@ -413,13 +463,13 @@ export default function NewLeadPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="sourceId">Lead Source</Label>
+                <Label htmlFor="sourceId">Lead Source *</Label>
                 <Select
                   value={formData.sourceId}
                   onValueChange={(value) => handleFormChange("sourceId", value)}
                   disabled={configsLoading}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={errors.sourceId ? "border-red-500 focus:border-red-500" : ""}>
                     <SelectValue
                       placeholder={
                         configsLoading
@@ -444,6 +494,12 @@ export default function NewLeadPage() {
                     )}
                   </SelectContent>
                 </Select>
+                {errors.sourceId && (
+                  <p className="text-xs text-red-500 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.sourceId}
+                  </p>
+                )}
                 {!configsLoading && sources.length === 0 && (
                   <p className="text-xs text-yellow-600">
                     No lead sources configured. Please contact your
@@ -483,7 +539,7 @@ export default function NewLeadPage() {
             </Button>
             <div>
               <h1 className="text-2xl font-bold tracking-tight">
-                Add New Lead
+                {isEditMode ? "Edit Lead" : "Add New Lead"}
               </h1>
               <p className="text-gray-600">Loading form...</p>
             </div>
@@ -508,7 +564,7 @@ export default function NewLeadPage() {
             <div className="flex items-center gap-4">
               <div>
                 <h1 className="text-2xl font-medium tracking-tight">
-                  Add New Lead
+                  {isEditMode ? "Edit Lead" : "Add New Lead"}
                 </h1>
               
               </div>
@@ -530,28 +586,30 @@ export default function NewLeadPage() {
             </Button>
 
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={() => handleSubmit(false)}
-              disabled={createLeadMutation.isPending}
-            >
-              Save & Add Another
-            </Button>
+            {!isEditMode && (
+              <Button
+                variant="outline"
+                onClick={() => handleSubmit(false)}
+                disabled={createLeadMutation.isPending || updateLeadMutation.isPending}
+              >
+                Save & Add Another
+              </Button>
+            )}
 
             <Button
               onClick={() => handleSubmit(true)}
-              disabled={createLeadMutation.isPending}
-              className="min-w-[140px]"
+              disabled={createLeadMutation.isPending || updateLeadMutation.isPending}
+              className="min-w-[140px] bg-[#45a2ff] hover:bg-[#45a2ff]/90"
             >
-              {createLeadMutation.isPending ? (
+              {(createLeadMutation.isPending || updateLeadMutation.isPending) ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creating...
+                  {isEditMode ? "Updating..." : "Creating..."}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Save & Exit
+                  {isEditMode ? "Update Lead" : "Save & Exit"}
                 </>
               )}
             </Button>

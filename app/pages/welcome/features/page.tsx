@@ -898,7 +898,7 @@ export default function FeaturesPage() {
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
             <p>
-              &copy; 2024 Leadgaze CRM. All rights reserved. Built with ❤️ for sales
+              &copy; 2025 Leadgaze CRM. All rights reserved. Built with ❤️ for sales
               teams worldwide.
             </p>
           </div>

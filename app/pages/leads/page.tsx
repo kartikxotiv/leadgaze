@@ -38,7 +38,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatCard } from "@/components/ui/stat-card";
-import { useLeads, useLeadConfigs, useUpdateLead } from "@/hooks/use-leads";
+import { useLeads, useLeadConfigs, useUpdateLead, useDeleteLead } from "@/hooks/use-leads";
 import dynamic from "next/dynamic";
 import { Switch } from "@/components/ui/switch";
 
@@ -126,6 +126,10 @@ export default function LeadsPage() {
   const { data: leadsData, isLoading, error } = useLeads();
   const { data: configs } = useLeadConfigs();
   const updateLeadMutation = useUpdateLead();
+  const deleteLeadMutation = useDeleteLead();
+
+
+  console.log("leadsData", leadsData);
 
   // Prevent navigation back to auth pages
   usePreventAuthBack();
@@ -156,6 +160,11 @@ export default function LeadsPage() {
     leadId?: string;
   }>({ open: false });
   const [bulkImportDialog, setBulkImportDialog] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    leadId?: string;
+    leadName?: string;
+  }>({ open: false });
 
   // Column customization state
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
@@ -217,9 +226,9 @@ export default function LeadsPage() {
       case "disqualified":
         return "bg-red-100 text-red-800 border-red-200";
       case "not_reachable":
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "text-gray-800 ";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "text-gray-800 ";
     }
   };
 
@@ -465,6 +474,77 @@ export default function LeadsPage() {
       throw new Error(`Failed to update ${field}`);
     }
   };
+
+
+
+const handleEditLead = (leadId: string) => {
+  
+  window.location.href = `/pages/leads/new?edit=${leadId}`;
+};
+
+const handeldeletelead = async (leadId: string, leadName: string) => {
+  setDeleteDialog({
+    open: true,
+    leadId,
+    leadName,
+  });
+};
+
+const confirmDeleteLead = async () => {
+  if (!deleteDialog.leadId) return;
+  
+  try {
+    await deleteLeadMutation.mutateAsync(deleteDialog.leadId);
+    toast.success("Lead deleted successfully!");
+    setDeleteDialog({ open: false });
+  } catch (error) {
+    toast.error("Failed to delete lead");
+  }
+};
+
+const handleExportLeads = (format: 'csv' | 'excel') => {
+  const headers = ['Name', 'Email', 'Phone', 'Company', 'Status', 'Source', 'Score'];
+  const data = filteredLeads.map(lead => [
+    `${lead.firstName} ${lead.lastName}`,
+    lead.email || '',
+    lead.phone || '',
+    lead.businessName || '',
+    statuses.find((s: any) => s.id === lead.statusId)?.entityValue || '',
+    sources.find((s: any)  => s.id === lead.sourceId)?.entityValue || '',
+    lead.leadScore || 0
+  ]);
+  
+  const fileName = `leads-export-${new Date().toISOString().split('T')[0]}`;
+  
+  if (format === 'csv') {
+    const csvContent = [headers, ...data]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${fileName}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  } else {
+    // Excel format (XLSX)
+    const excelContent = [headers, ...data]
+      .map(row => row.join('\t'))
+      .join('\n');
+    
+    const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${fileName}.xls`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  }
+  
+  toast.success(`Leads exported as ${format.toUpperCase()} successfully!`);
+};
 
   // Enhanced filter handlers
   const handleFilterChange = (filterId: string, values: string[]) => {
@@ -732,6 +812,40 @@ export default function LeadsPage() {
                 <div className="flex gap-2 items-center">
 
                 
+                  {/* Export Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Export
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleExportLeads('csv')}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Export as CSV
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleExportLeads('excel')}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Export as Excel
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    onClick={() => setBulkImportDialog(true)}
+                  >
+                    <Upload className="h-4 w-4" />
+                    Import
+                  </Button>
+
+
 
 
                   {/* Columns Customizer Dropdown */}
@@ -743,7 +857,7 @@ export default function LeadsPage() {
                         className="flex items-center gap-2 !font-regular !text-[14px]"
                       >
                         <LayoutGrid className="h-4 w-4" />
-                        Customize Columns
+                         Columns
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent side="bottom" align="end" className="w-64 p-2">
@@ -857,12 +971,12 @@ export default function LeadsPage() {
                                 key={lead.leadId}
                                 className="hover:bg-muted/50"
                               >
-                              <TableCell className="py-1">
+                              <TableCell className="py-0">
                                 {filteredLeads.findIndex((l) => l.leadId === lead.leadId) + 1}
                               </TableCell>
 
                                 {visibleColumns.includes('name') && (
-                                <TableCell className="py-1">
+                                <TableCell className="py-0">
                                   <div className="flex items-center gap-3">
                                     
                                     {/* <Avatar className="h-8 w-8">
@@ -876,7 +990,14 @@ export default function LeadsPage() {
 
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-2">
-                                        <DirectText
+
+
+
+                                        <div className="text-[13px] font-regular cursor-pointer "
+                                        onClick={() => handleEditLead(lead.leadId)}>{`${lead.firstName} ${lead.lastName}`}</div>
+
+                                        
+                                        {/* <DirectText
                                           value={`${lead.firstName} ${lead.lastName}`}
                                           onSave={async (value) => {
                                             const [
@@ -899,8 +1020,8 @@ export default function LeadsPage() {
                                             }
                                           }}
                                           placeholder="Enter full name..."
-                                          className="font-regular !text-[13px]"
-                                        />
+                                          className="font-regular !text-[13px] !h-[20px] !p-0"
+                                        /> */}
                                       </div>
 
                                           
@@ -909,7 +1030,7 @@ export default function LeadsPage() {
                                 </TableCell>
                                 )}
                                 {visibleColumns.includes('email') && (
-                                <TableCell className="py-1">
+                                <TableCell className="py-0">
                                   
                                   <InlineEditEmail
                                         value={lead.email}
@@ -930,7 +1051,7 @@ export default function LeadsPage() {
 
 
                                   {visibleColumns.includes('contact') && (
-                                    <TableCell className="py-1 text-[13px]">
+                                    <TableCell className="py-0 text-[13px]">
                                       {lead.phone}
                                     </TableCell>
                                   )}
@@ -938,7 +1059,7 @@ export default function LeadsPage() {
 
 
                                 {visibleColumns.includes('company') && (
-                                <TableCell className="py-1">
+                                <TableCell className="py-0">
                                   <div className="space-y-1">
                                     <DirectText
                                       value={lead.businessName}
@@ -950,7 +1071,7 @@ export default function LeadsPage() {
                                         )
                                       }
                                       placeholder="Enter company name..."
-                                      className="font-regular !text-[13px]" 
+                                      className="font-regular !text-[13px] !p-0 h-[20px]" 
                                     />
                                     {/* <DirectText
                                       value={lead.jobTitle}
@@ -967,8 +1088,9 @@ export default function LeadsPage() {
                                   </div>
                                 </TableCell>
                                 )}
+                                
                                 {visibleColumns.includes('status') && (
-                                <TableCell className="py-1">
+                                <TableCell className="py-0">
                                   <DirectSelect
                                     value={lead.statusId}
                                     options={statuses.map((s: any) => ({
@@ -987,7 +1109,7 @@ export default function LeadsPage() {
                                       )
                                     }
                                     badge={true}
-                                    badgeVariant="outline"
+                                    // badgeVariant="outline"
                                     badgeClassName={getStatusColor(
                                       status?.entityValue || ""
                                     )}
@@ -995,8 +1117,9 @@ export default function LeadsPage() {
                                   />
                                 </TableCell>
                                 )}
+
                                 {visibleColumns.includes('grade') && (
-                                <TableCell className="py-1">
+                                <TableCell className="py-0">
                                   <div className="flex items-center gap-2">
                                     <div
                                       className={`w-1 h-1 rounded-full ${getGradeColor(
@@ -1010,7 +1133,7 @@ export default function LeadsPage() {
                                 </TableCell>
                                 )}
                                 {visibleColumns.includes('score') && (
-                                <TableCell className="py-1">
+                                <TableCell className="py-0">
                                   <div className="flex items-center gap-2">
                                     <span className="text-[13px] font-regular">
                                       {lead.scoreData?.totalScore ||
@@ -1041,7 +1164,7 @@ export default function LeadsPage() {
                                 </TableCell>
                                 )}
                                 {visibleColumns.includes('source') && (
-                                <TableCell className="py-1">
+                                <TableCell className="py-0">
                                   <Badge variant="secondary" className="!text-[13px] !font-regular">
                                     {source?.entityValue || "Unknown"}
                                   </Badge>
@@ -1056,7 +1179,7 @@ export default function LeadsPage() {
                                   </span>
                                 </TableCell>
                                 )} */}
-                                <TableCell className="text-right py-1">
+                                <TableCell className="text-right py-0">
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <Button variant="ghost" size="sm">
@@ -1144,10 +1267,16 @@ export default function LeadsPage() {
                                         Add Note
                                       </DropdownMenuItem>
                                       <DropdownMenuSeparator />
-                                      <DropdownMenuItem className="text-destructive">
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Delete
-                                      </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleEditLead(lead.leadId)}>
+                                          <Edit className="h-4 w-4 mr-2" />
+                                          Edit
+                                        </DropdownMenuItem>
+                                        
+                                        <DropdownMenuItem className="text-destructive" onClick={() => handeldeletelead(lead.leadId, `${lead.firstName} ${lead.lastName}`)}>
+                                          <Trash2 className="h-4 w-4 mr-2" />
+                                          Delete
+                                        </DropdownMenuItem>
+
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                 </TableCell>
@@ -1300,6 +1429,52 @@ export default function LeadsPage() {
           // You can add a refetch function here
         }}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialog.open}
+        onOpenChange={(open) =>
+          setDeleteDialog({
+            open,
+            leadId: open ? deleteDialog.leadId : undefined,
+            leadName: open ? deleteDialog.leadName : undefined,
+          })
+        }
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Lead</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete <strong>{deleteDialog.leadName}</strong>? 
+              This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteDialog({ open: false })}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDeleteLead}
+                disabled={deleteLeadMutation.isPending}
+              >
+                {deleteLeadMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

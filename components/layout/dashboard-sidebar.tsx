@@ -101,7 +101,7 @@ const defaultMenuItems: SidebarItem[] = [
     id: "Marketing",
     label: "Marketing",
     href: "/pages/Marketing",
-    icon: BarChart3,
+    icon: Megaphone,
     
   },
 
@@ -111,12 +111,7 @@ const defaultMenuItems: SidebarItem[] = [
     href: "/pages/communications",
     icon: MessageSquare,
   },
-  {
-    id: "marketing",
-    label: "Marketing",
-    href: "/pages/marketing",
-    icon: Megaphone,
-  },
+  
   {
     id: "team",
     label: "Team",
@@ -127,6 +122,12 @@ const defaultMenuItems: SidebarItem[] = [
     id: "reports",
     label: "Reports",
     href: "/pages/reports",
+    icon: BarChart3,
+  },
+  {
+    id: "testtable",
+    label: "Test Table",
+    href: "/pages/testtable",
     icon: BarChart3,
   },
   {
@@ -291,7 +292,7 @@ export function DashboardSidebar({
           {hasChildren ? (
             <button
               onClick={() => toggleDropdown(item.id)}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full ${
+              className={`flex items-center gap-3 px-3 py-1 rounded-lg text-sm font-medium transition-colors w-full ${
                 isActive(item.href)
                   ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
                   : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -310,14 +311,14 @@ export function DashboardSidebar({
                 const Icon = item.icon as React.ElementType;
                 return (
                   <Icon
-                    className={`w-5 h-5 ${collapsed ? "mx-auto" : ""}`}
+                    className={`w-4 h-4 ${collapsed ? "mx-auto" : ""}`}
                   />
                 );
               })()}
 
               {}
               {!collapsed && (
-                <div className="flex items-center justify-between flex-1">
+                <div className="flex items-center justify-between flex-1 font-regular text-[12px]">
                   <span>{item.label}</span>
                   <div className="flex items-center gap-2">
                     {item.badge && (
@@ -340,7 +341,7 @@ export function DashboardSidebar({
           ) : (
             <Link
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center gap-3 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                 isActive(item.href)
                   ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
                   : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -357,14 +358,14 @@ export function DashboardSidebar({
                 const Icon = item.icon as React.ElementType;
                 return (
                   <Icon
-                    className={`w-5 h-5 ${collapsed ? "mx-auto" : ""}`}
+                    className={`w-4 h-4 ${collapsed ? "mx-auto" : ""}`}
                   />
                 );
               })()}
 
               {}
               {!collapsed && (
-                <div className="flex items-center justify-between flex-1">
+                <div className="flex items-center justify-between flex-1 font-regular text-[13px]">
                   <span>{item.label}</span>
                   {item.badge && (
                     <Badge

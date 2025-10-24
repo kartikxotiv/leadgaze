@@ -23,6 +23,7 @@ import {
   User,
   Users,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -76,7 +77,7 @@ export default function SignUpPage() {
   const [otpSentAt, setOtpSentAt] = useState<Date | null>(null);
 
   const totalSteps = 6;
-
+  const logo = "/image/leadgaze.png";
  
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -251,117 +252,7 @@ export default function SignUpPage() {
 
  
   setCurrentStep(currentStep + 1);
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-
-   
-   
-   
-   
-   
-
-   
-   
-   
-   
-   
-
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-
-   
-   
-   
-   
-   
-
-   
-   
-   
-
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-
-   
-   
-   
-   
-   
-   
-   
-   
-
-   
-   
-   
-   
-   
-   
-
-   
-   
-   
-   
-   
-   
-
-   
-   
-   
-   
-   
-   
-   
-   
-
-
-
-
-
-
-
-
+       
 
 
   };
@@ -484,17 +375,9 @@ export default function SignUpPage() {
               href="/pages/welcome"
               className="inline-flex items-center gap-3 mb-6 group"
             >
-              <div className="flex aspect-square size-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 text-white shadow-lg group-hover:scale-105 transition-transform duration-300">
-                <Building2 className="size-7 text-white" />
-              </div>
-              <div className="text-left">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Leadgaze CRM
-                </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Sales Platform
-                </p>
-              </div>
+             <Image src={logo} loading="lazy" width={250} height={80} alt="Leadgaze logo" />
+
+
             </Link>
           </div>
 
@@ -1154,17 +1037,7 @@ export default function SignUpPage() {
             href="/pages/welcome"
             className="inline-flex items-center gap-3 mb-6 group"
           >
-            <div className="flex aspect-square size-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 text-white shadow-lg group-hover:scale-105 transition-transform duration-300">
-              <Building2 className="size-7 text-white" />
-            </div>
-            <div className="text-left">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                MyCRM
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Sales Platform
-              </p>
-            </div>
+            <Image src={logo} loading="lazy" width={250} height={80} alt="Leadgaze logo" />
           </Link>
         </div>
 
@@ -1180,7 +1053,7 @@ export default function SignUpPage() {
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
             <div
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-500 ease-out"
+              className="bg-[#46a3ff] from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${(currentStep / totalSteps) * 100}%` }}
             ></div>
           </div>
@@ -1308,7 +1181,7 @@ export default function SignUpPage() {
                     (currentStep === 4 && !formData.currentRole) ||
                     (currentStep === 5 && !formData.teamSize)
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:scale-105 hover:shadow-xl"
+                      : "bg-[#46a3ff] from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:scale-105 hover:shadow-xl"
                   }`}
                 >
                   {currentStep === 1 && !showOTPStep && emailCheckLoading ? (
@@ -1348,7 +1221,7 @@ export default function SignUpPage() {
                   className={`px-8 py-3 transition-all duration-300 shadow-lg ${
                     isLoading || !formData.agreeToTerms || !formData.companySize
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 hover:scale-105 hover:shadow-xl"
+                      : "bg-[#46a3ff] from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 hover:scale-105 hover:shadow-xl"
                   }`}
                 >
                   {isLoading ? (
