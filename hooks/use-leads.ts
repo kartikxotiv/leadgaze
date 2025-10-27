@@ -99,8 +99,8 @@ export interface LeadFilters {
   source?: string;
   assignedTo?: string;
   search?: string;
+  page?: number;
   limit?: number;
-  offset?: number;
 }
 
 export interface CreateLeadData {
@@ -148,8 +148,13 @@ export function useLeads(filters?: LeadFilters) {
 
       const params = new URLSearchParams({
         organizationId: currentOrganization.organizationId,
-        ...(filters as Record<string, string>),
+        page: filters?.page?.toString() || "1",
+        limit: filters?.limit?.toString() || "20",
       });
+      if (filters?.status) params.set("status", filters.status);
+      if (filters?.source) params.set("source", filters.source);
+      if (filters?.assignedTo) params.set("assignedTo", filters.assignedTo);
+      if (filters?.search && filters.search.trim()) params.set("search", filters.search);
       if (currentWorkspace?.id) {
         params.set("workspaceId", currentWorkspace.id);
       }

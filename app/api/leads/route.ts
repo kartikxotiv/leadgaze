@@ -22,8 +22,10 @@ export async function GET(request: NextRequest) {
     const assignedTo = searchParams.get("assignedTo");
     const workspaceId = searchParams.get("workspaceId");
     const search = searchParams.get("search");
-    const limit = parseInt(searchParams.get("limit") || "50");
-    const offset = parseInt(searchParams.get("offset") || "0");
+    const page = parseInt(searchParams.get("page") || "1");
+    const pageSize = parseInt(searchParams.get("limit") || "20");
+    const limit = pageSize;
+    const offset = (page - 1) * pageSize;
 
     if (!organizationId) {
       return NextResponse.json(
@@ -161,7 +163,9 @@ export async function GET(request: NextRequest) {
           total: count,
           limit,
           offset,
-          pages: Math.ceil(count / limit),
+          page,
+          pageSize,
+          totalPages: Math.ceil(count / limit),
         },
       },
     });

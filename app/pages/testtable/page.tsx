@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { usePreventAuthBack } from "@/hooks/use-prevent-auth-back";
 import {
@@ -29,11 +29,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
   EnhancedFilters,
   type FilterConfig,
   type ActiveFilter,
 } from "@/components/leads/enhanced-filters";
 import { useLeads, useLeadConfigs, useUpdateLead, useDeleteLead } from "@/hooks/use-leads";
+import { useQueryClient } from "@tanstack/react-query";
+import { ActivityLogForm } from "@/components/activities/activity-log-form";
+import { FollowUpScheduler } from "@/components/tasks/follow-up-scheduler";
+import { CreateDealForm } from "@/components/deals/create-deal-form";
 import {
   Plus,
   MoreHorizontal,
@@ -49,6 +60,10 @@ import {
   Target,
   Upload,
   LayoutGrid,
+  Activity,
+  Clock,
+  Calendar,
+  MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -56,17 +71,41 @@ import { Switch } from "@/components/ui/switch";
 import { BulkImportDialog } from "@/components/leads/bulk-import-dialog";
 
 export default function TestTablePage() {
-  const { data: leadsData, isLoading, error } = useLeads();
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
+  
+  // State management
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
+  
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+  
+  // Add debounced search term
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+  
+  const { data: leadsData, isLoading, error } = useLeads({ 
+    page: currentPage, 
+    limit: pageSize,
+    search: debouncedSearchTerm
+  });
   const { data: configs } = useLeadConfigs();
   const updateLeadMutation = useUpdateLead();
   const deleteLeadMutation = useDeleteLead();
+  const queryClient = useQueryClient();
   const [bulkImportDialog, setBulkImportDialog] = useState(false);
   // Prevent navigation back to auth pages
   usePreventAuthBack();
 
-  // State management
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
   const [sortBy, setSortBy] = useState<string>("updated");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [deleteDialog, setDeleteDialog] = useState<{
@@ -74,9 +113,27 @@ export default function TestTablePage() {
     leadId?: string;
     leadName?: string;
   }>({ open: false });
-  // Extract leads array from the response data structure
+  const [leadDetailsSheet, setLeadDetailsSheet] = useState<{
+    open: boolean;
+    leadId?: string;
+  }>({ open: false });
+  const [activityDialog, setActivityDialog] = useState<{
+    open: boolean;
+    leadId?: string;
+  }>({ open: false });
+  const [followUpDialog, setFollowUpDialog] = useState<{
+    open: boolean;
+    leadId?: string;
+    leadName?: string;
+  }>({ open: false });
+  const [createDealDialog, setCreateDealDialog] = useState<{
+    open: boolean;
+    leadId?: string;
+  }>({ open: false });
+  // Extract leads array and pagination info from the response data structure
   const leads = leadsData?.leads || [];
   const safeLeads = Array.isArray(leads) ? leads : [];
+  const pagination = leadsData?.pagination || { total: 0, page: 1, totalPages: 1, limit: pageSize };
 
   // Get configurations (note: API returns data grouped by entity type)
   const statuses = configs?.status || [];
@@ -191,10 +248,18 @@ export default function TestTablePage() {
       { 
         id: 'name',
         name: 'Name', 
-        selector: (row: any) => `${row.firstName || ''} ${row.lastName || ''}`.trim(), 
+        selector: (row: any) => `${row.firstName || ''} ${row.lastName || ''} `.trim(), 
         sortable: true,
         width: '150px',
-        minWidth: '150px'
+        minWidth: '150px',
+        cell: (row: any) => (
+          <div 
+            onClick={() => setLeadDetailsSheet({ open: true, leadId: row.leadId })} 
+            className="cursor-pointer hover:text-blue-600"
+          >
+            {`${row.firstName || ''} ${row.lastName || ''}`.trim()}
+          </div>
+        )
       },
       { 
         id: 'email',
@@ -214,6 +279,7 @@ export default function TestTablePage() {
               )
             }
             placeholder="Enter email..."
+            
           />
         )
       },
@@ -342,7 +408,57 @@ export default function TestTablePage() {
                 <Mail className="h-4 w-4 mr-2" />
                 Send Email
               </DropdownMenuItem>
+                <DropdownMenuItem
+                    onClick={() =>
+                      setActivityDialog({
+                        open: true,
+                        leadId: row.leadId,
+                      })
+                    }
+                  >
+                    <Activity className="h-4 w-4 mr-2" />
+                    Log Activity
+              </DropdownMenuItem>
+               <DropdownMenuItem
+                        onClick={() =>
+                          setFollowUpDialog({
+                            open: true,
+                            leadId: row.leadId,
+                            leadName: `${row.firstName} ${row.lastName}`,
+                          })
+                        }
+                      >
+                        <Clock className="h-4 w-4 mr-2" />
+                        Schedule Follow-up
+                      </DropdownMenuItem>
+
               <DropdownMenuSeparator />
+
+              <DropdownMenuItem
+                  onClick={() =>
+                    setCreateDealDialog({
+                      open: true,
+                      leadId: row.leadId,
+                    })
+                  }
+                >
+                  <Target className="h-4 w-4 mr-2" />
+                  Create Deal
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Schedule Call
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Add Note
+                </DropdownMenuItem>
+
+
+                <DropdownMenuSeparator />
+
+
+
               <DropdownMenuItem onClick={() => handleEditLead(row.leadId)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
@@ -424,82 +540,12 @@ export default function TestTablePage() {
     [statuses, sources, grades, safeLeads]
   );
 
-  // Filter and sort leads
-  const filteredLeads = useMemo(() => {
-    let filtered = safeLeads.filter((lead) => {
-      // Search filter
-      const matchesSearch =
-        lead.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.businessName?.toLowerCase().includes(searchTerm.toLowerCase());
-
-      if (!matchesSearch) return false;
-
-      // Enhanced filters
-      const sourceFilter = activeFilters.find((f) => f.filterId === "source");
-      const gradeFilter = activeFilters.find((f) => f.filterId === "grade");
-
-      const matchesSource =
-        !sourceFilter?.values.length ||
-        sourceFilter.values.includes(lead.sourceId);
-      const matchesGrade =
-        !gradeFilter?.values.length ||
-        gradeFilter.values.includes(lead.scoreGradeId || "");
-
-      return matchesSource && matchesGrade;
-    });
-
-    // Sorting
-    if (sortBy) {
-      filtered.sort((a, b) => {
-        let aValue: any;
-        let bValue: any;
-
-        switch (sortBy) {
-          case "name":
-            aValue = `${a.firstName} ${a.lastName}`.toLowerCase();
-            bValue = `${b.firstName} ${b.lastName}`.toLowerCase();
-            break;
-          case "company":
-            aValue = (a.businessName || "").toLowerCase();
-            bValue = (b.businessName || "").toLowerCase();
-            break;
-          case "score":
-            aValue = a.leadScore;
-            bValue = b.leadScore;
-            break;
-          case "created":
-            aValue = new Date(a.createdAt).getTime();
-            bValue = new Date(b.createdAt).getTime();
-            break;
-          case "updated":
-          default:
-            aValue = new Date(a.updatedAt).getTime();
-            bValue = new Date(b.updatedAt).getTime();
-            break;
-        }
-
-        if (aValue < bValue) return sortOrder === "asc" ? -1 : 1;
-        if (aValue > bValue) return sortOrder === "asc" ? 1 : -1;
-        return 0;
-      });
-    }
-
-    return filtered;
-  }, [
-    safeLeads,
-    searchTerm,
-    activeFilters,
-    sortBy,
-    sortOrder,
-    statuses,
-    grades,
-  ]);
+  // Note: Filtering and sorting is now handled by the backend
+  // The frontend just displays the filtered results from the API
 
   // Quick stats
   const stats = useMemo(() => {
-    const total = safeLeads.length;
+    const total = pagination.total;
     const newLeads = safeLeads.filter((lead) => {
       const status = statuses.find((s: any) => s.id === lead.statusId);
       return (status?.value || status?.entityValue) === "new";
@@ -567,8 +613,8 @@ export default function TestTablePage() {
 
   const handleExportLeads = (format: 'csv' | 'excel') => {
     const headers = ['Name', 'Email', 'Phone', 'Company', 'Status', 'Source', 'Score'];
-    const data = filteredLeads.map(lead => [
-      `${lead.firstName} ${lead.lastName}`,
+    const data = safeLeads.map(lead => [
+      `${lead.firstName} ${lead.lastName} `,
       lead.email || '',
       lead.phone || '',
       lead.businessName || '',
@@ -705,8 +751,8 @@ export default function TestTablePage() {
                   sortBy={sortBy}
                   sortOrder={sortOrder}
                   onSortChange={handleSortChange}
-                  resultCount={filteredLeads.length}
-                  totalCount={safeLeads.length}
+                  resultCount={safeLeads.length}
+                  totalCount={pagination.total}
                 />
               </div>
               <div className="flex gap-2 items-center">
@@ -799,8 +845,58 @@ export default function TestTablePage() {
             <div className="mt-4">
               <ReactTable 
                 columns={getTableColumns()} 
-                data={filteredLeads} 
+                data={safeLeads} 
               />
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-[12px] text-muted-foreground">
+                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, pagination.total)} of {pagination.total} leads
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (pagination.totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= pagination.totalPages - 2) {
+                      pageNum = pagination.totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="min-w-[40px]"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+                  disabled={currentPage >= pagination.totalPages}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -809,10 +905,146 @@ export default function TestTablePage() {
 
 
 
+      
+      <Sheet 
+        open={leadDetailsSheet.open} 
+        onOpenChange={(open) => setLeadDetailsSheet({ open, leadId: open ? leadDetailsSheet.leadId : undefined })}
+      >
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Lead Details</SheetTitle>
+            <SheetDescription className="text-[12px] !mt-[0px]">
+              View detailed information about the selected lead
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="mt-3 space-y-6">
+            {safeLeads.length > 0 ? (
+              // Get first lead as example or selected lead
+              (() => {
+                const selectedLead = leadDetailsSheet.leadId 
+                  ? safeLeads.find(lead => lead.leadId === leadDetailsSheet.leadId)
+                  : safeLeads[0];
+                
+                if (!selectedLead) return <p className="text-muted-foreground">No lead selected</p>;
+                
+                return (
+                  <div className="space-y-4">
+                    {/* Basic Information */}
+                    <div className="bg-muted/50 p-4 rounded-lg space-y-3">
+                      <h3 className="font-meidum text-base mb-1">Basic Information</h3>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Full Name</p>
+                          <p className="font-medium text-xs" >{selectedLead.firstName} {selectedLead.lastName}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Email</p>
+                          <p className="font-medium text-xs">{selectedLead.email || "Not provided"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Phone</p>
+                          <p className="font-medium text-xs">{selectedLead.phone || "Not provided"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Job Title</p>
+                          <p className="font-medium text-xs">{selectedLead.jobTitle || "Not provided"}</p>
+                        </div>
+                      </div>
+                    </div>
 
+                    {/* Company Information */}
+                    <div className="bg-muted/50 p-4 rounded-lg space-y-3">
+                      <h3 className="font-meidum text-base mb-1">Company Information</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Company Name</p>
+                          <p className="font-medium text-xs">{selectedLead.businessName || "Not provided"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Website</p>
+                          <p className="font-medium text-xs">{selectedLead.companyWebsite || "Not provided"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">LinkedIn</p>
+                          <p className="font-medium text-xs">{selectedLead.linkedinProfile || "Not provided"}</p>
+                        </div>
+                      </div>
+                    </div>
 
+                    {/* Lead Information */}
+                    <div className="bg-muted/50 p-4 rounded-lg space-y-3">
+                      <h3 className="font-meidum text-base mb-1">Lead Information</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Status</p>
+                          <p className="font-medium text-xs">
+                            {(() => {
+                              const status = statuses.find((s: any) => s.id === selectedLead.statusId);
+                              return status?.entityValue || "Unknown";
+                            })()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Source</p>
+                          <p className="font-medium text-xs">
+                            {(() => {
+                              const source = sources.find((s: any) => s.id === selectedLead.sourceId);
+                              return source?.entityValue || "Unknown";
+                            })()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Grade</p>
+                          <p className="font-medium text-xs">
+                            {(() => {
+                              const grade = grades.find((g: any) => g.id === selectedLead.scoreGradeId);
+                              return grade?.entityValue || "Ungraded";
+                            })()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Score</p>
+                          <p className="font-medium text-xs">{selectedLead.leadScore || 0}</p>
+                        </div>
+                      </div>
+                    </div>
 
+                    {/* Notes */}
+                    {selectedLead.qualificationNotes && (
+                      <div className="bg-muted/50 p-4 rounded-lg space-y-3">
+                        <h3 className="font-meidum text-base mb-1">Notes</h3>
+                        <p className="text-xs text-muted-foreground">{selectedLead.qualificationNotes}</p>
+                      </div>
+                    )}
 
+                    {/* Dates */}
+                    <div className="bg-muted/50 p-4 rounded-lg space-y-3">
+                      <h3 className="font-meidum text-base mb-1">Dates</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Created</p>
+                          <p className="font-medium text-xs">
+                            {new Date(selectedLead.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Last Updated</p>
+                          <p className="font-medium text-xs">
+                            {new Date(selectedLead.updatedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()
+            ) : (
+              <p className="text-muted-foreground">No leads available to display</p>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <BulkImportDialog
         open={bulkImportDialog}
@@ -868,6 +1100,91 @@ export default function TestTablePage() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Activity Log Dialog */}
+      <Dialog
+        open={activityDialog.open}
+        onOpenChange={(open) =>
+          setActivityDialog({
+            open,
+            leadId: open ? activityDialog.leadId : undefined,
+          })
+        }
+      >
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Log Activity</DialogTitle>
+          </DialogHeader>
+          {activityDialog.leadId && (
+            <ActivityLogForm
+              relatedType="lead"
+              relatedId={activityDialog.leadId}
+              onSuccess={() => {
+                setActivityDialog({ open: false });
+                queryClient.invalidateQueries({ queryKey: ["leads"] });
+              }}
+              onCancel={() => setActivityDialog({ open: false })}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Follow-up Scheduler Dialog */}
+      <Dialog
+        open={followUpDialog.open}
+        onOpenChange={(open) =>
+          setFollowUpDialog({
+            open,
+            leadId: open ? followUpDialog.leadId : undefined,
+            leadName: open ? followUpDialog.leadName : undefined,
+          })
+        }
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Schedule Follow-up</DialogTitle>
+          </DialogHeader>
+          {followUpDialog.leadId && (
+            <FollowUpScheduler
+              leadId={followUpDialog.leadId}
+              leadName={followUpDialog.leadName}
+              onSuccess={() => {
+                setFollowUpDialog({ open: false });
+                queryClient.invalidateQueries({ queryKey: ["leads"] });
+              }}
+              onCancel={() => setFollowUpDialog({ open: false })}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Deal Dialog */}
+      <Dialog
+        open={createDealDialog.open}
+        onOpenChange={(open) =>
+          setCreateDealDialog({
+            open,
+            leadId: open ? createDealDialog.leadId : undefined,
+          })
+        }
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Deal from Lead</DialogTitle>
+          </DialogHeader>
+          {createDealDialog.leadId && (
+            <CreateDealForm
+              preSelectedLeadId={createDealDialog.leadId}
+              onSuccess={() => {
+                setCreateDealDialog({ open: false });
+                queryClient.invalidateQueries({ queryKey: ["deals"] });
+                toast.success("Deal created successfully!");
+              }}
+              onCancel={() => setCreateDealDialog({ open: false })}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </DashboardLayout>

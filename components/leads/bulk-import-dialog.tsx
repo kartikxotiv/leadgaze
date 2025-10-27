@@ -376,7 +376,7 @@ export function BulkImportDialog({
             <Upload className="h-5 w-5" />
             Bulk Import Leads
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs">
             Import leads from CSV or Excel files. Map your data fields and
             review before importing.
           </DialogDescription>
@@ -392,7 +392,7 @@ export function BulkImportDialog({
                     className={cn(
                       "w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium",
                       step === stepName
-                        ? "bg-blue-600 text-white"
+                        ? "bg-[#45a2ff] text-white"
                         : [
                             "upload",
                             "mapping",
@@ -427,7 +427,7 @@ export function BulkImportDialog({
                           "importing",
                           "complete",
                         ].indexOf(step) > index
-                          ? "bg-green-600"
+                          ? "bg-[#45a2ff]"
                           : "bg-gray-200"
                       )}
                     />
@@ -471,15 +471,16 @@ export function BulkImportDialog({
 
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">Supported formats:</h4>
-                  <p className="text-sm text-gray-500">
+                  <h4 className="font-medium text-xs">Supported formats:</h4>
+                  <p className="text-xs text-gray-500">
                     CSV, Excel (.xls, .xlsx)
                   </p>
                 </div>
-                <Button variant="outline" onClick={downloadSampleCSV}>
+                {/* <Button variant="outline" onClick={downloadSampleCSV}>
                   <Download className="h-4 w-4 mr-2" />
                   Download Sample CSV
-                </Button>
+                </Button> */}
+                &nbsp;
               </div>
 
               {file && (
@@ -514,8 +515,8 @@ export function BulkImportDialog({
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold">Map CSV Fields</h3>
-                  <p className="text-sm text-gray-500">
+                  <h3 className="text-sm font-semibold">Map CSV Fields</h3>
+                  <p className="text-xs text-gray-500">
                     Map your CSV columns to lead fields. Required fields must be
                     mapped.
                   </p>
@@ -539,11 +540,11 @@ export function BulkImportDialog({
                 </div>
               )}
 
-              <div className="space-y-4">
+              <div className="space-y-1">
                 {fieldMappings.map((mapping, index) => (
                   <div
                     key={mapping.leadField}
-                    className="flex items-center gap-4 p-4 border rounded-lg"
+                    className="flex items-center gap-4 px-2 py-1 border-b"
                   >
                     <Checkbox
                       checked={mapping.selected}
@@ -559,7 +560,7 @@ export function BulkImportDialog({
                     />
                     <div className="flex-1 grid grid-cols-2 gap-4 items-center">
                       <div>
-                        <Label className="font-medium">
+                        <Label className="font-regular text-xs">
                           {
                             LEAD_FIELDS.find((f) => f.key === mapping.leadField)
                               ?.label
@@ -576,15 +577,15 @@ export function BulkImportDialog({
                         }
                         disabled={!mapping.selected}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select CSV column" />
+                        <SelectTrigger className="text-xs font-regular ">
+                          <SelectValue placeholder="Select CSV column" className="text-xs font-regular text-gray-500" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__no_mapping__">
                             -- No mapping --
                           </SelectItem>
                           {csvHeaders.map((header) => (
-                            <SelectItem key={header} value={header}>
+                            <SelectItem key={header} value={header} className="text-xs font-regular text-gray-500">
                               {header}
                             </SelectItem>
                           ))}
@@ -596,10 +597,10 @@ export function BulkImportDialog({
               </div>
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setStep("upload")}>
+                <Button variant="outline" onClick={() => setStep("upload")} className="text-xs font-regular">
                   Back to Upload
                 </Button>
-                <Button onClick={processPreview}>
+                <Button onClick={processPreview} className="text-xs font-regular bg-[#45a2ff]">
                   <Eye className="h-4 w-4 mr-2" />
                   Preview Data
                 </Button>
@@ -611,8 +612,8 @@ export function BulkImportDialog({
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold">Preview Import Data</h3>
-                  <p className="text-sm text-gray-500">
+                  <h3 className="text-sm font-semibold">Preview Import Data</h3>
+                  <p className="text-xs text-gray-500">
                     Review the first 5 rows of mapped data before importing.
                   </p>
                 </div>
@@ -632,7 +633,7 @@ export function BulkImportDialog({
                             .map((mapping) => (
                               <th
                                 key={mapping.leadField}
-                                className="px-4 py-3 text-left text-sm font-medium"
+                                className="px-1 py-3 text-left text-xs font-medium"
                               >
                                 {
                                   LEAD_FIELDS.find(
@@ -651,7 +652,7 @@ export function BulkImportDialog({
                               .map((mapping) => (
                                 <td
                                   key={mapping.leadField}
-                                  className="px-4 py-3 text-sm"
+                                  className="px-1 py-3 text-xs"
                                 >
                                   {lead[mapping.leadField] || "-"}
                                 </td>
@@ -665,12 +666,12 @@ export function BulkImportDialog({
               </Card>
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setStep("mapping")}>
+                <Button variant="outline" onClick={() => setStep("mapping")} className="text-xs font-regular">
                   Back to Mapping
                 </Button>
                 <Button
                   onClick={startImport}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:bg-green-700 text-xs font-regular"
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   Start Import ({csvData.length} leads)
@@ -703,7 +704,7 @@ export function BulkImportDialog({
               <div className="text-center">
                 <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-green-600" />
                 <h3 className="text-lg font-semibold">Import Complete!</h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-xs text-gray-500">
                   Your leads have been processed successfully
                 </p>
               </div>
@@ -714,7 +715,7 @@ export function BulkImportDialog({
                     <div className="text-2xl font-bold text-green-600">
                       {importResults.successful}
                     </div>
-                    <div className="text-sm text-gray-500">Successful</div>
+                    <div className="text-xs text-gray-500">Successful</div>
                   </CardContent>
                 </Card>
                 <Card>
@@ -722,7 +723,7 @@ export function BulkImportDialog({
                     <div className="text-2xl font-bold text-orange-600">
                       {importResults.duplicates}
                     </div>
-                    <div className="text-sm text-gray-500">Duplicates</div>
+                    <div className="text-xs text-gray-500">Duplicates</div>
                   </CardContent>
                 </Card>
                 <Card>
@@ -730,7 +731,7 @@ export function BulkImportDialog({
                     <div className="text-2xl font-bold text-red-600">
                       {importResults.failed}
                     </div>
-                    <div className="text-sm text-gray-500">Failed</div>
+                    <div className="text-xs text-gray-500">Failed</div>
                   </CardContent>
                 </Card>
               </div>
@@ -756,11 +757,11 @@ export function BulkImportDialog({
               )}
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={resetDialog}>
+                <Button variant="outline" onClick={resetDialog} className="text-xs font-regular">
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Import Another File
                 </Button>
-                <Button onClick={() => onOpenChange(false)}>Done</Button>
+                <Button onClick={() => onOpenChange(false)} className="text-xs font-regular bg-[#45a2ff]">Done</Button>
               </div>
             </div>
           )}

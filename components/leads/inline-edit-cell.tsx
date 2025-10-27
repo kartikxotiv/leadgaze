@@ -186,7 +186,7 @@ export function InlineEditCell({
 
   return (
     <div
-      className="group flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1 transition-colors"
+      className="group flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-0 py-1 transition-colors"
       onClick={() => setIsEditing(true)}
     >
       {renderDisplayValue()}

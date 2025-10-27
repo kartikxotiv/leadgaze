@@ -112,20 +112,58 @@ export async function POST(request: NextRequest) {
      
       let sourceId: string | undefined = row.sourceId;
       if (!sourceId && row.source) {
+        console.log(`Looking for source: "${row.source}"`);
+        console.log(`Available sources:`, activeSources.map((s: any) => s.entityValue));
+        
+        // Try to find exact match first
         const match = activeSources.find(
           (s: any) =>
-            normalize((s as any).entityValue) ===
-            normalize(row.source as string)
+            normalize((s as any).entityValue) === normalize(row.source as string)
         );
         sourceId = (match as any)?.id;
+        console.log(`Found match:`, sourceId);
+        
+        // If no exact match, try common mappings
+        if (!sourceId) {
+          const sourceValue = normalize(row.source as string);
+          const mappedSources: Record<string, string[]> = {
+            website: ['website', 'web', 'online'],
+            referral: ['referral', 'refer'],
+            linkedin: ['linkedin', 'linked in'],
+            cold_call: ['coldcall', 'cold call', 'coldcall'],
+            email: ['email', 'mail'],
+            trade_show: ['tradeshow', 'trade show', 'tradeshow'],
+            advertisement: ['advertisement', 'ad', 'advert'],
+            unknown: ['unknown', 'other', 'na'],
+          };
+          
+          for (const [key, variations] of Object.entries(mappedSources)) {
+            if (variations.includes(sourceValue)) {
+              const mappedMatch = activeSources.find(
+                (s: any) => normalize((s as any).entityValue) === key
+              );
+              if (mappedMatch) {
+                sourceId = (mappedMatch as any).id;
+                break;
+              }
+            }
+          }
+        }
       }
+      
+      // If still no sourceId, try to find "unknown" source
       if (!sourceId) {
-       
         const unknown = activeSources.find(
           (s: any) => normalize((s as any).entityValue) === "unknown"
         );
         if (unknown) sourceId = (unknown as any).id;
       }
+      
+      // If still no sourceId, try to find the first available source
+      if (!sourceId && activeSources.length > 0) {
+        sourceId = (activeSources[0] as any).id;
+      }
+      
       if (!sourceId) {
         failed++;
         errors.push(`Row ${rowIdx}: Could not resolve source/sourceId`);

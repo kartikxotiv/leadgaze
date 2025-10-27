@@ -67,14 +67,14 @@ const customStyles: any = {
       style: {
         fontSize: "13px",
         color: "#000000",
-        maxHeight: "35px", // Match row height
+        maxHeight: "35px", 
         textAlign: "left",
         whiteSpace: "nowrap",
         textOverflow: "ellipsis",
-        paddingTop: "4px", // Reduced from 8px
-        paddingBottom: "4px", // Reduced from 8px
-        paddingLeft: "8px", // Reduced from 12px
-        paddingRight: "8px", // Reduced from 12px
+        paddingTop: "4px", 
+        paddingBottom: "4px",
+        paddingLeft: "16px", 
+        paddingRight: "16px",
         cursor: "pointer",
         borderBottom: "none",
         transition: "all 0.2s ease",
@@ -173,9 +173,10 @@ export const ReactTable = ({columns, data,}: {columns: any, data: any, }) => {
        <DataTable
         columns={columns}
         data={data}
-        pagination
+        pagination={false}
         customStyles={customStyles}
         conditionalRowStyles={customStyles.conditionalRowStyles}
+        
         />
        
        </>
