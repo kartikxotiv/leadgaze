@@ -141,8 +141,8 @@ export default function TestTablePage() {
   const grades = configs?.score_grade || [];
 
 
-  // Status color mapping
-  const getStatusColor = (statusName: string) => {
+  // Status color mapping for badges
+  const getStatusColor = (statusName: string): string => {
     switch (statusName?.toLowerCase()) {
       case "new":
         return "bg-blue-100 text-blue-800 border-blue-200";
@@ -161,8 +161,37 @@ export default function TestTablePage() {
     }
   };
 
+  // Status color mapping for dropdown items
+  const getStatusColorForDropdown = (statusLabel: string): string => {
+    const normalizedLabel = statusLabel?.toLowerCase().trim();
+    
+    switch (normalizedLabel) {
+      case "new":
+      case "contact attempted":
+        return "text-blue-600";
+      case "contacted":
+      case "in conversation":
+        return "text-yellow-600";
+      case "qualified":
+        return "text-green-600";
+      case "proposal":
+        return "text-purple-600";
+      case "negotiation":
+        return "text-orange-600";
+      case "closed won":
+        return "text-green-700 font-medium";
+      case "closed lost":
+      case "disqualified":
+        return "text-red-600";
+      case "not reachable":
+        return "text-gray-600";
+      default:
+        return "";
+    }
+  };
+
   // Grade color mapping
-  const getGradeColor = (gradeName: string) => {
+  const getGradeColor = (gradeName: string): string => {
     switch (gradeName?.toLowerCase()) {
       case "hot":
         return "bg-red-500";
@@ -176,7 +205,7 @@ export default function TestTablePage() {
   };
 
   // Helper function to get short, clean status names
-  const getShortStatusName = (entityValue: string) => {
+  const getShortStatusName = (entityValue: string): string => {
     const statusMap: Record<string, string> = {
       new: "New",
       contact_attempted: "Contacted",
@@ -338,6 +367,7 @@ export default function TestTablePage() {
                 value
               )
             }
+            getItemColor={getStatusColorForDropdown}
           />
         )
       },
@@ -914,7 +944,7 @@ export default function TestTablePage() {
           <SheetHeader>
             <SheetTitle>Lead Details</SheetTitle>
             <SheetDescription className="text-[12px] !mt-[0px]">
-              View detailed information about the selected lead
+              View detailed information about the selected lead 
             </SheetDescription>
           </SheetHeader>
           

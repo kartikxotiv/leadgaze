@@ -316,6 +316,7 @@ export function DirectSelect({
   badgeVariant = "outline" as const,
   badgeClassName = "",
   disabled = false,
+  getItemColor,
 }: {
   value: string | undefined;
   options: Array<{ id: string; value: string; label?: string }>;
@@ -325,6 +326,7 @@ export function DirectSelect({
   badgeVariant?: "default" | "secondary" | "destructive" | "outline";
   badgeClassName?: string;
   disabled?: boolean;
+  getItemColor?: (label: string) => string;
 }) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -348,6 +350,7 @@ export function DirectSelect({
   };
 
   const displayValue = getDisplayValue();
+  const badgeColorClass = getItemColor ? getItemColor(displayValue) : "";
 
   return (
     <Select
@@ -375,11 +378,19 @@ export function DirectSelect({
         </div>
       </SelectTrigger>
       <SelectContent>
-        {options.map((option) => (
-          <SelectItem key={option.id} value={option.id}>
-            {option.label || option.value}
-          </SelectItem>
-        ))}
+        {options.map((option) => {
+          const optionLabel = option.label || option.value;
+          const itemColor = getItemColor ? getItemColor(optionLabel) : "";
+          return (
+            <SelectItem 
+              key={option.id} 
+              value={option.id}
+              className={itemColor}
+            >
+              {optionLabel}
+            </SelectItem>
+          );
+        })}
       </SelectContent>
     </Select>
   );

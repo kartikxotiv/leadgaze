@@ -163,3 +163,8 @@
 .cocSnr.rdt_Pagination{
   border-top: none !important;
   }
+
+.rdt_TableBody {
+      max-height: 69vh;
+      overflow-y: auto;
+}

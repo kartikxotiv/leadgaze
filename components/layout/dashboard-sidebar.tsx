@@ -68,117 +68,112 @@ const defaultMenuItems: SidebarItem[] = [
    
     badgeVariant: "secondary",
   },
-  {
-    id: "deals",
-    label: "Deals",
-    href: "/deals",
-    icon: Target,
+  // {
+  //   id: "deals",
+  //   label: "Deals",
+  //   href: "/deals",
+  //   icon: Target,
    
     
-    badgeVariant: "default",
-  },
-  {
-    id: "tasks",
-    label: "Tasks",
-    href: "/tasks",
-    icon: CheckSquare,
+  //   badgeVariant: "default",
+  // },
+  // {
+  //   id: "tasks",
+  //   label: "Tasks",
+  //   href: "/tasks",
+  //   icon: CheckSquare,
    
-    badgeVariant: "destructive",
-  },
-  {
-    id: "pipeline",
-    label: "Pipeline",
-    href: "/pages/pipeline",
-    icon: BarChart3,
-  },
-  {
-    id: "sales",
-    label: "sales",
-    href: "/pages/sales",
-    icon: BarChart3,
-  },
-  {
-    id: "Marketing",
-    label: "Marketing",
-    href: "/pages/Marketing",
-    icon: Megaphone,
+  //   badgeVariant: "destructive",
+  // },
+  // {
+  //   id: "pipeline",
+  //   label: "Pipeline",
+  //   href: "/pages/pipeline",
+  //   icon: BarChart3,
+  // },
+  // {
+  //   id: "sales",
+  //   label: "sales",
+  //   href: "/pages/sales",
+  //   icon: BarChart3,
+  // },
+  // {
+  //   id: "Marketing",
+  //   label: "Marketing",
+  //   href: "/pages/Marketing",
+  //   icon: Megaphone,
     
-  },
+  // },
 
-  {
-    id: "communications",
-    label: "Communications",
-    href: "/pages/communications",
-    icon: MessageSquare,
-  },
+  // {
+  //   id: "communications",
+  //   label: "Communications",
+  //   href: "/pages/communications",
+  //   icon: MessageSquare,
+  // },
   
-  {
-    id: "team",
-    label: "Team",
-    href: "/pages/team",
-    icon: Users,
-  },
-  {
-    id: "reports",
-    label: "Reports",
-    href: "/pages/reports",
-    icon: BarChart3,
-  },
-  {
-    id: "testtable",
-    label: "Test Table",
-    href: "/pages/testtable",
-    icon: BarChart3,
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    href: "/pages/settings",
-    icon: Settings,
-    children: [
-        {
-          id: "team-management",
-          label: "Sales Team",
-          href: "#",
-          icon: Users,
-          children: [
-            {
-              id: "create-organization",
-              label: "Create New Organization",
-              href: "/pages/settings/create-organization",
-              icon: Plus,
-            },
-            {
-              id: "manage-team",
-              label: "Manage Team",
-              href: "/pages/settings/manage-team",
-              icon: UserPlus,
-            },
+  // {
+  //   id: "team",
+  //   label: "Team",
+  //   href: "/pages/team",
+  //   icon: Users,
+  // },
+  // {
+  //   id: "reports",
+  //   label: "Reports",
+  //   href: "/pages/reports",
+  //   icon: BarChart3,
+  // },
+  
+  // {
+  //   id: "settings",
+  //   label: "Settings",
+  //   href: "/pages/settings",
+  //   icon: Settings,
+  //   children: [
+  //       {
+  //         id: "team-management",
+  //         label: "Sales Team",
+  //         href: "#",
+  //         icon: Users,
+  //         children: [
+  //           {
+  //             id: "create-organization",
+  //             label: "Create New Organization",
+  //             href: "/pages/settings/create-organization",
+  //             icon: Plus,
+  //           },
+  //           {
+  //             id: "manage-team",
+  //             label: "Manage Team",
+  //             href: "/pages/settings/manage-team",
+  //             icon: UserPlus,
+  //           },
             
-          ],
-        },
-        {
-          id: "select-workspace",
-          label: "Select Workspace" ,
-          href: "#",
-          icon: Users,
-          children: [
-            {
-              id: "Create-Workspace",
-              label: "Create a Organization",
-              href: "/pages/settings/create-organization",
-              icon: Plus,
-            },
-            {
-              id: "manage-workspace",
-              label: "Manage Workspaces",
-              href: "/pages/settings/manage-team",
-              icon: UserPlus,
-            },           
-          ],
-        },
-    ],  
-  },
+  //         ],
+  //       },
+  //       {
+  //         id: "select-workspace",
+  //         label: "Select Workspace" ,
+  //         href: "#",
+  //         icon: Users,
+  //         children: [
+  //           {
+  //             id: "Create-Workspace",
+  //             label: "Create a Organization",
+  //             href: "/pages/settings/create-organization",
+  //             icon: Plus,
+  //           },
+  //           {
+  //             id: "manage-workspace",
+  //             label: "Manage Workspaces",
+  //             href: "/pages/settings/manage-team",
+  //             icon: UserPlus,
+  //           },           
+  //         ],
+  //       },
+  //   ],  
+  // },
 ];
 
 export function DashboardSidebar({

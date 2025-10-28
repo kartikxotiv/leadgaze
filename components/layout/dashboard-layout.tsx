@@ -33,7 +33,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         />
         
         {}
-        <main className="p-6">
+        <main className="p-2">
           {children}
         </main>
       </div>

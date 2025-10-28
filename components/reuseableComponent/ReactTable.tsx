@@ -2,7 +2,12 @@ import React from "react";
 
 import DataTable from 'react-data-table-component';
 const customStyles: any = {
+
+
     table: {
+
+
+   
       style: {
         whiteSpace: "nowrap",
         wordBreak: "break-word",
@@ -48,6 +53,9 @@ const customStyles: any = {
         fontFamily: "'Satoshi_Regular', 'Zoho_Puvi_SemiBold', Arial, sans-serif",
         fontSize: "12px",
         minHeight: "40px",
+        position: "sticky",
+        top: 0,
+        zIndex: 8,
       },
     },
     headCells: {
@@ -78,6 +86,7 @@ const customStyles: any = {
         cursor: "pointer",
         borderBottom: "none",
         transition: "all 0.2s ease",
+      
         "&:hover": {
           backgroundColor: "#F9FAFB",
         },
@@ -89,7 +98,9 @@ const customStyles: any = {
     },
     // Additional cell styling options
     cellRow: {
+      
       style: {
+        
         fontSize: "13px",
         color: "#374151",
         padding: "4px 8px", // Reduced padding
