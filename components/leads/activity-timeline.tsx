@@ -169,7 +169,7 @@ const groupActivitiesByDate = (activities: ActivityItem[]) => {
     groups[key].push(activity);
   });
 
-  // Sort activities within each group by timestamp (newest first)
+ 
   Object.keys(groups).forEach((key) => {
     groups[key].sort(
       (a, b) =>
@@ -187,7 +187,7 @@ export function ActivityTimeline({
 }: ActivityTimelineProps) {
   const groupedActivities = groupActivitiesByDate(activities);
   const dateKeys = Object.keys(groupedActivities).sort((a, b) => {
-    // Sort dates: Today, Yesterday, then chronological order (newest first)
+   
     if (a === "Today") return -1;
     if (b === "Today") return 1;
     if (a === "Yesterday") return -1;
@@ -257,13 +257,13 @@ export function ActivityTimeline({
             <div className="space-y-4">
               {groupedActivities[dateKey].map((activity, index) => (
                 <div key={activity.id} className="relative">
-                  {/* Timeline line */}
+                  {}
                   {index < groupedActivities[dateKey].length - 1 && (
                     <div className="absolute left-6 top-12 w-px h-8 bg-gray-200" />
                   )}
 
                   <div className="flex gap-4">
-                    {/* Activity icon */}
+                    {}
                     <div
                       className={`flex-shrink-0 w-12 h-12 rounded-full border-2 flex items-center justify-center ${getActivityColor(
                         activity.type,
@@ -273,7 +273,7 @@ export function ActivityTimeline({
                       {getActivityIcon(activity.type)}
                     </div>
 
-                    {/* Activity content */}
+                    {}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
@@ -344,7 +344,6 @@ export function ActivityTimeline({
   );
 }
 
-// Mock data generator for testing
 export const mockActivities: ActivityItem[] = [
   {
     id: "1",

@@ -84,7 +84,7 @@ export default function LeadDetailPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [openNoteSheet, setOpenNoteSheet] = useState(false);
 
-  // Get configurations
+ 
   const statuses = configs?.statuses || [];
   const sources = configs?.sources || [];
   const industries = configs?.industries || [];
@@ -121,14 +121,14 @@ export default function LeadDetailPage() {
     );
   }
 
-  // Get related data
-  const status = statuses.find((s) => s.id === lead.statusId);
-  const source = sources.find((s) => s.id === lead.sourceId);
-  const industry = industries.find((i) => i.id === lead.industryId);
-  const companySize = companySizes.find((c) => c.id === lead.companySizeId);
-  const grade = scoreGrades.find((g) => g.id === lead.scoreGradeId);
+ 
+  const status = statuses.find((s:any) => s.id === lead.statusId);
+  const source = sources.find((s:any) => s.id === lead.sourceId);
+  const industry = industries.find((i:any) => i.id === lead.industryId);
+  const companySize = companySizes.find((c:any) => c.id === lead.companySizeId);
+  const grade = scoreGrades.find((g:any) => g.id === lead.scoreGradeId);
 
-  // Status color mapping
+ 
   const getStatusColor = (statusName: string) => {
     switch (statusName?.toLowerCase()) {
       case "new":
@@ -148,7 +148,7 @@ export default function LeadDetailPage() {
     }
   };
 
-  // Grade color mapping
+ 
   const getGradeColor = (gradeName: string) => {
     switch (gradeName?.toLowerCase()) {
       case "hot":
@@ -162,7 +162,7 @@ export default function LeadDetailPage() {
     }
   };
 
-  // Quick status update
+ 
   const handleStatusUpdate = async (newStatusId: string) => {
     try {
       await updateLeadMutation.mutateAsync({
@@ -175,7 +175,7 @@ export default function LeadDetailPage() {
     }
   };
 
-  // Copy to clipboard
+ 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied to clipboard!`);
@@ -184,7 +184,7 @@ export default function LeadDetailPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" asChild>
@@ -243,7 +243,7 @@ export default function LeadDetailPage() {
           </div>
         </div>
 
-        {/* Quick Actions Bar */}
+        {}
         <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -299,15 +299,15 @@ export default function LeadDetailPage() {
                     >
                       {status?.entityValue
                         ?.replace("_", " ")
-                        .replace(/\b\w/g, (l) => l.toUpperCase()) || "Unknown"}
+                        .replace(/\b\w/g, (l:any) => l.toUpperCase()) || "Unknown"}
                     </Badge>
                   </SelectTrigger>
                   <SelectContent>
-                    {statuses.map((s) => (
+                    {statuses.map((s:any) => (
                       <SelectItem key={s.id} value={s.id}>
                         {s.entityValue
                           ?.replace("_", " ")
-                          .replace(/\b\w/g, (l) => l.toUpperCase())}
+                          .replace(/\b\w/g, (l:any) => l.toUpperCase())}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -317,7 +317,7 @@ export default function LeadDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Content Tabs */}
+        {}
         <Tabs
           value={activeTab}
           onValueChange={setActiveTab}
@@ -332,7 +332,7 @@ export default function LeadDetailPage() {
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Contact Information */}
+              {}
               <div className="lg:col-span-2 space-y-6">
                 <Card>
                   <CardHeader>
@@ -490,7 +490,7 @@ export default function LeadDetailPage() {
                 )}
               </div>
 
-              {/* Lead Score & Status */}
+              {}
               <div className="space-y-6">
                 <Card>
                   <CardHeader>
@@ -540,7 +540,7 @@ export default function LeadDetailPage() {
                       >
                         {status?.entityValue
                           ?.replace("_", " ")
-                          .replace(/\b\w/g, (l) => l.toUpperCase()) ||
+                          .replace(/\b\w/g, (l:any) => l.toUpperCase()) ||
                           "Unknown"}
                       </Badge>
                     </div>

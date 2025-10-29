@@ -2,7 +2,6 @@ const { Sequelize } = require("sequelize");
 const path = require("path");
 const fs = require("fs");
 
-// Database configuration - using the same config as lib/database.ts
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: "postgres",
   logging: console.log,
@@ -12,11 +11,11 @@ async function fixLeadsSchema() {
   try {
     console.log("🔧 Fixing Leads Schema...");
 
-    // Test connection
+   
     await sequelize.authenticate();
     console.log("✅ Database connection established successfully.");
 
-    // Add meta_data column to leads table if it doesn't exist
+   
     try {
       await sequelize.query(`
         ALTER TABLE leads 
@@ -27,7 +26,7 @@ async function fixLeadsSchema() {
       console.log("ℹ️ meta_data column might already exist:", error.message);
     }
 
-    // Add display_order column to leads_config table if it doesn't exist
+   
     try {
       await sequelize.query(`
         ALTER TABLE leads_config 
@@ -41,7 +40,7 @@ async function fixLeadsSchema() {
       );
     }
 
-    // Add description column to leads_config table if it doesn't exist
+   
     try {
       await sequelize.query(`
         ALTER TABLE leads_config 
@@ -52,7 +51,7 @@ async function fixLeadsSchema() {
       console.log("ℹ️ description column might already exist:", error.message);
     }
 
-    // Add metadata column to leads_config table if it doesn't exist
+   
     try {
       await sequelize.query(`
         ALTER TABLE leads_config 
@@ -63,7 +62,7 @@ async function fixLeadsSchema() {
       console.log("ℹ️ metadata column might already exist:", error.message);
     }
 
-    // Update display_order for existing records
+   
     try {
       await sequelize.query(`
         UPDATE leads_config 
@@ -118,7 +117,6 @@ async function fixLeadsSchema() {
   }
 }
 
-// Check if this script is being run directly
 if (require.main === module) {
   fixLeadsSchema()
     .then(() => {

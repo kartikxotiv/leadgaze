@@ -1,4 +1,4 @@
-// Core database types
+
 export interface User {
   id: string;
   email: string;
@@ -36,6 +36,18 @@ export interface Organization {
   updatedAt?: string;
 }
 
+export interface Workspace {
+  id: string;
+  organizationId: string;
+  name: string;
+  slug: string;
+  description?: string;
+  status: "active" | "inactive" | "archived";
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface PipelineStage {
   id: string;
   name: string;
@@ -58,7 +70,7 @@ export interface Deal {
   assigned_to?: string;
   created_at: string;
   updated_at: string;
-  // Relations
+ 
   lead?: Lead;
   stage?: PipelineStage;
   assigned_user?: User;
@@ -81,7 +93,7 @@ export interface Task {
   created_by?: string;
   created_at: string;
   updated_at: string;
-  // Relations
+ 
   lead?: Lead;
   deal?: Deal;
   assigned_user?: User;
@@ -107,13 +119,12 @@ export interface Activity {
   description: string;
   metadata?: Record<string, any>;
   created_at: string;
-  // Relations
+ 
   lead?: Lead;
   deal?: Deal;
   user?: User;
 }
 
-// API Response types
 export interface ApiResponse<T> {
   data: T;
   success: boolean;
@@ -132,7 +143,6 @@ export interface PaginatedResponse<T> {
   success: boolean;
 }
 
-// API Request types
 export interface CreateLeadRequest {
   company_name: string;
   contact_person: string;
@@ -188,7 +198,6 @@ export interface UpdateTaskRequest extends Partial<CreateTaskRequest> {
   completed?: boolean;
 }
 
-// Filter and search types
 export interface LeadFilters {
   status?: string;
   type?: string;

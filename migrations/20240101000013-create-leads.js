@@ -1,6 +1,6 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('leads', {
@@ -172,7 +172,7 @@ module.exports = {
       }
     });
 
-    // Add check constraint for lead_score
+   
     await queryInterface.addConstraint('leads', {
       fields: ['lead_score'],
       type: 'check',
@@ -184,7 +184,7 @@ module.exports = {
       }
     });
 
-    // Add unique constraint for organization_id + email
+   
     await queryInterface.addConstraint('leads', {
       fields: ['organization_id', 'email'],
       type: 'unique',

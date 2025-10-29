@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Build date filter
+   
     const dateFilter: any = {};
     if (dateFrom) {
       dateFilter[Op.gte] = new Date(dateFrom);
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       dateFilter[Op.lte] = new Date(dateTo);
     }
 
-    // Get organization users
+   
     const orgUsers = await User.findAll({
       include: [
         {
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     for (const user of orgUsers) {
       const userId = user.userId;
 
-      // Get user's leads
+     
       const leadsWhereClause: any = {
         organizationId,
         assignedTo: userId,
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
         },
       });
 
-      // Get user's deals
+     
       const dealsWhereClause: any = {
         organizationId,
         userId: userId,
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
         return sum + (isNaN(value) ? 0 : value);
       }, 0);
 
-      // Get user's activities count
+     
       const activitiesCount = await Activity.count({
         where: {
           userId: userId,
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Sort by total value descending
+   
     teamPerformance.sort((a, b) => b.stats.totalValue - a.stats.totalValue);
 
     return NextResponse.json({

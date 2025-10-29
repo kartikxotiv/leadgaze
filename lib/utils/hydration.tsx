@@ -2,10 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 
-/**
- * Hook to safely detect if we're on the client side
- * Prevents hydration mismatches by ensuring consistent SSR/client rendering
- */
+
 export function useIsClient() {
   const [isClient, setIsClient] = useState(false);
 
@@ -16,9 +13,7 @@ export function useIsClient() {
   return isClient;
 }
 
-/**
- * Hook for safe localStorage access that handles SSR and hydration
- */
+
 export function useSafeLocalStorage() {
   const isClient = useIsClient();
 
@@ -71,9 +66,7 @@ export function useSafeLocalStorage() {
   return { getItem, setItem, removeItem, isAvailable: isClient };
 }
 
-/**
- * Hook for safe cookie operations that handles SSR
- */
+
 export function useSafeCookies() {
   const isClient = useIsClient();
 
@@ -144,9 +137,7 @@ export function useSafeCookies() {
   return { getCookie, setCookie, isAvailable: isClient };
 }
 
-/**
- * Hook for safe window object access
- */
+
 export function useSafeWindow() {
   const isClient = useIsClient();
 
@@ -156,10 +147,7 @@ export function useSafeWindow() {
   };
 }
 
-/**
- * Component wrapper that only renders children on the client side
- * Useful for components that require browser APIs
- */
+
 export function ClientOnly({
   children,
   fallback = null,
@@ -172,9 +160,7 @@ export function ClientOnly({
   return <>{isClient ? children : fallback}</>;
 }
 
-/**
- * HOC that wraps a component with hydration safety
- */
+
 export function withHydrationSafety<T extends object>(
   Component: React.ComponentType<T>,
   fallback?: React.ReactNode

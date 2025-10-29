@@ -47,13 +47,13 @@ export async function PUT(
       );
     }
 
-    // Update activity
+   
     await activity.update({
       ...body,
       updatedAt: new Date(),
     });
 
-    // Fetch updated activity without problematic associations for now
+   
     const updatedActivity = await Activity.findByPk(params.id);
 
     return NextResponse.json({

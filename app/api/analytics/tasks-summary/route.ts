@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get organization users
+   
     const orgUsers = await User.findAll({
       include: [
         {
@@ -55,30 +55,30 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Base where clause for organization users
+   
     let baseWhere: any = {
       assignedTo: { [Op.in]: userIds },
     };
 
-    // If specific user requested, filter to that user
+   
     if (userId && userIds.includes(userId)) {
       baseWhere = { assignedTo: userId };
     }
 
-    // Get total tasks
+   
     const totalTasks = await Task.count({ where: baseWhere });
 
-    // Get completed tasks
+   
     const completedTasks = await Task.count({
       where: { ...baseWhere, status: "Completed" },
     });
 
-    // Get pending tasks
+   
     const pendingTasks = await Task.count({
       where: { ...baseWhere, status: { [Op.ne]: "Completed" } },
     });
 
-    // Get overdue tasks
+   
     const now = new Date();
     const overdueTasks = await Task.count({
       where: {
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Get tasks due today
+   
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Get tasks due this week
+   
     const weekEnd = new Date(today);
     weekEnd.setDate(weekEnd.getDate() + 7);
 
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Get tasks by priority
+   
     const priorities = ["Low", "Medium", "High", "Urgent"];
     const byPriority: any = {};
 
@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get tasks by status
+   
     const statuses = ["Pending", "In Progress", "Completed", "Cancelled"];
     const byStatus: any = {};
 

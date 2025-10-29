@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { Lead, LeadConfig } from "@/models";
 import { Op } from "sequelize";
 
-// GET /api/leads/duplicates?organizationId=...&email=...&firstName=...&lastName=...&businessName=...&phone=...&workspaceId=...
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -50,7 +49,7 @@ export async function GET(request: NextRequest) {
       [Op.or]: orClauses,
     };
 
-    // Optional workspace scoping (JSONB meta_data contains { workspaceId })
+   
     if (workspaceId) {
       whereClause.metaData = { [Op.contains]: { workspaceId } } as any;
     }

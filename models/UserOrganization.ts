@@ -4,7 +4,7 @@ export default (sequelize: Sequelize) => {
   const UserOrganization = sequelize.define(
     "UserOrganization",
     {
-      // PK aligns with migrated schema (column name: id)
+     
       id: {
         type: DataTypes.UUID,
         primaryKey: true,
@@ -29,7 +29,7 @@ export default (sequelize: Sequelize) => {
           key: "organization_id",
         },
       },
-      // Config-based role reference
+     
       roleId: {
         type: DataTypes.UUID,
         allowNull: false,
@@ -85,7 +85,7 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Static methods
+ 
   (UserOrganization as any).findByUserAndOrganization = function (
     userId: string,
     organizationId: string
@@ -130,12 +130,12 @@ export default (sequelize: Sequelize) => {
       where: {
         organizationId,
         status: "active",
-        // role will be derived via join with OrganizationRole if needed
+       
       },
     });
   };
 
-  // Helper functions (not attached to prototype to avoid TypeScript issues)
+ 
   (UserOrganization as any).isOwner = function (userOrg: any) {
     return userOrg.role === "owner" || userOrg.roleId != null;
   };
@@ -187,7 +187,7 @@ export default (sequelize: Sequelize) => {
     };
   };
 
-  // Associations
+ 
   (UserOrganization as any).associate = (models: any) => {
     UserOrganization.belongsTo(models.User, {
       foreignKey: "user_id",

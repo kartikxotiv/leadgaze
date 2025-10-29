@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Check, X, Edit3 } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
 interface InlineEditCellProps {
@@ -131,7 +132,7 @@ export function InlineEditCell({
         onChange={(e) => setEditValue(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="h-8 text-sm"
+        className="text-sm !h-[20px]"
         disabled={isLoading}
       />
     );
@@ -185,7 +186,7 @@ export function InlineEditCell({
 
   return (
     <div
-      className="group flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1 transition-colors"
+      className="group flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-0 py-1 transition-colors"
       onClick={() => setIsEditing(true)}
     >
       {renderDisplayValue()}
@@ -194,7 +195,6 @@ export function InlineEditCell({
   );
 }
 
-// Specialized components for common use cases
 export function InlineEditText({
   value,
   onSave,
@@ -232,7 +232,7 @@ export function InlineEditEmail({
       type="email"
       onSave={onSave}
       placeholder={placeholder}
-      className="text-blue-600 hover:underline"
+      className="text-blue-600 hover:underline text-[13px] !h-[20px] !rounded-[0px]"
     />
   );
 }
@@ -307,7 +307,6 @@ export function InlineEditScore({
   );
 }
 
-// Direct Dropdown Select - NO edit mode, saves immediately on selection
 export function DirectSelect({
   value,
   options,
@@ -317,6 +316,7 @@ export function DirectSelect({
   badgeVariant = "outline" as const,
   badgeClassName = "",
   disabled = false,
+  getItemColor,
 }: {
   value: string | undefined;
   options: Array<{ id: string; value: string; label?: string }>;
@@ -326,6 +326,7 @@ export function DirectSelect({
   badgeVariant?: "default" | "secondary" | "destructive" | "outline";
   badgeClassName?: string;
   disabled?: boolean;
+  getItemColor?: (label: string) => string;
 }) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -349,6 +350,7 @@ export function DirectSelect({
   };
 
   const displayValue = getDisplayValue();
+  const badgeColorClass = getItemColor ? getItemColor(displayValue) : "";
 
   return (
     <Select
@@ -356,34 +358,44 @@ export function DirectSelect({
       onValueChange={handleValueChange}
       disabled={disabled || isLoading}
     >
-      <SelectTrigger className="h-auto min-h-[2rem] border-none shadow-none p-1 hover:bg-muted/50 transition-colors">
-        {badge ? (
-          <Badge
-            variant={badgeVariant}
-            className={`text-xs ${badgeClassName} ${
-              isLoading ? "opacity-50" : ""
-            }`}
-          >
-            {displayValue}
-          </Badge>
-        ) : (
-          <span className={`text-sm ${isLoading ? "opacity-50" : ""}`}>
-            {displayValue}
-          </span>
-        )}
+      <SelectTrigger className="h-auto min-h-[20px] border-none shadow-none p-0 hover:bg-muted/50 transition-colors group ">
+        <div className="flex items-center justify-between w-full">
+          {badge ? (
+            <Badge
+              variant={badgeVariant}
+              className={`text-xs ${badgeClassName} ${badgeColorClass} ${
+                isLoading ? "opacity-50" : ""
+              }`}
+            >
+              {displayValue} 
+            </Badge>
+          ) : (
+            <span className={`text-sm ${badgeColorClass} ${isLoading ? "opacity-50" : ""}`}>
+              {displayValue}
+            </span>
+          )}
+          <ChevronDown className="h-4 w-4 opacity-0 group-hover:opacity-70 transition-opacity ml-1" />
+        </div>
       </SelectTrigger>
       <SelectContent>
-        {options.map((option) => (
-          <SelectItem key={option.id} value={option.id}>
-            {option.label || option.value}
-          </SelectItem>
-        ))}
+        {options.map((option) => {
+          const optionLabel = option.label || option.value;
+          const itemColor = getItemColor ? getItemColor(optionLabel) : "";
+          return (
+            <SelectItem 
+              key={option.id} 
+              value={option.id}
+              className={`${itemColor} mb-2 text-xs block`}
+            >
+              {optionLabel}
+            </SelectItem>
+          );
+        })}
       </SelectContent>
     </Select>
   );
 }
 
-// Direct Score Input - saves automatically when you finish typing
 export function DirectScore({
   value,
   onSave,
@@ -405,7 +417,7 @@ export function DirectScore({
 
   const handleSave = async (newValue: string) => {
     const numValue = parseInt(newValue) || 0;
-    const clampedValue = Math.max(0, Math.min(100, numValue)); // Clamp between 0-100
+    const clampedValue = Math.max(0, Math.min(100, numValue));
 
     if (clampedValue === value) return;
 
@@ -416,7 +428,7 @@ export function DirectScore({
       toast.success("Score updated!");
     } catch (error) {
       toast.error("Failed to update score");
-      setLocalValue(String(value || 0)); // Revert on error
+      setLocalValue(String(value || 0));
     } finally {
       setIsLoading(false);
     }
@@ -426,19 +438,19 @@ export function DirectScore({
     const newValue = e.target.value;
     setLocalValue(newValue);
 
-    // Clear existing timeout
+   
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
-    // Set new timeout to save after 1 second of no typing
+   
     timeoutRef.current = setTimeout(() => {
       handleSave(newValue);
     }, 1000);
   };
 
   const handleBlur = () => {
-    // Save immediately when user clicks away
+   
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -478,7 +490,6 @@ export function DirectScore({
   );
 }
 
-// Direct Text Input - saves automatically when you finish typing
 export function DirectText({
   value,
   onSave,
@@ -510,7 +521,7 @@ export function DirectText({
       toast.success("Updated successfully!");
     } catch (error) {
       toast.error("Failed to update");
-      setLocalValue(value || ""); // Revert on error
+      setLocalValue(value || "");
     } finally {
       setIsLoading(false);
     }
@@ -520,19 +531,19 @@ export function DirectText({
     const newValue = e.target.value;
     setLocalValue(newValue);
 
-    // Clear existing timeout
+   
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
-    // Set new timeout to save after 1.5 seconds of no typing
+   
     timeoutRef.current = setTimeout(() => {
       handleSave(newValue);
     }, 1500);
   };
 
   const handleBlur = () => {
-    // Save immediately when user clicks away
+   
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -557,7 +568,7 @@ export function DirectText({
       onKeyDown={handleKeyDown}
       placeholder={placeholder}
       disabled={disabled || isLoading}
-      className={`border-none shadow-none p-1 hover:bg-muted/50 focus:bg-background transition-colors ${className} ${
+      className={`border-none shadow-none p-1 hover:bg-muted/50 focus:bg-background transition-colors rounded-[2px] ${className} ${
         isLoading ? "opacity-50" : ""
       }`}
     />

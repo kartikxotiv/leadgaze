@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { Organization } from "@/lib/types";
 
-// Hydration-safe cookie helper functions for session management
 const setCookie = (name: string, value: string, days: number = 7) => {
   if (typeof window === "undefined" || typeof document === "undefined") return;
   try {
@@ -28,7 +27,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  // Setup questions (matching database column names)
+ 
   userRole?: string;
   teamSize?: string;
   companySize?: string;
@@ -37,7 +36,7 @@ export interface User {
 }
 
 export interface AuthState {
-  // State
+ 
   user: User | null;
   token: string | null;
   currentOrganization: Organization | null;
@@ -47,7 +46,7 @@ export interface AuthState {
   isLoading: boolean;
   error: string | null;
 
-  // Actions
+ 
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
   setCurrentOrganization: (org: Organization | null) => void;
@@ -56,7 +55,7 @@ export interface AuthState {
   setError: (error: string | null) => void;
   updateCurrentWorkspace: (workspace: any | null) => void;
 
-  // Auth actions
+ 
   login: (
     user: User,
     token: string,
@@ -67,14 +66,14 @@ export interface AuthState {
   register: (user: User) => void;
   updateCurrentOrganization: (org: Organization) => void;
 
-  // Computed
+ 
   getAuthHeaders: () => Record<string, string>;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      // Initial state
+     
       user: null,
       token: null,
       currentOrganization: null,
@@ -84,7 +83,7 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       error: null,
 
-      // Actions
+     
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       setToken: (token) => set({ token }),
       setCurrentOrganization: (currentOrganization) =>
@@ -95,18 +94,18 @@ export const useAuthStore = create<AuthState>()(
       updateCurrentWorkspace: (workspace) =>
         set({ currentWorkspace: workspace }),
 
-      // Auth actions
+     
       login: (user, token, organizations, currentOrg) => {
         console.log("🔐 Auth Store: Login function called");
         console.log("🔐 Token length:", token.length, "bytes");
 
-        // SOLUTION: Create a shorter session ID instead of storing full JWT in cookie
+       
         const sessionId = `session_${Date.now()}_${Math.random()
           .toString(36)
           .substr(2, 9)}`;
         console.log("🔑 Generated session ID:", sessionId);
 
-        // Store full token in localStorage (larger capacity) - hydration-safe
+       
         if (
           typeof window !== "undefined" &&
           typeof localStorage !== "undefined"
@@ -120,9 +119,9 @@ export const useAuthStore = create<AuthState>()(
           }
         }
 
-        // Set both session ID and auth token in cookies for middleware
+       
         setCookie("auth_session", sessionId, 7);
-        setCookie("auth_token", "authenticated", 7); // Simple flag for middleware
+        setCookie("auth_token", "authenticated", 7);
 
         console.log("🍪 Set auth cookies for middleware");
 
@@ -141,7 +140,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        // Clear all auth cookies and localStorage
+       
         deleteCookie("auth_session");
         deleteCookie("auth_token");
 
@@ -171,12 +170,12 @@ export const useAuthStore = create<AuthState>()(
       register: (user) =>
         set({
           user,
-          isAuthenticated: false, // Not fully authenticated until organization is created
+          isAuthenticated: false,
           error: null,
         }),
 
       updateCurrentOrganization: (org) => {
-        // Clear workspace when organization changes
+       
         try {
           if (
             typeof window !== "undefined" &&
@@ -191,7 +190,7 @@ export const useAuthStore = create<AuthState>()(
         });
       },
 
-      // Computed
+     
       getAuthHeaders: () => {
         const { token } = get();
         return token
@@ -202,12 +201,12 @@ export const useAuthStore = create<AuthState>()(
     {
       name: "auth-storage",
       storage: createJSONStorage(() => {
-        // Hydration-safe localStorage implementation
+       
         if (
           typeof window === "undefined" ||
           typeof localStorage === "undefined"
         ) {
-          // Return a no-op storage during SSR
+         
           return {
             getItem: () => null,
             setItem: () => {},

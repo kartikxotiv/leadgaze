@@ -66,8 +66,8 @@ export function AcceptInvitationForm({
 
       if (data.success) {
         setInvitation(data.invitation);
-        // Check if user might already exist by email domain or other logic
-        // For now, assume new user unless we have more information
+       
+       
       } else {
         toast.error(data.error || "Invalid invitation");
         router.push("/auth/sign-in");
@@ -116,15 +116,15 @@ export function AcceptInvitationForm({
             : "Invitation accepted! Welcome back!"
         );
 
-        // Store auth data (clear existing data first to avoid conflicts)
+       
         if (typeof window !== "undefined") {
-          // Clear any existing auth data to prevent cross-user contamination
+         
           localStorage.removeItem("auth_token");
           localStorage.removeItem("user");
           localStorage.removeItem("organizations");
           localStorage.removeItem("currentOrganization");
 
-          // Set new user's auth data
+         
           localStorage.setItem("auth_token", data.token);
           localStorage.setItem("user", JSON.stringify(data.user));
           localStorage.setItem(
@@ -137,14 +137,14 @@ export function AcceptInvitationForm({
           );
         }
 
-        // Wait a brief moment for auth state to update and cookie to be set
+       
         setTimeout(() => {
-          // Clear all browser history and force navigation to dashboard for NEW USER
+         
           if (typeof window !== "undefined") {
-            // Close any other tabs that might be open (can't do this but clear storage)
+           
             localStorage.setItem("new_user_login", Date.now().toString());
 
-            // Clear the entire history stack and navigate to dashboard
+           
             window.history.replaceState(null, "", "/pages/dashboard");
             window.location.replace("/pages/dashboard");
           }
@@ -270,7 +270,7 @@ export function AcceptInvitationForm({
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Invitation Details */}
+        {}
         <div className="space-y-4">
           <div className="flex items-start space-x-3">
             <Building className="h-5 w-5 text-muted-foreground mt-0.5" />
@@ -306,7 +306,7 @@ export function AcceptInvitationForm({
           </div>
         </div>
 
-        {/* Personal Message */}
+        {}
         {invitation.message && (
           <>
             <Separator />
@@ -318,7 +318,7 @@ export function AcceptInvitationForm({
           </>
         )}
 
-        {/* Role Description */}
+        {}
         <div className="bg-gray-50 border rounded-lg p-4">
           <h4 className="font-medium text-sm mb-2">
             As a {invitation.role.displayName}, you will be able to:
@@ -330,7 +330,7 @@ export function AcceptInvitationForm({
 
         <Separator />
 
-        {/* Minimal Details for New Users */}
+        {}
         {isNewUser && (
           <div className="space-y-4">
             <div>
@@ -375,7 +375,7 @@ export function AcceptInvitationForm({
           </div>
         )}
 
-        {/* Accept Button */}
+        {}
         <Button
           onClick={handleAcceptInvitation}
           disabled={isAccepting || (isNewUser && password.length < 8)}
@@ -391,7 +391,7 @@ export function AcceptInvitationForm({
           </span>
         </Button>
 
-        {/* Alternative Actions */}
+        {}
         <div className="text-center space-y-2">
           <p className="text-xs text-muted-foreground">
             Already have an account?{" "}

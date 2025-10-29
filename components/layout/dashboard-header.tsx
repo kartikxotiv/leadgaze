@@ -30,13 +30,17 @@ import {
   HelpCircle,
   Shield,
   UserPlus,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 interface DashboardHeaderProps {
   onMenuClick: () => void;
+  collapsed: boolean;
+  onCollapsedChange: (collapsed: boolean) => void;
 }
 
-export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
+export function DashboardHeader({ onMenuClick, collapsed, onCollapsedChange }: DashboardHeaderProps) {
   const { user, currentOrganization } = useAuth();
   const { currentOrganization: orgFromStore } = useAuthStore();
   const { logout, isLoggingOut } = useSmoothLogout();
@@ -60,14 +64,14 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // TODO: Implement search functionality
+     
       console.log("Searching for:", searchQuery);
     }
   };
 
   return (
     <>
-      {/* Logout Loading Overlay */}
+      {}
       {isLoggingOut && (
         <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
           <div className="text-center">
@@ -78,10 +82,24 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
       )}
 
       <header className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between px-6 py-[14px]">
-          {/* Left Section */}
+        <div className="flex items-center justify-between px-6 py-[12px]">
+          {}
           <div className="flex items-center gap-4">
-            {/* Mobile Menu Button */}
+            {}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onCollapsedChange(!collapsed)}
+              className="p-1.5"
+            >
+              {collapsed ? (
+                <ChevronRight className="w-4 h-4" />
+              ) : (
+                <ChevronLeft className="w-4 h-4" />
+              )}
+            </Button>
+
+            {}
             <Button
               variant="ghost"
               size="sm"
@@ -91,23 +109,13 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
               <Menu className="w-5 h-5" />
             </Button>
 
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="hidden md:block">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  placeholder="Search leads, deals, tasks..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 w-80 bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
-                />
-              </div>
-            </form>
+            {}
+            {}
           </div>
 
-          {/* Right Section */}
+          {}
           <div className="flex items-center gap-4">
-            {/* Invite button */}
+            {}
             {orgFromStore?.organizationId && (
               <InviteUserDialog
                 currentUserOrganization={orgFromStore}
@@ -125,20 +133,15 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
                 }
               />
             )}
-            {/* Trial Status Badge */}
-            {currentOrganization?.subscriptionStatus === "trial" && (
-              <Badge variant="outline" className="hidden sm:flex">
-                Trial: {(currentOrganization as any)?.trialDaysRemaining || 14}{" "}
-                days left
-              </Badge>
-            )}
+            {}
+            {}
 
-            {/* Notifications */}
+            {}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="relative">
+                <Button variant="ghost" size="sm" className="relative bg-[#f1f5f9]">
                   <Bell className="w-5 h-5" />
-                  {/* Notification Badge */}
+                  {}
                   <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">
                     3
                   </span>
@@ -181,7 +184,7 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* User Profile Dropdown */}
+            {}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -190,10 +193,10 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
                 >
                   <Avatar className="w-8 h-8">
                     <AvatarImage
-                      src={user?.avatar}
+                      src={undefined}
                       alt={getUserDisplayName()}
                     />
-                    <AvatarFallback className="bg-blue-600 text-white text-sm">
+                    <AvatarFallback className="bg-[#45a2ff] text-white text-sm">
                       {getUserInitials()}
                     </AvatarFallback>
                   </Avatar>
@@ -202,7 +205,9 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
                       {getUserDisplayName()}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
+                      
                       {currentOrganization?.name}
+
                     </div>
                   </div>
                 </Button>

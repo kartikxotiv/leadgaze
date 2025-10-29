@@ -13,9 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCreateLead, useLeadConfigs } from "@/hooks/use-leads";
-import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useCreateLead, useLeadConfigs, useLead, useUpdateLead } from "@/hooks/use-leads";
+import { useAuth } from "@/lib/hooks/use-auth";
+import { useState, useCallback, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -53,11 +54,17 @@ interface FormData {
 
 export default function NewLeadPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editLeadId = searchParams.get('edit');
+  const isEditMode = !!editLeadId;
+  
   const createLeadMutation = useCreateLead();
+  const updateLeadMutation = useUpdateLead();
   const { data: configs, isLoading: configsLoading } = useLeadConfigs();
+  const { data: leadData, isLoading: leadLoading } = useLead(editLeadId || '');
+  const { user: currentUser, currentOrganization } = useAuth();
 
   const [showOptionalFields, setShowOptionalFields] = useState(false);
-  const [isDirty, setIsDirty] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
     lastName: "",
@@ -79,14 +86,39 @@ export default function NewLeadPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Get configurations (note: API returns data grouped by entity type)
+  // Populate form data when editing
+  useEffect(() => {
+    if (isEditMode && leadData) {
+      setFormData({
+        firstName: leadData.firstName || "",
+        lastName: leadData.lastName || "",
+        email: leadData.email || "",
+        phone: leadData.phone || "",
+        company: leadData.businessName || "",
+        jobTitle: leadData.jobTitle || "",
+        website: leadData.companyWebsite || "",
+        linkedinUrl: leadData.linkedinProfile || "",
+        statusId: leadData.statusId || "",
+        sourceId: leadData.sourceId || "",
+        industryId: leadData.industryId || "",
+        companySizeId: leadData.companySizeId || "",
+        scoreGradeId: leadData.scoreGradeId || "",
+        productInterestIds: [],
+        assignedTo: leadData.assignedTo || "",
+        notes: leadData.qualificationNotes || "",
+        leadScore: leadData.leadScore || 0,
+      });
+    }
+  }, [isEditMode, leadData]);
+
+ 
   const statuses = configs?.status || [];
   const sources = configs?.source || [];
   const industries = configs?.industry || [];
   const companySizes = configs?.company_size || [];
   const scoreGrades = configs?.score_grade || [];
 
-  // Real-time validation for better UX
+ 
   const validateField = useCallback(
     (fieldName: string, value: string): string => {
       switch (fieldName) {
@@ -100,6 +132,8 @@ export default function NewLeadPage() {
           return "";
         case "company":
           return !value.trim() ? "Required" : "";
+        case "sourceId":
+          return !value.trim() ? "Required" : "";
         default:
           return "";
       }
@@ -110,13 +144,14 @@ export default function NewLeadPage() {
   const validateForm = useCallback((): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // Only validate required fields for submission
+   
     newErrors.firstName = validateField("firstName", formData.firstName);
     newErrors.lastName = validateField("lastName", formData.lastName);
     newErrors.email = validateField("email", formData.email);
     newErrors.company = validateField("company", formData.company);
+    newErrors.sourceId = validateField("sourceId", formData.sourceId);
 
-    // Filter out empty errors
+   
     const filteredErrors = Object.fromEntries(
       Object.entries(newErrors).filter(([_, value]) => value !== "")
     );
@@ -128,16 +163,16 @@ export default function NewLeadPage() {
     formData.lastName,
     formData.email,
     formData.company,
+    formData.sourceId,
     validateField,
   ]);
 
-  // Simplified form handlers
+ 
   const handleFormChange = useCallback(
     (field: string, value: string) => {
       setFormData((prev) => ({ ...prev, [field]: value }));
-      setIsDirty(true);
 
-      // Clear field error on change
+     
       if (errors[field]) {
         setErrors((prev) => ({ ...prev, [field]: "" }));
       }
@@ -152,39 +187,66 @@ export default function NewLeadPage() {
         return;
       }
 
+     
+      if (!currentOrganization?.organizationId && !currentOrganization?.id) {
+        toast.error("Organization not found. Please log in again.");
+        return;
+      }
+
+      if (!currentUser?.userId) {
+        toast.error("User not found. Please log in again.");
+        return;
+      }
+
       try {
-        // Clean the data - convert empty strings to null for UUID fields
-        // Map to the CreateLeadData interface expected by the API
+       
+       
         const leadData = {
           firstName: formData.firstName.trim(),
           lastName: formData.lastName.trim(),
           email: formData.email.trim() || undefined,
           phone: formData.phone.trim() || undefined,
-          businessName: formData.company.trim(),
+          businessName: formData.company.trim() || "Unknown Company",
           companyWebsite: formData.website.trim() || undefined,
-          // UUID fields - convert empty strings to undefined to avoid UUID errors
+         
+          organizationId: currentOrganization?.organizationId || currentOrganization?.id,
+          createdBy: currentUser?.userId,
+         
           sourceId: formData.sourceId || undefined,
           industryId: formData.industryId || undefined,
           companySizeId: formData.companySizeId || undefined,
-          productInterest: undefined, // Not implemented in form yet
-          tags: undefined, // Not implemented in form yet
+          productInterest: undefined,
+          tags: undefined,
           assignedTo: formData.assignedTo || undefined,
           notes: formData.notes.trim() || undefined,
         };
 
-        // Remove undefined fields to keep payload clean
+       
         const cleanedData = Object.fromEntries(
-          Object.entries(leadData).filter(([_, value]) => value !== undefined)
-        ) as any; // Type assertion since we know required fields are present
+          Object.entries(leadData).filter(([key, value]) => {
+            if (key === 'businessName') return true;
+            return value !== undefined;
+          })
+        ) as any;
 
-        await createLeadMutation.mutateAsync(cleanedData);
+        console.log("Frontend sending data:", cleanedData);
+        console.log("BusinessName value:", cleanedData.businessName);
 
-        toast.success("Lead created successfully!");
+        if (isEditMode && editLeadId) {
+          await updateLeadMutation.mutateAsync({
+            leadId: editLeadId,
+            data: cleanedData,
+          });
+          toast.success("Lead updated successfully!");
+        } else {
+          await createLeadMutation.mutateAsync(cleanedData);
+          toast.success("Lead created successfully!");
+        }
 
         if (saveAndExit) {
           router.push("/pages/leads");
         } else {
-          // Reset form for creating another lead
+         
           setFormData({
             firstName: "",
             lastName: "",
@@ -204,7 +266,6 @@ export default function NewLeadPage() {
             notes: "",
             leadScore: 0,
           });
-          setIsDirty(false);
           setErrors({});
           toast.success("Ready to add another lead!");
         }
@@ -215,20 +276,21 @@ export default function NewLeadPage() {
     [validateForm, formData, createLeadMutation, router]
   );
 
-  // Simple, focused form rendering
+ 
   const renderForm = () => {
     return (
-      <div className="space-y-8">
-        {/* Essential Information */}
-        <div className="space-y-6">
+        <div className="space-y-8">
+          <div className="space-y-6">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-50 rounded-lg">
               <User className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold">Essential Information</h3>
-              <p className="text-sm text-gray-600">
+              <h3 className="text-lg font-medium">Essential Information</h3>
+              <p className="text-sm text-gray-600 font-regular">
+                
                 Required fields to create the lead
+
               </p>
             </div>
           </div>
@@ -321,7 +383,7 @@ export default function NewLeadPage() {
           </div>
         </div>
 
-        {/* Optional Fields Toggle */}
+        {}
         <div className="border-t pt-6">
           <Button
             type="button"
@@ -340,7 +402,7 @@ export default function NewLeadPage() {
           </Button>
         </div>
 
-        {/* Optional Fields */}
+        {}
         {showOptionalFields && (
           <div className="space-y-6 animate-in slide-in-from-top-2 duration-200">
             <div className="flex items-center gap-3">
@@ -366,6 +428,7 @@ export default function NewLeadPage() {
                     onChange={(e) => handleFormChange("phone", e.target.value)}
                     placeholder="+1 (555) 123-4567"
                     className="pl-10"
+                    maxLength={10}
                   />
                 </div>
               </div>
@@ -392,20 +455,20 @@ export default function NewLeadPage() {
                     onChange={(e) =>
                       handleFormChange("website", e.target.value)
                     }
-                    placeholder="https://company.com"
+                    placeholder="https://example.com"
                     className="pl-10"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="sourceId">Lead Source</Label>
+                <Label htmlFor="sourceId">Lead Source *</Label>
                 <Select
                   value={formData.sourceId}
                   onValueChange={(value) => handleFormChange("sourceId", value)}
                   disabled={configsLoading}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={errors.sourceId ? "border-red-500 focus:border-red-500" : ""}>
                     <SelectValue
                       placeholder={
                         configsLoading
@@ -430,6 +493,12 @@ export default function NewLeadPage() {
                     )}
                   </SelectContent>
                 </Select>
+                {errors.sourceId && (
+                  <p className="text-xs text-red-500 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.sourceId}
+                  </p>
+                )}
                 {!configsLoading && sources.length === 0 && (
                   <p className="text-xs text-yellow-600">
                     No lead sources configured. Please contact your
@@ -455,7 +524,7 @@ export default function NewLeadPage() {
     );
   };
 
-  // Show loading state while configs are being fetched
+ 
   if (configsLoading) {
     return (
       <DashboardLayout>
@@ -469,7 +538,7 @@ export default function NewLeadPage() {
             </Button>
             <div>
               <h1 className="text-2xl font-bold tracking-tight">
-                Add New Lead
+                {isEditMode ? "Edit Lead" : "Add New Lead"}
               </h1>
               <p className="text-gray-600">Loading form...</p>
             </div>
@@ -489,69 +558,57 @@ export default function NewLeadPage() {
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/pages/leads">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Leads
-              </Link>
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">
-                Add New Lead
-              </h1>
-              <p className="text-gray-600">
-                Fill in the essential information to create a new lead
-              </p>
+            <div className="flex items-center gap-4">
+              <div>
+                <h1 className="text-2xl font-medium tracking-tight">
+                  {isEditMode ? "Edit Lead" : "Add New Lead"}
+                </h1>
+              
+              </div>
             </div>
-          </div>
-          {isDirty && (
-            <div className="text-sm text-orange-600 flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
-              Unsaved changes
-            </div>
-          )}
         </div>
 
-        {/* Simplified Form */}
+        {}
         <Card>
           <CardContent className="pt-6">{renderForm()}</CardContent>
         </Card>
 
-        {/* Action Buttons */}
-        <div className="flex items-center justify-between">
-          <Button variant="outline" asChild>
-            <Link href="/pages/leads">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Cancel
-            </Link>
-          </Button>
+        {}
+          <div className="flex items-center justify-between">
+            <Button variant="outline" asChild>
+              <Link href="/pages/leads">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Cancel
+              </Link>
+            </Button>
 
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={() => handleSubmit(false)}
-              disabled={createLeadMutation.isPending}
-            >
-              Save & Add Another
-            </Button>
+            {!isEditMode && (
+              <Button
+                variant="outline"
+                onClick={() => handleSubmit(false)}
+                disabled={createLeadMutation.isPending || updateLeadMutation.isPending}
+              >
+                Save & Add Another
+              </Button>
+            )}
 
             <Button
               onClick={() => handleSubmit(true)}
-              disabled={createLeadMutation.isPending}
-              className="min-w-[140px]"
+              disabled={createLeadMutation.isPending || updateLeadMutation.isPending}
+              className="min-w-[140px] bg-[#45a2ff] hover:bg-[#45a2ff]/90"
             >
-              {createLeadMutation.isPending ? (
+              {(createLeadMutation.isPending || updateLeadMutation.isPending) ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creating...
+                  {isEditMode ? "Updating..." : "Creating..."}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Save & Exit
+                  {isEditMode ? "Update Lead" : "Save & Exit"}
                 </>
               )}
             </Button>

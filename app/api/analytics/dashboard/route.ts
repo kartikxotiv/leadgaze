@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Build base where conditions
+   
     const whereConditions: any = { organizationId };
     const dateFilter: any = {};
 
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       dateFilter[Op.lte] = new Date(dateTo);
     }
 
-    // Get leads count and statistics
+   
     const leadsWhereConditions = { ...whereConditions };
     if (Object.keys(dateFilter).length > 0) {
       leadsWhereConditions.createdAt = dateFilter;
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       where: leadsWhereConditions,
     });
 
-    // Get qualified leads count (for conversion rate)
+   
     const qualifiedStatusConfig = await LeadConfig.findOne({
       where: { entityType: "status", entityValue: "qualified" },
     });
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
         })
       : 0;
 
-    // Get deals count and statistics
+   
     const dealsWhereConditions: any = { organizationId };
     if (userId) dealsWhereConditions.userId = userId;
     if (Object.keys(dateFilter).length > 0) {
@@ -77,30 +77,30 @@ export async function GET(request: NextRequest) {
       return sum + (isNaN(value) ? 0 : value);
     }, 0);
 
-    // Calculate stage distribution
+   
     const stageDistribution = deals.reduce((acc: any, deal) => {
       const stage = (deal as any).stage || "unknown";
       acc[stage] = (acc[stage] || 0) + 1;
       return acc;
     }, {});
 
-    // Calculate win rate
+   
     const wonDeals = stageDistribution.closed_won || 0;
     const lostDeals = stageDistribution.closed_lost || 0;
     const closedDeals = wonDeals + lostDeals;
     const winRate =
       closedDeals > 0 ? Math.round((wonDeals / closedDeals) * 100) : 0;
 
-    // Get tasks due today
+   
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Get tasks due today - using lead/deal relationships to filter by organization
+   
     let tasksDueToday = 0;
     try {
-      // Count tasks assigned to users in this organization
+     
       const orgUsers = await User.findAll({
         attributes: ["userId"],
         include: [
@@ -131,10 +131,10 @@ export async function GET(request: NextRequest) {
       tasksDueToday = 0;
     }
 
-    // Get recent activities - filter by organization through related leads/deals
+   
     let recentActivities: any[] = [];
     try {
-      // Get leads and deals for this organization
+     
       const orgLeads = await Lead.findAll({
         where: { organizationId },
         attributes: ["leadId"],
@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
         activitiesWhereConditions.userId = userId;
       }
 
-      // Only query if we have valid conditions
+     
       if (activitiesWhereConditions[Op.or].length > 0) {
         recentActivities = await Activity.findAll({
           where: activitiesWhereConditions,
@@ -191,11 +191,11 @@ export async function GET(request: NextRequest) {
       recentActivities = [];
     }
 
-    // Calculate conversion rate (qualified leads / total leads)
+   
     const conversionRate =
       totalLeads > 0 ? Math.round((qualifiedLeads / totalLeads) * 100) : 0;
 
-    // Get monthly trend data (last 6 months) with better structure
+   
     const monthlyTrendData = [];
     const months = [
       "Jan",
@@ -225,7 +225,7 @@ export async function GET(request: NextRequest) {
         59
       );
 
-      // Get leads for this month
+     
       const monthLeads = await Lead.count({
         where: {
           organizationId,
@@ -236,7 +236,7 @@ export async function GET(request: NextRequest) {
         },
       });
 
-      // Get deals for this month
+     
       const monthDealsData = await Deal.findAll({
         where: {
           organizationId,
@@ -290,7 +290,7 @@ export async function GET(request: NextRequest) {
           },
         },
         recentActivities: recentActivities || [],
-        trendData: trendData, // Real 6 months data
+        trendData: trendData,
       },
     });
   } catch (error) {

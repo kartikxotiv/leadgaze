@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Simple test route to check if basic API routing works
 export async function GET(request: NextRequest) {
   try {
     return NextResponse.json({

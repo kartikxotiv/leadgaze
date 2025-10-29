@@ -21,7 +21,6 @@ interface CreateOrganizationSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// Industry types based on common CRM use cases
 const INDUSTRY_TYPES = [
   "Technology",
   "Healthcare",
@@ -37,7 +36,6 @@ const INDUSTRY_TYPES = [
   "Other",
 ];
 
-// Company sizes matching auth_phase1.md specifications
 const COMPANY_SIZES = [
   { value: "1", label: "Just me (1 employee)" },
   { value: "2-10", label: "Small business (2-10 employees)" },
@@ -82,14 +80,14 @@ export function CreateOrganizationSheet({
       resetForm();
       onOpenChange(false);
 
-      // Force clear any lingering loading states
+     
       if (createOrganizationMutation.isPending) {
-        // Cancel any pending mutations if possible
+       
         console.warn("Force closing sheet while mutation is pending");
       }
     } catch (error) {
       console.error("Error in handleClose:", error);
-      onOpenChange(false); // Force close anyway
+      onOpenChange(false);
     }
   };
 
@@ -121,7 +119,7 @@ export function CreateOrganizationSheet({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Only submit if we're on the final step
+   
     if (currentStep !== totalSteps) {
       return;
     }
@@ -157,10 +155,10 @@ export function CreateOrganizationSheet({
 
       toast.success(`Organization "${formData.name}" created successfully!`);
 
-      // Ensure proper cleanup and closure
+     
       setTimeout(() => {
         handleClose();
-      }, 100); // Small delay to ensure state updates complete
+      }, 100);
     } catch (error) {
       console.error("Failed to create organization:", error);
       toast.error(
@@ -177,14 +175,14 @@ export function CreateOrganizationSheet({
         side="bottom"
         className="h-[80vh] max-h-[80vh] overflow-hidden rounded-t-2xl p-0 [&>button]:hidden"
       >
-        {/* Accessibility Title */}
+        {}
         <SheetHeader className="sr-only">
           <SheetTitle>
             Create Your Organization - Step {currentStep} of {totalSteps}
           </SheetTitle>
         </SheetHeader>
 
-        {/* Header with close button positioned on right */}
+        {}
         <div className="relative flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
           <SheetClose className="absolute right-4 top-4 rounded-full p-1.5 hover:bg-white/60 dark:hover:bg-gray-800/60 transition-colors">
             <X className="h-4 w-4" />
@@ -204,7 +202,7 @@ export function CreateOrganizationSheet({
               Step {currentStep} of {totalSteps}
             </p>
 
-            {/* Step Indicator */}
+            {}
             <div className="flex items-center justify-center gap-2">
               {Array.from({ length: totalSteps }, (_, index) => (
                 <div
@@ -220,16 +218,16 @@ export function CreateOrganizationSheet({
           </div>
         </div>
 
-        {/* Main Content - Fixed Height */}
+        {}
         <div className="flex flex-col" style={{ height: "calc(80vh - 120px)" }}>
-          {/* Form Content */}
+          {}
           <div className="flex-1 p-3 overflow-hidden">
             <div className="flex justify-center h-full">
               <div className="w-full max-w-4xl space-y-4">
-                {/* Step 1: Organization Identity */}
+                {}
                 {currentStep === 1 && (
                   <div className="space-y-4">
-                    {/* Spacer to match back icon area in other steps */}
+                    {}
                     <div className="flex justify-start mb-4">
                       <div className="p-2 opacity-0">
                         <span className="text-sm font-medium">Back</span>
@@ -289,10 +287,10 @@ export function CreateOrganizationSheet({
                   </div>
                 )}
 
-                {/* Step 2: Industry Selection */}
+                {}
                 {currentStep === 2 && (
                   <div className="space-y-4">
-                    {/* Back Icon */}
+                    {}
                     <div className="flex justify-start mb-4">
                       <button
                         onClick={prevStep}
@@ -312,7 +310,7 @@ export function CreateOrganizationSheet({
                       </p>
                     </div>
 
-                    {/* Industry Selection */}
+                    {}
                     <div className="flex justify-center">
                       <div className="w-full max-w-2xl">
                         <div className="grid grid-cols-3 gap-3">
@@ -339,10 +337,10 @@ export function CreateOrganizationSheet({
                   </div>
                 )}
 
-                {/* Step 3: Team Size Selection */}
+                {}
                 {currentStep === 3 && (
                   <div className="space-y-4">
-                    {/* Back Icon */}
+                    {}
                     <div className="flex justify-start mb-4">
                       <button
                         onClick={prevStep}
@@ -362,7 +360,7 @@ export function CreateOrganizationSheet({
                       </p>
                     </div>
 
-                    {/* Team Size Selection */}
+                    {}
                     <div className="flex justify-center">
                       <div className="w-full max-w-md space-y-3">
                         {COMPANY_SIZES.map((size) => (
@@ -392,12 +390,12 @@ export function CreateOrganizationSheet({
             </div>
           </div>
 
-          {/* Fixed Action Buttons at Bottom */}
+          {}
           <div className="border-t-2 border-gray-300 dark:border-gray-600 p-6 bg-white dark:bg-gray-800 shadow-lg shrink-0">
             <form onSubmit={handleSubmit}>
               <div className="flex justify-center">
                 <div className="flex justify-center w-full max-w-4xl">
-                  {/* Consistent Main Action Button */}
+                  {}
                   {currentStep === totalSteps ? (
                     <Button
                       type="submit"

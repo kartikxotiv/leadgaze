@@ -1,6 +1,5 @@
 const { Sequelize } = require("sequelize");
 
-// Database connection
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: "postgres",
   logging: false,
@@ -14,11 +13,11 @@ async function testModels() {
   try {
     console.log("🧪 Testing simplified model pattern...");
 
-    // Test connection
+   
     await sequelize.authenticate();
     console.log("✅ Database connected!");
 
-    // Define models directly (same as simple-db-setup.js)
+   
     const User = sequelize.define("User", {
       userId: {
         type: Sequelize.UUID,
@@ -121,12 +120,12 @@ async function testModels() {
 
     console.log("✅ Models defined!");
 
-    // Test model properties
+   
     console.log("\n📋 Model Information:");
     console.log(`  - User: ${User.name} (${User.tableName})`);
     console.log(`  - Task: ${Task.name} (${Task.tableName})`);
 
-    // Test associations
+   
     User.hasMany(Task, {
       foreignKey: "assigned_to",
       as: "assignedTasks",
@@ -139,7 +138,7 @@ async function testModels() {
 
     console.log("✅ Associations set up!");
 
-    // Test data creation
+   
     console.log("\n🧪 Testing data creation...");
     
     const testUser = await User.create({
@@ -159,7 +158,7 @@ async function testModels() {
 
     console.log("✅ Test task created:", testTask.toJSON());
 
-    // Test associations
+   
     const userWithTasks = await User.findOne({
       where: { userId: testUser.userId },
       include: [{
@@ -171,7 +170,7 @@ async function testModels() {
     console.log("✅ Association test passed!");
     console.log(`  - User has ${userWithTasks.assignedTasks.length} tasks`);
 
-    // Clean up
+   
     await Task.destroy({ where: {} });
     await User.destroy({ where: {} });
     console.log("✅ Test data cleaned up!");

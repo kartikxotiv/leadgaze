@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Validate required fields
+   
     if (
       !body.email ||
       !body.password ||
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate email format
+   
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(body.email)) {
       return NextResponse.json(
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate password strength
+   
     if (body.password.length < 8) {
       return NextResponse.json(
         {
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Register user and create organization
+   
     const result = await AuthService.registerUserWithOrganization({
       email: body.email,
       password: body.password,
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       setup_questions: body.setupQuestions || {},
     });
 
-    // Auto-login the user after successful registration
+   
     const loginResult = await AuthService.loginUser(body.email, body.password);
 
     return NextResponse.json({

@@ -1,7 +1,6 @@
-#!/bin/bash
 
-# Test Working CRM Features with curl
-# This script tests the actual working features
+
+
 
 API_BASE="http://localhost:3001/api"
 ORG_ID="cbc2d399-01bf-430d-abbb-d63e1f6ab671"
@@ -9,7 +8,6 @@ ORG_ID="cbc2d399-01bf-430d-abbb-d63e1f6ab671"
 echo "🚀 Testing Working CRM Features"
 echo "================================"
 
-# Test 1: API Health
 echo "ℹ️ Testing API Health..."
 HEALTH=$(curl -s "$API_BASE/test" | jq -r '.message // empty')
 if [ -n "$HEALTH" ]; then
@@ -19,12 +17,11 @@ else
     exit 1
 fi
 
-# Test 2: Lead Configs
 echo "ℹ️ Testing Lead Configurations..."
 CONFIGS=$(curl -s "$API_BASE/leads/config" | jq -r '.success // false')
 if [ "$CONFIGS" = "true" ]; then
     echo "✅ Lead Configs - PASSED"
-    # Get sourceId for later use
+
     SOURCE_ID=$(curl -s "$API_BASE/leads/config" | jq -r '.data.source[0].id // empty')
     STATUS_ID=$(curl -s "$API_BASE/leads/config" | jq -r '.data.status[0].id // empty')
 else
@@ -32,7 +29,6 @@ else
     exit 1
 fi
 
-# Test 3: Lead Creation
 echo "ℹ️ Testing Lead Creation..."
 TIMESTAMP=$(date +%s)
 USER_ID="7c526086-2137-4067-a25c-e7b142fd7bd9"
@@ -69,7 +65,6 @@ else
     exit 1
 fi
 
-# Test 4: Lead Retrieval
 echo "ℹ️ Testing Lead Retrieval..."
 LEAD_GET=$(curl -s "$API_BASE/leads/$LEAD_ID" | jq -r '.success // false')
 if [ "$LEAD_GET" = "true" ]; then
@@ -78,7 +73,6 @@ else
     echo "❌ Lead Retrieval - FAILED"
 fi
 
-# Test 5: Deal Creation
 echo "ℹ️ Testing Deal Creation..."
 DEAL_DATA=$(cat <<EOF
 {
@@ -109,7 +103,6 @@ else
     echo "$DEAL_RESPONSE" | jq '.'
 fi
 
-# Test 6: Deal Pipeline Update
 if [ -n "$DEAL_ID" ]; then
     echo "ℹ️ Testing Deal Pipeline Update..."
     UPDATE_DATA='{"stage": "proposal", "probability": 40}'
@@ -125,7 +118,6 @@ if [ -n "$DEAL_ID" ]; then
     fi
 fi
 
-# Test 7: Pipeline Data
 echo "ℹ️ Testing Pipeline Data Retrieval..."
 PIPELINE_DATA=$(curl -s "$API_BASE/deals?organizationId=$ORG_ID&limit=10" | jq -r '.success // false')
 if [ "$PIPELINE_DATA" = "true" ]; then
@@ -134,7 +126,6 @@ else
     echo "❌ Pipeline Data - FAILED"
 fi
 
-# Test 8: Activity Logging
 echo "ℹ️ Testing Activity Logging..."
 ACTIVITY_DATA=$(cat <<EOF
 {
@@ -160,7 +151,6 @@ else
     echo "⚠️ Activity Logging - May not be fully implemented"
 fi
 
-# Cleanup
 echo "ℹ️ Cleaning up test data..."
 if [ -n "$DEAL_ID" ]; then
     curl -s -X DELETE "$API_BASE/deals/$DEAL_ID" > /dev/null

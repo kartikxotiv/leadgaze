@@ -233,10 +233,10 @@ const SortDropdown = ({
     if (!onSortChange) return;
 
     if (sortBy === newSortBy) {
-      // Toggle sort order
+     
       onSortChange(newSortBy, sortOrder === "asc" ? "desc" : "asc");
     } else {
-      // New sort field, default to ascending
+     
       onSortChange(newSortBy, "asc");
     }
     setOpen(false);
@@ -315,75 +315,34 @@ export function EnhancedFilters({
     if (!activeFilter) return;
 
     if (value) {
-      // Remove specific value
+     
       const newValues = activeFilter.values.filter((v) => v !== value);
       onFilterChange(filterId, newValues);
     } else {
-      // Remove entire filter
+     
       onFilterChange(filterId, []);
     }
   };
 
   return (
     <Card className={cn(className)}>
-      <CardContent className="p-4 space-y-4">
-        {/* Search Bar */}
+      <CardContent className="px-0 py-0 space-y-4">
+      {}
+        {}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search leads by name, email, company..."
+            placeholder="Search leads by name, email"
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-10 h-10"
           />
         </div>
 
-        {/* Filters Row */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Filter className="h-4 w-4" />
-            <span>Filter by:</span>
-          </div>
+        {}
+        {}
 
-          {/* Filter Dropdowns */}
-          {filters.map((filter) => {
-            const activeFilter = activeFilters.find(
-              (f) => f.filterId === filter.id
-            );
-            return (
-              <FilterDropdown
-                key={filter.id}
-                filter={filter}
-                activeValues={activeFilter?.values || []}
-                onValueChange={(values) => onFilterChange(filter.id, values)}
-              />
-            );
-          })}
-
-          {/* Sort Dropdown */}
-          {onSortChange && (
-            <SortDropdown
-              sortBy={sortBy}
-              sortOrder={sortOrder}
-              onSortChange={onSortChange}
-            />
-          )}
-
-          {/* Clear Filters */}
-          {hasActiveFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClearFilters}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <RotateCcw className="h-3 w-3 mr-1" />
-              Clear filters
-            </Button>
-          )}
-        </div>
-
-        {/* Active Filters */}
+        {}
         {hasActiveFilters && (
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs text-muted-foreground">
@@ -421,23 +380,12 @@ export function EnhancedFilters({
           </div>
         )}
 
-        {/* Results Count */}
-        {(resultCount !== undefined || totalCount !== undefined) && (
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <div>
-              {resultCount !== undefined && totalCount !== undefined ? (
-                <span>
-                  Showing {resultCount} of {totalCount} leads
-                  {hasActiveFilters && " (filtered)"}
-                </span>
-              ) : resultCount !== undefined ? (
-                <span>{resultCount} leads found</span>
-              ) : (
-                <span>{totalCount} total leads</span>
-              )}
-            </div>
-          </div>
-        )}
+        {}
+        
+        {}
+
+
+
       </CardContent>
     </Card>
   );

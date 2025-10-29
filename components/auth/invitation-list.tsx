@@ -110,8 +110,8 @@ export function InvitationList({
   };
 
   const copyInvitationLink = async (invitationId: string) => {
-    // In a real app, you'd generate the invitation link based on the token
-    // For now, we'll use a placeholder
+   
+   
     const invitationLink = `${window.location.origin}/auth/invite/${invitationId}`;
 
     try {
@@ -127,7 +127,7 @@ export function InvitationList({
       const token = localStorage.getItem("auth_token");
       if (!token) return;
 
-      // Create a new invitation (same email, role)
+     
       const response = await fetch("/api/auth/invite", {
         method: "POST",
         headers: {
@@ -146,8 +146,8 @@ export function InvitationList({
 
       if (data.success) {
         toast.success("Invitation resent successfully");
-        fetchInvitations(); // Refresh the list
-        onRefresh?.(); // Trigger parent refresh
+        fetchInvitations();
+        onRefresh?.();
       } else {
         toast.error(data.error || "Failed to resend invitation");
       }
@@ -162,8 +162,8 @@ export function InvitationList({
       const token = localStorage.getItem("auth_token");
       if (!token) return;
 
-      // This would need a cancel endpoint in the API
-      // For now, we'll show a placeholder
+     
+     
       toast.info("Cancel invitation feature coming soon");
     } catch (error) {
       console.error("Failed to cancel invitation:", error);

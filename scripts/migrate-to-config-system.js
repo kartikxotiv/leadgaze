@@ -1,6 +1,5 @@
 const { Sequelize } = require("sequelize");
 
-// Database connection
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: "postgres",
   logging: false,
@@ -14,11 +13,11 @@ async function migrateToConfigSystem() {
   try {
     console.log("🔄 Starting migration to config-based system...");
 
-    // Test connection
+   
     await sequelize.authenticate();
     console.log("✅ Database connected!");
 
-    // Import new models
+   
     const {
       User,
       Organization,
@@ -34,7 +33,7 @@ async function migrateToConfigSystem() {
 
     console.log("🗑️  Dropping existing tables with foreign key constraints...");
 
-    // Drop tables in reverse dependency order
+   
     const tablesToDrop = [
       "deals",
       "leads",
@@ -45,7 +44,7 @@ async function migrateToConfigSystem() {
       "user_organizations",
       "organizations",
       "users",
-      // Add config tables if they exist
+     
       "user_invitations",
       "email_verifications",
       "password_reset_tokens",
@@ -66,13 +65,13 @@ async function migrateToConfigSystem() {
 
     console.log("🆕 Creating new tables with config system...");
 
-    // Sync all models to create new tables
+   
     await sequelize.sync({ force: true });
     console.log("✅ All tables created successfully!");
 
     console.log("🌱 Seeding config data...");
 
-    // Import and run seed script
+   
     const { seedConfigData } = require("./seed-config-data");
     await seedConfigData();
 
@@ -125,7 +124,6 @@ async function migrateToConfigSystem() {
   }
 }
 
-// Run the migration if this file is executed directly
 if (require.main === module) {
   migrateToConfigSystem();
 }

@@ -1,6 +1,5 @@
 const { Sequelize } = require("sequelize");
 
-// Database connection
 const sequelize = new Sequelize(
   process.env.DB_NAME || "crm",
   process.env.DB_USER || "sidharthverma",
@@ -19,12 +18,12 @@ async function setupNotificationsTables() {
     await sequelize.authenticate();
     console.log("✅ Database connection established successfully.");
 
-    // Drop existing tables if they exist
+   
     await sequelize.query(`DROP TABLE IF EXISTS notifications CASCADE;`);
     await sequelize.query(`DROP TABLE IF EXISTS automation_rules CASCADE;`);
     console.log("✅ Dropped existing tables");
 
-    // Create notifications table
+   
     await sequelize.query(`
       CREATE TABLE notifications (
         notification_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -54,7 +53,7 @@ async function setupNotificationsTables() {
     `);
     console.log("✅ Created notifications table");
 
-    // Create automation_rules table
+   
     await sequelize.query(`
       CREATE TABLE automation_rules (
         rule_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -79,7 +78,7 @@ async function setupNotificationsTables() {
     `);
     console.log("✅ Created automation_rules table");
 
-    // Create indexes for performance
+   
     await sequelize.query(`
       CREATE INDEX idx_notifications_user ON notifications(user_id);
       CREATE INDEX idx_notifications_org ON notifications(organization_id);
@@ -98,7 +97,7 @@ async function setupNotificationsTables() {
     `);
     console.log("✅ Created performance indexes");
 
-    // Get first user and organization for sample data
+   
     const firstUser = await sequelize.query(
       `SELECT user_id FROM users LIMIT 1;`
     );
@@ -116,7 +115,7 @@ async function setupNotificationsTables() {
     const userId = firstUser[0][0].user_id;
     const orgId = firstOrg[0][0].organization_id;
 
-    // Insert sample notifications
+   
     await sequelize.query(`
       INSERT INTO notifications (
         user_id, type, title, message, priority, channel, 
@@ -185,7 +184,7 @@ async function setupNotificationsTables() {
     `);
     console.log("✅ Inserted sample notifications");
 
-    // Insert default automation rules
+   
     await sequelize.query(`
       INSERT INTO automation_rules (
         name, description, trigger, conditions, actions, 
@@ -255,7 +254,6 @@ async function setupNotificationsTables() {
   }
 }
 
-// Run the setup
 if (require.main === module) {
   setupNotificationsTables()
     .then(() => {

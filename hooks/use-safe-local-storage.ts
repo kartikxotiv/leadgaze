@@ -2,10 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-/**
- * Hook that safely accesses localStorage without causing hydration mismatches
- * Returns [value, setValue, isLoaded] where isLoaded indicates if the value has been loaded from localStorage
- */
+
 export function useSafeLocalStorage<T>(
   key: string,
   defaultValue: T
@@ -14,7 +11,7 @@ export function useSafeLocalStorage<T>(
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // Only access localStorage on the client side
+   
     try {
       const item = localStorage.getItem(key);
       if (item !== null) {

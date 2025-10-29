@@ -136,7 +136,7 @@ export default function NewTaskPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Basic Information */}
+            {}
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="title">Task Title *</Label>
@@ -163,7 +163,7 @@ export default function NewTaskPage() {
               </div>
             </div>
 
-            {/* Task Properties */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="type">Task Type</Label>
@@ -242,7 +242,7 @@ export default function NewTaskPage() {
               </div>
             </div>
 
-            {/* Due Date and Related Lead */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Due Date</Label>
@@ -292,7 +292,7 @@ export default function NewTaskPage() {
               </div>
             </div>
 
-            {/* Actions */}
+            {}
             <div className="flex justify-end space-x-4 pt-6 border-t">
               <Button type="button" variant="outline" asChild>
                 <Link href="/tasks">Cancel</Link>

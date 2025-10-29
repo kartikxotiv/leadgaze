@@ -3,10 +3,10 @@ import { emailService } from "@/lib/email-service";
 
 export async function GET() {
   try {
-    // Initialize email service
+   
     await emailService.ensureInitialized();
 
-    // Test email configuration
+   
     const isConfigured = await emailService.testEmailConfiguration();
 
     return NextResponse.json({

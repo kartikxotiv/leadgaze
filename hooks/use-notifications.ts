@@ -39,7 +39,6 @@ export interface CreateNotificationData {
   metadata?: any;
 }
 
-// Hook to fetch user notifications
 export function useNotifications(
   options: {
     limit?: number;
@@ -69,11 +68,10 @@ export function useNotifications(
       return response.data;
     },
     enabled: isReady && isAuthenticated && !!user?.userId,
-    refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
+    refetchInterval: 30000,
   });
 }
 
-// Hook to get unread notification count
 export function useUnreadNotificationCount() {
   const { user } = useAuthStore();
   const { isReady, isAuthenticated } = useAuthReady();
@@ -85,11 +83,10 @@ export function useUnreadNotificationCount() {
       const response = await apiClient.get("/notifications/unread-count");
       return response.data;
     },
-    refetchInterval: 15000, // Refetch every 15 seconds
+    refetchInterval: 15000,
   });
 }
 
-// Hook to mark notification as read
 export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -102,13 +99,12 @@ export function useMarkNotificationRead() {
       return response.data;
     },
     onSuccess: () => {
-      // Invalidate notifications queries
+     
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
 }
 
-// Hook to mark all notifications as read
 export function useMarkAllNotificationsRead() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -124,7 +120,6 @@ export function useMarkAllNotificationsRead() {
   });
 }
 
-// Hook to send notification
 export function useSendNotification() {
   const queryClient = useQueryClient();
   const { user, organizationId } = useAuthStore();
@@ -147,7 +142,6 @@ export function useSendNotification() {
   });
 }
 
-// Hook to delete notification
 export function useDeleteNotification() {
   const queryClient = useQueryClient();
 
@@ -164,7 +158,6 @@ export function useDeleteNotification() {
   });
 }
 
-// Hook to get notification settings
 export function useNotificationSettings() {
   const { user } = useAuthStore();
 
@@ -178,7 +171,6 @@ export function useNotificationSettings() {
   });
 }
 
-// Hook to update notification settings
 export function useUpdateNotificationSettings() {
   const queryClient = useQueryClient();
 
@@ -196,7 +188,6 @@ export function useUpdateNotificationSettings() {
   });
 }
 
-// Utility function to get notification icon
 export function getNotificationIcon(type: string) {
   const icons = {
     lead_assigned: "👤",
@@ -215,7 +206,6 @@ export function getNotificationIcon(type: string) {
   return icons[type as keyof typeof icons] || "📨";
 }
 
-// Utility function to get priority color
 export function getPriorityColor(priority: string) {
   switch (priority) {
     case "urgent":
@@ -231,7 +221,6 @@ export function getPriorityColor(priority: string) {
   }
 }
 
-// Utility function to format notification time
 export function formatNotificationTime(dateString: string): string {
   const date = new Date(dateString);
   const now = new Date();

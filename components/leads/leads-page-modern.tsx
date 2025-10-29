@@ -135,7 +135,7 @@ export function LeadsPageModern({
     new Set(leads.map((lead) => lead.source?.entityValue).filter(Boolean))
   );
 
-  // Calculate stats
+ 
   const totalLeads = leads.length;
   const qualifiedLeads = leads.filter(
     (lead) => lead.status?.entityValue === "qualified"
@@ -151,7 +151,7 @@ export function LeadsPageModern({
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
+      {}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-6">
@@ -229,7 +229,7 @@ export function LeadsPageModern({
         </Card>
       </div>
 
-      {/* Header & Controls */}
+      {}
       <Card>
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -254,7 +254,7 @@ export function LeadsPageModern({
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Search & Filters */}
+          {}
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center flex-1">
               <div className="relative flex-1 max-w-md">
@@ -336,7 +336,7 @@ export function LeadsPageModern({
             </div>
           </div>
 
-          {/* Results Summary */}
+          {}
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>
               Showing {filteredLeads.length} of {leads.length} leads
@@ -350,7 +350,7 @@ export function LeadsPageModern({
         </CardContent>
       </Card>
 
-      {/* Leads Grid/List */}
+      {}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -395,7 +395,7 @@ export function LeadsPageModern({
         </div>
       )}
 
-      {/* Empty State */}
+      {}
       {!isLoading && sortedLeads.length === 0 && (
         <Card>
           <CardContent className="text-center py-12">

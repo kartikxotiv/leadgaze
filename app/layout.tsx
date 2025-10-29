@@ -10,7 +10,7 @@ import { AuthHydrationProvider } from "@/components/auth/auth-hydration-provider
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "MyCRM - Sales Platform",
+  title: "Leadgaze CRM - Sales Platform",
   description:
     "Professional CRM system for managing leads, deals, and sales pipeline",
   generator: "v0.dev",
@@ -28,7 +28,7 @@ export default function RootLayout({
           <ThemeProvider>
             <AuthHydrationProvider>
               {children}
-              <SimpleThemeToggle />
+              {}
               <SonnerToaster />
             </AuthHydrationProvider>
           </ThemeProvider>

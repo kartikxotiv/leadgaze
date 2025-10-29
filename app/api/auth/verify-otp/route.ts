@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate email format
+   
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate OTP format (6 digits)
+   
     if (!/^\d{6}$/.test(otp)) {
       return NextResponse.json(
         { success: false, error: "OTP must be 6 digits" },
@@ -29,11 +29,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find the OTP record
+   
     const otpRecord = await EmailOTP.findValidOTP(email, otp, purpose);
 
     if (!otpRecord) {
-      // Check if there's any recent OTP for this email to give better error message
+     
       const recentOTP = await EmailOTP.findLatestOTP(email, purpose);
 
       if (!recentOTP) {
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Increment attempts for wrong OTP
+     
       await recentOTP.incrementAttempts();
 
       const attemptsLeft = 5 - recentOTP.attempts;
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if OTP can still be used
+   
     if (!otpRecord.canAttempt()) {
       return NextResponse.json(
         {
@@ -105,10 +105,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Mark OTP as verified
+   
     await otpRecord.markVerified();
 
-    // Invalidate any other OTPs for this email/purpose
+   
     await EmailOTP.invalidateOTPs(email, purpose);
 
     return NextResponse.json({

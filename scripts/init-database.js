@@ -4,13 +4,13 @@ async function initDatabase() {
   try {
     console.log("🚀 Initializing CRM Database...")
 
-    // Import and run database sync
+   
     const { syncDatabase, testConnection } = require("../lib/database-sync.ts")
 
-    // Test connection first
+   
     await testConnection()
 
-    // Ask user if they want to reset the database
+   
     const readline = require("readline")
     const rl = readline.createInterface({
       input: process.stdin,
@@ -25,7 +25,7 @@ async function initDatabase() {
 
     const shouldReset = answer.toLowerCase() === "y" || answer.toLowerCase() === "yes"
 
-    // Sync database
+   
     await syncDatabase(shouldReset)
 
     console.log("✅ Database initialization completed!")

@@ -30,7 +30,7 @@ export default function PipelineSettingsPage() {
       }
     >
       <div className="space-y-6">
-        {/* Pipeline Overview */}
+        {}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -98,7 +98,7 @@ export default function PipelineSettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Stage Form */}
+        {}
         <Card>
           <CardHeader>
             <CardTitle>Add New Stage</CardTitle>

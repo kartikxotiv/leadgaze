@@ -458,7 +458,7 @@ export default function FeaturesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">
-      {/* Navigation */}
+      {}
       <nav className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -472,7 +472,7 @@ export default function FeaturesPage() {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                    MyCRM
+                    Leadgaze CRM
                   </h1>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Sales Platform
@@ -498,7 +498,7 @@ export default function FeaturesPage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {}
       <section className="relative overflow-hidden py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -514,19 +514,19 @@ export default function FeaturesPage() {
               </span>
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Discover how MyCRM's powerful features can transform your sales
+              Discover how Leadgaze CRM's powerful features can transform your sales
               process, increase productivity, and drive revenue growth for your
               team.
             </p>
           </div>
         </div>
 
-        {/* Floating gradient orbs */}
+        {}
         <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
         <div className="absolute top-1/3 right-1/4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
       </section>
 
-      {/* Feature Categories */}
+      {}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Tabs
@@ -553,7 +553,7 @@ export default function FeaturesPage() {
                 value={category.id}
                 className="space-y-8"
               >
-                {/* Category Header */}
+                {}
                 <div className="text-center mb-12">
                   <div
                     className={`w-16 h-16 rounded-full ${category.bgColor} flex items-center justify-center mx-auto mb-4`}
@@ -568,7 +568,7 @@ export default function FeaturesPage() {
                   </p>
                 </div>
 
-                {/* Feature Cards */}
+                {}
                 <div className="grid md:grid-cols-2 gap-8">
                   {category.features.map((feature, index) => (
                     <Card
@@ -616,7 +616,7 @@ export default function FeaturesPage() {
         </div>
       </section>
 
-      {/* Integrations Section */}
+      {}
       <section className="bg-gray-50 dark:bg-gray-800 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -624,7 +624,7 @@ export default function FeaturesPage() {
               Seamless Integrations
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Connect MyCRM with your favorite tools and create a unified
+              Connect Leadgaze CRM with your favorite tools and create a unified
               workflow
             </p>
           </div>
@@ -657,7 +657,7 @@ export default function FeaturesPage() {
         </div>
       </section>
 
-      {/* Pricing Section */}
+      {}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -739,7 +739,7 @@ export default function FeaturesPage() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {}
       <section className="py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <Card className="border-0 shadow-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
@@ -749,7 +749,7 @@ export default function FeaturesPage() {
               </h2>
               <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
                 Join thousands of sales teams who have already revolutionized
-                their workflow with MyCRM. Start your free trial today and
+                their workflow with Leadgaze CRM. Start your free trial today and
                 experience the difference.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -792,7 +792,7 @@ export default function FeaturesPage() {
         </div>
       </section>
 
-      {/* Footer */}
+      {}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8">
@@ -801,7 +801,7 @@ export default function FeaturesPage() {
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 text-white">
                   <Building2 className="size-4 text-white" />
                 </div>
-                <span className="text-xl font-bold">MyCRM</span>
+                <span className="text-xl font-bold">Leadgaze CRM</span>
               </div>
               <p className="text-gray-400 text-sm">
                 The modern CRM platform for sales teams who want to close more
@@ -898,7 +898,7 @@ export default function FeaturesPage() {
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
             <p>
-              &copy; 2024 MyCRM. All rights reserved. Built with ❤️ for sales
+              &copy; 2025 Leadgaze CRM. All rights reserved. Built with ❤️ for sales
               teams worldwide.
             </p>
           </div>

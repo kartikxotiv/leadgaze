@@ -37,7 +37,7 @@ export function WorkspaceSwitcher({
   const organizationId =
     currentOrganization?.organizationId || currentOrganization?.id;
 
-  // Ensure stale workspace from previous org is cleared at render time
+ 
   if (
     currentWorkspace &&
     (currentWorkspace as any).organizationId &&
@@ -67,9 +67,9 @@ export function WorkspaceSwitcher({
   const handleWorkspaceSelect = (workspace: Workspace) => {
     if (workspace.id === selectedWorkspaceId) return;
 
-    // Update global workspace context (persisted)
+   
     setCurrentWorkspace(workspace as any);
-    // Optional external callback
+   
     onWorkspaceChange?.(workspace);
     toast.success(`Switched to "${workspace.name}" workspace`);
   };

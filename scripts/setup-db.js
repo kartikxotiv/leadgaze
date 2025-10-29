@@ -4,19 +4,19 @@ async function setupDatabase() {
   try {
     console.log("🚀 Setting up CRM Database with Multi-Organization Tables...");
 
-    // Use ts-node to run the TypeScript file
+   
     const { spawn } = require("child_process");
 
-    // First, let's check if we can connect to the database
+   
     console.log("🔍 Testing database connection...");
 
-    // Create a simple test script
+   
           const testScript = `
         const { Sequelize } = require("sequelize");
         
-        // Database connection using environment variables
+       
         const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || 
-          "postgres://\${process.env.DB_USER || 'postgres'}:\${process.env.DB_PASSWORD || 'password'}@\${process.env.DB_HOST }:\${process.env.DB_PORT || '5432'}/\${process.env.DB_NAME || 'crm'}";
+          "postgres
 
         const sequelize = new Sequelize(DATABASE_URL, {
         dialect: "postgres",
@@ -37,17 +37,17 @@ async function setupDatabase() {
       testConnection();
     `;
 
-    // Write test script to temp file
+   
     const fs = require("fs");
     const path = require("path");
     const testFile = path.join(__dirname, "temp-test.js");
     fs.writeFileSync(testFile, testScript);
 
-    // Run test
+   
     execSync(`node ${testFile}`, { stdio: "inherit" });
     fs.unlinkSync(testFile);
 
-    // Ask user if they want to reset the database
+   
     const readline = require("readline");
     const rl = readline.createInterface({
       input: process.stdin,
@@ -72,7 +72,7 @@ async function setupDatabase() {
       console.log("📝 Creating new tables (keeping existing data)...");
     }
 
-    // Create a sync script
+   
     const syncScript = `
       const { Sequelize, DataTypes } = require("sequelize");
       
@@ -87,7 +87,7 @@ async function setupDatabase() {
         },
       });
       
-      // Define models
+     
       const User = sequelize.define("User", {
         id: {
           type: DataTypes.UUID,
@@ -341,7 +341,7 @@ async function setupDatabase() {
         },
       });
       
-      // Define associations
+     
       User.hasMany(UserOrganization, { foreignKey: "user_id", as: "userOrganizations" });
       User.hasMany(Organization, { foreignKey: "created_by", as: "createdOrganizations" });
       User.hasMany(UserInvitation, { foreignKey: "invited_by", as: "sentInvitations" });
@@ -379,11 +379,11 @@ async function setupDatabase() {
       syncDatabase(${shouldReset});
     `;
 
-    // Write sync script to temp file
+   
     const syncFile = path.join(__dirname, "temp-sync.js");
     fs.writeFileSync(syncFile, syncScript);
 
-    // Run sync
+   
     execSync(`node ${syncFile}`, { stdio: "inherit" });
     fs.unlinkSync(syncFile);
 

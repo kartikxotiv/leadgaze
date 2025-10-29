@@ -155,7 +155,7 @@ export function FollowUpScheduler({
         priority: template.priority,
       }));
 
-      // Set default due date
+     
       const defaultDate = addDays(new Date(), template.defaultDays);
       setSelectedDate(defaultDate);
       setFormData((prev) => ({
@@ -233,12 +233,12 @@ export function FollowUpScheduler({
 
       await createActivityMutation.mutateAsync(payload);
 
-      // If recurring, create additional follow-ups
+     
       if (isRecurring && recurringPattern.endDate) {
         const endDate = new Date(recurringPattern.endDate);
         let currentDate = new Date(formData.dueDate);
         let count = 0;
-        const maxRecurring = 10; // Limit to prevent too many tasks
+        const maxRecurring = 10;
 
         while (currentDate < endDate && count < maxRecurring) {
           if (recurringPattern.frequency === "daily") {
@@ -265,7 +265,7 @@ export function FollowUpScheduler({
 
       toast.success("Follow-up scheduled successfully!");
 
-      // Reset form
+     
       setFormData({
         activityType: "task",
         relatedType: "lead",
@@ -309,7 +309,7 @@ export function FollowUpScheduler({
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Quick Templates */}
+            {}
             <div>
               <Label className="text-base font-semibold">Quick Templates</Label>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
@@ -360,9 +360,9 @@ export function FollowUpScheduler({
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Column */}
+              {}
               <div className="space-y-4">
-                {/* Subject */}
+                {}
                 <div>
                   <Label htmlFor="subject">Subject *</Label>
                   <Input
@@ -379,7 +379,7 @@ export function FollowUpScheduler({
                   />
                 </div>
 
-                {/* Description */}
+                {}
                 <div>
                   <Label htmlFor="description">Description & Notes</Label>
                   <Textarea
@@ -396,7 +396,7 @@ export function FollowUpScheduler({
                   />
                 </div>
 
-                {/* Priority */}
+                {}
                 <div>
                   <Label htmlFor="priority">Priority</Label>
                   <Select
@@ -441,9 +441,9 @@ export function FollowUpScheduler({
                 </div>
               </div>
 
-              {/* Right Column */}
+              {}
               <div className="space-y-4">
-                {/* Quick Schedule Options */}
+                {}
                 <div>
                   <Label className="text-sm font-medium">Quick Schedule</Label>
                   <div className="grid grid-cols-2 gap-2 mt-2">
@@ -462,7 +462,7 @@ export function FollowUpScheduler({
                   </div>
                 </div>
 
-                {/* Custom Date & Time */}
+                {}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>Date</Label>
@@ -506,7 +506,7 @@ export function FollowUpScheduler({
                   </div>
                 </div>
 
-                {/* Recurring Options */}
+                {}
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <input
@@ -584,7 +584,7 @@ export function FollowUpScheduler({
                   )}
                 </div>
 
-                {/* Current Selection Preview */}
+                {}
                 {selectedDate && (
                   <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
                     <div className="flex items-center gap-2 text-sm">
@@ -602,7 +602,7 @@ export function FollowUpScheduler({
               </div>
             </div>
 
-            {/* Actions */}
+            {}
             <div className="flex items-center justify-end gap-3 pt-4 border-t">
               {onCancel && (
                 <Button type="button" variant="outline" onClick={onCancel}>

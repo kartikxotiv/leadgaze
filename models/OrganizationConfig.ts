@@ -77,7 +77,7 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Static methods for common queries
+ 
   (OrganizationConfig as any).getCompanySizeOptions = function () {
     return this.findAll({
       where: {
@@ -143,27 +143,27 @@ export default (sequelize: Sequelize) => {
     });
   };
 
-  // Associations - enabled for config-based schema
+ 
   (OrganizationConfig as any).associate = (models: any) => {
-    // Organizations reference this for company_size
+   
     OrganizationConfig.hasMany(models.Organization, {
       foreignKey: "company_size_config_id",
       as: "organizationsWithCompanySize",
     });
 
-    // Organizations reference this for status
+   
     OrganizationConfig.hasMany(models.Organization, {
       foreignKey: "status_id",
       as: "organizationsWithStatus",
     });
 
-    // Organizations reference this for subscription_status
+   
     OrganizationConfig.hasMany(models.Organization, {
       foreignKey: "subscription_status_id",
       as: "organizationsWithSubscriptionStatus",
     });
 
-    // Organizations reference this for plan_type
+   
     OrganizationConfig.hasMany(models.Organization, {
       foreignKey: "plan_type_id",
       as: "organizationsWithPlanType",

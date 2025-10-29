@@ -6,7 +6,6 @@ import { Op } from "sequelize";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
-// GET /api/organizations/[id]/workspaces/[workspaceId] - Get specific workspace
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; workspaceId: string }> }
@@ -15,7 +14,7 @@ export async function GET(
     const { id, workspaceId } = await params;
     const organizationId = id;
 
-    // Get JWT token from Authorization header
+   
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
@@ -26,7 +25,7 @@ export async function GET(
 
     const token = authHeader.substring(7);
 
-    // Verify JWT token
+   
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET) as any;
@@ -37,7 +36,7 @@ export async function GET(
       );
     }
 
-    // Verify user has access to this organization
+   
     const userId = (decoded as any).userId || (decoded as any).user_id;
     const hasAccess = await AuthService.userHasAccessToOrganization(
       userId,
@@ -51,7 +50,7 @@ export async function GET(
       );
     }
 
-    // Get the specific workspace
+   
     const workspace = await OrganizationWorkspace.findOne({
       where: {
         id: workspaceId,
@@ -73,7 +72,7 @@ export async function GET(
       );
     }
 
-    // Format the response
+   
     const formattedWorkspace = {
       id: (workspace as any).id,
       organizationId: (workspace as any).organizationId,
@@ -112,7 +111,6 @@ export async function GET(
   }
 }
 
-// PUT /api/organizations/[id]/workspaces/[workspaceId] - Update workspace
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; workspaceId: string }> }
@@ -122,7 +120,7 @@ export async function PUT(
     const organizationId = id;
     const body = await request.json();
 
-    // Get JWT token from Authorization header
+   
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
@@ -133,7 +131,7 @@ export async function PUT(
 
     const token = authHeader.substring(7);
 
-    // Verify JWT token
+   
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET) as any;
@@ -144,7 +142,7 @@ export async function PUT(
       );
     }
 
-    // Verify user has admin access to this organization
+   
     const userId = (decoded as any).userId || (decoded as any).user_id;
     const userRole = await AuthService.getUserRoleInOrganization(
       userId,
@@ -161,7 +159,7 @@ export async function PUT(
       );
     }
 
-    // Check if workspace exists
+   
     const workspace = await OrganizationWorkspace.findOne({
       where: {
         id: workspaceId,
@@ -176,13 +174,13 @@ export async function PUT(
       );
     }
 
-    // Prepare update data
+   
     const updateData: any = {};
 
     if (body.name && body.name.trim()) {
       updateData.name = body.name.trim();
 
-      // Generate new slug if name changed
+     
       if (updateData.name !== (workspace as any).name) {
         const generateSlug = (name: string): string => {
           return name
@@ -195,7 +193,7 @@ export async function PUT(
         let slug = generateSlug(updateData.name);
         let counter = 1;
 
-        // Check for unique slug within organization (excluding current workspace)
+       
         while (
           await OrganizationWorkspace.findOne({
             where: {
@@ -221,10 +219,10 @@ export async function PUT(
       updateData.statusId = body.statusId;
     }
 
-    // Update the workspace
+   
     await workspace.update(updateData);
 
-    // Fetch updated workspace
+   
     const updatedWorkspace = await OrganizationWorkspace.findByPk(workspaceId, {
       include: [
         {
@@ -235,7 +233,7 @@ export async function PUT(
       ],
     });
 
-    // Format the response
+   
     const formattedWorkspace = {
       id: (updatedWorkspace as any).id,
       organizationId: (updatedWorkspace as any).organizationId,
@@ -275,7 +273,6 @@ export async function PUT(
   }
 }
 
-// DELETE /api/organizations/[id]/workspaces/[workspaceId] - Delete workspace
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; workspaceId: string }> }
@@ -284,7 +281,7 @@ export async function DELETE(
     const { id, workspaceId } = await params;
     const organizationId = id;
 
-    // Get JWT token from Authorization header
+   
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
@@ -295,7 +292,7 @@ export async function DELETE(
 
     const token = authHeader.substring(7);
 
-    // Verify JWT token
+   
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET) as any;
@@ -306,7 +303,7 @@ export async function DELETE(
       );
     }
 
-    // Verify user has admin access to this organization
+   
     const userId = (decoded as any).userId || (decoded as any).user_id;
     const userRole = await AuthService.getUserRoleInOrganization(
       userId,
@@ -323,7 +320,7 @@ export async function DELETE(
       );
     }
 
-    // Check if workspace exists
+   
     const workspace = await OrganizationWorkspace.findOne({
       where: {
         id: workspaceId,
@@ -338,7 +335,7 @@ export async function DELETE(
       );
     }
 
-    // Archive instead of hard delete to preserve data integrity
+   
     await workspace.update({ status: "archived" });
 
     return NextResponse.json({

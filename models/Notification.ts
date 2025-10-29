@@ -137,7 +137,7 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Associations
+ 
   (Notification as any).associate = (models: any) => {
     Notification.belongsTo(models.User, {
       foreignKey: "user_id",

@@ -167,7 +167,7 @@ export function LeadScoringDashboard({
   const handleBatchCalculate = async () => {
     try {
       console.log("Starting batch score calculation...");
-      // Get all lead IDs that need scoring
+     
       const leadIds = scores.map((score) => score.leadId);
       console.log("Lead IDs to score:", leadIds);
       const result = await batchCalculateMutation.mutateAsync(leadIds);
@@ -183,7 +183,7 @@ export function LeadScoringDashboard({
     }
   };
 
-  // Simple fallback if there are API issues
+ 
   if (statsLoading && scoresLoading) {
     return (
       <div className={cn("w-full space-y-6", className)}>
@@ -196,7 +196,7 @@ export function LeadScoringDashboard({
 
   return (
     <div className={cn("w-full space-y-6", className)}>
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Lead Scoring</h2>
@@ -257,7 +257,7 @@ export function LeadScoringDashboard({
         </div>
       </div>
 
-      {/* Stats Overview */}
+      {}
       {statsLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -363,7 +363,7 @@ export function LeadScoringDashboard({
         </div>
       )}
 
-      {/* Main Content */}
+      {}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview" className="flex items-center gap-2">

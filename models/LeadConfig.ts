@@ -44,7 +44,7 @@ export default (sequelize: Sequelize) => {
       metadata: {
         type: DataTypes.JSONB,
         allowNull: true,
-        // Store additional config like scoring points, colors, etc.
+       
       },
       isActive: {
         type: DataTypes.BOOLEAN,
@@ -76,7 +76,7 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Static methods for common queries (following your UserConfig pattern)
+ 
   (LeadConfig as any).getStatusOptions = function () {
     return this.findAll({
       where: {
@@ -150,33 +150,33 @@ export default (sequelize: Sequelize) => {
     });
   };
 
-  // Associations
+ 
   (LeadConfig as any).associate = (models: any) => {
-    // Leads will reference this for status
+   
     LeadConfig.hasMany(models.Lead, {
       foreignKey: "status_id",
       as: "leadsWithStatus",
     });
 
-    // Leads will reference this for source
+   
     LeadConfig.hasMany(models.Lead, {
       foreignKey: "source_id",
       as: "leadsWithSource",
     });
 
-    // Leads will reference this for industry
+   
     LeadConfig.hasMany(models.Lead, {
       foreignKey: "industry_id",
       as: "leadsWithIndustry",
     });
 
-    // Leads will reference this for company size
+   
     LeadConfig.hasMany(models.Lead, {
       foreignKey: "company_size_id",
       as: "leadsWithCompanySize",
     });
 
-    // Leads will reference this for score grade
+   
     LeadConfig.hasMany(models.Lead, {
       foreignKey: "score_grade_id",
       as: "leadsWithScoreGrade",

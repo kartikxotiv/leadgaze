@@ -10,11 +10,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Await params first (Next.js 15 requirement)
+   
     const { id } = await params;
     const organizationId = id;
 
-    // Get JWT token from Authorization header
+   
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
@@ -25,7 +25,7 @@ export async function GET(
 
     const token = authHeader.substring(7);
 
-    // Verify JWT token
+   
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET) as any;
@@ -36,7 +36,7 @@ export async function GET(
       );
     }
 
-    // Verify user has access to this organization (our JWT uses camelCase keys)
+   
     const userId = decoded.userId;
     const hasAccess = await AuthService.userHasAccessToOrganization(
       userId,
@@ -50,7 +50,7 @@ export async function GET(
       );
     }
 
-    // Get organization members with their roles using a simpler approach
+   
     const userOrganizations = await UserOrganization.findAll({
       where: { organizationId },
       include: [
@@ -77,7 +77,7 @@ export async function GET(
       order: [["user", "firstName", "ASC"]],
     });
 
-    // Format the response
+   
     const formattedMembers = userOrganizations.map((userOrg: any) => {
       const user = userOrg.user;
       const role = userOrg.role;

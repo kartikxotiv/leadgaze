@@ -86,7 +86,7 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Associations
+ 
   (LeadScore as any).associate = (models: any) => {
     LeadScore.belongsTo(models.Lead, {
       foreignKey: "lead_id",

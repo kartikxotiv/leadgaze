@@ -93,7 +93,7 @@ export function CreateDealForm({
     }
 
     try {
-      // Set title from lead if not provided
+     
       let title = formData.title;
       if (!title.trim() && selectedLead) {
         title = `Deal with ${
@@ -113,7 +113,7 @@ export function CreateDealForm({
 
       toast.success("Deal created successfully!");
 
-      // Reset form
+     
       setFormData({
         leadId: preSelectedLeadId || "",
         title: "",
@@ -166,7 +166,7 @@ export function CreateDealForm({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Lead Selection */}
+          {}
           <div className="space-y-2">
             <Label htmlFor="lead">Lead *</Label>
             {!preSelectedLeadId ? (
@@ -231,9 +231,9 @@ export function CreateDealForm({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left Column */}
+            {}
             <div className="space-y-4">
-              {/* Title */}
+              {}
               <div>
                 <Label htmlFor="title">Deal Title *</Label>
                 <Input
@@ -247,7 +247,7 @@ export function CreateDealForm({
                 />
               </div>
 
-              {/* Value */}
+              {}
               <div>
                 <Label htmlFor="value">Deal Value *</Label>
                 <div className="flex gap-2">
@@ -261,11 +261,11 @@ export function CreateDealForm({
                       value={valueInput}
                       onChange={(e) => {
                         let v = e.target.value;
-                        // allow only digits and one dot
+                       
                         v = v.replace(/[^\d.]/g, "");
                         const parts = v.split(".");
-                        if (parts.length > 2) return; // ignore invalid
-                        // strip leading zeros except when value is like "0." 
+                        if (parts.length > 2) return;
+                       
                         if (!v.startsWith("0.")) {
                           v = v.replace(/^0+(?=\d)/, "");
                         }
@@ -295,7 +295,7 @@ export function CreateDealForm({
                 </div>
               </div>
 
-              {/* Stage */}
+              {}
               <div>
                 <Label htmlFor="stage">Stage</Label>
                 <Select
@@ -315,9 +315,9 @@ export function CreateDealForm({
               </div>
             </div>
 
-            {/* Right Column */}
+            {}
             <div className="space-y-4">
-              {/* Probability */}
+              {}
               <div>
                 <Label htmlFor="probability">Probability (%)</Label>
                 <Input
@@ -335,7 +335,7 @@ export function CreateDealForm({
                 />
               </div>
 
-              {/* Priority */}
+              {}
               <div>
                 <Label htmlFor="priority">Priority</Label>
                 <Select
@@ -379,7 +379,7 @@ export function CreateDealForm({
                 </Select>
               </div>
 
-              {/* Expected Close Date */}
+              {}
               <div>
                 <Label htmlFor="expectedCloseDate">Expected Close Date</Label>
                 <div className="relative">
@@ -401,7 +401,7 @@ export function CreateDealForm({
             </div>
           </div>
 
-          {/* Description */}
+          {}
           <div>
             <Label htmlFor="description">Description</Label>
             <Textarea
@@ -418,7 +418,7 @@ export function CreateDealForm({
             />
           </div>
 
-          {/* Actions */}
+          {}
           <div className="flex items-center justify-end gap-3 pt-4 border-t">
             {onCancel && (
               <Button type="button" variant="outline" onClick={onCancel}>

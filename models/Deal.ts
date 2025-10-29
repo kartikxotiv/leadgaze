@@ -140,7 +140,7 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Associations
+ 
   (Deal as any).associate = (models: any) => {
     Deal.belongsTo(models.User, {
       foreignKey: "user_id",

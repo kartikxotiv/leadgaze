@@ -1,0 +1,27 @@
+{
+  "development": {
+    "username": "live_user",
+    "password": "live_password",
+    "database": "live_db",
+    "host": "livehost.domain.com",
+    "port": 5432,
+    "dialect": "postgres"
+  },
+  "test": {
+    "username": "live_user",
+    "password": "live_password",
+    "database": "live_db",
+    "host": "livehost.domain.com",
+    "port": 5432,
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "live_user",
+    "password": "live_password",
+    "database": "live_db",
+    "host": "livehost.domain.com",
+    "port": 5432,
+    "dialect": "postgres",
+    "ssl": true
+  }
+}

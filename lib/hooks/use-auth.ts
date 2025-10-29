@@ -1,9 +1,8 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
-// Utility function for auto logout
 const autoLogoutAndRedirect = (authStore: any, delay: number = 1000) => {
-  // Prevent multiple simultaneous logout calls
+ 
   if (authStore.isLoading) return;
 
   authStore.logout();
@@ -14,18 +13,17 @@ const autoLogoutAndRedirect = (authStore: any, delay: number = 1000) => {
   }, delay);
 };
 
-// Simple auth hook without complex hydration logic
 function useClientOnlyAuth() {
   const authStore = useAuthStore();
 
-  // Always return the auth store directly - no client-side gating or useEffect
+ 
   return {
     ...authStore,
     isLoggedIn: authStore.isAuthenticated && !!authStore.token,
     hasOrganization: !!authStore.currentOrganization,
     switchOrganization: (organizationId: string) => {
       if (!authStore.token) {
-        // Auto logout if no token is available
+       
         autoLogoutAndRedirect(authStore);
         throw new Error("No authorization token provided");
       }
@@ -39,7 +37,7 @@ function useClientOnlyAuth() {
           );
         })
         .catch((error) => {
-          // If token is invalid, auto logout
+         
           if (
             error.message.includes("Invalid token") ||
             error.message.includes("token")
@@ -53,7 +51,6 @@ function useClientOnlyAuth() {
   };
 }
 
-// API functions
 const registerUser = async (userData: {
   email: string;
   password: string;
@@ -138,7 +135,6 @@ const createOrganization = async (organizationData: {
   return data;
 };
 
-// React Query hooks
 export const useRegister = () => {
   const { login, setLoading, setError } = useClientOnlyAuth();
 

@@ -112,7 +112,7 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Associations
+ 
   (AutomationRule as any).associate = (models: any) => {
     AutomationRule.belongsTo(models.Organization, {
       foreignKey: "organization_id",

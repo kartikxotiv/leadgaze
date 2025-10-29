@@ -17,13 +17,13 @@ export async function POST(request: NextRequest) {
     let results;
 
     if (leadId) {
-      // Calculate score for single lead
+     
       results = await LeadScoringEngine.calculateLeadScore(
         leadId,
         organizationId
       );
     } else if (leadIds && Array.isArray(leadIds)) {
-      // Calculate scores for multiple leads
+     
       results = await LeadScoringEngine.calculateBatchScores(
         leadIds,
         organizationId

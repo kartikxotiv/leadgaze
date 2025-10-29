@@ -7,7 +7,7 @@ export function useWorkspaceContext() {
     useAuthStore();
 
   const setCurrentWorkspace = (workspace: Workspace | null) => {
-    // Validate workspace belongs to current organization
+   
     if (workspace && currentOrganization) {
       const orgId =
         currentOrganization.organizationId || currentOrganization.id;
@@ -19,7 +19,7 @@ export function useWorkspaceContext() {
 
     updateCurrentWorkspace(workspace);
 
-    // Store in localStorage for persistence across browser sessions
+   
     if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
       try {
         if (workspace) {
@@ -44,7 +44,7 @@ export function useWorkspaceContext() {
     }
   };
 
-  // Get workspace context for API calls
+ 
   const getWorkspaceContext = () => {
     const orgId =
       currentOrganization?.organizationId || currentOrganization?.id;
@@ -57,7 +57,7 @@ export function useWorkspaceContext() {
     };
   };
 
-  // Check if current user can access workspace features
+ 
   const canUseWorkspaces = () => {
     if (!currentOrganization) return false;
 
@@ -65,7 +65,7 @@ export function useWorkspaceContext() {
     return ["owner", "admin", "manager", "user"].includes(userRole || "");
   };
 
-  // Check if current user can manage workspaces
+ 
   const canManageWorkspaces = () => {
     if (!currentOrganization) return false;
 

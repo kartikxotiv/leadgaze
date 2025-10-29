@@ -19,7 +19,6 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-// Common components
 import { FormLayout } from "@/components/common/form-layout";
 import {
   TextField,
@@ -38,7 +37,6 @@ interface ActivityLogFormProps {
   className?: string;
 }
 
-// Activity types configuration
 const activityTypes = [
   {
     type: "call",
@@ -108,7 +106,7 @@ export function ActivityLogFormRefactored({
     setFormData((prev) => ({
       ...prev,
       activityType: value as CreateActivityData["activityType"],
-      outcome: "", // Reset outcome when changing activity type
+      outcome: "",
     }));
   };
 
@@ -124,7 +122,7 @@ export function ActivityLogFormRefactored({
       await createActivityMutation.mutateAsync(formData);
       toast.success(`${selectedActivityType?.label} logged successfully`);
 
-      // Reset form
+     
       setFormData({
         activityType: "call",
         subject: "",
@@ -158,7 +156,7 @@ export function ActivityLogFormRefactored({
       showDialogHeader={true}
     >
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Activity Type Tabs */}
+        {}
         <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="grid w-full grid-cols-5">
             {activityTypes.map((type) => {
@@ -183,7 +181,7 @@ export function ActivityLogFormRefactored({
               className="space-y-4 mt-6"
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left Column */}
+                {}
                 <div className="space-y-4">
                   <TextField
                     label="Subject"
@@ -234,7 +232,7 @@ export function ActivityLogFormRefactored({
                   )}
                 </div>
 
-                {/* Right Column */}
+                {}
                 <div className="space-y-4">
                   <PrioritySelect
                     value={formData.priority}
@@ -258,7 +256,7 @@ export function ActivityLogFormRefactored({
                     placeholder="Set follow-up date..."
                   />
 
-                  {/* File Upload Placeholder */}
+                  {}
                   <div>
                     <label className="block text-sm font-medium mb-2">
                       Attachments
@@ -276,7 +274,7 @@ export function ActivityLogFormRefactored({
                 </div>
               </div>
 
-              {/* Description */}
+              {}
               <TextareaField
                 label="Details & Notes"
                 value={formData.description}

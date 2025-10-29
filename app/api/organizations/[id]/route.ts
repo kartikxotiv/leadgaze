@@ -9,11 +9,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Await params first (Next.js 15 requirement)
+   
     const { id } = await params;
     const organizationId = id;
 
-    // Get JWT token from Authorization header
+   
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
@@ -24,7 +24,7 @@ export async function GET(
 
     const token = authHeader.substring(7);
 
-    // Verify JWT token
+   
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET) as any;
@@ -35,7 +35,7 @@ export async function GET(
       );
     }
 
-    // Verify user has access to this organization
+   
     const userId = decoded.user_id;
     const hasAccess = await AuthService.userHasAccessToOrganization(
       userId,
@@ -49,7 +49,7 @@ export async function GET(
       );
     }
 
-    // Get detailed organization information
+   
     const organizationDetails = await AuthService.getOrganizationDetails(
       organizationId
     );

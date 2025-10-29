@@ -1,7 +1,6 @@
 const { Sequelize } = require("sequelize");
 const pg = require("pg");
 
-// Database connection
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: "postgres",
   dialectModule: pg,
@@ -15,7 +14,7 @@ async function fixUserOrganizationsSchema() {
     await sequelize.authenticate();
     console.log("✅ Database connected!");
 
-    // Check current schema
+   
     console.log("📋 Checking current schema...");
     const [currentColumns] = await sequelize.query(`
       SELECT column_name, data_type, is_nullable
@@ -29,7 +28,7 @@ async function fixUserOrganizationsSchema() {
       currentColumns.map((c) => c.column_name)
     );
 
-    // Fix the primary key column name
+   
     console.log("🔧 Renaming primary key column...");
 
     try {
@@ -45,7 +44,7 @@ async function fixUserOrganizationsSchema() {
       );
     }
 
-    // Check final schema
+   
     console.log("\n📋 Final schema check...");
     const [finalColumns] = await sequelize.query(`
       SELECT column_name, data_type, is_nullable
@@ -67,7 +66,6 @@ async function fixUserOrganizationsSchema() {
   }
 }
 
-// Run the fix if this file is executed directly
 if (require.main === module) {
   fixUserOrganizationsSchema()
     .then(() => {

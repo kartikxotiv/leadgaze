@@ -13,10 +13,10 @@ export default function HomePage() {
       if (isAuthenticated) {
         router.replace("/pages/dashboard");
       } else {
-        router.replace("/pages/welcome");
+        router.replace("/pages/auth/sign-in");
       }
     }
-  }, [isAuthenticated, isLoading]); // Removed router from dependency
+  }, [isAuthenticated, isLoading]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">

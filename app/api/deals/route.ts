@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     if (userId) whereClause.userId = userId;
     if (organizationId) whereClause.organizationId = organizationId;
 
-    // Optional workspace scoping (JSONB metadata contains { workspaceId })
+   
     if (workspaceId) {
       whereClause.metadata = { [Op.contains]: { workspaceId } } as any;
     }
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Validate required fields
+   
     const requiredFields = [
       "leadId",
       "title",
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Verify lead exists
+   
     const lead = await Lead.findByPk(body.leadId);
     if (!lead) {
       return NextResponse.json(
@@ -105,14 +105,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create deal
+   
     const deal = await Deal.create({
       ...body,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
-    // Fetch created deal with associations
+   
     const createdDeal = await Deal.findByPk((deal as any).dealId, {
       include: [
         {

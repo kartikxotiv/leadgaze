@@ -22,19 +22,20 @@ import {
   Clock,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-
+  const logo = "/image/leadgaze.png";
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
-    // Basic validation
+   
     if (!email) {
       setError("Please enter your email address");
       setIsLoading(false);
@@ -48,7 +49,7 @@ export default function ForgotPasswordPage() {
     }
 
     try {
-      // Call real forgot password API
+     
       const response = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: {
@@ -62,7 +63,7 @@ export default function ForgotPasswordPage() {
       if (data.success) {
         setSuccess(true);
       } else {
-        // Handle specific error cases
+       
         if (response.status === 429) {
           setError(
             data.error || "Too many attempts. Please wait before trying again."
@@ -81,22 +82,26 @@ export default function ForgotPasswordPage() {
     }
   };
 
+
+  
+
+
   const handleInputChange = (value: string) => {
     setEmail(value);
-    if (error) setError(""); // Clear error when user starts typing
+    if (error) setError("");
   };
 
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 flex items-center justify-center p-4">
-        {/* Background decoration */}
+        {}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse"></div>
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse animation-delay-2000"></div>
         </div>
 
         <div className="w-full max-w-md relative z-10">
-          {/* Header */}
+          {}
           <div className="text-center mb-8">
             <Link
               href="/pages/welcome"
@@ -107,7 +112,7 @@ export default function ForgotPasswordPage() {
               </div>
               <div className="text-left">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  MyCRM
+                  Leadgaze CRM
                 </h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Sales Platform
@@ -116,7 +121,7 @@ export default function ForgotPasswordPage() {
             </Link>
           </div>
 
-          {/* Success Card */}
+          {}
           <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-center">
             <CardContent className="p-8">
               <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -191,34 +196,38 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 flex items-center justify-center p-4">
-      {/* Background decoration */}
+      {}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse animation-delay-2000"></div>
       </div>
 
       <div className="w-full max-w-md relative z-10">
-        {/* Header */}
+        {}
         <div className="text-center mb-8">
           <Link
             href="/pages/welcome"
             className="inline-flex items-center gap-3 mb-6 group"
           >
-            <div className="flex aspect-square size-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 text-white shadow-lg group-hover:scale-105 transition-transform duration-300">
+
+          <Image src={logo} loading="lazy" width={250} height={80} alt="Leadgaze logo" />
+
+
+            {/* <div className="flex aspect-square size-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 text-white shadow-lg group-hover:scale-105 transition-transform duration-300">
               <Building2 className="size-7 text-white" />
             </div>
             <div className="text-left">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                MyCRM
+                Leadgaze CRM
               </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Sales Platform
               </p>
-            </div>
+            </div> */}
           </Link>
         </div>
 
-        {/* Forgot Password Form */}
+        {}
         <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <CardHeader className="text-center pb-6">
             <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -242,7 +251,7 @@ export default function ForgotPasswordPage() {
                 </Alert>
               )}
 
-              {/* Email Field */}
+              {}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
                   Email Address
@@ -260,16 +269,16 @@ export default function ForgotPasswordPage() {
                     autoFocus
                   />
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  This should be the email address associated with your MyCRM
+                {/* <p className="text-xs text-gray-500 dark:text-gray-400">
+                  This should be the email address associated with your Leadgaze CRM
                   account.
-                </p>
+                </p> */}
               </div>
 
-              {/* Submit Button */}
+              {}
               <Button
                 type="submit"
-                className="w-full h-12 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-300"
+                className="w-full h-12 text-base font-medium bg-[#46a3ff] from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-300"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -286,8 +295,8 @@ export default function ForgotPasswordPage() {
               </Button>
             </form>
 
-            {/* Help Text */}
-            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            {}
+            {/* <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
               <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
                 Need help?
               </h4>
@@ -297,9 +306,9 @@ export default function ForgotPasswordPage() {
                 <li>• The reset link expires after 1 hour</li>
                 <li>• Contact support if you continue having issues</li>
               </ul>
-            </div>
+            </div> */}
 
-            {/* Divider */}
+            
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
@@ -311,7 +320,7 @@ export default function ForgotPasswordPage() {
               </div>
             </div>
 
-            {/* Back to Sign In */}
+            
             <div className="text-center">
               <Link
                 href="/pages/auth/sign-in"
@@ -324,7 +333,7 @@ export default function ForgotPasswordPage() {
           </CardContent>
         </Card>
 
-        {/* Additional Help */}
+{/*         
         <Card className="mt-4 border-0 bg-amber-50 dark:bg-amber-900/20">
           <CardContent className="p-4">
             <div className="flex items-start gap-2">
@@ -338,7 +347,7 @@ export default function ForgotPasswordPage() {
                     href="/pages/auth/sign-up"
                     className="underline hover:no-underline"
                   >
-                    Create your free MyCRM account
+                    Create your free Leadgaze CRM account
                   </Link>{" "}
                   to get started with our sales platform.
                 </p>
@@ -347,7 +356,7 @@ export default function ForgotPasswordPage() {
           </CardContent>
         </Card>
 
-        {/* Footer */}
+        {}
         <div className="text-center mt-8 text-sm text-gray-500 dark:text-gray-400">
           <p>
             Need immediate help?{" "}
@@ -358,7 +367,7 @@ export default function ForgotPasswordPage() {
               Contact Support
             </Link>
           </p>
-        </div>
+        </div> */}
       </div>
     </div>
   );

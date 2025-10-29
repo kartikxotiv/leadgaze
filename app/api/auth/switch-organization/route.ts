@@ -6,7 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
 export async function POST(request: NextRequest) {
   try {
-    // Get JWT token from Authorization header
+   
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.substring(7);
 
-    // Verify JWT token
+   
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET) as any;
@@ -37,10 +37,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Our JWT payload uses camelCase keys
+   
     const userId = decoded.userId;
 
-    // Verify user has access to this organization
+   
     const hasAccess = await AuthService.userHasAccessToOrganization(
       userId,
       organizationId
@@ -53,12 +53,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update user session with new current organization
+   
     await AuthService.updateUserCurrentOrganization(userId, organizationId);
 
-    // Get updated user data with new current organization
+   
     const userEmail = decoded.email;
-    const loginResult = await AuthService.loginUser(userEmail, null, true); // Skip password check
+    const loginResult = await AuthService.loginUser(userEmail, null, true);
 
     return NextResponse.json({
       success: true,

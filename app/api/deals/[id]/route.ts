@@ -61,7 +61,7 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
-    // Validate stage field specifically  
+   
     if (body.stage) {
       const validStages = ["qualification", "proposal", "negotiation", "decision", "closed_won", "closed_lost"];
       if (!validStages.includes(body.stage)) {
@@ -80,13 +80,13 @@ export async function PUT(
       );
     }
 
-    // Update deal
+   
     await deal.update({
       ...body,
       updatedAt: new Date(),
     });
 
-    // Fetch updated deal with associations
+   
     const updatedDeal = await Deal.findByPk(id, {
       include: [
         {

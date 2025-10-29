@@ -15,10 +15,10 @@ export async function GET(request: NextRequest) {
   try {
     console.log("🧪 Testing model connections...");
 
-    // Test basic model queries
+   
     const tests = [];
 
-    // Test User model
+   
     try {
       const userCount = await User.count();
       tests.push({ model: "User", status: "✅", count: userCount });
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Test Organization model
+   
     try {
       const orgCount = await Organization.count();
       tests.push({ model: "Organization", status: "✅", count: orgCount });
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Test UserOrganization model
+   
     try {
       const userOrgCount = await UserOrganization.count();
       tests.push({
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Test UserSession model
+   
     try {
       const sessionCount = await UserSession.count();
       tests.push({ model: "UserSession", status: "✅", count: sessionCount });
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Test config models
+   
     try {
       const userConfigCount = await UserConfig.count();
       tests.push({ model: "UserConfig", status: "✅", count: userConfigCount });
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Test CRM models
+   
     try {
       const leadCount = await Lead.count();
       tests.push({ model: "Lead", status: "✅", count: leadCount });
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Summary
+   
     const passed = tests.filter((t) => t.status === "✅").length;
     const failed = tests.filter((t) => t.status === "❌").length;
 

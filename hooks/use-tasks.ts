@@ -114,12 +114,12 @@ export function useTasks() {
     }
   }, []);
 
-  // Debounced localStorage saves to improve performance
+ 
   useEffect(() => {
     if (tasks.length > 0) {
       const timeoutId = setTimeout(() => {
         localStorage.setItem("crm-tasks", JSON.stringify(tasks));
-      }, 500); // 500ms debounce
+      }, 500);
       return () => clearTimeout(timeoutId);
     }
   }, [tasks]);

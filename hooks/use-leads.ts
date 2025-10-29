@@ -33,7 +33,7 @@ export interface Lead {
   createdAt: string;
   updatedAt: string;
 
-  // Associations - these come as objects from API, not just IDs
+ 
   status: {
     entityValue: string;
     description: string;
@@ -99,8 +99,8 @@ export interface LeadFilters {
   source?: string;
   assignedTo?: string;
   search?: string;
+  page?: number;
   limit?: number;
-  offset?: number;
 }
 
 export interface CreateLeadData {
@@ -148,8 +148,13 @@ export function useLeads(filters?: LeadFilters) {
 
       const params = new URLSearchParams({
         organizationId: currentOrganization.organizationId,
-        ...(filters as Record<string, string>),
+        page: filters?.page?.toString() || "1",
+        limit: filters?.limit?.toString() || "20",
       });
+      if (filters?.status) params.set("status", filters.status);
+      if (filters?.source) params.set("source", filters.source);
+      if (filters?.assignedTo) params.set("assignedTo", filters.assignedTo);
+      if (filters?.search && filters.search.trim()) params.set("search", filters.search);
       if (currentWorkspace?.id) {
         params.set("workspaceId", currentWorkspace.id);
       }
@@ -168,7 +173,7 @@ export function useLeads(filters?: LeadFilters) {
         throw new Error(result.error || "Failed to fetch leads");
       }
 
-      // Client-side filter by current workspace if set
+     
       const workspaceId = currentWorkspace?.id;
       if (workspaceId) {
         const data = result.data;
@@ -189,7 +194,7 @@ export function useLeads(filters?: LeadFilters) {
 
       return result.data;
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,
   });
 }
 
@@ -235,7 +240,7 @@ export function useLeadConfigs(entityType?: string) {
 
       return result.data;
     },
-    staleTime: 1000 * 60 * 10, // 10 minutes (configs don't change often)
+    staleTime: 1000 * 60 * 10,
   });
 }
 
@@ -264,7 +269,7 @@ export function useCreateLead() {
           qualificationNotes: data.notes,
           organizationId: currentOrganization.organizationId,
           createdBy: user.userId,
-          // Store workspace in JSONB meta_data (models/Lead.ts)
+         
           metaData: currentWorkspace?.id
             ? { workspaceId: currentWorkspace.id }
             : undefined,

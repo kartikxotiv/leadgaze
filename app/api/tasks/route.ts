@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
       offset,
     });
 
-    // Optional client-side workspace filter via linked Lead/Deal metadata
+   
     let filteredRows = rows;
     if (workspaceId) {
       filteredRows = rows.filter((t: any) => {
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
 
     const total = workspaceId ? filteredRows.length : count || 0;
     const pagedData = workspaceId
-      ? filteredRows.slice(0, limit) // simple cap when workspace filter is active
+      ? filteredRows.slice(0, limit)
       : rows;
 
     const response: PaginatedResponse<any> = {
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Determine creator from JWT if not provided
+   
     let createdBy: string | undefined = (body as any).created_by;
     if (!createdBy) {
       const authHeader = request.headers.get("authorization");
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
           const decoded: any = jwt.verify(token, JWT_SECRET);
           createdBy = decoded.userId;
         } catch {
-          // ignore token errors here
+         
         }
       }
     }

@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { token, password, confirmPassword } = body;
 
-    // Validate required fields
+   
     if (!token || !password) {
       return NextResponse.json(
         {
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate password confirmation if provided
+   
     if (confirmPassword && password !== confirmPassword) {
       return NextResponse.json(
         {
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate password strength
+   
     if (password.length < 8) {
       return NextResponse.json(
         {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Additional password strength validation
+   
     const hasUpperCase = /[A-Z]/.test(password);
     const hasLowerCase = /[a-z]/.test(password);
     const hasNumbers = /\d/.test(password);
@@ -56,16 +56,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get client IP for logging
+   
     const clientIP =
       request.headers.get("x-forwarded-for") ||
       request.headers.get("x-real-ip") ||
       "unknown";
 
-    // Reset password
+   
     const result = await AuthService.resetPassword(token, password);
 
-    // Log successful password reset for security monitoring
+   
     console.log(
       `Password reset completed for token: ${token.substring(
         0,
@@ -80,11 +80,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Reset password error:", error);
 
-    // Return specific error message for better UX
+   
     const errorMessage =
       error instanceof Error ? error.message : "Failed to reset password";
 
-    // Determine appropriate status code based on error
+   
     let statusCode = 500;
     if (
       errorMessage.includes("Invalid") ||
@@ -104,7 +104,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Token validation endpoint (GET)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -120,7 +119,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validate token
+   
     const validation = await AuthService.validatePasswordResetToken(token);
 
     if (!validation.isValid) {
@@ -155,7 +154,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Prevent other HTTP methods
 export async function PUT() {
   return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
 }

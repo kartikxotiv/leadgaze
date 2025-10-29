@@ -133,7 +133,7 @@ export function LeadCard({
     <Card className="group hover:shadow-md transition-all duration-200 cursor-pointer border-l-4 border-l-blue-500 hover:border-l-blue-600">
       <CardContent className={cn("p-4", compact && "p-3")}>
         <div className="space-y-3">
-          {/* Header */}
+          {}
           <div className="flex items-start justify-between">
             <div
               className="flex items-center gap-3 flex-1 cursor-pointer"
@@ -164,7 +164,7 @@ export function LeadCard({
               </div>
             </div>
 
-            {/* Score Badge */}
+            {}
             <div
               className={cn(
                 "flex items-center gap-1 px-2 py-1 rounded-full",
@@ -186,7 +186,7 @@ export function LeadCard({
             </div>
           </div>
 
-          {/* Company & Status */}
+          {}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               {lead.businessName && (
@@ -220,7 +220,7 @@ export function LeadCard({
             </Badge>
           </div>
 
-          {/* Industry Badge */}
+          {}
           {lead.industry && (
             <div className="flex justify-end">
               <Badge
@@ -235,10 +235,10 @@ export function LeadCard({
             </div>
           )}
 
-          {/* Action Bar */}
+          {}
           {showQuickActions && (
             <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-              {/* Quick Contact Actions */}
+              {}
               <div className="flex items-center gap-1">
                 {lead.phone && (
                   <Button
@@ -282,7 +282,7 @@ export function LeadCard({
                 )}
               </div>
 
-              {/* More Actions & Source */}
+              {}
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 text-xs text-gray-500">
                   <Star className="h-3 w-3" />
@@ -324,7 +324,7 @@ export function LeadCard({
             </div>
           )}
 
-          {/* Last Updated */}
+          {}
           <div className="text-xs text-gray-400 flex items-center gap-1">
             <Clock className="h-3 w-3" />
             <span>Updated {getTimeAgo(lead.updatedAt)}</span>

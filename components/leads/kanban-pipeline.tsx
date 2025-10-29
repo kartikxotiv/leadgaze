@@ -133,7 +133,6 @@ const getGradeColor = (gradeName: string) => {
   }
 };
 
-// Droppable Column Component
 function DroppableColumn({
   column,
   onLeadClick,
@@ -199,7 +198,6 @@ function DroppableColumn({
   );
 }
 
-// Sortable Lead Card Component
 function SortableLeadCard({
   lead,
   onLeadClick,
@@ -236,7 +234,6 @@ function SortableLeadCard({
   );
 }
 
-// Lead Card Component
 function LeadCard({
   lead,
   onLeadClick,
@@ -249,7 +246,7 @@ function LeadCard({
   return (
     <Card className="w-full overflow-hidden cursor-pointer border-l-4 border-l-current bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
       <CardContent className="p-4">
-        {/* Header with avatar and actions */}
+        {}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
             <Avatar className="h-8 w-8">
@@ -303,7 +300,7 @@ function LeadCard({
           </DropdownMenu>
         </div>
 
-        {/* Company info */}
+        {}
         {lead.businessName && (
           <div className="flex items-center gap-2 mb-2">
             <Building2 className="h-3 w-3 text-gray-400 dark:text-gray-500" />
@@ -313,7 +310,7 @@ function LeadCard({
           </div>
         )}
 
-        {/* Contact info */}
+        {}
         <div className="space-y-1 mb-3">
           {lead.email && (
             <div className="flex items-center gap-2">
@@ -333,7 +330,7 @@ function LeadCard({
           )}
         </div>
 
-        {/* Lead score and grade */}
+        {}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-3 w-3 text-gray-400 dark:text-gray-500" />
@@ -356,7 +353,7 @@ function LeadCard({
           )}
         </div>
 
-        {/* Tags */}
+        {}
         {lead.tags && lead.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3">
             {lead.tags.slice(0, 2).map((tag, index) => (
@@ -376,13 +373,13 @@ function LeadCard({
           </div>
         )}
 
-        {/* Last activity */}
+        {}
         <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
           <Clock className="h-3 w-3" />
           <span>Updated {new Date(lead.updatedAt).toLocaleDateString()}</span>
         </div>
 
-        {/* Assigned user */}
+        {}
         {lead.assignedUser && (
           <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
             <User className="h-3 w-3 text-gray-400 dark:text-gray-500" />
@@ -410,7 +407,7 @@ export function KanbanPipeline({
     useSensor(KeyboardSensor)
   );
 
-  // Helper function to get short, clean status names
+ 
   const getShortStatusName = (entityValue: string) => {
     const statusMap: Record<string, string> = {
       new: "New",
@@ -429,7 +426,7 @@ export function KanbanPipeline({
     );
   };
 
-  // Group leads by status to create columns
+ 
   const columns: KanbanColumn[] = useMemo(() => {
     return statuses.map((status: any) => {
       const statusLeads = leads.filter((lead) => lead.statusId === status.id);
@@ -450,7 +447,7 @@ export function KanbanPipeline({
       return id;
     }
 
-    // Check if this is a lead ID and find its container
+   
     for (const column of columns) {
       if (column.leads.find((lead) => lead.leadId === id)) {
         return column.id;
@@ -473,15 +470,15 @@ export function KanbanPipeline({
 
     setOverId(overId);
 
-    // Find containers
+   
     const activeContainer = findContainer(activeId);
     const overContainer = findContainer(overId);
 
     if (!activeContainer || !overContainer) return;
 
-    // If dragging over a different container
+   
     if (activeContainer !== overContainer) {
-      // This is handled in handleDragEnd
+     
     }
   };
 
@@ -501,7 +498,7 @@ export function KanbanPipeline({
 
     if (!activeContainer || !overContainer) return;
 
-    // If moved to a different status column
+   
     if (activeContainer !== overContainer) {
       try {
         await onLeadUpdate(activeId, overContainer);

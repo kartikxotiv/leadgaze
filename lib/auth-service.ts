@@ -5,7 +5,7 @@ import {
   Organization,
   UserOrganization,
   UserSession,
-  // Config-based models - enabled for config-based schema
+ 
   UserConfig,
   OrganizationConfig,
   OrganizationRole,
@@ -49,7 +49,7 @@ export interface JWTPayload {
 }
 
 export class AuthService {
-  // Helper functions for role handling
+ 
   static getRoleDisplayName(role: string): string {
     const displayNames: { [key: string]: string } = {
       owner: "Owner",
@@ -97,7 +97,7 @@ export class AuthService {
     return permissions[role] || permissions.viewer;
   }
 
-  // Config-based helper methods - now enabled
+ 
   static async getUserStatusId(statusValue: string): Promise<string> {
     const statusConfig = await UserConfig.findOne({
       where: {
@@ -161,25 +161,25 @@ export class AuthService {
     return (statusConfig as any).id;
   }
 
-  // Helper function to map UI company size values to config values
+ 
   static mapCompanySizeToConfigValue(companySize: string): string {
     const mapping: Record<string, string> = {
-      "1": "startup", // Solo entrepreneurs -> startup
+      "1": "startup",
       "2-10": "small",
       "11-50": "medium",
       "51-200": "large",
       "201-1000": "enterprise",
-      "1000+": "enterprise", // Very large companies -> enterprise
+      "1000+": "enterprise",
     };
-    return mapping[companySize] || "small"; // Default to small if unknown
+    return mapping[companySize] || "small";
   }
 
-  // Check if email exists
+ 
   static async checkEmailExists(email: string): Promise<boolean> {
     try {
       const existingUser = await User.findOne({
         where: { email: email.toLowerCase().trim() },
-        attributes: ["email"], // Only select email to avoid column issues
+        attributes: ["email"],
       });
       return !!existingUser;
     } catch (error) {
@@ -187,7 +187,7 @@ export class AuthService {
     }
   }
 
-  // User Registration
+ 
   static async registerUser(userData: {
     email: string;
     password: string;
@@ -198,7 +198,7 @@ export class AuthService {
     const transaction = await sequelize.transaction();
 
     try {
-      // Check if user already exists
+     
       const existingUser = await User.findOne({
         where: { email: userData.email.toLowerCase() },
       });
@@ -207,14 +207,14 @@ export class AuthService {
         throw new Error("User with this email already exists");
       }
 
-      // Resolve active status config
+     
       const activeUserStatusId = await this.getUserStatusId("active");
 
-      // Create user (password will be hashed by model hooks)
+     
       const user = await User.create(
         {
           email: userData.email.toLowerCase(),
-          password: userData.password, // Will be hashed by model hook
+          password: userData.password,
           firstName: userData.first_name,
           lastName: userData.last_name,
           phoneNumber: userData.phone_number,
@@ -225,7 +225,7 @@ export class AuthService {
         { transaction }
       );
 
-      // Create user session
+     
       await UserSession.create(
         {
           userId: (user as any).userId,
@@ -242,7 +242,7 @@ export class AuthService {
     }
   }
 
-  // User Registration with Organization
+ 
   static async registerUserWithOrganization(userData: {
     email: string;
     password: string;
@@ -255,7 +255,7 @@ export class AuthService {
     const transaction = await sequelize.transaction();
 
     try {
-      // Check if user already exists
+     
       const existingUser = await User.findOne({
         where: { email: userData.email.toLowerCase() },
       });
@@ -264,11 +264,11 @@ export class AuthService {
         throw new Error("User with this email already exists");
       }
 
-      // Create user (password will be hashed by model hooks)
+     
       const user = await User.create(
         {
           email: userData.email.toLowerCase(),
-          password: userData.password, // Will be hashed by model hook
+          password: userData.password,
           firstName: userData.first_name,
           lastName: userData.last_name,
           phoneNumber: userData.phone_number,
@@ -279,21 +279,21 @@ export class AuthService {
         { transaction }
       );
 
-      // Generate slug from organization name (with user ID for uniqueness)
+     
       const baseSlug = this.generateSlug(userData.organization_name);
-      const slug = `${baseSlug}-${(user as any).userId.slice(-8)}`; // Add user ID suffix for uniqueness
+      const slug = `${baseSlug}-${(user as any).userId.slice(-8)}`;
 
-      // Note: During registration, this is the user's first organization, so no need to check for duplicates
+     
 
-      // Set trial dates
+     
       const trialStartsAt = new Date();
       const trialEndsAt = new Date();
-      trialEndsAt.setDate(trialEndsAt.getDate() + 14); // 14-day trial
+      trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
-      // Extract setup questions
+     
       const setupQuestions = userData.setup_questions || {};
 
-      // Map company size to config value and resolve IDs
+     
       const companySizeValue = this.mapCompanySizeToConfigValue(
         setupQuestions.companySize || "small"
       );
@@ -314,7 +314,7 @@ export class AuthService {
         companySizeValue
       );
 
-      // Create organization
+     
       const organization = await Organization.create(
         {
           name: userData.organization_name,
@@ -337,7 +337,7 @@ export class AuthService {
         { transaction }
       );
 
-      // Create user-organization relationship
+     
       const ownerRoleId = await this.getRoleId("owner");
       await UserOrganization.create(
         {
@@ -350,7 +350,7 @@ export class AuthService {
         { transaction }
       );
 
-      // Create user session with organization
+     
       await UserSession.create(
         {
           userId: (user as any).userId,
@@ -371,7 +371,7 @@ export class AuthService {
     }
   }
 
-  // User Login
+ 
   static async loginUser(
     email: string,
     password: string | null = null,
@@ -379,7 +379,7 @@ export class AuthService {
     organizationId?: string,
     organizationSlug?: string
   ) {
-    // If organization context provided, use per-org identity
+   
     if (organizationId || organizationSlug) {
       const models = await import("@/models");
       const org = organizationId
@@ -405,7 +405,7 @@ export class AuthService {
         throw new Error("Invalid email or password");
       }
 
-      // Validate password
+     
       const bcrypt = await import("bcryptjs");
       const ok = await bcrypt.compare(
         password || "",
@@ -415,7 +415,7 @@ export class AuthService {
         throw new Error("Invalid email or password");
       }
 
-      // Minimal org-scoped JWT (no cross-org organizations list)
+     
       const userLike = {
         userId: (account as any).id,
         email: (account as any).email,
@@ -450,7 +450,7 @@ export class AuthService {
       };
     }
 
-    // Global login (legacy)
+   
     const user = await User.findOne({
       where: { email: email.toLowerCase() },
       attributes: [
@@ -560,7 +560,7 @@ export class AuthService {
       throw new Error("Invalid email or password");
     }
 
-    // Verify password (skip for organization switching)
+   
     if (!skipPasswordCheck && password) {
       const isValidPassword = await (User as any).validatePassword(
         user,
@@ -571,14 +571,14 @@ export class AuthService {
       }
     }
 
-    // Update last login
+   
     await user.update({ lastLogin: new Date() });
 
-    // Get user's organizations (lightweight for login)
+   
     const organizations =
       (user as any).userOrganizations?.map((uo: any) => ({
         id: (uo.organization as any).organizationId,
-        organizationId: (uo.organization as any).organizationId, // Add this for consistency
+        organizationId: (uo.organization as any).organizationId,
         name: (uo.organization as any).name,
         slug: (uo.organization as any).slug,
         role: (uo.role as any)?.role || "viewer",
@@ -602,14 +602,14 @@ export class AuthService {
         maxWorkspaces: (uo.organization as any).maxWorkspaces || 3,
       })) || [];
 
-    // Get current organization
+   
     const currentOrganization = (user as any).session?.currentOrganizationId
       ? organizations.find(
           (org: any) => org.id === (user as any).session.currentOrganizationId
         )
       : organizations[0];
 
-    // Generate JWT token
+   
     const token = this.generateToken(user, organizations, currentOrganization);
 
     return {
@@ -620,7 +620,7 @@ export class AuthService {
     };
   }
 
-  // Create Organization
+ 
   static async createOrganization(
     userId: string,
     organizationData: {
@@ -635,11 +635,11 @@ export class AuthService {
     const transaction = await sequelize.transaction();
 
     try {
-      // Generate slug from name (with user ID for uniqueness)
+     
       const baseSlug = this.generateSlug(organizationData.name);
-      const slug = `${baseSlug}-${userId.slice(-8)}`; // Add user ID suffix for uniqueness
+      const slug = `${baseSlug}-${userId.slice(-8)}`;
 
-      // Check if user already has an organization with this exact name
+     
       const existingUserOrg = await UserOrganization.findOne({
         where: { userId },
         include: [
@@ -655,12 +655,12 @@ export class AuthService {
         throw new Error("You already have an organization with this name");
       }
 
-      // Set trial dates
+     
       const trialStartsAt = new Date();
       const trialEndsAt = new Date();
-      trialEndsAt.setDate(trialEndsAt.getDate() + 14); // 14-day trial
+      trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
-      // Resolve config IDs
+     
       const statusId = await this.getOrganizationConfigId("status", "active");
       const subscriptionStatusId = await this.getOrganizationConfigId(
         "subscription_status",
@@ -678,7 +678,7 @@ export class AuthService {
         companySizeValue
       );
 
-      // Create organization
+     
       const organization = await Organization.create(
         {
           name: organizationData.name,
@@ -701,7 +701,7 @@ export class AuthService {
         { transaction }
       );
 
-      // Create user-organization relationship
+     
       const ownerRoleId = await this.getRoleId("owner");
       await UserOrganization.create(
         {
@@ -714,7 +714,7 @@ export class AuthService {
         { transaction }
       );
 
-      // Update user session with current organization
+     
       await UserSession.update(
         {
           currentOrganizationId: (organization as any).organizationId,
@@ -727,7 +727,7 @@ export class AuthService {
 
       await transaction.commit();
 
-      // Reload with config includes for response convenience
+     
       const orgWithConfigs = await Organization.findOne({
         where: { organizationId: (organization as any).organizationId },
         include: [
@@ -761,15 +761,15 @@ export class AuthService {
     }
   }
 
-  // Switch Organization
+ 
   static async switchOrganization(userId: string, organizationId: string) {
     try {
-      // Verify user belongs to this organization
+     
       const userOrg = await UserOrganization.findOne({
         where: {
           userId,
           organizationId,
-          status: "active", // Use direct status field, not statusId
+          status: "active",
         },
       });
 
@@ -777,7 +777,7 @@ export class AuthService {
         throw new Error("User does not have access to this organization");
       }
 
-      // Update user session
+     
       await UserSession.update(
         {
           currentOrganizationId: organizationId,
@@ -794,7 +794,7 @@ export class AuthService {
     }
   }
 
-  // Generate JWT Token
+ 
   static generateToken(
     user: any,
     organizations: any[],
@@ -822,14 +822,14 @@ export class AuthService {
             featuresEnabled: ["contacts", "leads", "basic_reports"],
           }
         : undefined,
-      exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
+      exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
       iat: Math.floor(Date.now() / 1000),
     };
 
     return jwt.sign(payload, JWT_SECRET);
   }
 
-  // Verify JWT Token
+ 
   static verifyToken(token: string): JWTPayload {
     try {
       return jwt.verify(token, JWT_SECRET) as JWTPayload;
@@ -838,7 +838,7 @@ export class AuthService {
     }
   }
 
-  // Generate Organization Slug
+ 
   static generateSlug(name: string): string {
     return name
       .toLowerCase()
@@ -848,7 +848,7 @@ export class AuthService {
       .trim();
   }
 
-  // Get Organization Details
+ 
   static async getOrganizationDetails(organizationId: string) {
     try {
       const organization = await Organization.findOne({
@@ -874,7 +874,7 @@ export class AuthService {
 
       const orgData = organization as any;
 
-      // Calculate trial days remaining
+     
       const trialDaysRemaining = orgData.trialEndsAt
         ? Math.ceil(
             (new Date(orgData.trialEndsAt).getTime() - new Date().getTime()) /
@@ -917,7 +917,7 @@ export class AuthService {
     }
   }
 
-  // Check if user has access to organization
+ 
   static async userHasAccessToOrganization(
     userId: string,
     organizationId: string
@@ -941,13 +941,13 @@ export class AuthService {
     }
   }
 
-  // Update user's current organization
+ 
   static async updateUserCurrentOrganization(
     userId: string,
     organizationId: string
   ) {
     try {
-      // Find or create user session
+     
       let session = await UserSession.findOne({ where: { userId } });
 
       if (session) {
@@ -969,7 +969,7 @@ export class AuthService {
     }
   }
 
-  // Get User Organizations
+ 
   static async getUserOrganizations(userId: string) {
     try {
       const userOrgs = await UserOrganization.findAll({
@@ -989,7 +989,7 @@ export class AuthService {
 
       return userOrgs.map((uo: any) => ({
         id: (uo.organization as any).organizationId,
-        organizationId: (uo.organization as any).organizationId, // Add this for consistency
+        organizationId: (uo.organization as any).organizationId,
         name: (uo.organization as any).name,
         slug: (uo.organization as any).slug,
         role: uo.role || "viewer",
@@ -1012,7 +1012,7 @@ export class AuthService {
     }
   }
 
-  // Get User Role in Organization
+ 
   static async getUserRoleInOrganization(
     userId: string,
     organizationId: string
@@ -1037,7 +1037,7 @@ export class AuthService {
     }
   }
 
-  // Invitation Management Methods
+ 
   static async createInvitation(
     organizationId: string,
     email: string,
@@ -1048,14 +1048,14 @@ export class AuthService {
     const transaction = await sequelize.transaction();
 
     try {
-      // Validate inputs
+     
       if (!email || !organizationId || !roleName) {
         throw new Error(
           "Missing required fields: email, organizationId, roleName"
         );
       }
 
-      // Check if user already has org-scoped account (Monday.com-style)
+     
       const models = await import("@/models");
       const existingOrgAccount = await (
         models.default.OrgUserAccount as any
@@ -1070,7 +1070,7 @@ export class AuthService {
         throw new Error("User is already a member of this organization");
       }
 
-      // Check for existing pending invitation
+     
       const pendingStatusId = await this.getInvitationStatusId("pending");
       const existingInvitation = await UserInvitation.findOne({
         where: {
@@ -1084,10 +1084,10 @@ export class AuthService {
         throw new Error("Invitation already sent to this email");
       }
 
-      // Get role ID
+     
       const roleId = await this.getRoleId(roleName);
 
-      // Create invitation
+     
       const invitation = await UserInvitation.create(
         {
           organizationId,
@@ -1096,7 +1096,7 @@ export class AuthService {
           invitedBy,
           statusId: pendingStatusId,
           message: message || null,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           invitationToken: require("crypto").randomBytes(64).toString("hex"),
         },
         { transaction }
@@ -1118,7 +1118,7 @@ export class AuthService {
     const transaction = await sequelize.transaction();
 
     try {
-      // Find invitation with related data
+     
       const invitation = await UserInvitation.findOne({
         where: { invitationToken },
         include: [
@@ -1162,14 +1162,14 @@ export class AuthService {
         throw new Error("Invitation is not in pending status");
       }
 
-      // Check if user already exists
+     
       let user = await User.findOne({
         where: { email: (invitation as any).email },
       });
 
       let isNewUser = false;
       if (!user) {
-        // User doesn't exist, need to create account
+       
         if (!userPassword) {
           throw new Error("Password required for new user registration");
         }
@@ -1183,7 +1183,7 @@ export class AuthService {
             lastName = parts.slice(-1).join(" ");
           } else if (parts.length === 1) {
             firstName = parts[0];
-            // Ensure lastName is non-empty to satisfy notEmpty validation
+           
             lastName = "User";
           }
         }
@@ -1194,15 +1194,15 @@ export class AuthService {
             password: userPassword,
             firstName,
             lastName,
-            status: "active", // Use direct status field, not statusId
-            emailVerified: true, // Auto-verify for invited users
+            status: "active",
+            emailVerified: true,
           },
           { transaction }
         );
         isNewUser = true;
       }
 
-      // Create user-organization relationship (skip if already exists for Monday.com-style)
+     
       const existingRelationship = await UserOrganization.findOne({
         where: {
           userId: (user as any).userId,
@@ -1215,7 +1215,7 @@ export class AuthService {
           {
             userId: (user as any).userId,
             organizationId: (invitation as any).organizationId,
-            // Use config-based roleId from invitation
+           
             roleId:
               (invitation as any).roleId ||
               (((invitation as any).role &&
@@ -1228,7 +1228,7 @@ export class AuthService {
         );
       }
 
-      // Create per-organization credentials account (org-scoped identity)
+     
       const models = await import("@/models");
       const bcrypt = await import("bcryptjs");
       const hash = await bcrypt.hash(userPassword || "", 10);
@@ -1257,7 +1257,7 @@ export class AuthService {
         { transaction }
       );
 
-      // Mark invitation as accepted
+     
       const acceptedStatusId = await this.getInvitationStatusId("accepted");
       await invitation.update(
         {
@@ -1268,7 +1268,7 @@ export class AuthService {
         { transaction }
       );
 
-      // Update or create user session
+     
       let session = await UserSession.findOne({
         where: { userId: (user as any).userId },
       });
@@ -1422,14 +1422,11 @@ export class AuthService {
     }
   }
 
-  // ==========================================
-  // PASSWORD RESET METHODS
-  // ==========================================
+ 
+ 
+ 
 
-  /**
-   * Initiate password reset process
-   * Generates reset token and sends email
-   */
+  
   static async initiatePasswordReset(email: string): Promise<{
     success: boolean;
     message: string;
@@ -1437,43 +1434,43 @@ export class AuthService {
     const { emailService } = await import("./email-service");
 
     try {
-      // Always return success message for security (don't reveal if email exists)
+     
       const successMessage =
         "If an account with this email exists, you will receive a password reset link.";
 
-      // Find user by email
+     
       const user = await (User as any).findByEmail(email.toLowerCase());
 
       if (!user) {
-        // Don't reveal that email doesn't exist
+       
         return {
           success: true,
           message: successMessage,
         };
       }
 
-      // Invalidate any existing reset tokens for this user
+     
       await (PasswordResetToken as any).invalidateAllForUser(user.userId);
 
-      // Create new reset token
+     
       const resetToken = await (PasswordResetToken as any).createResetToken(
         user.userId
       );
 
-      // Generate reset URL
+     
       const baseUrl =
         process.env.NEXTAUTH_URL ||
         process.env.APP_URL;
       const resetUrl = `${baseUrl}/pages/auth/reset-password?token=${resetToken.token}`;
 
-      // Get user's current organization for branding
+     
       const userOrganizations = await this.getUserOrganizations(user.userId);
       const currentOrganization = userOrganizations[0];
 
-      // Ensure email service is properly initialized
+     
       await emailService.ensureInitialized();
 
-      // Send password reset email
+     
       const emailSent = await emailService.sendPasswordResetEmail(user.email, {
         firstName: user.firstName,
         lastName: user.lastName,
@@ -1496,9 +1493,7 @@ export class AuthService {
     }
   }
 
-  /**
-   * Validate password reset token
-   */
+  
   static async validatePasswordResetToken(token: string): Promise<{
     isValid: boolean;
     user?: any;
@@ -1512,7 +1507,7 @@ export class AuthService {
         };
       }
 
-      // Find valid token
+     
       const resetTokenRecord = await (PasswordResetToken as any).findByToken(
         token
       );
@@ -1552,9 +1547,7 @@ export class AuthService {
     }
   }
 
-  /**
-   * Reset password using token
-   */
+  
   static async resetPassword(
     token: string,
     newPassword: string
@@ -1566,12 +1559,12 @@ export class AuthService {
     const transaction = await sequelize.transaction();
 
     try {
-      // Validate password strength
+     
       if (!newPassword || newPassword.length < 8) {
         throw new Error("Password must be at least 8 characters long");
       }
 
-      // Validate token
+     
       const validation = await this.validatePasswordResetToken(token);
 
       if (!validation.isValid || !validation.user) {
@@ -1580,7 +1573,7 @@ export class AuthService {
 
       const user = validation.user;
 
-      // Get the reset token record to mark it as used
+     
       const resetTokenRecord = await (PasswordResetToken as any).findByToken(
         token
       );
@@ -1589,29 +1582,29 @@ export class AuthService {
         throw new Error("Reset token not found");
       }
 
-      // Update user password
+     
       await user.update(
         {
-          password: newPassword, // Will be hashed by the model hook
+          password: newPassword,
           passwordChangedAt: new Date(),
-          // Clear any login attempt locks
+         
           loginAttempts: 0,
           lockUntil: null,
         },
         { transaction }
       );
 
-      // Mark reset token as used
+     
       await resetTokenRecord.markUsed();
 
-      // Invalidate all other reset tokens for this user
+     
       await (PasswordResetToken as any).invalidateAllForUser(user.userId);
 
-      // Get user's organization for email
+     
       const userOrganizations = await this.getUserOrganizations(user.userId);
       const currentOrganization = userOrganizations[0];
 
-      // Send password changed confirmation email
+     
       await emailService.sendPasswordChangedEmail(
         user.email,
         user.firstName,
@@ -1635,10 +1628,7 @@ export class AuthService {
     }
   }
 
-  /**
-   * Check rate limiting for password reset requests
-   * Prevents abuse by limiting requests per email/IP
-   */
+  
   static async checkPasswordResetRateLimit(
     email: string,
     ipAddress?: string
@@ -1650,7 +1640,7 @@ export class AuthService {
     try {
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
-      // Count recent attempts for this email
+     
       const recentAttempts = await PasswordResetToken.count({
         where: {
           createdAt: {
@@ -1669,11 +1659,11 @@ export class AuthService {
         ],
       });
 
-      const maxAttempts = 3; // Maximum 3 attempts per hour
+      const maxAttempts = 3;
       const remainingAttempts = Math.max(0, maxAttempts - recentAttempts);
 
       if (recentAttempts >= maxAttempts) {
-        const resetTime = new Date(Date.now() + 60 * 60 * 1000); // Reset in 1 hour
+        const resetTime = new Date(Date.now() + 60 * 60 * 1000);
         return {
           allowed: false,
           remainingAttempts: 0,
@@ -1687,7 +1677,7 @@ export class AuthService {
       };
     } catch (error) {
       console.error("Rate limit check error:", error);
-      // On error, allow the request but log it
+     
       return {
         allowed: true,
         remainingAttempts: 1,
@@ -1695,10 +1685,7 @@ export class AuthService {
     }
   }
 
-  /**
-   * Cleanup expired password reset tokens
-   * Should be run periodically (cron job)
-   */
+  
   static async cleanupExpiredPasswordResetTokens(): Promise<number> {
     try {
       const deletedCount = await (PasswordResetToken as any).cleanupExpired();

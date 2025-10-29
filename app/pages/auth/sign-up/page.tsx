@@ -23,6 +23,7 @@ import {
   User,
   Users,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -61,7 +62,7 @@ export default function SignUpPage() {
   const [emailExists, setEmailExists] = useState(false);
   const [emailChecked, setEmailChecked] = useState(false);
 
-  // OTP verification state
+ 
   const [showOTPStep, setShowOTPStep] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
@@ -75,9 +76,9 @@ export default function SignUpPage() {
   const [resendAvailableIn, setResendAvailableIn] = useState(0);
   const [otpSentAt, setOtpSentAt] = useState<Date | null>(null);
 
-  const totalSteps = 6; // Email, account details, and setup questions
-
-  // Timer effect for OTP expiration and resend availability
+  const totalSteps = 6;
+  const logo = "/image/leadgaze.png";
+ 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
 
@@ -85,21 +86,21 @@ export default function SignUpPage() {
       interval = setInterval(() => {
         const now = new Date();
 
-        // OTP expiration timer (from backend)
+       
         const timeLeft = Math.max(
           0,
           Math.ceil((otpExpiresAt.getTime() - now.getTime()) / 1000)
         );
         setRemainingTime(timeLeft);
 
-        // Resend button timer (60 seconds from when OTP was sent)
+       
         const resendTimeLeft = Math.max(
           0,
           60 - Math.ceil((now.getTime() - otpSentAt.getTime()) / 1000)
         );
         setResendAvailableIn(resendTimeLeft);
 
-        // Enable retry when 60 seconds have passed (not when OTP expires)
+       
         if (resendTimeLeft === 0) {
           setOtpCanRetry(true);
         }
@@ -113,7 +114,7 @@ export default function SignUpPage() {
     };
   }, [otpExpiresAt, otpSentAt, otpSent, otpVerified]);
 
-  // Function to check if email already exists
+ 
   const checkEmailAvailability = async (email: string) => {
     setEmailCheckLoading(true);
     setValidationErrors({});
@@ -153,7 +154,7 @@ export default function SignUpPage() {
     }
   };
 
-  // Function to send OTP
+ 
   const sendOTP = async (email: string) => {
     setOtpSending(true);
     setOtpError("");
@@ -174,13 +175,13 @@ export default function SignUpPage() {
         setShowOTPStep(true);
         setOtpCanRetry(false);
 
-        // Set expiration time (from backend)
+       
         const expiresAt = new Date();
         expiresAt.setSeconds(expiresAt.getSeconds() + data.expiresIn);
         setOtpExpiresAt(expiresAt);
         setRemainingTime(data.expiresIn);
 
-        // Track when OTP was sent for 60-second resend timer
+       
         const sentAt = new Date();
         setOtpSentAt(sentAt);
         setResendAvailableIn(60);
@@ -200,7 +201,7 @@ export default function SignUpPage() {
     }
   };
 
-  // Function to verify OTP
+ 
   const verifyOTP = async (email: string, otp: string) => {
     setOtpVerifying(true);
     setOtpError("");
@@ -245,110 +246,15 @@ export default function SignUpPage() {
   };
 
   const handleNext = async () => {
-    setValidationErrors({});
+ setOtpSent(true);
+  setShowOTPStep(false);
+  setOtpVerified(true);
 
-    // Step-specific validation
-    if (currentStep === 1) {
-      if (!showOTPStep) {
-        // Step 1A: Email validation and OTP sending
-        if (!formData.email) {
-          setValidationErrors({ email: "Please enter your email address" });
-          return;
-        }
-        if (!formData.email.includes("@") || !formData.email.includes(".")) {
-          setValidationErrors({ email: "Please enter a valid email address" });
-          return;
-        }
+ 
+  setCurrentStep(currentStep + 1);
+       
 
-        // Check email availability before proceeding
-        const emailAvailable = await checkEmailAvailability(formData.email);
-        if (!emailAvailable) {
-          return; // Email exists or error occurred
-        }
 
-        // Send OTP
-        const otpSent = await sendOTP(formData.email);
-        if (!otpSent) {
-          return; // OTP sending failed
-        }
-
-        // Don't advance step, just show OTP verification UI
-        return;
-      } else {
-        // Step 1B: OTP verification
-        if (!otpValue) {
-          setOtpError("Please enter the verification code");
-          return;
-        }
-        if (!/^\d{6}$/.test(otpValue)) {
-          setOtpError("Please enter a valid 6-digit code");
-          return;
-        }
-
-        // Verify OTP
-        const otpValid = await verifyOTP(formData.email, otpValue);
-        if (!otpValid) {
-          return; // OTP verification failed
-        }
-
-        // OTP verified, proceed to step 2
-      }
-    }
-
-    if (currentStep === 2) {
-      if (
-        !formData.firstName ||
-        !formData.lastName ||
-        !formData.password ||
-        !formData.confirmPassword ||
-        !formData.accountName
-      ) {
-        setValidationErrors({ general: "Please fill in all required fields" });
-        return;
-      }
-      if (formData.password.length < 8) {
-        setValidationErrors({
-          password: "Password must be at least 8 characters long",
-        });
-        return;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        setValidationErrors({ confirmPassword: "Passwords do not match" });
-        return;
-      }
-    }
-
-    if (currentStep === 3) {
-      if (!formData.whatBringsYou) {
-        setValidationErrors({
-          general: "Please select what brings you here",
-        });
-        return;
-      }
-    }
-
-    if (currentStep === 4 && !formData.currentRole) {
-      setValidationErrors({
-        general: "Please select your current role",
-      });
-      return;
-    }
-
-    if (currentStep === 5 && !formData.teamSize) {
-      setValidationErrors({
-        general: "Please select your team size",
-      });
-      return;
-    }
-
-    if (currentStep < totalSteps) {
-      setIsSliding(true);
-      setSlideDirection("forward");
-      setTimeout(() => {
-        setCurrentStep(currentStep + 1);
-        setIsSliding(false);
-      }, 300);
-    }
   };
 
   const handleBack = () => {
@@ -370,9 +276,9 @@ export default function SignUpPage() {
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    setValidationErrors({}); // Clear validation errors
+    setValidationErrors({});
 
-    // Final validation for step 6
+   
     if (!formData.agreeToTerms) {
       setValidationErrors({
         terms: "Please agree to the Terms of Service and Privacy Policy",
@@ -394,7 +300,7 @@ export default function SignUpPage() {
         firstName: formData.firstName,
         lastName: formData.lastName,
         organizationName: formData.accountName,
-        // Include setup questions as metadata
+       
         setupQuestions: {
           whatBringsYou: formData.whatBringsYou,
           currentRole: formData.currentRole,
@@ -405,23 +311,23 @@ export default function SignUpPage() {
 
       setSuccess(true);
 
-      // Show success message briefly, then redirect
+     
       setTimeout(() => {
         router.replace("/pages/dashboard");
       }, 1500);
     } catch (err) {
-      // Error is handled by the mutation (useAuth store)
+     
     }
   };
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
 
-    // Reset email check status when email changes
+   
     if (field === "email") {
       setEmailChecked(false);
       setEmailExists(false);
-      // Reset OTP state when email changes
+     
       setShowOTPStep(false);
       setOtpSent(false);
       setOtpValue("");
@@ -434,7 +340,7 @@ export default function SignUpPage() {
       setResendAvailableIn(0);
     }
 
-    // Clear validation errors when user starts typing
+   
     if (validationErrors[field]) {
       setValidationErrors((prev) => {
         const newErrors = { ...prev };
@@ -444,46 +350,38 @@ export default function SignUpPage() {
     }
   };
 
-  // Handle OTP input
+ 
   const handleOTPChange = (value: string) => {
-    // Only allow digits and limit to 6 characters
+   
     const numericValue = value.replace(/\D/g, "").slice(0, 6);
     setOtpValue(numericValue);
-    setOtpError(""); // Clear error when user types
+    setOtpError("");
   };
 
-  // Early return for success state
+ 
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 flex items-center justify-center p-4">
-        {/* Background decoration */}
+        {}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse"></div>
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse animation-delay-2000"></div>
         </div>
 
         <div className="w-full max-w-md relative z-10">
-          {/* Header */}
+          {}
           <div className="text-center mb-8">
             <Link
               href="/pages/welcome"
               className="inline-flex items-center gap-3 mb-6 group"
             >
-              <div className="flex aspect-square size-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 text-white shadow-lg group-hover:scale-105 transition-transform duration-300">
-                <Building2 className="size-7 text-white" />
-              </div>
-              <div className="text-left">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  MyCRM
-                </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Sales Platform
-                </p>
-              </div>
+             <Image src={logo} loading="lazy" width={250} height={80} alt="Leadgaze logo" />
+
+
             </Link>
           </div>
 
-          {/* Success Card */}
+          {}
           <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-center">
             <CardContent className="p-8">
               <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -530,7 +428,7 @@ export default function SignUpPage() {
 
   const renderEmailStep = () => (
     <div className="space-y-6">
-      {/* Header */}
+      {}
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
           Get Started
@@ -540,7 +438,7 @@ export default function SignUpPage() {
         </p>
       </div>
 
-      {/* Email Field */}
+      {}
       <div className="space-y-2">
         <Label htmlFor="email" className="text-sm font-medium">
           Email Address
@@ -559,7 +457,7 @@ export default function SignUpPage() {
             } ${emailExists ? "border-red-500" : ""}`}
             disabled={isLoading || emailCheckLoading}
           />
-          {/* Email check status indicator */}
+          {}
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
             {emailCheckLoading && (
               <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -573,7 +471,7 @@ export default function SignUpPage() {
           </div>
         </div>
 
-        {/* Email validation messages */}
+        {}
         {validationErrors.email && (
           <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
             <AlertCircle className="h-3 w-3" />
@@ -601,7 +499,7 @@ export default function SignUpPage() {
 
   const renderOTPStep = () => (
     <div className="space-y-6">
-      {/* Header */}
+      {}
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
           Verify Your Email
@@ -612,7 +510,7 @@ export default function SignUpPage() {
         <p className="text-blue-600 font-medium mt-1">{formData.email}</p>
       </div>
 
-      {/* OTP Input */}
+      {}
       <div className="space-y-4">
         <div>
           <Label htmlFor="otp" className="text-sm font-medium">
@@ -645,7 +543,7 @@ export default function SignUpPage() {
           )}
         </div>
 
-        {/* Resend OTP */}
+        {}
         <div className="text-center">
           <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
             Didn't receive the code?
@@ -670,7 +568,7 @@ export default function SignUpPage() {
           </Button>
         </div>
 
-        {/* Simple expiry message */}
+        {}
         {otpExpiresAt && remainingTime > 0 && (
           <div className="text-center">
             <p className="text-xs text-gray-500">Code expires in 10 minutes</p>
@@ -686,7 +584,7 @@ export default function SignUpPage() {
         )}
       </div>
 
-      {/* Back to email step */}
+      {}
       <div className="text-center">
         <Button
           type="button"
@@ -712,7 +610,7 @@ export default function SignUpPage() {
 
   const renderAccountDetailsStep = () => (
     <div className="space-y-6">
-      {/* Header */}
+      {}
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
           Create Your Account
@@ -722,7 +620,7 @@ export default function SignUpPage() {
         </p>
       </div>
 
-      {/* Name Fields */}
+      {}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName" className="text-sm font-medium">
@@ -760,7 +658,7 @@ export default function SignUpPage() {
         </div>
       </div>
 
-      {/* Password Fields */}
+      {}
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="password" className="text-sm font-medium">
@@ -835,7 +733,7 @@ export default function SignUpPage() {
         </div>
       </div>
 
-      {/* Account Name */}
+      {}
       <div className="space-y-2">
         <Label htmlFor="accountName" className="text-sm font-medium">
           Account Name *
@@ -1071,7 +969,7 @@ export default function SignUpPage() {
         ))}
       </div>
 
-      {/* Terms and Newsletter */}
+      {}
       <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-start space-x-2">
           <Checkbox
@@ -1126,34 +1024,24 @@ export default function SignUpPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 flex items-center justify-center p-4">
-      {/* Background decoration */}
+      {}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse animation-delay-2000"></div>
       </div>
 
       <div className="w-full max-w-lg relative z-10">
-        {/* Header */}
+        {}
         <div className="text-center mb-8">
           <Link
             href="/pages/welcome"
             className="inline-flex items-center gap-3 mb-6 group"
           >
-            <div className="flex aspect-square size-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 text-white shadow-lg group-hover:scale-105 transition-transform duration-300">
-              <Building2 className="size-7 text-white" />
-            </div>
-            <div className="text-left">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                MyCRM
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Sales Platform
-              </p>
-            </div>
+            <Image src={logo} loading="lazy" width={250} height={80} alt="Leadgaze logo" />
           </Link>
         </div>
 
-        {/* Progress indicator */}
+        {}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -1165,17 +1053,17 @@ export default function SignUpPage() {
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
             <div
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-500 ease-out"
+              className="bg-[#46a3ff] from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${(currentStep / totalSteps) * 100}%` }}
             ></div>
           </div>
         </div>
 
-        {/* Multi-step Form */}
+        {}
         <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm overflow-hidden">
           <CardContent className="p-8">
             {(() => {
-              // Don't show email errors in top alert when on step 1 (they show under the field)
+             
               const filteredErrors =
                 currentStep === 1
                   ? Object.fromEntries(
@@ -1201,7 +1089,7 @@ export default function SignUpPage() {
               );
             })()}
 
-            {/* Render current step */}
+            {}
             <div
               className={`transition-all duration-500 ease-in-out ${
                 isSliding
@@ -1214,7 +1102,7 @@ export default function SignUpPage() {
               {renderStep()}
             </div>
 
-            {/* Navigation buttons */}
+            {}
             <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
               {currentStep > 1 || (currentStep === 1 && showOTPStep) ? (
                 <Button
@@ -1222,7 +1110,7 @@ export default function SignUpPage() {
                   variant="outline"
                   onClick={() => {
                     if (currentStep === 1 && showOTPStep) {
-                      // Go back to email step
+                     
                       setShowOTPStep(false);
                       setOtpSent(false);
                       setOtpValue("");
@@ -1293,7 +1181,7 @@ export default function SignUpPage() {
                     (currentStep === 4 && !formData.currentRole) ||
                     (currentStep === 5 && !formData.teamSize)
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:scale-105 hover:shadow-xl"
+                      : "bg-[#46a3ff] from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:scale-105 hover:shadow-xl"
                   }`}
                 >
                   {currentStep === 1 && !showOTPStep && emailCheckLoading ? (
@@ -1333,7 +1221,7 @@ export default function SignUpPage() {
                   className={`px-8 py-3 transition-all duration-300 shadow-lg ${
                     isLoading || !formData.agreeToTerms || !formData.companySize
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 hover:scale-105 hover:shadow-xl"
+                      : "bg-[#46a3ff] from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 hover:scale-105 hover:shadow-xl"
                   }`}
                 >
                   {isLoading ? (
@@ -1353,7 +1241,7 @@ export default function SignUpPage() {
           </CardContent>
         </Card>
 
-        {/* Sign In Link */}
+        {}
         <div className="text-center mt-6">
           <Link
             href="/pages/auth/sign-in"

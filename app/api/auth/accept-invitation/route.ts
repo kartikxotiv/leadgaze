@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       fullName,
     });
 
-    // Validate required fields
+   
     if (!invitationToken) {
       return NextResponse.json(
         {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get invitation details first
+   
     const invitation = await AuthService.getInvitationByToken(invitationToken);
 
     console.log("🔍 Invitation lookup result:", {
@@ -63,19 +63,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Accept invitation
+   
     const result = await AuthService.acceptInvitation(
       invitationToken,
       password,
       fullName
     );
 
-    // Auto-login the user after accepting invitation with org-scoped credentials
+   
     const loginResult = await AuthService.loginUser(
       (result.user as any).email,
       password,
-      false, // Don't skip password check
-      (result.organization as any).organizationId // Use org-scoped login
+      false,
+      (result.organization as any).organizationId
     );
 
     return NextResponse.json({
@@ -175,7 +175,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get invitation details
+   
     const invitation = await AuthService.getInvitationByToken(invitationToken);
 
     if (!invitation) {

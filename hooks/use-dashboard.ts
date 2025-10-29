@@ -50,7 +50,7 @@ export function useDashboardStats(dateRange?: string) {
     queryFn: async () => {
       if (!orgId) throw new Error("No organization selected");
 
-      // Calculate date range
+     
       let dateFrom = "";
       let dateTo = "";
 
@@ -62,7 +62,7 @@ export function useDashboardStats(dateRange?: string) {
         dateTo = now.toISOString();
       }
 
-      // Call the enhanced analytics API
+     
       const params = new URLSearchParams({
         organizationId: orgId,
         ...(dateFrom && { dateFrom }),
@@ -81,7 +81,7 @@ export function useDashboardStats(dateRange?: string) {
         trendData: data.data.trendData,
       };
     },
-    staleTime: 3 * 60_000, // 3 minutes cache
+    staleTime: 3 * 60_000,
     refetchOnWindowFocus: false,
   });
 }

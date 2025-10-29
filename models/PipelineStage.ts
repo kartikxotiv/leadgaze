@@ -107,10 +107,10 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Associations
+ 
   (PipelineStage as any).associate = (models: any) => {
-    // Note: Deals use stage ENUM instead of stage_id foreign key
-    // So no direct association between PipelineStage and Deal
+   
+   
   };
 
   return PipelineStage;

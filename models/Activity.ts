@@ -153,7 +153,7 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Associations
+ 
   (Activity as any).associate = (models: any) => {
     Activity.belongsTo(models.User, {
       foreignKey: "user_id",

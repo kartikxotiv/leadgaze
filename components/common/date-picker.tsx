@@ -112,7 +112,6 @@ export function DatePicker({
   );
 }
 
-// Quick date selection buttons
 interface QuickDateSelectProps {
   onDateSelect: (date: Date) => void;
   className?: string;

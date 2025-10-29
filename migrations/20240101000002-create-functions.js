@@ -1,9 +1,9 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Create password reset token sync function
+   
     await queryInterface.sequelize.query(`
       CREATE FUNCTION prt_sync_reset_token() RETURNS trigger
         LANGUAGE plpgsql
@@ -16,7 +16,7 @@ module.exports = {
       END$$;
     `);
 
-    // Create updated_at column update function
+   
     await queryInterface.sequelize.query(`
       CREATE FUNCTION update_updated_at_column() RETURNS trigger
         LANGUAGE plpgsql

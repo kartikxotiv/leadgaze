@@ -14,7 +14,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-// Common form field props
 interface BaseFieldProps {
   label: string;
   required?: boolean;
@@ -22,7 +21,6 @@ interface BaseFieldProps {
   error?: string;
 }
 
-// Text Input Field
 interface TextFieldProps extends BaseFieldProps {
   value: string;
   onChange: (value: string) => void;
@@ -59,7 +57,6 @@ export function TextField({
   );
 }
 
-// Textarea Field
 interface TextareaFieldProps extends BaseFieldProps {
   value: string;
   onChange: (value: string) => void;
@@ -96,7 +93,6 @@ export function TextareaField({
   );
 }
 
-// Select Field
 interface SelectOption {
   value: string;
   label: string;
@@ -153,7 +149,6 @@ export function SelectField({
   );
 }
 
-// Priority Select (commonly used)
 interface PrioritySelectProps {
   value: string;
   onChange: (value: string) => void;
@@ -205,7 +200,6 @@ export function PrioritySelect({
   );
 }
 
-// Number Input Field
 interface NumberFieldProps extends BaseFieldProps {
   value: number | undefined;
   onChange: (value: number | undefined) => void;

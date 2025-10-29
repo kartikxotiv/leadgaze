@@ -373,7 +373,7 @@ export function DealsPipeline({ className }: DealsPipelineProps) {
       availableStages: dealStages.map((s) => ({ id: s.id, name: s.name })),
     });
 
-    // Determine target stage: if dropped on a deal card, infer that deal's current stage bucket
+   
     const overData: any = (over as any).data?.current;
     let targetStageId: string = newStageId;
     if (overData?.type === "deal") {
@@ -390,7 +390,7 @@ export function DealsPipeline({ className }: DealsPipelineProps) {
       targetStageId = newStageId;
     }
 
-    // Find the deal being moved
+   
     let dealToMove: Deal | undefined;
     for (const stageDeals of Object.values(dealsByStage || {})) {
       dealToMove = (stageDeals as Deal[]).find(
@@ -406,10 +406,10 @@ export function DealsPipeline({ className }: DealsPipelineProps) {
     }
 
     if (dealToMove.stage === targetStageId) {
-      return; // Already in target stage, no action needed
+      return;
     }
 
-    // Validate that newStageId is a valid stage
+   
     const validStages = [
       "qualification",
       "proposal",
@@ -430,7 +430,7 @@ export function DealsPipeline({ className }: DealsPipelineProps) {
     }
 
     try {
-      // Update probability based on new stage
+     
       const stage = dealStages.find((s) => s.id === targetStageId);
       const probability = stage?.probability || dealToMove.probability;
 

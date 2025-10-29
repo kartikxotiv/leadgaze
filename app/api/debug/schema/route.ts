@@ -3,7 +3,7 @@ import sequelize from "@/lib/database";
 
 export async function GET(request: NextRequest) {
   try {
-    // Get table schema for users table
+   
     const [usersColumns] = await sequelize.query(`
       SELECT column_name, data_type, is_nullable, column_default
       FROM information_schema.columns 
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       ORDER BY ordinal_position;
     `);
 
-    // Get table schema for organizations table
+   
     const [organizationsColumns] = await sequelize.query(`
       SELECT column_name, data_type, is_nullable, column_default
       FROM information_schema.columns 
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       ORDER BY ordinal_position;
     `);
 
-    // Get all table names
+   
     const [tables] = await sequelize.query(`
       SELECT table_name 
       FROM information_schema.tables 

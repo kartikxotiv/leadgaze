@@ -79,7 +79,7 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Instance methods
+ 
   (OrganizationWorkspace as any).prototype.generateSlug = function (
     name: string
   ) {
@@ -105,7 +105,7 @@ export default (sequelize: Sequelize) => {
     return this.save();
   };
 
-  // Static methods
+ 
   (OrganizationWorkspace as any).findByOrganization = function (
     organizationId: string
   ) {
@@ -176,7 +176,7 @@ export default (sequelize: Sequelize) => {
     });
   };
 
-  // Associations
+ 
   (OrganizationWorkspace as any).associate = (models: any) => {
     OrganizationWorkspace.belongsTo(models.Organization, {
       foreignKey: "organization_id",

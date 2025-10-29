@@ -65,7 +65,7 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Static methods for common queries
+ 
   (UserConfig as any).getStatusOptions = function () {
     return this.findAll({
       where: {
@@ -97,15 +97,15 @@ export default (sequelize: Sequelize) => {
     });
   };
 
-  // Associations - enabled for config-based schema
+ 
   (UserConfig as any).associate = (models: any) => {
-    // Users reference this for status
+   
     UserConfig.hasMany(models.User, {
       foreignKey: "status_id",
       as: "usersWithStatus",
     });
 
-    // UserInvitations reference this for status
+   
     UserConfig.hasMany(models.UserInvitation, {
       foreignKey: "status_id",
       as: "invitationsWithStatus",

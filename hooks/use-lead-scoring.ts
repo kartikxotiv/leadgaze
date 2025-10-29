@@ -63,7 +63,6 @@ export interface CreateRuleData {
   isActive?: boolean;
 }
 
-// Hook to fetch lead scores
 export function useLeadScores(
   filters: {
     organizationId?: string;
@@ -101,7 +100,6 @@ export function useLeadScores(
   });
 }
 
-// Hook to calculate lead scores
 export function useCalculateLeadScore() {
   const queryClient = useQueryClient();
 
@@ -111,16 +109,15 @@ export function useCalculateLeadScore() {
       return response.data;
     },
     onSuccess: () => {
-      // Invalidate lead scores queries
+     
       queryClient.invalidateQueries({ queryKey: ["lead-scores"] });
 
-      // Invalidate leads queries to update scores in lead lists
+     
       queryClient.invalidateQueries({ queryKey: ["leads"] });
     },
   });
 }
 
-// Hook to fetch scoring rules
 export function useScoringRules(organizationId?: string, isActive?: boolean) {
   const { organizationId: authOrgId } = useAuthStore();
   const orgId = organizationId || authOrgId;
@@ -142,7 +139,6 @@ export function useScoringRules(organizationId?: string, isActive?: boolean) {
   });
 }
 
-// Hook to create scoring rule
 export function useCreateScoringRule() {
   const queryClient = useQueryClient();
   const { user, organizationId } = useAuthStore();
@@ -164,13 +160,12 @@ export function useCreateScoringRule() {
       return response.data;
     },
     onSuccess: () => {
-      // Invalidate scoring rules queries
+     
       queryClient.invalidateQueries({ queryKey: ["scoring-rules"] });
     },
   });
 }
 
-// Hook to get scoring statistics
 export function useScoringStats(organizationId?: string) {
   const { organizationId: authOrgId } = useAuthStore();
   const orgId = organizationId || authOrgId;
@@ -213,7 +208,6 @@ export function useScoringStats(organizationId?: string) {
   });
 }
 
-// Hook for batch score calculation
 export function useBatchCalculateScores() {
   const queryClient = useQueryClient();
   const { organizationId } = useAuthStore();
@@ -233,7 +227,6 @@ export function useBatchCalculateScores() {
   });
 }
 
-// Utility function to get tier color
 export function getTierColor(tier: LeadScore["tier"]) {
   switch (tier) {
     case "burning":
@@ -249,7 +242,6 @@ export function getTierColor(tier: LeadScore["tier"]) {
   }
 }
 
-// Utility function to get tier icon
 export function getTierIcon(tier: LeadScore["tier"]) {
   switch (tier) {
     case "burning":

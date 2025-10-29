@@ -1,8 +1,7 @@
 const { Sequelize } = require("sequelize");
 
-// Database connection using environment variables
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || 
-  `postgres://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'password'}@${process.env.DB_HOST }:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'crm'}`;
+  `postgres
 
 const sequelize = new Sequelize(DATABASE_URL, {
   dialect: "postgres",
@@ -17,11 +16,11 @@ async function setupDatabase() {
   try {
     console.log("🚀 Setting up TypeScript database...");
 
-    // Test connection
+   
     await sequelize.authenticate();
     console.log("✅ Database connected!");
 
-    // Import TypeScript models
+   
     const User = require("../models/User").default;
     const Organization = require("../models/Organization").default;
     const UserOrganization = require("../models/UserOrganization").default;
@@ -32,7 +31,7 @@ async function setupDatabase() {
     const Lead = require("../models/Lead").default;
     const Deal = require("../models/Deal").default;
 
-    // Initialize models with sequelize instance
+   
     const UserModel = User(sequelize);
     const OrganizationModel = Organization(sequelize);
     const UserOrganizationModel = UserOrganization(sequelize);
@@ -43,7 +42,7 @@ async function setupDatabase() {
     const LeadModel = Lead(sequelize);
     const DealModel = Deal(sequelize);
 
-    // Setup multi-organization associations
+   
     UserModel.hasMany(OrganizationModel, {
       foreignKey: "created_by",
       as: "createdOrganizations",
@@ -89,7 +88,7 @@ async function setupDatabase() {
       as: "currentOrganization",
     });
 
-    // Setup CRM associations
+   
     UserModel.hasMany(LeadModel, {
       foreignKey: "assigned_to",
       as: "assignedLeads",
@@ -234,7 +233,7 @@ async function setupDatabase() {
       },
     });
 
-    // Sync all tables
+   
     await sequelize.sync({ force: true });
     console.log("✅ All tables created!");
 

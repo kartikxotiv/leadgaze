@@ -11,6 +11,7 @@ const protectedRoutes = [
   "/pages/pipeline",
   "/pages/communications",
   "/pages/reports",
+  "/pages/testtable",
   // Legacy routes for backward compatibility
   "/dashboard",
   "/deals",
@@ -26,7 +27,7 @@ const authRoutes = [
   "/pages/auth/reset-password",
 ];
 const publicRoutes = ["/auth/accept-invitation"];
-const welcomeRoutes = ["/pages/welcome"]; // Special handling for welcome page
+const welcomeRoutes = ["/pages/auth/sign-in"]; // Special handling for welcome page
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -46,7 +47,7 @@ export function middleware(request: NextRequest) {
   if (pathname === "/") {
     return NextResponse.redirect(
       new URL(
-        isAuthenticated ? "/pages/dashboard" : "/pages/welcome",
+        isAuthenticated ? "/pages/dashboard" : "/pages/auth/sign-in",
         request.url
       )
     );
@@ -110,6 +111,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public (public files)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|public).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|public|image).*)",
   ],
 };

@@ -34,7 +34,7 @@ export default (sequelize: Sequelize) => {
         defaultValue: 0,
         validate: {
           min: 0,
-          max: 5, // Max 5 attempts
+          max: 5,
         },
       },
       expiresAt: {
@@ -60,7 +60,7 @@ export default (sequelize: Sequelize) => {
     },
     {
       tableName: "email_otps",
-      timestamps: false, // We handle timestamps manually
+      timestamps: false,
       indexes: [
         { fields: ["email"] },
         { fields: ["email", "purpose"] },
@@ -70,7 +70,7 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Instance methods
+ 
   (EmailOTP as any).prototype.isExpired = function () {
     return new Date() > this.expiresAt;
   };
@@ -95,9 +95,9 @@ export default (sequelize: Sequelize) => {
     return this.save();
   };
 
-  // Static methods
+ 
   (EmailOTP as any).generateOTP = function () {
-    return Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit number
+    return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
   (EmailOTP as any).createOTP = function (

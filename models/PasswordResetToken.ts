@@ -29,7 +29,7 @@ export default (sequelize: Sequelize) => {
         allowNull: false,
         field: "expires_at",
       },
-      // No 'used' column in DB; we manage single-use by deleting records on use
+     
       createdAt: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
@@ -38,7 +38,7 @@ export default (sequelize: Sequelize) => {
     },
     {
       tableName: "password_reset_tokens",
-      timestamps: false, // We handle timestamps manually
+      timestamps: false,
       indexes: [
         { unique: true, fields: ["token"] },
         { fields: ["user_id"] },
@@ -47,26 +47,26 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Instance methods
+ 
   (PasswordResetToken as any).prototype.isExpired = function () {
     return new Date() > this.expiresAt;
   };
 
   (PasswordResetToken as any).prototype.isUsed = function () {
-    // Without a 'used' column, consider not-used while it exists
+   
     return false;
   };
 
   (PasswordResetToken as any).prototype.markUsed = function () {
-    // Delete token on use to enforce single-use
+   
     return this.destroy();
   };
 
-  // Static methods
+ 
   (PasswordResetToken as any).createResetToken = function (userId: string) {
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour expiration
+    expiresAt.setHours(expiresAt.getHours() + 1);
 
     return this.create({
       userId,
@@ -80,7 +80,7 @@ export default (sequelize: Sequelize) => {
       where: {
         token,
         expiresAt: {
-          [Op.gt]: new Date(), // Not expired
+          [Op.gt]: new Date(),
         },
       },
       include: [
@@ -104,7 +104,7 @@ export default (sequelize: Sequelize) => {
   };
 
   (PasswordResetToken as any).invalidateAllForUser = function (userId: string) {
-    // Delete all existing tokens for the user
+   
     return this.destroy({ where: { userId } });
   };
 
@@ -118,7 +118,7 @@ export default (sequelize: Sequelize) => {
     });
   };
 
-  // Associations
+ 
   (PasswordResetToken as any).associate = (models: any) => {
     PasswordResetToken.belongsTo(models.User, {
       foreignKey: "user_id",

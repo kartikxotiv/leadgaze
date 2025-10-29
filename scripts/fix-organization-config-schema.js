@@ -1,7 +1,6 @@
 const { Sequelize } = require("sequelize");
 const pg = require("pg");
 
-// Database connection
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: "postgres",
   dialectModule: pg,
@@ -15,7 +14,7 @@ async function fixOrganizationConfigSchema() {
     await sequelize.authenticate();
     console.log("✅ Database connected!");
 
-    // Check current schema
+   
     console.log("📋 Checking current schema...");
     const [currentColumns] = await sequelize.query(`
       SELECT column_name, data_type, is_nullable
@@ -29,10 +28,10 @@ async function fixOrganizationConfigSchema() {
       currentColumns.map((c) => c.column_name)
     );
 
-    // Add missing columns that the Sequelize model expects
+   
     console.log("➕ Adding missing columns...");
 
-    // Add numeric_value column if it doesn't exist
+   
     try {
       await sequelize.query(`
         ALTER TABLE organization_config 
@@ -46,7 +45,7 @@ async function fixOrganizationConfigSchema() {
       );
     }
 
-    // Add display_name column if it doesn't exist (keeping existing one)
+   
     try {
       await sequelize.query(`
         ALTER TABLE organization_config 
@@ -60,7 +59,7 @@ async function fixOrganizationConfigSchema() {
       );
     }
 
-    // Drop config_data column if it exists (not used by model)
+   
     try {
       await sequelize.query(`
         ALTER TABLE organization_config 
@@ -74,7 +73,7 @@ async function fixOrganizationConfigSchema() {
       );
     }
 
-    // Check final schema
+   
     console.log("\n📋 Final schema check...");
     const [finalColumns] = await sequelize.query(`
       SELECT column_name, data_type, is_nullable
@@ -96,7 +95,6 @@ async function fixOrganizationConfigSchema() {
   }
 }
 
-// Run the fix if this file is executed directly
 if (require.main === module) {
   fixOrganizationConfigSchema()
     .then(() => {

@@ -26,8 +26,15 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLogin, useAuth } from "@/lib/hooks/use-auth";
+import Image from "next/image";
 
 export default function SignInPage() {
+
+
+  const logo = "/image/leadgaze.png";
+
+
+
   const router = useRouter();
   const { error, isLoading } = useAuth();
   const loginMutation = useLogin();
@@ -46,7 +53,7 @@ export default function SignInPage() {
     e.preventDefault();
     setValidationErrors({});
 
-    // Basic validation
+   
     if (!formData.email || !formData.password) {
       setValidationErrors({ general: "Please fill in all fields" });
       return;
@@ -70,17 +77,17 @@ export default function SignInPage() {
         password: formData.password,
       });
 
-      // Replace current history entry and redirect to dashboard
+     
       window.history.replaceState(null, "", "/pages/dashboard");
       router.replace("/pages/dashboard");
     } catch (err) {
-      // Error is handled by the mutation
+     
     }
   };
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear validation errors when user starts typing
+   
     if (validationErrors[field]) {
       setValidationErrors((prev) => {
         const newErrors = { ...prev };
@@ -92,42 +99,44 @@ export default function SignInPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 flex items-center justify-center p-4">
-      {/* Background decoration */}
+      {}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse animation-delay-2000"></div>
       </div>
 
       <div className="w-full max-w-md relative z-10">
-        {/* Header */}
+        {}
         <div className="text-center mb-8">
           <Link
             href="/pages/welcome"
             className="inline-flex items-center gap-3 mb-6 group"
           >
-            <div className="flex aspect-square size-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 text-white shadow-lg group-hover:scale-105 transition-transform duration-300">
+            <Image src={logo} loading="lazy" width={250} height={80} alt="Leadgaze logo" />
+            
+            {/* <div className="flex aspect-square size-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 text-white shadow-lg group-hover:scale-105 transition-transform duration-300">
               <Building2 className="size-7 text-white" />
             </div>
             <div className="text-left">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                MyCRM
+                Leadgaze CRM
               </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Sales Platform
               </p>
-            </div>
+            </div> */}
           </Link>
         </div>
 
-        {/* Sign In Form */}
+        {}
         <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <CardHeader className="text-center pb-6">
             <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
               Welcome Back
             </CardTitle>
-            <CardDescription className="text-base text-gray-600 dark:text-gray-300">
-              Sign in to your account to continue
-            </CardDescription>
+            {/* <CardDescription className="text-base text-gray-600 dark:text-gray-300">
+              Sign in to your account to continue 
+            </CardDescription> */}
           </CardHeader>
 
           <CardContent>
@@ -144,7 +153,7 @@ export default function SignInPage() {
                 </Alert>
               )}
 
-              {/* Email Field */}
+              
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
                   Email Address
@@ -162,8 +171,7 @@ export default function SignInPage() {
                   />
                 </div>
               </div>
-
-              {/* Password Field */}
+              
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-medium">
                   Password
@@ -196,7 +204,7 @@ export default function SignInPage() {
                 </div>
               </div>
 
-              {/* Remember Me & Forgot Password */}
+              {}
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -222,10 +230,10 @@ export default function SignInPage() {
                 </Link>
               </div>
 
-              {/* Submit Button */}
+              {}
               <Button
                 type="submit"
-                className="w-full h-12 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-300"
+                className="w-full h-12 text-base font-medium bg-[#46a3ff] from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-300"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -242,7 +250,7 @@ export default function SignInPage() {
               </Button>
             </form>
 
-            {/* Divider */}
+            {}
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
@@ -254,7 +262,7 @@ export default function SignInPage() {
               </div>
             </div>
 
-            {/* Sign Up Link */}
+            {}
             <div className="text-center">
               <Link
                 href="/pages/auth/sign-up"
@@ -263,45 +271,9 @@ export default function SignInPage() {
                 Create your account
               </Link>
             </div>
+
           </CardContent>
         </Card>
-
-        {/* Demo Credentials */}
-        <Card className="mt-4 border-0 bg-blue-50 dark:bg-blue-900/20">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-2">
-              <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-              <div className="text-sm">
-                <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">
-                  Demo Access
-                </p>
-                <p className="text-blue-700 dark:text-blue-300 text-xs">
-                  Use any email and password (6+ characters) to access the demo
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Footer */}
-        <div className="text-center mt-8 text-sm text-gray-500 dark:text-gray-400">
-          <p>
-            By signing in, you agree to our{" "}
-            <Link
-              href="#"
-              className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
-            >
-              Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link
-              href="#"
-              className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
-            >
-              Privacy Policy
-            </Link>
-          </p>
-        </div>
       </div>
     </div>
   );

@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     console.log("Received activity creation request:", body);
 
-    // Validate required fields
+   
     const requiredFields = [
       "activityType",
       "relatedType",
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
         let errorMessage = `Missing or empty required field: ${field}`;
         let helpMessage = "";
 
-        // Provide specific help for relatedId
+       
         if (field === "relatedId") {
           errorMessage =
             "A lead or deal must be selected to create an activity";
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Validate enum values
+   
     const validActivityTypes = [
       "call",
       "email",
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
 
     console.log("About to create activity with validated data:", body);
 
-    // Create activity
+   
     const activity = await Activity.create({
       ...body,
       createdAt: new Date(),
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
 
     console.log("Activity created successfully:", activity.dataValues);
 
-    // Fetch created activity without associations for now
+   
     const createdActivity = await Activity.findByPk(
       (activity as any).activityId
     );
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error creating activity:", error);
 
-    // Provide more detailed error information
+   
     let errorMessage = "Failed to create activity";
     let errorDetails = "Unknown error";
 
@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
       errorMessage = error.message;
       errorDetails = error.stack || error.message;
 
-      // Check for specific database errors
+     
       if (
         error.message.includes("validation") ||
         error.message.includes("constraint")

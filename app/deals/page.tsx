@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import dynamic from "next/dynamic";
 
-// Dynamic import for heavy DealsPipeline
 const DealsPipeline = dynamic(
   () =>
     import("@/components/deals/deals-pipeline").then((mod) => ({
@@ -28,6 +27,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import {
   TrendingUp,
   DollarSign,
@@ -66,19 +73,20 @@ export default function DealsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
+      
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Sales Pipeline
+            <h1 className="text-2xl font-bold tracking-tight">
+              {}
+              Deals
             </h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground mt-2 text-[13px] font-regular">
               Manage your deals and track revenue opportunities
             </p>
           </div>
         </div>
 
-        {/* Stats Overview */}
+      
         {statsLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (
@@ -205,22 +213,47 @@ export default function DealsPage() {
           </div>
         ) : null}
 
-        {/* Main Content */}
+        {}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="pipeline" className="flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              Kanban View
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="flex items-center gap-2">
-              <PieChart className="h-4 w-4" />
-              Reports
-            </TabsTrigger>
-          </TabsList>
+        
+        
+
+
+
+
+
+
+          <div className="lg:w-1/3 md:w-1/2 w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="pipeline" className="flex items-center gap-2 py-3">
+                  <Target className="h-4 w-4" />
+                  Kanban View
+                </TabsTrigger>
+                  <TabsTrigger value="analytics" className="flex items-center gap-2 py-3">
+                  <BarChart3 className="h-4 w-4" />
+                  Analytics
+                </TabsTrigger>
+                <TabsTrigger value="reports" className="flex items-center gap-2 py-3">
+                  <PieChart className="h-4 w-4" />
+                  Reports
+                </TabsTrigger>
+              </TabsList>
+          </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
           <TabsContent value="pipeline" className="mt-6">
             <DealsPipeline />
@@ -254,7 +287,7 @@ export default function DealsPage() {
                           </div>
                           <div className="flex items-center gap-3">
                             <span className="text-sm text-muted-foreground">
-                              {count} deals
+                              {count as number} deals
                             </span>
                             <span className="text-sm font-medium">
                               {formatCurrency(stats.valueByStage[stage] || 0)}

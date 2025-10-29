@@ -75,7 +75,7 @@ export default (sequelize: Sequelize) => {
     }
   );
 
-  // Static methods for role management
+ 
   (OrganizationRole as any).getActiveRoles = function () {
     return this.findAll({
       where: {
@@ -114,7 +114,7 @@ export default (sequelize: Sequelize) => {
     });
   };
 
-  // Instance methods for permission checking
+ 
   (OrganizationRole as any).prototype.hasPermission = function (
     permission: string
   ) {
@@ -131,7 +131,7 @@ export default (sequelize: Sequelize) => {
     return this.hierarchyLevel > targetRole.hierarchyLevel;
   };
 
-  // Static permission helper methods
+ 
   (OrganizationRole as any).canUserPerformAction = function (
     userRole: any,
     action: string
@@ -152,9 +152,9 @@ export default (sequelize: Sequelize) => {
     return role === "manager" || role === "admin" || role === "owner";
   };
 
-  // Associations - enabled for config-based schema
+ 
   (OrganizationRole as any).associate = (models: any) => {
-    // UserOrganizations reference this for role
+   
     OrganizationRole.hasMany(models.UserOrganization, {
       foreignKey: "role_id",
       as: "userOrganizations",

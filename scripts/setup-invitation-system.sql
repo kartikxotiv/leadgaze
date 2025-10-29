@@ -1,7 +1,7 @@
--- Setup Invitation System Tables
--- Run this in pgAdmin for the 'crm' database
 
--- 1. Create user_invitations table
+
+
+
 CREATE TABLE IF NOT EXISTS user_invitations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID NOT NULL REFERENCES organizations(organization_id) ON DELETE CASCADE,
@@ -19,14 +19,14 @@ CREATE TABLE IF NOT EXISTS user_invitations (
   CONSTRAINT user_invitations_org_email_unique UNIQUE (organization_id, email)
 );
 
--- Create indexes for user_invitations
+
 CREATE INDEX IF NOT EXISTS idx_user_invitations_org ON user_invitations(organization_id);
 CREATE INDEX IF NOT EXISTS idx_user_invitations_email ON user_invitations(email);
 CREATE INDEX IF NOT EXISTS idx_user_invitations_invited_by ON user_invitations(invited_by);
 CREATE INDEX IF NOT EXISTS idx_user_invitations_status ON user_invitations(status_id);
 CREATE INDEX IF NOT EXISTS idx_user_invitations_expires_at ON user_invitations(expires_at);
 
--- 2. Create org_user_accounts table (for per-organization identities)
+
 CREATE TABLE IF NOT EXISTS org_user_accounts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID NOT NULL REFERENCES organizations(organization_id) ON DELETE CASCADE,
@@ -41,16 +41,16 @@ CREATE TABLE IF NOT EXISTS org_user_accounts (
   CONSTRAINT org_user_accounts_org_email_unique UNIQUE (organization_id, email)
 );
 
--- Create indexes for org_user_accounts
+
 CREATE INDEX IF NOT EXISTS idx_org_user_accounts_email ON org_user_accounts(email);
 CREATE INDEX IF NOT EXISTS idx_org_user_accounts_org ON org_user_accounts(organization_id);
 
--- 3. Verify tables were created
+
 SELECT 'user_invitations' as table_name, COUNT(*) as record_count FROM user_invitations
 UNION ALL
 SELECT 'org_user_accounts' as table_name, COUNT(*) as record_count FROM org_user_accounts;
 
--- 4. Show required config data
+
 SELECT 'invitation_status configs:' as info;
 SELECT entity_type, entity_value, id FROM users_config WHERE entity_type = 'invitation_status';
 

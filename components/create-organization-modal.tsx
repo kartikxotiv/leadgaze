@@ -29,7 +29,6 @@ interface CreateOrganizationSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// Industry types based on common CRM use cases
 const INDUSTRY_TYPES = [
   "Technology",
   "Healthcare",
@@ -45,7 +44,6 @@ const INDUSTRY_TYPES = [
   "Other",
 ];
 
-// Company sizes matching auth_phase1.md specifications
 const COMPANY_SIZES = [
   { value: "1", label: "Just me (1 employee)" },
   { value: "2-10", label: "Small business (2-10 employees)" },
@@ -136,7 +134,7 @@ export function CreateOrganizationSheet({
         side="bottom"
         className="h-[80vh] max-h-[80vh] overflow-y-auto rounded-t-2xl"
       >
-        {/* Custom Close Button - Top Left */}
+        {}
         <SheetClose className="absolute left-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
@@ -154,7 +152,7 @@ export function CreateOrganizationSheet({
         </SheetHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Organization Name */}
+          {}
           <div className="space-y-2">
             <Label htmlFor="org-name">
               Organization Name <span className="text-red-500">*</span>
@@ -169,7 +167,7 @@ export function CreateOrganizationSheet({
             />
           </div>
 
-          {/* Description */}
+          {}
           <div className="space-y-2">
             <Label htmlFor="org-description">Description (Optional)</Label>
             <Textarea
@@ -183,7 +181,7 @@ export function CreateOrganizationSheet({
             />
           </div>
 
-          {/* Industry Type */}
+          {}
           <div className="space-y-2">
             <Label>
               Industry Type <span className="text-red-500">*</span>
@@ -208,7 +206,7 @@ export function CreateOrganizationSheet({
             </Select>
           </div>
 
-          {/* Company Size */}
+          {}
           <div className="space-y-2">
             <Label>
               Company Size <span className="text-red-500">*</span>
@@ -231,7 +229,7 @@ export function CreateOrganizationSheet({
             </Select>
           </div>
 
-          {/* Trial Information */}
+          {}
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
             <p className="text-sm text-blue-800 dark:text-blue-200">
               🎉 Your new organization will start with a{" "}
@@ -244,7 +242,7 @@ export function CreateOrganizationSheet({
             </ul>
           </div>
 
-          {/* Actions */}
+          {}
           <div className="flex gap-3 pt-4">
             <Button
               type="button"

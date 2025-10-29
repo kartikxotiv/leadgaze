@@ -43,7 +43,7 @@ export default function WorkspacesPage() {
 
   return (
     <div className="space-y-8">
-      {/* Page Header */}
+      {}
       <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
         <div className="flex items-center gap-3 mb-2">
           <FolderOpen className="h-8 w-8 text-blue-600" />
@@ -57,7 +57,7 @@ export default function WorkspacesPage() {
         </p>
       </div>
 
-      {/* Workspace Overview Cards */}
+      {}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="pb-3">
@@ -117,7 +117,7 @@ export default function WorkspacesPage() {
         </Card>
       </div>
 
-      {/* Permissions Alert */}
+      {}
       {!canManageWorkspaces && (
         <Alert>
           <Info className="h-4 w-4" />
@@ -129,7 +129,7 @@ export default function WorkspacesPage() {
         </Alert>
       )}
 
-      {/* Workspace List */}
+      {}
       <div>
         <WorkspaceList
           organizationId={organizationId || ""}
@@ -138,7 +138,7 @@ export default function WorkspacesPage() {
         />
       </div>
 
-      {/* Help Section */}
+      {}
       <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
         <CardHeader>
           <CardTitle className="text-blue-900 dark:text-blue-100">

@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     console.log("=== OTP DEBUG ===");
     console.log("Input:", { email, otp, purpose });
 
-    // Find all OTP records for this email
+   
     const allOTPs = await EmailOTP.findAll({
       where: { email: email.toLowerCase().trim() },
       order: [["createdAt", "DESC"]]
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       canAttempt: otp.canAttempt()
     })));
 
-    // Try to find the specific OTP
+   
     const specificOTP = await EmailOTP.findValidOTP(email, otp, purpose);
     console.log("Specific OTP found:", specificOTP ? {
       id: (specificOTP as any).id,

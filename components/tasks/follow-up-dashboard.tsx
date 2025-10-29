@@ -362,7 +362,7 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
 
   return (
     <div className={cn("w-full space-y-6", className)}>
-      {/* Header Stats */}
+      {}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -374,7 +374,7 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
                   Today's Tasks
                 </p>
-                <p className="text-2xl font-bold">{totalToday}</p>
+                <p className="text-xl font-bold">{totalToday}</p>
               </div>
             </div>
           </CardContent>
@@ -390,7 +390,7 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
                   Overdue
                 </p>
-                <p className="text-2xl font-bold text-red-600">
+                <p className="text-xl font-bold text-red-600">
                   {totalOverdue}
                 </p>
               </div>
@@ -408,7 +408,7 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
                   Completed Today
                 </p>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-xl font-bold text-green-600">
                   {completedToday}
                 </p>
               </div>
@@ -426,7 +426,7 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
                   Upcoming
                 </p>
-                <p className="text-2xl font-bold text-blue-600">
+                <p className="text-xl font-bold text-blue-600">
                   {totalUpcoming}
                 </p>
               </div>
@@ -444,7 +444,7 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
                   Completion Rate
                 </p>
-                <p className="text-2xl font-bold text-purple-600">
+                <p className="text-xl font-bold text-purple-600">
                   {totalToday > 0
                     ? Math.round((completedToday / totalToday) * 100)
                     : 0}
@@ -456,40 +456,27 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
         </Card>
       </div>
 
-      {/* Main Content */}
+      {}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
               <Bell className="h-5 w-5" />
               Follow-up Tasks
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="mt-2 text-xs">
               Stay on top of your pipeline with scheduled follow-ups and
-              reminders
+              reminders 
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                refetchToday();
-                refetchOverdue();
-                refetchUpcoming();
-              }}
-              disabled={loadingToday || loadingOverdue || loadingUpcoming}
-            >
-              {loadingToday || loadingOverdue ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <RefreshCcw className="h-4 w-4 mr-2" />
-              )}
-              Refresh
-            </Button>
+            
+            {}
+
+
             <Dialog open={showScheduler} onOpenChange={setShowScheduler}>
               <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                <Button className="bg-[#45a2ff] from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
                   <Plus className="h-4 w-4 mr-2" />
                   Schedule Follow-up
                 </Button>
@@ -499,7 +486,7 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
                   <DialogTitle>Schedule Follow-up</DialogTitle>
                 </DialogHeader>
 
-                {/* Lead Selection */}
+                {}
                 <div className="mb-4">
                   <label className="text-sm font-medium mb-2 block">
                     Select Lead <span className="text-red-500">*</span>
@@ -519,7 +506,7 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
                     ))}
                   </select>
                   {!selectedLeadId && (
-                    <p className="text-sm text-red-600 mt-1">
+                    <p className="text-sm text-red-600 ">
                       Please select a lead to create a follow-up task
                     </p>
                   )}
@@ -544,20 +531,26 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="today" className="w-full">
+            
+            
+          <div className="lg:w-1/3 md:w-1/2 w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="today" className="flex items-center gap-2">
+              <TabsTrigger value="today" className="flex items-center gap-2 py-3">
                 <Clock className="h-4 w-4" />
                 Today ({totalToday})
               </TabsTrigger>
-              <TabsTrigger value="overdue" className="flex items-center gap-2">
+              <TabsTrigger value="overdue" className="flex items-center gap-2 py-3">
                 <AlertTriangle className="h-4 w-4" />
                 Overdue ({totalOverdue})
               </TabsTrigger>
-              <TabsTrigger value="upcoming" className="flex items-center gap-2">
+              <TabsTrigger value="upcoming" className="flex items-center gap-2 py-3">
                 <Calendar className="h-4 w-4" />
                 Upcoming ({totalUpcoming})
               </TabsTrigger>
             </TabsList>
+          </div>
+
+
 
             <TabsContent value="today" className="mt-6">
               {loadingToday ? (
@@ -660,7 +653,7 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
         </CardContent>
       </Card>
 
-      {/* Edit Task Dialog */}
+      {}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>

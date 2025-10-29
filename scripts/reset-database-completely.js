@@ -1,24 +1,8 @@
-/**
- * Complete Database Reset Script
- * 
- * Environment Variables:
- * - DATABASE_URL: Full PostgreSQL connection string (preferred)
- * - OR individual components:
- *   - DB_USER: Database username (default: sidharthverma)  
- *   - DB_HOST: Database host (default: localhost)
- *   - DB_NAME: Database name (default: crm)
- *   - DB_PASSWORD: Database password (optional)
- *   - DB_PORT: Database port (default: 5432)
- * - NODE_ENV: Set to 'development' for SQL logging
- * 
- * Usage:
- *   node scripts/reset-database-completely.js
- */
+
 
 const { Sequelize } = require("sequelize");
 require('dotenv').config();
 
-// Database connection from environment variables
 let DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
@@ -28,7 +12,7 @@ if (!DATABASE_URL) {
   const dbPort = process.env.DB_PORT ? `:${process.env.DB_PORT}` : '';
   const dbName = process.env.DB_NAME || 'crm';
   
-  DATABASE_URL = `postgres://${dbUser}${dbPassword}@${dbHost}${dbPort}/${dbName}`;
+  DATABASE_URL = `postgres
 }
 
 if (!process.env.DATABASE_URL && !process.env.DB_NAME) {
@@ -36,7 +20,6 @@ if (!process.env.DATABASE_URL && !process.env.DB_NAME) {
   console.warn("   Set DATABASE_URL or DB_USER, DB_HOST, DB_NAME environment variables for production.");
 }
 
-// Log connection info (without password)
 const connectionInfo = DATABASE_URL.replace(/:([^:@]+)@/, ':****@');
 console.log(`🔌 Connecting to: ${connectionInfo}`);
 
@@ -49,13 +32,13 @@ async function resetDatabaseCompletely() {
   try {
     console.log("🔄 Starting complete database reset...");
 
-    // Test connection
+   
     await sequelize.authenticate();
     console.log("✅ Database connected!");
 
     console.log("🗑️  Dropping all tables and constraints...");
 
-    // Drop all tables with CASCADE to handle foreign key constraints
+   
     const tablesToDrop = [
       'activities',
       'deals', 
@@ -81,7 +64,7 @@ async function resetDatabaseCompletely() {
       'leads_config'
     ];
 
-    // Drop all tables with CASCADE
+   
     for (const table of tablesToDrop) {
       try {
         await sequelize.query(`DROP TABLE IF EXISTS "${table}" CASCADE;`);
@@ -93,7 +76,7 @@ async function resetDatabaseCompletely() {
 
     console.log("🔧 Dropping all custom types...");
 
-    // Drop all ENUM types in reverse order
+   
     const enumsToQuery = `
       SELECT n.nspname as "schema",
              t.typname as "name",
@@ -153,7 +136,6 @@ async function resetDatabaseCompletely() {
   }
 }
 
-// Run the reset
 if (require.main === module) {
   resetDatabaseCompletely()
     .then(() => {

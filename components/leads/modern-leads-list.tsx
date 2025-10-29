@@ -153,7 +153,7 @@ export function ModernLeadsList({
 
   return (
     <div className="space-y-6">
-      {/* Header & Controls */}
+      {}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="relative flex-1 min-w-[300px]">
@@ -211,7 +211,7 @@ export function ModernLeadsList({
         </div>
       </div>
 
-      {/* Results Summary */}
+      {}
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>
           Showing {filteredLeads.length} of {leads.length} leads
@@ -219,7 +219,7 @@ export function ModernLeadsList({
         <span>{searchTerm && `Results for "${searchTerm}"`}</span>
       </div>
 
-      {/* Leads Grid/List */}
+      {}
       <div
         className={cn(
           "gap-6",
@@ -254,7 +254,7 @@ export function ModernLeadsList({
                     viewMode === "list" && "flex items-center gap-6 flex-1"
                   )}
                 >
-                  {/* Header */}
+                  {}
                   <div
                     className={cn(
                       "flex items-start justify-between",
@@ -318,7 +318,7 @@ export function ModernLeadsList({
                     )}
                   </div>
 
-                  {/* Company & Industry */}
+                  {}
                   {lead.businessName && (
                     <div className="flex items-center gap-2 text-sm">
                       <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -331,7 +331,7 @@ export function ModernLeadsList({
                     </div>
                   )}
 
-                  {/* Status & Score */}
+                  {}
                   <div
                     className={cn(
                       "flex items-center justify-between",
@@ -357,7 +357,7 @@ export function ModernLeadsList({
                     </div>
                   </div>
 
-                  {/* Contact Info */}
+                  {}
                   <div
                     className={cn(
                       "flex items-center gap-4 text-sm text-muted-foreground",
@@ -378,7 +378,7 @@ export function ModernLeadsList({
                     )}
                   </div>
 
-                  {/* Last Activity */}
+                  {}
                   <div
                     className={cn(
                       "text-xs text-muted-foreground border-t pt-3",
@@ -396,7 +396,7 @@ export function ModernLeadsList({
                   </div>
                 </div>
 
-                {/* Quick Actions (List Mode) */}
+                {}
                 {viewMode === "list" && (
                   <div className="flex items-center gap-2">
                     <Button
@@ -404,7 +404,7 @@ export function ModernLeadsList({
                       size="sm"
                       onClick={async (e) => {
                         e.stopPropagation();
-                        // Use setTimeout to prevent UI blocking
+                       
                         setTimeout(() => onCallLead?.(lead), 0);
                       }}
                     >
@@ -457,7 +457,7 @@ export function ModernLeadsList({
         })}
       </div>
 
-      {/* Empty State */}
+      {}
       {filteredLeads.length === 0 && (
         <div className="text-center py-12">
           <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">

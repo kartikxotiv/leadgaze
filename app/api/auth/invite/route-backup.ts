@@ -6,7 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
 export async function POST(request: NextRequest) {
   try {
-    // Get JWT token from Authorization header
+   
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.substring(7);
 
-    // Verify JWT token
+   
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET) as any;
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { email, role, organizationId, message } = body;
 
-    // Validate required fields
+   
     if (!email || !role || !organizationId) {
       return NextResponse.json(
         {
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate email format
+   
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
@@ -56,11 +56,11 @@ export async function POST(request: NextRequest) {
 
     console.log("🔍 JWT Token decoded:", JSON.stringify(decoded, null, 2));
 
-    const jwtUserId = decoded.user_id || decoded.userId; // JWT user ID
+    const jwtUserId = decoded.user_id || decoded.userId;
     console.log("🔍 JWT userId:", jwtUserId);
     console.log("🔍 Target organizationId:", organizationId);
 
-    // Get the actual user from database using email (fallback for JWT mismatch)
+   
     let actualUserId = jwtUserId;
     try {
       const User = (await import("@/models")).User;
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       console.log("⚠️ Error finding user by email:", error);
     }
 
-    // Verify user has permission to invite users to this organization
+   
     const hasAccess = await AuthService.userHasAccessToOrganization(
       actualUserId,
       organizationId
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create invitation
+   
     const invitation = await AuthService.createInvitation(
       organizationId,
       email,
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       message
     );
 
-    // Best-effort: send invitation email
+   
     try {
       const baseUrl =
         process.env.NEXTAUTH_URL ||
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
         organizationId
       );
 
-      // Get inviter name from JWT token
+     
       const inviterName =
         decoded.firstName && decoded.lastName
           ? `${decoded.firstName} ${decoded.lastName}`
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // Get JWT token from Authorization header
+   
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
@@ -211,7 +211,7 @@ export async function GET(request: NextRequest) {
 
     const token = authHeader.substring(7);
 
-    // Verify JWT token
+   
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET) as any;
@@ -237,7 +237,7 @@ export async function GET(request: NextRequest) {
 
     const userId = decoded.user_id;
 
-    // Verify user has access to this organization
+   
     const hasAccess = await AuthService.userHasAccessToOrganization(
       userId,
       organizationId
@@ -250,7 +250,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get organization invitations
+   
     const invitations = await AuthService.getOrganizationInvitations(
       organizationId
     );

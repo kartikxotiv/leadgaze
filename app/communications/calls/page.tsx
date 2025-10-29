@@ -108,7 +108,7 @@ export default function CallLogsPage() {
       }
     >
       <div className="space-y-6">
-        {/* Stats Cards */}
+        {}
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
@@ -150,7 +150,7 @@ export default function CallLogsPage() {
           </Card>
         </div>
 
-        {/* Call Logs Table */}
+        {}
         <Card>
           <CardHeader>
             <CardTitle>Call History</CardTitle>

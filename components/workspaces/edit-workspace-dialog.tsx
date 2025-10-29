@@ -49,7 +49,7 @@ export function EditWorkspaceDialog({
     workspace.id
   );
 
-  // Initialize form with workspace data
+ 
   useEffect(() => {
     if (workspace) {
       setName(workspace.name || "");
@@ -66,7 +66,7 @@ export function EditWorkspaceDialog({
       return;
     }
 
-    // Check if anything changed
+   
     const hasChanges =
       name.trim() !== workspace.name ||
       description.trim() !== (workspace.description || "") ||
@@ -87,13 +87,13 @@ export function EditWorkspaceDialog({
 
       onOpenChange(false);
     } catch (error) {
-      // Error handling is done in the mutation
+     
     }
   };
 
   const handleClose = () => {
     if (!updateWorkspaceMutation.isPending) {
-      // Reset form to original values
+     
       setName(workspace.name || "");
       setDescription(workspace.description || "");
       setStatus(workspace.status || "active");

@@ -18,7 +18,7 @@ export async function GET(
         },
         {
           model: LeadConfig,
-          as: "source",
+          as: "sourceConfig",
           attributes: ["entityValue", "description"],
         },
         {
@@ -89,7 +89,7 @@ export async function PUT(
       );
     }
 
-    // Permission check: require JWT and either creator or can_edit_all_data
+   
     let requesterUserId: string | undefined;
     let canEditAllData = false;
     const authHeader = request.headers.get("authorization");
@@ -118,7 +118,7 @@ export async function PUT(
       );
     }
 
-    // Validate email uniqueness if email is being updated
+   
     if (body.email && body.email !== (lead as any).email) {
       const existingLead = await Lead.findOne({
         where: {
@@ -136,13 +136,13 @@ export async function PUT(
       }
     }
 
-    // Update lead
+   
     await lead.update({
       ...body,
       email: body.email?.toLowerCase(),
     });
 
-    // Fetch updated lead with associations
+   
     const updatedLead = await Lead.findByPk(id, {
       include: [
         {
@@ -152,7 +152,7 @@ export async function PUT(
         },
         {
           model: LeadConfig,
-          as: "source",
+          as: "sourceConfig",
           attributes: ["entityValue", "description"],
         },
         {
@@ -163,7 +163,7 @@ export async function PUT(
       ],
     });
 
-    // Log activity: lead updated
+   
     try {
       await (Activity as any).create({
         activityType: "lead_updated",

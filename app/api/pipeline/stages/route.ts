@@ -2,8 +2,8 @@ import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    // This system doesn't use a separate pipeline_stages table
-    // Deals have direct stage enum values
+   
+   
     const stages = [
       {
         id: "qualification",
@@ -63,8 +63,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    // This system uses fixed pipeline stages defined in the Deal model enum
-    // Custom stage creation would require modifying the Deal model enum
+   
+   
     return NextResponse.json(
       {
         success: false,
