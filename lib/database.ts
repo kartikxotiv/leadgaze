@@ -38,6 +38,9 @@ const getSequelizeInstance = (): Sequelize => {
   return sequelizeInstance;
 };
 
+// change for ssl certificate
+
+
 const sequelize = getSequelizeInstance();
 
 export default sequelize;
