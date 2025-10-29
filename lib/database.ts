@@ -16,16 +16,14 @@ const getSequelizeInstance = (): Sequelize => {
         min: parseInt(process.env.DB_POOL_MIN || "1"), 
         acquire: parseInt(process.env.DB_POOL_ACQUIRE || "10000"),
         idle: parseInt(process.env.DB_POOL_IDLE || "2000"),
-        evict: parseInt(process.env.DB_POOL_EVICT || "500"),
-        handleDisconnects: true,
       },
       logging: process.env.NODE_ENV === "development" ? console.log : false,
       dialectOptions: {
-       
-        ...(process.env.NODE_ENV === "production" && process.env.DB_SSL === "true" ? {
+        // Enable SSL for Supabase connections or when DB_SSL is enabled
+        ...(DATABASE_URL.includes('.supabase.co') || process.env.DB_SSL === "true" || (process.env.NODE_ENV === "production" && process.env.DB_SSL === "true") ? {
           ssl: {
             require: true,
-            rejectUnauthorized: false
+            rejectUnauthorized: false  // Allow self-signed certificates for Supabase
           }
         } : {})
       },

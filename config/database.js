@@ -10,10 +10,11 @@ const config = {
     dialect: 'postgres',
     logging: console.log,
     dialectOptions: {
-      ...(process.env.NODE_ENV === "production" && process.env.DB_SSL === "true" ? {
+      // Enable SSL for Supabase connections or when DB_SSL is enabled
+      ...(process.env.DATABASE_URL?.includes('.supabase.co') || process.env.DB_SSL === "true" || (process.env.NODE_ENV === "production" && process.env.DB_SSL === "true") ? {
         ssl: {
           require: true,
-          rejectUnauthorized: false
+          rejectUnauthorized: false  // Allow self-signed certificates for Supabase
         }
       } : {})
     },
