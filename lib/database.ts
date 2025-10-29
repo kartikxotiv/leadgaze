@@ -8,6 +8,16 @@ let sequelizeInstance: Sequelize | null = null;
 
 const getSequelizeInstance = (): Sequelize => {
   if (!sequelizeInstance) {
+    // Determine if SSL should be enabled
+    const shouldUseSSL = 
+      DATABASE_URL.includes('.supabase.co') ||  // Supabase
+      DATABASE_URL.includes('.neon.tech') ||   // Neon
+      DATABASE_URL.includes('.railway.app') ||  // Railway
+      DATABASE_URL.includes('.render.com') ||   // Render
+      DATABASE_URL.includes('sslmode=require') || // Explicit SSL in URL
+      process.env.DB_SSL === "true" ||
+      (process.env.NODE_ENV === "production" && process.env.DB_SSL !== "false");
+
     sequelizeInstance = new Sequelize(DATABASE_URL, {
       dialect: "postgres",
       dialectModule: pg,
@@ -19,11 +29,11 @@ const getSequelizeInstance = (): Sequelize => {
       },
       logging: process.env.NODE_ENV === "development" ? console.log : false,
       dialectOptions: {
-        // Enable SSL for Supabase connections or when DB_SSL is enabled
-        ...(DATABASE_URL.includes('.supabase.co') || process.env.DB_SSL === "true" || (process.env.NODE_ENV === "production" && process.env.DB_SSL === "true") ? {
+        // Enable SSL for cloud databases or when explicitly enabled
+        ...(shouldUseSSL ? {
           ssl: {
             require: true,
-            rejectUnauthorized: false  // Allow self-signed certificates for Supabase
+            rejectUnauthorized: false  // Allow self-signed certificates for cloud databases
           }
         } : {})
       },

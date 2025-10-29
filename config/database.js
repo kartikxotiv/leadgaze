@@ -10,11 +10,17 @@ const config = {
     dialect: 'postgres',
     logging: console.log,
     dialectOptions: {
-      // Enable SSL for Supabase connections or when DB_SSL is enabled
-      ...(process.env.DATABASE_URL?.includes('.supabase.co') || process.env.DB_SSL === "true" || (process.env.NODE_ENV === "production" && process.env.DB_SSL === "true") ? {
+      // Enable SSL for cloud databases or when explicitly enabled
+      ...((process.env.DATABASE_URL?.includes('.supabase.co') ||
+           process.env.DATABASE_URL?.includes('.neon.tech') ||
+           process.env.DATABASE_URL?.includes('.railway.app') ||
+           process.env.DATABASE_URL?.includes('.render.com') ||
+           process.env.DATABASE_URL?.includes('sslmode=require') ||
+           process.env.DB_SSL === "true" ||
+           (process.env.NODE_ENV === "production" && process.env.DB_SSL !== "false")) ? {
         ssl: {
           require: true,
-          rejectUnauthorized: false  // Allow self-signed certificates for Supabase
+          rejectUnauthorized: false  // Allow self-signed certificates for cloud databases
         }
       } : {})
     },
