@@ -203,8 +203,6 @@ export async function POST(request: NextRequest) {
           sourceId,
           statusId: defaultStatusId,
           createdBy: requesterUserId,
-          contactPerson: `${firstName} ${lastName}`.trim(), // Add contactPerson field
-          source: sourceEnumValue, // Add source enum field
           leadScore: 0, // Add leadScore field (required)
           metaData: workspaceId ? { workspaceId } : null, // Fix: use null instead of undefined
           tags: null, // Fix: explicitly set tags to null to avoid array literal error

@@ -168,23 +168,23 @@ export default function TestTablePage() {
     switch (normalizedLabel) {
       case "new":
       case "contact attempted":
-        return "text-blue-600";
+        return "bg-blue-100 text-blue-700 border-blue-200";
       case "contacted":
       case "in conversation":
-        return "text-yellow-600";
+        return "bg-yellow-100 text-yellow-700 border-yellow-200";
       case "qualified":
-        return "text-green-600";
+        return "bg-green-100 text-green-700 border-green-200";
       case "proposal":
-        return "text-purple-600";
+        return "bg-purple-100 text-purple-700 border-purple-200";
       case "negotiation":
-        return "text-orange-600";
+        return "bg-orange-100 text-orange-700 border-orange-200";
       case "closed won":
-        return "text-green-700 font-medium";
+        return "bg-green-100 text-green-800 border-green-300 font-medium";
       case "closed lost":
       case "disqualified":
-        return "text-red-600";
+        return "bg-red-100 text-red-700 border-red-200";
       case "not reachable":
-        return "text-gray-600";
+        return "bg-gray-100 text-gray-700 border-gray-200";
       default:
         return "";
     }

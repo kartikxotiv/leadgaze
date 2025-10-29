@@ -320,41 +320,6 @@ export async function POST(request: NextRequest) {
       createdBy: body.createdBy,
     });
 
-    // Get the source enum value from the sourceId
-    let sourceEnumValue = "Website"; // default value
-    if (body.sourceId) {
-      const sourceConfig = await LeadConfig.findByPk(body.sourceId);
-      if (sourceConfig) {
-        const sourceValue = (sourceConfig as any).entityValue;
-        // Map the source value to the enum value
-        switch (sourceValue) {
-          case "website":
-            sourceEnumValue = "Website";
-            break;
-          case "referral":
-            sourceEnumValue = "Referral";
-            break;
-          case "cold_call":
-            sourceEnumValue = "Cold Call";
-            break;
-          case "linkedin":
-            sourceEnumValue = "LinkedIn";
-            break;
-          case "email":
-            sourceEnumValue = "Email";
-            break;
-          case "trade_show":
-            sourceEnumValue = "Trade Show";
-            break;
-          case "advertisement":
-            sourceEnumValue = "Advertisement";
-            break;
-          default:
-            sourceEnumValue = "Website";
-        }
-      }
-    }
-
     const lead = await Lead.create({
       firstName: body.firstName,
       lastName: body.lastName,
@@ -375,8 +340,6 @@ export async function POST(request: NextRequest) {
       createdBy: body.createdBy,
       qualificationNotes: body.qualificationNotes || body.notes,
       leadScore: 0,
-      contactPerson: body.contactPerson || `${body.firstName} ${body.lastName}`,
-      source: sourceEnumValue,
     });
 
    

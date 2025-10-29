@@ -358,19 +358,19 @@ export function DirectSelect({
       onValueChange={handleValueChange}
       disabled={disabled || isLoading}
     >
-      <SelectTrigger className="h-auto min-h-[20px] border-none shadow-none p-0 hover:bg-muted/50 transition-colors group">
+      <SelectTrigger className="h-auto min-h-[20px] border-none shadow-none p-0 hover:bg-muted/50 transition-colors group ">
         <div className="flex items-center justify-between w-full">
           {badge ? (
             <Badge
               variant={badgeVariant}
-              className={`text-xs ${badgeClassName} ${
+              className={`text-xs ${badgeClassName} ${badgeColorClass} ${
                 isLoading ? "opacity-50" : ""
               }`}
             >
               {displayValue} 
             </Badge>
           ) : (
-            <span className={`text-sm ${isLoading ? "opacity-50" : ""}`}>
+            <span className={`text-sm ${badgeColorClass} ${isLoading ? "opacity-50" : ""}`}>
               {displayValue}
             </span>
           )}
@@ -385,7 +385,7 @@ export function DirectSelect({
             <SelectItem 
               key={option.id} 
               value={option.id}
-              className={itemColor}
+              className={`${itemColor} mb-2 text-xs block`}
             >
               {optionLabel}
             </SelectItem>

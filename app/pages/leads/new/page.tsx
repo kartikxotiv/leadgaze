@@ -208,7 +208,6 @@ export default function NewLeadPage() {
           phone: formData.phone.trim() || undefined,
           businessName: formData.company.trim() || "Unknown Company",
           companyWebsite: formData.website.trim() || undefined,
-          contactPerson: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
          
           organizationId: currentOrganization?.organizationId || currentOrganization?.id,
           createdBy: currentUser?.userId,

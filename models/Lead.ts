@@ -10,16 +10,6 @@ export default (sequelize: Sequelize) => {
         defaultValue: DataTypes.UUIDV4,
         field: "lead_id",
       },
-      contactPerson: {
-        type: DataTypes.STRING(255),
-        allowNull: false,
-        field: "contact_person",
-      },
-      source: {
-        type: DataTypes.ENUM('Website', 'Referral', 'Cold Call', 'LinkedIn', 'Email', 'Trade Show', 'Advertisement'),
-        allowNull: false,
-        defaultValue: 'Website',
-      },
       organizationId: {
         type: DataTypes.UUID,
         allowNull: false,
