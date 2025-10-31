@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Lead, LeadConfig, User, Activity } from "@/models";
+import { getLeadWithRelations, updateLead, deleteLead, findLeadByEmail } from "@/lib/data/leads";
+import { createActivity } from "@/lib/data/activities";
 import jwt from "jsonwebtoken";
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
@@ -9,45 +10,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const lead = await Lead.findByPk(id, {
-      include: [
-        {
-          model: LeadConfig,
-          as: "status",
-          attributes: ["entityValue", "description"],
-        },
-        {
-          model: LeadConfig,
-          as: "sourceConfig",
-          attributes: ["entityValue", "description"],
-        },
-        {
-          model: LeadConfig,
-          as: "industry",
-          attributes: ["entityValue", "description"],
-        },
-        {
-          model: LeadConfig,
-          as: "companySize",
-          attributes: ["entityValue", "description"],
-        },
-        {
-          model: LeadConfig,
-          as: "scoreGrade",
-          attributes: ["entityValue", "description", "metadata"],
-        },
-        {
-          model: User,
-          as: "assignedUser",
-          attributes: ["firstName", "lastName", "email"],
-        },
-        {
-          model: User,
-          as: "createdUser",
-          attributes: ["firstName", "lastName"],
-        },
-      ],
-    });
+    const lead = await getLeadWithRelations(id);
 
     if (!lead) {
       return NextResponse.json(
@@ -81,7 +44,7 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
-    const lead = await Lead.findByPk(id);
+    const lead = await getLeadWithRelations(id);
     if (!lead) {
       return NextResponse.json(
         { success: false, error: "Lead not found" },
@@ -89,7 +52,7 @@ export async function PUT(
       );
     }
 
-   
+    // Auth check
     let requesterUserId: string | undefined;
     let canEditAllData = false;
     const authHeader = request.headers.get("authorization");
@@ -100,7 +63,7 @@ export async function PUT(
         requesterUserId = decoded?.userId;
         canEditAllData = Boolean(
           decoded?.availableOrganizations?.find(
-            (o: any) => o.id === (lead as any).organizationId
+            (o: any) => o.id === lead.organization_id
           )?.permissions?.can_edit_all_data ||
             decoded?.permissions?.can_edit_all_data
         );
@@ -118,17 +81,14 @@ export async function PUT(
       );
     }
 
-   
-    if (body.email && body.email !== (lead as any).email) {
-      const existingLead = await Lead.findOne({
-        where: {
-          email: body.email.toLowerCase(),
-          organizationId: (lead as any).organizationId,
-          leadId: { [require("sequelize").Op.ne]: id },
-        },
-      });
+    // Check duplicate email
+    if (body.email && body.email !== lead.email) {
+      const existingLead = await findLeadByEmail(
+        body.email.toLowerCase(),
+        lead.organization_id
+      );
 
-      if (existingLead) {
+      if (existingLead && existingLead.lead_id !== id) {
         return NextResponse.json(
           { success: false, error: "Lead with this email already exists" },
           { status: 409 }
@@ -136,56 +96,48 @@ export async function PUT(
       }
     }
 
-   
-    await lead.update({
-      ...body,
-      email: body.email?.toLowerCase(),
-    });
+    // Convert body fields to snake_case
+    const updateData: any = {};
+    if (body.firstName) updateData.first_name = body.firstName;
+    if (body.lastName) updateData.last_name = body.lastName;
+    if (body.email) updateData.email = body.email.toLowerCase();
+    if (body.phone) updateData.phone = body.phone;
+    if (body.businessName) updateData.business_name = body.businessName;
+    if (body.companyWebsite) updateData.company_website = body.companyWebsite;
+    if (body.jobTitle) updateData.job_title = body.jobTitle;
+    if (body.linkedinProfile) updateData.linkedin_profile = body.linkedinProfile;
+    if (body.sourceId) updateData.source_id = body.sourceId;
+    if (body.industryId) updateData.industry_id = body.industryId;
+    if (body.companySizeId) updateData.company_size_id = body.companySizeId;
+    if (body.statusId) updateData.status_id = body.statusId;
+    if (body.assignedTo) updateData.assigned_to = body.assignedTo;
+    if (body.qualificationNotes) updateData.qualification_notes = body.qualificationNotes;
+    if (body.productInterest) updateData.product_interest = body.productInterest;
+    if (body.tags) updateData.tags = body.tags;
 
-   
-    const updatedLead = await Lead.findByPk(id, {
-      include: [
-        {
-          model: LeadConfig,
-          as: "status",
-          attributes: ["entityValue", "description"],
-        },
-        {
-          model: LeadConfig,
-          as: "sourceConfig",
-          attributes: ["entityValue", "description"],
-        },
-        {
-          model: User,
-          as: "assignedUser",
-          attributes: ["firstName", "lastName", "email"],
-        },
-      ],
-    });
+    const updatedLead = await updateLead(id, updateData);
 
-   
+    // Log activity
     try {
-      await (Activity as any).create({
-        activityType: "lead_updated",
-        relatedType: "lead",
-        relatedId: id,
-        subject: `Lead updated by user ${(requesterUserId as string).slice(
-          0,
-          8
-        )}`,
-        userId: requesterUserId,
+      await createActivity({
+        activity_type: "lead_updated",
+        related_type: "lead",
+        related_id: id,
+        subject: `Lead updated by user ${requesterUserId.slice(0, 8)}`,
+        user_id: requesterUserId,
         description: body?.qualificationNotes || null,
-        metadata: { changedFields: Object.keys(body || {}) },
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        metadata: { changedFields: Object.keys(body || {}) } as any,
       });
     } catch (e) {
       console.error("Failed to log lead_updated activity", e);
     }
 
+    // Get updated lead with relations
+    const updatedLeadWithRelations = await getLeadWithRelations(id);
+
     return NextResponse.json({
       success: true,
-      data: updatedLead,
+      data: updatedLeadWithRelations,
       message: "Lead updated successfully",
     });
   } catch (error) {
@@ -207,7 +159,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const lead = await Lead.findByPk(id);
+    const lead = await getLeadWithRelations(id);
     if (!lead) {
       return NextResponse.json(
         { success: false, error: "Lead not found" },
@@ -215,7 +167,7 @@ export async function DELETE(
       );
     }
 
-    await lead.destroy();
+    await deleteLead(id);
 
     return NextResponse.json({
       success: true,

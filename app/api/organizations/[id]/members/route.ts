@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { User, UserOrganization, OrganizationRole } from "@/models";
+import { getOrganizationUsers, getUserOrganization } from "@/lib/data/user-organizations";
+import { getUserById } from "@/lib/data/users";
+import { getRoleById } from "@/lib/data/organization-roles";
 import jwt from "jsonwebtoken";
 import { AuthService } from "@/lib/auth-service";
 
@@ -50,56 +52,37 @@ export async function GET(
       );
     }
 
-   
-    const userOrganizations = await UserOrganization.findAll({
-      where: { organizationId },
-      include: [
-        {
-          model: User,
-          as: "user",
-          attributes: [
-            "userId",
-            "firstName",
-            "lastName",
-            "email",
-            "phoneNumber",
-            "lastLogin",
-            "createdAt",
-          ],
-        },
-        {
-          model: OrganizationRole,
-          as: "role",
-          attributes: ["role", "displayName", "permissions"],
-        },
-      ],
-      attributes: ["joinedAt", "status"],
-      order: [["user", "firstName", "ASC"]],
-    });
+    // Get organization users
+    const userOrganizations = await getOrganizationUsers(organizationId);
 
-   
-    const formattedMembers = userOrganizations.map((userOrg: any) => {
-      const user = userOrg.user;
-      const role = userOrg.role;
+    // Get user and role details for each
+    const formattedMembers = await Promise.all(
+      userOrganizations.map(async (userOrg) => {
+        const user = await getUserById(userOrg.user_id);
+        const role = userOrg.role_id ? await getRoleById(userOrg.role_id) : null;
 
-      return {
-        userId: user.userId,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        fullName: `${user.firstName} ${user.lastName}`,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-        lastLogin: user.lastLogin,
-        memberSince: user.createdAt,
-        joinedAt: userOrg.joinedAt,
-        status: userOrg.status || "active",
-        role: {
-          role: role?.role || "user",
-          displayName: role?.displayName || "User",
-          permissions: role?.permissions || [],
-        },
-      };
-    });
+        return {
+          userId: user?.user_id,
+          firstName: user?.first_name,
+          lastName: user?.last_name,
+          fullName: user ? `${user.first_name} ${user.last_name}` : "Unknown User",
+          email: user?.email,
+          phoneNumber: user?.phone_number,
+          lastLogin: user?.last_login,
+          memberSince: user?.created_at,
+          joinedAt: userOrg.joined_at,
+          status: "active",
+          role: {
+            role: role?.role || "viewer",
+            displayName: role?.display_name || "Viewer",
+            permissions: role?.permissions || [],
+          },
+        };
+      })
+    );
+
+    // Sort by first name
+    formattedMembers.sort((a, b) => (a.firstName || "").localeCompare(b.firstName || ""));
 
     return NextResponse.json({
       success: true,

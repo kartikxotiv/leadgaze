@@ -174,7 +174,27 @@ interface UserData {
     phone: string;
 }
 
-export const ReactTable = ({columns, data,}: {columns: any, data: any, }) => {
+interface ReactTableProps {
+    columns: any;
+    data: any;
+    pagination?: boolean;
+    paginationTotalRows?: number;
+    paginationPerPage?: number;
+    paginationDefaultPage?: number;
+    onChangePage?: (page: number) => void;
+    onChangeRowsPerPage?: (currentRowsPerPage: number, currentPage: number) => void;
+}
+
+export const ReactTable = ({
+    columns, 
+    data,
+    pagination = false,
+    paginationTotalRows,
+    paginationPerPage = 20,
+    paginationDefaultPage = 1,
+    onChangePage,
+    onChangeRowsPerPage,
+}: ReactTableProps) => {
     console.log("columns", columns);
     console.log("data", data);
     
@@ -184,7 +204,13 @@ export const ReactTable = ({columns, data,}: {columns: any, data: any, }) => {
        <DataTable
         columns={columns}
         data={data}
-        pagination={false}
+        pagination={pagination}
+        paginationTotalRows={paginationTotalRows}
+        paginationPerPage={paginationPerPage}
+        paginationDefaultPage={paginationDefaultPage}
+        onChangePage={onChangePage}
+        onChangeRowsPerPage={onChangeRowsPerPage}
+        paginationServer={pagination}
         customStyles={customStyles}
         conditionalRowStyles={customStyles.conditionalRowStyles}
         

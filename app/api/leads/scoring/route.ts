@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { LeadScoringEngine } from "@/lib/lead-scoring-engine";
-import { LeadScore, Lead } from "@/models";
+import { getLeadScoresPaginated } from "@/lib/data/lead-scores";
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,8 +60,8 @@ export async function GET(request: NextRequest) {
     const tier = searchParams.get("tier");
     const minScore = searchParams.get("minScore");
     const maxScore = searchParams.get("maxScore");
+    const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "50");
-    const offset = parseInt(searchParams.get("offset") || "0");
 
     if (!organizationId) {
       return NextResponse.json(
@@ -70,52 +70,27 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const whereClause: any = { organizationId };
+    const filters: { tier?: string; minScore?: number; maxScore?: number } = {};
+    if (tier) filters.tier = tier;
+    if (minScore) filters.minScore = parseInt(minScore);
+    if (maxScore) filters.maxScore = parseInt(maxScore);
 
-    if (tier) whereClause.tier = tier;
-    if (minScore)
-      whereClause.totalScore = {
-        ...whereClause.totalScore,
-        $gte: parseInt(minScore),
-      };
-    if (maxScore)
-      whereClause.totalScore = {
-        ...whereClause.totalScore,
-        $lte: parseInt(maxScore),
-      };
-
-    const { count, rows: scores } = await LeadScore.findAndCountAll({
-      where: whereClause,
-      include: [
-        {
-          model: Lead,
-          as: "lead",
-          attributes: [
-            "leadId",
-            "firstName",
-            "lastName",
-            "businessName",
-            "email",
-            "phone",
-            "jobTitle",
-            "source",
-          ],
-        },
-      ],
-      order: [["totalScore", "DESC"]],
+    const result = await getLeadScoresPaginated(
+      organizationId,
+      page,
       limit,
-      offset,
-    });
+      Object.keys(filters).length > 0 ? filters : undefined
+    );
 
     return NextResponse.json({
       success: true,
       data: {
-        scores,
+        scores: result.data,
         pagination: {
-          total: count,
+          total: result.total,
           limit,
-          offset,
-          pages: Math.ceil(count / limit),
+          offset: result.offset,
+          pages: result.totalPages,
         },
       },
     });

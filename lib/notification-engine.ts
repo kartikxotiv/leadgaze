@@ -1,12 +1,19 @@
 import {
-  Notification,
-  AutomationRule,
-  User,
-  Lead,
-  Deal,
-  Activity,
-} from "@/models";
-import { Op } from "sequelize";
+  createNotification,
+  createBulkNotifications,
+  getUserNotifications,
+  getUnreadNotificationCount,
+  markNotificationAsRead,
+  deleteExpiredNotifications,
+} from "./data/notifications";
+import {
+  getAutomationRulesByOrganization,
+  createAutomationRule,
+  updateAutomationRule,
+} from "./data/automation-rules";
+import { getLeadById } from "./data/leads";
+import { getDealById } from "./data/deals";
+import type { Notification, AutomationRule } from "./types/database";
 
 export interface NotificationData {
   userId: string;
@@ -37,12 +44,24 @@ export class NotificationEngine {
   
   static async sendNotification(data: NotificationData): Promise<any> {
     try {
-      const notification = await Notification.create({
-        ...data,
-        sentAt: new Date(),
+      const notification = await createNotification({
+        user_id: data.userId,
+        type: data.type,
+        title: data.title,
+        message: data.message,
+        priority: data.priority || "medium",
+        channel: data.channel || "in_app",
+        action_url: data.actionUrl,
+        action_label: data.actionLabel,
+        related_type: data.relatedType,
+        related_id: data.relatedId,
+        organization_id: data.organizationId,
+        expires_at: data.expiresAt?.toISOString(),
+        metadata: data.metadata,
+        sent_at: new Date().toISOString(),
+        read: false,
       });
 
-     
       await this.dispatchNotification(notification, data.channel || "in_app");
 
       return notification;
@@ -57,14 +76,26 @@ export class NotificationEngine {
     notifications: NotificationData[]
   ): Promise<void> {
     try {
-      const createdNotifications = await Notification.bulkCreate(
-        notifications.map((n) => ({
-          ...n,
-          sentAt: new Date(),
-        }))
-      );
+      const notificationData = notifications.map((n) => ({
+        user_id: n.userId,
+        type: n.type,
+        title: n.title,
+        message: n.message,
+        priority: n.priority || "medium",
+        channel: n.channel || "in_app",
+        action_url: n.actionUrl,
+        action_label: n.actionLabel,
+        related_type: n.relatedType,
+        related_id: n.relatedId,
+        organization_id: n.organizationId,
+        expires_at: n.expiresAt?.toISOString(),
+        metadata: n.metadata,
+        sent_at: new Date().toISOString(),
+        read: false,
+      }));
 
-     
+      const createdNotifications = await createBulkNotifications(notificationData);
+
       for (const notification of createdNotifications) {
         await this.dispatchNotification(notification, notification.channel);
       }
@@ -77,32 +108,25 @@ export class NotificationEngine {
   
   static async processAutomation(context: AutomationContext): Promise<void> {
     try {
-     
-      const rules = await AutomationRule.findAll({
-        where: {
-          trigger: context.trigger,
-          organizationId: context.organizationId,
-          isActive: true,
-        },
-        order: [["priority", "ASC"]],
-      });
+      const rules = await getAutomationRulesByOrganization(
+        context.organizationId,
+        context.trigger,
+        true
+      );
 
       for (const rule of rules) {
         try {
-         
-          if (await this.evaluateConditions(rule.conditions, context)) {
-           
-            await this.executeActions(rule.actions, context, rule);
+          if (await this.evaluateConditions(rule.conditions as any, context)) {
+            await this.executeActions(rule.actions as any, context, rule);
 
-           
-            await rule.update({
-              lastTriggered: new Date(),
-              triggerCount: rule.triggerCount + 1,
+            await updateAutomationRule(rule.rule_id, {
+              last_triggered: new Date().toISOString(),
+              trigger_count: (rule.trigger_count || 0) + 1,
             });
           }
         } catch (error) {
           console.error(
-            `Error processing automation rule ${rule.ruleId}:`,
+            `Error processing automation rule ${rule.rule_id}:`,
             error
           );
         }
@@ -117,18 +141,7 @@ export class NotificationEngine {
     notificationId: string,
     userId: string
   ): Promise<void> {
-    await Notification.update(
-      {
-        isRead: true,
-        readAt: new Date(),
-      },
-      {
-        where: {
-          notificationId,
-          userId,
-        },
-      }
-    );
+    await markNotificationAsRead(notificationId, userId);
   }
 
   
@@ -141,52 +154,15 @@ export class NotificationEngine {
       types?: string[];
     } = {}
   ): Promise<{ notifications: any[]; unreadCount: number }> {
-    const whereClause: any = { userId };
-
-    if (options.unreadOnly) {
-      whereClause.isRead = false;
-    }
-
-    if (options.types && options.types.length > 0) {
-      whereClause.type = { [Op.in]: options.types };
-    }
-
-   
-    whereClause[Op.or] = [
-      { expiresAt: { [Op.is]: null } },
-      { expiresAt: { [Op.gt]: new Date() } },
-    ];
-
-    const notifications = await Notification.findAll({
-      where: whereClause,
-      order: [["createdAt", "DESC"]],
-      limit: options.limit || 50,
-      offset: options.offset || 0,
-    });
-
-    const unreadCount = await Notification.count({
-      where: {
-        userId,
-        isRead: false,
-        [Op.or]: [
-          { expiresAt: { [Op.is]: null } },
-          { expiresAt: { [Op.gt]: new Date() } },
-        ],
-      },
-    });
+    const notifications = await getUserNotifications(userId, options);
+    const unreadCount = await getUnreadNotificationCount(userId);
 
     return { notifications, unreadCount };
   }
 
   
   static async cleanupExpiredNotifications(): Promise<void> {
-    await Notification.destroy({
-      where: {
-        expiresAt: {
-          [Op.lt]: new Date(),
-        },
-      },
-    });
+    await deleteExpiredNotifications();
   }
 
   
@@ -194,16 +170,15 @@ export class NotificationEngine {
     organizationId: string,
     notification: Omit<NotificationData, "userId" | "organizationId">
   ): Promise<void> {
-   
-    const users = await User.findAll({
-     
-     
-      attributes: ["userId"],
-    });
+    const { getOrganizationUsers } = await import("./data/user-organizations");
+    
+    // Get all users in organization
+    const userOrgs = await getOrganizationUsers(organizationId);
+    const userIds = userOrgs.map((uo) => uo.user_id);
 
-    const notifications = users.map((user) => ({
+    const notifications = userIds.map((userId) => ({
       ...notification,
-      userId: user.userId,
+      userId,
       organizationId,
     }));
 
@@ -291,11 +266,15 @@ export class NotificationEngine {
     ];
 
     for (const [index, rule] of defaultRules.entries()) {
-      await AutomationRule.create({
-        ...rule,
-        organizationId,
-        createdBy,
+      await createAutomationRule({
+        organization_id: organizationId,
+        trigger: rule.trigger,
+        conditions: rule.conditions,
+        actions: rule.actions,
+        is_active: true,
         priority: index + 1,
+        trigger_count: 0,
+        created_by: createdBy,
       });
     }
   }
@@ -504,15 +483,11 @@ export class NotificationEngine {
     try {
       switch (entityType) {
         case "lead":
-          const lead = await Lead.findByPk(entityId, {
-            attributes: ["createdBy"],
-          });
-          return lead?.createdBy || null;
+          const lead = await getLeadById(entityId);
+          return lead?.assigned_to || lead?.created_by || null;
         case "deal":
-          const deal = await Deal.findByPk(entityId, {
-            attributes: ["userId"],
-          });
-          return deal?.userId || null;
+          const deal = await getDealById(entityId);
+          return deal?.user_id || null;
         default:
           return null;
       }

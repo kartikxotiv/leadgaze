@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
-import { Op } from "sequelize";
-import { Lead, LeadConfig, User } from "@/models";
+import { createLead, findLeadByEmail } from "@/lib/data/leads";
+import { getLeadConfigsByType, getLeadConfigByTypeAndValue } from "@/lib/data/lead-config";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
@@ -61,16 +61,11 @@ export async function POST(request: NextRequest) {
     let duplicates = 0;
     const errors: string[] = [];
 
-   
-    const activeSources = await LeadConfig.findAll({
-      where: { entityType: "source" },
-      attributes: ["id", "entityValue"],
-    });
+    // Get active sources
+    const activeSources = await getLeadConfigsByType("source");
 
-    const defaultStatus = await LeadConfig.findOne({
-      where: { entityType: "status", entityValue: "new" },
-      attributes: ["id"],
-    });
+    // Get default status
+    const defaultStatus = await getLeadConfigByTypeAndValue("status", "new");
     if (!defaultStatus) {
       return NextResponse.json(
         {
@@ -80,7 +75,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-    const defaultStatusId = (defaultStatus as any).id as string;
+    const defaultStatusId = defaultStatus.id;
 
     const normalize = (s: string) => (s || "").trim().toLowerCase();
 
@@ -99,11 +94,8 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-     
-      const existing = await Lead.findOne({
-        where: { email, organizationId },
-        attributes: ["leadId"],
-      });
+      // Check for existing lead
+      const existing = await findLeadByEmail(email, organizationId);
       if (existing) {
         duplicates++;
         continue;
@@ -113,14 +105,13 @@ export async function POST(request: NextRequest) {
       let sourceId: string | undefined = row.sourceId;
       if (!sourceId && row.source) {
         console.log(`Looking for source: "${row.source}"`);
-        console.log(`Available sources:`, activeSources.map((s: any) => s.entityValue));
+        console.log(`Available sources:`, activeSources.map((s) => s.entity_value));
         
         // Try to find exact match first
         const match = activeSources.find(
-          (s: any) =>
-            normalize((s as any).entityValue) === normalize(row.source as string)
+          (s) => normalize(s.entity_value) === normalize(row.source as string)
         );
-        sourceId = (match as any)?.id;
+        sourceId = match?.id;
         console.log(`Found match:`, sourceId);
         
         // If no exact match, try common mappings
@@ -140,10 +131,10 @@ export async function POST(request: NextRequest) {
           for (const [key, variations] of Object.entries(mappedSources)) {
             if (variations.includes(sourceValue)) {
               const mappedMatch = activeSources.find(
-                (s: any) => normalize((s as any).entityValue) === key
+                (s) => normalize(s.entity_value) === key
               );
               if (mappedMatch) {
-                sourceId = (mappedMatch as any).id;
+                sourceId = mappedMatch.id;
                 break;
               }
             }
@@ -154,14 +145,14 @@ export async function POST(request: NextRequest) {
       // If still no sourceId, try to find "unknown" source
       if (!sourceId) {
         const unknown = activeSources.find(
-          (s: any) => normalize((s as any).entityValue) === "unknown"
+          (s) => normalize(s.entity_value) === "unknown"
         );
-        if (unknown) sourceId = (unknown as any).id;
+        if (unknown) sourceId = unknown.id;
       }
       
       // If still no sourceId, try to find the first available source
       if (!sourceId && activeSources.length > 0) {
-        sourceId = (activeSources[0] as any).id;
+        sourceId = activeSources[0].id;
       }
       
       if (!sourceId) {
@@ -171,42 +162,21 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        // Get the source enum value from the sourceId
-        let sourceEnumValue = "Website"; // default value
-        if (sourceId) {
-          const sourceConfig = activeSources.find((s: any) => s.id === sourceId);
-          if (sourceConfig) {
-            const sourceValue = (sourceConfig as any).entityValue;
-            // Map the source value to the enum value
-            switch (sourceValue) {
-              case "website": sourceEnumValue = "Website"; break;
-              case "referral": sourceEnumValue = "Referral"; break;
-              case "cold_call": sourceEnumValue = "Cold Call"; break;
-              case "linkedin": sourceEnumValue = "LinkedIn"; break;
-              case "email": sourceEnumValue = "Email"; break;
-              case "trade_show": sourceEnumValue = "Trade Show"; break;
-              case "advertisement": sourceEnumValue = "Advertisement"; break;
-              default: sourceEnumValue = "Website";
-            }
-          }
-        }
-
-        await Lead.create({
-          firstName,
-          lastName,
+        await createLead({
+          first_name: firstName,
+          last_name: lastName,
           email,
           phone: row.phone || null,
-          businessName: row.businessName || null,
-          jobTitle: row.jobTitle || null,
-          qualificationNotes: row.notes || null,
-          organizationId,
-          sourceId,
-          statusId: defaultStatusId,
-          createdBy: requesterUserId,
-          leadScore: 0, // Add leadScore field (required)
-          metaData: workspaceId ? { workspaceId } : null, // Fix: use null instead of undefined
-          tags: null, // Fix: explicitly set tags to null to avoid array literal error
-         
+          business_name: row.businessName || null,
+          job_title: row.jobTitle || null,
+          qualification_notes: row.notes || null,
+          organization_id: organizationId,
+          source_id: sourceId,
+          status_id: defaultStatusId,
+          created_by: requesterUserId!,
+          lead_score: 0,
+          metadata: workspaceId ? { workspaceId } : null,
+          tags: null,
         });
         successful++;
       } catch (e: any) {

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Activity, Lead, User } from "@/models";
+import { getActivityById, updateActivity, deleteActivity } from "@/lib/data/activities";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const activity = await Activity.findByPk(params.id);
+    const { id } = await params;
+    const activity = await getActivityById(id);
 
     if (!activity) {
       return NextResponse.json(
@@ -34,12 +35,13 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
 
-    const activity = await Activity.findByPk(params.id);
+    const activity = await getActivityById(id);
     if (!activity) {
       return NextResponse.json(
         { success: false, error: "Activity not found" },
@@ -47,14 +49,18 @@ export async function PUT(
       );
     }
 
-   
-    await activity.update({
-      ...body,
-      updatedAt: new Date(),
-    });
+    // Convert camelCase to snake_case
+    const updateData: any = {};
+    if (body.activityType) updateData.activity_type = body.activityType;
+    if (body.relatedType) updateData.related_type = body.relatedType;
+    if (body.relatedId) updateData.related_id = body.relatedId;
+    if (body.subject) updateData.subject = body.subject;
+    if (body.description !== undefined) updateData.description = body.description;
+    if (body.outcome) updateData.outcome = body.outcome;
+    if (body.priority) updateData.priority = body.priority;
+    if (body.metadata) updateData.metadata = body.metadata;
 
-   
-    const updatedActivity = await Activity.findByPk(params.id);
+    const updatedActivity = await updateActivity(id, updateData);
 
     return NextResponse.json({
       success: true,
@@ -76,10 +82,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const activity = await Activity.findByPk(params.id);
+    const { id } = await params;
+    const activity = await getActivityById(id);
     if (!activity) {
       return NextResponse.json(
         { success: false, error: "Activity not found" },
@@ -87,7 +94,7 @@ export async function DELETE(
       );
     }
 
-    await activity.destroy();
+    await deleteActivity(id);
 
     return NextResponse.json({
       success: true,

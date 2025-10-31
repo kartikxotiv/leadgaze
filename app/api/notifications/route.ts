@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Notification } from "@/models";
 import { NotificationEngine } from "@/lib/notification-engine";
 
 export async function GET(request: NextRequest) {
