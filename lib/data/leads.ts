@@ -76,7 +76,7 @@ export async function getLeadsPaginated(
     query = buildSearchQuery(query, search, ['first_name', 'last_name', 'email', 'business_name']);
   }
 
-  // Apply orderings
+  // Apply orderingsss
   query = query.order('created_at', { ascending: false });
 
   return paginateQuery(query, { page, limit });
