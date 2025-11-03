@@ -28,15 +28,32 @@ export interface Organization {
   name: string;
   slug: string;
   description?: string;
+  industry_type?: string;
+  company_size_config_id?: string;
+  primary_use_case?: string;
+  current_tool?: string;
   logo_url?: string;
   website?: string;
-  subscription_status: string;
-  subscription_plan?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
+  phone?: string;
+  created_by: string;
+  status_id?: string;
+  subscription_status_id?: string;
+  plan_type_id?: string;
+  trial_starts_at?: string;
   trial_ends_at?: string;
+  subscription_starts_at?: string;
+  subscription_ends_at?: string;
+  billing_email?: string;
   max_users?: number;
   max_workspaces?: number;
+  max_storage_gb?: number;
   features_enabled?: string[];
-  created_by: string;
+  settings?: Record<string, any>;
   created_at: string;
   updated_at: string;
 }
@@ -63,14 +80,14 @@ export interface UserSession {
 }
 
 export interface OrganizationRole {
-  role_id: string;
+    id: string;
   role: string;
   display_name: string;
   description?: string;
   permissions: Record<string, any>;
   is_active: boolean;
   is_system_role: boolean;
-  sort_order: number;
+  hierarchy_level: number;
   created_at: string;
   updated_at: string;
 }

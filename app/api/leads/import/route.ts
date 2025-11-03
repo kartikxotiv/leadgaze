@@ -166,17 +166,17 @@ export async function POST(request: NextRequest) {
           first_name: firstName,
           last_name: lastName,
           email,
-          phone: row.phone || null,
-          business_name: row.businessName || null,
-          job_title: row.jobTitle || null,
-          qualification_notes: row.notes || null,
+          phone: row.phone || undefined,
+          business_name: row.businessName || undefined,
+          job_title: row.jobTitle || undefined,
+          qualification_notes: row.notes || undefined,
           organization_id: organizationId,
           source_id: sourceId,
           status_id: defaultStatusId,
           created_by: requesterUserId!,
           lead_score: 0,
-          metadata: workspaceId ? { workspaceId } : null,
-          tags: null,
+          meta_data: workspaceId ? { workspaceId } : undefined,
+          tags: undefined,
         });
         successful++;
       } catch (e: any) {

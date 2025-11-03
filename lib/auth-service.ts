@@ -173,7 +173,7 @@ export class AuthService {
     if (!role || !role.is_active) {
       throw new Error(`Role '${roleName}' not found`);
     }
-    return role.role_id;
+    return role.id;
   }
 
   static async getInvitationStatusId(statusValue: string): Promise<string> {
@@ -323,10 +323,14 @@ export class AuthService {
         slug,
         description: `Organization for ${userData.first_name} ${userData.last_name}`,
         created_by: user.user_id,
-        subscription_status: "trial",
+        status_id: orgStatusId,
+        subscription_status_id: orgSubStatusId,
+        plan_type_id: orgPlanTypeId,
+        company_size_config_id: orgCompanySizeConfigId,
         trial_ends_at: trialEndsAt.toISOString(),
         max_users: 5,
         max_workspaces: 3,
+        max_storage_gb: 10,
         features_enabled: ["contacts", "leads", "basic_reports"],
       });
 
@@ -440,8 +444,8 @@ export class AuthService {
           role: role?.role || "viewer",
           roleDisplayName: role?.display_name || this.getRoleDisplayName("viewer"),
           permissions: role?.permissions || this.getRolePermissions("viewer"),
-          subscriptionStatus: org.subscription_status || "trial",
-          planType: org.subscription_plan || "trial",
+          subscriptionStatus: "trial",
+          planType: "trial",
           trialDaysRemaining,
           maxUsers: org.max_users || 5,
           maxWorkspaces: org.max_workspaces || 3,
@@ -523,16 +527,35 @@ export class AuthService {
       const trialEndsAt = new Date();
       trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
+      // Get organization config IDs
+      const companySizeValue = organizationData.company_size 
+        ? this.mapCompanySizeToConfigValue(organizationData.company_size)
+        : "small";
+      const orgStatusId = await this.getOrganizationConfigId("status", "active");
+      const orgSubStatusId = await this.getOrganizationConfigId(
+        "subscription_status",
+        "trial"
+      );
+      const orgPlanTypeId = await this.getOrganizationConfigId("plan_type", "trial");
+      const orgCompanySizeConfigId = await this.getOrganizationConfigId(
+        "company_size",
+        companySizeValue
+      );
+
       // Create organization
       const organization = await createOrganization({
         name: organizationData.name,
         slug,
         description: organizationData.description || undefined,
         created_by: userId,
-        subscription_status: "trial",
+        status_id: orgStatusId,
+        subscription_status_id: orgSubStatusId,
+        plan_type_id: orgPlanTypeId,
+        company_size_config_id: orgCompanySizeConfigId,
         trial_ends_at: trialEndsAt.toISOString(),
         max_users: 5,
         max_workspaces: 3,
+        max_storage_gb: 10,
         features_enabled: ["contacts", "leads", "basic_reports"],
       });
 
@@ -596,8 +619,8 @@ export class AuthService {
       availableOrganizations: organizations,
       subscription: currentOrganization
         ? {
-            status: currentOrganization.subscriptionStatus || currentOrganization.subscription_status,
-            planType: currentOrganization.planType || currentOrganization.subscription_plan || "trial",
+            status: currentOrganization.subscriptionStatus || "trial",
+            planType: currentOrganization.planType || "trial",
             trialEndsAt: currentOrganization.trialEndsAt || currentOrganization.trial_ends_at,
             daysRemaining: currentOrganization.trialDaysRemaining,
             maxUsers: currentOrganization.maxUsers || currentOrganization.max_users || 5,
@@ -655,7 +678,7 @@ export class AuthService {
         ? await Promise.all(roleIds.map(id => getRoleById(id)))
         : [];
 
-      const roleMap = new Map(roles.map(r => [r!.role_id, r!]));
+      const roleMap = new Map(roles.map(r => [r!.id, r!]));
 
       const trialDaysRemaining = organization.trial_ends_at
         ? Math.ceil(
@@ -669,8 +692,8 @@ export class AuthService {
         name: organization.name,
         slug: organization.slug,
         description: organization.description,
-        subscriptionStatus: organization.subscription_status,
-        planType: organization.subscription_plan,
+        subscriptionStatus: "trial",
+        planType: "trial",
         trialEndsAt: organization.trial_ends_at,
         maxUsers: organization.max_users,
         maxWorkspaces: organization.max_workspaces,

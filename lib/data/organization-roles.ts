@@ -5,7 +5,7 @@ export async function getRoleById(roleId: string): Promise<OrganizationRole | nu
   const { data, error } = await supabase
     .from('organization_roles')
     .select('*')
-    .eq('role_id', roleId)
+    .eq('id', roleId)
     .single();
   
   if (error && error.code !== 'PGRST116') throw error;
@@ -52,7 +52,7 @@ export async function updateRole(
   const { data, error } = await supabase
     .from('organization_roles')
     .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('role_id', roleId)
+    .eq('id', roleId)
     .select()
     .single();
   
