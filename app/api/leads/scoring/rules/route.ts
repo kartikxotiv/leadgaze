@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ScoringRule } from "@/models";
+import { getScoringRulesByOrganization, createScoringRule } from "@/lib/data/scoring-rules";
 import { LeadScoringEngine } from "@/lib/lead-scoring-engine";
 
 export async function GET(request: NextRequest) {
@@ -15,13 +15,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const whereClause: any = { organizationId };
-    if (isActive !== null) whereClause.isActive = isActive === "true";
+    const activeOnly = isActive !== null ? isActive === "true" : true;
 
-    const rules = await ScoringRule.findAll({
-      where: whereClause,
-      order: [["priority", "ASC"]],
-    });
+    const rules = await getScoringRulesByOrganization(organizationId, activeOnly);
 
     return NextResponse.json({
       success: true,
@@ -76,11 +72,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const rule = await ScoringRule.create({
-      ...ruleData,
-      organizationId,
-      createdBy,
-    });
+    // Convert camelCase to snake_case
+    const ruleDataSnake: any = {
+      organization_id: organizationId,
+      rule_name: ruleData.ruleName || ruleData.rule_name,
+      rule_type: ruleData.ruleType || ruleData.rule_type,
+      condition: ruleData.condition,
+      points: ruleData.points,
+      priority: ruleData.priority || 0,
+      is_active: ruleData.isActive !== undefined ? ruleData.isActive : ruleData.is_active !== undefined ? ruleData.is_active : true,
+      description: ruleData.description || null,
+      metadata: ruleData.metadata || null,
+      created_by: createdBy,
+    };
+
+    const rule = await createScoringRule(ruleDataSnake);
 
     return NextResponse.json({
       success: true,

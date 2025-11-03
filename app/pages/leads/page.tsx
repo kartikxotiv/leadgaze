@@ -97,7 +97,7 @@ export default function LeadsPage() {
     page: currentPage, 
     limit: pageSize,
     search: debouncedSearchTerm
-  });
+});
   const { data: configs } = useLeadConfigs();
   const updateLeadMutation = useUpdateLead();
   const deleteLeadMutation = useDeleteLead();
@@ -872,58 +872,16 @@ export default function LeadsPage() {
             <div className="mt-4">
               <ReactTable 
                 columns={getTableColumns()} 
-                data={safeLeads} 
+                data={safeLeads}
+                pagination={true}
+                paginationTotalRows={pagination?.total || 0}
+                paginationPerPage={pageSize}
+                paginationDefaultPage={currentPage}
+                onChangePage={(page: number) => setCurrentPage(page)}
+                onChangeRowsPerPage={(currentRowsPerPage: number, currentPage: number) => {
+                  setCurrentPage(currentPage);
+                }}
               />
-            </div>
-
-          
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-[12px] text-muted-foreground">
-                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, pagination.total)} of {pagination.total} leads
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </Button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                    let pageNum;
-                    if (pagination.totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNum = i + 1;
-                    } else if (currentPage >= pagination.totalPages - 2) {
-                      pageNum = pagination.totalPages - 4 + i;
-                    } else {
-                      pageNum = currentPage - 2 + i;
-                    }
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={currentPage === pageNum ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCurrentPage(pageNum)}
-                        className="min-w-[40px]"
-                      >
-                        {pageNum}
-                      </Button>
-                    );
-                  })}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
-                  disabled={currentPage >= pagination.totalPages}
-                >
-                  Next
-                </Button>
-              </div>
             </div>
         
         

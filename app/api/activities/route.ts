@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Activity, Lead, User } from "@/models";
-import { Op } from "sequelize";
+import { getActivitiesPaginated, createActivity, getActivityById } from "@/lib/data/activities";
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,32 +8,30 @@ export async function GET(request: NextRequest) {
     const relatedId = searchParams.get("relatedId");
     const activityType = searchParams.get("activityType");
     const userId = searchParams.get("userId");
+    const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "50");
-    const offset = parseInt(searchParams.get("offset") || "0");
 
-    const whereClause: any = {};
+    const filters: Record<string, any> = {};
+    if (relatedType) filters.related_type = relatedType;
+    if (relatedId) filters.related_id = relatedId;
+    if (activityType) filters.activity_type = activityType;
+    if (userId) filters.user_id = userId;
 
-    if (relatedType) whereClause.relatedType = relatedType;
-    if (relatedId) whereClause.relatedId = relatedId;
-    if (activityType) whereClause.activityType = activityType;
-    if (userId) whereClause.userId = userId;
-
-    const { count, rows: activities } = await Activity.findAndCountAll({
-      where: whereClause,
-      order: [["createdAt", "DESC"]],
-      limit,
-      offset,
-    });
+    const result = await getActivitiesPaginated(
+      Object.keys(filters).length > 0 ? filters : undefined,
+      page,
+      limit
+    );
 
     return NextResponse.json({
       success: true,
       data: {
-        activities,
+        activities: result.data,
         pagination: {
-          total: count,
+          total: result.total,
           limit,
-          offset,
-          pages: Math.ceil(count / limit),
+          offset: result.offset,
+          pages: result.totalPages,
         },
       },
     });
@@ -163,19 +160,25 @@ export async function POST(request: NextRequest) {
 
     console.log("About to create activity with validated data:", body);
 
-   
-    const activity = await Activity.create({
-      ...body,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+    // Convert camelCase to snake_case
+    const activityData: any = {
+      activity_type: body.activityType,
+      related_type: body.relatedType,
+      related_id: body.relatedId,
+      subject: body.subject,
+      user_id: body.userId,
+      description: body.description || null,
+      outcome: body.outcome || null,
+      priority: body.priority || "medium",
+      metadata: body.metadata || null,
+    };
 
-    console.log("Activity created successfully:", activity.dataValues);
+    const activity = await createActivity(activityData);
 
-   
-    const createdActivity = await Activity.findByPk(
-      (activity as any).activityId
-    );
+    console.log("Activity created successfully:", activity);
+
+    // Get created activity with relations
+    const createdActivity = await getActivityById(activity.activity_id);
 
     return NextResponse.json({
       success: true,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { EmailOTP } from "@/models";
+import { getAllOTPsByEmail, getOTPByEmailAndPurpose } from "@/lib/data/email-otp";
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,33 +8,40 @@ export async function POST(request: NextRequest) {
     console.log("=== OTP DEBUG ===");
     console.log("Input:", { email, otp, purpose });
 
-   
-    const allOTPs = await EmailOTP.findAll({
-      where: { email: email.toLowerCase().trim() },
-      order: [["createdAt", "DESC"]]
-    });
+    const allOTPs = await getAllOTPsByEmail(email.toLowerCase().trim());
 
-    console.log("All OTPs for email:", allOTPs.map((otp: any) => ({
-      id: otp.id,
-      email: otp.email,
-      otp: otp.otp,
-      purpose: otp.purpose,
-      attempts: otp.attempts,
-      expiresAt: otp.expiresAt,
-      verifiedAt: otp.verifiedAt,
-      isExpired: otp.isExpired(),
-      canAttempt: otp.canAttempt()
-    })));
+    console.log("All OTPs for email:", allOTPs.map((otp) => {
+      const isExpired = new Date(otp.expires_at) < new Date();
+      const canAttempt = otp.attempts < 5 && !otp.verified && !isExpired;
+      
+      return {
+        id: otp.id,
+        email: otp.email,
+        otp: otp.otp,
+        purpose: otp.purpose,
+        attempts: otp.attempts,
+        expiresAt: otp.expires_at,
+        verifiedAt: otp.verified_at,
+        isExpired,
+        canAttempt
+      };
+    }));
 
-   
-    const specificOTP = await EmailOTP.findValidOTP(email, otp, purpose);
+    // Find specific OTP
+    const specificOTP = allOTPs.find(
+      (o) => o.otp === otp && o.purpose === purpose && !o.verified && new Date(o.expires_at) > new Date()
+    );
+    
+    const isExpired = specificOTP ? new Date(specificOTP.expires_at) < new Date() : false;
+    const canAttempt = specificOTP ? specificOTP.attempts < 5 && !specificOTP.verified && !isExpired : false;
+    
     console.log("Specific OTP found:", specificOTP ? {
-      id: (specificOTP as any).id,
-      email: (specificOTP as any).email,
-      otp: (specificOTP as any).otp,
-      purpose: (specificOTP as any).purpose,
-      isExpired: (specificOTP as any).isExpired(),
-      canAttempt: (specificOTP as any).canAttempt()
+      id: specificOTP.id,
+      email: specificOTP.email,
+      otp: specificOTP.otp,
+      purpose: specificOTP.purpose,
+      isExpired,
+      canAttempt
     } : null);
 
     return NextResponse.json({

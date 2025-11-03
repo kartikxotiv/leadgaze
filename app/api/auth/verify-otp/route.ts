@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { EmailOTP } from "@/models";
+import { getOTPByEmailAndPurpose, getAllOTPsByEmail, verifyOTP, incrementOTPAttempts, invalidateOTPs } from "@/lib/data/email-otp";
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,12 +29,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-   
-    const otpRecord = await EmailOTP.findValidOTP(email, otp, purpose);
+    // Find valid OTP
+    const allOTPs = await getAllOTPsByEmail(email);
+    const otpRecord = allOTPs.find(
+      (o) => o.otp === otp && o.purpose === purpose && !o.verified
+    );
 
     if (!otpRecord) {
-     
-      const recentOTP = await EmailOTP.findLatestOTP(email, purpose);
+      // Get latest OTP for error messages
+      const recentOTP = allOTPs.find((o) => o.purpose === purpose);
 
       if (!recentOTP) {
         return NextResponse.json(
@@ -46,7 +49,8 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (recentOTP.isExpired()) {
+      const isExpired = new Date(recentOTP.expires_at) < new Date();
+      if (isExpired) {
         return NextResponse.json(
           {
             success: false,
@@ -57,7 +61,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (recentOTP.isVerified()) {
+      if (recentOTP.verified) {
         return NextResponse.json(
           {
             success: false,
@@ -67,7 +71,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (!recentOTP.canAttempt()) {
+      if (recentOTP.attempts >= 5) {
         return NextResponse.json(
           {
             success: false,
@@ -79,10 +83,10 @@ export async function POST(request: NextRequest) {
         );
       }
 
-     
-      await recentOTP.incrementAttempts();
+      // Increment attempts
+      const updated = await incrementOTPAttempts(recentOTP.id);
+      const attemptsLeft = 5 - updated.attempts;
 
-      const attemptsLeft = 5 - recentOTP.attempts;
       return NextResponse.json(
         {
           success: false,
@@ -93,8 +97,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-   
-    if (!otpRecord.canAttempt()) {
+    // Check if expired
+    const isExpired = new Date(otpRecord.expires_at) < new Date();
+    if (isExpired) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Verification code has expired. Please request a new one.",
+        },
+        { status: 410 }
+      );
+    }
+
+    // Check attempts
+    if (otpRecord.attempts >= 5) {
       return NextResponse.json(
         {
           success: false,
@@ -105,11 +122,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-   
-    await otpRecord.markVerified();
+    // Verify OTP
+    await verifyOTP(otpRecord.id);
 
-   
-    await EmailOTP.invalidateOTPs(email, purpose);
+    // Invalidate other OTPs for this email/purpose
+    await invalidateOTPs(email, purpose);
 
     return NextResponse.json({
       success: true,

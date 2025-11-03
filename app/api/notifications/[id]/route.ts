@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Notification } from "@/models";
+import { getNotificationById, updateNotification, deleteNotification } from "@/lib/data/notifications";
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const notificationId = params.id;
+    const { id } = await params;
     const body = await request.json();
 
-    const notification = await Notification.findByPk(notificationId);
+    const notification = await getNotificationById(id);
     if (!notification) {
       return NextResponse.json(
         { success: false, error: "Notification not found" },
@@ -17,11 +17,11 @@ export async function PATCH(
       );
     }
 
-    await notification.update(body);
+    const updated = await updateNotification(id, body);
 
     return NextResponse.json({
       success: true,
-      data: notification,
+      data: updated,
       message: "Notification updated successfully",
     });
   } catch (error) {
@@ -39,12 +39,12 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const notificationId = params.id;
+    const { id } = await params;
 
-    const notification = await Notification.findByPk(notificationId);
+    const notification = await getNotificationById(id);
     if (!notification) {
       return NextResponse.json(
         { success: false, error: "Notification not found" },
@@ -52,7 +52,7 @@ export async function DELETE(
       );
     }
 
-    await notification.destroy();
+    await deleteNotification(id);
 
     return NextResponse.json({
       success: true,

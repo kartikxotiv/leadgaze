@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import sequelize from "@/lib/database";
+import { supabase } from "@/lib/supabase-client";
 
 export async function GET(request: NextRequest) {
   try {
-   
-    const [userInvitationsColumns] = await sequelize.query(`
-      SELECT column_name, data_type, is_nullable, column_default
-      FROM information_schema.columns 
-      WHERE table_name = 'user_invitations' 
-      ORDER BY ordinal_position;
-    `);
-
+    // Supabase doesn't support direct information_schema queries
+    // Return basic info and suggest using Supabase dashboard
     return NextResponse.json({
       success: true,
+      message: "Use Supabase Dashboard > Database > Tables > user_invitations for schema details",
       data: {
-        userInvitationsColumns,
+        note: "Schema inspection available in Supabase Dashboard",
       },
       timestamp: new Date().toISOString(),
     });

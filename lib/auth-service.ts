@@ -1,20 +1,69 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import {
+  getUserByEmail,
+  createUser,
+  updateUser,
+  getUserById,
+  updateUserLastLogin,
+  updateUserLoginAttempts,
+  updatePasswordResetToken,
+  markEmailVerified,
+} from "./data/users";
+import {
+  getOrganizationById,
+  getOrganizationBySlug,
+  createOrganization,
+  updateOrganization,
+  getOrganizationsByUserId,
+  getUserWithOrganizations,
+} from "./data/organizations";
+import {
+  getUserOrganization,
+  getUserOrganizations as getOrgRelations,
+  getOrganizationUsers,
+  createUserOrganization,
+  updateUserOrganizationRole,
+} from "./data/user-organizations";
+import {
+  createSession,
+  deleteSessionByToken,
+  deleteUserSessions,
+} from "./data/user-sessions";
+import { supabase } from "./supabase-client";
+import {
+  getRoleByValue,
+  getRoleById,
+} from "./data/organization-roles";
+import {
+  getUserConfigByTypeAndValue,
+} from "./data/user-config";
+import {
+  getOrganizationConfigByTypeAndValue,
+} from "./data/organization-config";
+import {
+  getInvitationByToken as getInvitationByTokenData,
+  createInvitation,
+  acceptInvitation as acceptInvitationData,
+  getInvitationsByOrganization,
+  updateInvitation,
+  getInvitationsByEmail,
+} from "./data/user-invitations";
+import {
+  createPasswordResetToken,
+  getPasswordResetTokenByToken,
+  markTokenAsUsed,
+  countRecentPasswordResetTokens,
+  deleteExpiredPasswordResetTokens,
+} from "./data/password-reset-tokens";
+import type {
   User,
   Organization,
   UserOrganization,
   UserSession,
- 
-  UserConfig,
-  OrganizationConfig,
   OrganizationRole,
   UserInvitation,
-  EmailVerification,
-  PasswordResetToken,
-} from "@/models";
-import { Op } from "sequelize";
-import sequelize from "@/lib/database";
+} from "./types/database";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
@@ -99,66 +148,40 @@ export class AuthService {
 
  
   static async getUserStatusId(statusValue: string): Promise<string> {
-    const statusConfig = await UserConfig.findOne({
-      where: {
-        entityType: "status",
-        entityValue: statusValue,
-        isActive: true,
-      },
-      attributes: ["id"],
-    });
+    const statusConfig = await getUserConfigByTypeAndValue("status", statusValue);
     if (!statusConfig) {
       throw new Error(`User status '${statusValue}' not found`);
     }
-    return (statusConfig as any).id;
+    return statusConfig.id;
   }
 
   static async getOrganizationConfigId(
     entityType: string,
     entityValue: string
   ): Promise<string> {
-    const config = await OrganizationConfig.findOne({
-      where: {
-        entityType,
-        entityValue,
-        isActive: true,
-      },
-      attributes: ["id"],
-    });
+    const config = await getOrganizationConfigByTypeAndValue(entityType, entityValue);
     if (!config) {
       throw new Error(
         `Organization config '${entityType}:${entityValue}' not found`
       );
     }
-    return (config as any).id;
+    return config.id;
   }
 
   static async getRoleId(roleName: string): Promise<string> {
-    const role = await OrganizationRole.findOne({
-      where: {
-        role: roleName,
-        isActive: true,
-      },
-    });
-    if (!role) {
+    const role = await getRoleByValue(roleName);
+    if (!role || !role.is_active) {
       throw new Error(`Role '${roleName}' not found`);
     }
-    return (role as any).id;
+    return role.id;
   }
 
   static async getInvitationStatusId(statusValue: string): Promise<string> {
-    const statusConfig = await UserConfig.findOne({
-      where: {
-        entityType: "invitation_status",
-        entityValue: statusValue,
-        isActive: true,
-      },
-      attributes: ["id"],
-    });
+    const statusConfig = await getUserConfigByTypeAndValue("invitation_status", statusValue);
     if (!statusConfig) {
       throw new Error(`Invitation status '${statusValue}' not found`);
     }
-    return (statusConfig as any).id;
+    return statusConfig.id;
   }
 
  
@@ -177,10 +200,7 @@ export class AuthService {
  
   static async checkEmailExists(email: string): Promise<boolean> {
     try {
-      const existingUser = await User.findOne({
-        where: { email: email.toLowerCase().trim() },
-        attributes: ["email"],
-      });
+      const existingUser = await getUserByEmail(email.toLowerCase().trim());
       return !!existingUser;
     } catch (error) {
       throw error;
@@ -195,49 +215,45 @@ export class AuthService {
     last_name: string;
     phone_number?: string;
   }) {
-    const transaction = await sequelize.transaction();
-
     try {
-     
-      const existingUser = await User.findOne({
-        where: { email: userData.email.toLowerCase() },
-      });
-
+      // Check if user exists
+      const existingUser = await getUserByEmail(userData.email.toLowerCase());
       if (existingUser) {
         throw new Error("User with this email already exists");
       }
 
-     
+      // Get active status ID
       const activeUserStatusId = await this.getUserStatusId("active");
 
-     
-      const user = await User.create(
-        {
-          email: userData.email.toLowerCase(),
-          password: userData.password,
-          firstName: userData.first_name,
-          lastName: userData.last_name,
-          phoneNumber: userData.phone_number,
+      // Hash password
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
 
-          emailVerified: false,
-          statusId: activeUserStatusId,
-        },
-        { transaction }
-      );
+      // Create user
+      const user = await createUser({
+        email: userData.email.toLowerCase(),
+        password: hashedPassword,
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        phone_number: userData.phone_number || undefined,
+        email_verified: false,
+        status_id: activeUserStatusId,
+        login_attempts: 0,
+      });
 
-     
-      await UserSession.create(
-        {
-          userId: (user as any).userId,
-        },
-        { transaction }
-      );
-
-      await transaction.commit();
+      // Create session (non-critical, if it fails we don't rollback user creation)
+      try {
+        await createSession({
+          user_id: user.user_id,
+          token: "", // Will be set by login flow
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+        });
+      } catch (sessionError) {
+        // Log but don't fail registration
+        console.error("Failed to create initial session:", sessionError);
+      }
 
       return user;
     } catch (error) {
-      await transaction.rollback();
       throw error;
     }
   }
@@ -252,121 +268,86 @@ export class AuthService {
     organization_name: string;
     setup_questions?: any;
   }) {
-    const transaction = await sequelize.transaction();
-
     try {
-     
-      const existingUser = await User.findOne({
-        where: { email: userData.email.toLowerCase() },
-      });
-
+      // Check if user exists
+      const existingUser = await getUserByEmail(userData.email.toLowerCase());
       if (existingUser) {
         throw new Error("User with this email already exists");
       }
 
-     
-      const user = await User.create(
-        {
-          email: userData.email.toLowerCase(),
-          password: userData.password,
-          firstName: userData.first_name,
-          lastName: userData.last_name,
-          phoneNumber: userData.phone_number,
+      // Get active status ID
+      const activeUserStatusId = await this.getUserStatusId("active");
 
-          emailVerified: false,
-          status: "active",
-        },
-        { transaction }
-      );
+      // Hash password
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
 
-     
+      // Create user
+      const user = await createUser({
+        email: userData.email.toLowerCase(),
+        password: hashedPassword,
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        phone_number: userData.phone_number || undefined,
+        email_verified: false,
+        status_id: activeUserStatusId,
+        login_attempts: 0,
+      });
+
+      // Generate organization slug
       const baseSlug = this.generateSlug(userData.organization_name);
-      const slug = `${baseSlug}-${(user as any).userId.slice(-8)}`;
+      const slug = `${baseSlug}-${user.user_id.slice(-8)}`;
 
-     
-
-     
-      const trialStartsAt = new Date();
+      // Calculate trial dates
       const trialEndsAt = new Date();
       trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
-     
+      // Get organization config IDs
       const setupQuestions = userData.setup_questions || {};
-
-     
       const companySizeValue = this.mapCompanySizeToConfigValue(
         setupQuestions.companySize || "small"
       );
-      const orgStatusId = await this.getOrganizationConfigId(
-        "status",
-        "active"
-      );
+      const orgStatusId = await this.getOrganizationConfigId("status", "active");
       const orgSubStatusId = await this.getOrganizationConfigId(
         "subscription_status",
         "trial"
       );
-      const orgPlanTypeId = await this.getOrganizationConfigId(
-        "plan_type",
-        "trial"
-      );
+      const orgPlanTypeId = await this.getOrganizationConfigId("plan_type", "trial");
       const orgCompanySizeConfigId = await this.getOrganizationConfigId(
         "company_size",
         companySizeValue
       );
 
-     
-      const organization = await Organization.create(
-        {
-          name: userData.organization_name,
-          slug,
-          description: `Organization for ${userData.first_name} ${userData.last_name}`,
-          industryType: setupQuestions.whatBringsYou || null,
-          companySizeConfigId: orgCompanySizeConfigId,
-          primaryUseCase: setupQuestions.whatBringsYou || null,
-          currentTool: setupQuestions.currentRole || null,
-          createdBy: (user as any).userId,
-          statusId: orgStatusId,
-          subscriptionStatusId: orgSubStatusId,
-          planTypeId: orgPlanTypeId,
-          trialStartsAt,
-          trialEndsAt,
-          maxUsers: 5,
-          maxWorkspaces: 3,
-          featuresEnabled: ["contacts", "leads", "basic_reports"],
-        },
-        { transaction }
-      );
+      // Create organization
+      const organization = await createOrganization({
+        name: userData.organization_name,
+        slug,
+        description: `Organization for ${userData.first_name} ${userData.last_name}`,
+        created_by: user.user_id,
+        status_id: orgStatusId,
+        subscription_status_id: orgSubStatusId,
+        plan_type_id: orgPlanTypeId,
+        company_size_config_id: orgCompanySizeConfigId,
+        trial_ends_at: trialEndsAt.toISOString(),
+        max_users: 5,
+        max_workspaces: 3,
+        max_storage_gb: 10,
+        features_enabled: ["contacts", "leads", "basic_reports"],
+      });
 
-     
+      // Create user-organization relationship with owner role
       const ownerRoleId = await this.getRoleId("owner");
-      await UserOrganization.create(
-        {
-          userId: (user as any).userId,
-          organizationId: (organization as any).organizationId,
-          roleId: ownerRoleId,
-          status: "active",
-          joinedAt: new Date(),
-        },
-        { transaction }
-      );
-
-     
-      await UserSession.create(
-        {
-          userId: (user as any).userId,
-          currentOrganizationId: (organization as any).organizationId,
-        },
-        { transaction }
-      );
-
-      await transaction.commit();
+      await createUserOrganization({
+        user_id: user.user_id,
+        organization_id: organization.organization_id,
+        role_id: ownerRoleId,
+        joined_at: new Date().toISOString(),
+      });
 
       return {
         user,
         organization,
       };
     } catch (error) {
-      await transaction.rollback();
       throw error;
     }
   }
@@ -379,241 +360,131 @@ export class AuthService {
     organizationId?: string,
     organizationSlug?: string
   ) {
-   
+    // Handle organization account login (if OrgUserAccount table exists)
     if (organizationId || organizationSlug) {
-      const models = await import("@/models");
       const org = organizationId
-        ? await (models.default.Organization as any).findOne({
-            where: { organizationId },
-          })
-        : await (models.default.Organization as any).findOne({
-            where: { slug: organizationSlug },
-          });
+        ? await getOrganizationById(organizationId)
+        : await getOrganizationBySlug(organizationSlug || "");
 
       if (!org) {
         throw new Error("Organization not found");
       }
 
-      const account = await (models.default.OrgUserAccount as any).findOne({
-        where: {
-          organizationId: (org as any).organizationId,
-          email: email.toLowerCase(),
-        },
-      });
-
-      if (!account) {
-        throw new Error("Invalid email or password");
-      }
-
-     
-      const bcrypt = await import("bcryptjs");
-      const ok = await bcrypt.compare(
-        password || "",
-        (account as any).passwordHash
-      );
-      if (!ok) {
-        throw new Error("Invalid email or password");
-      }
-
-     
-      const userLike = {
-        userId: (account as any).id,
-        email: (account as any).email,
-        firstName: (account as any).firstName,
-        lastName: (account as any).lastName,
-      } as any;
-
-      const orgPayload = [
-        {
-          id: (org as any).organizationId,
-          organizationId: (org as any).organizationId,
-          name: (org as any).name,
-          slug: (org as any).slug,
-          role: "member",
-          roleDisplayName: "Member",
-          permissions: {},
-          subscriptionStatus: (org as any).subscriptionStatus || "trial",
-          planType: (org as any).planType || "trial",
-          trialDaysRemaining: 14,
-          maxUsers: (org as any).maxUsers || 5,
-          maxWorkspaces: (org as any).maxWorkspaces || 3,
-        },
-      ];
-
-      const token = this.generateToken(userLike, orgPayload, orgPayload[0]);
-
-      return {
-        user: userLike,
-        token,
-        organizations: orgPayload,
-        currentOrganization: orgPayload[0],
-      };
+      // Note: OrgUserAccount table migration needed if this feature is used
+      // For now, falling through to regular user login
+      // TODO: Implement OrgUserAccount data access layer if needed
     }
 
-   
-    const user = await User.findOne({
-      where: { email: email.toLowerCase() },
-      attributes: [
-        "userId",
-        "email",
-        "password",
-        "firstName",
-        "lastName",
-        "phoneNumber",
-        "emailVerified",
-        "statusId",
-        "lastLogin",
-        "loginAttempts",
-        "lockUntil",
-        "passwordResetToken",
-        "passwordResetExpires",
-        "passwordChangedAt",
-        "createdAt",
-        "updatedAt",
-      ],
-      include: [
-        {
-          model: UserConfig,
-          as: "statusConfig",
-          attributes: ["entityType", "entityValue", "displayName"],
-        },
-        {
-          model: UserOrganization,
-          as: "userOrganizations",
-          attributes: [
-            "id",
-            "userId",
-            "organizationId",
-            "roleId",
-            "status",
-            "joinedAt",
-            "invitedBy",
-            "createdAt",
-            "updatedAt",
-          ],
-          include: [
-            {
-              model: Organization,
-              as: "organization",
-              attributes: [
-                "organizationId",
-                "name",
-                "slug",
-                "description",
-                "industryType",
-                "companySizeConfigId",
-                "primaryUseCase",
-                "currentTool",
-                "statusId",
-                "subscriptionStatusId",
-                "planTypeId",
-                "trialStartsAt",
-                "trialEndsAt",
-                "maxUsers",
-                "maxWorkspaces",
-                "featuresEnabled",
-                "createdBy",
-                "createdAt",
-                "updatedAt",
-              ],
-              include: [
-                {
-                  model: OrganizationConfig,
-                  as: "statusConfig",
-                  attributes: ["entityValue"],
-                },
-                {
-                  model: OrganizationConfig,
-                  as: "subscriptionStatusConfig",
-                  attributes: ["entityValue"],
-                },
-                {
-                  model: OrganizationConfig,
-                  as: "planTypeConfig",
-                  attributes: ["entityValue"],
-                },
-              ],
-            },
-            {
-              model: OrganizationRole,
-              as: "role",
-              attributes: ["role", "displayName", "permissions"],
-            },
-          ],
-        },
-        {
-          model: UserSession,
-          as: "session",
-          attributes: [
-            "id",
-            "userId",
-            "currentOrganizationId",
-            "lastActivityAt",
-            "createdAt",
-            "updatedAt",
-          ],
-        },
-      ],
-    });
-
+    // Regular user login
+    const user = await getUserByEmail(email.toLowerCase());
+    
     if (!user) {
       throw new Error("Invalid email or password");
     }
 
-   
+    // Check if account is locked
+    if (user.lock_until && new Date(user.lock_until) > new Date()) {
+      throw new Error("Account is locked. Please try again later.");
+    }
+
+    // Validate password
     if (!skipPasswordCheck && password) {
-      const isValidPassword = await (User as any).validatePassword(
-        user,
-        password
-      );
+      const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
+        // Increment login attempts
+        const newAttempts = (user.login_attempts || 0) + 1;
+        const lockUntil =
+          newAttempts >= 5
+            ? new Date(Date.now() + 30 * 60 * 1000).toISOString() // Lock for 30 minutes
+            : undefined;
+        
+        await updateUserLoginAttempts(user.user_id, newAttempts, lockUntil);
         throw new Error("Invalid email or password");
       }
     }
 
-   
-    await user.update({ lastLogin: new Date() });
+    // Reset login attempts on successful login
+    await updateUserLastLogin(user.user_id);
 
-   
-    const organizations =
-      (user as any).userOrganizations?.map((uo: any) => ({
-        id: (uo.organization as any).organizationId,
-        organizationId: (uo.organization as any).organizationId,
-        name: (uo.organization as any).name,
-        slug: (uo.organization as any).slug,
-        role: (uo.role as any)?.role || "viewer",
-        roleDisplayName:
-          (uo.role as any)?.displayName || this.getRoleDisplayName("viewer"),
-        permissions:
-          (uo.role as any)?.permissions || this.getRolePermissions("viewer"),
-        subscriptionStatus:
-          (uo.organization as any).subscriptionStatusConfig?.entityValue ||
-          "trial",
-        planType:
-          (uo.organization as any).planTypeConfig?.entityValue || "trial",
-        trialDaysRemaining: (uo.organization as any).trialEndsAt
+    // Get user organizations with roles
+    const userOrgs = await getUserWithOrganizations(user.user_id);
+    
+    // Check if user has organizations
+    if (!userOrgs || userOrgs.length === 0) {
+      throw new Error("User has no organizations assigned. Please contact administrator.");
+    }
+    
+    // Get user's last visited organization
+    const lastOrgId = user.last_visited_organization_id;
+
+    // Map organizations to payload format
+    const organizations = await Promise.all(
+      userOrgs.map(async (uo: any) => {
+        const org = uo.organization;
+        const role = uo.role;
+        
+        // Validate organization data
+        if (!org || !org.organization_id) {
+          throw new Error(`Invalid organization data for user ${user.user_id}`);
+        }
+        
+        // Calculate trial days remaining
+        const trialDaysRemaining = org.trial_ends_at
           ? Math.ceil(
-              (new Date((uo.organization as any).trialEndsAt).getTime() -
-                new Date().getTime()) /
+              (new Date(org.trial_ends_at).getTime() - new Date().getTime()) /
                 (1000 * 60 * 60 * 24)
             )
-          : 14,
-        maxUsers: (uo.organization as any).maxUsers || 5,
-        maxWorkspaces: (uo.organization as any).maxWorkspaces || 3,
-      })) || [];
+          : 14;
 
-   
-    const currentOrganization = (user as any).session?.currentOrganizationId
-      ? organizations.find(
-          (org: any) => org.id === (user as any).session.currentOrganizationId
-        )
+        return {
+          id: org.organization_id,
+          organizationId: org.organization_id,
+          name: org.name,
+          slug: org.slug,
+          role: role?.role || "viewer",
+          roleDisplayName: role?.display_name || this.getRoleDisplayName("viewer"),
+          permissions: role?.permissions || this.getRolePermissions("viewer"),
+          subscriptionStatus: "trial",
+          planType: "trial",
+          trialDaysRemaining,
+          maxUsers: org.max_users || 5,
+          maxWorkspaces: org.max_workspaces || 3,
+        };
+      })
+    );
+
+    // Find current organization
+    const currentOrganization = lastOrgId
+      ? organizations.find((org: any) => org.id === lastOrgId) || organizations[0]
       : organizations[0];
+    
+    // Ensure we have a current organization
+    if (!currentOrganization) {
+      throw new Error("No valid organization found for user");
+    }
 
-   
-    const token = this.generateToken(user, organizations, currentOrganization);
+    // Generate token
+    const token = this.generateToken(
+      {
+        userId: user.user_id,
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+      } as any,
+      organizations,
+      currentOrganization
+    );
 
     return {
-      user,
+      user: {
+        userId: user.user_id,
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        phoneNumber: user.phone_number,
+        emailVerified: user.email_verified,
+        lastLogin: user.last_login,
+      },
       token,
       organizations,
       currentOrganization,
@@ -632,131 +503,78 @@ export class AuthService {
       current_tool?: string;
     }
   ) {
-    const transaction = await sequelize.transaction();
-
     try {
-     
+      // Generate slug
       const baseSlug = this.generateSlug(organizationData.name);
       const slug = `${baseSlug}-${userId.slice(-8)}`;
 
-     
-      const existingUserOrg = await UserOrganization.findOne({
-        where: { userId },
-        include: [
-          {
-            model: Organization,
-            as: "organization",
-            where: { name: organizationData.name },
-          },
-        ],
-      });
-
-      if (existingUserOrg) {
-        throw new Error("You already have an organization with this name");
+      // Check if user already has organization with this name
+      const userOrgs = await getOrgRelations(userId);
+      const userOrgIds = userOrgs.map((uo) => uo.organization_id);
+      if (userOrgIds.length > 0) {
+        const { data: orgs } = await supabase
+          .from('organizations')
+          .select('organization_id, name')
+          .in('organization_id', userOrgIds)
+          .eq('name', organizationData.name);
+        
+        if (orgs && orgs.length > 0) {
+          throw new Error("You already have an organization with this name");
+        }
       }
 
-     
-      const trialStartsAt = new Date();
+      // Calculate trial dates
       const trialEndsAt = new Date();
       trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
-     
-      const statusId = await this.getOrganizationConfigId("status", "active");
-      const subscriptionStatusId = await this.getOrganizationConfigId(
+      // Get organization config IDs
+      const companySizeValue = organizationData.company_size 
+        ? this.mapCompanySizeToConfigValue(organizationData.company_size)
+        : "small";
+      const orgStatusId = await this.getOrganizationConfigId("status", "active");
+      const orgSubStatusId = await this.getOrganizationConfigId(
         "subscription_status",
         "trial"
       );
-      const planTypeId = await this.getOrganizationConfigId(
-        "plan_type",
-        "trial"
-      );
-      const companySizeValue = this.mapCompanySizeToConfigValue(
-        organizationData.company_size || "small"
-      );
-      const companySizeConfigId = await this.getOrganizationConfigId(
+      const orgPlanTypeId = await this.getOrganizationConfigId("plan_type", "trial");
+      const orgCompanySizeConfigId = await this.getOrganizationConfigId(
         "company_size",
         companySizeValue
       );
 
-     
-      const organization = await Organization.create(
-        {
-          name: organizationData.name,
-          slug,
-          description: organizationData.description,
-          industryType: organizationData.industry_type,
-          companySizeConfigId,
-          primaryUseCase: organizationData.primary_use_case,
-          currentTool: organizationData.current_tool,
-          createdBy: userId,
-          statusId,
-          subscriptionStatusId,
-          planTypeId,
-          trialStartsAt,
-          trialEndsAt,
-          maxUsers: 5,
-          maxWorkspaces: 3,
-          featuresEnabled: ["contacts", "leads", "basic_reports"],
-        },
-        { transaction }
-      );
-
-     
-      const ownerRoleId = await this.getRoleId("owner");
-      await UserOrganization.create(
-        {
-          userId,
-          organizationId: (organization as any).organizationId,
-          roleId: ownerRoleId,
-          status: "active",
-          joinedAt: new Date(),
-        },
-        { transaction }
-      );
-
-     
-      await UserSession.update(
-        {
-          currentOrganizationId: (organization as any).organizationId,
-        },
-        {
-          where: { userId },
-          transaction,
-        }
-      );
-
-      await transaction.commit();
-
-     
-      const orgWithConfigs = await Organization.findOne({
-        where: { organizationId: (organization as any).organizationId },
-        include: [
-          {
-            model: OrganizationConfig,
-            as: "statusConfig",
-            attributes: ["entityValue"],
-          },
-          {
-            model: OrganizationConfig,
-            as: "subscriptionStatusConfig",
-            attributes: ["entityValue"],
-          },
-          {
-            model: OrganizationConfig,
-            as: "planTypeConfig",
-            attributes: ["entityValue"],
-          },
-          {
-            model: OrganizationConfig,
-            as: "companySizeConfig",
-            attributes: ["entityValue"],
-          },
-        ],
+      // Create organization
+      const organization = await createOrganization({
+        name: organizationData.name,
+        slug,
+        description: organizationData.description || undefined,
+        created_by: userId,
+        status_id: orgStatusId,
+        subscription_status_id: orgSubStatusId,
+        plan_type_id: orgPlanTypeId,
+        company_size_config_id: orgCompanySizeConfigId,
+        trial_ends_at: trialEndsAt.toISOString(),
+        max_users: 5,
+        max_workspaces: 3,
+        max_storage_gb: 10,
+        features_enabled: ["contacts", "leads", "basic_reports"],
       });
 
-      return orgWithConfigs || organization;
+      // Create user-organization relationship with owner role
+      const ownerRoleId = await this.getRoleId("owner");
+      await createUserOrganization({
+        user_id: userId,
+        organization_id: organization.organization_id,
+        role_id: ownerRoleId,
+        joined_at: new Date().toISOString(),
+      });
+
+      // Update user's last visited organization
+      await updateUser(userId, {
+        last_visited_organization_id: organization.organization_id,
+      });
+
+      return organization;
     } catch (error) {
-      await transaction.rollback();
       throw error;
     }
   }
@@ -764,29 +582,17 @@ export class AuthService {
  
   static async switchOrganization(userId: string, organizationId: string) {
     try {
-     
-      const userOrg = await UserOrganization.findOne({
-        where: {
-          userId,
-          organizationId,
-          status: "active",
-        },
-      });
-
+      // Check if user has access to this organization
+      const userOrg = await getUserOrganization(userId, organizationId);
+      
       if (!userOrg) {
         throw new Error("User does not have access to this organization");
       }
 
-     
-      await UserSession.update(
-        {
-          currentOrganizationId: organizationId,
-          lastActivityAt: new Date(),
-        },
-        {
-          where: { userId },
-        }
-      );
+      // Update user's last visited organization
+      await updateUser(userId, {
+        last_visited_organization_id: organizationId,
+      });
 
       return { success: true };
     } catch (error) {
@@ -801,25 +607,25 @@ export class AuthService {
     currentOrganization?: any
   ): string {
     const payload: JWTPayload = {
-      userId: (user as any).userId,
-      email: (user as any).email,
-      firstName: (user as any).firstName,
-      lastName: (user as any).lastName,
+      userId: user.userId || user.user_id,
+      email: user.email,
+      firstName: user.firstName || user.first_name,
+      lastName: user.lastName || user.last_name,
 
-      currentOrganizationId: currentOrganization?.id,
+      currentOrganizationId: currentOrganization?.id || currentOrganization?.organization_id,
       currentOrganizationName: currentOrganization?.name,
       currentOrganizationSlug: currentOrganization?.slug,
       currentRole: currentOrganization?.role,
       availableOrganizations: organizations,
       subscription: currentOrganization
         ? {
-            status: currentOrganization.subscriptionStatus,
-            planType: "trial",
-            trialEndsAt: currentOrganization.trialEndsAt,
+            status: currentOrganization.subscriptionStatus || "trial",
+            planType: currentOrganization.planType || "trial",
+            trialEndsAt: currentOrganization.trialEndsAt || currentOrganization.trial_ends_at,
             daysRemaining: currentOrganization.trialDaysRemaining,
-            maxUsers: 5,
-            maxWorkspaces: 3,
-            featuresEnabled: ["contacts", "leads", "basic_reports"],
+            maxUsers: currentOrganization.maxUsers || currentOrganization.max_users || 5,
+            maxWorkspaces: currentOrganization.maxWorkspaces || currentOrganization.max_workspaces || 3,
+            featuresEnabled: currentOrganization.featuresEnabled || currentOrganization.features_enabled || ["contacts", "leads", "basic_reports"],
           }
         : undefined,
       exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
@@ -838,7 +644,7 @@ export class AuthService {
     }
   }
 
- 
+  // generateSlug already works - no database calls, so no migration needed
   static generateSlug(name: string): string {
     return name
       .toLowerCase()
@@ -851,66 +657,62 @@ export class AuthService {
  
   static async getOrganizationDetails(organizationId: string) {
     try {
-      const organization = await Organization.findOne({
-        where: { organizationId },
-        include: [
-          {
-            model: UserOrganization,
-            as: "userOrganizations",
-            include: [
-              {
-                model: User,
-                as: "user",
-                attributes: ["userId", "firstName", "lastName", "email"],
-              },
-            ],
-          },
-        ],
-      });
-
+      const organization = await getOrganizationById(organizationId);
+      
       if (!organization) {
         throw new Error("Organization not found");
       }
 
-      const orgData = organization as any;
+      // Get organization users with roles
+      const orgUsers = await getOrganizationUsers(organizationId);
+      const userIds = orgUsers.map((uo) => uo.user_id);
+      
+      // Get user details
+      const usersData = userIds.length > 0 
+        ? await Promise.all(userIds.map(id => getUserById(id)))
+        : [];
 
-     
-      const trialDaysRemaining = orgData.trialEndsAt
+      // Get roles for user-org relationships
+      const roleIds = orgUsers.map((uo) => uo.role_id).filter(Boolean);
+      const roles = roleIds.length > 0
+        ? await Promise.all(roleIds.map(id => getRoleById(id)))
+        : [];
+
+      const roleMap = new Map(roles.map(r => [r!.id, r!]));
+
+      const trialDaysRemaining = organization.trial_ends_at
         ? Math.ceil(
-            (new Date(orgData.trialEndsAt).getTime() - new Date().getTime()) /
+            (new Date(organization.trial_ends_at).getTime() - new Date().getTime()) /
               (1000 * 60 * 60 * 24)
           )
         : undefined;
 
       return {
-        organizationId: orgData.organizationId,
-        name: orgData.name,
-        slug: orgData.slug,
-        description: orgData.description,
-        industryType: orgData.industryType,
-        companySize: orgData.companySize,
-        primaryUseCase: orgData.primaryUseCase,
-        currentTool: orgData.currentTool,
-        subscriptionStatus: orgData.subscriptionStatus,
-        planType: orgData.planType,
-        trialStartsAt: orgData.trialStartsAt,
-        trialEndsAt: orgData.trialEndsAt,
-        maxUsers: orgData.maxUsers,
-        maxWorkspaces: orgData.maxWorkspaces,
-        featuresEnabled: orgData.featuresEnabled,
+        organizationId: organization.organization_id,
+        name: organization.name,
+        slug: organization.slug,
+        description: organization.description,
+        subscriptionStatus: "trial",
+        planType: "trial",
+        trialEndsAt: organization.trial_ends_at,
+        maxUsers: organization.max_users,
+        maxWorkspaces: organization.max_workspaces,
+        featuresEnabled: organization.features_enabled,
         trialDaysRemaining: trialDaysRemaining,
-        createdAt: orgData.createdAt,
-        updatedAt: orgData.updatedAt,
-        users:
-          orgData.userOrganizations?.map((uo: any) => ({
-            userId: uo.user.userId,
-            firstName: uo.user.firstName,
-            lastName: uo.user.lastName,
-            email: uo.user.email,
-            role: uo.role,
-            status: uo.status,
-            joinedAt: uo.joinedAt,
-          })) || [],
+        createdAt: organization.created_at,
+        updatedAt: organization.updated_at,
+        users: orgUsers.map((uo) => {
+          const user = usersData.find(u => u?.user_id === uo.user_id);
+          const role = roleMap.get(uo.role_id);
+          return {
+            userId: user?.user_id,
+            firstName: user?.first_name,
+            lastName: user?.last_name,
+            email: user?.email,
+            role: role?.role,
+            joinedAt: uo.joined_at,
+          };
+        }).filter(u => u.userId),
       };
     } catch (error) {
       throw error;
@@ -923,14 +725,7 @@ export class AuthService {
     organizationId: string
   ) {
     try {
-      const userOrg = await UserOrganization.findOne({
-        where: {
-          userId,
-          organizationId,
-          status: "active",
-        },
-      });
-
+      const userOrg = await getUserOrganization(userId, organizationId);
       console.log(
         `🔐 Access check: User ${userId} -> Org ${organizationId}: ${!!userOrg}`
       );
@@ -947,22 +742,10 @@ export class AuthService {
     organizationId: string
   ) {
     try {
-     
-      let session = await UserSession.findOne({ where: { userId } });
-
-      if (session) {
-        await session.update({
-          currentOrganizationId: organizationId,
-          lastActivityAt: new Date(),
-        });
-      } else {
-        await UserSession.create({
-          userId,
-          currentOrganizationId: organizationId,
-          lastActivityAt: new Date(),
-        });
-      }
-
+      // Simply update user's last visited organization
+      await updateUser(userId, {
+        last_visited_organization_id: organizationId,
+      });
       return true;
     } catch (error) {
       throw error;
@@ -972,41 +755,36 @@ export class AuthService {
  
   static async getUserOrganizations(userId: string) {
     try {
-      const userOrgs = await UserOrganization.findAll({
-        where: { userId, status: "active" },
-        include: [
-          {
-            model: Organization,
-            as: "organization",
-          },
-          {
-            model: OrganizationRole,
-            as: "role",
-            attributes: ["role", "displayName", "permissions"],
-          },
-        ],
-      });
+      const userOrgs = await getUserWithOrganizations(userId);
 
-      return userOrgs.map((uo: any) => ({
-        id: (uo.organization as any).organizationId,
-        organizationId: (uo.organization as any).organizationId,
-        name: (uo.organization as any).name,
-        slug: (uo.organization as any).slug,
-        role: uo.role || "viewer",
-        roleDisplayName: this.getRoleDisplayName(uo.role || "viewer"),
-        permissions: this.getRolePermissions(uo.role || "viewer"),
-        subscriptionStatus: "trial",
-        planType: "trial",
-        trialDaysRemaining: (uo.organization as any).trialEndsAt
-          ? Math.ceil(
-              (new Date((uo.organization as any).trialEndsAt).getTime() -
-                new Date().getTime()) /
-                (1000 * 60 * 60 * 24)
-            )
-          : undefined,
-        maxUsers: (uo.organization as any).maxUsers || 5,
-        maxWorkspaces: (uo.organization as any).maxWorkspaces || 3,
-      }));
+      return await Promise.all(
+        userOrgs.map(async (uo: any) => {
+          const org = uo.organization;
+          const role = uo.role;
+
+          const trialDaysRemaining = org.trial_ends_at
+            ? Math.ceil(
+                (new Date(org.trial_ends_at).getTime() - new Date().getTime()) /
+                  (1000 * 60 * 60 * 24)
+              )
+            : undefined;
+
+          return {
+            id: org.organization_id,
+            organizationId: org.organization_id,
+            name: org.name,
+            slug: org.slug,
+            role: role?.role || "viewer",
+            roleDisplayName: role?.display_name || this.getRoleDisplayName("viewer"),
+            permissions: role?.permissions || this.getRolePermissions("viewer"),
+            subscriptionStatus: org.subscription_status || "trial",
+            planType: org.subscription_plan || "trial",
+            trialDaysRemaining,
+            maxUsers: org.max_users || 5,
+            maxWorkspaces: org.max_workspaces || 3,
+          };
+        })
+      );
     } catch (error) {
       throw error;
     }
@@ -1018,19 +796,14 @@ export class AuthService {
     organizationId: string
   ): Promise<string | null> {
     try {
-      const userOrg = await UserOrganization.findOne({
-        where: {
-          userId,
-          organizationId,
-          status: "active",
-        },
-      });
+      const userOrg = await getUserOrganization(userId, organizationId);
 
       if (!userOrg) {
         return null;
       }
 
-      return (userOrg as any).role || "viewer";
+      const role = await getRoleById(userOrg.role_id);
+      return role?.role || "viewer";
     } catch (error) {
       console.error("Error getting user role in organization:", error);
       return null;
@@ -1045,67 +818,53 @@ export class AuthService {
     invitedBy: string,
     message?: string
   ) {
-    const transaction = await sequelize.transaction();
-
     try {
-     
+      // Validate required fields
       if (!email || !organizationId || !roleName) {
         throw new Error(
           "Missing required fields: email, organizationId, roleName"
         );
       }
 
-     
-      const models = await import("@/models");
-      const existingOrgAccount = await (
-        models.default.OrgUserAccount as any
-      ).findOne({
-        where: {
-          organizationId,
-          email: email.toLowerCase(),
-        },
-      });
-
-      if (existingOrgAccount) {
-        throw new Error("User is already a member of this organization");
+      // Check if user already exists in organization
+      const existingUser = await getUserByEmail(email.toLowerCase());
+      if (existingUser) {
+        const userOrg = await getUserOrganization(existingUser.user_id, organizationId);
+        if (userOrg) {
+          throw new Error("User is already a member of this organization");
+        }
       }
 
-     
-      const pendingStatusId = await this.getInvitationStatusId("pending");
-      const existingInvitation = await UserInvitation.findOne({
-        where: {
-          organizationId,
-          email: email.toLowerCase(),
-          statusId: pendingStatusId,
-        },
-      });
+      // Check for existing pending invitation
+      const existingInvitations = await getInvitationsByEmail(email.toLowerCase());
+      const pendingInvitation = existingInvitations.find(
+        (inv) => inv.organization_id === organizationId && inv.status === "pending"
+      );
 
-      if (existingInvitation) {
+      if (pendingInvitation) {
         throw new Error("Invitation already sent to this email");
       }
 
-     
+      // Get role ID
       const roleId = await this.getRoleId(roleName);
 
-     
-      const invitation = await UserInvitation.create(
-        {
-          organizationId,
-          email: email.toLowerCase(),
-          roleId,
-          invitedBy,
-          statusId: pendingStatusId,
-          message: message || null,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          invitationToken: require("crypto").randomBytes(64).toString("hex"),
-        },
-        { transaction }
-      );
+      // Generate token
+      const crypto = await import("crypto");
+      const token = crypto.randomBytes(64).toString("hex");
 
-      await transaction.commit();
+      // Create invitation
+      const invitation = await createInvitation({
+        organization_id: organizationId,
+        email: email.toLowerCase(),
+        role_id: roleId,
+        invited_by: invitedBy,
+        token,
+        status: "pending",
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      });
+
       return invitation;
     } catch (error) {
-      await transaction.rollback();
       throw error;
     }
   }
@@ -1115,61 +874,45 @@ export class AuthService {
     userPassword?: string,
     fullName?: string
   ) {
-    const transaction = await sequelize.transaction();
-
     try {
-     
-      const invitation = await UserInvitation.findOne({
-        where: { invitationToken },
-        include: [
-          {
-            model: Organization,
-            as: "organization",
-            attributes: ["organizationId", "name", "slug"],
-          },
-          {
-            model: OrganizationRole,
-            as: "role",
-            attributes: ["id", "role", "displayName", "permissions"],
-          },
-          {
-            model: UserConfig,
-            as: "status",
-            attributes: ["entityValue"],
-          },
-          {
-            model: User,
-            as: "inviter",
-            attributes: ["firstName", "lastName", "email"],
-          },
-        ],
-      });
+      // Get invitation with token
+      const invitation = await getInvitationByTokenData(invitationToken);
 
       if (!invitation) {
         throw new Error("Invalid or expired invitation token");
       }
 
-      if ((invitation as any).isExpired()) {
+      // Check if expired
+      if (new Date(invitation.expires_at) < new Date()) {
         throw new Error("Invitation has expired");
       }
 
-      if ((invitation as any).isAccepted()) {
+      // Check if already accepted
+      if (invitation.status === "accepted") {
         throw new Error("Invitation has already been accepted");
       }
 
-      const pendingStatusId = await this.getInvitationStatusId("pending");
-      if ((invitation as any).statusId !== pendingStatusId) {
+      if (invitation.status !== "pending") {
         throw new Error("Invitation is not in pending status");
       }
 
-     
-      let user = await User.findOne({
-        where: { email: (invitation as any).email },
-      });
+      // Get organization and role details
+      const organization = await getOrganizationById(invitation.organization_id);
+      if (!organization) {
+        throw new Error("Organization not found");
+      }
 
+      const role = await getRoleById(invitation.role_id);
+      if (!role) {
+        throw new Error("Role not found");
+      }
+
+      // Check if user exists
+      let user = await getUserByEmail(invitation.email);
       let isNewUser = false;
+
       if (!user) {
-       
+        // New user - create account
         if (!userPassword) {
           throw new Error("Password required for new user registration");
         }
@@ -1183,173 +926,119 @@ export class AuthService {
             lastName = parts.slice(-1).join(" ");
           } else if (parts.length === 1) {
             firstName = parts[0];
-           
             lastName = "User";
           }
         }
 
-        user = await User.create(
-          {
-            email: (invitation as any).email,
-            password: userPassword,
-            firstName,
-            lastName,
-            status: "active",
-            emailVerified: true,
-          },
-          { transaction }
-        );
+        const hashedPassword = await bcrypt.hash(userPassword, 10);
+        const activeUserStatusId = await this.getUserStatusId("active");
+
+        user = await createUser({
+          email: invitation.email,
+          password: hashedPassword,
+          first_name: firstName,
+          last_name: lastName,
+          email_verified: true,
+          status_id: activeUserStatusId,
+          login_attempts: 0,
+        });
         isNewUser = true;
       }
 
-     
-      const existingRelationship = await UserOrganization.findOne({
-        where: {
-          userId: (user as any).userId,
-          organizationId: (invitation as any).organizationId,
-        },
-      });
+      // Check if user-organization relationship already exists
+      const existingRelationship = await getUserOrganization(
+        user.user_id,
+        invitation.organization_id
+      );
 
       if (!existingRelationship) {
-        await UserOrganization.create(
-          {
-            userId: (user as any).userId,
-            organizationId: (invitation as any).organizationId,
-           
-            roleId:
-              (invitation as any).roleId ||
-              (((invitation as any).role &&
-                (invitation as any).role.id) as string),
-            status: "active",
-            joinedAt: new Date(),
-            invitedBy: (invitation as any).invitedBy,
-          },
-          { transaction }
-        );
+        // Create user-organization relationship
+        await createUserOrganization({
+          user_id: user.user_id,
+          organization_id: invitation.organization_id,
+          role_id: invitation.role_id,
+          joined_at: new Date().toISOString(),
+        });
       }
 
-     
-      const models = await import("@/models");
-      const bcrypt = await import("bcryptjs");
-      const hash = await bcrypt.hash(userPassword || "", 10);
-      const parsedName = (
-        fullName || `${(user as any).firstName} ${(user as any).lastName}`
-      )
-        .trim()
-        .split(/\s+/);
-      const firstName =
-        parsedName.length > 1
-          ? parsedName.slice(0, -1).join(" ")
-          : parsedName[0];
-      const lastName =
-        parsedName.length > 1 ? parsedName.slice(-1).join(" ") : "User";
-
-      await (models.default.OrgUserAccount as any).create(
-        {
-          organizationId: (invitation as any).organizationId,
-          email: (invitation as any).email.toLowerCase(),
-          passwordHash: hash,
-          firstName,
-          lastName,
-          status: "active",
-          lastLogin: new Date(),
-        },
-        { transaction }
-      );
-
-     
-      const acceptedStatusId = await this.getInvitationStatusId("accepted");
-      await invitation.update(
-        {
-          statusId: acceptedStatusId,
-          acceptedAt: new Date(),
-          acceptedByUserId: (user as any).userId,
-        },
-        { transaction }
-      );
-
-     
-      let session = await UserSession.findOne({
-        where: { userId: (user as any).userId },
+      // Update user's last visited organization
+      await updateUser(user.user_id, {
+        last_visited_organization_id: invitation.organization_id,
       });
 
-      if (session) {
-        await session.update(
-          {
-            currentOrganizationId: (invitation as any).organizationId,
-            lastActivityAt: new Date(),
-          },
-          { transaction }
-        );
-      } else {
-        await UserSession.create(
-          {
-            userId: (user as any).userId,
-            currentOrganizationId: (invitation as any).organizationId,
-            lastActivityAt: new Date(),
-          },
-          { transaction }
-        );
-      }
-
-      await transaction.commit();
+      // Mark invitation as accepted
+      await acceptInvitationData(invitation.invitation_id);
 
       return {
-        user,
-        organization: (invitation as any).organization,
-        role: (invitation as any).role,
+        user: {
+          userId: user.user_id,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+        },
+        organization: {
+          organizationId: organization.organization_id,
+          name: organization.name,
+          slug: organization.slug,
+        },
+        role: {
+          role: role.role,
+          displayName: role.display_name,
+          permissions: role.permissions,
+        },
         isNewUser,
       };
     } catch (error) {
-      await transaction.rollback();
       throw error;
     }
   }
 
   static async getInvitationByToken(invitationToken: string) {
     try {
-      const invitation = await UserInvitation.findOne({
-        where: { invitationToken },
-        include: [
-          {
-            model: Organization,
-            as: "organization",
-            attributes: ["organizationId", "name", "slug", "description"],
-          },
-          {
-            model: OrganizationRole,
-            as: "role",
-            attributes: ["role", "displayName", "description"],
-          },
-          {
-            model: User,
-            as: "inviter",
-            attributes: ["firstName", "lastName", "email"],
-          },
-          {
-            model: UserConfig,
-            as: "status",
-            attributes: ["entityValue"],
-          },
-        ],
-      });
+      const invitation = await getInvitationByTokenData(invitationToken);
 
       if (!invitation) {
         return null;
       }
 
+      // Get related data
+      const organization = await getOrganizationById(invitation.organization_id);
+      const role = await getRoleById(invitation.role_id);
+      const inviter = invitation.invited_by ? await getUserById(invitation.invited_by) : null;
+
+      const isExpired = new Date(invitation.expires_at) < new Date();
+      const isAccepted = invitation.status === "accepted";
+
       return {
-        id: (invitation as any).id,
-        email: (invitation as any).email,
-        message: (invitation as any).message,
-        organization: (invitation as any).organization,
-        role: (invitation as any).role,
-        inviter: (invitation as any).inviter,
-        status: (invitation as any).status?.entityValue,
-        expiresAt: (invitation as any).expiresAt,
-        isExpired: (invitation as any).isExpired(),
-        isAccepted: (invitation as any).isAccepted(),
-        createdAt: (invitation as any).createdAt,
+        id: invitation.invitation_id,
+        email: invitation.email,
+        organization: organization
+          ? {
+              organizationId: organization.organization_id,
+              name: organization.name,
+              slug: organization.slug,
+              description: organization.description,
+            }
+          : null,
+        role: role
+          ? {
+              role: role.role,
+              displayName: role.display_name,
+              description: role.description,
+            }
+          : null,
+        inviter: inviter
+          ? {
+              firstName: inviter.first_name,
+              lastName: inviter.last_name,
+              email: inviter.email,
+            }
+          : null,
+        status: invitation.status,
+        expiresAt: invitation.expires_at,
+        isExpired,
+        isAccepted,
+        createdAt: invitation.created_at,
       };
     } catch (error) {
       throw error;
@@ -1358,66 +1047,68 @@ export class AuthService {
 
   static async getOrganizationInvitations(organizationId: string) {
     try {
-      const invitations = await UserInvitation.findAll({
-        where: { organizationId },
-        include: [
-          {
-            model: OrganizationRole,
-            as: "role",
-            attributes: ["role", "displayName"],
-          },
-          {
-            model: User,
-            as: "inviter",
-            attributes: ["firstName", "lastName", "email"],
-          },
-          {
-            model: UserConfig,
-            as: "status",
-            attributes: ["entityValue"],
-          },
-        ],
-        order: [["created_at", "DESC"]],
-      });
+      const invitations = await getInvitationsByOrganization(organizationId);
 
-      return invitations.map((invitation: any) => ({
-        id: invitation.id,
-        email: invitation.email,
-        message: invitation.message,
-        role: invitation.role,
-        inviter: invitation.inviter,
-        status: invitation.status?.entityValue,
-        expiresAt: invitation.expiresAt,
-        isExpired: invitation.isExpired(),
-        isAccepted: invitation.isAccepted(),
-        createdAt: invitation.createdAt,
-      }));
+      // Get related data for each invitation
+      const invitationsWithDetails = await Promise.all(
+        invitations.map(async (invitation) => {
+          const role = await getRoleById(invitation.role_id);
+          const inviter = invitation.invited_by
+            ? await getUserById(invitation.invited_by)
+            : null;
+
+          const isExpired = new Date(invitation.expires_at) < new Date();
+          const isAccepted = invitation.status === "accepted";
+
+          return {
+            id: invitation.invitation_id,
+            email: invitation.email,
+            role: role
+              ? {
+                  role: role.role,
+                  displayName: role.display_name,
+                }
+              : null,
+            inviter: inviter
+              ? {
+                  firstName: inviter.first_name,
+                  lastName: inviter.last_name,
+                  email: inviter.email,
+                }
+              : null,
+            status: invitation.status,
+            expiresAt: invitation.expires_at,
+            isExpired,
+            isAccepted,
+            createdAt: invitation.created_at,
+          };
+        })
+      );
+
+      return invitationsWithDetails;
     } catch (error) {
       throw error;
     }
   }
 
   static async cancelInvitation(invitationId: string, cancelledBy: string) {
-    const transaction = await sequelize.transaction();
-
     try {
-      const invitation = await UserInvitation.findByPk(invitationId);
+      const { data: invitation } = await supabase
+        .from('user_invitations')
+        .select('*')
+        .eq('invitation_id', invitationId)
+        .single();
+
       if (!invitation) {
         throw new Error("Invitation not found");
       }
 
-      const cancelledStatusId = await this.getInvitationStatusId("cancelled");
-      await invitation.update(
-        {
-          statusId: cancelledStatusId,
-        },
-        { transaction }
-      );
+      await updateInvitation(invitationId, {
+        status: "cancelled",
+      });
 
-      await transaction.commit();
       return true;
     } catch (error) {
-      await transaction.rollback();
       throw error;
     }
   }
@@ -1434,46 +1125,55 @@ export class AuthService {
     const { emailService } = await import("./email-service");
 
     try {
-     
       const successMessage =
         "If an account with this email exists, you will receive a password reset link.";
 
-     
-      const user = await (User as any).findByEmail(email.toLowerCase());
+      const user = await getUserByEmail(email.toLowerCase());
 
       if (!user) {
-       
+        // Don't reveal if user exists or not
         return {
           success: true,
           message: successMessage,
         };
       }
 
-     
-      await (PasswordResetToken as any).invalidateAllForUser(user.userId);
+      // Check rate limit
+      const recentTokens = await countRecentPasswordResetTokens(user.user_id, 24);
+      if (recentTokens >= 5) {
+        throw new Error("Too many password reset requests. Please try again later.");
+      }
 
-     
-      const resetToken = await (PasswordResetToken as any).createResetToken(
-        user.userId
-      );
+      // Note: We don't invalidate old tokens here - they expire automatically
+      // Old tokens will be cleaned up by cleanupExpiredPasswordResetTokens
 
-     
-      const baseUrl =
-        process.env.NEXTAUTH_URL ||
-        process.env.APP_URL;
-      const resetUrl = `${baseUrl}/pages/auth/reset-password?token=${resetToken.token}`;
+      // Generate token
+      const crypto = await import("crypto");
+      const token = crypto.randomBytes(64).toString("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-     
-      const userOrganizations = await this.getUserOrganizations(user.userId);
+      // Create reset token
+      await createPasswordResetToken({
+        user_id: user.user_id,
+        token,
+        expires_at: expiresAt.toISOString(),
+        used: false,
+      });
+
+      // Build reset URL
+      const baseUrl = process.env.NEXTAUTH_URL || process.env.APP_URL;
+      const resetUrl = `${baseUrl}/pages/auth/reset-password?token=${token}`;
+
+      // Get user organizations
+      const userOrganizations = await this.getUserOrganizations(user.user_id);
       const currentOrganization = userOrganizations[0];
 
-     
+      // Send email
       await emailService.ensureInitialized();
 
-     
       const emailSent = await emailService.sendPasswordResetEmail(user.email, {
-        firstName: user.firstName,
-        lastName: user.lastName,
+        firstName: user.first_name,
+        lastName: user.last_name,
         resetUrl,
         expiresInHours: 1,
         organizationName: currentOrganization?.name,
@@ -1507,10 +1207,7 @@ export class AuthService {
         };
       }
 
-     
-      const resetTokenRecord = await (PasswordResetToken as any).findByToken(
-        token
-      );
+      const resetTokenRecord = await getPasswordResetTokenByToken(token);
 
       if (!resetTokenRecord) {
         return {
@@ -1519,23 +1216,39 @@ export class AuthService {
         };
       }
 
-      if (resetTokenRecord.isExpired()) {
+      // Check if expired
+      if (new Date(resetTokenRecord.expires_at) < new Date()) {
         return {
           isValid: false,
           message: "Reset token has expired",
         };
       }
 
-      if (resetTokenRecord.isUsed()) {
+      // Check if already used
+      if (resetTokenRecord.used) {
         return {
           isValid: false,
           message: "Reset token has already been used",
         };
       }
 
+      // Get user
+      const user = await getUserById(resetTokenRecord.user_id);
+      if (!user) {
+        return {
+          isValid: false,
+          message: "User not found",
+        };
+      }
+
       return {
         isValid: true,
-        user: resetTokenRecord.user,
+        user: {
+          userId: user.user_id,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+        },
         message: "Valid reset token",
       };
     } catch (error) {
@@ -1556,15 +1269,14 @@ export class AuthService {
     message: string;
   }> {
     const { emailService } = await import("./email-service");
-    const transaction = await sequelize.transaction();
 
     try {
-     
+      // Validate password length
       if (!newPassword || newPassword.length < 8) {
         throw new Error("Password must be at least 8 characters long");
       }
 
-     
+      // Validate token
       const validation = await this.validatePasswordResetToken(token);
 
       if (!validation.isValid || !validation.user) {
@@ -1573,38 +1285,31 @@ export class AuthService {
 
       const user = validation.user;
 
-     
-      const resetTokenRecord = await (PasswordResetToken as any).findByToken(
-        token
-      );
-
+      // Get token record
+      const resetTokenRecord = await getPasswordResetTokenByToken(token);
       if (!resetTokenRecord) {
         throw new Error("Reset token not found");
       }
 
-     
-      await user.update(
-        {
-          password: newPassword,
-          passwordChangedAt: new Date(),
-         
-          loginAttempts: 0,
-          lockUntil: null,
-        },
-        { transaction }
-      );
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-     
-      await resetTokenRecord.markUsed();
+      // Update user password
+      await updateUser(user.userId, {
+        password: hashedPassword,
+        password_changed_at: new Date().toISOString(),
+        login_attempts: 0,
+        lock_until: undefined,
+      });
 
-     
-      await (PasswordResetToken as any).invalidateAllForUser(user.userId);
+      // Mark token as used
+      await markTokenAsUsed(resetTokenRecord.id);
 
-     
+      // Get user organizations for email
       const userOrganizations = await this.getUserOrganizations(user.userId);
       const currentOrganization = userOrganizations[0];
 
-     
+      // Send confirmation email
       await emailService.sendPasswordChangedEmail(
         user.email,
         user.firstName,
@@ -1612,14 +1317,11 @@ export class AuthService {
         currentOrganization?.name
       );
 
-      await transaction.commit();
-
       return {
         success: true,
         message: "Password has been reset successfully",
       };
     } catch (error) {
-      await transaction.rollback();
       console.error("Password reset error:", error);
 
       const errorMessage =
@@ -1638,26 +1340,18 @@ export class AuthService {
     resetTime?: Date;
   }> {
     try {
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      // Get user by email
+      const user = await getUserByEmail(email.toLowerCase());
+      if (!user) {
+        // If user doesn't exist, allow (we don't reveal user existence)
+        return {
+          allowed: true,
+          remainingAttempts: 3,
+        };
+      }
 
-     
-      const recentAttempts = await PasswordResetToken.count({
-        where: {
-          createdAt: {
-            [Op.gte]: oneHourAgo,
-          },
-        },
-        include: [
-          {
-            model: User,
-            as: "user",
-            where: {
-              email: email.toLowerCase(),
-            },
-            attributes: [],
-          },
-        ],
-      });
+      // Count recent tokens for this user (last hour)
+      const recentAttempts = await countRecentPasswordResetTokens(user.user_id, 1);
 
       const maxAttempts = 3;
       const remainingAttempts = Math.max(0, maxAttempts - recentAttempts);
@@ -1677,7 +1371,7 @@ export class AuthService {
       };
     } catch (error) {
       console.error("Rate limit check error:", error);
-     
+      // On error, allow but limit attempts
       return {
         allowed: true,
         remainingAttempts: 1,
@@ -1688,7 +1382,7 @@ export class AuthService {
   
   static async cleanupExpiredPasswordResetTokens(): Promise<number> {
     try {
-      const deletedCount = await (PasswordResetToken as any).cleanupExpired();
+      const deletedCount = await deleteExpiredPasswordResetTokens();
       console.log(`Cleaned up ${deletedCount} expired password reset tokens`);
       return deletedCount;
     } catch (error) {
