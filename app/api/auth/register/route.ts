@@ -64,13 +64,13 @@ export async function POST(request: NextRequest) {
       success: true,
       message: "User and organization created successfully",
       user: {
-        userId: result.user.userId,
+        userId: result.user.user_id,
         email: result.user.email,
-        firstName: result.user.firstName,
-        lastName: result.user.lastName,
+        firstName: result.user.first_name,
+        lastName: result.user.last_name,
       },
       organization: {
-        organizationId: result.organization.organizationId,
+        organizationId: result.organization.organization_id,
         name: result.organization.name,
         slug: result.organization.slug,
       },

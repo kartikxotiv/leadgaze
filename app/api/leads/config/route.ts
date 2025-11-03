@@ -1,39 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { LeadConfig } from "@/models";
+import { getLeadConfigsByType, getAllLeadConfigs } from "@/lib/data/lead-config";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const entityType = searchParams.get("entityType");
 
-    let whereClause: any = {
-      isActive: true,
-    };
+    // Get configs by type or all
+    const configs = entityType
+      ? await getLeadConfigsByType(entityType)
+      : await getAllLeadConfigs();
 
-    if (entityType) {
-      whereClause.entityType = entityType;
-    }
-
-    const configs = await LeadConfig.findAll({
-      where: whereClause,
-      order: [
-        ["entityType", "ASC"],
-        ["displayOrder", "ASC"],
-        ["entityValue", "ASC"],
-      ],
-    });
-
-   
-    const groupedConfigs = configs.reduce((acc: any, config: any) => {
-      const type = config.entityType;
+    // Group by entity type
+    const groupedConfigs = configs.reduce((acc: any, config) => {
+      const type = config.entity_type;
       if (!acc[type]) {
         acc[type] = [];
       }
       acc[type].push({
         id: config.id,
-        value: config.entityValue,
-        label: config.description || config.entityValue,
-        displayOrder: config.displayOrder,
+        value: config.entity_value,
+        label: config.description || config.entity_value,
+        displayOrder: config.display_order,
         metadata: config.metadata,
       });
       return acc;

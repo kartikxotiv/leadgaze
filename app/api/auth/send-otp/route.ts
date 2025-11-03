@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AuthService } from "@/lib/auth-service";
-import { EmailOTP } from "@/models";
+import { createEmailOTP, deleteOTP } from "@/lib/data/email-otp";
 import emailService from "@/lib/email-service";
 
 export async function POST(request: NextRequest) {
@@ -54,23 +54,20 @@ export async function POST(request: NextRequest) {
    
    
 
-   
-    await EmailOTP.invalidateOTPs(email, purpose);
+    // Create OTP (invalidation is handled in createEmailOTP)
+    const otpRecord = await createEmailOTP(email, purpose, 10);
 
-   
-    const otpRecord = await EmailOTP.createOTP(email, purpose, 10);
-
-   
+    // Send email
     const emailSent = await emailService.sendOTPEmail({
       email,
-      otp: (otpRecord as any).otp,
+      otp: otpRecord.otp,
       purpose,
       expiresInMinutes: 10,
     });
 
     if (!emailSent) {
-     
-      await otpRecord.destroy();
+      // Delete OTP if email failed
+      await deleteOTP(otpRecord.id);
       return NextResponse.json(
         {
           success: false,

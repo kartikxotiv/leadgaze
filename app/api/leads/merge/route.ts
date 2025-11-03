@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sequelize, Lead, Deal, Activity, Task } from "@/models";
+import { getLeadById, updateLead, deleteLead } from "@/lib/data/leads";
+import { updateDeal } from "@/lib/data/deals";
+import { updateActivity } from "@/lib/data/activities";
+import { updateTask } from "@/lib/data/tasks";
+import { supabase } from "@/lib/supabase-client";
 
 export async function POST(request: NextRequest) {
-  const t = await (sequelize as any).transaction();
   try {
     const body = await request.json();
     const { organizationId, primaryLeadId, duplicateLeadIds } = body || {};
@@ -23,17 +26,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-   
+    // Sanitize duplicates
     const sanitizedDuplicates: string[] = Array.isArray(duplicateLeadIds)
       ? duplicateLeadIds.filter((id: string) => id && id !== primaryLeadId)
       : [];
 
-    const primary = await (Lead as any).findOne({
-      where: { leadId: primaryLeadId, organizationId },
-      transaction: t,
-    });
-    if (!primary) {
-      await t.rollback();
+    // Get primary lead
+    const primary = await getLeadById(primaryLeadId);
+    if (!primary || primary.organization_id !== organizationId) {
       return NextResponse.json(
         { success: false, error: "Primary lead not found" },
         { status: 404 }
@@ -41,31 +41,20 @@ export async function POST(request: NextRequest) {
     }
 
     if (sanitizedDuplicates.length === 0) {
-      await t.rollback();
       return NextResponse.json(
         { success: false, error: "No valid duplicate leads to merge" },
         { status: 400 }
       );
     }
 
-   
-    const duplicatesExisting = await (Lead as any).findAll({
-      where: { leadId: sanitizedDuplicates, organizationId },
-      attributes: [
-        "leadId",
-        "tags",
-        "metaData",
-        "email",
-        "phone",
-        "businessName",
-        "companyWebsite",
-        "jobTitle",
-        "qualificationNotes",
-      ],
-      transaction: t,
-    });
+    // Get duplicate leads
+    const duplicatesPromises = sanitizedDuplicates.map(id => getLeadById(id));
+    const duplicatesResults = await Promise.all(duplicatesPromises);
+    const duplicatesExisting = duplicatesResults.filter(
+      (lead) => lead && lead.organization_id === organizationId
+    );
+
     if (duplicatesExisting.length !== sanitizedDuplicates.length) {
-      await t.rollback();
       return NextResponse.json(
         {
           success: false,
@@ -75,33 +64,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
-   
-    await (Deal as any).update(
-      { leadId: primaryLeadId },
-      { where: { leadId: sanitizedDuplicates }, transaction: t }
-    );
-
-   
-    await (Activity as any).update(
-      { relatedId: primaryLeadId },
-      {
-        where: { relatedType: "lead", relatedId: sanitizedDuplicates },
-        transaction: t,
+    // Update deals - change lead_id to primary
+    for (const dupId of sanitizedDuplicates) {
+      const { data: deals } = await supabase
+        .from('deals')
+        .select('deal_id')
+        .eq('lead_id', dupId);
+      
+      if (deals && deals.length > 0) {
+        for (const deal of deals) {
+          await updateDeal(deal.deal_id, { lead_id: primaryLeadId });
+        }
       }
-    );
+    }
 
-   
-    await (Task as any).update(
-      { leadId: primaryLeadId },
-      { where: { leadId: sanitizedDuplicates }, transaction: t }
-    );
+    // Update activities - change related_id to primary
+    for (const dupId of sanitizedDuplicates) {
+      const { data: activities } = await supabase
+        .from('activities')
+        .select('activity_id')
+        .eq('related_type', 'lead')
+        .eq('related_id', dupId);
+      
+      if (activities && activities.length > 0) {
+        for (const activity of activities) {
+          await updateActivity(activity.activity_id, { related_id: primaryLeadId });
+        }
+      }
+    }
 
-   
-    const duplicates = duplicatesExisting;
+    // Update tasks - change lead_id to primary
+    for (const dupId of sanitizedDuplicates) {
+      const { data: tasks } = await supabase
+        .from('tasks')
+        .select('task_id')
+        .eq('lead_id', dupId);
+      
+      if (tasks && tasks.length > 0) {
+        for (const task of tasks) {
+          await updateTask(task.task_id, { lead_id: primaryLeadId });
+        }
+      }
+    }
+
+    // Consolidate data from duplicates into primary
     const consolidated: any = {};
     const fillIfEmpty = (key: string, extractor: (l: any) => any) => {
-      if (!primary[key]) {
-        for (const dup of duplicates) {
+      if (!(primary as any)[key]) {
+        for (const dup of duplicatesExisting) {
           const val = extractor(dup);
           if (val) {
             consolidated[key] = val;
@@ -111,19 +121,19 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    fillIfEmpty("email", (l) => l.email);
-    fillIfEmpty("phone", (l) => l.phone);
-    fillIfEmpty("businessName", (l) => l.businessName);
-    fillIfEmpty("companyWebsite", (l) => l.companyWebsite);
-    fillIfEmpty("jobTitle", (l) => l.jobTitle);
-    fillIfEmpty("qualificationNotes", (l) => l.qualificationNotes);
+    fillIfEmpty("email", (l: any) => l.email);
+    fillIfEmpty("phone", (l: any) => l.phone);
+    fillIfEmpty("business_name", (l: any) => l.business_name);
+    fillIfEmpty("company_website", (l: any) => l.company_website);
+    fillIfEmpty("job_title", (l: any) => l.job_title);
+    fillIfEmpty("qualification_notes", (l: any) => l.qualification_notes);
 
-   
+    // Merge tags
     try {
-      const primaryTags: string[] = Array.isArray((primary as any).tags)
-        ? ((primary as any).tags as string[])
+      const primaryTags: string[] = Array.isArray(primary.tags)
+        ? (primary.tags as string[])
         : [];
-      const duplicateTags: string[] = duplicates.flatMap((d: any) =>
+      const duplicateTags: string[] = duplicatesExisting.flatMap((d: any) =>
         Array.isArray(d.tags) ? (d.tags as string[]) : []
       );
       const mergedTags = Array.from(
@@ -137,11 +147,11 @@ export async function POST(request: NextRequest) {
       }
     } catch {}
 
-   
+    // Merge metadata
     try {
-      const mergedMeta: any = { ...((primary as any).metaData || {}) };
-      for (const dup of duplicates) {
-        const md = (dup as any).metaData || {};
+      const mergedMeta: any = { ...(primary.metadata || {}) };
+      for (const dup of duplicatesExisting) {
+        const md = dup.metadata || {};
         for (const key of Object.keys(md)) {
           if (
             mergedMeta[key] === undefined ||
@@ -153,34 +163,29 @@ export async function POST(request: NextRequest) {
         }
       }
       if (Object.keys(mergedMeta).length > 0) {
-        consolidated.metaData = mergedMeta;
+        consolidated.metadata = mergedMeta;
       }
     } catch {}
 
+    // Update primary lead with consolidated data
     if (Object.keys(consolidated).length > 0) {
-      await primary.update(consolidated, { transaction: t });
+      await updateLead(primaryLeadId, consolidated);
     }
 
-   
-    await (Lead as any).destroy({
-      where: { leadId: sanitizedDuplicates, organizationId },
-      transaction: t,
-    });
+    // Delete duplicate leads
+    for (const dupId of sanitizedDuplicates) {
+      await deleteLead(dupId);
+    }
 
-   
-    const updatedPrimary = await (Lead as any).findByPk(
-      (primary as any).leadId,
-      { transaction: t }
-    );
+    // Get updated primary lead
+    const updatedPrimary = await getLeadById(primaryLeadId);
 
-    await t.commit();
     return NextResponse.json({
       success: true,
       message: "Leads merged successfully",
       data: updatedPrimary,
     });
   } catch (error) {
-    await t.rollback();
     console.error("Error merging leads:", error);
     return NextResponse.json(
       {

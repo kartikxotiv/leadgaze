@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Task, User } from "@/models";
+import { getTaskById, updateTask, deleteTask } from "@/lib/data/tasks";
 
 export async function GET(
   request: NextRequest,
@@ -7,20 +7,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const task = await (Task as any).findByPk(id, {
-      include: [
-        {
-          model: User,
-          as: "assignedUser",
-          attributes: ["firstName", "lastName", "email"],
-        },
-        {
-          model: User,
-          as: "createdUser",
-          attributes: ["firstName", "lastName", "email"],
-        },
-      ],
-    });
+    const task = await getTaskById(id);
+    
     if (!task) {
       return NextResponse.json(
         { success: false, error: "Task not found" },
@@ -44,7 +32,7 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
-    const task = await (Task as any).findByPk(id);
+    const task = await getTaskById(id);
     if (!task) {
       return NextResponse.json(
         { success: false, error: "Task not found" },
@@ -52,6 +40,7 @@ export async function PUT(
       );
     }
 
+    // Convert camelCase to snake_case
     const updates: any = {};
     if (body.title !== undefined) updates.title = body.title;
     if (body.description !== undefined) updates.description = body.description;
@@ -59,30 +48,14 @@ export async function PUT(
     if (body.priority !== undefined) updates.priority = body.priority;
     if (body.status !== undefined) updates.status = body.status;
     if (body.due_date !== undefined)
-      updates.dueDate = body.due_date ? new Date(body.due_date) : null;
+      updates.due_date = body.due_date ? new Date(body.due_date).toISOString() : null;
     if (body.assigned_to !== undefined)
-      updates.assignedTo = body.assigned_to || null;
-    if (body.lead_id !== undefined) updates.leadId = body.lead_id || null;
-    if (body.deal_id !== undefined) updates.dealId = body.deal_id || null;
+      updates.assigned_to = body.assigned_to || null;
+    if (body.lead_id !== undefined) updates.lead_id = body.lead_id || null;
+    if (body.deal_id !== undefined) updates.deal_id = body.deal_id || null;
+    if (body.completed_at !== undefined) updates.completed_at = body.completed_at || null;
 
-    updates.updatedAt = new Date();
-
-    await task.update(updates);
-
-    const updated = await (Task as any).findByPk(id, {
-      include: [
-        {
-          model: User,
-          as: "assignedUser",
-          attributes: ["firstName", "lastName", "email"],
-        },
-        {
-          model: User,
-          as: "createdUser",
-          attributes: ["firstName", "lastName", "email"],
-        },
-      ],
-    });
+    const updated = await updateTask(id, updates);
 
     return NextResponse.json({
       success: true,
@@ -103,14 +76,14 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const task = await (Task as any).findByPk(id);
+    const task = await getTaskById(id);
     if (!task) {
       return NextResponse.json(
         { success: false, error: "Task not found" },
         { status: 404 }
       );
     }
-    await task.destroy();
+    await deleteTask(id);
     return NextResponse.json({ success: true, message: "Task deleted" });
   } catch (error) {
     return NextResponse.json(

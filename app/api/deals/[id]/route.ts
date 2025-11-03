@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Deal, Lead, User } from "@/models";
+import { getDealById, updateDeal, deleteDeal } from "@/lib/data/deals";
 
 export async function GET(
   request: NextRequest,
@@ -7,27 +7,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const deal = await Deal.findByPk(id, {
-      include: [
-        {
-          model: User,
-          as: "user",
-          attributes: ["firstName", "lastName", "email"],
-        },
-        {
-          model: Lead,
-          as: "lead",
-          attributes: [
-            "leadId",
-            "firstName",
-            "lastName",
-            "businessName",
-            "email",
-            "phone",
-          ],
-        },
-      ],
-    });
+    const deal = await getDealById(id);
 
     if (!deal) {
       return NextResponse.json(
@@ -72,7 +52,7 @@ export async function PUT(
       }
     }
 
-    const deal = await Deal.findByPk(id);
+    const deal = await getDealById(id);
     if (!deal) {
       return NextResponse.json(
         { success: false, error: "Deal not found" },
@@ -80,34 +60,18 @@ export async function PUT(
       );
     }
 
-   
-    await deal.update({
-      ...body,
-      updatedAt: new Date(),
-    });
+    // Convert camelCase to snake_case
+    const updateData: any = {};
+    if (body.title) updateData.title = body.title;
+    if (body.value !== undefined) updateData.value = body.value;
+    if (body.stage) updateData.stage_id = body.stage;
+    if (body.stageId) updateData.stage_id = body.stageId;
+    if (body.probability !== undefined) updateData.probability = body.probability;
+    if (body.expectedCloseDate) updateData.expected_close_date = body.expectedCloseDate;
+    if (body.notes !== undefined) updateData.notes = body.notes;
+    if (body.metadata) updateData.metadata = body.metadata;
 
-   
-    const updatedDeal = await Deal.findByPk(id, {
-      include: [
-        {
-          model: User,
-          as: "user",
-          attributes: ["firstName", "lastName", "email"],
-        },
-        {
-          model: Lead,
-          as: "lead",
-          attributes: [
-            "leadId",
-            "firstName",
-            "lastName",
-            "businessName",
-            "email",
-            "phone",
-          ],
-        },
-      ],
-    });
+    const updatedDeal = await updateDeal(id, updateData);
 
     return NextResponse.json({
       success: true,
@@ -133,7 +97,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const deal = await Deal.findByPk(id);
+    const deal = await getDealById(id);
     if (!deal) {
       return NextResponse.json(
         { success: false, error: "Deal not found" },
@@ -141,7 +105,7 @@ export async function DELETE(
       );
     }
 
-    await deal.destroy();
+    await deleteDeal(id);
 
     return NextResponse.json({
       success: true,

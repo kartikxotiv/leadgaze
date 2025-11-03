@@ -1,5 +1,8 @@
-import { Lead, LeadScore, ScoringRule, Activity } from "@/models";
-import { Op } from "sequelize";
+import { getLeadById } from "./data/leads";
+import { getLeadScoreByLeadId, upsertLeadScore } from "./data/lead-scores";
+import { getScoringRulesByOrganization } from "./data/scoring-rules";
+import { getActivitiesByRelated } from "./data/activities";
+import type { Lead, LeadScore, ScoringRule, Activity } from "./types/database";
 
 export interface ScoreBreakdown {
   ruleId: string;
@@ -107,47 +110,31 @@ export class LeadScoringEngine {
     organizationId: string
   ): Promise<LeadScoreResult> {
     try {
-     
-      const lead = await Lead.findByPk(leadId, {
-        include: [
-          {
-            model: Activity,
-            as: "activities",
-            where: { relatedType: "lead", relatedId: leadId },
-            required: false,
-            order: [["createdAt", "DESC"]],
-          },
-        ],
-      });
-
+      // Get lead
+      const lead = await getLeadById(leadId);
       if (!lead) {
         throw new Error(`Lead not found: ${leadId}`);
       }
 
-     
-      const rules = await ScoringRule.findAll({
-        where: {
-          organizationId,
-          isActive: true,
-        },
-        order: [["priority", "ASC"]],
-      });
+      // Get activities for this lead
+      const activities = await getActivitiesByRelated("lead", leadId);
 
-     
-      const previousScore = await LeadScore.findOne({
-        where: { leadId },
-      });
+      // Get scoring rules
+      const rules = await getScoringRulesByOrganization(organizationId, true);
 
-     
+      // Get previous score
+      const previousScore = await getLeadScoreByLeadId(leadId);
+
+      // Calculate score
       const breakdown: ScoreBreakdown[] = [];
       let totalScore = 0;
 
       for (const rule of rules) {
-        const result = await this.evaluateRule(rule, lead);
+        const result = await this.evaluateRule(rule, lead, activities);
         if (result.applies) {
           breakdown.push({
-            ruleId: rule.ruleId,
-            ruleName: rule.ruleName,
+            ruleId: rule.rule_id,
+            ruleName: rule.rule_name,
             points: result.points,
             reason: result.reason,
           });
@@ -155,10 +142,10 @@ export class LeadScoringEngine {
         }
       }
 
-     
+      // Clamp score between -100 and 100
       totalScore = Math.max(-100, Math.min(100, totalScore));
 
-     
+      // Calculate tier
       const tier = this.calculateTier(totalScore);
 
       const result: LeadScoreResult = {
@@ -166,14 +153,14 @@ export class LeadScoringEngine {
         totalScore,
         tier,
         breakdown,
-        previousScore: previousScore?.totalScore,
+        previousScore: previousScore?.total_score,
         scoreChange: previousScore
-          ? totalScore - previousScore.totalScore
+          ? totalScore - previousScore.total_score
           : undefined,
       };
 
-     
-      await this.saveScore(result, lead.userId, organizationId);
+      // Save score
+      await this.saveScore(result, lead.created_by, organizationId);
 
       return result;
     } catch (error) {
@@ -206,37 +193,44 @@ export class LeadScoringEngine {
     organizationId: string,
     createdBy: string
   ): Promise<void> {
+    const { createScoringRule } = await import("./data/scoring-rules");
+    
     for (const [index, rule] of this.DEFAULT_RULES.entries()) {
-      await ScoringRule.create({
-        ...rule,
-        organizationId,
-        createdBy,
+      await createScoringRule({
+        organization_id: organizationId,
+        rule_name: rule.ruleName,
+        rule_type: rule.ruleType,
+        condition: rule.condition,
+        points: rule.points,
+        description: rule.description,
         priority: index + 1,
-        isActive: true,
+        is_active: true,
+        created_by: createdBy,
       });
     }
   }
 
   
   private static async evaluateRule(
-    rule: any,
-    lead: any
+    rule: ScoringRule,
+    lead: Lead,
+    activities: Activity[]
   ): Promise<{ applies: boolean; points: number; reason: string }> {
-    const condition = rule.condition;
-    const ruleType = rule.ruleType;
+    const condition = rule.condition as any;
+    const ruleType = rule.rule_type;
 
     switch (ruleType) {
       case "activity_response":
-        return this.evaluateActivityResponse(condition, lead.activities || []);
+        return this.evaluateActivityResponse(condition, activities);
 
       case "email_interaction":
-        return this.evaluateEmailInteraction(condition, lead.activities || []);
+        return this.evaluateEmailInteraction(condition, activities);
 
       case "quotation_request":
-        return this.evaluateQuotationRequest(condition, lead.activities || []);
+        return this.evaluateQuotationRequest(condition, activities);
 
       case "no_response_penalty":
-        return this.evaluateNoResponsePenalty(condition, lead.activities || []);
+        return this.evaluateNoResponsePenalty(condition, activities);
 
       case "icp_match":
       case "job_title_match":
@@ -251,10 +245,10 @@ export class LeadScoringEngine {
 
   private static evaluateActivityResponse(
     condition: any,
-    activities: any[]
+    activities: Activity[]
   ): { applies: boolean; points: number; reason: string } {
     const relevantActivities = activities.filter((activity) =>
-      condition.activityType.includes(activity.activityType)
+      condition.activityType.includes(activity.activity_type)
     );
 
     const positiveResponses = relevantActivities.filter(
@@ -269,7 +263,7 @@ export class LeadScoringEngine {
       return {
         applies: true,
         points: 15,
-        reason: `Positive response in ${positiveResponses[0].activityType}`,
+        reason: `Positive response in ${positiveResponses[0].activity_type}`,
       };
     }
 
@@ -278,17 +272,17 @@ export class LeadScoringEngine {
 
   private static evaluateEmailInteraction(
     condition: any,
-    activities: any[]
+    activities: Activity[]
   ): { applies: boolean; points: number; reason: string } {
     const emailActivities = activities.filter(
-      (activity) => activity.activityType === "email"
+      (activity) => activity.activity_type === "email"
     );
 
     const engagements = emailActivities.filter(
       (activity) =>
         activity.outcome &&
         ["opened", "clicked", "replied"].some((engagement) =>
-          activity.outcome.toLowerCase().includes(engagement)
+          activity.outcome?.toLowerCase().includes(engagement)
         )
     );
 
@@ -305,7 +299,7 @@ export class LeadScoringEngine {
 
   private static evaluateQuotationRequest(
     condition: any,
-    activities: any[]
+    activities: Activity[]
   ): { applies: boolean; points: number; reason: string } {
     const quotationRequests = activities.filter(
       (activity) =>
@@ -325,15 +319,20 @@ export class LeadScoringEngine {
 
   private static evaluateNoResponsePenalty(
     condition: any,
-    activities: any[]
+    activities: Activity[]
   ): { applies: boolean; points: number; reason: string } {
     if (activities.length === 0) {
       return { applies: false, points: 0, reason: "No activities to evaluate" };
     }
 
-    const lastActivity = activities[0];
+    // Sort by created_at descending
+    const sortedActivities = [...activities].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    const lastActivity = sortedActivities[0];
+    
     const daysSinceLastActivity = Math.floor(
-      (Date.now() - new Date(lastActivity.createdAt).getTime()) /
+      (Date.now() - new Date(lastActivity.created_at).getTime()) /
         (1000 * 60 * 60 * 24)
     );
 
@@ -341,7 +340,7 @@ export class LeadScoringEngine {
       (activity) =>
         activity.outcome &&
         ["positive", "connected", "interested"].some((positive) =>
-          activity.outcome.toLowerCase().includes(positive)
+          activity.outcome?.toLowerCase().includes(positive)
         )
     );
 
@@ -365,19 +364,37 @@ export class LeadScoringEngine {
 
   private static evaluateFieldMatch(
     condition: any,
-    lead: any
+    lead: Lead
   ): { applies: boolean; points: number; reason: string } {
     const field = condition.field;
-    const leadValue = lead[field];
+    // Map camelCase fields to snake_case database fields
+    const fieldMap: Record<string, keyof Lead> = {
+      industry: "industry_id",
+      jobTitle: "job_title",
+      source: "source_id",
+      companySize: "company_size_id",
+    };
+    
+    const dbField = fieldMap[field] || field as keyof Lead;
+    let leadValue = lead[dbField] as any;
+
+    // If it's an ID field, we might need to get the actual value from config
+    // For now, we'll work with the ID or value directly
+    if (typeof leadValue === "string" && leadValue.length === 36) {
+      // Likely a UUID, we'll skip field matching for ID fields for now
+      // This would need config lookup if we want to match on values
+      return { applies: false, points: 0, reason: `Field ${field} is an ID, needs config lookup` };
+    }
 
     if (!leadValue) {
       return { applies: false, points: 0, reason: `No ${field} data` };
     }
 
+    const leadValueStr = String(leadValue).toLowerCase();
+
     if (condition.values) {
-     
       const matches = condition.values.some((targetValue: string) =>
-        leadValue.toLowerCase().includes(targetValue.toLowerCase())
+        leadValueStr.includes(targetValue.toLowerCase())
       );
 
       if (matches) {
@@ -390,8 +407,7 @@ export class LeadScoringEngine {
     }
 
     if (condition.operator && condition.value) {
-     
-      const numericValue = parseInt(leadValue);
+      const numericValue = parseInt(leadValueStr);
       if (!isNaN(numericValue)) {
         switch (condition.operator) {
           case ">=":
@@ -437,14 +453,14 @@ export class LeadScoringEngine {
     userId: string,
     organizationId: string
   ): Promise<void> {
-    await LeadScore.upsert({
-      leadId: result.leadId,
-      totalScore: result.totalScore,
+    await upsertLeadScore({
+      lead_id: result.leadId,
+      total_score: result.totalScore,
       tier: result.tier,
-      lastCalculated: new Date(),
-      scoreBreakdown: result.breakdown,
-      userId,
-      organizationId,
+      last_calculated: new Date().toISOString(),
+      score_breakdown: result.breakdown as any,
+      user_id: userId,
+      organization_id: organizationId,
     });
   }
 }

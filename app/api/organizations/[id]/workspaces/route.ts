@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { AuthService } from "@/lib/auth-service";
-import { OrganizationWorkspace, User, Organization } from "@/models";
+import { getWorkspacesByOrganization, createWorkspace, countWorkspacesByOrganization } from "@/lib/data/organization-workspaces";
+import { getOrganizationById } from "@/lib/data/organizations";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
@@ -49,38 +50,23 @@ export async function GET(
       );
     }
 
-   
-    const workspaces = await OrganizationWorkspace.findAll({
-      where: {
-        organizationId: organizationId,
-      },
-      include: [
-        {
-          model: User,
-          as: "creator",
-          attributes: ["userId", "email", "firstName", "lastName"],
-        },
-      ],
-      order: [["createdAt", "DESC"]],
-    });
+    const workspaces = await getWorkspacesByOrganization(organizationId);
 
-   
     const formattedWorkspaces = workspaces.map((workspace: any) => ({
-      id: workspace.id,
-      organizationId: workspace.organizationId,
+      id: workspace.workspace_id,
+      organizationId: workspace.organization_id,
       name: workspace.name,
       slug: workspace.slug,
       description: workspace.description,
-     
       status: "active",
-      createdBy: workspace.createdBy,
-      createdAt: workspace.createdAt,
-      updatedAt: workspace.updatedAt,
+      createdBy: workspace.created_by,
+      createdAt: workspace.created_at,
+      updatedAt: workspace.updated_at,
       creator: workspace.creator
         ? {
-            id: workspace.creator.userId,
+            id: workspace.creator.user_id,
             email: workspace.creator.email,
-            name: `${workspace.creator.firstName} ${workspace.creator.lastName}`.trim(),
+            name: `${workspace.creator.first_name} ${workspace.creator.last_name}`.trim(),
           }
         : null,
     }));
@@ -174,11 +160,7 @@ export async function POST(
       );
     }
 
-   
-    const organization = await Organization.findOne({
-      where: { organizationId },
-      attributes: ["organizationId", "name", "slug", "maxWorkspaces"],
-    });
+    const organization = await getOrganizationById(organizationId);
 
     if (!organization) {
       return NextResponse.json(
@@ -187,14 +169,9 @@ export async function POST(
       );
     }
 
-   
-    const currentWorkspaceCount = await OrganizationWorkspace.count({
-      where: {
-        organizationId: organizationId,
-      },
-    });
+    const currentWorkspaceCount = await countWorkspacesByOrganization(organizationId);
 
-    if (currentWorkspaceCount >= (organization as any).maxWorkspaces) {
+    if (currentWorkspaceCount >= (organization.max_workspaces || 999)) {
       return NextResponse.json(
         {
           success: false,
@@ -207,51 +184,47 @@ export async function POST(
     }
 
    
+    // Generate slug
     const generateSlug = (name: string): string => {
       return name
         .toLowerCase()
-        .replace(/[^\w\s-]/g, "")
-        .replace(/[\s_-]+/g, "-")
-        .replace(/^-+|-+$/g, "");
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
     };
 
     let slug = generateSlug(body.name.trim());
     let counter = 1;
 
-   
-    while (
-      await OrganizationWorkspace.findOne({
-        where: { organizationId, slug },
-      })
-    ) {
+    // Check for existing slug
+    const existingWorkspaces = await getWorkspacesByOrganization(organizationId);
+    while (existingWorkspaces.some((w: any) => w.slug === slug)) {
       slug = `${generateSlug(body.name.trim())}-${counter}`;
       counter++;
     }
 
-   
-    const workspace = await OrganizationWorkspace.create({
-      organizationId: organizationId,
+    // Create workspace
+    const workspace = await createWorkspace({
+      organization_id: organizationId,
       name: body.name.trim(),
       slug: slug,
       description: body.description?.trim() || null,
-      statusId: null,
-      createdBy: userId,
-    });
+      status_id: null,
+      created_by: userId,
+    } as any);
 
-   
     return NextResponse.json({
       success: true,
       message: "Workspace created successfully",
       workspace: {
-        id: (workspace as any).id,
-        organizationId: (workspace as any).organizationId,
-        name: (workspace as any).name,
+        id: workspace.workspace_id,
+        organizationId: workspace.organization_id,
+        name: workspace.name,
         slug: (workspace as any).slug,
-        description: (workspace as any).description,
+        description: workspace.description,
         status: "active",
-        createdBy: (workspace as any).createdBy,
-        createdAt: (workspace as any).createdAt,
-        updatedAt: (workspace as any).updatedAt,
+        createdBy: workspace.created_by,
+        createdAt: workspace.created_at,
+        updatedAt: workspace.updated_at,
       },
     });
   } catch (error) {
