@@ -19,6 +19,9 @@ const protectedRoutes = [
   "/pipeline",
   "/communications",
   "/reports",
+  "/pages/companies",
+  "/pages/contacts",
+  "/pages/createworkspace",
 ];
 const authRoutes = [
   "/pages/auth/sign-in",

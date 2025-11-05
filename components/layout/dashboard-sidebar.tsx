@@ -61,119 +61,104 @@ const defaultMenuItems: SidebarItem[] = [
     icon: Home,
   },
   {
-    id: "leads",
-    label: "Leads",
-    href: "/pages/leads",
-    icon: Users,
-   
-    badgeVariant: "secondary",
+    id: "CRM",
+    label: "CRM",
+    href: "#",
+    icon: Settings,
+    children: [
+        {
+          id: "companies",
+          label: "Companies",
+          href: "/pages/companies",
+          icon: Users,
+        },
+        {
+          id: "Contacts",
+          label: "Contacts",
+          href: "/pages/contacts",
+          icon: Plus,
+        },
+        {
+          id: "leads",
+          label: "Leads",
+          href: "/pages/leads",
+          icon: UserPlus,
+        },
+        {
+          id: "Deals",
+          label: "Deals",
+          href: "/pages/deals",
+          icon: UserPlus,
+        },
+        {
+          id: "Pipeline",
+          label: "Pipeline",
+          href: "/pages/pipeline",
+          icon: UserPlus,
+        },
+    ],  
   },
-  // {
-  //   id: "deals",
-  //   label: "Deals",
-  //   href: "/deals",
-  //   icon: Target,
-   
-    
-  //   badgeVariant: "default",
-  // },
-  // {
-  //   id: "tasks",
-  //   label: "Tasks",
-  //   href: "/tasks",
-  //   icon: CheckSquare,
-   
-  //   badgeVariant: "destructive",
-  // },
-  // {
-  //   id: "pipeline",
-  //   label: "Pipeline",
-  //   href: "/pages/pipeline",
-  //   icon: BarChart3,
-  // },
-  // {
-  //   id: "sales",
-  //   label: "sales",
-  //   href: "/pages/sales",
-  //   icon: BarChart3,
-  // },
-  // {
-  //   id: "Marketing",
-  //   label: "Marketing",
-  //   href: "/pages/Marketing",
-  //   icon: Megaphone,
-    
-  // },
-
-  // {
-  //   id: "communications",
-  //   label: "Communications",
-  //   href: "/pages/communications",
-  //   icon: MessageSquare,
-  // },
-  
-  // {
-  //   id: "team",
-  //   label: "Team",
-  //   href: "/pages/team",
-  //   icon: Users,
-  // },
-  // {
-  //   id: "reports",
-  //   label: "Reports",
-  //   href: "/pages/reports",
-  //   icon: BarChart3,
-  // },
-  
-  // {
-  //   id: "settings",
-  //   label: "Settings",
-  //   href: "/pages/settings",
-  //   icon: Settings,
-  //   children: [
-  //       {
-  //         id: "team-management",
-  //         label: "Sales Team",
-  //         href: "#",
-  //         icon: Users,
-  //         children: [
-  //           {
-  //             id: "create-organization",
-  //             label: "Create New Organization",
-  //             href: "/pages/settings/create-organization",
-  //             icon: Plus,
-  //           },
-  //           {
-  //             id: "manage-team",
-  //             label: "Manage Team",
-  //             href: "/pages/settings/manage-team",
-  //             icon: UserPlus,
-  //           },
-            
-  //         ],
-  //       },
-  //       {
-  //         id: "select-workspace",
-  //         label: "Select Workspace" ,
-  //         href: "#",
-  //         icon: Users,
-  //         children: [
-  //           {
-  //             id: "Create-Workspace",
-  //             label: "Create a Organization",
-  //             href: "/pages/settings/create-organization",
-  //             icon: Plus,
-  //           },
-  //           {
-  //             id: "manage-workspace",
-  //             label: "Manage Workspaces",
-  //             href: "/pages/settings/manage-team",
-  //             icon: UserPlus,
-  //           },           
-  //         ],
-  //       },
-  //   ],  
-  // },
+  {
+    id: "tasks",
+    label: "Tasks",
+    href: "/tasks",
+    icon: CheckSquare,
+    badgeVariant: "destructive",
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    href: "/pages/reports",
+    icon: BarChart3,
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    href: "/pages/settings",
+    icon: Settings,
+    children: [
+        {
+          id: "team-management",
+          label: "Sales Team",
+          href: "#",
+          icon: Users,
+          children: [
+            {
+              id: "create-organization",
+              label: "Create New Organization",
+              href: "/pages/settings/create-organization",
+              icon: Plus,
+            },
+            {
+              id: "manage-team",
+              label: "Manage Team",
+              href: "/pages/settings/manage-team",
+              icon: UserPlus,
+            },
+          ],
+        },
+        {
+          id: "select-workspace",
+          label: "Select Workspace" ,
+          href: "#",
+          icon: Users,
+          children: [
+            {
+              id: "Create-Workspace",
+              label: "Create a Organization",
+              href: "/pages/settings/create-organization",
+              icon: Plus,
+            },
+            {
+              id: "manage-workspace",
+              label: "Manage Workspaces",
+              href: "/pages/settings/manage-team",
+              icon: UserPlus,
+            },           
+          ],
+        },
+    ],  
+  },
 ];
 
 export function DashboardSidebar({
@@ -287,21 +272,14 @@ export function DashboardSidebar({
           {hasChildren ? (
             <button
               onClick={() => toggleDropdown(item.id)}
-              className={`flex items-center gap-3 px-3 py-1 rounded-lg text-sm font-medium transition-colors w-full ${
+              className={`flex items-center  gap-3 px-3 py-1 rounded-lg text-sm font-medium transition-colors w-full ${
                 isActive(item.href)
                   ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
                   : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               }`}
               style={{ marginLeft: `${marginLeft}px` }}
             >
-              {}
-              {/* {!collapsed && level === 0 && (
-
-                <GripVertical className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
               
-              )} */}
-
-              {}
               {(() => {
                 const Icon = item.icon as React.ElementType;
                 return (
@@ -386,7 +364,7 @@ export function DashboardSidebar({
 
         {}
         {hasChildren && !collapsed && isOpen && (
-          <div className="space-y-1">
+          <div className="space-y-1 mt-4">
             {item.children!.map((child) => renderMenuItem(child, level + 1))}
           </div>
         )}

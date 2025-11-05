@@ -1,192 +1,219 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient as ApiClient } from "@/lib/api-client";
-import { Workspace } from "@/lib/types";
-import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAuthReady } from "@/hooks/use-auth-ready";
 
-const workspaceApi = {
- 
-  getWorkspaces: async (organizationId: string): Promise<Workspace[]> => {
-    const response = (await ApiClient.get(
-      `/organizations/${organizationId}/workspaces`
-    )) as { workspaces: Workspace[] };
-    return response.workspaces;
-  },
+export interface Workspace {
+  id: string;
+  name: string;
+  description?: string;
+  organizationId: string;
+  createdAt: string;
+  updatedAt: string;
+  organization?: {
+    organizationId: string;
+    name: string;
+    slug: string;
+  };
+}
 
- 
-  getWorkspace: async (
-    organizationId: string,
-    workspaceId: string
-  ): Promise<Workspace> => {
-    const response = (await ApiClient.get(
-      `/organizations/${organizationId}/workspaces/${workspaceId}`
-    )) as { workspace: Workspace };
-    return response.workspace;
-  },
+export interface WorkspaceFilters {
+  organizationId?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
 
- 
-  createWorkspace: async (
-    organizationId: string,
-    data: { name: string; description?: string }
-  ): Promise<Workspace> => {
-    const response = (await ApiClient.post(
-      `/organizations/${organizationId}/workspaces`,
-      data
-    )) as { workspace: Workspace };
-    return response.workspace;
-  },
+export interface CreateWorkspaceData {
+  name: string;
+  description?: string;
+  organizationId: string;
+}
 
- 
-  updateWorkspace: async (
-    organizationId: string,
-    workspaceId: string,
-    data: {
-      name?: string;
-      description?: string;
-      status?: "active" | "inactive" | "archived";
-    }
-  ): Promise<Workspace> => {
-    const response = (await ApiClient.put(
-      `/organizations/${organizationId}/workspaces/${workspaceId}`,
-      data
-    )) as { workspace: Workspace };
-    return response.workspace;
-  },
+export interface UpdateWorkspaceData extends Partial<CreateWorkspaceData> {}
 
- 
-  deleteWorkspace: async (
-    organizationId: string,
-    workspaceId: string
-  ): Promise<void> => {
-    await ApiClient.delete(
-      `/organizations/${organizationId}/workspaces/${workspaceId}`
-    );
-  },
-};
+export function useWorkspaces(filters?: WorkspaceFilters) {
+  const { currentOrganization, token } = useAuthStore();
+  const { isReady, isAuthenticated } = useAuthReady();
 
-export function useWorkspaces(
-  organizationId: string,
-  options?: { enabled?: boolean }
-) {
   return useQuery({
-    queryKey: ["workspaces", organizationId],
-    queryFn: () => workspaceApi.getWorkspaces(organizationId),
-    enabled: !!organizationId && options?.enabled !== false,
-    staleTime: 5 * 60 * 1000,
+    queryKey: [
+      "workspaces",
+      filters?.organizationId || currentOrganization?.organizationId,
+      filters,
+    ],
+    enabled:
+      isReady &&
+      isAuthenticated &&
+      !!(filters?.organizationId || currentOrganization?.organizationId),
+    queryFn: async () => {
+      const organizationId =
+        filters?.organizationId || currentOrganization?.organizationId;
+      if (!organizationId) {
+        throw new Error("No organization selected");
+      }
+
+      const params = new URLSearchParams({
+        organizationId,
+        page: filters?.page?.toString() || "1",
+        limit: filters?.limit?.toString() || "20",
+      });
+      if (filters?.search && filters.search.trim()) {
+        params.set("search", filters.search);
+      }
+
+      const response = await fetch(`/api/workspaces?${params}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch workspaces");
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || "Failed to fetch workspaces");
+      }
+
+      return result.data;
+    },
+    staleTime: 1000 * 60 * 5,
   });
 }
 
-export function useWorkspace(organizationId: string, workspaceId: string) {
+export function useWorkspace(workspaceId: string) {
+  const { token } = useAuthStore();
+
   return useQuery({
-    queryKey: ["workspace", organizationId, workspaceId],
-    queryFn: () => workspaceApi.getWorkspace(organizationId, workspaceId),
-    enabled: !!organizationId && !!workspaceId,
-    staleTime: 5 * 60 * 1000,
+    queryKey: ["workspace", workspaceId],
+    queryFn: async () => {
+      const response = await fetch(`/api/workspaces/${workspaceId}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch workspace");
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || "Failed to fetch workspace");
+      }
+
+      return result.data;
+    },
+    enabled: !!workspaceId,
   });
 }
 
-export function useCreateWorkspace(organizationId: string) {
+export function useCreateWorkspace() {
   const queryClient = useQueryClient();
+  const { currentOrganization, token } = useAuthStore();
 
   return useMutation({
-    mutationFn: (data: { name: string; description?: string }) =>
-      workspaceApi.createWorkspace(organizationId, data),
-    onSuccess: (newWorkspace) => {
-     
-      queryClient.setQueryData(
-        ["workspaces", organizationId],
-        (oldData: Workspace[] | undefined) => {
-          if (!oldData) return [newWorkspace];
-          return [newWorkspace, ...oldData];
-        }
-      );
+    mutationFn: async (data: CreateWorkspaceData) => {
+      if (!currentOrganization?.organizationId) {
+        throw new Error("Missing organization context");
+      }
 
-     
-      queryClient.invalidateQueries({
-        queryKey: ["workspaces", organizationId],
+      const response = await fetch("/api/workspaces", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          ...data,
+          organizationId:
+            data.organizationId || currentOrganization.organizationId,
+        }),
       });
 
-      toast.success(`Workspace "${newWorkspace.name}" created successfully!`);
+      if (!response.ok) {
+        throw new Error("Failed to create workspace");
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || "Failed to create workspace");
+      }
+
+      return result.data;
     },
-    onError: (error: any) => {
-      console.error("Failed to create workspace:", error);
-      toast.error(
-        error.message || "Failed to create workspace. Please try again."
-      );
-    },
-  });
-}
-
-export function useUpdateWorkspace(
-  organizationId: string,
-  workspaceId: string
-) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: {
-      name?: string;
-      description?: string;
-      status?: "active" | "inactive" | "archived";
-    }) => workspaceApi.updateWorkspace(organizationId, workspaceId, data),
-    onSuccess: (updatedWorkspace) => {
-     
-      queryClient.setQueryData(
-        ["workspace", organizationId, workspaceId],
-        updatedWorkspace
-      );
-
-     
-      queryClient.setQueryData(
-        ["workspaces", organizationId],
-        (oldData: Workspace[] | undefined) => {
-          if (!oldData) return [updatedWorkspace];
-          return oldData.map((workspace) =>
-            workspace.id === workspaceId ? updatedWorkspace : workspace
-          );
-        }
-      );
-
-      toast.success(
-        `Workspace "${updatedWorkspace.name}" updated successfully!`
-      );
-    },
-    onError: (error: any) => {
-      console.error("Failed to update workspace:", error);
-      toast.error(
-        error.message || "Failed to update workspace. Please try again."
-      );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workspaces"] });
     },
   });
 }
 
-export function useDeleteWorkspace(organizationId: string) {
+export function useUpdateWorkspace() {
   const queryClient = useQueryClient();
+  const { token } = useAuthStore();
 
   return useMutation({
-    mutationFn: (workspaceId: string) =>
-      workspaceApi.deleteWorkspace(organizationId, workspaceId),
-    onSuccess: (_, workspaceId) => {
-     
-      queryClient.setQueryData(
-        ["workspaces", organizationId],
-        (oldData: Workspace[] | undefined) => {
-          if (!oldData) return [];
-          return oldData.filter((workspace) => workspace.id !== workspaceId);
-        }
-      );
-
-     
-      queryClient.invalidateQueries({
-        queryKey: ["workspaces", organizationId],
+    mutationFn: async ({
+      workspaceId,
+      data,
+    }: {
+      workspaceId: string;
+      data: UpdateWorkspaceData;
+    }) => {
+      const response = await fetch(`/api/workspaces/${workspaceId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(data),
       });
 
-      toast.success("Workspace archived successfully!");
+      if (!response.ok) {
+        throw new Error("Failed to update workspace");
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || "Failed to update workspace");
+      }
+
+      return result.data;
     },
-    onError: (error: any) => {
-      console.error("Failed to delete workspace:", error);
-      toast.error(
-        error.message || "Failed to delete workspace. Please try again."
-      );
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["workspaces"] });
+      queryClient.invalidateQueries({
+        queryKey: ["workspace", variables.workspaceId],
+      });
+    },
+  });
+}
+
+export function useDeleteWorkspace() {
+  const queryClient = useQueryClient();
+  const { token } = useAuthStore();
+
+  return useMutation({
+    mutationFn: async (workspaceId: string) => {
+      const response = await fetch(`/api/workspaces/${workspaceId}`, {
+        method: "DELETE",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete workspace");
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || "Failed to delete workspace");
+      }
+
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workspaces"] });
     },
   });
 }
