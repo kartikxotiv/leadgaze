@@ -1,7 +1,3 @@
--- Insert new roles into organization_roles table
--- This migration adds 6 new roles: sales_rep, sales_manager, project_manager, marketing_manager, workspace_admin, system_admin
--- Hierarchy: Owner (100) > System Admin (90) > Admin (80) > Workspace Admin (75) > Manager (60) > Sales/Project/Marketing Manager (55) > Sales Rep (35) > Viewer (20)
-
 INSERT INTO public.organization_roles (role, display_name, description, permissions, hierarchy_level, is_system_role, is_active)
 VALUES
 (

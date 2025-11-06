@@ -3,6 +3,9 @@ import {
   getCompaniesPaginated,
   createCompany,
 } from "@/lib/data/companies";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,6 +37,7 @@ export async function GET(request: NextRequest) {
       revenue: company.revenue,
       industry: company.industry,
       closeDate: company.close_date,
+      userId: company.user_id,
       createdAt: company.created_at,
       updatedAt: company.updated_at,
       contacts: company.contacts,
@@ -86,6 +90,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Verify authorization and extract user_id
+    const authHeader = request.headers.get("authorization");
+    let userId: string | undefined;
+    
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      try {
+        const decoded: any = jwt.verify(authHeader.substring(7), JWT_SECRET);
+        userId = decoded?.userId || decoded?.user_id;
+        if (userId) {
+          console.log("✅ Successfully extracted userId from token:", userId);
+        } else {
+          console.warn("⚠️ Token decoded but userId not found in payload:", decoded);
+        }
+      } catch (error) {
+        // If token is invalid, continue without user_id (optional auth)
+        console.warn("⚠️ Failed to verify/parse token:", error);
+      }
+    } else {
+      console.warn("⚠️ No authorization header found in request");
+    }
+
     // Create company
     const company = await createCompany({
       title: body.title,
@@ -95,6 +120,7 @@ export async function POST(request: NextRequest) {
       industry: body.industry,
       close_date: body.closeDate,
       workspace_id: body.workspaceId,
+      user_id: userId,
     });
 
     return NextResponse.json({
@@ -107,6 +133,7 @@ export async function POST(request: NextRequest) {
         revenue: company.revenue,
         industry: company.industry,
         closeDate: company.close_date,
+        userId: company.user_id,
         createdAt: company.created_at,
         updatedAt: company.updated_at,
       },

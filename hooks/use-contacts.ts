@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 export interface Contact {
   id: string;
@@ -21,6 +22,7 @@ export interface Contact {
 
 export interface ContactFilters {
   companyId?: string;
+  workspaceId?: string;
   search?: string;
   page?: number;
   limit?: number;
@@ -31,7 +33,8 @@ export interface CreateContactData {
   lastName?: string;
   email?: string;
   phoneNumber?: string;
-  companyId: string;
+  companyId?: string;
+  workspaceId?: string;
   location?: string;
   description?: string;
   contactTimeZone?: string;
@@ -40,24 +43,38 @@ export interface CreateContactData {
 export interface UpdateContactData extends Partial<CreateContactData> {}
 
 export function useContacts(filters?: ContactFilters) {
+  const { token } = useAuthStore();
+
   return useQuery({
-    queryKey: ["contacts", filters?.companyId, filters],
-    enabled: !!filters?.companyId,
+    queryKey: ["contacts", filters?.companyId, filters?.workspaceId, filters],
+    enabled: !!(filters?.companyId || filters?.workspaceId),
     queryFn: async () => {
-      if (!filters?.companyId) {
-        throw new Error("Company ID is required");
+      if (!filters?.companyId && !filters?.workspaceId) {
+        throw new Error("Company ID or Workspace ID is required");
       }
 
       const params = new URLSearchParams({
-        companyId: filters.companyId,
         page: filters?.page?.toString() || "1",
         limit: filters?.limit?.toString() || "20",
       });
+      
+      if (filters?.companyId) {
+        params.set("companyId", filters.companyId);
+      }
+      
+      if (filters?.workspaceId) {
+        params.set("workspaceId", filters.workspaceId);
+      }
+      
       if (filters?.search && filters.search.trim()) {
         params.set("search", filters.search);
       }
 
-      const response = await fetch(`/api/contacts?${params}`);
+      const response = await fetch(`/api/contacts?${params}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch contacts");
       }
@@ -74,10 +91,16 @@ export function useContacts(filters?: ContactFilters) {
 }
 
 export function useContact(contactId: string) {
+  const { token } = useAuthStore();
+
   return useQuery({
     queryKey: ["contact", contactId],
     queryFn: async () => {
-      const response = await fetch(`/api/contacts/${contactId}`);
+      const response = await fetch(`/api/contacts/${contactId}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch contact");
       }
@@ -95,6 +118,7 @@ export function useContact(contactId: string) {
 
 export function useCreateContact() {
   const queryClient = useQueryClient();
+  const { token } = useAuthStore();
 
   return useMutation({
     mutationFn: async (data: CreateContactData) => {
@@ -102,6 +126,7 @@ export function useCreateContact() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(data),
       });
@@ -130,6 +155,7 @@ export function useCreateContact() {
 
 export function useUpdateContact() {
   const queryClient = useQueryClient();
+  const { token } = useAuthStore();
 
   return useMutation({
     mutationFn: async ({
@@ -143,6 +169,7 @@ export function useUpdateContact() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(data),
       });
@@ -169,11 +196,15 @@ export function useUpdateContact() {
 
 export function useDeleteContact() {
   const queryClient = useQueryClient();
+  const { token } = useAuthStore();
 
   return useMutation({
     mutationFn: async (contactId: string) => {
       const response = await fetch(`/api/contacts/${contactId}`, {
         method: "DELETE",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
       });
 
       if (!response.ok) {

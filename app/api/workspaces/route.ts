@@ -66,6 +66,7 @@ export async function GET(request: NextRequest) {
       name: workspace.name,
       description: workspace.description,
       organizationId: workspace.organization_id,
+      userId: workspace.user_id,
       createdAt: workspace.created_at,
       updatedAt: workspace.updated_at,
       organization: workspace.organization,
@@ -127,8 +128,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let decoded: any;
+    let userId: string | undefined;
     try {
-      const decoded: any = jwt.verify(authHeader.substring(7), JWT_SECRET);
+      decoded = jwt.verify(authHeader.substring(7), JWT_SECRET) as any;
+      userId = decoded?.userId || decoded?.user_id;
       const hasOrgAccess = Array.isArray(decoded?.availableOrganizations)
         ? decoded.availableOrganizations.some(
             (o: any) => o.id === body.organizationId
@@ -152,6 +156,7 @@ export async function POST(request: NextRequest) {
       name: body.name,
       description: body.description,
       organization_id: body.organizationId,
+      user_id: userId,
     });
 
     return NextResponse.json({
@@ -161,6 +166,7 @@ export async function POST(request: NextRequest) {
         name: workspace.name,
         description: workspace.description,
         organizationId: workspace.organization_id,
+        userId: workspace.user_id,
         createdAt: workspace.created_at,
         updatedAt: workspace.updated_at,
       },

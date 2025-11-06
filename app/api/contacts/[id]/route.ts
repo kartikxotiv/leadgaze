@@ -27,6 +27,7 @@ export async function GET(
         firstName: contact.first_name,
         lastName: contact.last_name,
         email: contact.email,
+        userId: contact.user_id,
         phoneNumber: contact.phone_number,
         companyId: contact.company_id,
         location: contact.location,
@@ -63,16 +64,22 @@ export async function PUT(
       );
     }
 
-    const contact = await updateContact(params.id, {
+    const updateData: any = {
       first_name: body.firstName,
       last_name: body.lastName,
       email: body.email?.toLowerCase(),
       phone_number: body.phoneNumber,
-      company_id: body.companyId,
       location: body.location,
       description: body.description,
       contact_time_zone: body.contactTimeZone,
-    });
+    };
+
+    // Handle company_id - allow setting to null/undefined to remove it
+    if (body.hasOwnProperty('companyId')) {
+      updateData.company_id = body.companyId || null;
+    }
+
+    const contact = await updateContact(params.id, updateData);
 
     return NextResponse.json({
       success: true,
@@ -82,6 +89,7 @@ export async function PUT(
         firstName: contact.first_name,
         lastName: contact.last_name,
         email: contact.email,
+        userId: contact.user_id,
         phoneNumber: contact.phone_number,
         companyId: contact.company_id,
         location: contact.location,

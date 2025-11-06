@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 export interface Company {
   id: string;
@@ -38,6 +39,8 @@ export interface CreateCompanyData {
 export interface UpdateCompanyData extends Partial<CreateCompanyData> {}
 
 export function useCompanies(filters?: CompanyFilters) {
+  const { token } = useAuthStore();
+
   return useQuery({
     queryKey: ["companies", filters],
     queryFn: async () => {
@@ -52,7 +55,11 @@ export function useCompanies(filters?: CompanyFilters) {
         params.set("workspaceId", filters.workspaceId);
       }
 
-      const response = await fetch(`/api/companies?${params}`);
+      const response = await fetch(`/api/companies?${params}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch companies");
       }
@@ -69,10 +76,16 @@ export function useCompanies(filters?: CompanyFilters) {
 }
 
 export function useCompany(companyId: string) {
+  const { token } = useAuthStore();
+
   return useQuery({
     queryKey: ["company", companyId],
     queryFn: async () => {
-      const response = await fetch(`/api/companies/${companyId}`);
+      const response = await fetch(`/api/companies/${companyId}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch company");
       }
@@ -90,6 +103,7 @@ export function useCompany(companyId: string) {
 
 export function useCreateCompany() {
   const queryClient = useQueryClient();
+  const { token } = useAuthStore();
 
   return useMutation({
     mutationFn: async (data: CreateCompanyData) => {
@@ -97,6 +111,7 @@ export function useCreateCompany() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(data),
       });
@@ -120,6 +135,7 @@ export function useCreateCompany() {
 
 export function useUpdateCompany() {
   const queryClient = useQueryClient();
+  const { token } = useAuthStore();
 
   return useMutation({
     mutationFn: async ({
@@ -133,6 +149,7 @@ export function useUpdateCompany() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(data),
       });
@@ -159,11 +176,15 @@ export function useUpdateCompany() {
 
 export function useDeleteCompany() {
   const queryClient = useQueryClient();
+  const { token } = useAuthStore();
 
   return useMutation({
     mutationFn: async (companyId: string) => {
       const response = await fetch(`/api/companies/${companyId}`, {
         method: "DELETE",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
       });
 
       if (!response.ok) {
