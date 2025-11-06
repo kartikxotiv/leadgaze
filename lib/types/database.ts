@@ -384,3 +384,53 @@ export interface ActivityWithRelations extends Activity {
   user?: Pick<User, 'user_id' | 'first_name' | 'last_name' | 'email'>;
 }
 
+export interface Workspace {
+  id: string;
+  name: string;
+  description?: string;
+  organization_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Company {
+  id: string;
+  title: string;
+  description?: string;
+  location?: string;
+  revenue?: string;
+  industry?: string;
+  close_date?: string;
+  workspace_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Contact {
+  id: string;
+  workspace_id?: string;
+  first_name: string;
+  last_name?: string;
+  email?: string;
+  phone_number?: string;
+  company_id?: string;
+  location?: string;
+  description?: string;
+  contact_time_zone?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkspaceWithRelations extends Workspace {
+  organization?: Pick<Organization, 'organization_id' | 'name' | 'slug'>;
+}
+
+export interface CompanyWithRelations extends Company {
+  contacts?: Pick<Contact, 'id' | 'first_name' | 'last_name' | 'email'>[];
+}
+
+export interface ContactWithRelations extends Contact {
+  workspace?: Pick<Workspace, 'id' | 'name' | 'description'>;
+  company?: Pick<Company, 'id' | 'title' | 'location'>;
+}
+

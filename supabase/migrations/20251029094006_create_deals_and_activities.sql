@@ -21,8 +21,16 @@ CREATE TABLE IF NOT EXISTS public.deals (
 );
 
 -- Constraint for probability between 0 and 100
-ALTER TABLE public.deals
-  ADD CONSTRAINT deals_probability_check CHECK (probability >= 0 AND probability <= 100);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'deals_probability_check'
+  ) THEN
+    ALTER TABLE public.deals
+      ADD CONSTRAINT deals_probability_check CHECK (probability >= 0 AND probability <= 100);
+  END IF;
+END $$;
 
 -- Create activities table
 CREATE TABLE IF NOT EXISTS public.activities (
@@ -50,12 +58,28 @@ CREATE TABLE IF NOT EXISTS public.activities (
 );
 
 -- Check constraint for direction
-ALTER TABLE public.activities
-  ADD CONSTRAINT activities_direction_check CHECK (direction IN ('inbound', 'outbound'));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'activities_direction_check'
+  ) THEN
+    ALTER TABLE public.activities
+      ADD CONSTRAINT activities_direction_check CHECK (direction IN ('inbound', 'outbound'));
+  END IF;
+END $$;
 
 -- Check constraint for duration_minutes
-ALTER TABLE public.activities
-  ADD CONSTRAINT activities_duration_minutes_check CHECK (duration_minutes >= 0);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'activities_duration_minutes_check'
+  ) THEN
+    ALTER TABLE public.activities
+      ADD CONSTRAINT activities_duration_minutes_check CHECK (duration_minutes >= 0);
+  END IF;
+END $$;
 
 -- Enable row level security (optional)
 ALTER TABLE public.deals ENABLE ROW LEVEL SECURITY;
