@@ -1,4 +1,9 @@
-CREATE TYPE IF NOT EXISTS public.sales_lead_status AS ENUM ('in_progress','pipeline','won','lost');
+DO $$
+BEGIN
+  CREATE TYPE public.sales_lead_status AS ENUM ('in_progress','pipeline','won','lost');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.sales_leads (
     
@@ -19,7 +24,7 @@ CREATE TABLE IF NOT EXISTS public.sales_leads (
   email VARCHAR(255),
   phone_number INTEGER,
   location VARCHAR(255),
-  platform TEXT,
+  platform INTEGER REFERENCES public.contact_platforms(id) ON UPDATE CASCADE ON DELETE SET NULL,
   priority UUID REFERENCES public.lead_priorities(id) ON UPDATE CASCADE ON DELETE SET NULL,
   contact_time_zone VARCHAR(100),
   is_deleted BOOLEAN NOT NULL DEFAULT FALSE,

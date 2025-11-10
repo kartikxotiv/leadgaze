@@ -62,7 +62,7 @@ const defaultMenuItems: SidebarItem[] = [
   },
   {
     id: "CRM",
-    label: "CRM",
+    label: "Sales Ops",
     href: "#",
     icon: Settings,
     children: [
@@ -314,7 +314,7 @@ export function DashboardSidebar({
           ) : (
             <Link
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center gap-3 px-3 py-1 uronded-lg text-sm font-medium transition-colors ${
                 isActive(item.href)
                   ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
                   : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -353,7 +353,7 @@ export function DashboardSidebar({
             </Link>
           )}
 
-          {}
+          
           {collapsed && (
             <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
               {item.label}
@@ -362,9 +362,9 @@ export function DashboardSidebar({
           )}
         </div>
 
-        {}
+        
         {hasChildren && !collapsed && isOpen && (
-          <div className="space-y-1 mt-4">
+          <div className="space-y-1 mt-2">
             {item.children!.map((child) => renderMenuItem(child, level + 1))}
           </div>
         )}
@@ -400,10 +400,7 @@ export function DashboardSidebar({
         )}
       </div>
 
-      {}
-      {}
-
-      {}
+      
       <div className="flex-1 overflow-hidden">
         <SafeScrollArea className="h-full px-3 py-4">
           <nav className="space-y-1">
@@ -412,8 +409,7 @@ export function DashboardSidebar({
         </SafeScrollArea>
       </div>
 
-      {}
-      {}
+      
     </div>
   );
 }

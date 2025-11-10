@@ -14,7 +14,7 @@ export interface User {
   login_attempts: number;
   lock_until?: string;
   password_reset_token?: string;
-  password_reset_expires?: string;
+  password_reset_expires?: string; 
   password_changed_at?: string;
   created_at: string;
   updated_at: string;

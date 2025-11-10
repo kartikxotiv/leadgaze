@@ -14,13 +14,14 @@ const customStyles: any = {
         textAlign: "left",
         borderTopLeftRadius: "8px",
         borderTopRightRadius: "8px",
-        border: "1px solid #EAECF0",
+        // border: "1px solid  red",
         backgroundColor: "#FFFFFF",
         boxShadow: "0px 1px 8px rgba(16, 24, 40, 0.10)",
         fontFamily: "'Satoshi_Regular', 'Zoho_Puvi_SemiBold', Arial, sans-serif",
         fontSize: "14px",
         color: "#101828",
         letterSpacing: "0.5px",
+
       },
     },
     linkText: {
@@ -60,6 +61,7 @@ const customStyles: any = {
     },
     headCells: {
       style: {
+        // borderRight: "1px solid #64748b4d",
         color: "#6C7A99",
         fontSize: "12px",
         fontWeight: 600,
@@ -73,6 +75,7 @@ const customStyles: any = {
     },
     cells: {
       style: {
+        // borderRight: "1px solid #64748b4d",
         fontSize: "13px",
         color: "#000000",
         maxHeight: "35px", 
@@ -183,6 +186,7 @@ interface ReactTableProps {
     paginationDefaultPage?: number;
     onChangePage?: (page: number) => void;
     onChangeRowsPerPage?: (currentRowsPerPage: number, currentPage: number) => void;
+    onRowClicked?: (row: any) => void;
 }
 
 export const ReactTable = ({
@@ -194,6 +198,7 @@ export const ReactTable = ({
     paginationDefaultPage = 1,
     onChangePage,
     onChangeRowsPerPage,
+    onRowClicked,
 }: ReactTableProps) => {
     console.log("columns", columns);
     console.log("data", data);
@@ -211,6 +216,7 @@ export const ReactTable = ({
         onChangePage={onChangePage}
         onChangeRowsPerPage={onChangeRowsPerPage}
         paginationServer={pagination}
+        onRowClicked={onRowClicked}
         customStyles={customStyles}
         conditionalRowStyles={customStyles.conditionalRowStyles}
         

@@ -1,11 +1,19 @@
 CREATE TABLE IF NOT EXISTS public.notes(
-   id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
    lead_id UUID NOT NULL REFERENCES public.sales_leads(id) ON UPDATE CASCADE ON DELETE CASCADE,
    title VARCHAR(255) NOT NULL,
    description TEXT NOT NULL,
-   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+   created_by UUID REFERENCES public.users(user_id) ON UPDATE CASCADE ON DELETE SET NULL,
+   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON UPDATE CASCADE ON DELETE CASCADE,
+   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
+
+
+
+
+
+
+

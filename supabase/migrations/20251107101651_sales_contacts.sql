@@ -1,4 +1,9 @@
-CREATE TYPE IF NOT EXISTS public.sales_contact_status AS ENUM ('pending','moved_to_lead','rejected');
+DO $$
+BEGIN
+  CREATE TYPE public.sales_contact_status AS ENUM ('pending','moved_to_lead','rejected');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 CREATE TABLE IF NOT EXISTS public.sales_contacts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
@@ -7,7 +12,7 @@ CREATE TABLE IF NOT EXISTS public.sales_contacts (
   first_name VARCHAR(255) NOT NULL,
   last_name VARCHAR(255),
   email VARCHAR(255),
-  phone_number INTEGER,
+  phone_number VARCHAR(255),
   company_id UUID REFERENCES public.companies(id) ON UPDATE CASCADE ON DELETE SET NULL,
   location VARCHAR(255),
   contact_time_zone VARCHAR(100),
@@ -16,7 +21,7 @@ CREATE TABLE IF NOT EXISTS public.sales_contacts (
   deleted_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  platform VARCHAR REFERENCES public.contact_platforms(id) ON UPDATE CASCADE ON DELETE SET NULL,
+  platform INTEGER REFERENCES public.contact_platforms(id) ON UPDATE CASCADE ON DELETE SET NULL,
   created_by UUID REFERENCES public.users(user_id) ON DELETE SET NULL
 );
 

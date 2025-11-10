@@ -202,6 +202,27 @@ export type Database = {
           },
         ]
       }
+      contact_platforms: {
+        Row: {
+          created_at: string
+          id: number
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           company_id: string | null
@@ -216,6 +237,7 @@ export type Database = {
           phone_number: string | null
           updated_at: string
           user_id: string | null
+          workspace_id: string | null
         }
         Insert: {
           company_id?: string | null
@@ -230,6 +252,7 @@ export type Database = {
           phone_number?: string | null
           updated_at?: string
           user_id?: string | null
+          workspace_id?: string | null
         }
         Update: {
           company_id?: string | null
@@ -244,6 +267,7 @@ export type Database = {
           phone_number?: string | null
           updated_at?: string
           user_id?: string | null
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -259,6 +283,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "contacts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -426,6 +457,117 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      lead_comments: {
+        Row: {
+          comment: string
+          created_at: string
+          created_by: string | null
+          id: string
+          lead_id: string
+          updated_at: string
+        }
+        Insert: {
+          comment: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id: string
+          updated_at?: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_comments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "lead_comments_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "sales_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_media: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          lead_id: string
+          media_type: string
+          media_url: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id: string
+          media_type: string
+          media_url: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id?: string
+          media_type?: string
+          media_url?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_media_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "lead_media_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "sales_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_priorities: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       lead_scores: {
         Row: {
@@ -624,6 +766,45 @@ export type Database = {
           },
         ]
       }
+      leads_assignees: {
+        Row: {
+          created_at: string
+          id: string
+          lead_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lead_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lead_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_assignees_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "sales_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_assignees_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       leads_config: {
         Row: {
           created_at: string
@@ -659,6 +840,61 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          lead_id: string
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description: string
+          id?: string
+          lead_id: string
+          title: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          lead_id?: string
+          title?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "sales_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notes_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -1121,6 +1357,198 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      sales_contacts: {
+        Row: {
+          company_id: string | null
+          contact_time_zone: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          email: string | null
+          first_name: string
+          id: string
+          is_deleted: boolean
+          last_name: string | null
+          location: string | null
+          phone_number: string | null
+          platform: number | null
+          status: Database["public"]["Enums"]["sales_contact_status"]
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          company_id?: string | null
+          contact_time_zone?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          email?: string | null
+          first_name: string
+          id?: string
+          is_deleted?: boolean
+          last_name?: string | null
+          location?: string | null
+          phone_number?: string | null
+          platform?: number | null
+          status?: Database["public"]["Enums"]["sales_contact_status"]
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          company_id?: string | null
+          contact_time_zone?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          email?: string | null
+          first_name?: string
+          id?: string
+          is_deleted?: boolean
+          last_name?: string | null
+          location?: string | null
+          phone_number?: string | null
+          platform?: number | null
+          status?: Database["public"]["Enums"]["sales_contact_status"]
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_contacts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_contacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "sales_contacts_platform_fkey"
+            columns: ["platform"]
+            isOneToOne: false
+            referencedRelation: "contact_platforms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_contacts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_leads: {
+        Row: {
+          contact_id: string | null
+          contact_time_zone: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          email: string | null
+          first_name: string
+          id: string
+          is_deleted: boolean
+          last_name: string | null
+          location: string | null
+          owner_id: string | null
+          phone_number: number | null
+          platform: number | null
+          priority: string | null
+          status: Database["public"]["Enums"]["sales_lead_status"]
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          contact_id?: string | null
+          contact_time_zone?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          email?: string | null
+          first_name: string
+          id?: string
+          is_deleted?: boolean
+          last_name?: string | null
+          location?: string | null
+          owner_id?: string | null
+          phone_number?: number | null
+          platform?: number | null
+          priority?: string | null
+          status?: Database["public"]["Enums"]["sales_lead_status"]
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          contact_id?: string | null
+          contact_time_zone?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          email?: string | null
+          first_name?: string
+          id?: string
+          is_deleted?: boolean
+          last_name?: string | null
+          location?: string | null
+          owner_id?: string | null
+          phone_number?: number | null
+          platform?: number | null
+          priority?: string | null
+          status?: Database["public"]["Enums"]["sales_lead_status"]
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_leads_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "sales_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_leads_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "sales_leads_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "sales_leads_platform_fkey"
+            columns: ["platform"]
+            isOneToOne: false
+            referencedRelation: "contact_platforms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_leads_priority_fkey"
+            columns: ["priority"]
+            isOneToOne: false
+            referencedRelation: "lead_priorities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_leads_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scoring_rules: {
         Row: {
@@ -1752,6 +2180,8 @@ export type Database = {
       enum_user_organizations_role: "owner" | "admin" | "manager" | "viewer"
       enum_user_organizations_status: "active" | "inactive" | "pending"
       enum_users_status: "active" | "inactive" | "suspended"
+      sales_contact_status: "pending" | "moved_to_lead" | "rejected"
+      sales_lead_status: "in_progress" | "pipeline" | "won" | "lost"
       task_priority: "Low" | "Medium" | "High" | "Urgent"
       task_status: "Pending" | "In Progress" | "Completed" | "Cancelled"
       task_type: "Task" | "Call" | "Email" | "Meeting" | "Note"
@@ -1964,6 +2394,8 @@ export const Constants = {
       enum_user_organizations_role: ["owner", "admin", "manager", "viewer"],
       enum_user_organizations_status: ["active", "inactive", "pending"],
       enum_users_status: ["active", "inactive", "suspended"],
+      sales_contact_status: ["pending", "moved_to_lead", "rejected"],
+      sales_lead_status: ["in_progress", "pipeline", "won", "lost"],
       task_priority: ["Low", "Medium", "High", "Urgent"],
       task_status: ["Pending", "In Progress", "Completed", "Cancelled"],
       task_type: ["Task", "Call", "Email", "Meeting", "Note"],
