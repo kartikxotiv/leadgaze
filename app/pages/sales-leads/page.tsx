@@ -49,14 +49,10 @@ import {
   AlertCircle,
   Phone,
   MapPin,
+  Globe,
   Loader2,
   Save,
-  Globe,
-  MessageSquare,
-  CalendarClock,
   Flag,
-  FileText,
-  ListChecks,
   Paperclip,
   Smile,
   AtSign,
@@ -85,18 +81,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
-import {
-  X,
-  ChevronDown,
-  Clock,
-  Tag,
-  Users,
-  Calendar,
-  BarChart3,
-  Link2,
-  Sparkles,
-  Send,
-} from "lucide-react";
+import { X, ChevronDown, Clock, Calendar, Send } from "lucide-react";
 // import { X, Calendar, Clock, Tag, Users, Link2, ChevronDown, MessageSquare, Send, Paperclip, Smile, AtSign, Hash, MoreHorizontal } from 'lucide-react';
 
 const ADD_PLATFORM_SELECT_VALUE = "__add_new_platform__";
@@ -577,19 +562,21 @@ const SalesLeadFormFields = ({
                 />
               </div>
             </div>
-            {/* <div className="space-y-2">
-                <Label htmlFor="contactTimeZone">Contact Time Zone</Label>
-                <div className="relative">
-                  <Globe className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
-                  <Input
-                    id="contactTimeZone"
-                    value={data.contactTimeZone}
-                    onChange={(event) => onChange('contactTimeZone', event.target.value)}
-                    placeholder="America/New_York"
-                    className="pl-10 bg-gray-100"
-                  />
-                </div>
-              </div> */}
+            <div className="space-y-2">
+              <Label htmlFor="contactTimeZone">Contact Time Zone</Label>
+              <div className="relative">
+                <Globe className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+                <Input
+                  id="contactTimeZone"
+                  value={data.contactTimeZone}
+                  onChange={(event) =>
+                    onChange("contactTimeZone", event.target.value)
+                  }
+                  placeholder="America/New_York"
+                  className="pl-10 bg-gray-100"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -601,11 +588,6 @@ export default function SalesLeadsPage() {
   const { currentWorkspace } = useWorkspaceContext();
   const workspaceId = currentWorkspace?.id;
   const { user } = useAuthStore();
-  //  const [activeTab, setActiveTab] = useState('details');
-  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
-  const [commentText, setCommentText] = useState("");
-  const [activeTab, setActiveTab] = useState("subtasks");
-  const [comment, setComment] = useState("");
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -643,6 +625,10 @@ export default function SalesLeadsPage() {
   const createLeadPriorityMutation = useCreateLeadPriority();
   const updateLeadPriorityMutation = useUpdateLeadPriority();
   const deleteLeadPriorityMutation = useDeleteLeadPriority();
+  const prioritySaving =
+    createLeadPriorityMutation.isPending ||
+    updateLeadPriorityMutation.isPending;
+  const priorityDeleting = deleteLeadPriorityMutation.isPending;
 
   const createSalesLeadMutation = useCreateSalesLead();
   const createContactPlatformMutation = useCreateContactPlatform();
@@ -658,6 +644,33 @@ export default function SalesLeadsPage() {
     });
     return map;
   }, [priorityList]);
+  const priorityColorsByKey = useMemo(() => {
+    const lookup: Record<string, string> = {};
+    priorityOptions.forEach((priority) => {
+      const fallback =
+        priority.color ??
+        KNOWN_PRIORITY_COLORS[priority.name?.toLowerCase() ?? ""] ??
+        "#2563eb";
+      if (priority.id) {
+        lookup[priority.id] = fallback;
+      }
+      if (priority.name) {
+        lookup[priority.name.toLowerCase()] = fallback;
+      }
+    });
+    return lookup;
+  }, [priorityOptions]);
+  const getPriorityColor = useCallback(
+    (key?: string | null) => {
+      if (!key) return "#2563eb";
+      return (
+        priorityColorsByKey[key] ??
+        priorityColorsByKey[key.toLowerCase?.() ?? key] ??
+        "#2563eb"
+      );
+    },
+    [priorityColorsByKey]
+  );
 
   const platformMap = useMemo(() => {
     const map = new Map<number, string>();
@@ -728,9 +741,6 @@ export default function SalesLeadsPage() {
     salesLeadName?: string;
   }>({ open: false });
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
-  const [previewDialogTab, setPreviewDialogTab] = useState<
-    "overview" | "priority" | "comments" | "assignees" | "platform"
-  >("overview");
   const [addSalesLeadSidebarOpen, setAddSalesLeadSidebarOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({ ...INITIAL_FORM_STATE });
   const [errors, setErrors] = useState<Record<keyof FormData, string>>({
@@ -744,6 +754,26 @@ export default function SalesLeadsPage() {
   });
   const [previewLead, setPreviewLead] = useState<any | null>(null);
   const [newCommentText, setNewCommentText] = useState("");
+  const previewLeadDisplayName = useMemo(() => {
+    if (!previewLead) return "";
+    const name = `${previewLead.first_name ?? ""} ${
+      previewLead.last_name ?? ""
+    }`
+      .trim()
+      .replace(/\s+/g, " ");
+    if (name) return name;
+    if (previewLead.company) return previewLead.company;
+    if (previewLead.email) return previewLead.email;
+    return "Untitled Lead";
+  }, [previewLead]);
+  const statusLabel = useMemo(
+    () => formatStatus(editFormData.status),
+    [editFormData.status]
+  );
+  const statusClassName = useMemo(
+    () => STATUS_STYLE_MAP[editFormData.status] ?? "bg-gray-100 text-gray-700",
+    [editFormData.status]
+  );
   const [priorityFormState, setPriorityFormState] = useState<{
     id: string | null;
     name: string;
@@ -830,6 +860,17 @@ export default function SalesLeadsPage() {
       }
     },
     [deleteLeadPriorityMutation, priorityFormState.id, resetPriorityFormState]
+  );
+
+  const handleSelectPriorityForEdit = useCallback(
+    (priority: LeadPriority) => {
+      setPriorityFormState({
+        id: priority.id ?? null,
+        name: priority.name ?? "",
+        color: priority.color ?? "#2563eb",
+      });
+    },
+    [setPriorityFormState]
   );
 
   const handleAddComment = useCallback(async () => {
@@ -1013,7 +1054,6 @@ export default function SalesLeadsPage() {
       if (!open) {
         setPreviewLead(null);
         resetEditFormState();
-        setPreviewDialogTab("overview");
         setNewCommentText("");
         resetPriorityFormState();
       }
@@ -1354,7 +1394,6 @@ export default function SalesLeadsPage() {
     (lead: any) => {
       setPreviewLead(lead);
       setPreviewDialogOpen(true);
-      setPreviewDialogTab("overview");
       setNewCommentText("");
       resetPriorityFormState();
       setEditFormData(mapLeadToFormData(lead));
@@ -1456,9 +1495,9 @@ export default function SalesLeadsPage() {
         sortable: true,
       },
       {
-        id: "contact",
-        name: "Linked Contact",
-        selector: (row: SalesLeadRow) => row.contact_label || "",
+        id: "Location",
+        name: "Location ",
+        selector: (row: SalesLeadRow) => row.location || "",
         sortable: true,
       },
       {
@@ -1601,621 +1640,546 @@ export default function SalesLeadsPage() {
         open={previewDialogOpen}
         onOpenChange={handlePreviewDialogOpenChange}
       >
-        {/* <DialogContent className="max-w-7xl"> */}
         <DialogContent className="max-w-6xl p-0">
-          {/* {previewLead ? (
-                <>
-                <Tabs
-                    value={previewDialogTab}
-                    onValueChange={(value) =>
-                    setPreviewDialogTab(
-                        value as 'overview' | 'priority' | 'comments' | 'assignees' | 'platform'
-                    )
-                    }
-                    className="space-y-4 h-[80vh]"
-                >
-                    <div className=""></div>
-                            <div className='border-b border-muted-foreground/30 !mt-0'>
-                            <p>Update your Task and Priority</p>
-                            <p className="text-xs text-muted-foreground mb-4">
-                            Create, edit, or remove priority levels.
-                            </p>
-                            </div>
-                            <div className='w-full flex gap-10 !mt-0'>
-                                <div className='w-[90%]'>
+          {previewLead ? (
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col relative">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-500">Lead</span>
+                  <span className="text-sm text-gray-400">
+                    {previewLead.id ?? "—"}
+                  </span>
+                </div>
+              </div>
+              <div className="flex-1 overflow-hidden flex">
+                <div className="flex-1 overflow-y-auto">
+                  <div className="p-10">
+                    <h1 className="text-2xl font-semibold text-gray-900 mb-6">
+                      {previewLeadDisplayName}
+                    </h1>
 
-                                <TabsContent value="overview" className="space-y-4">
-                                    <SalesLeadFormFields
-                                    data={editFormData}
-                                    errors={editErrors}
-                                    onChange={handleEditFormChange}
-                                    onPlatformSelectChange={handleEditPlatformSelectChange}
-                                    onPrioritySelectChange={handleEditPrioritySelectChange}
-                                    onContactSelectChange={handleEditContactSelectChange}
-                                    platformOptions={platformOptions}
-                                    priorityOptions={priorityOptions}
-                                    contactOptions={contactOptions}
-                                    platformsLoading={platformsLoading}
-                                    />
-                            </TabsContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-gray-600 w-32">
+                          Status
+                        </span>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              className={`inline-flex items-center gap-2 rounded px-3 py-1 text-sm font-medium transition-colors ${statusClassName}`}
+                            >
+                              {statusLabel || "Select status"}
+                              <ChevronDown size={14} />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            {STATUS_OPTIONS.map((option) => (
+                              <DropdownMenuItem
+                                key={option.value}
+                                onClick={() =>
+                                  handleEditFormChange("status", option.value)
+                                }
+                              >
+                                {option.label}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
 
-                    <TabsContent value="priority" className="space-y-6 !w-[60%]">
-                    <div className="space-y-3 flex items-center gap-2">
-                        <Label className="text-sm font-medium text-muted-foreground w-[20%]"> Priority</Label>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-gray-600 w-32">
+                          Priority
+                        </span>
                         <Select
-                        value={editFormData.priorityId}
-                        onValueChange={handleEditPrioritySelectChange}
-                        disabled={priorityOptions.length === 0}
-                        
+                          value={editFormData.priorityId}
+                          onValueChange={handleEditPrioritySelectChange}
+                          disabled={priorityOptions.length === 0}
                         >
-                        <SelectTrigger className="bg-gray-100 w-[50%]">
+                          <SelectTrigger
+                            className=" outline-none focus:outline-none
+    focus:ring-0 focus:ring-offset-0 px-2 border-none shadow-none  hover:bg-muted/50 transition-colors group w-52 justify-between"
+                          >
                             <SelectValue
-                            placeholder={
-                                priorityOptions.length === 0 ? 'No priorities' : 'Select priority'
-                            }
+                              placeholder={
+                                priorityOptions.length === 0
+                                  ? "No priorities"
+                                  : "Select priority"
+                              }
                             />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value={NO_SELECTION_VALUE}>No priority</SelectItem>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={NO_SELECTION_VALUE}>
+                              No priority
+                            </SelectItem>
                             {priorityOptions.map((priority) => (
-                            <SelectItem key={priority.id} value={priority.id}>
+                              <SelectItem key={priority.id} value={priority.id}>
                                 <div className="flex items-center gap-2">
-                                <Flag
+                                  <Flag
                                     className="h-3 w-3"
                                     style={{
-                                    color: resolvePriorityColor(priority.name, priority.color),
+                                      color: resolvePriorityColor(
+                                        priority.name,
+                                        priority.color
+                                      ),
                                     }}
-                                />
-                                <span>{priority.name}</span>
+                                  />
+                                  <span>{priority.name}</span>
                                 </div>
-                            </SelectItem>
+                              </SelectItem>
                             ))}
-                        </SelectContent>
+                          </SelectContent>
                         </Select>
-                    </div>
+                      </div>
 
-                    <div className="space-y-4">
-                    
-
-                    </div>
-                    </TabsContent>
-
-                    <TabsContent value="comments" className="space-y-5">
-                    <div className="space-y-2">
-                        <Label htmlFor="newComment">Add Comment</Label>
-                        <Textarea
-                        id="newComment"
-                        value={newCommentText}
-                        onChange={(event) => setNewCommentText(event.target.value)}
-                        placeholder="Share an update about this lead..."
-                        rows={4}
-                        />
-                        <div className="flex items-center justify-end">
-                        <Button
-                            onClick={() => {
-                            void handleAddComment();
-                            }}
-                            disabled={
-                            createLeadCommentMutation.isPending || newCommentText.trim() === ''
-                            }
-                        >
-                            {createLeadCommentMutation.isPending ? (
-                            <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Adding...
-                            </>
-                            ) : (
-                            <>
-                                <MessageSquare className="h-4 w-4 mr-2" />
-                                Add Comment
-                            </>
-                            )}
-                        </Button>
-                        </div>
-                    </div>
-
-                    {leadCommentsLoading ? (
-                        <Skeleton className="h-24 w-full" />
-                    ) : leadComments.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                        No comments yet. Start the conversation above.
-                        </p>
-                    ) : (
-                        <div className="max-h-60 overflow-y-auto rounded-lg border bg-background">
-                        <table className="w-full text-sm">
-                            <thead className="sticky top-0 bg-muted/60 text-xs uppercase text-muted-foreground">
-                            <tr>
-                                <th className="px-4 py-2 text-left font-medium">Comment</th>
-                                <th className="px-4 py-2 text-left font-medium">Author</th>
-                                <th className="px-4 py-2 text-left font-medium">Created</th>
-                                <th className="px-4 py-2 text-right font-medium">Actions</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {leadComments.map((comment) => (
-                                <tr key={comment.id} className="border-t">
-                                <td className="px-4 py-2 align-top">
-                                    <p className="whitespace-pre-wrap text-[13px] leading-relaxed">
-                                    {comment.comment}
-                                    </p>
-                                </td>
-                                <td className="px-4 py-2 align-top text-xs text-muted-foreground">
-                                    {comment.created_by ?? '—'}
-                                </td>
-                                <td className="px-4 py-2 align-top text-xs text-muted-foreground">
-                                    {formatDateTimeWithTime(comment.created_at)}
-                                </td>
-                                <td className="px-4 py-2 text-right align-top">
-                                    <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-muted-foreground hover:text-destructive"
-                                    onClick={() => {
-                                        void handleDeleteComment(comment.id);
-                                    }}
-                                    disabled={deleteLeadCommentMutation.isPending}
-                                    >
-                                    <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                        </div>
-                    )}
-                    </TabsContent>
-
-                    <TabsContent value="assignees" className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="ownerId">Lead Owner ID</Label>
-                        <Input
-                        id="ownerId"
-                        value={
-                            editFormData.ownerId === NO_SELECTION_VALUE ? '' : editFormData.ownerId
-                        }
-                        onChange={(event) =>
-                            handleEditFormChange(
-                            'ownerId',
-                            event.target.value ? event.target.value : NO_SELECTION_VALUE
-                            )
-                        }
-                        placeholder="Enter teammate user ID"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                        Assign this lead to a teammate by specifying their user ID.
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditFormChange('ownerId', NO_SELECTION_VALUE)}
-                        >
-                        Clear Assignment
-                        </Button>
-                    </div>
-                    </TabsContent>
-
-                    <TabsContent value="platform" className="space-y-5">
-                    <div className="space-y-3">
-                        <Label htmlFor="platformSelect">Lead Platform</Label>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-gray-600 w-32">
+                          Platform
+                        </span>
                         <Select
-                        value={editFormData.platformId}
-                        onValueChange={handleEditPlatformSelectChange}
-                        disabled={platformsLoading}
+                          value={editFormData.platformId}
+                          onValueChange={handleEditPlatformSelectChange}
+                          disabled={platformsLoading}
                         >
-                        <SelectTrigger id="platformSelect" className="bg-gray-100">
+                          <SelectTrigger
+                            className="outline-none focus:outline-none
+    focus:ring-0 focus:ring-offset-0 px-2 border-none shadow-none  hover:bg-muted/50 transition-colors group w-52 justify-between"
+                          >
                             <SelectValue
-                            placeholder={
+                              placeholder={
                                 platformsLoading
-                                ? 'Loading platforms...'
-                                : platformOptions.length === 0
-                                ? 'No saved platforms'
-                                : 'Select a platform'
-                            }
+                                  ? "Loading platforms..."
+                                  : platformOptions.length === 0
+                                  ? "No saved platforms"
+                                  : "Select a platform"
+                              }
                             />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value={NO_SELECTION_VALUE}>No platform</SelectItem>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={NO_SELECTION_VALUE}>
+                              No platform
+                            </SelectItem>
                             {platformOptions.map((platform) => (
-                            <SelectItem
+                              <SelectItem
                                 key={platform.id ?? `platform-${platform.name}`}
                                 value={
-                                platform.id !== null && platform.id !== undefined
+                                  platform.id !== null &&
+                                  platform.id !== undefined
                                     ? String(platform.id)
                                     : platform.name
                                 }
-                            >
+                              >
                                 {platform.name}
-                            </SelectItem>
+                              </SelectItem>
                             ))}
                             <div className="my-1 border-t border-muted-foreground/20" />
                             <SelectItem
-                            value={ADD_PLATFORM_SELECT_VALUE}
-                            className="text-sm text-muted-foreground"
+                              value={ADD_PLATFORM_SELECT_VALUE}
+                              className="text-sm text-muted-foreground"
                             >
-                            + Add platform
+                              + Add platform
                             </SelectItem>
-                        </SelectContent>
+                          </SelectContent>
                         </Select>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-gray-600 w-32">
+                          Assignee
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            id="ownerId"
+                            value={
+                              editFormData.ownerId === NO_SELECTION_VALUE
+                                ? ""
+                                : editFormData.ownerId
+                            }
+                            onChange={(event) =>
+                              handleEditFormChange(
+                                "ownerId",
+                                event.target.value
+                                  ? event.target.value
+                                  : NO_SELECTION_VALUE
+                              )
+                            }
+                            // placeholder="Enter teammate user ID"
+                            className="!outline-none !focus:outline-none
+    !focus:ring-0 !focus:ring-offset-0 px-2 border-none shadow-none  hover:bg-muted/50 transition-colors group w-52 justify-between"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-gray-600 w-32">
+                          Linked Contact
+                        </span>
+                        <Select
+                          value={editFormData.contactId}
+                          onValueChange={handleEditContactSelectChange}
+                          disabled={contactOptions.length === 0}
+                        >
+                          <SelectTrigger
+                            className="outline-none focus:outline-none
+    focus:ring-0 focus:ring-offset-0 px-2 border-none shadow-none  hover:bg-muted/50 transition-colors group w-52 justify-between"
+                          >
+                            <SelectValue
+                              placeholder={
+                                contactOptions.length === 0
+                                  ? "No contacts"
+                                  : "Select contact"
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={NO_SELECTION_VALUE}>
+                              No contact
+                            </SelectItem>
+                            {contactOptions.map((contact: any) => (
+                              <SelectItem key={contact.id} value={contact.id}>
+                                {buildContactLabel(contact)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-gray-600 w-32">
+                          Created
+                        </span>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <Calendar size={14} />
+                          <span>
+                            {previewLead.created_at
+                              ? formatDateTimeWithTime(previewLead.created_at)
+                              : "—"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-gray-600 w-32">
+                          Updated
+                        </span>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <Clock size={14} />
+                          <span>
+                            {previewLead.updated_at
+                              ? formatDateTimeWithTime(previewLead.updated_at)
+                              : "—"}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="customPlatform">Add custom platform</Label>
-                        <Input
-                        id="customPlatform"
-                        value={editFormData.platformCustom}
-                        onChange={(event) => handleEditFormChange('platformCustom', event.target.value)}
-                        placeholder="Enter a platform name"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                        We’ll create the platform automatically when you save if it does not already
-                        exist.
+
+                    {/* <div className="mt-8 space-y-6">
+                      <div>
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          Lead Details
+                        </h2>
+                        <p className="text-sm text-gray-500">
+                          Update the contact and source information for this lead.
                         </p>
-                    </div>
-                    </TabsContent>
+                      </div>
+                      <SalesLeadFormFields
+                        data={editFormData}
+                        errors={editErrors}
+                        onChange={handleEditFormChange}
+                        onPlatformSelectChange={handleEditPlatformSelectChange}
+                        onPrioritySelectChange={handleEditPrioritySelectChange}
+                        onContactSelectChange={handleEditContactSelectChange}
+                        platformOptions={platformOptions}
+                        priorityOptions={priorityOptions}
+                        contactOptions={contactOptions}
+                        platformsLoading={platformsLoading}
+                      />
+                    </div> */}
 
-
-                        <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between mt-8">
-                        <div className="text-xs text-muted-foreground">
-                        
+                    {/* <div className="mt-10 space-y-6">
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+                          Priority Levels
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          Create, edit, or remove priority levels.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,320px),1fr] gap-6">
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="priorityName">Priority name</Label>
+                            <Input
+                              id="priorityName"
+                              value={priorityFormState.name}
+                              onChange={(event) =>
+                                setPriorityFormState((prev) => ({
+                                  ...prev,
+                                  name: event.target.value,
+                                }))
+                              }
+                              placeholder="e.g. Urgent"
+                              className="bg-gray-100"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="priorityColor">
+                              Priority color
+                            </Label>
+                            <Input
+                              id="priorityColor"
+                              type="color"
+                              value={priorityFormState.color}
+                              onChange={(event) =>
+                                setPriorityFormState((prev) => ({
+                                  ...prev,
+                                  color: event.target.value,
+                                }))
+                              }
+                              className="h-11 w-16 p-1"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              className="min-w-[140px]"
+                              onClick={() => {
+                                void handlePriorityFormSubmit();
+                              }}
+                              disabled={prioritySaving}
+                            >
+                              {prioritySaving ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Saving...
+                                </>
+                              ) : priorityFormState.id ? (
+                                "Update priority"
+                              ) : (
+                                "Create priority"
+                              )}
+                            </Button>
+                            {priorityFormState.id ? (
+                              <Button
+                                variant="ghost"
+                                onClick={resetPriorityFormState}
+                                disabled={prioritySaving}
+                              >
+                                Cancel
+                              </Button>
+                            ) : null}
+                          </div>
                         </div>
-                <div className="flex items-center justify-end gap-3">
-                <Button
-                    variant="outline"
-                            onClick={() => handlePreviewDialogOpenChange(false)}
-                    disabled={isUpdating}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    className="min-w-[140px] bg-[#45a2ff] hover:bg-[#45a2ff]/90"
-                    onClick={() => {
-                    void handleUpdateSubmit();
-                    }}
-                    disabled={isUpdating}
-                >
-                    {isUpdating ? (
-                    <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Updating...
-                    </>
-                    ) : (
-                    <>
-                        <Save className="h-4 w-4 mr-2" />
-                        Update Lead
-                    </>
-                    )}
-                </Button>
-                </div>
-            </div>
-
-                    
-                                </div>
-                                <div className='w-[10%] border-l border-muted-foreground/30 pt-4'>
-                                <TabsList className="grid w-full grid-cols-5 flex flex-col bg-white items-end justify-end">
-                                    <TabsTrigger value="overview" className="flex items-center gap-2 mb-4">
-                                        Details
-                                        <FileText className="h-4 w-4" />
-                                        </TabsTrigger>
-                                    <TabsTrigger value="priority" className="flex items-center gap-2 mb-4">
-                                        Priority
-                                        <ListChecks className="h-4 w-4" />
-                                            </TabsTrigger>
-                                            <TabsTrigger value="comments" className={`flex items-center gap-2 mb-4 `}>
-                                        Comments
-                                        <MessageSquare className="h-4 w-4" />
-                                            </TabsTrigger>
-                                    <TabsTrigger value="assignees" className="flex items-center gap-2 mb-4">
-                                        Assign
-                                        <User className="h-4 w-4" />
-                                            </TabsTrigger>
-                                </TabsList>
-                                </div>
-                            </div>
-
-
-
-
-
-
-
-
-
-                </Tabs>
-
-                
-                </>
-                ) : (
-                    <div className="py-12 text-center text-muted-foreground text-sm">
-                    Select a sales lead to view details.
-                </div>
-            )} */}
-
-          {/* <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"> */}
-
-          {/* <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"> */}
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col relative">
-            {/* Header */}
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-500">Task</span>
-                <span className="text-sm text-gray-400">86b722ae0</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <button className="text-gray-400 hover:text-gray-600 transition-colors">
-                  <X size={20} />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-hidden flex">
-              {/* Main Content */}
-              <div className="flex-1 overflow-y-auto">
-                <div className="px-6 py-6">
-                  {/* Title */}
-                  <h1 className="text-2xl font-semibold text-gray-900 mb-6">
-                    UI Improvement
-                  </h1>
-
-                  {/* Metadata Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    {/* Status */}
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-600 w-24">Status</span>
-                      <div className="flex items-center gap-2 bg-pink-500 text-white px-3 py-1 rounded text-sm font-medium cursor-pointer hover:bg-pink-600">
-                        IN PROGRESS
-                        <ChevronDown size={14} />
-                      </div>
-                    </div>
-
-                    {/* Assignees */}
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-600 w-24">
-                        Assignees
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-orange-400 flex items-center justify-center text-white text-xs font-medium">
-                          M
+                        <div className="space-y-3">
+                          {priorityOptions.length === 0 ? (
+                            <p className="text-sm text-gray-500">
+                              No priority levels yet.
+                            </p>
+                          ) : (
+                            priorityOptions.map((priority) => (
+                              <div
+                                key={priority.id}
+                                className="flex items-center justify-between rounded border border-gray-200 px-3 py-2"
+                              >
+                                <button
+                                  type="button"
+                                  className="flex items-center gap-2 text-left"
+                                  onClick={() =>
+                                    handleSelectPriorityForEdit(priority)
+                                  }
+                                >
+                                  <Flag
+                                    className="h-3.5 w-3.5"
+                                    style={{
+                                      color: getPriorityColor(
+                                        priority.id ?? priority.name ?? ""
+                                      ),
+                                    }}
+                                  />
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-medium text-gray-900">
+                                      {priority.name}
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                      {priority.id}
+                                    </span>
+                                  </div>
+                                </button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-muted-foreground hover:text-destructive"
+                                  onClick={() => {
+                                    void handleDeletePriority(priority.id);
+                                  }}
+                                  disabled={priorityDeleting}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))
+                          )}
                         </div>
                       </div>
-                    </div>
+                    </div> */}
 
-                    {/* Dates */}
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-600 w-24">Dates</span>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <Calendar size={14} />
-                        <span>Start</span>
-                        <span>→</span>
-                        <span>Due</span>
+                    <div className="mt-10 flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="text-xs text-muted-foreground">
+                        {previewLead.updated_at
+                          ? `Last updated ${formatDateTimeWithTime(
+                              previewLead.updated_at
+                            )}`
+                          : ""}
                       </div>
-                    </div>
-
-                    {/* Priority */}
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-600 w-24">
-                        Priority
-                      </span>
-                      <div className="flex items-center gap-1 text-red-500 text-sm font-medium">
-                        <span className="text-red-500">!</span>
-                        Urgent
+                      <div className="flex items-center justify-end gap-3">
+                        <Button
+                          variant="outline"
+                          onClick={() => handlePreviewDialogOpenChange(false)}
+                          disabled={isUpdating}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          className="min-w-[140px] bg-[#45a2ff] hover:bg-[#45a2ff]/90"
+                          onClick={() => {
+                            void handleUpdateSubmit();
+                          }}
+                          disabled={isUpdating}
+                        >
+                          {isUpdating ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Updating...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="h-4 w-4 mr-2" />
+                              Update Lead
+                            </>
+                          )}
+                        </Button>
                       </div>
-                    </div>
-
-                    {/* Time Estimate */}
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-600 w-24">
-                        Time Estimate
-                      </span>
-                      <span className="text-sm text-gray-400">Empty</span>
-                    </div>
-
-                    {/* Track Time */}
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-600 w-24">
-                        Track Time
-                      </span>
-                      <button className="text-sm text-gray-400 hover:text-gray-600">
-                        Add time
-                      </button>
-                    </div>
-
-                    {/* Relationships */}
-                    <div className="flex items-center gap-3 md:col-span-2">
-                      <span className="text-sm text-gray-600 w-24">
-                        Relationships
-                      </span>
-                      <span className="text-sm text-gray-400">Empty</span>
                     </div>
                   </div>
+                </div>
 
-                  {/* Description Section */}
-                  <div className="mb-6">
-                    <button className="text-sm text-gray-500 hover:text-gray-700 mb-2">
-                      + Add description
-                    </button>
-                  </div>
-
-                  {/* Tabs */}
-                  {/* <div className="border-b border-gray-200 mb-6">
-                    <div className="flex gap-6">
-                      <button
-                        onClick={() => setActiveTab("details")}
-                        className={`pb-3 text-sm font-medium transition-colors relative ${
-                          activeTab === "details"
-                            ? "text-gray-900"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`}
-                      >
-                        Details
-                        {activeTab === "details" && (
-                          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-pink-500"></div>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => setActiveTab("priority")}
-                        className={`pb-3 text-sm font-medium transition-colors relative ${
-                          activeTab === "priority"
-                            ? "text-gray-900"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`}
-                      >
-                        Priority
-                        {activeTab === "priority" && (
-                          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-pink-500"></div>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => setActiveTab("comments")}
-                        className={`pb-3 text-sm font-medium transition-colors relative ${
-                          activeTab === "comments"
-                            ? "text-gray-900"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`}
-                      >
-                        Comments
-                        {activeTab === "comments" && (
-                          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-pink-500"></div>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => setActiveTab("assign")}
-                        className={`pb-3 text-sm font-medium transition-colors relative ${
-                          activeTab === "assign"
-                            ? "text-gray-900"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`}
-                      >
-                        Assign
-                        {activeTab === "assign" && (
-                          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-pink-500"></div>
-                        )}
-                      </button>
-                    </div>
-                  </div> */}
-
-                  {/* Subtasks */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-4">
+                <div className="border-l border-gray-200 bg-white w-80 lg:w-96 flex-shrink-0 flex flex-col">
+                  <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+                    <div className="flex items-center gap-2">
                       <h3 className="text-sm font-semibold text-gray-900">
-                        Subtasks
+                        Activity
                       </h3>
-                      <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden max-w-xs">
-                        <div className="h-full bg-teal-400 w-1/2"></div>
-                      </div>
-                      <span className="text-sm text-gray-500">2/2</span>
+                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                        {leadCommentsLoading ? "…" : leadComments.length}
+                      </span>
                     </div>
-
-                    <button className="text-sm text-gray-500 hover:text-gray-700">
-                      + Add Task
-                    </button>
                   </div>
-                </div>
-              </div>
-
-              {/* Comments Sidebar - Always visible on right */}
-              <div className="border-l border-gray-200 bg-white w-80 lg:w-96 flex-shrink-0 flex flex-col">
-                {/* Comments Header */}
-                <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-gray-900">
-                      Activity
-                    </h3>
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                      2
-                    </span>
-                  </div>
-                </div>
-
-                {/* Comments List */}
-                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                  {/* Comment 1 */}
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-orange-400 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
-                      M
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-sm font-medium text-gray-900">
-                          You
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          Oct 16 at 6:21 pm
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-700">
-                        Created subtask: check all page ui improvement
+                  <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+                    {leadCommentsLoading ? (
+                      <Skeleton className="h-24 w-full" />
+                    ) : leadComments.length === 0 ? (
+                      <p className="text-sm text-gray-500">
+                        No comments yet. Start the conversation below.
                       </p>
-                    </div>
-                  </div>
+                    ) : (
+                      leadComments.map((comment) => {
+                        const initials = (
+                          (comment.created_by ?? "")
+                            .toString()
+                            .trim()
+                            .charAt(0) || "?"
+                        ).toUpperCase();
 
-                  {/* Comment 2 */}
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-purple-400 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
-                      AI
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-sm font-medium text-gray-900">
-                          Ask AI
-                        </span>
-                        <span className="text-xs text-gray-500">Oct 13</span>
-                      </div>
-                      <p className="text-sm text-gray-700">Task created</p>
-                    </div>
+                        return (
+                          <div key={comment.id} className="flex gap-3">
+                            <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
+                              {initials}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {comment.created_by ?? "Unknown"}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {formatDateTimeWithTime(comment.created_at)}
+                                  </span>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-muted-foreground hover:text-destructive"
+                                  onClick={() => {
+                                    void handleDeleteComment(comment.id);
+                                  }}
+                                  disabled={deleteLeadCommentMutation.isPending}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+                                {comment.comment}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                    {!leadCommentsLoading && leadComments.length > 5 ? (
+                      <button className="text-sm text-gray-500 hover:text-gray-700 w-full text-left">
+                        Show more
+                      </button>
+                    ) : null}
                   </div>
-
-                  {/* Show more button */}
-                  <button className="text-sm text-gray-500 hover:text-gray-700 w-full text-left">
-                    Show more
-                  </button>
-                </div>
-
-                {/* Comment Input */}
-                <div className="px-4 py-3 border-t border-gray-200 flex-shrink-0">
-                  <div className="relative">
-                    <textarea
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      placeholder="Add a comment..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                      rows={3}
-                    />
-                    <div className="absolute bottom-2 right-2 flex items-center gap-1">
-                      <button className="p-1 text-gray-400 hover:text-gray-600 transition-colors">
-                        <Paperclip size={16} />
-                      </button>
-                      <button className="p-1 text-gray-400 hover:text-gray-600 transition-colors">
-                        <Smile size={16} />
-                      </button>
-                      <button className="p-1 text-gray-400 hover:text-gray-600 transition-colors">
-                        <AtSign size={16} />
-                      </button>
-                      <button className="p-1 text-gray-400 hover:text-gray-600 transition-colors">
-                        <Hash size={16} />
-                      </button>
-                      <button className="p-1 text-gray-400 hover:text-gray-600 transition-colors">
-                        <MoreHorizontal size={16} />
+                  <div className="px-4 py-3 border-t border-gray-200 flex-shrink-0">
+                    <div className="relative">
+                      <textarea
+                        value={newCommentText}
+                        onChange={(event) =>
+                          setNewCommentText(event.target.value)
+                        }
+                        placeholder="Add a comment..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                        rows={3}
+                        disabled={
+                          createLeadCommentMutation.isPending ||
+                          !previewLead?.id
+                        }
+                      />
+                    </div>
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        className="px-4 py-1.5 bg-purple-600 text-white rounded text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                        onClick={() => {
+                          void handleAddComment();
+                        }}
+                        disabled={
+                          createLeadCommentMutation.isPending ||
+                          newCommentText.trim() === "" ||
+                          !previewLead?.id
+                        }
+                      >
+                        {createLeadCommentMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Send size={14} />
+                            Send
+                          </>
+                        )}
                       </button>
                     </div>
-                  </div>
-                  <div className="mt-2 flex justify-end">
-                    <button
-                      className="px-4 py-1.5 bg-purple-600 text-white rounded text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-                      disabled={!commentText.trim()}
-                    >
-                      <Send size={14} />
-                      Send
-                    </button>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-          {/* </div> */}
-
-          {/* </div> */}
+          ) : (
+            <div className="py-12 text-center text-muted-foreground text-sm">
+              Select a sales lead to view details.
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

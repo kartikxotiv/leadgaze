@@ -57,6 +57,7 @@ import {
 } from "@/components/ui/select";
 import type { SalesContactInsert } from "@/lib/data/sales-contacts";
 import type { SalesLeadInsert } from "@/lib/data/sales-leads";
+import type { ContactPlatform } from "@/lib/data/contact-platforms";
 import {
   Dialog,
   DialogContent,
@@ -166,6 +167,190 @@ function normalizePhoneNumberFromString(value?: string | null): number | null {
     return null;
   }
   return parsed;
+}
+
+interface SalesContactFormFieldsProps {
+  data: FormData;
+  errors: Record<keyof FormData, string>;
+  onChange: <K extends keyof FormData>(field: K, value: FormData[K]) => void;
+  onPlatformSelectChange: (value: string) => void;
+  platformOptions: ContactPlatform[];
+  platformsLoading: boolean;
+}
+
+function SalesContactFormFields({
+  data,
+  errors: formErrors,
+  onChange,
+  onPlatformSelectChange,
+  platformOptions,
+  platformsLoading,
+}: SalesContactFormFieldsProps) {
+  return (
+    <div className="space-y-8">
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="firstName">First Name *</Label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+              <Input
+                id="firstName"
+                value={data.firstName}
+                onChange={(event) => onChange("firstName", event.target.value)}
+                placeholder="John"
+                className={`pl-10 bg-gray-100 ${
+                  formErrors.firstName
+                    ? "border-red-500 focus:border-red-500"
+                    : ""
+                }`}
+              />
+            </div>
+            {formErrors.firstName && (
+              <p className="text-xs text-red-500 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {formErrors.firstName}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="lastName">Last Name</Label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+              <Input
+                id="lastName"
+                value={data.lastName}
+                onChange={(event) => onChange("lastName", event.target.value)}
+                placeholder="Doe"
+                className="pl-10 bg-gray-100"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+              <Input
+                id="email"
+                type="email"
+                value={data.email}
+                onChange={(event) => onChange("email", event.target.value)}
+                placeholder="john.doe@example.com"
+                className={`pl-10 bg-gray-100 ${
+                  formErrors.email ? "border-red-500 focus:border-red-500" : ""
+                }`}
+              />
+            </div>
+            {formErrors.email && (
+              <p className="text-xs text-red-500 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {formErrors.email}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phoneNumber">Phone Number</Label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+              <Input
+                id="phoneNumber"
+                value={data.phoneNumber}
+                onChange={(event) =>
+                  onChange("phoneNumber", event.target.value)
+                }
+                placeholder="+1 (555) 123-4567"
+                className="pl-10 bg-gray-100"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="location">Location</Label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+              <Input
+                id="location"
+                value={data.location}
+                onChange={(event) => onChange("location", event.target.value)}
+                placeholder="New York, USA"
+                className="pl-10 bg-gray-100"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="status">Status</Label>
+            <Select
+              value={data.status}
+              onValueChange={(value) =>
+                onChange("status", value as FormData["status"])
+              }
+            >
+              <SelectTrigger className="bg-gray-100">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="platformId">Lead Platform</Label>
+            <Select
+              value={data.platformId}
+              onValueChange={onPlatformSelectChange}
+              disabled={platformsLoading}
+            >
+              <SelectTrigger className="bg-gray-100">
+                <SelectValue
+                  placeholder={
+                    platformsLoading
+                      ? "Loading platforms..."
+                      : platformOptions.length === 0
+                      ? "No saved platforms"
+                      : "Select a platform"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {platformOptions.length > 0 ? (
+                  platformOptions.map((platform) => (
+                    <SelectItem key={platform.id} value={String(platform.id)}>
+                      {platform.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-platforms" disabled>
+                    No saved platforms
+                  </SelectItem>
+                )}
+                <div className="my-1 border-t border-muted-foreground/20" />
+                <SelectItem
+                  value={ADD_PLATFORM_SELECT_VALUE}
+                  className="text-sm text-muted-foreground"
+                >
+                  + Add platform
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function SalesContactsPage() {
@@ -778,182 +963,6 @@ export default function SalesContactsPage() {
     validateEditForm,
   ]);
 
-  const SalesContactFormFields = ({
-    data,
-    errors: formErrors,
-    onChange,
-    onPlatformSelectChange,
-  }: {
-    data: FormData;
-    errors: Record<keyof FormData, string>;
-    onChange: <K extends keyof FormData>(field: K, value: FormData[K]) => void;
-    onPlatformSelectChange: (value: string) => void;
-  }) => (
-    <div className="space-y-8">
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="firstName">First Name *</Label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
-              <Input
-                id="firstName"
-                value={data.firstName}
-                onChange={(event) => onChange("firstName", event.target.value)}
-                placeholder="John"
-                className={`pl-10 bg-gray-100 ${
-                  formErrors.firstName
-                    ? "border-red-500 focus:border-red-500"
-                    : ""
-                }`}
-              />
-            </div>
-            {formErrors.firstName && (
-              <p className="text-xs text-red-500 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {formErrors.firstName}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="lastName">Last Name</Label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
-              <Input
-                id="lastName"
-                value={data.lastName}
-                onChange={(event) => onChange("lastName", event.target.value)}
-                placeholder="Doe"
-                className="pl-10 bg-gray-100"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
-              <Input
-                id="email"
-                type="email"
-                value={data.email}
-                onChange={(event) => onChange("email", event.target.value)}
-                placeholder="john.doe@example.com"
-                className={`pl-10 bg-gray-100 ${
-                  formErrors.email ? "border-red-500 focus:border-red-500" : ""
-                }`}
-              />
-            </div>
-            {formErrors.email && (
-              <p className="text-xs text-red-500 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {formErrors.email}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="phoneNumber">Phone Number</Label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
-              <Input
-                id="phoneNumber"
-                value={data.phoneNumber}
-                onChange={(event) =>
-                  onChange("phoneNumber", event.target.value)
-                }
-                placeholder="+1 (555) 123-4567"
-                className="pl-10 bg-gray-100"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
-              <Input
-                id="location"
-                value={data.location}
-                onChange={(event) => onChange("location", event.target.value)}
-                placeholder="New York, USA"
-                className="pl-10 bg-gray-100"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <Select
-              value={data.status}
-              onValueChange={(value) =>
-                onChange("status", value as FormData["status"])
-              }
-            >
-              <SelectTrigger className="bg-gray-100">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="platformId">Lead Platform</Label>
-            <Select
-              value={data.platformId}
-              onValueChange={onPlatformSelectChange}
-              disabled={platformsLoading}
-            >
-              <SelectTrigger className="bg-gray-100">
-                <SelectValue
-                  placeholder={
-                    platformsLoading
-                      ? "Loading platforms..."
-                      : platformOptions.length === 0
-                      ? "No saved platforms"
-                      : "Select a platform"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {platformOptions.length > 0 ? (
-                  platformOptions.map((platform) => (
-                    <SelectItem key={platform.id} value={String(platform.id)}>
-                      {platform.name}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="no-platforms" disabled>
-                    No saved platforms
-                  </SelectItem>
-                )}
-                <div className="my-1 border-t border-muted-foreground/20" />
-                <SelectItem
-                  value={ADD_PLATFORM_SELECT_VALUE}
-                  className="text-sm text-muted-foreground"
-                >
-                  + Add platform
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   const handlePlatformSelectChange = useCallback(
     (value: string) => {
       if (value === ADD_PLATFORM_SELECT_VALUE) {
@@ -1247,6 +1256,8 @@ export default function SalesContactsPage() {
               errors={editErrors}
               onChange={handleEditFormChange}
               onPlatformSelectChange={handleEditPlatformSelectChange}
+              platformOptions={platformOptions}
+              platformsLoading={platformsLoading}
             />
 
             <div className="flex items-center justify-end gap-3">
@@ -1321,6 +1332,8 @@ export default function SalesContactsPage() {
               errors={errors}
               onChange={handleFormChange}
               onPlatformSelectChange={handlePlatformSelectChange}
+              platformOptions={platformOptions}
+              platformsLoading={platformsLoading}
             />
           </CardContent>
 
