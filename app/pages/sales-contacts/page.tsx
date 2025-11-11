@@ -1,29 +1,33 @@
-'use client';
+"use client";
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from "react";
 
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
-import { ReactTable } from '@/components/reuseableComponent/ReactTable';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useWorkspaceContext } from '@/hooks/use-workspace-context';
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { ReactTable } from "@/components/reuseableComponent/ReactTable";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useWorkspaceContext } from "@/hooks/use-workspace-context";
 import {
   useCreateSalesContact,
   useDeleteSalesContact,
   useSalesContacts,
   useUpdateSalesContact,
-} from '@/hooks/use-sales-contact';
-import { useContactPlatforms, useCreateContactPlatform } from '@/hooks/use-contact-platforms';
-import { DeleteConfirmDialog } from '@/components/common/delete-confirm-dialog';
-import { SidebarPanel } from '@/components/common/sidebar-panel';
+} from "@/hooks/use-sales-contact";
+import { useCreateSalesLead } from "@/hooks/use-sales-leads";
+import {
+  useContactPlatforms,
+  useCreateContactPlatform,
+} from "@/hooks/use-contact-platforms";
+import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
+import { SidebarPanel } from "@/components/common/sidebar-panel";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
 import {
   Plus,
   Download,
@@ -38,16 +42,29 @@ import {
   MapPin,
   Loader2,
   Save,
-} from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
-import { Input } from '@/components/ui/input';
-import { CardContent } from '@/components/ui/card';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import type { SalesContactInsert } from '@/lib/data/sales-contacts';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+  MoveRight,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import type { SalesContactInsert } from "@/lib/data/sales-contacts";
+import type { SalesLeadInsert } from "@/lib/data/sales-leads";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
-type StatusOptionValue = NonNullable<SalesContactInsert['status']>;
+type StatusOptionValue = NonNullable<SalesContactInsert["status"]>;
 
 interface FormData {
   firstName: string;
@@ -62,55 +79,93 @@ interface FormData {
 }
 
 const INITIAL_FORM_STATE: FormData = {
-  firstName: '',
-  lastName: '',
-  email: '',
-  phoneNumber: '',
-  location: '',
-  contactTimeZone: '',
-  platformId: '',
-  platformCustom: '',
-  status: 'pending',
+  firstName: "",
+  lastName: "",
+  email: "",
+  phoneNumber: "",
+  location: "",
+  contactTimeZone: "",
+  platformId: "",
+  platformCustom: "",
+  status: "pending",
 };
 
 const INITIAL_FORM_ERRORS: Record<keyof FormData, string> = {
-  firstName: '',
-  lastName: '',
-  email: '',
-  phoneNumber: '',
-  location: '',
-  contactTimeZone: '',
-  platformId: '',
-  platformCustom: '',
-  status: '',
+  firstName: "",
+  lastName: "",
+  email: "",
+  phoneNumber: "",
+  location: "",
+  contactTimeZone: "",
+  platformId: "",
+  platformCustom: "",
+  status: "",
 };
 
 const STATUS_OPTIONS: Array<{ value: StatusOptionValue; label: string }> = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'moved_to_lead', label: 'Moved to Lead' },
-  { value: 'rejected', label: 'Rejected' },
+  { value: "pending", label: "Pending" },
+  { value: "moved_to_lead", label: "Moved to Lead" },
+  { value: "rejected", label: "Rejected" },
 ];
 
-const ADD_PLATFORM_SELECT_VALUE = '__add_new_platform__';
+const CONTACT_STATUS_STYLE_MAP: Record<StatusOptionValue, string> = {
+  pending: "bg-blue-100 text-blue-700",
+  moved_to_lead: "bg-emerald-100 text-emerald-700",
+  rejected: "bg-rose-100 text-rose-700",
+};
+
+function getPlatformBadgeColors(label: string) {
+  const trimmed = label.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  let hash = 0;
+  for (let i = 0; i < trimmed.length; i += 1) {
+    hash = trimmed.charCodeAt(i) + ((hash << 5) - hash);
+    hash |= 0;
+  }
+  const hue = Math.abs(hash) % 360;
+  const backgroundColor = `hsla(${hue}, 80%, 90%, 0.9)`;
+  const color = `hsl(${hue}, 60%, 32%)`;
+  return { backgroundColor, color };
+}
+
+const ADD_PLATFORM_SELECT_VALUE = "__add_new_platform__";
 
 function formatStatus(status?: string | null) {
-  if (!status) return '';
+  if (!status) return "";
   return status
-    .split('_')
+    .split("_")
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(' ');
+    .join(" ");
 }
 
 function formatDateTime(value?: string | null) {
-  if (!value) return '';
+  if (!value) return "";
   try {
     return new Intl.DateTimeFormat(undefined, {
-      dateStyle: 'medium',
-      timeStyle: 'short',
+      dateStyle: "medium",
+      timeStyle: "short",
     }).format(new Date(value));
   } catch {
     return value;
   }
+}
+
+function normalizePhoneNumberFromString(value?: string | null): number | null {
+  if (!value) return null;
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return null;
+  const parsed = Number(digits);
+  if (Number.isNaN(parsed)) {
+    return null;
+  }
+  const INT32_MAX = 2_147_483_647;
+  const INT32_MIN = -2_147_483_648;
+  if (parsed > INT32_MAX || parsed < INT32_MIN) {
+    return null;
+  }
+  return parsed;
 }
 
 export default function SalesContactsPage() {
@@ -133,39 +188,45 @@ export default function SalesContactsPage() {
     open: boolean;
     platformName: string;
     error: string;
-    targetForm: 'add' | 'edit';
+    targetForm: "add" | "edit";
   }>({
     open: false,
-    platformName: '',
-    error: '',
-    targetForm: 'add',
+    platformName: "",
+    error: "",
+    targetForm: "add",
   });
 
   const handleAddPlatformDialogOpenChange = useCallback(
-    (open: boolean, targetForm?: 'add' | 'edit') => {
+    (open: boolean, targetForm?: "add" | "edit") => {
       setAddPlatformDialog((prev) => ({
         open,
-        platformName: open
-          ? prev.open
-            ? prev.platformName
-            : ''
-          : '',
-        error: '',
+        platformName: open ? (prev.open ? prev.platformName : "") : "",
+        error: "",
         targetForm: open
-          ? targetForm ?? prev.targetForm ?? 'add'
-          : prev.targetForm ?? 'add',
+          ? targetForm ?? prev.targetForm ?? "add"
+          : prev.targetForm ?? "add",
       }));
     },
     []
   );
 
-  const handleAddPlatformDialogPlatformNameChange = useCallback((platformName: string) => {
-    setAddPlatformDialog((prev) => ({ ...prev, platformName, error: '' }));
-  }, []);
+  const handleAddPlatformDialogPlatformNameChange = useCallback(
+    (platformName: string) => {
+      setAddPlatformDialog((prev) => ({ ...prev, platformName, error: "" }));
+    },
+    []
+  );
 
-  const { data: salesContacts, isLoading, isError, error } = useSalesContacts(filters);
-  const { data: platformList, isLoading: platformsLoading } = useContactPlatforms();
+  const {
+    data: salesContacts,
+    isLoading,
+    isError,
+    error,
+  } = useSalesContacts(filters);
+  const { data: platformList, isLoading: platformsLoading } =
+    useContactPlatforms();
   const createSalesContactMutation = useCreateSalesContact();
+  const createSalesLeadMutation = useCreateSalesLead();
   const createContactPlatformMutation = useCreateContactPlatform();
   const updateSalesContactMutation = useUpdateSalesContact();
   const deleteSalesContactMutation = useDeleteSalesContact();
@@ -184,10 +245,10 @@ export default function SalesContactsPage() {
     const contacts = salesContacts?.data ?? [];
     return contacts.map((contact) => ({
       ...contact,
-      company_label: contact.company_id ?? '',
+      company_label: contact.company_id ?? "",
       platform_label: contact.platform
         ? platformNameMap.get(contact.platform) ?? `ID ${contact.platform}`
-        : '',
+        : "",
       status_label: formatStatus(contact.status),
       created_at_label: formatDateTime(contact.created_at),
       updated_at_label: formatDateTime(contact.updated_at),
@@ -201,59 +262,72 @@ export default function SalesContactsPage() {
     salesContactName?: string;
   }>({ open: false });
   const [previewSidebarOpen, setPreviewSidebarOpen] = useState(false);
-  const [addSalesContactSidebarOpen, setAddSalesContactSidebarOpen] = useState(false);
+  const [addSalesContactSidebarOpen, setAddSalesContactSidebarOpen] =
+    useState(false);
+  const [movingToLeadContactId, setMovingToLeadContactId] = useState<
+    string | null
+  >(null);
   const [formData, setFormData] = useState<FormData>({ ...INITIAL_FORM_STATE });
   const [errors, setErrors] = useState<Record<keyof FormData, string>>({
     ...INITIAL_FORM_ERRORS,
   });
-  const [editFormData, setEditFormData] = useState<FormData>({ ...INITIAL_FORM_STATE });
+  const [editFormData, setEditFormData] = useState<FormData>({
+    ...INITIAL_FORM_STATE,
+  });
   const [editErrors, setEditErrors] = useState<Record<keyof FormData, string>>({
     ...INITIAL_FORM_ERRORS,
   });
   const isSaving =
-    createSalesContactMutation.isPending || createContactPlatformMutation.isPending;
+    createSalesContactMutation.isPending ||
+    createContactPlatformMutation.isPending;
   const isAddingPlatform = createContactPlatformMutation.isPending;
   const isUpdating = updateSalesContactMutation.isPending;
 
-  const validateField = useCallback((fieldName: keyof FormData, value: string) => {
-    switch (fieldName) {
-      case 'firstName':
-        return !value.trim() ? 'First name is required' : '';
-      case 'email':
-        if (value && value.trim()) {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          return emailRegex.test(value) ? '' : 'Please enter a valid email';
-        }
-        return '';
-      default:
-        return '';
-    }
-  }, []);
+  const validateField = useCallback(
+    (fieldName: keyof FormData, value: string) => {
+      switch (fieldName) {
+        case "firstName":
+          return !value.trim() ? "First name is required" : "";
+        case "email":
+          if (value && value.trim()) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(value) ? "" : "Please enter a valid email";
+          }
+          return "";
+        default:
+          return "";
+      }
+    },
+    []
+  );
 
-  const buildValidationErrors = useCallback((data: FormData) => {
-    const newErrors: Record<keyof FormData, string> = {
-      firstName: validateField('firstName', data.firstName),
-      email: validateField('email', data.email),
-      lastName: '',
-      phoneNumber: '',
-      location: '',
-      contactTimeZone: '',
-      platformId: '',
-      platformCustom: '',
-      status: '',
-    };
+  const buildValidationErrors = useCallback(
+    (data: FormData) => {
+      const newErrors: Record<keyof FormData, string> = {
+        firstName: validateField("firstName", data.firstName),
+        email: validateField("email", data.email),
+        lastName: "",
+        phoneNumber: "",
+        location: "",
+        contactTimeZone: "",
+        platformId: "",
+        platformCustom: "",
+        status: "",
+      };
 
-    return Object.fromEntries(
-      Object.entries(newErrors).filter(([, value]) => value !== '')
-    ) as Record<keyof FormData, string>;
-  }, [validateField]);
+      return Object.fromEntries(
+        Object.entries(newErrors).filter(([, value]) => value !== "")
+      ) as Record<keyof FormData, string>;
+    },
+    [validateField]
+  );
 
   const handleFormChange = useCallback(
     <K extends keyof FormData>(field: K, value: FormData[K]) => {
       setFormData((prev) => ({ ...prev, [field]: value }));
 
       if (errors[field]) {
-        setErrors((prev) => ({ ...prev, [field]: '' }));
+        setErrors((prev) => ({ ...prev, [field]: "" }));
       }
     },
     [errors]
@@ -264,7 +338,7 @@ export default function SalesContactsPage() {
       setEditFormData((prev) => ({ ...prev, [field]: value }));
 
       if (editErrors[field]) {
-        setEditErrors((prev) => ({ ...prev, [field]: '' }));
+        setEditErrors((prev) => ({ ...prev, [field]: "" }));
       }
     },
     [editErrors]
@@ -304,18 +378,18 @@ export default function SalesContactsPage() {
     }
 
     return {
-      firstName: contact.first_name ?? '',
-      lastName: contact.last_name ?? '',
-      email: contact.email ?? '',
-      phoneNumber: contact.phone_number ?? '',
-      location: contact.location ?? '',
-      contactTimeZone: contact.contact_time_zone ?? '',
+      firstName: contact.first_name ?? "",
+      lastName: contact.last_name ?? "",
+      email: contact.email ?? "",
+      phoneNumber: contact.phone_number ?? "",
+      location: contact.location ?? "",
+      contactTimeZone: contact.contact_time_zone ?? "",
       platformId:
         contact.platform !== undefined && contact.platform !== null
           ? String(contact.platform)
-          : '',
-      platformCustom: '',
-      status: (contact.status as StatusOptionValue) ?? 'pending',
+          : "",
+      platformCustom: "",
+      status: (contact.status as StatusOptionValue) ?? "pending",
     };
   }, []);
   const [previewContact, setPreviewContact] = useState<any | null>(null);
@@ -329,6 +403,103 @@ export default function SalesContactsPage() {
       });
     },
     []
+  );
+
+  const handleMoveToLead = useCallback(
+    async (contact: any) => {
+      if (!contact?.id) {
+        toast.error("Select a sales contact to move to leads.");
+        return;
+      }
+
+      if (!currentWorkspace?.id) {
+        toast.error(
+          "Please select a workspace before moving contacts to leads."
+        );
+        return;
+      }
+
+      if (contact.status === "moved_to_lead") {
+        toast.info("This contact is already moved to Sales Leads.");
+        return;
+      }
+
+      const contactId = String(contact.id);
+      const firstName = (contact.first_name ?? "").trim();
+      const normalizedPhone = normalizePhoneNumberFromString(
+        contact.phone_number != null ? String(contact.phone_number) : null
+      );
+      const rawPlatformId =
+        contact.platform !== undefined && contact.platform !== null
+          ? Number(contact.platform)
+          : null;
+      const platformId =
+        rawPlatformId !== null && Number.isNaN(rawPlatformId)
+          ? null
+          : rawPlatformId;
+
+      const payload: SalesLeadInsert = {
+        first_name: firstName || "Unnamed Contact",
+        last_name: contact.last_name?.trim() || null,
+        email: contact.email?.trim() || null,
+        phone_number: normalizedPhone,
+        location: contact.location?.trim() || null,
+        contact_time_zone: contact.contact_time_zone?.trim() || null,
+        status: "pipeline",
+        workspace_id: currentWorkspace.id,
+        platform: platformId,
+        priority: null,
+        contact_id: contactId,
+      };
+
+      try {
+        setMovingToLeadContactId(contactId);
+        await createSalesLeadMutation.mutateAsync(payload);
+        const updatedContact = await updateSalesContactMutation.mutateAsync({
+          id: contactId,
+          data: { status: "moved_to_lead" },
+        });
+        toast.success("Sales contact moved to Sales Leads successfully!");
+
+        setPreviewContact((prev: any) => {
+          if (!prev || prev.id !== contact.id) {
+            return prev;
+          }
+          const platformLabel =
+            updatedContact?.platform !== undefined &&
+            updatedContact?.platform !== null
+              ? platformNameMap.get(updatedContact.platform) ??
+                prev.platform_label ??
+                ""
+              : "";
+          return {
+            ...prev,
+            ...updatedContact,
+            status_label: formatStatus(updatedContact.status),
+            platform_label: platformLabel,
+            created_at_label: formatDateTime(updatedContact.created_at),
+            updated_at_label: formatDateTime(updatedContact.updated_at),
+          };
+        });
+
+        if (previewContact?.id === contact.id) {
+          setEditFormData(mapContactToFormData(updatedContact));
+          setEditErrors({ ...INITIAL_FORM_ERRORS });
+        }
+      } catch (error: any) {
+        toast.error(error?.message || "Failed to move contact to lead.");
+      } finally {
+        setMovingToLeadContactId(null);
+      }
+    },
+    [
+      currentWorkspace?.id,
+      createSalesLeadMutation,
+      mapContactToFormData,
+      previewContact?.id,
+      platformNameMap,
+      updateSalesContactMutation,
+    ]
   );
 
   const confirmDeleteSalesContact = useCallback(
@@ -378,32 +549,31 @@ export default function SalesContactsPage() {
 
   const handleAddPlatformDialogAddPlatform = useCallback(async () => {
     const platformName = addPlatformDialog.platformName.trim();
-    const targetForm = addPlatformDialog.targetForm ?? 'add';
+    const targetForm = addPlatformDialog.targetForm ?? "add";
 
     if (!platformName) {
       setAddPlatformDialog((prev) => ({
         ...prev,
-        error: 'Platform name is required',
+        error: "Platform name is required",
       }));
       return;
     }
 
     const existingPlatform = platformOptions.find(
-      (platform) =>
-        platform.name.toLowerCase() === platformName.toLowerCase()
+      (platform) => platform.name.toLowerCase() === platformName.toLowerCase()
     );
 
     if (existingPlatform?.id !== undefined && existingPlatform?.id !== null) {
-      if (targetForm === 'edit') {
-        handleEditFormChange('platformId', String(existingPlatform.id));
+      if (targetForm === "edit") {
+        handleEditFormChange("platformId", String(existingPlatform.id));
       } else {
-        handleFormChange('platformId', String(existingPlatform.id));
+        handleFormChange("platformId", String(existingPlatform.id));
       }
-      toast.success('Platform already existed, selected it for you.');
+      toast.success("Platform already existed, selected it for you.");
       setAddPlatformDialog({
         open: false,
-        platformName: '',
-        error: '',
+        platformName: "",
+        error: "",
         targetForm,
       });
       return;
@@ -414,23 +584,23 @@ export default function SalesContactsPage() {
         platformName
       );
       if (newPlatform?.id !== undefined && newPlatform?.id !== null) {
-        if (targetForm === 'edit') {
-          handleEditFormChange('platformId', String(newPlatform.id));
+        if (targetForm === "edit") {
+          handleEditFormChange("platformId", String(newPlatform.id));
         } else {
-          handleFormChange('platformId', String(newPlatform.id));
+          handleFormChange("platformId", String(newPlatform.id));
         }
       }
-      toast.success('Platform added successfully!');
+      toast.success("Platform added successfully!");
       setAddPlatformDialog({
         open: false,
-        platformName: '',
-        error: '',
+        platformName: "",
+        error: "",
         targetForm,
       });
     } catch (error: any) {
       setAddPlatformDialog((prev) => ({
         ...prev,
-        error: error?.message || 'Failed to create platform. Please try again.',
+        error: error?.message || "Failed to create platform. Please try again.",
       }));
     }
   }, [
@@ -444,12 +614,12 @@ export default function SalesContactsPage() {
   const handleSubmit = useCallback(
     async (saveAndExit: boolean = true) => {
       if (!currentWorkspace?.id) {
-        toast.error('Please select a workspace before creating contacts.');
+        toast.error("Please select a workspace before creating contacts.");
         return;
       }
 
       if (!validateForm()) {
-        toast.error('Please fix the highlighted errors.');
+        toast.error("Please fix the highlighted errors.");
         return;
       }
 
@@ -475,7 +645,7 @@ export default function SalesContactsPage() {
             platformId = newPlatform?.id ?? null;
           } catch (error: any) {
             toast.error(
-              error?.message || 'Failed to create platform. Please try again.'
+              error?.message || "Failed to create platform. Please try again."
             );
             return;
           }
@@ -496,13 +666,13 @@ export default function SalesContactsPage() {
 
       try {
         await createSalesContactMutation.mutateAsync(payload);
-        toast.success('Sales contact created successfully!');
+        toast.success("Sales contact created successfully!");
         resetFormState();
         if (saveAndExit) {
           setAddSalesContactSidebarOpen(false);
         }
       } catch (error: any) {
-        toast.error(error?.message || 'Failed to create sales contact.');
+        toast.error(error?.message || "Failed to create sales contact.");
       }
     },
     [
@@ -516,100 +686,97 @@ export default function SalesContactsPage() {
     ]
   );
 
-  const handleUpdateSubmit = useCallback(
-    async () => {
-      const contactId = previewContact?.id;
-      if (!contactId) {
-        toast.error('Select a sales contact to update.');
-        return;
-      }
+  const handleUpdateSubmit = useCallback(async () => {
+    const contactId = previewContact?.id;
+    if (!contactId) {
+      toast.error("Select a sales contact to update.");
+      return;
+    }
 
-      if (!validateEditForm()) {
-        toast.error('Please fix the highlighted errors.');
-        return;
-      }
+    if (!validateEditForm()) {
+      toast.error("Please fix the highlighted errors.");
+      return;
+    }
 
-      let platformId: number | null = editFormData.platformId
-        ? Number(editFormData.platformId)
-        : null;
+    let platformId: number | null = editFormData.platformId
+      ? Number(editFormData.platformId)
+      : null;
 
-      const manualPlatformName = editFormData.platformCustom.trim();
+    const manualPlatformName = editFormData.platformCustom.trim();
 
-      if (!platformId && manualPlatformName) {
-        const existingPlatform = platformOptions.find(
-          (platform) =>
-            platform.name.toLowerCase() === manualPlatformName.toLowerCase()
-        );
+    if (!platformId && manualPlatformName) {
+      const existingPlatform = platformOptions.find(
+        (platform) =>
+          platform.name.toLowerCase() === manualPlatformName.toLowerCase()
+      );
 
-        if (existingPlatform) {
-          platformId = existingPlatform.id ?? null;
-        } else {
-          try {
-            const newPlatform = await createContactPlatformMutation.mutateAsync(
-              manualPlatformName
-            );
-            platformId = newPlatform?.id ?? null;
-          } catch (error: any) {
-            toast.error(
-              error?.message || 'Failed to create platform. Please try again.'
-            );
-            return;
-          }
+      if (existingPlatform) {
+        platformId = existingPlatform.id ?? null;
+      } else {
+        try {
+          const newPlatform = await createContactPlatformMutation.mutateAsync(
+            manualPlatformName
+          );
+          platformId = newPlatform?.id ?? null;
+        } catch (error: any) {
+          toast.error(
+            error?.message || "Failed to create platform. Please try again."
+          );
+          return;
         }
       }
+    }
 
-      const payload = {
-        first_name: editFormData.firstName.trim(),
-        last_name: editFormData.lastName.trim() || null,
-        email: editFormData.email.trim() || null,
-        phone_number: editFormData.phoneNumber.trim() || null,
-        location: editFormData.location.trim() || null,
-        contact_time_zone: editFormData.contactTimeZone.trim() || null,
-        status: editFormData.status,
-        platform: platformId,
-      };
+    const payload = {
+      first_name: editFormData.firstName.trim(),
+      last_name: editFormData.lastName.trim() || null,
+      email: editFormData.email.trim() || null,
+      phone_number: editFormData.phoneNumber.trim() || null,
+      location: editFormData.location.trim() || null,
+      contact_time_zone: editFormData.contactTimeZone.trim() || null,
+      status: editFormData.status,
+      platform: platformId,
+    };
 
-      try {
-        const updatedContact = await updateSalesContactMutation.mutateAsync({
-          id: String(contactId),
-          data: payload,
-        });
-        toast.success('Sales contact updated successfully!');
-        setPreviewContact((prev: any) => {
-          if (!prev) return prev;
-          const platformLabel =
-            updatedContact?.platform !== undefined &&
-            updatedContact?.platform !== null
-              ? platformNameMap.get(updatedContact.platform) ??
-                prev.platform_label ??
-                ''
-              : '';
-          return {
-            ...prev,
-            ...updatedContact,
-            platform_label: platformLabel,
-            status_label: formatStatus(updatedContact?.status),
-            created_at_label: formatDateTime(updatedContact?.created_at),
-            updated_at_label: formatDateTime(updatedContact?.updated_at),
-          };
-        });
-        setEditFormData(mapContactToFormData(updatedContact));
-        setEditErrors({ ...INITIAL_FORM_ERRORS });
-      } catch (error: any) {
-        toast.error(error?.message || 'Failed to update sales contact.');
-      }
-    },
-    [
-      createContactPlatformMutation,
-      editFormData,
-      mapContactToFormData,
-      platformNameMap,
-      platformOptions,
-      previewContact?.id,
-      updateSalesContactMutation,
-      validateEditForm,
-    ]
-  );
+    try {
+      const updatedContact = await updateSalesContactMutation.mutateAsync({
+        id: String(contactId),
+        data: payload,
+      });
+      toast.success("Sales contact updated successfully!");
+      setPreviewContact((prev: any) => {
+        if (!prev) return prev;
+        const platformLabel =
+          updatedContact?.platform !== undefined &&
+          updatedContact?.platform !== null
+            ? platformNameMap.get(updatedContact.platform) ??
+              prev.platform_label ??
+              ""
+            : "";
+        return {
+          ...prev,
+          ...updatedContact,
+          platform_label: platformLabel,
+          status_label: formatStatus(updatedContact?.status),
+          created_at_label: formatDateTime(updatedContact?.created_at),
+          updated_at_label: formatDateTime(updatedContact?.updated_at),
+        };
+      });
+      setEditFormData(mapContactToFormData(updatedContact));
+      setEditErrors({ ...INITIAL_FORM_ERRORS });
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to update sales contact.");
+    }
+  }, [
+    createContactPlatformMutation,
+    editFormData,
+    mapContactToFormData,
+    platformNameMap,
+    platformOptions,
+    previewContact?.id,
+    updateSalesContactMutation,
+    validateEditForm,
+  ]);
 
   const SalesContactFormFields = ({
     data,
@@ -632,10 +799,12 @@ export default function SalesContactsPage() {
               <Input
                 id="firstName"
                 value={data.firstName}
-                onChange={(event) => onChange('firstName', event.target.value)}
+                onChange={(event) => onChange("firstName", event.target.value)}
                 placeholder="John"
                 className={`pl-10 bg-gray-100 ${
-                  formErrors.firstName ? 'border-red-500 focus:border-red-500' : ''
+                  formErrors.firstName
+                    ? "border-red-500 focus:border-red-500"
+                    : ""
                 }`}
               />
             </div>
@@ -654,7 +823,7 @@ export default function SalesContactsPage() {
               <Input
                 id="lastName"
                 value={data.lastName}
-                onChange={(event) => onChange('lastName', event.target.value)}
+                onChange={(event) => onChange("lastName", event.target.value)}
                 placeholder="Doe"
                 className="pl-10 bg-gray-100"
               />
@@ -671,10 +840,10 @@ export default function SalesContactsPage() {
                 id="email"
                 type="email"
                 value={data.email}
-                onChange={(event) => onChange('email', event.target.value)}
+                onChange={(event) => onChange("email", event.target.value)}
                 placeholder="john.doe@example.com"
                 className={`pl-10 bg-gray-100 ${
-                  formErrors.email ? 'border-red-500 focus:border-red-500' : ''
+                  formErrors.email ? "border-red-500 focus:border-red-500" : ""
                 }`}
               />
             </div>
@@ -693,7 +862,9 @@ export default function SalesContactsPage() {
               <Input
                 id="phoneNumber"
                 value={data.phoneNumber}
-                onChange={(event) => onChange('phoneNumber', event.target.value)}
+                onChange={(event) =>
+                  onChange("phoneNumber", event.target.value)
+                }
                 placeholder="+1 (555) 123-4567"
                 className="pl-10 bg-gray-100"
               />
@@ -709,7 +880,7 @@ export default function SalesContactsPage() {
               <Input
                 id="location"
                 value={data.location}
-                onChange={(event) => onChange('location', event.target.value)}
+                onChange={(event) => onChange("location", event.target.value)}
                 placeholder="New York, USA"
                 className="pl-10 bg-gray-100"
               />
@@ -720,7 +891,7 @@ export default function SalesContactsPage() {
             <Select
               value={data.status}
               onValueChange={(value) =>
-                onChange('status', value as FormData['status'])
+                onChange("status", value as FormData["status"])
               }
             >
               <SelectTrigger className="bg-gray-100">
@@ -749,10 +920,10 @@ export default function SalesContactsPage() {
                 <SelectValue
                   placeholder={
                     platformsLoading
-                      ? 'Loading platforms...'
+                      ? "Loading platforms..."
                       : platformOptions.length === 0
-                      ? 'No saved platforms'
-                      : 'Select a platform'
+                      ? "No saved platforms"
+                      : "Select a platform"
                   }
                 />
               </SelectTrigger>
@@ -786,10 +957,10 @@ export default function SalesContactsPage() {
   const handlePlatformSelectChange = useCallback(
     (value: string) => {
       if (value === ADD_PLATFORM_SELECT_VALUE) {
-        handleAddPlatformDialogOpenChange(true, 'add');
+        handleAddPlatformDialogOpenChange(true, "add");
         return;
       }
-      handleFormChange('platformId', value);
+      handleFormChange("platformId", value);
     },
     [handleAddPlatformDialogOpenChange, handleFormChange]
   );
@@ -797,60 +968,89 @@ export default function SalesContactsPage() {
   const handleEditPlatformSelectChange = useCallback(
     (value: string) => {
       if (value === ADD_PLATFORM_SELECT_VALUE) {
-        handleAddPlatformDialogOpenChange(true, 'edit');
+        handleAddPlatformDialogOpenChange(true, "edit");
         return;
       }
-      handleEditFormChange('platformId', value);
+      handleEditFormChange("platformId", value);
     },
     [handleAddPlatformDialogOpenChange, handleEditFormChange]
   );
-  
+
   const columns = useMemo(
     () => [
       {
-        id: 'first_name',
-        name: 'First Name',
-        selector: (row: any) => `${row.first_name || ''} ${row.last_name || ''}`.trim(),
-        sortable: true,
-      },
-     
-      {
-        id: 'email',
-        name: 'Email',
-        selector: (row: any) => row.email || '',
+        id: "first_name",
+        name: "First Name",
+        selector: (row: any) =>
+          `${row.first_name || ""} ${row.last_name || ""}`.trim(),
         sortable: true,
       },
 
       {
-        id: 'phone_number',
-        name: 'Phone Number',
-        selector: (row: any) => row.phone_number || '',
+        id: "email",
+        name: "Email",
+        selector: (row: any) => row.email || "",
         sortable: true,
       },
-     
-   
+
       {
-        id: 'location',
-        name: 'Location',
-        selector: (row: any) => row.location || '',
+        id: "phone_number",
+        name: "Phone Number",
+        selector: (row: any) => row.phone_number || "",
         sortable: true,
       },
+
       {
-        id: 'platform',
-        name: 'Platform',
-        selector: (row: any) => row.platform_label || '',
-        sortable: true,
-      },
-      
-      {
-        id: 'status',
-        name: 'Status',
-        selector: (row: any) => row.status_label || '',
+        id: "location",
+        name: "Location",
+        selector: (row: any) => row.location || "",
         sortable: true,
       },
       {
-        id: 'actions',
-        name: 'Actions', 
+        id: "platform",
+        name: "Platform",
+        selector: (row: any) => row.platform_label || "",
+        cell: (row: any) => {
+          if (!row.platform_label) {
+            return <span className="text-sm text-muted-foreground/60">—</span>;
+          }
+          const badgeColors = getPlatformBadgeColors(row.platform_label);
+          return (
+            <span
+              className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium bg-gray-100 text-gray-700"
+              style={badgeColors}
+            >
+              {row.platform_label}
+            </span>
+          );
+        },
+        sortable: true,
+      },
+
+      {
+        id: "status",
+        name: "Status",
+        selector: (row: any) => row.status_label || "",
+        cell: (row: any) => {
+          const statusValue = (row.status as StatusOptionValue) ?? "pending";
+          const classes =
+            CONTACT_STATUS_STYLE_MAP[statusValue] ??
+            "bg-gray-100 text-gray-700";
+          return row.status_label ? (
+            <span
+              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${classes}`}
+            >
+              {row.status_label}
+            </span>
+          ) : (
+            <span className="text-sm text-muted-foreground/60">—</span>
+          );
+        },
+        sortable: true,
+      },
+      {
+        id: "actions",
+        name: "Actions",
         cell: (row: any) => (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -859,17 +1059,42 @@ export default function SalesContactsPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => router.push(`/pages/sales-contacts/new?edit=${row.id}`)}>
+              <DropdownMenuItem
+                onClick={() =>
+                  router.push(`/pages/sales-contacts/new?edit=${row.id}`)
+                }
+              >
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  void handleMoveToLead(row);
+                }}
+                disabled={
+                  movingToLeadContactId !== null ||
+                  row.status === "moved_to_lead"
+                }
+              >
+                {movingToLeadContactId === String(row.id) ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Moving...
+                  </>
+                ) : (
+                  <>
+                    <MoveRight className="h-4 w-4 mr-2" />
+                    Move to Lead
+                  </>
+                )}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                className="text-destructive" 
+              <DropdownMenuItem
+                className="text-destructive"
                 onClick={() =>
                   handleDeleteSalesContact(
                     row.id,
-                    `${row.first_name || ''} ${row.last_name || ''}`.trim()
+                    `${row.first_name || ""} ${row.last_name || ""}`.trim()
                   )
                 }
               >
@@ -884,7 +1109,7 @@ export default function SalesContactsPage() {
         button: true,
       },
     ],
-    [handleDeleteSalesContact, router],
+    [handleDeleteSalesContact, handleMoveToLead, movingToLeadContactId, router]
   );
 
   const totalRows = salesContacts?.count ?? 0;
@@ -894,10 +1119,13 @@ export default function SalesContactsPage() {
     setPage(nextPage);
   }, []);
 
-  const handleRowsPerPageChange = useCallback((nextRowsPerPage: number, nextPage: number) => {
-    setPageSize(nextRowsPerPage);
-    setPage(nextPage);
-  }, []);
+  const handleRowsPerPageChange = useCallback(
+    (nextRowsPerPage: number, nextPage: number) => {
+      setPageSize(nextRowsPerPage);
+      setPage(nextPage);
+    },
+    []
+  );
 
   const renderTable = () => {
     if (!workspaceId) {
@@ -913,7 +1141,8 @@ export default function SalesContactsPage() {
     }
 
     if (isError) {
-      const message = error instanceof Error ? error.message : 'Something went wrong.';
+      const message =
+        error instanceof Error ? error.message : "Something went wrong.";
       return (
         <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
           Failed to load sales contacts. {message}
@@ -949,14 +1178,16 @@ export default function SalesContactsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-medium tracking-tight"> Contacts</h1>
-          <p className="text-sm text-muted-foreground">Manage your sales contacts</p>
+          <p className="text-sm text-muted-foreground">
+            Manage your sales contacts
+          </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" >
+          <Button variant="outline" size="sm">
             <Upload className="mr-2 h-4 w-4" />
             Import
           </Button>
-          <Button variant="outline" size="sm" >
+          <Button variant="outline" size="sm">
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
@@ -967,11 +1198,9 @@ export default function SalesContactsPage() {
         </div>
       </div>
 
-      <div className="mt-6 border border-muted-foreground/30 overflow-hidden">{renderTable()}</div>
-
-
-
-
+      <div className="mt-6 border border-muted-foreground/30 overflow-hidden">
+        {renderTable()}
+      </div>
 
       <DeleteConfirmDialog
         open={deleteDialog.open}
@@ -994,7 +1223,9 @@ export default function SalesContactsPage() {
         title="Sales Contact Preview"
         description={
           previewContact
-            ? `${previewContact.first_name || ""} ${previewContact.last_name || ""}`.trim()
+            ? `${previewContact.first_name || ""} ${
+                previewContact.last_name || ""
+              }`.trim()
             : "Select a sales contact to view details"
         }
       >
@@ -1002,11 +1233,12 @@ export default function SalesContactsPage() {
           <div className="space-y-6">
             <div>
               <h3 className="text-xl font-semibold">
-                {`${previewContact.first_name || ''} ${previewContact.last_name || ''}`.trim() ||
-                  'Unnamed Contact'}
+                {`${previewContact.first_name || ""} ${
+                  previewContact.last_name || ""
+                }`.trim() || "Unnamed Contact"}
               </h3>
               <p className="text-sm text-muted-foreground">
-                {previewContact.email || 'No email provided'}
+                {previewContact.email || "No email provided"}
               </p>
             </div>
 
@@ -1017,8 +1249,6 @@ export default function SalesContactsPage() {
               onPlatformSelectChange={handleEditPlatformSelectChange}
             />
 
-          
-
             <div className="flex items-center justify-end gap-3">
               <Button
                 variant="outline"
@@ -1026,6 +1256,29 @@ export default function SalesContactsPage() {
                 disabled={isUpdating}
               >
                 Cancel
+              </Button>
+              <Button
+                variant="outline"
+                className="min-w-[150px]"
+                onClick={() => {
+                  void handleMoveToLead(previewContact);
+                }}
+                disabled={
+                  movingToLeadContactId !== null ||
+                  previewContact.status === "moved_to_lead"
+                }
+              >
+                {movingToLeadContactId === String(previewContact.id) ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Moving...
+                  </>
+                ) : (
+                  <>
+                    <MoveRight className="h-4 w-4 mr-2" />
+                    Move to Lead
+                  </>
+                )}
               </Button>
               <Button
                 className="min-w-[140px] bg-[#45a2ff] hover:bg-[#45a2ff]/90"
@@ -1055,14 +1308,11 @@ export default function SalesContactsPage() {
         )}
       </SidebarPanel>
 
-
       <SidebarPanel
         open={addSalesContactSidebarOpen}
         onOpenChange={handleAddSalesContactSidebarOpenChange}
         title="Add Sales Contact"
-        description={
-          "Add a new sales contact to your workspace"
-        }
+        description={"Add a new sales contact to your workspace"}
       >
         <div className="space-y-6">
           <CardContent className="p-1">
@@ -1116,50 +1366,48 @@ export default function SalesContactsPage() {
         </div>
       </SidebarPanel>
 
-
-
-
-
-    <Dialog open={addPlatformDialog.open} onOpenChange={handleAddPlatformDialogOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add Platform</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <Input
-            id="platformName"
-            value={addPlatformDialog.platformName}
-            onChange={(event) =>
-              handleAddPlatformDialogPlatformNameChange(event.target.value)
-            }
-            placeholder="Enter platform name"
-          />
-          {addPlatformDialog.error && (
-            <p className="text-sm text-destructive">{addPlatformDialog.error}</p>
-          )}
-          <div className="flex justify-end">
-            <Button
-              onClick={() => {
-                void handleAddPlatformDialogAddPlatform();
-              }}
-              disabled={isAddingPlatform}
-            >
-              {isAddingPlatform ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Adding...
-                </>
-              ) : (
-                'Add Platform'
-              )}
-            </Button>
+      <Dialog
+        open={addPlatformDialog.open}
+        onOpenChange={handleAddPlatformDialogOpenChange}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Platform</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              id="platformName"
+              value={addPlatformDialog.platformName}
+              onChange={(event) =>
+                handleAddPlatformDialogPlatformNameChange(event.target.value)
+              }
+              placeholder="Enter platform name"
+            />
+            {addPlatformDialog.error && (
+              <p className="text-sm text-destructive">
+                {addPlatformDialog.error}
+              </p>
+            )}
+            <div className="flex justify-end">
+              <Button
+                onClick={() => {
+                  void handleAddPlatformDialogAddPlatform();
+                }}
+                disabled={isAddingPlatform}
+              >
+                {isAddingPlatform ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  "Add Platform"
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
-      
-      </DialogContent>
-    </Dialog>
-
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
-

@@ -23,6 +23,7 @@ const protectedRoutes = [
   "/pages/contacts",
   "/pages/createworkspace",
   "/pages/sales-contacts",
+  "/pages/sales-leads",
 ];
 const authRoutes = [
   "/pages/auth/sign-in",
@@ -31,7 +32,7 @@ const authRoutes = [
   "/pages/auth/reset-password",
 ];
 const publicRoutes = ["/auth/accept-invitation"];
-const welcomeRoutes = ["/pages/auth/sign-in"]; // Special handling for welcome page
+const welcomeRoutes = ["/pages/auth/sign-in"]; 
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

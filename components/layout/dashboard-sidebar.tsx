@@ -66,6 +66,19 @@ const defaultMenuItems: SidebarItem[] = [
     href: "#",
     icon: Settings,
     children: [
+      {
+        id: "sales-contacts",
+        label: "Sales Contacts",
+        href: "/pages/sales-contacts",
+        icon: Users,
+      },
+      {
+        id: "sales-leads",
+        label: "Sales Leads",
+        href: "/pages/sales-leads",
+        icon: UserPlus,
+      },
+
         {
           id: "companies",
           label: "Companies",
