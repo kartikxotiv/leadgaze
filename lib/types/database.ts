@@ -1,7 +1,4 @@
-/**
- * Database Type Definitions
- * All types match Supabase table schemas (snake_case)
- */
+
 
 export interface User {
   user_id: string;
@@ -17,7 +14,7 @@ export interface User {
   login_attempts: number;
   lock_until?: string;
   password_reset_token?: string;
-  password_reset_expires?: string;
+  password_reset_expires?: string; 
   password_changed_at?: string;
   created_at: string;
   updated_at: string;
@@ -57,6 +54,21 @@ export interface Organization {
   created_at: string;
   updated_at: string;
 }
+
+export interface WorkspaceRole {
+  id: string;
+  name: string;
+  description?: string;
+  permissions: Record<string, any>;
+  hierarchy_level: number;
+  is_deleted: boolean;
+  created_by: string;
+  workspace_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+
 
 export interface UserOrganization {
   user_organization_id: string;
@@ -382,5 +394,58 @@ export interface TaskWithRelations extends Task {
 export interface ActivityWithRelations extends Activity {
   lead?: Pick<Lead, 'lead_id' | 'first_name' | 'last_name' | 'business_name'>;
   user?: Pick<User, 'user_id' | 'first_name' | 'last_name' | 'email'>;
+}
+
+export interface Workspace {
+  id: string;
+  name: string;
+  description?: string;
+  organization_id: string;
+  user_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Company {
+  id: string;
+  title: string;
+  description?: string;
+  location?: string;
+  revenue?: string;
+  industry?: string;
+  close_date?: string;
+  workspace_id: string;
+  user_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Contact {
+  id: string;
+  workspace_id?: string;
+  first_name: string;
+  last_name?: string;
+  email?: string;
+  phone_number?: string;
+  company_id?: string;
+  user_id?: string;
+  location?: string;
+  description?: string;
+  contact_time_zone?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkspaceWithRelations extends Workspace {
+  organization?: Pick<Organization, 'organization_id' | 'name' | 'slug'>;
+}
+
+export interface CompanyWithRelations extends Company {
+  contacts?: Pick<Contact, 'id' | 'first_name' | 'last_name' | 'email'>[];
+}
+
+export interface ContactWithRelations extends Contact {
+  workspace?: Pick<Workspace, 'id' | 'name' | 'description'>;
+  company?: Pick<Company, 'id' | 'title' | 'location'>;
 }
 

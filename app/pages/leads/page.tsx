@@ -28,13 +28,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
+import { LeadDetailsSheet } from "@/components/leads/lead-details-sheet";
 import {
   EnhancedFilters,
   type FilterConfig,
@@ -45,6 +40,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ActivityLogForm } from "@/components/activities/activity-log-form";
 import { FollowUpScheduler } from "@/components/tasks/follow-up-scheduler";
 import { CreateDealForm } from "@/components/deals/create-deal-form";
+import { useAuth } from "@/lib/hooks/use-auth";
 import {
   Plus,
   MoreHorizontal,
@@ -69,8 +65,11 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { BulkImportDialog } from "@/components/leads/bulk-import-dialog";
+import hasPermission from "@/lib/utils/permissions/check-permission";
+import { Role } from "@/lib/utils/permissions/roles";
 
 export default function LeadsPage() {
+  const { currentOrganization } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize =20;
   
@@ -247,9 +246,7 @@ export default function LeadsPage() {
     { id: 'grade', label: 'Grade' },
     { id: 'score', label: 'Score' },
     { id: 'source', label: 'Source' },
-    // { id: 'lastActivity', label: 'Last Activity' },
   ];
-  // Column toggle handlers
   const handleToggleColumn = (columnId: string) => {
     setVisibleColumns(prev => 
       prev.includes(columnId) 
@@ -259,12 +256,8 @@ export default function LeadsPage() {
   };
 
   const handleApplyColumns = () => {
-    // Columns are already updated via handleToggleColumn
-    // This function can be used for additional logic if needed
     console.log('Applied columns:', visibleColumns);
   };
-
-  // Create dynamic columns based on visibleColumns state
   const getTableColumns = () => {
     const allColumns = [
       { 
@@ -401,7 +394,7 @@ export default function LeadsPage() {
         width: '120px',
         minWidth: '120px'
       },
-      { 
+      {
         id: 'actions',
         name: 'Actions', 
         cell: (row: any) => (
@@ -508,6 +501,13 @@ export default function LeadsPage() {
         button: true,
         width: '100px',
         minWidth: '100px'
+      },
+      { 
+        id: 'SDR',
+        name: 'SDR', 
+        selector: (row: any) => row.SDR || '', 
+        sortable: true,
+       
       },
     ];
 
@@ -629,15 +629,15 @@ export default function LeadsPage() {
     });
   };
 
-  const confirmDeleteLead = async () => {
-    if (!deleteDialog.leadId) return;
+  const confirmDeleteLead = async (leadId?: string) => {
+    if (!leadId) return;
     
     try {
-      await deleteLeadMutation.mutateAsync(deleteDialog.leadId);
+      await deleteLeadMutation.mutateAsync(leadId);
       toast.success("Lead deleted successfully!");
-      setDeleteDialog({ open: false });
     } catch (error) {
       toast.error("Failed to delete lead");
+      throw error; // Re-throw to keep dialog open on error
     }
   };
 
@@ -759,7 +759,19 @@ export default function LeadsPage() {
   }
 
   return (
+
     <DashboardLayout>
+
+
+
+    {hasPermission('leads', 'createLead', currentOrganization?.role as Role) && (
+      <div>
+        <h1>Sales Manager</h1>
+      </div>
+    )}
+
+
+
 
               <div className="sticky top-[65px] bg-white z-10  p-2 rounded-lg shadow-sm ">
                 <div className="flex gap-4 justify-between     ">
@@ -883,153 +895,34 @@ export default function LeadsPage() {
                 }}
               />
             </div>
-        
-        
       </div>
 
 
 
 
-      
-      <Sheet 
-        open={leadDetailsSheet.open} 
-        onOpenChange={(open) => setLeadDetailsSheet({ open, leadId: open ? leadDetailsSheet.leadId : undefined })}
-      >
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Lead Details</SheetTitle>
-            <SheetDescription className="text-[12px] !mt-[0px]">
-              View detailed information about the selected lead 
-            </SheetDescription>
-          </SheetHeader>
-          
-          <div className="mt-3 space-y-6">
-            {safeLeads.length > 0 ? (
-              // Get first lead as example or selected lead
-              (() => {
-                const selectedLead = leadDetailsSheet.leadId 
-                  ? safeLeads.find(lead => lead.leadId === leadDetailsSheet.leadId)
-                  : safeLeads[0];
-                
-                if (!selectedLead) return <p className="text-muted-foreground">No lead selected</p>;
-                
-                return (
-                  <div className="space-y-4">
-                    {/* Basic Information */}
-                    <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                      <h3 className="font-meidum text-base mb-1">Basic Information</h3>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Full Name</p>
-                          <p className="font-medium text-xs" >{selectedLead.firstName} {selectedLead.lastName}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Email</p>
-                          <p className="font-medium text-xs">{selectedLead.email || "Not provided"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Phone</p>
-                          <p className="font-medium text-xs">{selectedLead.phone || "Not provided"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Job Title</p>
-                          <p className="font-medium text-xs">{selectedLead.jobTitle || "Not provided"}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Company Information */}
-                    <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                      <h3 className="font-meidum text-base mb-1">Company Information</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Company Name</p>
-                          <p className="font-medium text-xs">{selectedLead.businessName || "Not provided"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Website</p>
-                          <p className="font-medium text-xs">{selectedLead.companyWebsite || "Not provided"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">LinkedIn</p>
-                          <p className="font-medium text-xs">{selectedLead.linkedinProfile || "Not provided"}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Lead Information */}
-                    <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                      <h3 className="font-meidum text-base mb-1">Lead Information</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Status</p>
-                          <p className="font-medium text-xs">
-                            {(() => {
-                              const status = statuses.find((s: any) => s.id === selectedLead.statusId);
-                              return status?.entityValue || "Unknown";
-                            })()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Source</p>
-                          <p className="font-medium text-xs">
-                            {(() => {
-                              const source = sources.find((s: any) => s.id === selectedLead.sourceId);
-                              return source?.entityValue || "Unknown";
-                            })()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Grade</p>
-                          <p className="font-medium text-xs">
-                            {(() => {
-                              const grade = grades.find((g: any) => g.id === selectedLead.scoreGradeId);
-                              return grade?.entityValue || "Ungraded";
-                            })()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Score</p>
-                          <p className="font-medium text-xs">{selectedLead.leadScore || 0}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Notes */}
-                    {selectedLead.qualificationNotes && (
-                      <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                        <h3 className="font-meidum text-base mb-1">Notes</h3>
-                        <p className="text-xs text-muted-foreground">{selectedLead.qualificationNotes}</p>
-                      </div>
-                    )}
-
-                    {/* Dates */}
-                    <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                      <h3 className="font-meidum text-base mb-1">Dates</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Created</p>
-                          <p className="font-medium text-xs">
-                            {new Date(selectedLead.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Last Updated</p>
-                          <p className="font-medium text-xs">
-                            {new Date(selectedLead.updatedAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()
-            ) : (
-              <p className="text-muted-foreground">No leads available to display</p>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+      <LeadDetailsSheet
+        open={leadDetailsSheet.open}
+        onOpenChange={(open) =>
+          setLeadDetailsSheet({
+            open,
+            leadId: open ? leadDetailsSheet.leadId : undefined,
+          })
+        }
+        lead={
+          leadDetailsSheet.leadId
+            ? safeLeads.find(
+                (lead) => lead.leadId === leadDetailsSheet.leadId
+              ) || null
+            : safeLeads.length > 0
+            ? safeLeads[0]
+            : null
+        }
+        configs={{
+          status: statuses,
+          source: sources,
+          score_grade: grades,
+        }}
+      />
 
       <BulkImportDialog
         open={bulkImportDialog}
@@ -1043,7 +936,7 @@ export default function LeadsPage() {
 
 
       {/* Delete Confirmation Dialog */}
-      <Dialog
+      <DeleteConfirmDialog
         open={deleteDialog.open}
         onOpenChange={(open) =>
           setDeleteDialog({
@@ -1052,41 +945,12 @@ export default function LeadsPage() {
             leadName: open ? deleteDialog.leadName : undefined,
           })
         }
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete Lead</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Are you sure you want to delete <strong>{deleteDialog.leadName}</strong>? 
-              This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setDeleteDialog({ open: false })}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={confirmDeleteLead}
-                disabled={deleteLeadMutation.isPending}
-              >
-                {deleteLeadMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Deleting...
-                  </>
-                ) : (
-                  "Delete"
-                )}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+        itemName={deleteDialog.leadName || ""}
+        itemId={deleteDialog.leadId}
+        onConfirm={confirmDeleteLead}
+        isLoading={deleteLeadMutation.isPending}
+        title="Delete Lead"
+      />
 
       {/* Activity Log Dialog */}
       <Dialog

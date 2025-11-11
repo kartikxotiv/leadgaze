@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth, useRegister } from "@/lib/hooks/use-auth";
 import {
   AlertCircle,
@@ -313,7 +314,7 @@ export default function SignUpPage() {
 
      
       setTimeout(() => {
-        router.replace("/pages/dashboard");
+        router.replace("/pages/createworkspace");
       }, 1500);
     } catch (err) {
      
@@ -372,7 +373,7 @@ export default function SignUpPage() {
           {}
           <div className="text-center mb-8">
             <Link
-              href="/pages/welcome"
+              href="#"
               className="inline-flex items-center gap-3 mb-6 group"
             >
              <Image src={logo} loading="lazy" width={250} height={80} alt="Leadgaze logo" />
@@ -1250,6 +1251,12 @@ export default function SignUpPage() {
             Already have an account? Sign in
           </Link>
         </div>
+
+
+     
+
+
+
       </div>
     </div>
   );
