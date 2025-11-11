@@ -249,10 +249,10 @@ export function DashboardHeader({ onMenuClick, collapsed, onCollapsedChange }: D
 
 
 
-          {}
+          
           <div className="flex items-center gap-4">
-            {}
-            {orgFromStore?.organizationId && (
+            
+            {/* {orgFromStore?.organizationId && (
               <InviteUserDialog
                 currentUserOrganization={orgFromStore}
                 organizationId={orgFromStore.organizationId}
@@ -268,7 +268,7 @@ export function DashboardHeader({ onMenuClick, collapsed, onCollapsedChange }: D
                   </Button>
                 }
               />
-            )}
+            )} */}
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

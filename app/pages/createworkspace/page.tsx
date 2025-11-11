@@ -13,20 +13,18 @@ export default function CreateWorkspacePage() {
   };
 
   return (
-    <div style={{backgroundImage: "url('/image/workspace_img.png')", 
-            backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat", height: "100vh", }} className="flex items-center justify-center">
-                <div className="relative flex items-center justify-center">
-                <div className="fixed inset-0 w-full h-full bg-black bg-opacity-50 "></div>
-                 <div className="w-[500px] h-full flex items-center justify-center ">
-                  <div className="bg-white p-4 rounded-lg z-50 w-full p-10 relative">
-                    <CreateWorkspaceForm
-                      onSuccess={handleWorkspaceCreated}
-                      showCancelButton={false}
-                      submitButtonText="Submit"
-                    />
-                  </div>
-                 </div>
-                </div>
+    <div className="flex items-center justify-center h-[100vh] bgworkspace">
+      <div className="relative flex items-center justify-center">
+        <div className="w-[500px] h-full flex items-center justify-center ">
+        <div className="bg-white p-4 rounded-lg z-50 w-full p-10 relative shadow-lg border border-gray-200">
+          <CreateWorkspaceForm
+            onSuccess={handleWorkspaceCreated}
+            showCancelButton={false}
+            submitButtonText="Submit"
+          />
+        </div>
+        </div>
+      </div>
     </div>
   )
 }

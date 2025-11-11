@@ -22,6 +22,7 @@ const protectedRoutes = [
   "/pages/companies",
   "/pages/contacts",
   "/pages/createworkspace",
+  "/pages/sales-contacts",
 ];
 const authRoutes = [
   "/pages/auth/sign-in",

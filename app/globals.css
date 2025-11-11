@@ -168,3 +168,8 @@
       max-height: 69vh;
       overflow-y: auto;
 }
+.bgworkspace {
+background: #FFEFBA; 
+background: -webkit-linear-gradient(to top, #FFFFFF, #FFEFBA);  
+background: linear-gradient(to top, #FFFFFF, #FFEFBA); 
+}

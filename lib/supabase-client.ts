@@ -1,11 +1,8 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Server-side: Use service role key for admin operations
-// Client-side: Use anon key (but this file is server-only)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Debug: Log what we're getting (only in development)
 if (process.env.NODE_ENV === 'development') {
   console.log('🔍 Supabase Config Check:');
   console.log('  NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ SET' : '❌ MISSING');

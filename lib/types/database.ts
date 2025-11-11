@@ -1,7 +1,4 @@
-/**
- * Database Type Definitions
- * All types match Supabase table schemas (snake_case)
- */
+
 
 export interface User {
   user_id: string;
@@ -17,7 +14,7 @@ export interface User {
   login_attempts: number;
   lock_until?: string;
   password_reset_token?: string;
-  password_reset_expires?: string;
+  password_reset_expires?: string; 
   password_changed_at?: string;
   created_at: string;
   updated_at: string;
@@ -57,6 +54,21 @@ export interface Organization {
   created_at: string;
   updated_at: string;
 }
+
+export interface WorkspaceRole {
+  id: string;
+  name: string;
+  description?: string;
+  permissions: Record<string, any>;
+  hierarchy_level: number;
+  is_deleted: boolean;
+  created_by: string;
+  workspace_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+
 
 export interface UserOrganization {
   user_organization_id: string;
@@ -389,6 +401,7 @@ export interface Workspace {
   name: string;
   description?: string;
   organization_id: string;
+  user_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -402,6 +415,7 @@ export interface Company {
   industry?: string;
   close_date?: string;
   workspace_id: string;
+  user_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -414,6 +428,7 @@ export interface Contact {
   email?: string;
   phone_number?: string;
   company_id?: string;
+  user_id?: string;
   location?: string;
   description?: string;
   contact_time_zone?: string;
