@@ -81,8 +81,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
-import { X, ChevronDown, Clock, Calendar, Send, Users } from "lucide-react";
+import { X, ChevronDown, Clock, Calendar, Send, Users, UserCog, Contact2 } from "lucide-react";
 import { AssigneeInlineEditor } from "@/components/assignees";
+import { OwnerInlineEditor } from "@/components/owner";
+import { ContactAvatar } from "@/components/contact";
 // import { X, Calendar, Clock, Tag, Users, Link2, ChevronDown, MessageSquare, Send, Paperclip, Smile, AtSign, Hash, MoreHorizontal } from 'lucide-react';
 
 const ADD_PLATFORM_SELECT_VALUE = "__add_new_platform__";
@@ -588,7 +590,7 @@ const SalesLeadFormFields = ({
 export default function SalesLeadsPage() {
   const { currentWorkspace } = useWorkspaceContext();
   const workspaceId = currentWorkspace?.id;
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -742,6 +744,7 @@ export default function SalesLeadsPage() {
     salesLeadName?: string;
   }>({ open: false });
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [addSalesLeadSidebarOpen, setAddSalesLeadSidebarOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({ ...INITIAL_FORM_STATE });
   const [errors, setErrors] = useState<Record<keyof FormData, string>>({
@@ -1392,15 +1395,44 @@ export default function SalesLeadsPage() {
   );
 
   const handlePreviewLead = useCallback(
-    (lead: any) => {
+    async (lead: any) => {
+      // Open dialog immediately with basic data
       setPreviewLead(lead);
       setPreviewDialogOpen(true);
+      setIsLoadingPreview(true);
       setNewCommentText("");
       resetPriorityFormState();
-      setEditFormData(mapLeadToFormData(lead));
       setEditErrors({ ...INITIAL_FORM_ERRORS });
+      
+      // Fetch full lead data with relations from API
+      try {
+        const response = await fetch(`/api/sales-leads/${lead.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          // Update with full lead data including relations (contact, owner, etc.)
+          setPreviewLead(data.data);
+          setEditFormData(mapLeadToFormData(data.data));
+        } else {
+          // Fallback to row data if API call fails
+          setEditFormData(mapLeadToFormData(lead));
+          toast.error("Failed to load complete lead details");
+        }
+      } catch (error) {
+        console.error("Failed to fetch lead details:", error);
+        // Fallback to row data if API call fails
+        setEditFormData(mapLeadToFormData(lead));
+        toast.error("Failed to load complete lead details");
+      } finally {
+        setIsLoadingPreview(false);
+      }
     },
-    [mapLeadToFormData, resetPriorityFormState]
+    [mapLeadToFormData, resetPriorityFormState, token]
   );
 
   const handlePageChange = useCallback((nextPage: number) => {
@@ -1785,29 +1817,21 @@ export default function SalesLeadsPage() {
                       </div>
 
                       <div className="flex items-center gap-3">
-                        <span className="text-sm text-gray-600 w-32">
+                        <span className="text-sm text-gray-600 w-32 flex items-center gap-2">
+                          <UserCog className="h-4 w-4" />
                           Owner
                         </span>
                         <div className="flex items-center gap-2">
-                          <Input
-                            id="ownerId"
-                            value={
-                              editFormData.ownerId === NO_SELECTION_VALUE
-                                ? ""
-                                : editFormData.ownerId
-                            }
-                            onChange={(event) =>
-                              handleEditFormChange(
-                                "ownerId",
-                                event.target.value
-                                  ? event.target.value
-                                  : NO_SELECTION_VALUE
-                              )
-                            }
-                            // placeholder="Enter teammate user ID"
-                            className="!outline-none !focus:outline-none
-    !focus:ring-0 !focus:ring-offset-0 px-2 border-none shadow-none  hover:bg-muted/50 transition-colors group w-52 justify-between"
-                          />
+                          {isLoadingPreview ? (
+                            <Skeleton className="h-8 w-48" />
+                          ) : previewLead?.id ? (
+                            <OwnerInlineEditor
+                              leadId={previewLead.id}
+                              owner={previewLead.owner}
+                              size="md"
+                              showLabel={true}
+                            />
+                          ) : null}
                         </div>
                       </div>
 
@@ -1817,48 +1841,36 @@ export default function SalesLeadsPage() {
                           Assignees
                         </span>
                         <div className="flex items-center gap-2">
-                          {previewLead?.id && (
+                          {isLoadingPreview ? (
+                            <Skeleton className="h-8 w-32" />
+                          ) : previewLead?.id ? (
                             <AssigneeInlineEditor
                               leadId={previewLead.id}
                               size="md"
                               maxVisible={3}
                             />
-                          )}
+                          ) : null}
                         </div>
                       </div>
 
                       <div className="flex items-center gap-3">
-                        <span className="text-sm text-gray-600 w-32">
+                        <span className="text-sm text-gray-600 w-32 flex items-center gap-2">
+                          <Contact2 className="h-4 w-4" />
                           Linked Contact
                         </span>
-                        <Select
-                          value={editFormData.contactId}
-                          onValueChange={handleEditContactSelectChange}
-                          disabled={contactOptions.length === 0}
-                        >
-                          <SelectTrigger
-                            className="outline-none focus:outline-none
-    focus:ring-0 focus:ring-offset-0 px-2 border-none shadow-none  hover:bg-muted/50 transition-colors group w-52 justify-between"
-                          >
-                            <SelectValue
-                              placeholder={
-                                contactOptions.length === 0
-                                  ? "No contacts"
-                                  : "Select contact"
-                              }
+                        <div className="flex items-center gap-2">
+                          {isLoadingPreview ? (
+                            <Skeleton className="h-8 w-48" />
+                          ) : (
+                            <ContactAvatar
+                              contact={previewLead?.contact}
+                              size="md"
+                              showLabel={true}
+                              showEmail={true}
+                              showPhone={false}
                             />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={NO_SELECTION_VALUE}>
-                              No contact
-                            </SelectItem>
-                            {contactOptions.map((contact: any) => (
-                              <SelectItem key={contact.id} value={contact.id}>
-                                {buildContactLabel(contact)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-3">
