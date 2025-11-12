@@ -4,10 +4,27 @@ import type { Database } from "../../database.types";
 export type LeadComment = Database["public"]["Tables"]["lead_comments"]["Row"];
 export type LeadCommentInsert = Database["public"]["Tables"]["lead_comments"]["Insert"];
 
-export async function getLeadComments(leadId: string): Promise<LeadComment[]> {
+export interface LeadCommentWithUser extends LeadComment {
+  created_by_user?: {
+    user_id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  } | null;
+}
+
+export async function getLeadComments(leadId: string): Promise<LeadCommentWithUser[]> {
   const { data, error } = await supabase
     .from("lead_comments")
-    .select("*")
+    .select(`
+      *,
+      created_by_user:users!lead_comments_created_by_fkey(
+        user_id,
+        first_name,
+        last_name,
+        email
+      )
+    `)
     .eq("lead_id", leadId)
     .order("created_at", { ascending: false });
 

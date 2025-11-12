@@ -81,10 +81,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
-import { X, ChevronDown, Clock, Calendar, Send, Users, UserCog, Contact2 } from "lucide-react";
+import { X, ChevronDown, Clock, Calendar, Send, Users, UserCog, Contact2, ChevronRight } from "lucide-react";
 import { AssigneeInlineEditor } from "@/components/assignees";
 import { OwnerInlineEditor } from "@/components/owner";
 import { ContactAvatar } from "@/components/contact";
+import { CommentCard, CommentInput } from "@/components/comments";
 // import { X, Calendar, Clock, Tag, Users, Link2, ChevronDown, MessageSquare, Send, Paperclip, Smile, AtSign, Hash, MoreHorizontal } from 'lucide-react';
 
 const ADD_PLATFORM_SELECT_VALUE = "__add_new_platform__";
@@ -2091,115 +2092,78 @@ export default function SalesLeadsPage() {
                   </div>
                 </div>
 
-                <div className="border-l border-gray-200 bg-white w-80 lg:w-96 flex-shrink-0 flex flex-col">
-                  <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-gray-900">
-                        Activity
-                      </h3>
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                        {leadCommentsLoading ? "…" : leadComments.length}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                    {leadCommentsLoading ? (
-                      <Skeleton className="h-24 w-full" />
-                    ) : leadComments.length === 0 ? (
-                      <p className="text-sm text-gray-500">
-                        No comments yet. Start the conversation below.
-                      </p>
-                    ) : (
-                      leadComments.map((comment) => {
-                        const initials = (
-                          (comment.created_by ?? "")
-                            .toString()
-                            .trim()
-                            .charAt(0) || "?"
-                        ).toUpperCase();
-
-                        return (
-                          <div key={comment.id} className="flex gap-3">
-                            <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
-                              {initials}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium text-gray-900">
-                                    {comment.created_by ?? "Unknown"}
-                                  </span>
-                                  <span className="text-xs text-gray-500">
-                                    {formatDateTimeWithTime(comment.created_at)}
-                                  </span>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-muted-foreground hover:text-destructive"
-                                  onClick={() => {
-                                    void handleDeleteComment(comment.id);
-                                  }}
-                                  disabled={deleteLeadCommentMutation.isPending}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                              <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
-                                {comment.comment}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                    {!leadCommentsLoading && leadComments.length > 5 ? (
-                      <button className="text-sm text-gray-500 hover:text-gray-700 w-full text-left">
+                <div className="border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 w-80 lg:w-96 flex-shrink-0 flex flex-col">
+                  {/* Header */}
+                  <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                          Activity
+                        </h3>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                          {leadCommentsLoading ? "…" : leadComments.length}
+                        </span>
+                      </div>
+                      <button className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors">
+                        <ChevronRight className="h-3.5 w-3.5" />
                         Show more
                       </button>
-                    ) : null}
+                    </div>
                   </div>
-                  <div className="px-4 py-3 border-t border-gray-200 flex-shrink-0">
-                    <div className="relative">
-                      <textarea
-                        value={newCommentText}
-                        onChange={(event) =>
-                          setNewCommentText(event.target.value)
-                        }
-                        placeholder="Add a comment..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                        rows={3}
-                        disabled={
-                          createLeadCommentMutation.isPending ||
-                          !previewLead?.id
-                        }
-                      />
-                    </div>
-                    <div className="mt-2 flex justify-end">
-                      <button
-                        className="px-4 py-1.5 bg-purple-600 text-white rounded text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-                        onClick={() => {
-                          void handleAddComment();
-                        }}
-                        disabled={
-                          createLeadCommentMutation.isPending ||
-                          newCommentText.trim() === "" ||
-                          !previewLead?.id
-                        }
-                      >
-                        {createLeadCommentMutation.isPending ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Sending...
-                          </>
-                        ) : (
-                          <>
-                            <Send size={14} />
-                            Send
-                          </>
-                        )}
-                      </button>
-                    </div>
+
+                  {/* Comments List */}
+                  <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+                    {leadCommentsLoading ? (
+                      <>
+                        <Skeleton className="h-24 w-full rounded-lg" />
+                        <Skeleton className="h-24 w-full rounded-lg" />
+                      </>
+                    ) : leadComments.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8 text-center">
+                        <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
+                          <Send className="h-5 w-5 text-gray-400 dark:text-gray-600" />
+                        </div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                          No activity yet
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Start the conversation below
+                        </p>
+                      </div>
+                    ) : (
+                      leadComments.map((comment) => (
+                        <CommentCard
+                          key={comment.id}
+                          comment={comment}
+                          currentUser={{
+                            user_id: user?.userId,
+                            first_name: user?.firstName,
+                            last_name: user?.lastName,
+                            email: user?.email,
+                          }}
+                          onDelete={handleDeleteComment}
+                          isDeleting={deleteLeadCommentMutation.isPending}
+                        />
+                      ))
+                    )}
+                  </div>
+
+                  {/* Comment Input */}
+                  <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex-shrink-0">
+                    <CommentInput
+                      currentUser={{
+                        user_id: user?.userId,
+                        first_name: user?.firstName,
+                        last_name: user?.lastName,
+                        email: user?.email,
+                      }}
+                      value={newCommentText}
+                      onChange={setNewCommentText}
+                      onSubmit={handleAddComment}
+                      isSubmitting={createLeadCommentMutation.isPending}
+                      disabled={!previewLead?.id}
+                      placeholder="Add a comment..."
+                    />
                   </div>
                 </div>
               </div>
