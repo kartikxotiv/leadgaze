@@ -25,3 +25,4 @@ export * from './tasks';
 export * from './organization-workspaces';
 export * from './email-otp';
 export * from './lead-scores';
+export * from './lead-assignees';

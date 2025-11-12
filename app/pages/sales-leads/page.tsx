@@ -81,7 +81,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
-import { X, ChevronDown, Clock, Calendar, Send } from "lucide-react";
+import { X, ChevronDown, Clock, Calendar, Send, Users } from "lucide-react";
+import { AssigneeInlineEditor } from "@/components/assignees";
 // import { X, Calendar, Clock, Tag, Users, Link2, ChevronDown, MessageSquare, Send, Paperclip, Smile, AtSign, Hash, MoreHorizontal } from 'lucide-react';
 
 const ADD_PLATFORM_SELECT_VALUE = "__add_new_platform__";
@@ -1785,7 +1786,7 @@ export default function SalesLeadsPage() {
 
                       <div className="flex items-center gap-3">
                         <span className="text-sm text-gray-600 w-32">
-                          Assignee
+                          Owner
                         </span>
                         <div className="flex items-center gap-2">
                           <Input
@@ -1807,6 +1808,22 @@ export default function SalesLeadsPage() {
                             className="!outline-none !focus:outline-none
     !focus:ring-0 !focus:ring-offset-0 px-2 border-none shadow-none  hover:bg-muted/50 transition-colors group w-52 justify-between"
                           />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-gray-600 w-32 flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          Assignees
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {previewLead?.id && (
+                            <AssigneeInlineEditor
+                              leadId={previewLead.id}
+                              size="md"
+                              maxVisible={3}
+                            />
+                          )}
                         </div>
                       </div>
 
