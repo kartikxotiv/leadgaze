@@ -20,16 +20,17 @@ export interface Assignee {
 interface AssigneeAvatarGroupProps {
   assignees: Assignee[];
   maxVisible?: number;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   className?: string;
   onAvatarClick?: (assignee: Assignee) => void;
   showTooltip?: boolean;
 }
 
 const sizeClasses = {
-  sm: "h-6 w-6 text-xs",
-  md: "h-8 w-8 text-sm",
-  lg: "h-10 w-10 text-base",
+  xs: "h-5 w-5 text-[10px]",
+  sm: "h-6 w-6 text-[12px]",
+  md: "h-8 w-8 text-[14px]",
+  lg: "h-10 w-10 text-[16px]",
 };
 
 /**
@@ -64,13 +65,10 @@ function getUserColor(userId: string): string {
   return colors[Math.abs(hash) % colors.length];
 }
 
-/**
- * Reusable component to display a group of assignee avatars
- */
 export function AssigneeAvatarGroup({
   assignees,
   maxVisible = 3,
-  size = "md",
+  size = "xs",
   className,
   onAvatarClick,
   showTooltip = true,
@@ -95,14 +93,16 @@ export function AssigneeAvatarGroup({
               key={assignee.user_id}
               className={cn(
                 sizeClasses[size],
-                "border-2 border-background cursor-pointer hover:z-10 transition-transform hover:scale-110",
+                "border-2 border-background cursor-pointer hover:z-10 transition-transform ",
                 onAvatarClick && "cursor-pointer"
               )}
               onClick={() => onAvatarClick?.(assignee)}
               style={{ zIndex: visibleAssignees.length - index }}
             >
               <AvatarImage src="" alt={fullName} />
-              <AvatarFallback className={cn(colorClass, "text-white font-medium")}>
+              <AvatarFallback
+                className={cn(colorClass, "text-white font-medium text-[11px]")}
+              >
                 {initials}
               </AvatarFallback>
             </Avatar>
@@ -114,7 +114,9 @@ export function AssigneeAvatarGroup({
                 <TooltipTrigger asChild>{avatarElement}</TooltipTrigger>
                 <TooltipContent>
                   <p className="font-medium">{fullName}</p>
-                  <p className="text-xs text-muted-foreground">{assignee.email}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {assignee.email}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             );
@@ -140,10 +142,14 @@ export function AssigneeAvatarGroup({
             </TooltipTrigger>
             <TooltipContent>
               <p className="font-medium">
-                {remainingCount} more {remainingCount === 1 ? "assignee" : "assignees"}
+                {remainingCount} more{" "}
+                {remainingCount === 1 ? "assignee" : "assignees"}
               </p>
               {assignees.slice(maxVisible).map((assignee) => (
-                <p key={assignee.user_id} className="text-xs text-muted-foreground">
+                <p
+                  key={assignee.user_id}
+                  className="text-xs text-muted-foreground"
+                >
                   {assignee.first_name} {assignee.last_name}
                 </p>
               ))}
@@ -154,4 +160,3 @@ export function AssigneeAvatarGroup({
     </TooltipProvider>
   );
 }
-

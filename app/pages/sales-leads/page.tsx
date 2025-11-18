@@ -81,11 +81,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
-import { X, ChevronDown, Clock, Calendar, Send, Users, UserCog, Contact2, ChevronRight } from "lucide-react";
+import {
+  X,
+  ChevronDown,
+  Clock,
+  Calendar,
+  Send,
+  Users,
+  UserCog,
+  Contact2,
+  ChevronRight,
+} from "lucide-react";
 import { AssigneeInlineEditor } from "@/components/assignees";
 import { OwnerInlineEditor } from "@/components/owner";
 import { ContactAvatar } from "@/components/contact";
 import { CommentCard, CommentInput } from "@/components/comments";
+import { NoteDialog } from "@/components/notes/note-dialog";
+import { MeetingDialog } from "@/components/meetings/meeting-dialog";
+import { MeetingDetailsDialog } from "@/components/meetings/meeting-details-dialog";
+import { LeadMediaDialog } from "@/components/lead-media/lead-media-dialog";
+import { useMeetings } from "@/hooks/use-meetings";
 // import { X, Calendar, Clock, Tag, Users, Link2, ChevronDown, MessageSquare, Send, Paperclip, Smile, AtSign, Hash, MoreHorizontal } from 'lucide-react';
 
 const ADD_PLATFORM_SELECT_VALUE = "__add_new_platform__";
@@ -747,6 +762,14 @@ export default function SalesLeadsPage() {
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [addSalesLeadSidebarOpen, setAddSalesLeadSidebarOpen] = useState(false);
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [meetingDialogOpen, setMeetingDialogOpen] = useState(false);
+  const [meetingDetailsDialogOpen, setMeetingDetailsDialogOpen] =
+    useState(false);
+  const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(
+    null
+  );
+  const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({ ...INITIAL_FORM_STATE });
   const [errors, setErrors] = useState<Record<keyof FormData, string>>({
     ...INITIAL_FORM_ERRORS,
@@ -920,6 +943,55 @@ export default function SalesLeadsPage() {
 
   const { data: leadComments = [], isLoading: leadCommentsLoading } =
     useLeadComments(previewLead?.id);
+
+  // Fetch upcoming meetings for the preview lead
+  const { data: meetingsData, isLoading: meetingsLoading } = useMeetings({
+    leadId: previewLead?.id ? String(previewLead.id) : undefined,
+  });
+
+  const upcomingMeetings = useMemo(() => {
+    if (!meetingsData) return [];
+
+    // Handle different possible response structures
+    const meetings =
+      meetingsData?.data?.meetings ||
+      meetingsData?.meetings ||
+      (Array.isArray(meetingsData?.data) ? meetingsData.data : []);
+
+    // Debug logging in development
+    if (process.env.NODE_ENV === "development" && previewLead?.id) {
+      console.log("Meetings data structure:", {
+        meetingsData,
+        meetings,
+        meetingsCount: Array.isArray(meetings) ? meetings.length : 0,
+      });
+    }
+
+    if (!Array.isArray(meetings) || meetings.length === 0) return [];
+
+    const now = new Date();
+    const filtered = meetings
+      .filter((meeting: any) => {
+        if (!meeting?.time) return false;
+        const meetingTime = new Date(meeting.time);
+        return !isNaN(meetingTime.getTime()) && meetingTime >= now;
+      })
+      .sort((a: any, b: any) => {
+        return new Date(a.time).getTime() - new Date(b.time).getTime();
+      })
+      .slice(0, 3); // Show only next 3 upcoming meetings
+
+    // Debug logging in development
+    if (process.env.NODE_ENV === "development" && previewLead?.id) {
+      console.log("Upcoming meetings:", {
+        totalMeetings: meetings.length,
+        upcomingCount: filtered.length,
+        upcomingMeetings: filtered,
+      });
+    }
+
+    return filtered;
+  }, [meetingsData, previewLead?.id]);
 
   const isSaving =
     createSalesLeadMutation.isPending ||
@@ -1404,7 +1476,7 @@ export default function SalesLeadsPage() {
       setNewCommentText("");
       resetPriorityFormState();
       setEditErrors({ ...INITIAL_FORM_ERRORS });
-      
+
       // Fetch full lead data with relations from API
       try {
         const response = await fetch(`/api/sales-leads/${lead.id}`, {
@@ -1412,9 +1484,9 @@ export default function SalesLeadsPage() {
             Authorization: `Bearer ${token}`,
           },
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success && data.data) {
           // Update with full lead data including relations (contact, owner, etc.)
           setPreviewLead(data.data);
@@ -1653,7 +1725,6 @@ export default function SalesLeadsPage() {
       <div className="mt-6 border border-muted-foreground/30 overflow-hidden">
         {renderTable()}
       </div>
-
       <DeleteConfirmDialog
         open={deleteDialog.open}
         onOpenChange={(open) =>
@@ -1674,31 +1745,37 @@ export default function SalesLeadsPage() {
         open={previewDialogOpen}
         onOpenChange={handlePreviewDialogOpenChange}
       >
-        <DialogContent className="max-w-6xl p-0">
+        <DialogContent className="max-w-7xl p-0">
           {previewLead ? (
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col relative">
+            <div className="bg-white rounded-lg shadow-xl   min-w-7xl h-[80vh] overflow-hidden flex flex-col relative">
               <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-500">Lead</span>
-                  <span className="text-sm text-gray-400">
-                    {previewLead.id ?? "—"}
-                  </span>
+                <div className="">
+                  <div>
+                    <span className="text-sm text-gray-500">Lead</span>
+                    <span className="text-sm text-gray-400">
+                      {previewLead.id ?? "—"}
+                    </span>
+                  </div>
+
+                  <h1 className="text-2xl font-semibold text-gray-900 mb-0">
+                    {previewLeadDisplayName}
+                  </h1>
                 </div>
               </div>
               <div className="flex-1 overflow-hidden flex">
                 <div className="flex-1 overflow-y-auto">
-                  <div className="p-10">
-                    <h1 className="text-2xl font-semibold text-gray-900 mb-6">
-                      {previewLeadDisplayName}
-                    </h1>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                  <div className="p-10 relative h-full">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10                                                                                                                                                                                                 ">
                       <div className="flex items-center gap-3">
                         <span className="text-sm text-gray-600 w-32">
                           Status
                         </span>
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
+                          <DropdownMenuTrigger
+                            asChild
+                            className=" outline-none focus:outline-none
+    focus:ring-0 focus:ring-offset-0"
+                          >
                             <button
                               className={`inline-flex items-center gap-2 rounded px-3 py-1 text-sm font-medium transition-colors ${statusClassName}`}
                             >
@@ -1732,7 +1809,7 @@ export default function SalesLeadsPage() {
                         >
                           <SelectTrigger
                             className=" outline-none focus:outline-none
-    focus:ring-0 focus:ring-offset-0 px-2 border-none shadow-none  hover:bg-muted/50 transition-colors group w-52 justify-between"
+    focus:ring-0 focus:ring-offset-0 px-2 border-none shadow-none bg-[#f1f5f980] hover:bg-muted/50 transition-colors group w-52 justify-between"
                           >
                             <SelectValue
                               placeholder={
@@ -1777,7 +1854,7 @@ export default function SalesLeadsPage() {
                         >
                           <SelectTrigger
                             className="outline-none focus:outline-none
-    focus:ring-0 focus:ring-offset-0 px-2 border-none shadow-none  hover:bg-muted/50 transition-colors group w-52 justify-between"
+    focus:ring-0 focus:ring-offset-0 px-2 border-none shadow-none bg-[#f1f5f980]  hover:bg-muted/50 transition-colors group w-52 justify-between"
                           >
                             <SelectValue
                               placeholder={
@@ -1819,7 +1896,7 @@ export default function SalesLeadsPage() {
 
                       <div className="flex items-center gap-3">
                         <span className="text-sm text-gray-600 w-32 flex items-center gap-2">
-                          <UserCog className="h-4 w-4" />
+                          {/* <UserCog className="h-4 w-4" /> */}
                           Owner
                         </span>
                         <div className="flex items-center gap-2">
@@ -1838,7 +1915,7 @@ export default function SalesLeadsPage() {
 
                       <div className="flex items-center gap-3">
                         <span className="text-sm text-gray-600 w-32 flex items-center gap-2">
-                          <Users className="h-4 w-4" />
+                          {/* <Users className="h-4 w-4" /> */}
                           Assignees
                         </span>
                         <div className="flex items-center gap-2">
@@ -1856,7 +1933,7 @@ export default function SalesLeadsPage() {
 
                       <div className="flex items-center gap-3">
                         <span className="text-sm text-gray-600 w-32 flex items-center gap-2">
-                          <Contact2 className="h-4 w-4" />
+                          {/* <Contact2 className="h-4 w-4" /> */}
                           Linked Contact
                         </span>
                         <div className="flex items-center gap-2">
@@ -1902,6 +1979,102 @@ export default function SalesLeadsPage() {
                         </div>
                       </div>
                     </div>
+
+                    <hr className="my-4" />
+                    <div className="flex items-center gap-2 mt-8">
+                      <div
+                        className="bg-blue-500 text-white px-4 w-fit flex gap-1 py-2 rounded-md cursor-pointer flex items-center text-sm font-regular text-gray-900"
+                        onClick={() => setNoteDialogOpen(true)}
+                      >
+                        <Plus className="!h-3 !w-3" />
+                        Create Notes
+                      </div>
+                      <button
+                        className="bg-blue-500 text-white px-4 w-fit flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                        onClick={() => setMediaDialogOpen(true)}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Upload File
+                      </button>
+                    </div>
+
+                    {/* Upcoming Meetings List */}
+                    {previewLead?.id && (
+                      <div className="mt-6">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                            {meetingsLoading
+                              ? "Loading meetings..."
+                              : `Upcoming Meetings${
+                                  upcomingMeetings.length > 0
+                                    ? ` (${upcomingMeetings.length})`
+                                    : ""
+                                }`}
+                          </h3>
+                          <button
+                            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                            onClick={() => {
+                              setSelectedMeetingId(null);
+                              setMeetingDialogOpen(true);
+                            }}
+                          >
+                            <Plus className="h-4 w-4" />
+                            Create Meeting
+                          </button>
+                        </div>
+                        {meetingsLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                          </div>
+                        ) : upcomingMeetings.length > 0 ? (
+                          <div className="space-y-2">
+                            {upcomingMeetings.map((meeting: any) => {
+                              const meetingDate = new Date(meeting.time);
+                              const formattedDate =
+                                meetingDate.toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                });
+                              const formattedTime =
+                                meetingDate.toLocaleTimeString("en-US", {
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                });
+                              return (
+                                <div
+                                  key={meeting.id}
+                                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                  onClick={() => {
+                                    setSelectedMeetingId(meeting.id);
+                                    setMeetingDetailsDialogOpen(true);
+                                  }}
+                                >
+                                  <div className="flex-shrink-0">
+                                    <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                                      <Calendar className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                    </div>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                      {meeting.title}
+                                    </h4>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                      {formattedDate} at {formattedTime}
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-500 dark:text-gray-400 py-4">
+                            No upcoming meetings
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* <div className="mt-8 space-y-6">
                       <div>
@@ -2052,7 +2225,7 @@ export default function SalesLeadsPage() {
                       </div>
                     </div> */}
 
-                    <div className="mt-10 flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="mt-10 flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between absolute bottom-4 left-4 right-4">
                       <div className="text-xs text-muted-foreground">
                         {previewLead.updated_at
                           ? `Last updated ${formatDateTimeWithTime(
@@ -2104,10 +2277,10 @@ export default function SalesLeadsPage() {
                           {leadCommentsLoading ? "…" : leadComments.length}
                         </span>
                       </div>
-                      <button className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors">
-                        <ChevronRight className="h-3.5 w-3.5" />
-                        Show more
-                      </button>
+                      {/* <button className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors">
+                          <ChevronRight className="h-3.5 w-3.5" />
+                          Show more
+                        </button> */}
                     </div>
                   </div>
 
@@ -2263,6 +2436,66 @@ export default function SalesLeadsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Note Dialog */}
+      {previewLead && (
+        <NoteDialog
+          open={noteDialogOpen}
+          onOpenChange={setNoteDialogOpen}
+          leadId={previewLead.id}
+          onSuccess={() => {
+            // Optionally refresh notes or show success message
+          }}
+        />
+      )}
+
+      {/* Meeting Dialog - For Create/Edit */}
+      {previewLead && (
+        <MeetingDialog
+          open={meetingDialogOpen}
+          onOpenChange={(open) => {
+            setMeetingDialogOpen(open);
+            if (!open) {
+              setSelectedMeetingId(null);
+            }
+          }}
+          leadId={previewLead.id}
+          meetingId={selectedMeetingId || undefined}
+          onSuccess={() => {
+            // Optionally refresh meetings or show success message
+            setSelectedMeetingId(null);
+          }}
+        />
+      )}
+
+      {/* Meeting Details Dialog - For Viewing */}
+      <MeetingDetailsDialog
+        open={meetingDetailsDialogOpen}
+        onOpenChange={(open) => {
+          setMeetingDetailsDialogOpen(open);
+          if (!open) {
+            setSelectedMeetingId(null);
+          }
+        }}
+        meetingId={selectedMeetingId || undefined}
+        onEdit={(meetingId) => {
+          setSelectedMeetingId(meetingId);
+          setMeetingDetailsDialogOpen(false);
+          setMeetingDialogOpen(true);
+        }}
+      />
+
+      {/* Media Dialog */}
+      {previewLead && (
+        <LeadMediaDialog
+          open={mediaDialogOpen}
+          onOpenChange={setMediaDialogOpen}
+          leadId={previewLead.id}
+          onSuccess={() => {
+            // Optionally refresh media or show success message
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 }

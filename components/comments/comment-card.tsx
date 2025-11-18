@@ -45,7 +45,9 @@ function getInitials(name?: string, email?: string): string {
   if (name) {
     const parts = name.trim().split(" ");
     if (parts.length >= 2) {
-      return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+      return (
+        parts[0].charAt(0) + parts[parts.length - 1].charAt(0)
+      ).toUpperCase();
     }
     return name.charAt(0).toUpperCase();
   }
@@ -92,14 +94,18 @@ function formatTimestamp(dateString: string): string {
     }
 
     // Format as "Oct 13 at 5:27 pm"
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    }) + " at " + date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
+    return (
+      date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }) +
+      " at " +
+      date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      })
+    );
   } catch (error) {
     return "Recently";
   }
@@ -122,7 +128,7 @@ export function CommentCard({
   const userName = comment.created_by_user
     ? `${comment.created_by_user.first_name} ${comment.created_by_user.last_name}`.trim()
     : "Unknown User";
-  
+
   const userEmail = comment.created_by_user?.email;
   const initials = getInitials(userName, userEmail);
   const colorClass = getUserColor(comment.created_by || userName);
@@ -186,9 +192,7 @@ export function CommentCard({
             )}
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-4 mt-3">
-            {/* Like Button */}
+          {/* <div className="flex items-center gap-4 mt-3">
             <button
               onClick={() => setIsLiked(!isLiked)}
               className={cn(
@@ -206,7 +210,6 @@ export function CommentCard({
               />
             </button>
 
-            {/* Reply Button */}
             {onReply && (
               <button
                 onClick={() => onReply(comment.id)}
@@ -215,10 +218,9 @@ export function CommentCard({
                 Reply
               </button>
             )}
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
   );
 }
-

@@ -77,16 +77,16 @@ export function OwnerAvatar({
   if (!owner) {
     return (
       <div className={cn("flex items-center gap-2", className)}>
-        <div
+        {/* <div
           className={cn(
             sizeClasses[size],
             "rounded-full bg-muted flex items-center justify-center"
           )}
         >
           <span className="text-muted-foreground text-xs">—</span>
-        </div>
+        </div> */}
         {showLabel && (
-          <span className="text-sm text-muted-foreground">No owner</span>
+          <span className="text-sm text-muted-foreground">add owner</span>
         )}
       </div>
     );
@@ -138,4 +138,3 @@ export function OwnerAvatar({
 
   return avatarElement;
 }
-

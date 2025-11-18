@@ -112,9 +112,6 @@ export function OwnerDialog({
   );
 }
 
-/**
- * Inline component that shows owner and allows editing via dialog
- */
 interface OwnerInlineEditorProps {
   leadId: string;
   owner?: Owner | null;
@@ -190,7 +187,7 @@ export function OwnerInlineEditor({
         leadId={leadId}
         onOwnerUpdated={handleOwnerUpdated}
         trigger={
-          <Button variant="ghost" size="sm" className="h-8 px-2">
+          <Button variant="ghost" size="sm" className="h-8 px-2 bg-[#f1f5f980]">
             <UserCog className="h-4 w-4" />
           </Button>
         }
@@ -198,4 +195,3 @@ export function OwnerInlineEditor({
     </div>
   );
 }
-

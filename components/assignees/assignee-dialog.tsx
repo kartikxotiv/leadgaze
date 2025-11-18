@@ -96,8 +96,8 @@ export function AssigneeDialog({
         <DialogHeader>
           <DialogTitle>Manage Assignees</DialogTitle>
           <DialogDescription>
-            Select team members to assign to this lead. They will be notified about
-            updates and can collaborate on this lead.
+            Select team members to assign to this lead. They will be notified
+            about updates and can collaborate on this lead.
           </DialogDescription>
         </DialogHeader>
         <div className="mt-4">
@@ -119,9 +119,6 @@ export function AssigneeDialog({
   );
 }
 
-/**
- * Inline component that shows assignees and allows editing via dialog
- */
 interface AssigneeInlineEditorProps {
   leadId: string;
   onAssigneesUpdated?: (assignees: Assignee[]) => void;
@@ -205,7 +202,7 @@ export function AssigneeInlineEditor({
         leadId={leadId}
         onAssigneesUpdated={handleAssigneesUpdated}
         trigger={
-          <Button variant="ghost" size="sm" className="h-8 px-2">
+          <Button variant="ghost" size="sm" className="h-8 px-2 bg-[#f1f5f980]">
             <UserPlus className="h-4 w-4" />
           </Button>
         }
@@ -213,4 +210,3 @@ export function AssigneeInlineEditor({
     </div>
   );
 }
-

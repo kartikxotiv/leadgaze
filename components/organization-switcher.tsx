@@ -53,50 +53,41 @@ export function OrganizationSwitcher() {
   const [error, setError] = useState<string | null>(null);
 
   const handleOrganizationSwitch = async (orgId: string) => {
-   
     setError(null);
 
-   
     if (!isAuthenticated || !token) {
       setError("Your session has expired. Logging out...");
       autoLogout();
       return;
     }
 
-   
     if (!orgId || typeof orgId !== "string") {
       setError("Invalid organization selected");
       return;
     }
 
-   
     if (switchingToOrgId === orgId) {
       return;
     }
 
-   
     const currentOrgId =
       currentOrganization?.organizationId || currentOrganization?.id;
     if (orgId === currentOrgId) {
       return;
     }
 
-   
     if (isLoading || switchingToOrgId) {
       return;
     }
 
-   
     setIsLoading(true);
     setSwitchingToOrgId(orgId);
 
     try {
       await switchOrganization(orgId);
 
-     
       setError(null);
     } catch (error) {
-     
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -130,7 +121,6 @@ export function OrganizationSwitcher() {
     }
   };
 
- 
   if (!isAuthenticated || !token) {
     return null;
   }

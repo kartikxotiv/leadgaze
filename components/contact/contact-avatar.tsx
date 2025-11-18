@@ -65,9 +65,6 @@ function getContactColor(contactId: string): string {
   return colors[Math.abs(hash) % colors.length];
 }
 
-/**
- * Read-only component to display linked contact information
- */
 export function ContactAvatar({
   contact,
   size = "md",
@@ -89,7 +86,9 @@ export function ContactAvatar({
           <span className="text-muted-foreground text-xs">—</span>
         </div>
         {showLabel && (
-          <span className="text-sm text-muted-foreground">No linked contact</span>
+          <span className="text-sm text-muted-foreground">
+            No linked contact
+          </span>
         )}
       </div>
     );
@@ -103,7 +102,9 @@ export function ContactAvatar({
     <div className={cn("flex items-center gap-2", className)}>
       <Avatar className={cn(sizeClasses[size], "border-2 border-background")}>
         <AvatarImage src="" alt={fullName} />
-        <AvatarFallback className={cn(colorClass, "text-white font-medium")}>
+        <AvatarFallback
+          className={cn(colorClass, "text-white font-medium text-[11px]")}
+        >
           {initials}
         </AvatarFallback>
       </Avatar>
@@ -148,4 +149,3 @@ export function ContactAvatar({
 
   return avatarElement;
 }
-

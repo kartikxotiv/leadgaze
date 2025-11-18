@@ -30,10 +30,10 @@ interface CommentInputProps {
  */
 function getUserInitials(user?: CommentInputUser): string {
   if (!user) return "?";
-  
+
   const firstName = user.first_name || "";
   const lastName = user.last_name || "";
-  
+
   if (firstName && lastName) {
     return (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
   }
@@ -47,7 +47,7 @@ function getUserInitials(user?: CommentInputUser): string {
  */
 function getUserColor(user?: CommentInputUser): string {
   if (!user || !user.user_id) return "bg-gray-500";
-  
+
   const colors = [
     "bg-blue-500",
     "bg-green-500",
@@ -64,9 +64,6 @@ function getUserColor(user?: CommentInputUser): string {
   return colors[Math.abs(hash) % colors.length];
 }
 
-/**
- * Modern comment input component
- */
 export function CommentInput({
   currentUser,
   value,
@@ -92,7 +89,9 @@ export function CommentInput({
     // Use setTimeout to allow button clicks to register before losing focus
     setTimeout(() => {
       const relatedTarget = e.relatedTarget as HTMLElement;
-      const isClickingInsideActions = relatedTarget?.closest('.comment-actions-bar');
+      const isClickingInsideActions = relatedTarget?.closest(
+        ".comment-actions-bar"
+      );
       if (!isClickingInsideActions) {
         setIsFocused(false);
       }
@@ -143,7 +142,7 @@ export function CommentInput({
           {/* Actions Bar - Always show if there's text or focused */}
           {(isFocused || value.trim().length > 0) && (
             <div className="comment-actions-bar flex items-center justify-between pt-2 mt-2 border-t border-gray-100 dark:border-gray-800">
-              <div className="flex items-center gap-1">
+              {/* <div className="flex items-center gap-1">
                 <Button
                   type="button"
                   variant="ghost"
@@ -171,12 +170,12 @@ export function CommentInput({
                 >
                   <Smile className="h-4 w-4" />
                 </Button>
-              </div>
-
+              </div> */}
+              &nbsp;
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400 dark:text-gray-600">
+                {/* <span className="text-xs text-gray-400 dark:text-gray-600">
                   {value.length > 0 && `${value.length} characters`}
-                </span>
+                </span> */}
                 <Button
                   type="button"
                   size="sm"
@@ -213,7 +212,7 @@ export function CommentInput({
         </div>
       </div>
 
-      {!isFocused && (
+      {/* {!isFocused && (
         <p className="text-xs text-gray-500 dark:text-gray-400 px-1">
           <kbd className="px-1.5 py-0.5 text-xs font-semibold text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded">
             ⌘
@@ -221,11 +220,10 @@ export function CommentInput({
           +{" "}
           <kbd className="px-1.5 py-0.5 text-xs font-semibold text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded">
             Enter
-          </kbd>{" "}
+          </kbd>
           to send
         </p>
-      )}
+      )} */}
     </div>
   );
 }
-

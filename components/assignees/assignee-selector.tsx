@@ -59,9 +59,6 @@ function getUserColor(userId: string): string {
   return colors[Math.abs(hash) % colors.length];
 }
 
-/**
- * Reusable component for selecting assignees from organization members
- */
 export function AssigneeSelector({
   leadId,
   selectedAssignees,
@@ -209,7 +206,9 @@ export function AssigneeSelector({
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <UserPlus className="h-8 w-8 text-muted-foreground mb-2" />
                   <p className="text-sm text-muted-foreground">
-                    {searchQuery ? "No members found" : "No team members available"}
+                    {searchQuery
+                      ? "No members found"
+                      : "No team members available"}
                   </p>
                 </div>
               ) : (
@@ -217,7 +216,10 @@ export function AssigneeSelector({
                   const isSelected = selectedAssignees.some(
                     (a) => a.user_id === member.userId
                   );
-                  const initials = getInitials(member.firstName, member.lastName);
+                  const initials = getInitials(
+                    member.firstName,
+                    member.lastName
+                  );
                   const colorClass = getUserColor(member.userId);
 
                   return (
@@ -237,7 +239,10 @@ export function AssigneeSelector({
                       <Avatar className="h-8 w-8">
                         <AvatarImage src="" alt={member.fullName} />
                         <AvatarFallback
-                          className={cn(colorClass, "text-white text-xs font-medium")}
+                          className={cn(
+                            colorClass,
+                            "text-white text-xs font-medium"
+                          )}
                         >
                           {initials}
                         </AvatarFallback>
@@ -280,4 +285,3 @@ export function AssigneeSelector({
     </div>
   );
 }
-
