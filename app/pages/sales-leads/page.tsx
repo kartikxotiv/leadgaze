@@ -100,7 +100,7 @@ import { NoteDialog } from "@/components/notes/note-dialog";
 import { MeetingDialog } from "@/components/meetings/meeting-dialog";
 import { MeetingDetailsDialog } from "@/components/meetings/meeting-details-dialog";
 import { LeadMediaDialog } from "@/components/lead-media/lead-media-dialog";
-import { useMeetings } from "@/hooks/use-meetings";
+import { useMeetings, useDeleteMeeting } from "@/hooks/use-meetings";
 // import { X, Calendar, Clock, Tag, Users, Link2, ChevronDown, MessageSquare, Send, Paperclip, Smile, AtSign, Hash, MoreHorizontal } from 'lucide-react';
 
 const ADD_PLATFORM_SELECT_VALUE = "__add_new_platform__";
@@ -769,6 +769,11 @@ export default function SalesLeadsPage() {
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(
     null
   );
+  const [meetingDeleteDialog, setMeetingDeleteDialog] = useState<{
+    open: boolean;
+    meetingId?: string;
+    meetingTitle?: string;
+  }>({ open: false });
   const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({ ...INITIAL_FORM_STATE });
   const [errors, setErrors] = useState<Record<keyof FormData, string>>({
@@ -949,6 +954,8 @@ export default function SalesLeadsPage() {
     leadId: previewLead?.id ? String(previewLead.id) : undefined,
   });
 
+  const deleteMeetingMutation = useDeleteMeeting();
+
   const upcomingMeetings = useMemo(() => {
     if (!meetingsData) return [];
 
@@ -992,6 +999,20 @@ export default function SalesLeadsPage() {
 
     return filtered;
   }, [meetingsData, previewLead?.id]);
+
+  const handleDeleteMeeting = useCallback(
+    async (meetingId: string) => {
+      if (!meetingId) return;
+      try {
+        await deleteMeetingMutation.mutateAsync(meetingId);
+        toast.success("Meeting deleted successfully");
+        setMeetingDeleteDialog({ open: false });
+      } catch (error: any) {
+        toast.error(error?.message || "Failed to delete meeting");
+      }
+    },
+    [deleteMeetingMutation]
+  );
 
   const isSaving =
     createSalesLeadMutation.isPending ||
@@ -1488,17 +1509,14 @@ export default function SalesLeadsPage() {
         const data = await response.json();
 
         if (data.success && data.data) {
-          // Update with full lead data including relations (contact, owner, etc.)
           setPreviewLead(data.data);
           setEditFormData(mapLeadToFormData(data.data));
         } else {
-          // Fallback to row data if API call fails
           setEditFormData(mapLeadToFormData(lead));
           toast.error("Failed to load complete lead details");
         }
       } catch (error) {
         console.error("Failed to fetch lead details:", error);
-        // Fallback to row data if API call fails
         setEditFormData(mapLeadToFormData(lead));
         toast.error("Failed to load complete lead details");
       } finally {
@@ -1751,7 +1769,7 @@ export default function SalesLeadsPage() {
               <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <div className="">
                   <div>
-                    <span className="text-sm text-gray-500">Lead</span>
+                    <span className="text-sm text-gray-500">Lead Id : </span>
                     <span className="text-sm text-gray-400">
                       {previewLead.id ?? "—"}
                     </span>
@@ -1978,25 +1996,26 @@ export default function SalesLeadsPage() {
                           </span>
                         </div>
                       </div>
+
+                      <div className="flex items-center gap-2 mt-8">
+                        <div
+                          className="bg-blue-500 text-white px-4 w-fit flex gap-1 py-2 rounded-md cursor-pointer flex items-center text-sm font-regular text-gray-900"
+                          onClick={() => setNoteDialogOpen(true)}
+                        >
+                          <Plus className="!h-3 !w-3" />
+                          Create Notes
+                        </div>
+                        <button
+                          className="bg-[#f9fafb] text-[#111827] border-[#e5e7eb] border px-4 w-fit flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                          onClick={() => setMediaDialogOpen(true)}
+                        >
+                          <Plus className="h-4 w-4" />
+                          Upload File
+                        </button>
+                      </div>
                     </div>
 
                     <hr className="my-4" />
-                    <div className="flex items-center gap-2 mt-8">
-                      <div
-                        className="bg-blue-500 text-white px-4 w-fit flex gap-1 py-2 rounded-md cursor-pointer flex items-center text-sm font-regular text-gray-900"
-                        onClick={() => setNoteDialogOpen(true)}
-                      >
-                        <Plus className="!h-3 !w-3" />
-                        Create Notes
-                      </div>
-                      <button
-                        className="bg-blue-500 text-white px-4 w-fit flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
-                        onClick={() => setMediaDialogOpen(true)}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Upload File
-                      </button>
-                    </div>
 
                     {/* Upcoming Meetings List */}
                     {previewLead?.id && (
@@ -2045,7 +2064,7 @@ export default function SalesLeadsPage() {
                               return (
                                 <div
                                   key={meeting.id}
-                                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                  className="flex group items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                                   onClick={() => {
                                     setSelectedMeetingId(meeting.id);
                                     setMeetingDetailsDialogOpen(true);
@@ -2063,6 +2082,34 @@ export default function SalesLeadsPage() {
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
                                       {formattedDate} at {formattedTime}
                                     </p>
+                                  </div>
+                                  <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                      className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedMeetingId(meeting.id);
+                                        setMeetingDetailsDialogOpen(false);
+                                        setMeetingDialogOpen(true);
+                                      }}
+                                      title="Edit meeting"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setMeetingDeleteDialog({
+                                          open: true,
+                                          meetingId: meeting.id,
+                                          meetingTitle: meeting.title,
+                                        });
+                                      }}
+                                      title="Delete meeting"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
                                   </div>
                                 </div>
                               );
@@ -2284,7 +2331,6 @@ export default function SalesLeadsPage() {
                     </div>
                   </div>
 
-                  {/* Comments List */}
                   <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
                     {leadCommentsLoading ? (
                       <>
@@ -2321,7 +2367,6 @@ export default function SalesLeadsPage() {
                     )}
                   </div>
 
-                  {/* Comment Input */}
                   <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex-shrink-0">
                     <CommentInput
                       currentUser={{
@@ -2449,7 +2494,6 @@ export default function SalesLeadsPage() {
         />
       )}
 
-      {/* Meeting Dialog - For Create/Edit */}
       {previewLead && (
         <MeetingDialog
           open={meetingDialogOpen}
@@ -2468,7 +2512,6 @@ export default function SalesLeadsPage() {
         />
       )}
 
-      {/* Meeting Details Dialog - For Viewing */}
       <MeetingDetailsDialog
         open={meetingDetailsDialogOpen}
         onOpenChange={(open) => {
@@ -2485,17 +2528,35 @@ export default function SalesLeadsPage() {
         }}
       />
 
-      {/* Media Dialog */}
       {previewLead && (
         <LeadMediaDialog
           open={mediaDialogOpen}
           onOpenChange={setMediaDialogOpen}
           leadId={previewLead.id}
-          onSuccess={() => {
-            // Optionally refresh media or show success message
-          }}
+          onSuccess={() => {}}
         />
       )}
+
+      <DeleteConfirmDialog
+        open={meetingDeleteDialog.open}
+        onOpenChange={(open) =>
+          setMeetingDeleteDialog((prev) => ({
+            open,
+            meetingId: open ? prev.meetingId : undefined,
+            meetingTitle: open ? prev.meetingTitle : undefined,
+          }))
+        }
+        itemName={meetingDeleteDialog.meetingTitle || "this meeting"}
+        itemId={meetingDeleteDialog.meetingId}
+        onConfirm={async (itemId) => {
+          if (itemId) {
+            await handleDeleteMeeting(itemId);
+          }
+        }}
+        isLoading={deleteMeetingMutation.isPending}
+        title="Delete Meeting"
+        description={`Are you sure you want to delete "${meetingDeleteDialog.meetingTitle}"? This action cannot be undone.`}
+      />
     </DashboardLayout>
   );
 }

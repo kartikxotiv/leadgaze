@@ -1,18 +1,43 @@
-'use client';
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
-import { ReactTable } from '@/components/reuseableComponent/ReactTable';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useWorkspaceContext } from '@/hooks/use-workspace-context';
-import { Edit, MoreHorizontal, Plus, Trash2, User, Mail, Phone, MapPin, FileText, AlertCircle, Building2, Save, Loader2 } from 'lucide-react';
-import Link from 'next/link';
-import React, { useState, useEffect, useCallback } from 'react'
-import { useContacts, useDeleteContact, useContact, useUpdateContact } from '@/hooks/use-contacts';
-import { useCompanies } from '@/hooks/use-companies';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
-import { DeleteConfirmDialog } from '@/components/common/delete-confirm-dialog';
+"use client";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { ReactTable } from "@/components/reuseableComponent/ReactTable";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useWorkspaceContext } from "@/hooks/use-workspace-context";
+import {
+  Edit,
+  MoreHorizontal,
+  Plus,
+  Trash2,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  FileText,
+  AlertCircle,
+  Building2,
+  Save,
+  Loader2,
+} from "lucide-react";
+import Link from "next/link";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  useContacts,
+  useDeleteContact,
+  useContact,
+  useUpdateContact,
+} from "@/hooks/use-contacts";
+import { useCompanies } from "@/hooks/use-companies";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import {
   Sheet,
   SheetContent,
@@ -20,8 +45,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -29,17 +54,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-    
-
-
 
 export default function ContactsPage() {
   const { currentWorkspace } = useWorkspaceContext();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(
+    null
+  );
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("all");
   const router = useRouter();
   const [deleteDialog, setDeleteDialog] = useState<{
@@ -48,22 +72,18 @@ export default function ContactsPage() {
     contactName?: string;
   }>({ open: false });
 
-  // Fetch selected contact details
   const { data: selectedContact, isLoading: isLoadingContact } = useContact(
     selectedContactId || ""
   );
 
-  // Fetch companies for the form
   const { data: companiesData, isLoading: companiesLoading } = useCompanies({
     workspaceId: currentWorkspace?.id,
     limit: 100,
   });
   const companies = companiesData?.companies || [];
 
-  // Update mutation
   const updateContactMutation = useUpdateContact();
 
-  // Form state
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -76,7 +96,6 @@ export default function ContactsPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Initialize form data when contact is selected
   useEffect(() => {
     if (selectedContact) {
       setFormData({
@@ -84,23 +103,21 @@ export default function ContactsPage() {
         lastName: selectedContact.lastName || "",
         email: selectedContact.email || "",
         phoneNumber: selectedContact.phoneNumber || "",
-        companyId: "", // Always start with empty so user can manually select
+        companyId: "",
         location: selectedContact.location || "",
         description: selectedContact.description || "",
         contactTimeZone: selectedContact.contactTimeZone || "",
       });
       setErrors({});
     }
-  }, [selectedContact?.id]); // Only update when contact ID changes
+  }, [selectedContact?.id]);
 
-  // Reset form when modal closes
   useEffect(() => {
     if (!selectedContactId) {
       setErrors({});
     }
   }, [selectedContactId]);
 
-  // Validation
   const validateField = useCallback(
     (fieldName: string, value: string): string => {
       switch (fieldName) {
@@ -109,7 +126,9 @@ export default function ContactsPage() {
         case "email":
           if (value && value.trim()) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return !emailRegex.test(value) ? "Please enter a valid email address" : "";
+            return !emailRegex.test(value)
+              ? "Please enter a valid email address"
+              : "";
           }
           return "";
         default:
@@ -158,37 +177,39 @@ export default function ContactsPage() {
         lastName: formData.lastName.trim() || undefined,
         email: formData.email.trim() || undefined,
         phoneNumber: formData.phoneNumber.trim() || undefined,
-        companyId: formData.companyId && formData.companyId.trim() ? formData.companyId : undefined,
+        companyId:
+          formData.companyId && formData.companyId.trim()
+            ? formData.companyId
+            : undefined,
         location: formData.location.trim() || undefined,
         description: formData.description.trim() || undefined,
         contactTimeZone: formData.contactTimeZone.trim() || undefined,
       };
 
       const cleanedData = Object.fromEntries(
-        Object.entries(contactData).filter(([_, value]) => value !== undefined && value !== "")
+        Object.entries(contactData).filter(
+          ([_, value]) => value !== undefined && value !== ""
+        )
       ) as any;
 
       await updateContactMutation.mutateAsync({
         contactId: selectedContactId,
         data: cleanedData,
       });
-      
+
       toast.success("Contact updated successfully!");
-      // Close the sidebar after successful update
       setSelectedContactId(null);
     } catch (error: any) {
       toast.error(error?.message || "Failed to update contact");
     }
   }, [validateForm, formData, updateContactMutation, selectedContactId]);
 
-  // Reset state when workspace changes
   useEffect(() => {
-    setSearchTerm('');
+    setSearchTerm("");
     setCurrentPage(1);
     setSelectedCompanyId("all");
   }, [currentWorkspace?.id]);
 
-  // Debounce search term
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -196,22 +217,29 @@ export default function ContactsPage() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Reset to page 1 when search term or company filter changes
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearchTerm, selectedCompanyId]);
 
-  // Fetch all contacts for the workspace
-  const { data: contactsData, isLoading, error } = useContacts({
+  const {
+    data: contactsData,
+    isLoading,
+    error,
+  } = useContacts({
     workspaceId: currentWorkspace?.id,
     companyId: selectedCompanyId === "all" ? undefined : selectedCompanyId,
     page: currentPage,
     limit: pageSize,
     search: debouncedSearchTerm,
   });
-  
+
   const contacts = contactsData?.contacts || [];
-  const pagination = contactsData?.pagination || { count: 0, page: 1, totalPages: 1, limit: 20 };
+  const pagination = contactsData?.pagination || {
+    count: 0,
+    page: 1,
+    totalPages: 1,
+    limit: 20,
+  };
 
   const deleteContactMutation = useDeleteContact();
 
@@ -235,78 +263,82 @@ export default function ContactsPage() {
       toast.success("Contact deleted successfully");
     } catch (error: any) {
       toast.error(error?.message || "Failed to delete contact");
-      throw error; // Re-throw to keep dialog open on error
+      throw error;
     }
   };
 
   const getTableColumns = () => {
     return [
-      { id: 'name',
-        
-        name: 'Name',
-        selector: (row: any) => row.name || '', 
+      {
+        id: "name",
+
+        name: "Name",
+        selector: (row: any) => row.name || "",
         cell: (row: any) => (
-          <div 
+          <div
             className="flex items-center gap-2 cursor-pointer hover:text-primary"
             onClick={() => setSelectedContactId(row.id)}
           >
-            <span className="font-medium">{row.firstName} {row.lastName}</span>
+            <span className="font-medium">
+              {row.firstName} {row.lastName}
+            </span>
           </div>
-        )
-       },
-      { id: 'email',
-        name: 'Email',
-        selector: (row: any) => row.email || '',
-        cell: (row: any) => (
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{row.email || '-'}</span>
-          </div>
-        )
+        ),
       },
-      { 
-        id: 'company',
-        name: 'Company',
-        selector: (row: any) => row.company?.title || '',
+      {
+        id: "email",
+        name: "Email",
+        selector: (row: any) => row.email || "",
         cell: (row: any) => (
           <div className="flex items-center gap-2">
-            <span className="font-medium">{row.company?.title || '-'}</span>
+            <span className="font-medium">{row.email || "-"}</span>
           </div>
-        )
+        ),
       },
-     
-      { 
-        id: 'phone',
-        name: 'Phone',
-        selector: (row: any) => row.phoneNumber || '',
+      {
+        id: "company",
+        name: "Company",
+        selector: (row: any) => row.company?.title || "",
         cell: (row: any) => (
           <div className="flex items-center gap-2">
-            <span className="font-medium">{row.phoneNumber || '-'}</span>
+            <span className="font-medium">{row.company?.title || "-"}</span>
           </div>
-        )
-       },
-      { 
-        id: 'location',
-        name: 'Location',
-        selector: (row: any) => row.location || '',
-        cell: (row: any) => (
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{row.location || '-'}</span>
-          </div>
-        )
+        ),
       },
-      { 
-        id: 'description', 
-        name: 'Description',
-        selector: (row: any) => row.description || '',
+
+      {
+        id: "phone",
+        name: "Phone",
+        selector: (row: any) => row.phoneNumber || "",
         cell: (row: any) => (
           <div className="flex items-center gap-2">
-            <span className="font-medium">{row.description || '-'}</span>
+            <span className="font-medium">{row.phoneNumber || "-"}</span>
           </div>
-        )
-       },
-       {
-        id: 'actions',
-        name: 'Actions', 
+        ),
+      },
+      {
+        id: "location",
+        name: "Location",
+        selector: (row: any) => row.location || "",
+        cell: (row: any) => (
+          <div className="flex items-center gap-2">
+            <span className="font-medium">{row.location || "-"}</span>
+          </div>
+        ),
+      },
+      {
+        id: "description",
+        name: "Description",
+        selector: (row: any) => row.description || "",
+        cell: (row: any) => (
+          <div className="flex items-center gap-2">
+            <span className="font-medium">{row.description || "-"}</span>
+          </div>
+        ),
+      },
+      {
+        id: "actions",
+        name: "Actions",
         cell: (row: any) => (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -320,16 +352,21 @@ export default function ContactsPage() {
                 Edit
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                className="text-destructive" 
-                onClick={() => handleDeleteContact(row.id, `${row.firstName} ${row.lastName}`)}
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() =>
+                  handleDeleteContact(
+                    row.id,
+                    `${row.firstName} ${row.lastName}`
+                  )
+                }
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        )
+        ),
       },
     ];
   };
@@ -344,7 +381,7 @@ export default function ContactsPage() {
               Manage your contact records
             </p>
           </div>
-          <Button asChild>    
+          <Button asChild>
             <Link href="/pages/contacts/new">
               <Plus className="h-4 w-4 mr-2" />
               New Contact
@@ -352,7 +389,6 @@ export default function ContactsPage() {
           </Button>
         </div>
 
-        {/* Search and Filter */}
         <div className="flex items-center gap-2">
           <Input
             type="text"
@@ -389,7 +425,9 @@ export default function ContactsPage() {
         {/* Error State */}
         {error && (
           <div className="text-center py-8">
-            <p className="text-red-500">Error loading contacts: {error.message}</p>
+            <p className="text-red-500">
+              Error loading contacts: {error.message}
+            </p>
           </div>
         )}
 
@@ -404,7 +442,10 @@ export default function ContactsPage() {
               paginationPerPage={pageSize}
               paginationDefaultPage={currentPage}
               onChangePage={setCurrentPage}
-              onChangeRowsPerPage={(currentRowsPerPage: number, currentPage: number) => {
+              onChangeRowsPerPage={(
+                currentRowsPerPage: number,
+                currentPage: number
+              ) => {
                 setPageSize(currentRowsPerPage);
                 setCurrentPage(currentPage);
               }}
@@ -425,21 +466,27 @@ export default function ContactsPage() {
           </div>
         )}
 
-        {/* Contact Details Sidebar */}
-        <Sheet open={!!selectedContactId} onOpenChange={(open) => !open && setSelectedContactId(null)} >
-          <SheetContent 
-            side="right" 
+        <Sheet
+          open={!!selectedContactId}
+          onOpenChange={(open) => !open && setSelectedContactId(null)}
+        >
+          <SheetContent
+            side="right"
             className="w-full sm:max-w-lg overflow-y-auto p-0"
             overlayClassName="bg-black/10"
           >
             {isLoadingContact ? (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">Loading contact details...</p>
+                <p className="text-muted-foreground">
+                  Loading contact details...
+                </p>
               </div>
             ) : selectedContact ? (
               <>
-                <SheetHeader className='px-4 py-6 bg-[#45a2ff]'>
-                  <SheetTitle className='text-white'>Contact Details</SheetTitle>
+                <SheetHeader className="px-4 py-6 bg-[#45a2ff]">
+                  <SheetTitle className="text-white">
+                    Contact Details
+                  </SheetTitle>
                   <SheetDescription className="text-[12px] !mt-[0px] text-white">
                     Update contact information
                   </SheetDescription>
@@ -453,14 +500,14 @@ export default function ContactsPage() {
                           <User className="h-5 w-5 text-blue-600" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-medium">Essential Information</h3>
+                          <h3 className="text-lg font-medium">
+                            Essential Information
+                          </h3>
                           <p className="text-sm text-gray-600 font-regular">
                             Update contact information
                           </p>
                         </div>
                       </div>
-
-                     
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
@@ -470,10 +517,14 @@ export default function ContactsPage() {
                             <Input
                               id="firstName"
                               value={formData.firstName}
-                              onChange={(e) => handleFormChange("firstName", e.target.value)}
+                              onChange={(e) =>
+                                handleFormChange("firstName", e.target.value)
+                              }
                               placeholder="John"
                               className={`pl-10 bg-gray-100 ${
-                                errors.firstName ? "border-red-500 focus:border-red-500" : ""
+                                errors.firstName
+                                  ? "border-red-500 focus:border-red-500"
+                                  : ""
                               }`}
                             />
                           </div>
@@ -492,7 +543,9 @@ export default function ContactsPage() {
                             <Input
                               id="lastName"
                               value={formData.lastName}
-                              onChange={(e) => handleFormChange("lastName", e.target.value)}
+                              onChange={(e) =>
+                                handleFormChange("lastName", e.target.value)
+                              }
                               placeholder="Doe"
                               className="pl-10 bg-gray-100"
                             />
@@ -509,10 +562,14 @@ export default function ContactsPage() {
                               id="email"
                               type="email"
                               value={formData.email}
-                              onChange={(e) => handleFormChange("email", e.target.value)}
+                              onChange={(e) =>
+                                handleFormChange("email", e.target.value)
+                              }
                               placeholder="john.doe@example.com"
                               className={`pl-10 bg-gray-100 ${
-                                errors.email ? "border-red-500 focus:border-red-500" : ""
+                                errors.email
+                                  ? "border-red-500 focus:border-red-500"
+                                  : ""
                               }`}
                             />
                           </div>
@@ -532,7 +589,9 @@ export default function ContactsPage() {
                               id="phoneNumber"
                               type="tel"
                               value={formData.phoneNumber}
-                              onChange={(e) => handleFormChange("phoneNumber", e.target.value)}
+                              onChange={(e) =>
+                                handleFormChange("phoneNumber", e.target.value)
+                              }
                               placeholder="+1 (555) 123-4567"
                               className="pl-10 bg-gray-100"
                             />
@@ -540,78 +599,87 @@ export default function ContactsPage() {
                         </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="location">Location</Label>
-                        <div className="relative">
-                          <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                          <Input
-                            id="location"
-                            value={formData.location}
-                            onChange={(e) => handleFormChange("location", e.target.value)}
-                            placeholder="New York, NY"
-                            className="pl-10 bg-gray-100"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="companyId">Select Company</Label>
-                        {companies.length === 0 && !companiesLoading ? (
-                          <div className="space-y-2">
-                            <div className="p-4 border border-dashed border-gray-300 rounded-lg bg-gray-50">
-                              <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <AlertCircle className="h-4 w-4 text-amber-500" />
-                                <span>No companies available. Please create a company first.</span>
-                              </div>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              asChild
-                              className="w-full"
-                            >
-                              <Link href="/pages/companies/new">
-                                <Building2 className="h-4 w-4 mr-2" />
-                                Create Company
-                              </Link>
-                            </Button>
+                        <div className="space-y-2">
+                          <Label htmlFor="location">Location</Label>
+                          <div className="relative">
+                            <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Input
+                              id="location"
+                              value={formData.location}
+                              onChange={(e) =>
+                                handleFormChange("location", e.target.value)
+                              }
+                              placeholder="New York, NY"
+                              className="pl-10 bg-gray-100"
+                            />
                           </div>
-                        ) : (
-                          <>
-                            <Select
-                              value={formData.companyId}
-                              onValueChange={(value) => handleFormChange("companyId", value)}
-                              disabled={companiesLoading}
-                            >
-                              <SelectTrigger className="bg-gray-100">
-                                <SelectValue
-                                  placeholder={
-                                    companiesLoading
-                                      ? "Loading companies..."
-                                      : companies.length === 0 
-                                      ? "No companies available"
-                                      : "Select Company"
-                                  }
-                                />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {companies.length > 0 ? (
-                                  companies.map((company: any) => (
-                                    <SelectItem key={company.id} value={company.id}>
-                                      {company.title}
-                                    </SelectItem>
-                                  ))
-                                ) : (
-                                  <SelectItem value="no-companies" disabled>
-                                    No companies available
-                                  </SelectItem>
-                                )}
-                              </SelectContent>
-                            </Select>
-                          </>
-                        )}
-                      </div>
+                        </div>
 
+                        <div className="space-y-2">
+                          <Label htmlFor="companyId">Select Company</Label>
+                          {companies.length === 0 && !companiesLoading ? (
+                            <div className="space-y-2">
+                              <div className="p-4 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                                  <span>
+                                    No companies available. Please create a
+                                    company first.
+                                  </span>
+                                </div>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                asChild
+                                className="w-full"
+                              >
+                                <Link href="/pages/companies/new">
+                                  <Building2 className="h-4 w-4 mr-2" />
+                                  Create Company
+                                </Link>
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <Select
+                                value={formData.companyId}
+                                onValueChange={(value) =>
+                                  handleFormChange("companyId", value)
+                                }
+                                disabled={companiesLoading}
+                              >
+                                <SelectTrigger className="bg-gray-100">
+                                  <SelectValue
+                                    placeholder={
+                                      companiesLoading
+                                        ? "Loading companies..."
+                                        : companies.length === 0
+                                        ? "No companies available"
+                                        : "Select Company"
+                                    }
+                                  />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {companies.length > 0 ? (
+                                    companies.map((company: any) => (
+                                      <SelectItem
+                                        key={company.id}
+                                        value={company.id}
+                                      >
+                                        {company.title}
+                                      </SelectItem>
+                                    ))
+                                  ) : (
+                                    <SelectItem value="no-companies" disabled>
+                                      No companies available
+                                    </SelectItem>
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            </>
+                          )}
+                        </div>
                       </div>
 
                       <div className="space-y-2">
@@ -621,7 +689,9 @@ export default function ContactsPage() {
                           <Textarea
                             id="description"
                             value={formData.description}
-                            onChange={(e) => handleFormChange("description", e.target.value)}
+                            onChange={(e) =>
+                              handleFormChange("description", e.target.value)
+                            }
                             placeholder="Additional notes and information about the contact..."
                             rows={3}
                             className="pl-10 bg-gray-100"
@@ -675,5 +745,5 @@ export default function ContactsPage() {
         />
       </div>
     </DashboardLayout>
-  )
+  );
 }

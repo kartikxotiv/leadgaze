@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createWorkspaceRole, getWorkspaceRolesPaginated } from "@/lib/data/workspace-roles";
+import {
+  createWorkspaceRole,
+  getWorkspaceRolesPaginated,
+} from "@/lib/data/workspace-roles";
+import { AuthService } from "@/lib/auth-service";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
@@ -29,15 +33,15 @@ export async function POST(request: NextRequest) {
       body = await request.json();
     } catch (parseError: any) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: "Invalid JSON in request body. Please check your JSON format." 
+        {
+          success: false,
+          error: "Invalid JSON in request body. Please check your JSON format.",
         },
         { status: 400 }
       );
     }
 
-    const requiredFields = ["name", "workspaceId", "permissions", "hierarchy_level"];
+    const requiredFields = ["name", "permissions"];
     for (const field of requiredFields) {
       if (body[field] === undefined || body[field] === null) {
         return NextResponse.json(
@@ -48,13 +52,35 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = decoded?.userId || decoded?.user_id;
-    
+
+    // Get user's organizations to check role
+    const userOrganizations = await AuthService.getUserOrganizations(userId);
+    if (!userOrganizations || userOrganizations.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "User not associated with any organization" },
+        { status: 403 }
+      );
+    }
+
+    // Check if user is admin or owner in any organization
+    const hasPermission = userOrganizations.some((org: any) => {
+      const role = org.role?.toLowerCase();
+      return ["owner", "admin"].includes(role);
+    });
+
+    if (!hasPermission) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Only Administrators and Owners can create roles",
+        },
+        { status: 403 }
+      );
+    }
+
     const workspaceRole = await createWorkspaceRole({
       name: body.name,
-      description: body.description,
       permissions: body.permissions,
-      hierarchy_level: body.hierarchy_level,
-      workspace_id: body.workspaceId,
       created_by: userId,
     });
 
@@ -65,7 +91,10 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("Error creating workspace role:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to create workspace role" },
+      {
+        success: false,
+        error: error.message || "Failed to create workspace role",
+      },
       { status: 500 }
     );
   }
@@ -91,26 +120,17 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const workspaceId = searchParams.get("workspaceId");    
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const search = searchParams.get("search");
-    
-    if (!workspaceId) {
-      return NextResponse.json(
-        { success: false, error: "Workspace ID is required" },
-        { status: 400 }
-      );
-    }
 
     const workspaceRoles = await getWorkspaceRolesPaginated(
-      workspaceId, 
-      page, 
-      limit, 
-      undefined, 
+      page,
+      limit,
+      undefined,
       search || undefined
     );
-    
+
     return NextResponse.json({
       success: true,
       data: workspaceRoles,
@@ -118,7 +138,10 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error("Error getting workspace roles:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to get workspace roles" },
+      {
+        success: false,
+        error: error.message || "Failed to get workspace roles",
+      },
       { status: 500 }
     );
   }

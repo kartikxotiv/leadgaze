@@ -22,7 +22,7 @@ import {
   type Note,
 } from "@/hooks/use-notes";
 import { useWorkspaceContext } from "@/hooks/use-workspace-context";
-import { Loader2, FileText, Edit, Trash2, Plus } from "lucide-react";
+import { Loader2, FileText, Edit, Trash2, Plus, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
@@ -79,7 +79,10 @@ function NoteCard({
   const timestamp = formatTimestamp(note.createdAt);
 
   return (
-    <Card className="group hover:shadow-md transition-all duration-200">
+    <Card
+      className="group hover:shadow-md transition-all duration-200 cursor-pointer"
+      onClick={() => onEdit(note)}
+    >
       <CardContent className="p-4">
         <div className="flex gap-3">
           <Avatar className="h-10 w-10 flex-shrink-0">
@@ -98,7 +101,10 @@ function NoteCard({
                   {timestamp}
                 </span>
               </div>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div
+                className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <Button
                   variant="ghost"
                   size="icon"
@@ -139,6 +145,7 @@ export function NoteDialog({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [viewNotesModalOpen, setViewNotesModalOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     noteId?: string;
@@ -160,14 +167,11 @@ export function NoteDialog({
   const updateNoteMutation = useUpdateNote();
   const deleteNoteMutation = useDeleteNote();
 
-  // Extract notes from response - handle both possible structures
   const notes: Note[] = (() => {
-    // Debug: log the response structure
     if (notesData && process.env.NODE_ENV === "development") {
       console.log("Notes data structure:", notesData);
     }
 
-    // Try different possible response structures
     if (notesData?.data?.notes && Array.isArray(notesData.data.notes)) {
       return notesData.data.notes;
     }
@@ -180,10 +184,8 @@ export function NoteDialog({
     return [];
   })();
 
-  // Reset form when dialog opens/closes and refetch notes when opening
   useEffect(() => {
     if (open && leadId) {
-      // Refetch notes when dialog opens to ensure we have the latest data
       refetchNotes();
     } else if (!open) {
       setTitle("");
@@ -192,10 +194,17 @@ export function NoteDialog({
     }
   }, [open, leadId, refetchNotes]);
 
+  useEffect(() => {
+    if (viewNotesModalOpen && leadId) {
+      refetchNotes();
+    }
+  }, [viewNotesModalOpen, leadId, refetchNotes]);
+
   const handleEdit = (note: Note) => {
     setSelectedNote(note);
     setTitle(note.title);
     setDescription(note.description);
+    setViewNotesModalOpen(false);
   };
 
   const handleCancelEdit = () => {
@@ -243,12 +252,9 @@ export function NoteDialog({
       }
 
       handleCancelEdit();
-      // Refetch notes to show the newly created/updated note
       await refetchNotes();
       onSuccess?.();
-    } catch (error) {
-      // Error is handled by the mutation
-    }
+    } catch (error) {}
   };
 
   const handleDelete = async (noteIdToDelete?: string) => {
@@ -258,12 +264,9 @@ export function NoteDialog({
       await deleteNoteMutation.mutateAsync(noteIdToDelete);
       toast.success("Note deleted successfully");
       setDeleteDialog({ open: false });
-      // Refetch notes to update the list
       await refetchNotes();
       onSuccess?.();
-    } catch (error) {
-      // Error is handled by the mutation
-    }
+    } catch (error) {}
   };
 
   const handleClose = () => {
@@ -285,133 +288,150 @@ export function NoteDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0 [&>button]:hidden">
           <DialogHeader className="px-6 pt-6 pb-4 border-b">
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Notes
-            </DialogTitle>
-            <DialogDescription>
-              Manage notes for this lead. View existing notes or create new
-              ones.
-            </DialogDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Notes
+                </DialogTitle>
+                <DialogDescription>
+                  Manage notes for this lead. View existing notes or create new
+                  ones.
+                </DialogDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setViewNotesModalOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Eye className="h-4 w-4" />
+                View Notes
+              </Button>
+            </div>
           </DialogHeader>
 
-          <div className="flex flex-1 overflow-hidden">
-            <div className="w-1/2 border-r overflow-y-auto p-6">
-              {/* <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  All Notes ({notes.length})
-                </h3>
-              </div> */}
-
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {isEditMode ? "Edit Note" : "Create New Note"}
-                </h3>
-                {isEditMode && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCancelEdit}
-                    className="text-sm"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    New Note
-                  </Button>
-                )}
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="note-title">Title *</Label>
-                  <Input
-                    id="note-title"
-                    placeholder="Enter note title..."
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    disabled={isLoading}
-                    maxLength={255}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="note-description">Description *</Label>
-                  <Textarea
-                    id="note-description"
-                    placeholder="Enter note description..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    disabled={isLoading}
-                    rows={10}
-                    required
-                  />
-                </div>
-
-                <DialogFooter className="pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCancelEdit}
-                    disabled={isLoading}
-                  >
-                    {isEditMode ? "Cancel" : "Clear"}
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={isLoading || !title.trim() || !description.trim()}
-                  >
-                    {isLoading && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {isEditMode ? "Update Note" : "Create Note"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </div>
-
-            {/* Right Side - Create/Edit Form */}
-            <div className="w-1/2 overflow-y-auto p-6">
-              {isLoadingNotes ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-                </div>
-              ) : notes.length === 0 ? (
-                <div className="text-center py-12">
-                  <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    No notes yet
-                  </p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                    Create your first note on the right
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {notes.map((note: Note) => (
-                    <NoteCard
-                      key={note.id}
-                      note={note}
-                      onEdit={handleEdit}
-                      onDelete={(id) =>
-                        setDeleteDialog({
-                          open: true,
-                          noteId: id,
-                          noteTitle: note.title,
-                        })
-                      }
-                      isDeleting={deleteNoteMutation.isPending}
-                    />
-                  ))}
-                </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                {isEditMode ? "Edit Note" : "Create New Note"}
+              </h3>
+              {isEditMode && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                  className="text-sm"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  New Note
+                </Button>
               )}
             </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="note-title">Title *</Label>
+                <Input
+                  id="note-title"
+                  placeholder="Enter note title..."
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  disabled={isLoading}
+                  maxLength={255}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="note-description">Description *</Label>
+                <Textarea
+                  id="note-description"
+                  placeholder="Enter note description..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  disabled={isLoading}
+                  rows={10}
+                  required
+                />
+              </div>
+
+              <DialogFooter className="pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancelEdit}
+                  disabled={isLoading}
+                >
+                  {isEditMode ? "Cancel" : "Clear"}
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isLoading || !title.trim() || !description.trim()}
+                >
+                  {isLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {isEditMode ? "Update Note" : "Create Note"}
+                </Button>
+              </DialogFooter>
+            </form>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      <Dialog open={viewNotesModalOpen} onOpenChange={setViewNotesModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b">
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              View Notes ({notes.length})
+            </DialogTitle>
+            <DialogDescription>
+              Click on a note to edit it or use the actions to manage notes.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto p-6">
+            {isLoadingNotes ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              </div>
+            ) : notes.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  No notes yet
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  Create your first note in the main dialog
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {notes.map((note: Note) => (
+                  <NoteCard
+                    key={note.id}
+                    note={note}
+                    onEdit={handleEdit}
+                    onDelete={(id) =>
+                      setDeleteDialog({
+                        open: true,
+                        noteId: id,
+                        noteTitle: note.title,
+                      })
+                    }
+                    isDeleting={deleteNoteMutation.isPending}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <DeleteConfirmDialog
         open={deleteDialog.open}
         onOpenChange={(open) =>

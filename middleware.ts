@@ -24,6 +24,7 @@ const protectedRoutes = [
   "/pages/createworkspace",
   "/pages/sales-contacts",
   "/pages/sales-leads",
+  "/pages/roles",
 ];
 const authRoutes = [
   "/pages/auth/sign-in",
@@ -32,7 +33,7 @@ const authRoutes = [
   "/pages/auth/reset-password",
 ];
 const publicRoutes = ["/auth/accept-invitation"];
-const welcomeRoutes = ["/pages/auth/sign-in"]; 
+const welcomeRoutes = ["/pages/auth/sign-in"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

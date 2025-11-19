@@ -1,18 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useAuthReady } from "@/hooks/use-auth-ready";
-import { useWorkspaceContext } from "@/hooks/use-workspace-context";
 
 export interface WorkspaceRole {
   id: string;
   name: string;
-  description?: string;
   permissions: Record<string, any>;
-  hierarchy_level: number;
 }
 
 export interface WorkspaceRoleFilters {
-  workspaceId?: string;
   search?: string;
   page?: number;
   limit?: number;
@@ -20,25 +16,22 @@ export interface WorkspaceRoleFilters {
 
 export interface CreateWorkspaceRoleData {
   name: string;
-  description?: string;
   permissions: Record<string, any>;
-  hierarchy_level: number;
 }
 
-export interface UpdateWorkspaceRoleData extends Partial<CreateWorkspaceRoleData> {}
+export interface UpdateWorkspaceRoleData
+  extends Partial<CreateWorkspaceRoleData> {}
 
 export function useWorkspaceRoles(filters?: WorkspaceRoleFilters) {
   const { token } = useAuthStore();
   const { isReady, isAuthenticated } = useAuthReady();
-  const { currentWorkspace } = useWorkspaceContext();
 
   return useQuery({
     queryKey: ["workspace-roles", filters],
-    
-    enabled: isReady && isAuthenticated && !!currentWorkspace?.id,
+
+    enabled: isReady && isAuthenticated,
     queryFn: async () => {
       const params = new URLSearchParams({
-        workspaceId: currentWorkspace?.id || "",
         page: filters?.page?.toString() || "1",
         limit: filters?.limit?.toString() || "20",
       });
@@ -67,10 +60,9 @@ export function useWorkspaceRoles(filters?: WorkspaceRoleFilters) {
 export function useWorkspaceRole(roleId: string) {
   const { token } = useAuthStore();
   const { isReady, isAuthenticated } = useAuthReady();
-  const { currentWorkspace } = useWorkspaceContext();
   return useQuery({
     queryKey: ["workspace-role", roleId],
-    enabled: isReady && isAuthenticated && !!currentWorkspace?.id && !!roleId,
+    enabled: isReady && isAuthenticated && !!roleId,
     queryFn: async () => {
       const response = await fetch(`/api/workspace-roles/${roleId}`, {
         headers: {
@@ -93,24 +85,17 @@ export function useWorkspaceRole(roleId: string) {
 
 export function useCreateWorkspaceRole() {
   const { token } = useAuthStore();
-  const { currentWorkspace } = useWorkspaceContext();
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (data: CreateWorkspaceRoleData) => {
-      if (!currentWorkspace?.id) {
-        throw new Error("Workspace ID is required");
-      }
       const response = await fetch(`/api/workspace-roles`, {
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        method: 'POST',
-        body: JSON.stringify({
-          ...data,
-          workspaceId: currentWorkspace.id,
-        }),
+        method: "POST",
+        body: JSON.stringify(data),
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -131,15 +116,18 @@ export function useCreateWorkspaceRole() {
 export function useUpdateWorkspaceRole() {
   const { token } = useAuthStore();
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async ({ id, ...data }: UpdateWorkspaceRoleData & { id: string }) => {
+    mutationFn: async ({
+      id,
+      ...data
+    }: UpdateWorkspaceRoleData & { id: string }) => {
       const response = await fetch(`/api/workspace-roles/${id}`, {
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        method: 'PUT',
+        method: "PUT",
         body: JSON.stringify(data),
       });
       if (!response.ok) {
@@ -154,7 +142,9 @@ export function useUpdateWorkspaceRole() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["workspace-roles"] });
-      queryClient.invalidateQueries({ queryKey: ["workspace-role", variables.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["workspace-role", variables.id],
+      });
     },
   });
 }
@@ -162,7 +152,7 @@ export function useUpdateWorkspaceRole() {
 export function useDeleteWorkspaceRole() {
   const { token } = useAuthStore();
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (roleId: string) => {
       const response = await fetch(`/api/workspace-roles/${roleId}`, {
@@ -170,7 +160,7 @@ export function useDeleteWorkspaceRole() {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        method: 'DELETE',
+        method: "DELETE",
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));

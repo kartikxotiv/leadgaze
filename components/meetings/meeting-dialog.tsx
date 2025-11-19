@@ -64,12 +64,10 @@ export function MeetingDialog({
   const updateMeetingMutation = useUpdateMeeting();
   const deleteMeetingMutation = useDeleteMeeting();
 
-  // Fetch meeting data when meetingId is provided
   const { data: meetingData, isLoading: isLoadingMeeting } = useMeeting(
     meetingId || ""
   );
 
-  // Load meeting data when meetingId changes or when data is available
   useEffect(() => {
     if (meetingId && meetingData?.data) {
       const meeting = meetingData.data;
@@ -83,10 +81,8 @@ export function MeetingDialog({
     }
   }, [meetingId, meetingData]);
 
-  // Reset form when dialog opens/closes
   useEffect(() => {
     if (!open) {
-      // Clear everything when dialog closes
       setTitle("");
       setDescription("");
       setMeetingNotes("");
@@ -95,7 +91,6 @@ export function MeetingDialog({
       setType("");
       setSelectedMeeting(null);
     } else if (open && !meetingId) {
-      // When dialog opens in create mode (no meetingId): clear form
       setTitle("");
       setDescription("");
       setMeetingNotes("");
@@ -104,7 +99,6 @@ export function MeetingDialog({
       setType("");
       setSelectedMeeting(null);
     }
-    // If meetingId exists, don't clear - wait for data to load via the other effect
   }, [open, meetingId]);
 
   const handleEdit = (meeting: Meeting) => {
@@ -172,9 +166,7 @@ export function MeetingDialog({
 
       handleCancelEdit();
       onSuccess?.();
-    } catch (error) {
-      // Error is handled by the mutation
-    }
+    } catch (error) {}
   };
 
   const handleClose = () => {

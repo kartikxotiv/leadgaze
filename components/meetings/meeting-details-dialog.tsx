@@ -44,17 +44,14 @@ export function MeetingDetailsDialog({
   meetingId,
   onEdit,
 }: MeetingDetailsDialogProps) {
-  // Fetch meeting data when meetingId is provided
   const {
     data: meetingData,
     isLoading: isLoadingMeeting,
     error,
   } = useMeeting(meetingId || "");
 
-  // Extract meeting from response
   const meeting = meetingData?.data;
 
-  // Debug logging in development
   useEffect(() => {
     if (process.env.NODE_ENV === "development" && meetingId) {
       console.log("MeetingDetailsDialog - meetingId:", meetingId);
@@ -108,7 +105,6 @@ export function MeetingDetailsDialog({
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Title */}
             <div className="space-y-2">
               <Label className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Title
@@ -118,7 +114,6 @@ export function MeetingDetailsDialog({
               </p>
             </div>
 
-            {/* Meeting Time */}
             <div className="space-y-2">
               <Label className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Meeting Time
@@ -128,7 +123,6 @@ export function MeetingDetailsDialog({
               </p>
             </div>
 
-            {/* Type */}
             {meeting.type && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -140,7 +134,6 @@ export function MeetingDetailsDialog({
               </div>
             )}
 
-            {/* Link */}
             {meeting.link && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -159,7 +152,6 @@ export function MeetingDetailsDialog({
               </div>
             )}
 
-            {/* Description */}
             {meeting.description && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -171,7 +163,6 @@ export function MeetingDetailsDialog({
               </div>
             )}
 
-            {/* Meeting Notes */}
             {meeting.meetingNotes && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -185,7 +176,6 @@ export function MeetingDetailsDialog({
               </div>
             )}
 
-            {/* Created/Updated Info */}
             <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
               <div className="flex flex-col gap-2 text-xs text-gray-500 dark:text-gray-400">
                 {meeting.createdAt && (

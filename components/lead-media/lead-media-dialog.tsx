@@ -14,8 +14,6 @@ import { Label } from "@/components/ui/label";
 import {
   Loader2,
   Upload,
-  File,
-  X,
   Download,
   Trash2,
   FileText,
@@ -24,8 +22,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
@@ -119,96 +115,121 @@ function MediaCard({
   const isImage = media.media_type.startsWith("image/");
 
   return (
-    <Card className="group hover:shadow-md transition-all duration-200 relative overflow-hidden">
-      <CardContent className="p-0">
-        {isImage ? (
-          <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 group/image">
-            {imageError ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                <Image className="h-12 w-12 text-gray-400" />
-                <span className="text-xs text-gray-500">
-                  Image not available
-                </span>
-              </div>
-            ) : (
-              <>
-                <img
-                  src={media.media_url}
-                  alt={fileName}
-                  className="w-full h-full object-cover"
-                  onError={() => setImageError(true)}
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover/image:bg-black/20 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover/image:opacity-100">
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      window.open(media.media_url, "_blank");
-                    }}
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(media.id);
-                    }}
-                    disabled={isDeleting}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="p-4">
-            <div className="flex gap-3">
-              <div className="flex-shrink-0">
-                <div className="h-12 w-12 rounded-lg bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
-                  <FileIconComponent className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
-                  {fileName}
-                </h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {fileTypeLabel}
-                </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  {timestamp}
-                </p>
-              </div>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div className="group relative border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800 hover:shadow-lg transition-all duration-200">
+      {isImage ? (
+        <div className="relative aspect-square bg-gray-100 dark:bg-gray-800">
+          {imageError ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+              <Image className="h-8 w-8 text-gray-400" />
+              <span className="text-xs text-gray-500">Image not available</span>
+            </div>
+          ) : (
+            <>
+              <img
+                src={media.media_url}
+                alt={fileName}
+                className="w-full h-full object-cover"
+                onError={() => setImageError(true)}
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
                 <Button
-                  variant="ghost"
+                  variant="secondary"
                   size="icon"
-                  className="h-7 w-7"
-                  onClick={() => window.open(media.media_url, "_blank")}
+                  className="h-8 w-8 bg-white hover:bg-gray-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open(media.media_url, "_blank");
+                  }}
                 >
-                  <Download className="h-3.5 w-3.5 text-gray-500 hover:text-blue-600" />
+                  <Download className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant="ghost"
+                  variant="secondary"
                   size="icon"
-                  className="h-7 w-7"
-                  onClick={() => onDelete(media.id)}
+                  className="h-8 w-8 bg-white hover:bg-gray-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(media.id);
+                  }}
                   disabled={isDeleting}
                 >
-                  <Trash2 className="h-3.5 w-3.5 text-gray-500 hover:text-red-600" />
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="p-3">
+          <div className="flex flex-col items-center text-center gap-2">
+            <div className="h-12 w-12 rounded bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+              <FileIconComponent className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div className="w-full min-w-0">
+              <h4 className="font-medium text-xs text-gray-900 dark:text-gray-100 truncate px-1">
+                {fileName}
+              </h4>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {fileTypeLabel}
+              </p>
+            </div>
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mt-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => window.open(media.media_url, "_blank")}
+              >
+                <Download className="h-3 w-3 text-gray-500 hover:text-blue-600" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => onDelete(media.id)}
+                disabled={isDeleting}
+              >
+                <Trash2 className="h-3 w-3 text-gray-500 hover:text-red-600" />
+              </Button>
             </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <span className="truncate block">{fileName}</span>
+        <span className="text-gray-300">{timestamp}</span>
+      </div>
+    </div>
+  );
+}
+
+export function LeadMediaDialogTrigger({
+  leadId,
+  onSuccess,
+}: {
+  leadId: string;
+  onSuccess?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => setOpen(true)}
+        className="gap-2"
+      >
+        <Upload className="h-4 w-4" />
+        Upload Files
+      </Button>
+      <LeadMediaDialog
+        open={open}
+        onOpenChange={setOpen}
+        leadId={leadId}
+        onSuccess={onSuccess}
+      />
+    </>
   );
 }
 
@@ -355,202 +376,110 @@ export function LeadMediaDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col p-0">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b">
-            <DialogTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
-              Lead Media & Documents
-            </DialogTitle>
-            <DialogDescription>
-              Upload and manage files for this lead
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex flex-1 overflow-hidden">
-            {/* Left Side - Upload Section */}
-            <div className="w-1/2 border-r overflow-y-auto p-6">
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  Upload Files
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Upload images, PDFs, and documents (Max 50MB per file)
-                </p>
-              </div>
-
-              <div
-                className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 hover:border-blue-400 dark:hover:border-blue-600 transition-colors cursor-pointer"
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const files = e.dataTransfer.files;
-                  if (files.length > 0) {
-                    const file = files[0];
-                    // Create a data transfer object to simulate file input
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    if (fileInputRef.current) {
-                      fileInputRef.current.files = dataTransfer.files;
-                      const changeEvent = new Event("change", {
-                        bubbles: true,
-                      });
-                      fileInputRef.current.dispatchEvent(changeEvent);
-                    }
-                  }
-                }}
-              >
-                <div className="flex flex-col items-center justify-center gap-4">
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />
-                      <div className="text-center">
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Uploading...
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          Please wait
-                        </p>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="rounded-full bg-blue-100 dark:bg-blue-900 p-4">
-                        <Upload className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <div className="text-center">
-                        <Label htmlFor="file-upload" className="cursor-pointer">
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 block">
-                            Click to upload or drag and drop
-                          </span>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                            Supported: PDF, DOC, DOCX, XLS, XLSX, Images
-                          </p>
-                        </Label>
-                      </div>
-                    </>
-                  )}
-                  <input
-                    ref={fileInputRef}
-                    id="file-upload"
-                    type="file"
-                    className="hidden"
-                    onChange={handleFileSelect}
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt"
-                    disabled={isUploading}
-                  />
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col p-0 [&>button]:hidden">
+          <div className="px-6 pt-6 pb-4 border-b flex justify-between  gap-2">
+            <div>
+              <DialogTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Upload className="h-5 w-5" />
+                  Media Library
                 </div>
-              </div>
-
-              {mediaList.length > 0 && (
-                <div className="mt-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      Quick Stats
-                    </h4>
+                {mediaList.length > 0 && (
+                  <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                    <span>{mediaList.length} items</span>
+                    <span>•</span>
+                    <span>{images.length} images</span>
+                    <span>•</span>
+                    <span>{documents.length} documents</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                        {images.length}
-                      </p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">
-                        Images
-                      </p>
-                    </div>
-                    <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                      <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                        {documents.length}
-                      </p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">
-                        Documents
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+                )}
+              </DialogTitle>
+              <DialogDescription>
+                Upload and manage files for this lead
+              </DialogDescription>
             </div>
 
-            <div className="w-1/2 overflow-y-auto p-6">
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Uploaded Files ({mediaList.length})
-                </h3>
-              </div>
+            <div className="flex justify-end">
+              <Button
+                className="inline-block w-fit flex items-center gap-2"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Files
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
 
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            id="file-upload"
+            type="file"
+            className="hidden"
+            onChange={handleFileSelect}
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt"
+            disabled={isUploading}
+          />
+
+          {/* Upload Status */}
+          {isUploading && (
+            <div className="px-6 py-3 bg-blue-50 dark:bg-blue-900/20 border-b">
+              <div className="flex items-center gap-3">
+                <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Uploading file...
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col flex-1 overflow-hidden">
+            {/* Files Grid - Bottom */}
+            <div className="flex-1 overflow-y-auto p-6">
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
                 </div>
               ) : mediaList.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="rounded-full bg-gray-100 dark:bg-gray-800 p-4 mb-4">
-                    <FileIcon className="h-8 w-8 text-gray-400" />
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="rounded-full bg-gray-100 dark:bg-gray-800 p-6 mb-4">
+                    <FileIcon className="h-12 w-12 text-gray-400" />
                   </div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <p className="text-base font-medium text-gray-900 dark:text-gray-100 mb-1">
                     No files uploaded yet
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Upload files using the panel on the left
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Click "Upload Files" button to get started
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {images.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                        Images ({images.length})
-                      </h4>
-                      <div className="grid grid-cols-2 gap-3">
-                        {images.map((media) => (
-                          <MediaCard
-                            key={media.id}
-                            media={media}
-                            onDelete={(id) => {
-                              const fileName =
-                                media.media_url.split("/").pop() || "file";
-                              setDeleteDialog({
-                                open: true,
-                                mediaId: id,
-                                fileName,
-                              });
-                            }}
-                            isDeleting={isDeleting}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {documents.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                        Documents ({documents.length})
-                      </h4>
-                      <div className="space-y-2">
-                        {documents.map((media) => (
-                          <MediaCard
-                            key={media.id}
-                            media={media}
-                            onDelete={(id) => {
-                              const fileName =
-                                media.media_url.split("/").pop() || "file";
-                              setDeleteDialog({
-                                open: true,
-                                mediaId: id,
-                                fileName,
-                              });
-                            }}
-                            isDeleting={isDeleting}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {mediaList.map((media) => (
+                    <MediaCard
+                      key={media.id}
+                      media={media}
+                      onDelete={(id) => {
+                        const fileName =
+                          media.media_url.split("/").pop() || "file";
+                        setDeleteDialog({
+                          open: true,
+                          mediaId: id,
+                          fileName,
+                        });
+                      }}
+                      isDeleting={isDeleting}
+                    />
+                  ))}
                 </div>
               )}
             </div>
