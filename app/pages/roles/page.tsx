@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useState, useMemo } from "react";
+import React, { useCallback, useState, useMemo, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import {
   useWorkspaceRoles,
@@ -7,9 +7,17 @@ import {
   useUpdateWorkspaceRole,
 } from "@/hooks/use-workspace-roles";
 import { Button } from "@/components/ui/button";
-import { Plus, Lock, Info, ShieldAlert } from "lucide-react";
-import { SidebarPanel } from "@/components/common/sidebar-panel";
+import { Plus, Lock, Info, ShieldAlert, Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { useWorkspaceContext } from "@/hooks/use-workspace-context";
 import {
   Form,
   FormLabel,
@@ -19,7 +27,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
-import { FormActions } from "@/components/common/form-actions";
 import { toast } from "sonner";
 import {
   Table,
@@ -31,6 +38,8 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface RoutePermission {
   route: string;
@@ -61,15 +70,14 @@ export default function RolesPage() {
   const { data: workspaceRoles } = useWorkspaceRoles();
   const createRoleMutation = useCreateWorkspaceRole();
   const updateRoleMutation = useUpdateWorkspaceRole();
-  const [addRoleSidebarOpen, setAddRoleSidebarOpen] = useState(false);
-  const [isCreatingRole, setIsCreatingRole] = useState(false);
+  const [addRoleDialogOpen, setAddRoleDialogOpen] = useState(false);
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
   const [editingPermissions, setEditingPermissions] = useState<
     Record<string, RoutePermission>
   >({});
   const { currentOrganization } = useAuthStore();
+  const { currentWorkspace } = useWorkspaceContext();
 
-  // Check if user can manage roles (only admin and owner)
   const canManageRoles = useMemo(() => {
     if (!currentOrganization) return false;
     const userRole = currentOrganization.role?.toLowerCase();
@@ -101,7 +109,6 @@ export default function RolesPage() {
 
   const resetForm = useCallback(() => {
     form.reset();
-    setIsCreatingRole(false);
     const defaultPerms: Record<string, RoutePermission> = {};
     AVAILABLE_ROUTES.forEach((route) => {
       defaultPerms[route] = {
@@ -116,16 +123,34 @@ export default function RolesPage() {
     setPermissions(defaultPerms);
   }, [form]);
 
-  const handleAddRoleSidebarOpenChange = useCallback(
+  // Reset editing state when workspace changes
+  useEffect(() => {
+    setEditingRoleId(null);
+    setEditingPermissions({});
+    setAddRoleDialogOpen(false);
+    form.reset();
+    const defaultPerms: Record<string, RoutePermission> = {};
+    AVAILABLE_ROUTES.forEach((route) => {
+      defaultPerms[route] = {
+        route,
+        visible: true,
+        view: true,
+        create: true,
+        update: true,
+        delete: true,
+      };
+    });
+    setPermissions(defaultPerms);
+  }, [currentWorkspace?.id, form]);
+
+  const handleAddRoleDialogOpenChange = useCallback(
     (open: boolean) => {
-      setAddRoleSidebarOpen(open);
-      if (!open && !isCreatingRole) {
-        // Reset if closing and not in create mode
+      setAddRoleDialogOpen(open);
+      if (!open) {
         resetForm();
-        setIsCreatingRole(false);
       }
     },
-    [isCreatingRole, resetForm]
+    [resetForm]
   );
 
   const handlePermissionChange = useCallback(
@@ -161,6 +186,11 @@ export default function RolesPage() {
   const onSubmit = useCallback(
     async (data: any) => {
       try {
+        if (!data.name || !data.name.trim()) {
+          toast.error("Please enter a role name");
+          return;
+        }
+
         const permissionsData: Record<string, any> = {};
         Object.values(permissions).forEach((perm) => {
           permissionsData[perm.route] = {
@@ -172,16 +202,29 @@ export default function RolesPage() {
           };
         });
 
-        await createRoleMutation.mutateAsync({
-          name: data.name,
+        console.log("Creating role with data:", {
+          name: data.name.trim(),
+          permissionsCount: Object.keys(permissionsData).length,
           permissions: permissionsData,
         });
 
+        const result = await createRoleMutation.mutateAsync({
+          name: data.name.trim(),
+          permissions: permissionsData,
+        });
+
+        console.log("Role creation result:", result);
+
         toast.success("Role created successfully");
         resetForm();
-        setIsCreatingRole(false);
-        setAddRoleSidebarOpen(false);
+        setAddRoleDialogOpen(false);
       } catch (error: any) {
+        console.error("Error creating role:", error);
+        console.error("Error details:", {
+          message: error?.message,
+          response: error?.response,
+          stack: error?.stack,
+        });
         toast.error(error?.message || "Failed to create role");
       }
     },
@@ -249,7 +292,7 @@ export default function RolesPage() {
           <h1 className="text-2xl font-medium tracking-tight">Roles</h1>
           {canManageRoles && (
             <div className="flex items-center gap-3">
-              <Button onClick={() => handleAddRoleSidebarOpenChange(true)}>
+              <Button onClick={() => handleAddRoleDialogOpenChange(true)}>
                 <Plus className="h-4 w-4" />
                 Add New Role
               </Button>
@@ -279,14 +322,7 @@ export default function RolesPage() {
           <div className="flex items-center gap-2 p-4 bg-primary/10 rounded-lg border border-primary/20">
             <Lock className="h-5 w-5 text-primary" />
             <div>
-              <h3 className="font-semibold text-lg">
-                Permissions Matrix
-                {form.watch("name") && (
-                  <span className="ml-2 text-primary">
-                    - {form.watch("name")}
-                  </span>
-                )}
-              </h3>
+              <h3 className="font-semibold text-lg">Permissions Matrix</h3>
               <p className="text-sm text-muted-foreground">
                 Configure access levels for different routes and features.
               </p>
@@ -298,9 +334,7 @@ export default function RolesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[200px]">
-                      {isCreatingRole ? "ROUTE NAME" : "ROLE NAME"}
-                    </TableHead>
+                    <TableHead className="min-w-[200px]">ROLE NAME</TableHead>
                     <TableHead className="text-center">VISIBLE</TableHead>
                     <TableHead className="text-center">VIEW</TableHead>
                     <TableHead className="text-center">CREATE</TableHead>
@@ -309,93 +343,8 @@ export default function RolesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isCreatingRole ? (
-                    // Show permissions matrix for creating new role
-                    AVAILABLE_ROUTES.map((route) => {
-                      const routePerm = permissions[route];
-                      return (
-                        <TableRow
-                          key={route}
-                          className={routePerm?.visible ? "" : "opacity-60"}
-                        >
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{route}</span>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-6 px-2 text-xs"
-                                type="button"
-                              >
-                                Route
-                              </Button>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Switch
-                              checked={routePerm?.visible ?? true}
-                              onCheckedChange={(checked) =>
-                                handlePermissionChange(
-                                  route,
-                                  "visible",
-                                  checked
-                                )
-                              }
-                            />
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Checkbox
-                              checked={routePerm?.view ?? true}
-                              onCheckedChange={(checked) =>
-                                handlePermissionChange(
-                                  route,
-                                  "view",
-                                  checked === true
-                                )
-                              }
-                            />
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Checkbox
-                              checked={routePerm?.create ?? true}
-                              onCheckedChange={(checked) =>
-                                handlePermissionChange(
-                                  route,
-                                  "create",
-                                  checked === true
-                                )
-                              }
-                            />
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Checkbox
-                              checked={routePerm?.update ?? true}
-                              onCheckedChange={(checked) =>
-                                handlePermissionChange(
-                                  route,
-                                  "update",
-                                  checked === true
-                                )
-                              }
-                            />
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Checkbox
-                              checked={routePerm?.delete ?? true}
-                              onCheckedChange={(checked) =>
-                                handlePermissionChange(
-                                  route,
-                                  "delete",
-                                  checked === true
-                                )
-                              }
-                            />
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  ) : // Show existing roles from database
-                  workspaceRoles?.data && workspaceRoles.data.length > 0 ? (
+                  {/* Show existing roles from database */}
+                  {workspaceRoles?.data && workspaceRoles.data.length > 0 ? (
                     workspaceRoles.data.map((role: any) => {
                       const isEditing = editingRoleId === role.id;
                       const rolePermissions = role.permissions || {};
@@ -635,81 +584,214 @@ export default function RolesPage() {
               Changes will be applied immediately after saving.
             </p>
           </div>
-
-          {isCreatingRole && canManageRoles && (
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={resetForm}>
-                Reset Permissions
-              </Button>
-              <Button
-                onClick={async () => {
-                  const roleName = form.getValues("name");
-                  if (!roleName || !roleName.trim()) {
-                    toast.error("Please enter a role name first");
-                    handleAddRoleSidebarOpenChange(true);
-                    return;
-                  }
-                  await onSubmit({ name: roleName });
-                }}
-                disabled={createRoleMutation.isPending}
-              >
-                {createRoleMutation.isPending ? "Creating..." : "Create Role"}
-              </Button>
-            </div>
-          )}
         </div>
 
-        <SidebarPanel
-          open={addRoleSidebarOpen}
-          onOpenChange={handleAddRoleSidebarOpenChange}
-          title="Add Role"
-          description={"Enter a name for the new role"}
+        <Dialog
+          open={addRoleDialogOpen}
+          onOpenChange={handleAddRoleDialogOpenChange}
         >
-          <div className="space-y-6">
+          <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle>Create New Role</DialogTitle>
+              <DialogDescription>
+                Enter a name for the new role and configure its permissions.
+              </DialogDescription>
+            </DialogHeader>
+
             <Form {...form}>
               <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleAddRoleSidebarOpenChange(false);
-                }}
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="flex flex-col flex-1 min-h-0"
               >
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g., Manager" />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormActions
-                  onCancel={() => {
-                    resetForm();
-                    handleAddRoleSidebarOpenChange(false);
-                  }}
-                  onSubmit={() => {
-                    if (!canManageRoles) {
-                      toast.error("You don't have permission to create roles");
-                      return;
+                <div className="space-y-4 flex-1 min-h-0 flex flex-col">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Role Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="e.g., Manager, Editor, Viewer"
+                            disabled={createRoleMutation.isPending}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="flex-1 min-h-0 flex flex-col">
+                    <Label className="mb-2">Permissions</Label>
+                    <ScrollArea className="flex-1 border rounded-lg">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="min-w-[200px]">
+                              ROUTE NAME
+                            </TableHead>
+                            <TableHead className="text-center">
+                              VISIBLE
+                            </TableHead>
+                            <TableHead className="text-center">VIEW</TableHead>
+                            <TableHead className="text-center">
+                              CREATE
+                            </TableHead>
+                            <TableHead className="text-center">
+                              UPDATE
+                            </TableHead>
+                            <TableHead className="text-center">
+                              DELETE
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {AVAILABLE_ROUTES.map((route) => {
+                            const routePerm = permissions[route];
+                            return (
+                              <TableRow
+                                key={route}
+                                className={
+                                  routePerm?.visible ? "" : "opacity-60"
+                                }
+                              >
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">{route}</span>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-6 px-2 text-xs"
+                                      type="button"
+                                    >
+                                      Route
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <Switch
+                                    checked={routePerm?.visible ?? true}
+                                    onCheckedChange={(checked) =>
+                                      handlePermissionChange(
+                                        route,
+                                        "visible",
+                                        checked
+                                      )
+                                    }
+                                    disabled={createRoleMutation.isPending}
+                                  />
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <Checkbox
+                                    checked={routePerm?.view ?? true}
+                                    onCheckedChange={(checked) =>
+                                      handlePermissionChange(
+                                        route,
+                                        "view",
+                                        checked === true
+                                      )
+                                    }
+                                    disabled={createRoleMutation.isPending}
+                                  />
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <Checkbox
+                                    checked={routePerm?.create ?? true}
+                                    onCheckedChange={(checked) =>
+                                      handlePermissionChange(
+                                        route,
+                                        "create",
+                                        checked === true
+                                      )
+                                    }
+                                    disabled={createRoleMutation.isPending}
+                                  />
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <Checkbox
+                                    checked={routePerm?.update ?? true}
+                                    onCheckedChange={(checked) =>
+                                      handlePermissionChange(
+                                        route,
+                                        "update",
+                                        checked === true
+                                      )
+                                    }
+                                    disabled={createRoleMutation.isPending}
+                                  />
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <Checkbox
+                                    checked={routePerm?.delete ?? true}
+                                    onCheckedChange={(checked) =>
+                                      handlePermissionChange(
+                                        route,
+                                        "delete",
+                                        checked === true
+                                      )
+                                    }
+                                    disabled={createRoleMutation.isPending}
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </ScrollArea>
+                  </div>
+                </div>
+
+                <DialogFooter className="mt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      resetForm();
+                      handleAddRoleDialogOpenChange(false);
+                    }}
+                    disabled={createRoleMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const defaultPerms: Record<string, RoutePermission> = {};
+                      AVAILABLE_ROUTES.forEach((route) => {
+                        defaultPerms[route] = {
+                          route,
+                          visible: true,
+                          view: true,
+                          create: true,
+                          update: true,
+                          delete: true,
+                        };
+                      });
+                      setPermissions(defaultPerms);
+                    }}
+                    disabled={createRoleMutation.isPending}
+                  >
+                    Reset Permissions
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={
+                      createRoleMutation.isPending ||
+                      !form.watch("name")?.trim()
                     }
-                    const roleName = form.getValues("name");
-                    if (!roleName || !roleName.trim()) {
-                      toast.error("Please enter a role name");
-                      return;
-                    }
-                    setIsCreatingRole(true);
-                    handleAddRoleSidebarOpenChange(false);
-                  }}
-                  submitText="Continue"
-                  isLoading={false}
-                />
+                  >
+                    {createRoleMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Create Role
+                  </Button>
+                </DialogFooter>
               </form>
             </Form>
-          </div>
-        </SidebarPanel>
+          </DialogContent>
+        </Dialog>
       </DashboardLayout>
     </>
   );

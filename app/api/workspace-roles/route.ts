@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   createWorkspaceRole,
   getWorkspaceRolesPaginated,
+  getWorkspaceRolesByWorkspaceId,
 } from "@/lib/data/workspace-roles";
 import { AuthService } from "@/lib/auth-service";
 import jwt from "jsonwebtoken";
@@ -78,10 +79,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Note: workspace_roles table no longer has workspace_id column
+    // Roles are now global. workspace_id is ignored if provided.
+    console.log("Creating workspace role:", {
+      name: body.name,
+      permissionsKeys: Object.keys(body.permissions || {}),
+      permissionsCount: Object.keys(body.permissions || {}).length,
+      userId,
+    });
+
+    // Validate permissions structure
+    if (typeof body.permissions !== "object" || body.permissions === null) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Permissions must be an object",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Log permissions structure for debugging
+    console.log(
+      "Permissions structure:",
+      JSON.stringify(body.permissions, null, 2)
+    );
+
     const workspaceRole = await createWorkspaceRole({
       name: body.name,
       permissions: body.permissions,
       created_by: userId,
+    });
+
+    console.log("Workspace role created successfully:", {
+      id: workspaceRole?.id,
+      name: workspaceRole?.name,
     });
 
     return NextResponse.json({
@@ -90,10 +122,51 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("Error creating workspace role:", error);
+    console.error("Error details:", {
+      message: error?.message,
+      code: error?.code,
+      details: error?.details,
+      hint: error?.hint,
+      stack: error?.stack,
+    });
+
+    const errorMessage = error?.message || "Failed to create workspace role";
+    const errorCode = error?.code;
+    const errorDetails = error?.details;
+    const errorHint = error?.hint;
+
+    // Provide more specific error messages
+    if (errorCode === "23505") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "A role with this name already exists",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      errorCode === "42501" ||
+      errorMessage.includes("permission denied") ||
+      errorMessage.includes("row-level security")
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Permission denied. Please check your database RLS policies.",
+          hint: errorHint,
+        },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Failed to create workspace role",
+        error: errorMessage,
+        details: errorDetails,
+        hint: errorHint,
       },
       { status: 500 }
     );
@@ -120,9 +193,31 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
+    const workspaceId = searchParams.get("workspaceId");
+    const showAll = searchParams.get("showAll") === "true"; // New parameter to show all roles
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const search = searchParams.get("search");
+
+    // If workspaceId is provided AND showAll is not true, get roles for that workspace
+    // Otherwise, get all paginated roles
+    if (workspaceId && !showAll) {
+      const workspaceRoles = await getWorkspaceRolesByWorkspaceId(workspaceId);
+      return NextResponse.json({
+        success: true,
+        roles: workspaceRoles,
+        total: workspaceRoles.length,
+      });
+    }
+
+    // Get all paginated roles (either no workspaceId or showAll=true)
+    console.log("Fetching workspace roles:", {
+      page,
+      limit,
+      search,
+      showAll,
+      workspaceId,
+    });
 
     const workspaceRoles = await getWorkspaceRolesPaginated(
       page,
@@ -131,16 +226,50 @@ export async function GET(request: NextRequest) {
       search || undefined
     );
 
+    console.log("Fetched workspace roles:", {
+      count: workspaceRoles?.data?.length || 0,
+      total: workspaceRoles?.count || 0,
+    });
+
     return NextResponse.json({
       success: true,
       data: workspaceRoles,
     });
   } catch (error: any) {
     console.error("Error getting workspace roles:", error);
+    const errorMessage = error?.message || "Failed to get workspace roles";
+    const errorCode = error?.code;
+
+    // Provide more specific error messages
+    if (errorCode === "42P01" || errorMessage.includes("does not exist")) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "The workspace_roles table does not exist. Please run database migrations.",
+        },
+        { status: 500 }
+      );
+    }
+
+    if (
+      errorCode === "42501" ||
+      errorMessage.includes("permission denied") ||
+      errorMessage.includes("row-level security")
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Permission denied. Please check your database RLS policies.",
+        },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Failed to get workspace roles",
+        error: errorMessage,
       },
       { status: 500 }
     );

@@ -31,16 +31,9 @@ import {
   deleteUserSessions,
 } from "./data/user-sessions";
 import { supabase } from "./supabase-client";
-import {
-  getRoleByValue,
-  getRoleById,
-} from "./data/organization-roles";
-import {
-  getUserConfigByTypeAndValue,
-} from "./data/user-config";
-import {
-  getOrganizationConfigByTypeAndValue,
-} from "./data/organization-config";
+import { getRoleByValue, getRoleById } from "./data/organization-roles";
+import { getUserConfigByTypeAndValue } from "./data/user-config";
+import { getOrganizationConfigByTypeAndValue } from "./data/organization-config";
 import {
   getInvitationByToken as getInvitationByTokenData,
   createInvitation,
@@ -98,7 +91,6 @@ export interface JWTPayload {
 }
 
 export class AuthService {
- 
   static getRoleDisplayName(role: string): string {
     const displayNames: { [key: string]: string } = {
       owner: "Owner",
@@ -146,9 +138,11 @@ export class AuthService {
     return permissions[role] || permissions.viewer;
   }
 
- 
   static async getUserStatusId(statusValue: string): Promise<string> {
-    const statusConfig = await getUserConfigByTypeAndValue("status", statusValue);
+    const statusConfig = await getUserConfigByTypeAndValue(
+      "status",
+      statusValue
+    );
     if (!statusConfig) {
       throw new Error(`User status '${statusValue}' not found`);
     }
@@ -159,7 +153,10 @@ export class AuthService {
     entityType: string,
     entityValue: string
   ): Promise<string> {
-    const config = await getOrganizationConfigByTypeAndValue(entityType, entityValue);
+    const config = await getOrganizationConfigByTypeAndValue(
+      entityType,
+      entityValue
+    );
     if (!config) {
       throw new Error(
         `Organization config '${entityType}:${entityValue}' not found`
@@ -177,14 +174,16 @@ export class AuthService {
   }
 
   static async getInvitationStatusId(statusValue: string): Promise<string> {
-    const statusConfig = await getUserConfigByTypeAndValue("invitation_status", statusValue);
+    const statusConfig = await getUserConfigByTypeAndValue(
+      "invitation_status",
+      statusValue
+    );
     if (!statusConfig) {
       throw new Error(`Invitation status '${statusValue}' not found`);
     }
     return statusConfig.id;
   }
 
- 
   static mapCompanySizeToConfigValue(companySize: string): string {
     const mapping: Record<string, string> = {
       "1": "startup",
@@ -197,7 +196,6 @@ export class AuthService {
     return mapping[companySize] || "small";
   }
 
- 
   static async checkEmailExists(email: string): Promise<boolean> {
     try {
       const existingUser = await getUserByEmail(email.toLowerCase().trim());
@@ -207,7 +205,6 @@ export class AuthService {
     }
   }
 
- 
   static async registerUser(userData: {
     email: string;
     password: string;
@@ -245,11 +242,167 @@ export class AuthService {
         await createSession({
           user_id: user.user_id,
           token: "", // Will be set by login flow
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+          expires_at: new Date(
+            Date.now() + 7 * 24 * 60 * 60 * 1000
+          ).toISOString(), // 7 days
         });
       } catch (sessionError) {
         // Log but don't fail registration
         console.error("Failed to create initial session:", sessionError);
+      }
+
+      // Check for pending workspace invites and members by email
+      try {
+        const normalizedEmail = userData.email.toLowerCase();
+
+        // 1. Check workspace_invites (pending invitations)
+        const { getWorkspaceInvitesByEmail, updateWorkspaceInvite } =
+          await import("@/lib/data/workspace-invites");
+        const { createWorkspaceMember } = await import(
+          "@/lib/data/workspace-members"
+        );
+
+        const pendingWorkspaceInvites = await getWorkspaceInvitesByEmail(
+          normalizedEmail
+        );
+
+        // Filter only pending invites
+        const pendingInvites = pendingWorkspaceInvites.filter(
+          (invite) => invite.status === "pending"
+        );
+
+        // Process pending workspace invites - create workspace_members and mark invites as accepted
+        for (const invite of pendingInvites) {
+          if (invite.workspace_id && invite.role_id) {
+            try {
+              // Get workspace to find organization_id
+              const { getWorkspaceById } = await import(
+                "@/lib/data/workspaces"
+              );
+              const workspace = await getWorkspaceById(invite.workspace_id);
+
+              if (!workspace || !workspace.organization_id) {
+                console.warn(
+                  `⚠️ Workspace ${invite.workspace_id} not found or missing organization_id`
+                );
+                continue;
+              }
+
+              // 1. Ensure user is added to the organization (if not already)
+              const existingUserOrg = await getUserOrganization(
+                user.user_id,
+                workspace.organization_id
+              );
+
+              if (!existingUserOrg) {
+                // Add user to organization with a default role (user role)
+                try {
+                  const defaultRoleId = await this.getRoleId("user");
+                  await createUserOrganization({
+                    user_id: user.user_id,
+                    organization_id: workspace.organization_id,
+                    role_id: defaultRoleId,
+                    joined_at: new Date().toISOString(),
+                  });
+                  console.log(
+                    `✅ Added user ${user.user_id} to organization ${workspace.organization_id}`
+                  );
+                } catch (orgError: any) {
+                  // If user already in org or other error, log and continue
+                  console.warn(
+                    `⚠️ Could not add user to organization:`,
+                    orgError?.message || orgError
+                  );
+                }
+              }
+
+              // 2. Create workspace_member from the invite
+              await createWorkspaceMember({
+                user_id: user.user_id,
+                workspace_id: invite.workspace_id,
+                email: normalizedEmail,
+                role_id: invite.role_id,
+                invited_by: invite.invited_by,
+                status: "accepted",
+                is_deleted: false,
+              });
+
+              // 3. Update invite status to accepted
+              await updateWorkspaceInvite(invite.id, {
+                status: "accepted",
+              });
+
+              console.log(
+                `✅ Created workspace_member from invite ${invite.id} for workspace ${invite.workspace_id} and user ${user.user_id}`
+              );
+            } catch (memberError: any) {
+              // If workspace_member already exists or other error, just mark invite as accepted
+              console.warn(
+                `⚠️ Could not create workspace_member from invite ${invite.id}:`,
+                memberError?.message || memberError
+              );
+              try {
+                await updateWorkspaceInvite(invite.id, {
+                  status: "accepted",
+                });
+              } catch (updateError) {
+                console.error(
+                  `Failed to update invite ${invite.id} status:`,
+                  updateError
+                );
+              }
+            }
+          }
+        }
+
+        // 2. Check workspace_members (already added but without user_id)
+        const { getWorkspaceMembersByEmail, updateWorkspaceMember } =
+          await import("@/lib/data/workspace-members");
+
+        try {
+          const pendingMembers = await getWorkspaceMembersByEmail(
+            normalizedEmail
+          );
+
+          // Link user_id to all pending workspace members
+          for (const member of pendingMembers) {
+            if (!member.user_id) {
+              try {
+                await updateWorkspaceMember(member.id, {
+                  user_id: user.user_id,
+                  status: "accepted",
+                });
+                console.log(
+                  `✅ Linked workspace member ${member.id} to user ${user.user_id}`
+                );
+              } catch (updateError: any) {
+                // Handle case where workspace_id column doesn't exist
+                if (updateError?.message?.includes("workspace_id")) {
+                  console.log(
+                    `⚠️ workspace_members.workspace_id column not available, skipping update for member ${member.id}`
+                  );
+                } else {
+                  console.warn(
+                    `⚠️ Failed to update workspace member ${member.id}:`,
+                    updateError?.message || updateError
+                  );
+                }
+              }
+            }
+          }
+        } catch (membersError: any) {
+          // Handle case where workspace_id column doesn't exist in workspace_members
+          if (membersError?.message?.includes("workspace_id")) {
+            console.log(
+              "⚠️ workspace_members.workspace_id column not available, skipping workspace_members check"
+            );
+          } else {
+            console.warn("Failed to check workspace members:", membersError);
+          }
+        }
+      } catch (inviteError) {
+        // Log but don't fail registration if invite linking fails
+        console.error("Failed to link workspace invites/members:", inviteError);
       }
 
       return user;
@@ -258,7 +411,6 @@ export class AuthService {
     }
   }
 
- 
   static async registerUserWithOrganization(userData: {
     email: string;
     password: string;
@@ -306,12 +458,18 @@ export class AuthService {
       const companySizeValue = this.mapCompanySizeToConfigValue(
         setupQuestions.companySize || "small"
       );
-      const orgStatusId = await this.getOrganizationConfigId("status", "active");
+      const orgStatusId = await this.getOrganizationConfigId(
+        "status",
+        "active"
+      );
       const orgSubStatusId = await this.getOrganizationConfigId(
         "subscription_status",
         "trial"
       );
-      const orgPlanTypeId = await this.getOrganizationConfigId("plan_type", "trial");
+      const orgPlanTypeId = await this.getOrganizationConfigId(
+        "plan_type",
+        "trial"
+      );
       const orgCompanySizeConfigId = await this.getOrganizationConfigId(
         "company_size",
         companySizeValue
@@ -343,6 +501,184 @@ export class AuthService {
         joined_at: new Date().toISOString(),
       });
 
+      // Check for pending workspace invites by email and auto-add user to workspaces
+      try {
+        const normalizedEmail = userData.email.toLowerCase();
+
+        // Check workspace_invites (pending invitations)
+        const { getWorkspaceInvitesByEmail, updateWorkspaceInvite } =
+          await import("@/lib/data/workspace-invites");
+        const { createWorkspaceMember } = await import(
+          "@/lib/data/workspace-members"
+        );
+
+        const pendingWorkspaceInvites = await getWorkspaceInvitesByEmail(
+          normalizedEmail
+        );
+
+        // Filter only pending invites
+        const pendingInvites = pendingWorkspaceInvites.filter(
+          (invite) => invite.status === "pending"
+        );
+
+        console.log(
+          `[registerUserWithOrganization] Found ${pendingInvites.length} pending workspace invites for ${normalizedEmail}`
+        );
+
+        // Process pending workspace invites - create workspace_members and mark invites as accepted
+        for (const invite of pendingInvites) {
+          if (invite.workspace_id && invite.role_id) {
+            try {
+              // Get workspace to find organization_id
+              const { getWorkspaceById } = await import(
+                "@/lib/data/workspaces"
+              );
+              const workspace = await getWorkspaceById(invite.workspace_id);
+
+              if (!workspace || !workspace.organization_id) {
+                console.warn(
+                  `⚠️ Workspace ${invite.workspace_id} not found or missing organization_id`
+                );
+                continue;
+              }
+
+              // 1. Ensure user is added to the organization (if not already)
+              const existingUserOrg = await getUserOrganization(
+                user.user_id,
+                workspace.organization_id
+              );
+
+              if (!existingUserOrg) {
+                // Add user to organization with a default role (user role)
+                try {
+                  const defaultRoleId = await this.getRoleId("user");
+                  await createUserOrganization({
+                    user_id: user.user_id,
+                    organization_id: workspace.organization_id,
+                    role_id: defaultRoleId,
+                    joined_at: new Date().toISOString(),
+                  });
+                  console.log(
+                    `✅ Added user ${user.user_id} to organization ${workspace.organization_id}`
+                  );
+                } catch (orgError: any) {
+                  // If user already in org or other error, log and continue
+                  console.warn(
+                    `⚠️ Could not add user to organization:`,
+                    orgError?.message || orgError
+                  );
+                }
+              }
+
+              // 2. Create workspace_member from the invite
+              try {
+                const memberResult = await createWorkspaceMember({
+                  user_id: user.user_id,
+                  workspace_id: invite.workspace_id,
+                  email: normalizedEmail,
+                  role_id: invite.role_id,
+                  invited_by: invite.invited_by,
+                  status: "accepted",
+                  is_deleted: false,
+                });
+
+                console.log(
+                  `✅ Created workspace_member from invite ${invite.id} for workspace ${invite.workspace_id} (${workspace.name}) and user ${user.user_id}`,
+                  `Member ID: ${memberResult.id}`
+                );
+              } catch (createError: any) {
+                // Check if member already exists
+                if (
+                  createError?.message?.includes("duplicate") ||
+                  createError?.code === "23505" ||
+                  createError?.message?.includes("already exists")
+                ) {
+                  console.log(
+                    `ℹ️ Workspace member already exists for workspace ${invite.workspace_id} and user ${user.user_id}`
+                  );
+                } else {
+                  console.error(
+                    `❌ Failed to create workspace_member:`,
+                    createError?.message || createError
+                  );
+                  throw createError;
+                }
+              }
+
+              // 3. Update invite status to accepted
+              await updateWorkspaceInvite(invite.id, {
+                status: "accepted",
+              });
+            } catch (memberError: any) {
+              // If workspace_member already exists or other error, just mark invite as accepted
+              console.warn(
+                `⚠️ Could not create workspace_member from invite ${invite.id}:`,
+                memberError?.message || memberError
+              );
+              try {
+                await updateWorkspaceInvite(invite.id, {
+                  status: "accepted",
+                });
+              } catch (updateError) {
+                console.error(
+                  `Failed to update invite ${invite.id} status:`,
+                  updateError
+                );
+              }
+            }
+          }
+        }
+
+        // 2. Check workspace_members (already added but without user_id)
+        const { getWorkspaceMembersByEmail, updateWorkspaceMember } =
+          await import("@/lib/data/workspace-members");
+
+        try {
+          const pendingMembers = await getWorkspaceMembersByEmail(
+            normalizedEmail
+          );
+
+          // Link user_id to all pending workspace members
+          for (const member of pendingMembers) {
+            if (!member.user_id) {
+              try {
+                await updateWorkspaceMember(member.id, {
+                  user_id: user.user_id,
+                  status: "accepted",
+                });
+                console.log(
+                  `✅ Linked workspace member ${member.id} to user ${user.user_id}`
+                );
+              } catch (updateError: any) {
+                // Handle case where workspace_id column doesn't exist
+                if (updateError?.message?.includes("workspace_id")) {
+                  console.log(
+                    `⚠️ workspace_members.workspace_id column not available, skipping update for member ${member.id}`
+                  );
+                } else {
+                  console.warn(
+                    `⚠️ Failed to update workspace member ${member.id}:`,
+                    updateError?.message || updateError
+                  );
+                }
+              }
+            }
+          }
+        } catch (membersError: any) {
+          // Handle case where workspace_id column doesn't exist in workspace_members
+          if (membersError?.message?.includes("workspace_id")) {
+            console.log(
+              "⚠️ workspace_members.workspace_id column not available, skipping workspace_members check"
+            );
+          } else {
+            console.warn("Failed to check workspace members:", membersError);
+          }
+        }
+      } catch (inviteError) {
+        // Log but don't fail registration if invite linking fails
+        console.error("Failed to link workspace invites/members:", inviteError);
+      }
+
       return {
         user,
         organization,
@@ -352,7 +688,6 @@ export class AuthService {
     }
   }
 
- 
   static async loginUser(
     email: string,
     password: string | null = null,
@@ -377,7 +712,7 @@ export class AuthService {
 
     // Regular user login
     const user = await getUserByEmail(email.toLowerCase());
-    
+
     if (!user) {
       throw new Error("Invalid email or password");
     }
@@ -397,7 +732,7 @@ export class AuthService {
           newAttempts >= 5
             ? new Date(Date.now() + 30 * 60 * 1000).toISOString() // Lock for 30 minutes
             : undefined;
-        
+
         await updateUserLoginAttempts(user.user_id, newAttempts, lockUntil);
         throw new Error("Invalid email or password");
       }
@@ -406,14 +741,208 @@ export class AuthService {
     // Reset login attempts on successful login
     await updateUserLastLogin(user.user_id);
 
-    // Get user organizations with roles
+    // Check for workspace invites and members by email and link them to user
+    try {
+      const normalizedEmail = email.toLowerCase();
+
+      // 1. Check workspace_invites (pending invitations)
+      const { getWorkspaceInvitesByEmail, updateWorkspaceInvite } =
+        await import("@/lib/data/workspace-invites");
+      const {
+        createWorkspaceMember,
+        getWorkspaceMembersByEmail,
+        updateWorkspaceMember,
+      } = await import("@/lib/data/workspace-members");
+
+      const pendingWorkspaceInvites = await getWorkspaceInvitesByEmail(
+        normalizedEmail
+      );
+
+      // Filter only pending invites
+      const pendingInvites = pendingWorkspaceInvites.filter(
+        (invite) => invite.status === "pending"
+      );
+
+      console.log(
+        `[loginUser] Found ${pendingInvites.length} pending workspace invites for ${normalizedEmail}`
+      );
+
+      // Process pending workspace invites - create workspace_members and mark invites as accepted
+      for (const invite of pendingInvites) {
+        if (invite.workspace_id && invite.role_id) {
+          try {
+            // Get workspace to find organization_id
+            const { getWorkspaceById } = await import("@/lib/data/workspaces");
+            const workspace = await getWorkspaceById(invite.workspace_id);
+
+            if (!workspace || !workspace.organization_id) {
+              console.warn(
+                `⚠️ Workspace ${invite.workspace_id} not found or missing organization_id`
+              );
+              continue;
+            }
+
+            // 1. Ensure user is added to the organization (if not already)
+            const existingUserOrg = await getUserOrganization(
+              user.user_id,
+              workspace.organization_id
+            );
+
+            if (!existingUserOrg) {
+              // Add user to organization with a default role (user role)
+              try {
+                const defaultRoleId = await this.getRoleId("user");
+                await createUserOrganization({
+                  user_id: user.user_id,
+                  organization_id: workspace.organization_id,
+                  role_id: defaultRoleId,
+                  joined_at: new Date().toISOString(),
+                });
+                console.log(
+                  `✅ Added user ${user.user_id} to organization ${workspace.organization_id} during login`
+                );
+              } catch (orgError: any) {
+                console.warn(
+                  `⚠️ Could not add user to organization during login:`,
+                  orgError?.message || orgError
+                );
+              }
+            }
+
+            // 2. Create workspace_member from the invite
+            try {
+              const memberResult = await createWorkspaceMember({
+                user_id: user.user_id,
+                workspace_id: invite.workspace_id,
+                email: normalizedEmail,
+                role_id: invite.role_id,
+                invited_by: invite.invited_by,
+                status: "accepted",
+                is_deleted: false,
+              });
+
+              console.log(
+                `✅ Created workspace_member from invite ${invite.id} for workspace ${invite.workspace_id} (${workspace.name}) and user ${user.user_id} during login`
+              );
+            } catch (createError: any) {
+              // Check if member already exists
+              if (
+                createError?.message?.includes("duplicate") ||
+                createError?.code === "23505" ||
+                createError?.message?.includes("already exists")
+              ) {
+                console.log(
+                  `ℹ️ Workspace member already exists for workspace ${invite.workspace_id} and user ${user.user_id}`
+                );
+              } else {
+                console.error(
+                  `❌ Failed to create workspace_member during login:`,
+                  createError?.message || createError
+                );
+              }
+            }
+
+            // 3. Update invite status to accepted
+            await updateWorkspaceInvite(invite.id, {
+              status: "accepted",
+            });
+          } catch (memberError: any) {
+            console.warn(
+              `⚠️ Could not process workspace invite ${invite.id} during login:`,
+              memberError?.message || memberError
+            );
+          }
+        }
+      }
+
+      // 2. Check workspace_members (already added but without user_id)
+      try {
+        const pendingMembers = await getWorkspaceMembersByEmail(
+          normalizedEmail
+        );
+
+        console.log(
+          `[loginUser] Found ${pendingMembers.length} workspace members with email ${normalizedEmail} but no user_id`
+        );
+
+        // Link user_id to all pending workspace members
+        for (const member of pendingMembers) {
+          if (!member.user_id && member.workspace_id) {
+            try {
+              // Get workspace to find organization_id
+              const { getWorkspaceById } = await import(
+                "@/lib/data/workspaces"
+              );
+              const workspace = await getWorkspaceById(member.workspace_id);
+
+              if (workspace && workspace.organization_id) {
+                // Ensure user is added to the organization
+                const existingUserOrg = await getUserOrganization(
+                  user.user_id,
+                  workspace.organization_id
+                );
+
+                if (!existingUserOrg) {
+                  try {
+                    const defaultRoleId = await this.getRoleId("user");
+                    await createUserOrganization({
+                      user_id: user.user_id,
+                      organization_id: workspace.organization_id,
+                      role_id: defaultRoleId,
+                      joined_at: new Date().toISOString(),
+                    });
+                    console.log(
+                      `✅ Added user ${user.user_id} to organization ${workspace.organization_id} from workspace member during login`
+                    );
+                  } catch (orgError: any) {
+                    console.warn(
+                      `⚠️ Could not add user to organization from workspace member:`,
+                      orgError?.message || orgError
+                    );
+                  }
+                }
+              }
+
+              // Link user_id to workspace member
+              await updateWorkspaceMember(member.id, {
+                user_id: user.user_id,
+                status: "accepted",
+              });
+              console.log(
+                `✅ Linked workspace member ${member.id} to user ${user.user_id} during login`
+              );
+            } catch (updateError: any) {
+              console.warn(
+                `⚠️ Failed to link workspace member ${member.id} during login:`,
+                updateError?.message || updateError
+              );
+            }
+          }
+        }
+      } catch (membersError: any) {
+        console.warn(
+          "Failed to check workspace members during login:",
+          membersError
+        );
+      }
+    } catch (inviteError) {
+      // Log but don't fail login if invite linking fails
+      console.error(
+        "Failed to link workspace invites/members during login:",
+        inviteError
+      );
+    }
+
+    // Get user organizations with roles (this will now include newly added organizations)
     const userOrgs = await getUserWithOrganizations(user.user_id);
-    
+
     // Check if user has organizations
     if (!userOrgs || userOrgs.length === 0) {
-      throw new Error("User has no organizations assigned. Please contact administrator.");
+      throw new Error(
+        "User has no organizations assigned. Please contact administrator."
+      );
     }
-    
+
     // Get user's last visited organization
     const lastOrgId = user.last_visited_organization_id;
 
@@ -422,12 +951,12 @@ export class AuthService {
       userOrgs.map(async (uo: any) => {
         const org = uo.organization;
         const role = uo.role;
-        
+
         // Validate organization data
         if (!org || !org.organization_id) {
           throw new Error(`Invalid organization data for user ${user.user_id}`);
         }
-        
+
         // Calculate trial days remaining
         const trialDaysRemaining = org.trial_ends_at
           ? Math.ceil(
@@ -442,7 +971,8 @@ export class AuthService {
           name: org.name,
           slug: org.slug,
           role: role?.role || "viewer",
-          roleDisplayName: role?.display_name || this.getRoleDisplayName("viewer"),
+          roleDisplayName:
+            role?.display_name || this.getRoleDisplayName("viewer"),
           permissions: role?.permissions || this.getRolePermissions("viewer"),
           subscriptionStatus: "trial",
           planType: "trial",
@@ -455,9 +985,10 @@ export class AuthService {
 
     // Find current organization
     const currentOrganization = lastOrgId
-      ? organizations.find((org: any) => org.id === lastOrgId) || organizations[0]
+      ? organizations.find((org: any) => org.id === lastOrgId) ||
+        organizations[0]
       : organizations[0];
-    
+
     // Ensure we have a current organization
     if (!currentOrganization) {
       throw new Error("No valid organization found for user");
@@ -491,7 +1022,6 @@ export class AuthService {
     };
   }
 
- 
   static async createOrganization(
     userId: string,
     organizationData: {
@@ -513,11 +1043,11 @@ export class AuthService {
       const userOrgIds = userOrgs.map((uo) => uo.organization_id);
       if (userOrgIds.length > 0) {
         const { data: orgs } = await supabase
-          .from('organizations')
-          .select('organization_id, name')
-          .in('organization_id', userOrgIds)
-          .eq('name', organizationData.name);
-        
+          .from("organizations")
+          .select("organization_id, name")
+          .in("organization_id", userOrgIds)
+          .eq("name", organizationData.name);
+
         if (orgs && orgs.length > 0) {
           throw new Error("You already have an organization with this name");
         }
@@ -528,15 +1058,21 @@ export class AuthService {
       trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
       // Get organization config IDs
-      const companySizeValue = organizationData.company_size 
+      const companySizeValue = organizationData.company_size
         ? this.mapCompanySizeToConfigValue(organizationData.company_size)
         : "small";
-      const orgStatusId = await this.getOrganizationConfigId("status", "active");
+      const orgStatusId = await this.getOrganizationConfigId(
+        "status",
+        "active"
+      );
       const orgSubStatusId = await this.getOrganizationConfigId(
         "subscription_status",
         "trial"
       );
-      const orgPlanTypeId = await this.getOrganizationConfigId("plan_type", "trial");
+      const orgPlanTypeId = await this.getOrganizationConfigId(
+        "plan_type",
+        "trial"
+      );
       const orgCompanySizeConfigId = await this.getOrganizationConfigId(
         "company_size",
         companySizeValue
@@ -579,12 +1115,11 @@ export class AuthService {
     }
   }
 
- 
   static async switchOrganization(userId: string, organizationId: string) {
     try {
       // Check if user has access to this organization
       const userOrg = await getUserOrganization(userId, organizationId);
-      
+
       if (!userOrg) {
         throw new Error("User does not have access to this organization");
       }
@@ -600,7 +1135,6 @@ export class AuthService {
     }
   }
 
- 
   static generateToken(
     user: any,
     organizations: any[],
@@ -612,7 +1146,8 @@ export class AuthService {
       firstName: user.firstName || user.first_name,
       lastName: user.lastName || user.last_name,
 
-      currentOrganizationId: currentOrganization?.id || currentOrganization?.organization_id,
+      currentOrganizationId:
+        currentOrganization?.id || currentOrganization?.organization_id,
       currentOrganizationName: currentOrganization?.name,
       currentOrganizationSlug: currentOrganization?.slug,
       currentRole: currentOrganization?.role,
@@ -621,11 +1156,24 @@ export class AuthService {
         ? {
             status: currentOrganization.subscriptionStatus || "trial",
             planType: currentOrganization.planType || "trial",
-            trialEndsAt: currentOrganization.trialEndsAt || currentOrganization.trial_ends_at,
+            trialEndsAt:
+              currentOrganization.trialEndsAt ||
+              currentOrganization.trial_ends_at,
             daysRemaining: currentOrganization.trialDaysRemaining,
-            maxUsers: currentOrganization.maxUsers || currentOrganization.max_users || 5,
-            maxWorkspaces: currentOrganization.maxWorkspaces || currentOrganization.max_workspaces || 3,
-            featuresEnabled: currentOrganization.featuresEnabled || currentOrganization.features_enabled || ["contacts", "leads", "basic_reports"],
+            maxUsers:
+              currentOrganization.maxUsers ||
+              currentOrganization.max_users ||
+              5,
+            maxWorkspaces:
+              currentOrganization.maxWorkspaces ||
+              currentOrganization.max_workspaces ||
+              3,
+            featuresEnabled: currentOrganization.featuresEnabled ||
+              currentOrganization.features_enabled || [
+                "contacts",
+                "leads",
+                "basic_reports",
+              ],
           }
         : undefined,
       exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
@@ -635,7 +1183,6 @@ export class AuthService {
     return jwt.sign(payload, JWT_SECRET);
   }
 
- 
   static verifyToken(token: string): JWTPayload {
     try {
       return jwt.verify(token, JWT_SECRET) as JWTPayload;
@@ -654,11 +1201,10 @@ export class AuthService {
       .trim();
   }
 
- 
   static async getOrganizationDetails(organizationId: string) {
     try {
       const organization = await getOrganizationById(organizationId);
-      
+
       if (!organization) {
         throw new Error("Organization not found");
       }
@@ -666,23 +1212,26 @@ export class AuthService {
       // Get organization users with roles
       const orgUsers = await getOrganizationUsers(organizationId);
       const userIds = orgUsers.map((uo) => uo.user_id);
-      
+
       // Get user details
-      const usersData = userIds.length > 0 
-        ? await Promise.all(userIds.map(id => getUserById(id)))
-        : [];
+      const usersData =
+        userIds.length > 0
+          ? await Promise.all(userIds.map((id) => getUserById(id)))
+          : [];
 
       // Get roles for user-org relationships
       const roleIds = orgUsers.map((uo) => uo.role_id).filter(Boolean);
-      const roles = roleIds.length > 0
-        ? await Promise.all(roleIds.map(id => getRoleById(id)))
-        : [];
+      const roles =
+        roleIds.length > 0
+          ? await Promise.all(roleIds.map((id) => getRoleById(id)))
+          : [];
 
-      const roleMap = new Map(roles.map(r => [r!.id, r!]));
+      const roleMap = new Map(roles.map((r) => [r!.id, r!]));
 
       const trialDaysRemaining = organization.trial_ends_at
         ? Math.ceil(
-            (new Date(organization.trial_ends_at).getTime() - new Date().getTime()) /
+            (new Date(organization.trial_ends_at).getTime() -
+              new Date().getTime()) /
               (1000 * 60 * 60 * 24)
           )
         : undefined;
@@ -701,25 +1250,26 @@ export class AuthService {
         trialDaysRemaining: trialDaysRemaining,
         createdAt: organization.created_at,
         updatedAt: organization.updated_at,
-        users: orgUsers.map((uo) => {
-          const user = usersData.find(u => u?.user_id === uo.user_id);
-          const role = roleMap.get(uo.role_id);
-          return {
-            userId: user?.user_id,
-            firstName: user?.first_name,
-            lastName: user?.last_name,
-            email: user?.email,
-            role: role?.role,
-            joinedAt: uo.joined_at,
-          };
-        }).filter(u => u.userId),
+        users: orgUsers
+          .map((uo) => {
+            const user = usersData.find((u) => u?.user_id === uo.user_id);
+            const role = roleMap.get(uo.role_id);
+            return {
+              userId: user?.user_id,
+              firstName: user?.first_name,
+              lastName: user?.last_name,
+              email: user?.email,
+              role: role?.role,
+              joinedAt: uo.joined_at,
+            };
+          })
+          .filter((u) => u.userId),
       };
     } catch (error) {
       throw error;
     }
   }
 
- 
   static async userHasAccessToOrganization(
     userId: string,
     organizationId: string
@@ -736,7 +1286,6 @@ export class AuthService {
     }
   }
 
- 
   static async updateUserCurrentOrganization(
     userId: string,
     organizationId: string
@@ -752,7 +1301,6 @@ export class AuthService {
     }
   }
 
- 
   static async getUserOrganizations(userId: string) {
     try {
       const userOrgs = await getUserWithOrganizations(userId);
@@ -775,7 +1323,8 @@ export class AuthService {
             name: org.name,
             slug: org.slug,
             role: role?.role || "viewer",
-            roleDisplayName: role?.display_name || this.getRoleDisplayName("viewer"),
+            roleDisplayName:
+              role?.display_name || this.getRoleDisplayName("viewer"),
             permissions: role?.permissions || this.getRolePermissions("viewer"),
             subscriptionStatus: org.subscription_status || "trial",
             planType: org.subscription_plan || "trial",
@@ -790,7 +1339,6 @@ export class AuthService {
     }
   }
 
- 
   static async getUserRoleInOrganization(
     userId: string,
     organizationId: string
@@ -810,7 +1358,6 @@ export class AuthService {
     }
   }
 
- 
   static async createInvitation(
     organizationId: string,
     email: string,
@@ -829,16 +1376,22 @@ export class AuthService {
       // Check if user already exists in organization
       const existingUser = await getUserByEmail(email.toLowerCase());
       if (existingUser) {
-        const userOrg = await getUserOrganization(existingUser.user_id, organizationId);
+        const userOrg = await getUserOrganization(
+          existingUser.user_id,
+          organizationId
+        );
         if (userOrg) {
           throw new Error("User is already a member of this organization");
         }
       }
 
       // Check for existing pending invitation
-      const existingInvitations = await getInvitationsByEmail(email.toLowerCase());
+      const existingInvitations = await getInvitationsByEmail(
+        email.toLowerCase()
+      );
       const pendingInvitation = existingInvitations.find(
-        (inv) => inv.organization_id === organizationId && inv.status === "pending"
+        (inv) =>
+          inv.organization_id === organizationId && inv.status === "pending"
       );
 
       if (pendingInvitation) {
@@ -860,7 +1413,9 @@ export class AuthService {
         invited_by: invitedBy,
         token,
         status: "pending",
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        expires_at: new Date(
+          Date.now() + 7 * 24 * 60 * 60 * 1000
+        ).toISOString(),
       });
 
       return invitation;
@@ -897,7 +1452,9 @@ export class AuthService {
       }
 
       // Get organization and role details
-      const organization = await getOrganizationById(invitation.organization_id);
+      const organization = await getOrganizationById(
+        invitation.organization_id
+      );
       if (!organization) {
         throw new Error("Organization not found");
       }
@@ -1002,9 +1559,13 @@ export class AuthService {
       }
 
       // Get related data
-      const organization = await getOrganizationById(invitation.organization_id);
+      const organization = await getOrganizationById(
+        invitation.organization_id
+      );
       const role = await getRoleById(invitation.role_id);
-      const inviter = invitation.invited_by ? await getUserById(invitation.invited_by) : null;
+      const inviter = invitation.invited_by
+        ? await getUserById(invitation.invited_by)
+        : null;
 
       const isExpired = new Date(invitation.expires_at) < new Date();
       const isAccepted = invitation.status === "accepted";
@@ -1094,9 +1655,9 @@ export class AuthService {
   static async cancelInvitation(invitationId: string, cancelledBy: string) {
     try {
       const { data: invitation } = await supabase
-        .from('user_invitations')
-        .select('*')
-        .eq('invitation_id', invitationId)
+        .from("user_invitations")
+        .select("*")
+        .eq("invitation_id", invitationId)
         .single();
 
       if (!invitation) {
@@ -1113,11 +1674,6 @@ export class AuthService {
     }
   }
 
- 
- 
- 
-
-  
   static async initiatePasswordReset(email: string): Promise<{
     success: boolean;
     message: string;
@@ -1139,9 +1695,14 @@ export class AuthService {
       }
 
       // Check rate limit
-      const recentTokens = await countRecentPasswordResetTokens(user.user_id, 24);
+      const recentTokens = await countRecentPasswordResetTokens(
+        user.user_id,
+        24
+      );
       if (recentTokens >= 5) {
-        throw new Error("Too many password reset requests. Please try again later.");
+        throw new Error(
+          "Too many password reset requests. Please try again later."
+        );
       }
 
       // Note: We don't invalidate old tokens here - they expire automatically
@@ -1193,7 +1754,6 @@ export class AuthService {
     }
   }
 
-  
   static async validatePasswordResetToken(token: string): Promise<{
     isValid: boolean;
     user?: any;
@@ -1260,7 +1820,6 @@ export class AuthService {
     }
   }
 
-  
   static async resetPassword(
     token: string,
     newPassword: string
@@ -1330,7 +1889,6 @@ export class AuthService {
     }
   }
 
-  
   static async checkPasswordResetRateLimit(
     email: string,
     ipAddress?: string
@@ -1351,7 +1909,10 @@ export class AuthService {
       }
 
       // Count recent tokens for this user (last hour)
-      const recentAttempts = await countRecentPasswordResetTokens(user.user_id, 1);
+      const recentAttempts = await countRecentPasswordResetTokens(
+        user.user_id,
+        1
+      );
 
       const maxAttempts = 3;
       const remainingAttempts = Math.max(0, maxAttempts - recentAttempts);
@@ -1379,7 +1940,6 @@ export class AuthService {
     }
   }
 
-  
   static async cleanupExpiredPasswordResetTokens(): Promise<number> {
     try {
       const deletedCount = await deleteExpiredPasswordResetTokens();

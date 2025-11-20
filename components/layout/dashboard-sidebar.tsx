@@ -30,6 +30,7 @@ import {
   Plus,
   UserPlus,
   Calendar,
+  ShieldAlert,
 } from "lucide-react";
 // import Image from "next/image";
 
@@ -181,6 +182,12 @@ const defaultMenuItems: SidebarItem[] = [
     id: "roles",
     label: "Roles",
     href: "/pages/roles",
+    icon: ShieldAlert,
+  },
+  {
+    id: "add member",
+    label: "Add Member",
+    href: "/pages/add-member",
     icon: UserPlus,
   },
 ];
@@ -291,7 +298,7 @@ export function DashboardSidebar({
             {hasChildren ? (
               <button
                 onClick={() => toggleDropdown(item.id)}
-                className={`flex items-center  gap-3 px-3 py-1 rounded-lg text-sm font-medium transition-colors w-full ${
+                className={`flex items-center  gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full ${
                   isActive(item.href)
                     ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
                     : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -330,7 +337,7 @@ export function DashboardSidebar({
             ) : (
               <Link
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-1 uronded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center rounded-sm gap-3 px-3 py-2 uronded-lg text-sm font-medium transition-colors ${
                   isActive(item.href)
                     ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
                     : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -368,7 +375,7 @@ export function DashboardSidebar({
             )}
 
             {collapsed && (
-              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+              <div className="absolute left-full ml-2 px-2 py-2 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
                 {item.label}
                 {item.badge && ` (${item.badge})`}
               </div>
