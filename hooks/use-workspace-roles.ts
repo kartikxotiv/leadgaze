@@ -6,13 +6,10 @@ import { useWorkspaceContext } from "@/hooks/use-workspace-context";
 export interface WorkspaceRole {
   id: string;
   name: string;
-  description?: string;
   permissions: Record<string, any>;
-  hierarchy_level: number;
 }
 
 export interface WorkspaceRoleFilters {
-  workspaceId?: string;
   search?: string;
   page?: number;
   limit?: number;
@@ -20,12 +17,11 @@ export interface WorkspaceRoleFilters {
 
 export interface CreateWorkspaceRoleData {
   name: string;
-  description?: string;
   permissions: Record<string, any>;
-  hierarchy_level: number;
 }
 
-export interface UpdateWorkspaceRoleData extends Partial<CreateWorkspaceRoleData> {}
+export interface UpdateWorkspaceRoleData
+  extends Partial<CreateWorkspaceRoleData> {}
 
 export function useWorkspaceRoles(filters?: WorkspaceRoleFilters) {
   const { token } = useAuthStore();
@@ -33,18 +29,23 @@ export function useWorkspaceRoles(filters?: WorkspaceRoleFilters) {
   const { currentWorkspace } = useWorkspaceContext();
 
   return useQuery({
-    queryKey: ["workspace-roles", filters],
-    
-    enabled: isReady && isAuthenticated && !!currentWorkspace?.id,
+    queryKey: ["workspace-roles", currentWorkspace?.id || null, filters],
+    enabled: isReady && isAuthenticated,
     queryFn: async () => {
       const params = new URLSearchParams({
-        workspaceId: currentWorkspace?.id || "",
         page: filters?.page?.toString() || "1",
         limit: filters?.limit?.toString() || "20",
       });
       if (filters?.search && filters.search.trim()) {
         params.set("search", filters.search);
       }
+      // Don't filter by workspaceId when showing all roles on the roles page
+      // Only filter when specifically needed (e.g., for workspace member assignment)
+      // if (currentWorkspace?.id && filters?.workspaceId) {
+      //   params.set("workspaceId", currentWorkspace.id);
+      // }
+      // Always show all roles by default
+      params.set("showAll", "true");
       const response = await fetch(`/api/workspace-roles?${params}`, {
         headers: {
           "Content-Type": "application/json",
@@ -58,19 +59,32 @@ export function useWorkspaceRoles(filters?: WorkspaceRoleFilters) {
       if (!result.success) {
         throw new Error(result.error || "Failed to fetch workspace roles");
       }
+      // Handle both response formats:
+      // - When workspaceId is provided: returns { roles: [...], total: ... }
+      // - When workspaceId is not provided: returns { data: PaginationResult } where PaginationResult has { data: [...], count, page, limit, totalPages }
+      if (result.roles) {
+        // Normalize workspaceId response format to match pagination format
+        return {
+          data: result.roles,
+          count: result.total || result.roles.length,
+          page: 1,
+          limit: result.roles.length,
+          totalPages: 1,
+        };
+      }
+      // Return paginated response as-is
       return result.data;
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0, // Always refetch when workspace changes
   });
 }
 
 export function useWorkspaceRole(roleId: string) {
   const { token } = useAuthStore();
   const { isReady, isAuthenticated } = useAuthReady();
-  const { currentWorkspace } = useWorkspaceContext();
   return useQuery({
     queryKey: ["workspace-role", roleId],
-    enabled: isReady && isAuthenticated && !!currentWorkspace?.id && !!roleId,
+    enabled: isReady && isAuthenticated && !!roleId,
     queryFn: async () => {
       const response = await fetch(`/api/workspace-roles/${roleId}`, {
         headers: {
@@ -93,24 +107,17 @@ export function useWorkspaceRole(roleId: string) {
 
 export function useCreateWorkspaceRole() {
   const { token } = useAuthStore();
-  const { currentWorkspace } = useWorkspaceContext();
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (data: CreateWorkspaceRoleData) => {
-      if (!currentWorkspace?.id) {
-        throw new Error("Workspace ID is required");
-      }
       const response = await fetch(`/api/workspace-roles`, {
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        method: 'POST',
-        body: JSON.stringify({
-          ...data,
-          workspaceId: currentWorkspace.id,
-        }),
+        method: "POST",
+        body: JSON.stringify(data),
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -131,15 +138,18 @@ export function useCreateWorkspaceRole() {
 export function useUpdateWorkspaceRole() {
   const { token } = useAuthStore();
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async ({ id, ...data }: UpdateWorkspaceRoleData & { id: string }) => {
+    mutationFn: async ({
+      id,
+      ...data
+    }: UpdateWorkspaceRoleData & { id: string }) => {
       const response = await fetch(`/api/workspace-roles/${id}`, {
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        method: 'PUT',
+        method: "PUT",
         body: JSON.stringify(data),
       });
       if (!response.ok) {
@@ -154,7 +164,9 @@ export function useUpdateWorkspaceRole() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["workspace-roles"] });
-      queryClient.invalidateQueries({ queryKey: ["workspace-role", variables.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["workspace-role", variables.id],
+      });
     },
   });
 }
@@ -162,7 +174,7 @@ export function useUpdateWorkspaceRole() {
 export function useDeleteWorkspaceRole() {
   const { token } = useAuthStore();
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (roleId: string) => {
       const response = await fetch(`/api/workspace-roles/${roleId}`, {
@@ -170,7 +182,7 @@ export function useDeleteWorkspaceRole() {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        method: 'DELETE',
+        method: "DELETE",
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));

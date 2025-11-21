@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getWorkspaceRoleById, updateWorkspaceRole, deleteWorkspaceRole } from "@/lib/data/workspace-roles";
+import {
+  getWorkspaceRoleById,
+  updateWorkspaceRole,
+  deleteWorkspaceRole,
+} from "@/lib/data/workspace-roles";
+import { AuthService } from "@/lib/auth-service";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
@@ -45,7 +50,10 @@ export async function GET(
   } catch (error: any) {
     console.error("Error fetching workspace role:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to fetch workspace role" },
+      {
+        success: false,
+        error: error.message || "Failed to fetch workspace role",
+      },
       { status: 500 }
     );
   }
@@ -66,8 +74,9 @@ export async function PUT(
     }
 
     const token = authHeader.substring(7);
+    let decoded: any;
     try {
-      jwt.verify(token, JWT_SECRET);
+      decoded = jwt.verify(token, JWT_SECRET);
     } catch (error) {
       return NextResponse.json(
         { success: false, error: "Invalid token" },
@@ -83,11 +92,38 @@ export async function PUT(
       body = await request.json();
     } catch (parseError: any) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: "Invalid JSON in request body. Please check your JSON format." 
+        {
+          success: false,
+          error: "Invalid JSON in request body. Please check your JSON format.",
         },
         { status: 400 }
+      );
+    }
+
+    const userId = decoded?.userId || decoded?.user_id;
+
+    // Get user's organizations to check role
+    const userOrganizations = await AuthService.getUserOrganizations(userId);
+    if (!userOrganizations || userOrganizations.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "User not associated with any organization" },
+        { status: 403 }
+      );
+    }
+
+    // Check if user is admin or owner in any organization
+    const hasPermission = userOrganizations.some((org: any) => {
+      const role = org.role?.toLowerCase();
+      return ["owner", "admin"].includes(role);
+    });
+
+    if (!hasPermission) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Only Administrators and Owners can update roles",
+        },
+        { status: 403 }
       );
     }
 
@@ -103,9 +139,8 @@ export async function PUT(
     // Prepare update data
     const updateData: any = {};
     if (body.name !== undefined) updateData.name = body.name;
-    if (body.description !== undefined) updateData.description = body.description;
-    if (body.permissions !== undefined) updateData.permissions = body.permissions;
-    if (body.hierarchy_level !== undefined) updateData.hierarchy_level = body.hierarchy_level;
+    if (body.permissions !== undefined)
+      updateData.permissions = body.permissions;
 
     const workspaceRole = await updateWorkspaceRole(id, updateData);
 
@@ -116,7 +151,10 @@ export async function PUT(
   } catch (error: any) {
     console.error("Error updating workspace role:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to update workspace role" },
+      {
+        success: false,
+        error: error.message || "Failed to update workspace role",
+      },
       { status: 500 }
     );
   }
@@ -167,9 +205,11 @@ export async function DELETE(
   } catch (error: any) {
     console.error("Error deleting workspace role:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to delete workspace role" },
+      {
+        success: false,
+        error: error.message || "Failed to delete workspace role",
+      },
       { status: 500 }
     );
   }
 }
-
