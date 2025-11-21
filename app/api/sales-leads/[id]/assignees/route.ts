@@ -6,10 +6,6 @@ import {
   updateLeadAssignees,
 } from "@/lib/data/lead-assignees";
 
-/**
- * GET /api/sales-leads/[id]/assignees
- * Get all assignees for a lead
- */
 export async function GET(
   _request: NextRequest,
   { params }: { params: { id: string } }
@@ -30,10 +26,6 @@ export async function GET(
   }
 }
 
-/**
- * POST /api/sales-leads/[id]/assignees
- * Add a new assignee to a lead
- */
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -60,10 +52,6 @@ export async function POST(
   }
 }
 
-/**
- * PUT /api/sales-leads/[id]/assignees
- * Update all assignees for a lead (replace)
- */
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -79,6 +67,8 @@ export async function PUT(
       );
     }
 
+    // updateLeadAssignees() function call karo
+    // Ye function pehle delete karega, phir insert karega
     const assignees = await updateLeadAssignees(id, body.userIds);
     return NextResponse.json({ success: true, data: assignees });
   } catch (error: any) {
@@ -93,10 +83,6 @@ export async function PUT(
   }
 }
 
-/**
- * DELETE /api/sales-leads/[id]/assignees
- * Remove an assignee from a lead
- */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -123,4 +109,3 @@ export async function DELETE(
     );
   }
 }
-

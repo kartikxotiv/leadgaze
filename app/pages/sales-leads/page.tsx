@@ -8,6 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkspaceContext } from "@/hooks/use-workspace-context";
 import {
+  useWorkspacePermissions,
+  useWorkspaceRoutePermission,
+} from "@/hooks/use-workspace-permissions";
+import {
   useCreateSalesLead,
   useDeleteSalesLead,
   useSalesLeads,
@@ -635,6 +639,28 @@ export default function SalesLeadsPage() {
     isError,
     error,
   } = useSalesLeads(filters);
+
+  // Get workspace permissions
+  const { data: permissionsData, isLoading: isLoadingPermissions } =
+    useWorkspacePermissions();
+  const canViewSalesLeads = useWorkspaceRoutePermission("Sales Leads", "view");
+  const canCreateSalesLeads = useWorkspaceRoutePermission(
+    "Sales Leads",
+    "create"
+  );
+  const canUpdateSalesLeads = useWorkspaceRoutePermission(
+    "Sales Leads",
+    "update"
+  );
+  const canDeleteSalesLeads = useWorkspaceRoutePermission(
+    "Sales Leads",
+    "delete"
+  );
+  const isSalesLeadsVisible = useWorkspaceRoutePermission(
+    "Sales Leads",
+    "visible"
+  );
+
   const { data: priorityList } = useLeadPriorities();
   const { data: platformList, isLoading: platformsLoading } =
     useContactPlatforms();
@@ -1633,45 +1659,69 @@ export default function SalesLeadsPage() {
       {
         id: "actions",
         name: "Actions",
-        cell: (row: SalesLeadRow) => (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => {
-                  handlePreviewLead(row);
-                }}
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                View & Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={() =>
-                  handleDeleteSalesLead(
-                    row.id,
-                    `${row.first_name || ""} ${row.last_name || ""}`.trim() ||
-                      "this lead"
-                  )
-                }
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ),
+        cell: (row: SalesLeadRow) => {
+          // Only show actions menu if user has any permissions
+          const hasAnyPermission =
+            canUpdateSalesLeads || canDeleteSalesLeads || canCreateSalesLeads;
+          if (!hasAnyPermission) {
+            return null;
+          }
+
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {canUpdateSalesLeads && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      handlePreviewLead(row);
+                    }}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    View & Edit
+                  </DropdownMenuItem>
+                )}
+                {canDeleteSalesLeads && (
+                  <>
+                    {(canUpdateSalesLeads || canCreateSalesLeads) && (
+                      <DropdownMenuSeparator />
+                    )}
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() =>
+                        handleDeleteSalesLead(
+                          row.id,
+                          `${row.first_name || ""} ${
+                            row.last_name || ""
+                          }`.trim() || "this lead"
+                        )
+                      }
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
         ignoreRowClick: true,
         allowOverflow: true,
         button: true,
       },
     ],
-    [handleDeleteSalesLead, handlePreviewLead]
+    [
+      handleDeleteSalesLead,
+      handlePreviewLead,
+      canUpdateSalesLeads,
+      canDeleteSalesLeads,
+      canCreateSalesLeads,
+    ]
   );
 
   const totalRows = salesLeads?.count ?? 0;
@@ -1723,6 +1773,42 @@ export default function SalesLeadsPage() {
     );
   };
 
+  // Show loading state while permissions are being fetched
+  if (isLoadingPermissions && !permissionsData) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-medium tracking-tight">Sales Leads</h1>
+            <p className="text-sm text-muted-foreground">
+              Manage your sales pipeline
+            </p>
+          </div>
+        </div>
+        <div className="mt-6 border border-muted-foreground/30 overflow-hidden">
+          <Skeleton className="h-[420px] w-full" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Check if user has permission to view (only after permissions are loaded)
+  if (permissionsData && !canViewSalesLeads && !isSalesLeadsVisible) {
+    return (
+      <DashboardLayout>
+        <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-6 text-sm text-muted-foreground text-center">
+          <AlertCircle className="h-8 w-8 mx-auto mb-2 text-muted-foreground/60" />
+          <p>
+            You don't have permission to view sales leads in this workspace.
+          </p>
+          <p className="text-xs mt-1">
+            Contact your workspace administrator to grant access.
+          </p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="flex items-center justify-between">
@@ -1733,10 +1819,12 @@ export default function SalesLeadsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button onClick={() => handleAddSalesLeadSidebarOpenChange(true)}>
-            <Plus className="h-4 w-4" />
-            Add Lead
-          </Button>
+          {canCreateSalesLeads && (
+            <Button onClick={() => handleAddSalesLeadSidebarOpenChange(true)}>
+              <Plus className="h-4 w-4" />
+              Add Lead
+            </Button>
+          )}
         </div>
       </div>
 

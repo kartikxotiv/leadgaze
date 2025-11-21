@@ -8,6 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkspaceContext } from "@/hooks/use-workspace-context";
 import {
+  useWorkspacePermissions,
+  useWorkspaceRoutePermission,
+} from "@/hooks/use-workspace-permissions";
+import {
   useCreateSalesContact,
   useDeleteSalesContact,
   useSalesContacts,
@@ -356,6 +360,29 @@ function SalesContactFormFields({
 export default function SalesContactsPage() {
   const { currentWorkspace } = useWorkspaceContext();
   const workspaceId = currentWorkspace?.id;
+
+  // Get workspace permissions
+  const { data: permissionsData } = useWorkspacePermissions();
+  const canViewSalesContacts = useWorkspaceRoutePermission(
+    "Sales Contacts",
+    "view"
+  );
+  const canCreateSalesContacts = useWorkspaceRoutePermission(
+    "Sales Contacts",
+    "create"
+  );
+  const canUpdateSalesContacts = useWorkspaceRoutePermission(
+    "Sales Contacts",
+    "update"
+  );
+  const canDeleteSalesContacts = useWorkspaceRoutePermission(
+    "Sales Contacts",
+    "delete"
+  );
+  const isSalesContactsVisible = useWorkspaceRoutePermission(
+    "Sales Contacts",
+    "visible"
+  );
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -1060,65 +1087,96 @@ export default function SalesContactsPage() {
       {
         id: "actions",
         name: "Actions",
-        cell: (row: any) => (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() =>
-                  router.push(`/pages/sales-contacts/new?edit=${row.id}`)
-                }
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  void handleMoveToLead(row);
-                }}
-                disabled={
-                  movingToLeadContactId !== null ||
-                  row.status === "moved_to_lead"
-                }
-              >
-                {movingToLeadContactId === String(row.id) ? (
+        cell: (row: any) => {
+          // Only show actions menu if user has any permissions
+          const hasAnyPermission =
+            canUpdateSalesContacts ||
+            canDeleteSalesContacts ||
+            canCreateSalesContacts;
+          if (!hasAnyPermission) {
+            return null;
+          }
+
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {canUpdateSalesContacts && (
+                  <DropdownMenuItem
+                    onClick={() =>
+                      router.push(`/pages/sales-contacts/new?edit=${row.id}`)
+                    }
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
+                )}
+                {canCreateSalesContacts && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      void handleMoveToLead(row);
+                    }}
+                    disabled={
+                      movingToLeadContactId !== null ||
+                      row.status === "moved_to_lead"
+                    }
+                  >
+                    {movingToLeadContactId === String(row.id) ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Moving...
+                      </>
+                    ) : (
+                      <>
+                        <MoveRight className="h-4 w-4 mr-2" />
+                        Move to Lead
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                )}
+                {canDeleteSalesContacts && (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Moving...
-                  </>
-                ) : (
-                  <>
-                    <MoveRight className="h-4 w-4 mr-2" />
-                    Move to Lead
+                    {(canUpdateSalesContacts || canCreateSalesContacts) && (
+                      <DropdownMenuSeparator />
+                    )}
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() =>
+                        handleDeleteSalesContact(
+                          row.id,
+                          `${row.first_name || ""} ${
+                            row.last_name || ""
+                          }`.trim()
+                        )
+                      }
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
                   </>
                 )}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={() =>
-                  handleDeleteSalesContact(
-                    row.id,
-                    `${row.first_name || ""} ${row.last_name || ""}`.trim()
-                  )
-                }
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ),
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
         ignoreRowClick: true,
         allowOverflow: true,
         button: true,
       },
     ],
-    [handleDeleteSalesContact, handleMoveToLead, movingToLeadContactId, router]
+    [
+      handleDeleteSalesContact,
+      handleMoveToLead,
+      movingToLeadContactId,
+      router,
+      canUpdateSalesContacts,
+      canDeleteSalesContacts,
+      canCreateSalesContacts,
+    ]
   );
 
   const totalRows = salesContacts?.count ?? 0;
@@ -1141,6 +1199,21 @@ export default function SalesContactsPage() {
       return (
         <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-6 text-sm text-muted-foreground">
           Select a workspace to view sales contacts.
+        </div>
+      );
+    }
+
+    // Check if user has permission to view
+    if (permissionsData && !canViewSalesContacts && !isSalesContactsVisible) {
+      return (
+        <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-6 text-sm text-muted-foreground text-center">
+          <AlertCircle className="h-8 w-8 mx-auto mb-2 text-muted-foreground/60" />
+          <p>
+            You don't have permission to view sales contacts in this workspace.
+          </p>
+          <p className="text-xs mt-1">
+            Contact your workspace administrator to grant access.
+          </p>
         </div>
       );
     }
@@ -1200,10 +1273,14 @@ export default function SalesContactsPage() {
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button onClick={() => handleAddSalesContactSidebarOpenChange(true)}>
-            <Plus className="h-4 w-4" />
-            Add Contact
-          </Button>
+          {canCreateSalesContacts && (
+            <Button
+              onClick={() => handleAddSalesContactSidebarOpenChange(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Add Contact
+            </Button>
+          )}
         </div>
       </div>
 

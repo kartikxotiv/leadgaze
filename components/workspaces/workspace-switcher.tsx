@@ -37,13 +37,16 @@ export function WorkspaceSwitcher({
   const organizationId =
     currentOrganization?.organizationId || currentOrganization?.id;
 
- 
-  if (
-    currentWorkspace &&
-    (currentWorkspace as any).organizationId &&
-    (currentWorkspace as any).organizationId !== organizationId
-  ) {
-    setCurrentWorkspace(null);
+  // Clear workspace if it's no longer in the available workspaces list
+  // This handles cases where user loses access to a workspace
+  if (currentWorkspace && !isLoading && workspaces.length > 0) {
+    const workspaceStillAvailable = workspaces.some(
+      (w) => w.id === currentWorkspace.id
+    );
+    if (!workspaceStillAvailable) {
+      // Workspace is no longer available, clear it
+      setCurrentWorkspace(null);
+    }
   }
 
   const {
@@ -67,9 +70,8 @@ export function WorkspaceSwitcher({
   const handleWorkspaceSelect = (workspace: Workspace) => {
     if (workspace.id === selectedWorkspaceId) return;
 
-   
     setCurrentWorkspace(workspace as any);
-   
+
     onWorkspaceChange?.(workspace);
     toast.success(`Switched to "${workspace.name}" workspace`);
   };
