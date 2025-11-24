@@ -31,6 +31,7 @@ import { useSalesContacts } from "@/hooks/use-sales-contact";
 import {
   useCreateLeadComment,
   useDeleteLeadComment,
+  useUpdateLeadComment,
   useLeadComments,
 } from "@/hooks/use-lead-comments";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
@@ -179,8 +180,21 @@ const KNOWN_PRIORITY_COLORS: Record<string, string> = {
   low: "#6b7280", // gray
 };
 
+const PRIORITY_COLOR_ARRAY = [
+  "#ef4444", // Red - Urgent
+  "#f59e0b", // Amber - High
+  "#3b82f6", // Blue - Normal/Medium
+  "#6b7280", // Gray - Low
+  "#10b981", // Green
+  "#8b5cf6", // Purple
+  "#ec4899", // Pink
+];
+
 function resolvePriorityColor(name?: string | null, fallback?: string | null) {
-  if (fallback) return fallback;
+  // Check if fallback is a valid color (not null, undefined, or empty string)
+  if (fallback && fallback.trim() !== "") {
+    return fallback;
+  }
   if (!name) return "#2563eb";
   const key = name.toLowerCase();
   return KNOWN_PRIORITY_COLORS[key] ?? "#2563eb";
@@ -296,7 +310,8 @@ function mapLeadToTableRow(
   return {
     ...lead,
     priority_label: priority?.name ?? "",
-    priority_color: priority?.color ?? "",
+    priority_color:
+      priority?.color && priority.color.trim() !== "" ? priority.color : null,
     platform_label: platformLabel,
     status_label: formatStatus(lead.status),
     contact_label: contactLabel,
@@ -362,7 +377,7 @@ const SalesLeadFormFields = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
+              <Label htmlFor="lastName">Last Name *</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
                 <Input
@@ -370,15 +385,25 @@ const SalesLeadFormFields = ({
                   value={data.lastName}
                   onChange={(event) => onChange("lastName", event.target.value)}
                   placeholder="Doe"
-                  className="pl-10 bg-gray-100"
+                  className={`pl-10 bg-gray-100 ${
+                    formErrors.lastName
+                      ? "border-red-500 focus:border-red-500"
+                      : ""
+                  }`}
                 />
               </div>
+              {formErrors.lastName && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {formErrors.lastName}
+                </p>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Email *</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
                 <Input
@@ -403,19 +428,36 @@ const SalesLeadFormFields = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phoneNumber">Phone Number</Label>
+              <Label htmlFor="phoneNumber">Phone Number *</Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
                 <Input
                   id="phoneNumber"
+                  type="tel"
                   value={data.phoneNumber}
-                  onChange={(event) =>
-                    onChange("phoneNumber", event.target.value)
-                  }
-                  placeholder="+1 (555) 123-4567"
-                  className="pl-10 bg-gray-100"
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    // Only allow digits
+                    const digitsOnly = value.replace(/\D/g, "");
+                    // Limit to 10 digits
+                    const limitedDigits = digitsOnly.slice(0, 10);
+                    onChange("phoneNumber", limitedDigits);
+                  }}
+                  placeholder="1234567890"
+                  maxLength={10}
+                  className={`pl-10 bg-gray-100 ${
+                    formErrors.phoneNumber
+                      ? "border-red-500 focus:border-red-500"
+                      : ""
+                  }`}
                 />
               </div>
+              {formErrors.phoneNumber && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {formErrors.phoneNumber}
+                </p>
+              )}
             </div>
           </div>
 
@@ -449,13 +491,45 @@ const SalesLeadFormFields = ({
                 disabled={priorityOptions.length === 0}
               >
                 <SelectTrigger className="bg-gray-100">
-                  <SelectValue
-                    placeholder={
-                      priorityOptions.length === 0
-                        ? "No priorities"
-                        : "Select priority"
-                    }
-                  />
+                  {data.priorityId && data.priorityId !== NO_SELECTION_VALUE ? (
+                    (() => {
+                      const selectedPriority = priorityOptions.find(
+                        (p) => p.id === data.priorityId
+                      );
+                      if (selectedPriority) {
+                        const priorityColor = resolvePriorityColor(
+                          selectedPriority.name,
+                          selectedPriority.color
+                        );
+                        return (
+                          <div className="flex items-center gap-2 w-full">
+                            <Flag
+                              className="h-3 w-3"
+                              style={{ color: priorityColor }}
+                            />
+                            <span>{selectedPriority.name}</span>
+                          </div>
+                        );
+                      }
+                      return (
+                        <SelectValue
+                          placeholder={
+                            priorityOptions.length === 0
+                              ? "No priorities"
+                              : "Select priority"
+                          }
+                        />
+                      );
+                    })()
+                  ) : (
+                    <SelectValue
+                      placeholder={
+                        priorityOptions.length === 0
+                          ? "No priorities"
+                          : "Select priority"
+                      }
+                    />
+                  )}
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NO_SELECTION_VALUE}>
@@ -579,11 +653,28 @@ const SalesLeadFormFields = ({
                 <Input
                   id="location"
                   value={data.location}
-                  onChange={(event) => onChange("location", event.target.value)}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    // Only allow alphabets, spaces, commas, and hyphens
+                    const locationRegex = /^[a-zA-Z\s,\-]*$/;
+                    if (locationRegex.test(value) || value === "") {
+                      onChange("location", value);
+                    }
+                  }}
                   placeholder="New York, USA"
-                  className="pl-10 bg-gray-100"
+                  className={`pl-10 bg-gray-100 ${
+                    formErrors.location
+                      ? "border-red-500 focus:border-red-500"
+                      : ""
+                  }`}
                 />
               </div>
+              {formErrors.location && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {formErrors.location}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="contactTimeZone">Contact Time Zone</Label>
@@ -666,6 +757,7 @@ export default function SalesLeadsPage() {
     useContactPlatforms();
   const contactLookup = useSalesContacts(contactLookupFilters);
   const createLeadCommentMutation = useCreateLeadComment();
+  const updateLeadCommentMutation = useUpdateLeadComment();
   const deleteLeadCommentMutation = useDeleteLeadComment();
   const createLeadPriorityMutation = useCreateLeadPriority();
   const updateLeadPriorityMutation = useUpdateLeadPriority();
@@ -879,17 +971,24 @@ export default function SalesLeadsPage() {
       return;
     }
 
+    // Auto-assign color based on name if not set or default
+    let colorToUse = priorityFormState.color;
+    if (!colorToUse || colorToUse === "#2563eb" || colorToUse.trim() === "") {
+      const nameLower = name.toLowerCase();
+      colorToUse = KNOWN_PRIORITY_COLORS[nameLower] || PRIORITY_COLOR_ARRAY[0];
+    }
+
     try {
       if (priorityFormState.id) {
         await updateLeadPriorityMutation.mutateAsync({
           id: priorityFormState.id,
-          data: { name, color: priorityFormState.color },
+          data: { name, color: colorToUse },
         });
         toast.success("Priority updated.");
       } else {
         await createLeadPriorityMutation.mutateAsync({
           name,
-          color: priorityFormState.color,
+          color: colorToUse,
         });
         toast.success("Priority created.");
       }
@@ -955,6 +1054,24 @@ export default function SalesLeadsPage() {
       toast.error(error?.message || "Failed to add comment.");
     }
   }, [createLeadCommentMutation, newCommentText, previewLead, user?.userId]);
+
+  const handleEditComment = useCallback(
+    async (commentId: string, newComment: string) => {
+      if (!previewLead?.id) return;
+      try {
+        await updateLeadCommentMutation.mutateAsync({
+          commentId,
+          comment: newComment,
+          leadId: String(previewLead.id),
+        });
+        toast.success("Comment updated.");
+      } catch (error: any) {
+        toast.error(error?.message || "Failed to update comment.");
+        throw error; // Re-throw so CommentCard can handle it
+      }
+    },
+    [updateLeadCommentMutation, previewLead]
+  );
 
   const handleDeleteComment = useCallback(
     async (commentId: string) => {
@@ -1051,10 +1168,34 @@ export default function SalesLeadsPage() {
       switch (fieldName) {
         case "firstName":
           return !value.trim() ? "First name is required" : "";
+        case "lastName":
+          return !value.trim() ? "Last name is required" : "";
         case "email":
+          if (!value.trim()) {
+            return "Email is required";
+          }
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          return emailRegex.test(value.trim())
+            ? ""
+            : "Please enter a valid email";
+        case "phoneNumber":
+          if (!value.trim()) {
+            return "Phone number is required";
+          }
+          // Remove common phone number characters for validation
+          const digits = value.replace(/\D/g, "");
+          // Phone must have exactly 10 digits
+          if (digits.length !== 10) {
+            return "Phone number must be exactly 10 digits";
+          }
+          return "";
+        case "location":
+          // Location is optional, but if provided, should only contain alphabets, spaces, commas, and hyphens
           if (value && value.trim()) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return emailRegex.test(value) ? "" : "Please enter a valid email";
+            const locationRegex = /^[a-zA-Z\s,\-]+$/;
+            if (!locationRegex.test(value.trim())) {
+              return "Location can only contain letters, spaces, commas, and hyphens";
+            }
           }
           return "";
         default:
@@ -1068,10 +1209,10 @@ export default function SalesLeadsPage() {
     (data: FormData) => {
       const newErrors: Record<keyof FormData, string> = {
         firstName: validateField("firstName", data.firstName),
+        lastName: validateField("lastName", data.lastName),
         email: validateField("email", data.email),
-        lastName: "",
-        phoneNumber: "",
-        location: "",
+        phoneNumber: validateField("phoneNumber", data.phoneNumber),
+        location: validateField("location", data.location),
         contactTimeZone: "",
         platformId: "",
         platformCustom: "",
@@ -1081,9 +1222,7 @@ export default function SalesLeadsPage() {
         ownerId: "",
       };
 
-      return Object.fromEntries(
-        Object.entries(newErrors).filter(([, value]) => value !== "")
-      ) as Record<keyof FormData, string>;
+      return newErrors;
     },
     [validateField]
   );
@@ -1111,18 +1250,26 @@ export default function SalesLeadsPage() {
   );
 
   const validateForm = useCallback(() => {
-    const filteredErrors = buildValidationErrors(formData);
+    const allErrors = buildValidationErrors(formData);
+    const filteredErrors = Object.fromEntries(
+      Object.entries(allErrors).filter(([, value]) => value !== "")
+    ) as Record<keyof FormData, string>;
+
     if (Object.keys(filteredErrors).length > 0) {
-      setErrors((prev) => ({ ...prev, ...filteredErrors }));
+      setErrors((prev) => ({ ...prev, ...allErrors }));
       return false;
     }
     return true;
   }, [buildValidationErrors, formData]);
 
   const validateEditForm = useCallback(() => {
-    const filteredErrors = buildValidationErrors(editFormData);
+    const allErrors = buildValidationErrors(editFormData);
+    const filteredErrors = Object.fromEntries(
+      Object.entries(allErrors).filter(([, value]) => value !== "")
+    ) as Record<keyof FormData, string>;
+
     if (Object.keys(filteredErrors).length > 0) {
-      setEditErrors((prev) => ({ ...prev, ...filteredErrors }));
+      setEditErrors((prev) => ({ ...prev, ...allErrors }));
       return false;
     }
     return true;
@@ -1917,13 +2064,46 @@ export default function SalesLeadsPage() {
                             className=" outline-none focus:outline-none
     focus:ring-0 focus:ring-offset-0 px-2 border-none shadow-none bg-[#f1f5f980] hover:bg-muted/50 transition-colors group w-52 justify-between"
                           >
-                            <SelectValue
-                              placeholder={
-                                priorityOptions.length === 0
-                                  ? "No priorities"
-                                  : "Select priority"
-                              }
-                            />
+                            {editFormData.priorityId &&
+                            editFormData.priorityId !== NO_SELECTION_VALUE ? (
+                              (() => {
+                                const selectedPriority = priorityOptions.find(
+                                  (p) => p.id === editFormData.priorityId
+                                );
+                                if (selectedPriority) {
+                                  const priorityColor = resolvePriorityColor(
+                                    selectedPriority.name,
+                                    selectedPriority.color
+                                  );
+                                  return (
+                                    <div className="flex items-center gap-2 w-full">
+                                      <Flag
+                                        className="h-3 w-3"
+                                        style={{ color: priorityColor }}
+                                      />
+                                      <span>{selectedPriority.name}</span>
+                                    </div>
+                                  );
+                                }
+                                return (
+                                  <SelectValue
+                                    placeholder={
+                                      priorityOptions.length === 0
+                                        ? "No priorities"
+                                        : "Select priority"
+                                    }
+                                  />
+                                );
+                              })()
+                            ) : (
+                              <SelectValue
+                                placeholder={
+                                  priorityOptions.length === 0
+                                    ? "No priorities"
+                                    : "Select priority"
+                                }
+                              />
+                            )}
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value={NO_SELECTION_VALUE}>
@@ -2134,74 +2314,76 @@ export default function SalesLeadsPage() {
                             <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
                           </div>
                         ) : upcomingMeetings.length > 0 ? (
-                          <div className="space-y-2">
-                            {upcomingMeetings.map((meeting: any) => {
-                              const meetingDate = new Date(meeting.time);
-                              const formattedDate =
-                                meetingDate.toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                });
-                              const formattedTime =
-                                meetingDate.toLocaleTimeString("en-US", {
-                                  hour: "numeric",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                });
-                              return (
-                                <div
-                                  key={meeting.id}
-                                  className="flex group items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                                  onClick={() => {
-                                    setSelectedMeetingId(meeting.id);
-                                    setMeetingDetailsDialogOpen(true);
-                                  }}
-                                >
-                                  <div className="flex-shrink-0">
-                                    <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
-                                      <Calendar className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                          <div className="h-[190px] overflow-y-auto">
+                            <div className="space-y-2">
+                              {upcomingMeetings.map((meeting: any) => {
+                                const meetingDate = new Date(meeting.time);
+                                const formattedDate =
+                                  meetingDate.toLocaleDateString("en-US", {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  });
+                                const formattedTime =
+                                  meetingDate.toLocaleTimeString("en-US", {
+                                    hour: "numeric",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                  });
+                                return (
+                                  <div
+                                    key={meeting.id}
+                                    className="flex group items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                    onClick={() => {
+                                      setSelectedMeetingId(meeting.id);
+                                      setMeetingDetailsDialogOpen(true);
+                                    }}
+                                  >
+                                    <div className="flex-shrink-0">
+                                      <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                                        <Calendar className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                      </div>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                        {meeting.title}
+                                      </h4>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        {formattedDate} at {formattedTime}
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button
+                                        className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedMeetingId(meeting.id);
+                                          setMeetingDetailsDialogOpen(false);
+                                          setMeetingDialogOpen(true);
+                                        }}
+                                        title="Edit meeting"
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setMeetingDeleteDialog({
+                                            open: true,
+                                            meetingId: meeting.id,
+                                            meetingTitle: meeting.title,
+                                          });
+                                        }}
+                                        title="Delete meeting"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
                                     </div>
                                   </div>
-                                  <div className="flex-1 min-w-0">
-                                    <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                                      {meeting.title}
-                                    </h4>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                      {formattedDate} at {formattedTime}
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                      className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedMeetingId(meeting.id);
-                                        setMeetingDetailsDialogOpen(false);
-                                        setMeetingDialogOpen(true);
-                                      }}
-                                      title="Edit meeting"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                      className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setMeetingDeleteDialog({
-                                          open: true,
-                                          meetingId: meeting.id,
-                                          meetingTitle: meeting.title,
-                                        });
-                                      }}
-                                      title="Delete meeting"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            })}
+                                );
+                              })}
+                            </div>
                           </div>
                         ) : (
                           <div className="text-sm text-gray-500 dark:text-gray-400 py-4">
@@ -2448,8 +2630,10 @@ export default function SalesLeadsPage() {
                             last_name: user?.lastName,
                             email: user?.email,
                           }}
+                          onEdit={handleEditComment}
                           onDelete={handleDeleteComment}
                           isDeleting={deleteLeadCommentMutation.isPending}
+                          isEditing={updateLeadCommentMutation.isPending}
                         />
                       ))
                     )}

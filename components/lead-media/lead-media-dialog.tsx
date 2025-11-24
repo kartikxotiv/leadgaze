@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import {
   Loader2,
   Upload,
-  Download,
+  Eye,
   Trash2,
   FileText,
   Image,
@@ -141,7 +141,7 @@ function MediaCard({
                     window.open(media.media_url, "_blank");
                   }}
                 >
-                  <Download className="h-4 w-4" />
+                  <Eye className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="secondary"
@@ -180,7 +180,7 @@ function MediaCard({
                 className="h-6 w-6"
                 onClick={() => window.open(media.media_url, "_blank")}
               >
-                <Download className="h-3 w-3 text-gray-500 hover:text-blue-600" />
+                <Eye className="h-3 w-3 text-gray-500 hover:text-blue-600" />
               </Button>
               <Button
                 variant="ghost"
@@ -284,10 +284,10 @@ export function LeadMediaDialog({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (50MB limit)
-    const maxSize = 50 * 1024 * 1024;
+    // Validate file size (3MB limit)
+    const maxSize = 3 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast.error("File size exceeds 50MB limit");
+      toast.error("File size exceeds 3MB limit");
       return;
     }
 

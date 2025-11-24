@@ -219,7 +219,7 @@ function SalesContactFormFields({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="lastName">Last Name</Label>
+            <Label htmlFor="lastName">Last Name *</Label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
               <Input
@@ -227,15 +227,25 @@ function SalesContactFormFields({
                 value={data.lastName}
                 onChange={(event) => onChange("lastName", event.target.value)}
                 placeholder="Doe"
-                className="pl-10 bg-gray-100"
+                className={`pl-10 bg-gray-100 ${
+                  formErrors.lastName
+                    ? "border-red-500 focus:border-red-500"
+                    : ""
+                }`}
               />
             </div>
+            {formErrors.lastName && (
+              <p className="text-xs text-red-500 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {formErrors.lastName}
+              </p>
+            )}
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Email *</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
               <Input
@@ -258,19 +268,36 @@ function SalesContactFormFields({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phoneNumber">Phone Number</Label>
+            <Label htmlFor="phoneNumber">Phone Number *</Label>
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
               <Input
                 id="phoneNumber"
+                type="tel"
                 value={data.phoneNumber}
-                onChange={(event) =>
-                  onChange("phoneNumber", event.target.value)
-                }
-                placeholder="+1 (555) 123-4567"
-                className="pl-10 bg-gray-100"
+                onChange={(event) => {
+                  const value = event.target.value;
+                  // Only allow digits
+                  const digitsOnly = value.replace(/\D/g, "");
+                  // Limit to 10 digits
+                  const limitedDigits = digitsOnly.slice(0, 10);
+                  onChange("phoneNumber", limitedDigits);
+                }}
+                placeholder="1234567890"
+                maxLength={10}
+                className={`pl-10 bg-gray-100 ${
+                  formErrors.phoneNumber
+                    ? "border-red-500 focus:border-red-500"
+                    : ""
+                }`}
               />
             </div>
+            {formErrors.phoneNumber && (
+              <p className="text-xs text-red-500 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {formErrors.phoneNumber}
+              </p>
+            )}
           </div>
         </div>
 
@@ -282,11 +309,28 @@ function SalesContactFormFields({
               <Input
                 id="location"
                 value={data.location}
-                onChange={(event) => onChange("location", event.target.value)}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  // Only allow alphabets, spaces, commas, and hyphens
+                  const locationRegex = /^[a-zA-Z\s,\-]*$/;
+                  if (locationRegex.test(value) || value === "") {
+                    onChange("location", value);
+                  }
+                }}
                 placeholder="New York, USA"
-                className="pl-10 bg-gray-100"
+                className={`pl-10 bg-gray-100 ${
+                  formErrors.location
+                    ? "border-red-500 focus:border-red-500"
+                    : ""
+                }`}
               />
             </div>
+            {formErrors.location && (
+              <p className="text-xs text-red-500 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {formErrors.location}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
@@ -500,10 +544,34 @@ export default function SalesContactsPage() {
       switch (fieldName) {
         case "firstName":
           return !value.trim() ? "First name is required" : "";
+        case "lastName":
+          return !value.trim() ? "Last name is required" : "";
         case "email":
+          if (!value.trim()) {
+            return "Email is required";
+          }
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          return emailRegex.test(value.trim())
+            ? ""
+            : "Please enter a valid email";
+        case "phoneNumber":
+          if (!value.trim()) {
+            return "Phone number is required";
+          }
+          // Remove common phone number characters for validation
+          const digits = value.replace(/\D/g, "");
+          // Phone must have exactly 10 digits
+          if (digits.length !== 10) {
+            return "Phone number must be exactly 10 digits";
+          }
+          return "";
+        case "location":
+          // Location is optional, but if provided, should only contain alphabets, spaces, commas, and hyphens
           if (value && value.trim()) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return emailRegex.test(value) ? "" : "Please enter a valid email";
+            const locationRegex = /^[a-zA-Z\s,\-]+$/;
+            if (!locationRegex.test(value.trim())) {
+              return "Location can only contain letters, spaces, commas, and hyphens";
+            }
           }
           return "";
         default:
@@ -517,19 +585,17 @@ export default function SalesContactsPage() {
     (data: FormData) => {
       const newErrors: Record<keyof FormData, string> = {
         firstName: validateField("firstName", data.firstName),
+        lastName: validateField("lastName", data.lastName),
         email: validateField("email", data.email),
-        lastName: "",
-        phoneNumber: "",
-        location: "",
+        phoneNumber: validateField("phoneNumber", data.phoneNumber),
+        location: validateField("location", data.location),
         contactTimeZone: "",
         platformId: "",
         platformCustom: "",
         status: "",
       };
 
-      return Object.fromEntries(
-        Object.entries(newErrors).filter(([, value]) => value !== "")
-      ) as Record<keyof FormData, string>;
+      return newErrors;
     },
     [validateField]
   );
@@ -557,18 +623,26 @@ export default function SalesContactsPage() {
   );
 
   const validateForm = useCallback(() => {
-    const filteredErrors = buildValidationErrors(formData);
+    const allErrors = buildValidationErrors(formData);
+    const filteredErrors = Object.fromEntries(
+      Object.entries(allErrors).filter(([, value]) => value !== "")
+    ) as Record<keyof FormData, string>;
+
     if (Object.keys(filteredErrors).length > 0) {
-      setErrors((prev) => ({ ...prev, ...filteredErrors }));
+      setErrors((prev) => ({ ...prev, ...allErrors }));
       return false;
     }
     return true;
   }, [buildValidationErrors, formData]);
 
   const validateEditForm = useCallback(() => {
-    const filteredErrors = buildValidationErrors(editFormData);
+    const allErrors = buildValidationErrors(editFormData);
+    const filteredErrors = Object.fromEntries(
+      Object.entries(allErrors).filter(([, value]) => value !== "")
+    ) as Record<keyof FormData, string>;
+
     if (Object.keys(filteredErrors).length > 0) {
-      setEditErrors((prev) => ({ ...prev, ...filteredErrors }));
+      setEditErrors((prev) => ({ ...prev, ...allErrors }));
       return false;
     }
     return true;
@@ -1015,17 +1089,10 @@ export default function SalesContactsPage() {
   const columns = useMemo(
     () => [
       {
-        id: "first_name",
-        name: "First Name",
+        id: "full name",
+        name: "Full Name",
         selector: (row: any) =>
           `${row.first_name || ""} ${row.last_name || ""}`.trim(),
-        sortable: true,
-      },
-
-      {
-        id: "email",
-        name: "Email",
-        selector: (row: any) => row.email || "",
         sortable: true,
       },
 
@@ -1107,12 +1174,12 @@ export default function SalesContactsPage() {
               <DropdownMenuContent align="end">
                 {canUpdateSalesContacts && (
                   <DropdownMenuItem
-                    onClick={() =>
-                      router.push(`/pages/sales-contacts/new?edit=${row.id}`)
-                    }
+                    onClick={() => {
+                      handlePreviewContact(row);
+                    }}
                   >
                     <Edit className="h-4 w-4 mr-2" />
-                    Edit
+                    View
                   </DropdownMenuItem>
                 )}
                 {canCreateSalesContacts && (
@@ -1306,7 +1373,7 @@ export default function SalesContactsPage() {
       <SidebarPanel
         open={previewSidebarOpen}
         onOpenChange={handleSidebarOpenChange}
-        title="Sales Contact Preview"
+        title="Edit Contact Details"
         description={
           previewContact
             ? `${previewContact.first_name || ""} ${
@@ -1337,56 +1404,62 @@ export default function SalesContactsPage() {
               platformsLoading={platformsLoading}
             />
 
-            <div className="flex items-center justify-end gap-3">
-              <Button
-                variant="outline"
-                onClick={() => handleSidebarOpenChange(false)}
-                disabled={isUpdating}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="outline"
-                className="min-w-[150px]"
-                onClick={() => {
-                  void handleMoveToLead(previewContact);
-                }}
-                disabled={
-                  movingToLeadContactId !== null ||
-                  previewContact.status === "moved_to_lead"
-                }
-              >
-                {movingToLeadContactId === String(previewContact.id) ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Moving...
-                  </>
-                ) : (
-                  <>
-                    <MoveRight className="h-4 w-4 mr-2" />
-                    Move to Lead
-                  </>
-                )}
-              </Button>
-              <Button
-                className="min-w-[140px] bg-[#45a2ff] hover:bg-[#45a2ff]/90"
-                onClick={() => {
-                  void handleUpdateSubmit();
-                }}
-                disabled={isUpdating}
-              >
-                {isUpdating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Update Contact
-                  </>
-                )}
-              </Button>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <Button
+                  variant="outline"
+                  onClick={() => handleSidebarOpenChange(false)}
+                  disabled={isUpdating}
+                >
+                  Cancel
+                </Button>
+              </div>
+
+              <div>
+                <Button
+                  variant="outline"
+                  className="min-w-[150px]"
+                  onClick={() => {
+                    void handleMoveToLead(previewContact);
+                  }}
+                  disabled={
+                    movingToLeadContactId !== null ||
+                    previewContact.status === "moved_to_lead"
+                  }
+                >
+                  {movingToLeadContactId === String(previewContact.id) ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Moving...
+                    </>
+                  ) : (
+                    <>
+                      <MoveRight className="h-4 w-4 mr-2" />
+                      Move to Lead
+                    </>
+                  )}
+                </Button>{" "}
+                &nbsp;
+                <Button
+                  className="min-w-[140px] bg-[#45a2ff] hover:bg-[#45a2ff]/90"
+                  onClick={() => {
+                    void handleUpdateSubmit();
+                  }}
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Update Contact
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         ) : (

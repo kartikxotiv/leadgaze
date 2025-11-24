@@ -86,7 +86,6 @@
   }
 }
 
-
 @layer utilities {
   @keyframes fade-in {
     from {
@@ -155,21 +154,24 @@
     animation: scale-in 0.3s ease-out;
   }
 
-  
   body:not([data-radix-scroll-area-viewport]):not([data-modal-open]) {
     pointer-events: auto !important;
   }
 }
-.cocSnr.rdt_Pagination{
+.cocSnr.rdt_Pagination {
   border-top: none !important;
-  }
+}
 
 .rdt_TableBody {
-      max-height: 69vh;
-      overflow-y: auto;
+  max-height: 69vh;
+  overflow-y: auto;
 }
 .bgworkspace {
-background: #FFEFBA; 
-background: -webkit-linear-gradient(to top, #FFFFFF, #FFEFBA);  
-background: linear-gradient(to top, #FFFFFF, #FFEFBA); 
+  background: #ffefba;
+  background: -webkit-linear-gradient(to top, #ffffff, #ffefba);
+  background: linear-gradient(to top, #ffffff, #ffefba);
 }
+/* .notes_dialog svg {
+  top: 10px !important;
+  right: 10px !important;
+} */
