@@ -7,19 +7,40 @@ export function useWorkspaceContext() {
     useAuthStore();
 
   const setCurrentWorkspace = (workspace: Workspace | null) => {
-   
+    // Allow switching to workspaces where user is a member
+    // The API already validates membership, so we trust workspaces from the list
+    // If workspace is from a different organization, we allow it since user is a member
+
     if (workspace && currentOrganization) {
       const orgId =
         currentOrganization.organizationId || currentOrganization.id;
-      if (workspace.organizationId !== orgId) {
-        toast.error("Invalid workspace for current organization");
-        return;
+      const workspaceOrgId =
+        workspace.organizationId ||
+        (workspace as any).organization?.organizationId ||
+        (workspace as any).organization?.id;
+
+      // If workspace is from a different organization, log it but allow it
+      // User might be a member of workspaces across organizations
+      if (workspaceOrgId && workspaceOrgId !== orgId) {
+        console.log(
+          `[WorkspaceContext] Switching to workspace from different organization:`,
+          {
+            currentOrg: orgId,
+            workspaceOrg: workspaceOrgId,
+            workspaceId: workspace.id,
+            workspaceName: workspace.name,
+          }
+        );
+        // Allow the switch - user is a member of this workspace
+        // Optionally show info toast
+        toast.info(
+          `Switching to workspace "${workspace.name}" from different organization`
+        );
       }
     }
 
     updateCurrentWorkspace(workspace);
 
-   
     if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
       try {
         if (workspace) {
@@ -44,7 +65,6 @@ export function useWorkspaceContext() {
     }
   };
 
- 
   const getWorkspaceContext = () => {
     const orgId =
       currentOrganization?.organizationId || currentOrganization?.id;
@@ -57,7 +77,6 @@ export function useWorkspaceContext() {
     };
   };
 
- 
   const canUseWorkspaces = () => {
     if (!currentOrganization) return false;
 
@@ -65,7 +84,6 @@ export function useWorkspaceContext() {
     return ["owner", "admin", "manager", "user"].includes(userRole || "");
   };
 
- 
   const canManageWorkspaces = () => {
     if (!currentOrganization) return false;
 

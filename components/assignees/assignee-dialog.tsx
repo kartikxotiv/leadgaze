@@ -22,10 +22,6 @@ interface AssigneeDialogProps {
   onAssigneesUpdated?: (assignees: Assignee[]) => void;
 }
 
-/**
- * Dialog component for managing lead assignees
- * Fetches current assignees and allows updating them
- */
 export function AssigneeDialog({
   leadId,
   trigger,

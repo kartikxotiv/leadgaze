@@ -9,7 +9,7 @@ BEGIN
   ALTER COLUMN user_id DROP NOT NULL;
 EXCEPTION
   WHEN OTHERS THEN
-    lumn might already be nullable, ignore error
+    -- Column might already be nullable, ignore error
     NULL;
 END $$;
 

@@ -4,10 +4,17 @@ import {
   getWorkspaceInvitesByWorkspaceId,
   createWorkspaceInvite,
   getWorkspaceInvitesPaginated,
+  updateWorkspaceInvite,
 } from "@/lib/data/workspace-invites";
 import { getWorkspaceById } from "@/lib/data/workspaces";
 import { AuthService } from "@/lib/auth-service";
 import { supabase } from "@/lib/supabase-client";
+import { getUserByEmail } from "@/lib/data/users";
+import { createWorkspaceMember } from "@/lib/data/workspace-members";
+import {
+  getUserOrganization,
+  createUserOrganization,
+} from "@/lib/data/user-organizations";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
@@ -76,26 +83,84 @@ export async function GET(
       filters.status = status;
     }
 
+    // Debug logging
+    console.log("[GET /api/workspaces/[id]/invites] Request details:", {
+      workspaceId,
+      userId,
+      page,
+      limit,
+      status,
+      search,
+      filters,
+    });
+
     // Get workspace invites
-    let invites;
+    let invites: {
+      data: any[];
+      count: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
     if (page && limit) {
-      invites = await getWorkspaceInvitesPaginated(
+      const paginatedInvites = await getWorkspaceInvitesPaginated(
         workspaceId,
         page,
         limit,
         Object.keys(filters).length > 0 ? filters : undefined,
         search || undefined
       );
+      invites = {
+        data: paginatedInvites.data,
+        count: paginatedInvites.count,
+        page: paginatedInvites.page,
+        limit: paginatedInvites.limit,
+        totalPages: paginatedInvites.totalPages,
+      };
+      console.log("[GET /api/workspaces/[id]/invites] Paginated invites:", {
+        count: invites.count,
+        dataLength: invites.data.length,
+        firstFew: invites.data.slice(0, 3).map((inv) => ({
+          id: inv.id,
+          email: inv.email,
+          status: inv.status,
+        })),
+      });
     } else {
       const allInvites = await getWorkspaceInvitesByWorkspaceId(workspaceId);
       invites = {
         data: allInvites,
-        total: allInvites.length,
+        count: allInvites.length,
         page: 1,
         limit: allInvites.length,
         totalPages: 1,
       };
+      console.log("[GET /api/workspaces/[id]/invites] All invites:", {
+        count: invites.count,
+        dataLength: invites.data.length,
+        firstFew: invites.data.slice(0, 3).map((inv) => ({
+          id: inv.id,
+          email: inv.email,
+          status: inv.status,
+        })),
+      });
     }
+
+    // Also check directly in database for debugging
+    const { data: directCheck, error: directError } = await supabase
+      .from("workspace_invites")
+      .select("id, email, status, workspace_id, created_at")
+      .eq("workspace_id", workspaceId);
+
+    console.log("[GET /api/workspaces/[id]/invites] Direct database check:", {
+      directCheckCount: directCheck?.length || 0,
+      directCheckError: directError?.message,
+      directCheckData: directCheck?.map((inv) => ({
+        id: inv.id,
+        email: inv.email,
+        status: inv.status,
+      })),
+    });
 
     // Format response
     const formattedInvites = invites.data.map((invite) => ({
@@ -136,10 +201,10 @@ export async function GET(
       success: true,
       invites: formattedInvites,
       pagination: {
-        total: invites.total,
-        page: invites.page,
-        limit: invites.limit,
-        totalPages: invites.totalPages,
+        total: invites.count || invites.data?.length || 0,
+        page: invites.page || 1,
+        limit: invites.limit || invites.data?.length || 20,
+        totalPages: invites.totalPages || 1,
       },
     });
   } catch (error: any) {
@@ -253,11 +318,17 @@ export async function POST(
       );
     }
 
+    // Normalize email
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check if user already exists with this email
+    const existingUser = await getUserByEmail(normalizedEmail);
+
     // Check if invite already exists for this email and workspace
     const { data: existingInvite } = await supabase
       .from("workspace_invites")
       .select("id, status")
-      .eq("email", email.toLowerCase())
+      .eq("email", normalizedEmail)
       .eq("workspace_id", workspaceId)
       .single();
 
@@ -275,9 +346,179 @@ export async function POST(
       // If invite was accepted or rejected, allow creating a new one
     }
 
-    // Create workspace invite
+    // If user exists, auto-create workspace member and mark invite as accepted
+    if (existingUser) {
+      try {
+        console.log(
+          "[POST /api/workspaces/[id]/invites] User exists, auto-adding to workspace:",
+          {
+            userId: existingUser.user_id,
+            email: normalizedEmail,
+            workspaceId,
+            roleId,
+          }
+        );
+
+        // Check if user is already a member of this workspace
+        const { data: existingMember, error: memberCheckError } = await supabase
+          .from("workspace_members")
+          .select("id, status")
+          .eq("user_id", existingUser.user_id)
+          .eq("workspace_id", workspaceId)
+          .eq("is_deleted", false)
+          .single();
+
+        if (memberCheckError && memberCheckError.code !== "PGRST116") {
+          console.error(
+            "[POST /api/workspaces/[id]/invites] Error checking existing member:",
+            memberCheckError
+          );
+        }
+
+        if (existingMember) {
+          // User is already a member
+          if (existingMember.status === "accepted") {
+            console.log(
+              "[POST /api/workspaces/[id]/invites] User already a member with accepted status"
+            );
+            return NextResponse.json(
+              {
+                success: false,
+                error: "User is already a member of this workspace",
+              },
+              { status: 400 }
+            );
+          } else {
+            // Update existing member to accepted
+            console.log(
+              "[POST /api/workspaces/[id]/invites] Updating existing member to accepted"
+            );
+            const { error: updateError } = await supabase
+              .from("workspace_members")
+              .update({
+                status: "accepted",
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", existingMember.id);
+
+            if (updateError) {
+              console.error(
+                "[POST /api/workspaces/[id]/invites] Error updating member:",
+                updateError
+              );
+              throw updateError;
+            }
+          }
+        } else {
+          // Ensure user is in the organization
+          const userOrg = await getUserOrganization(
+            existingUser.user_id,
+            workspace.organization_id
+          );
+
+          if (!userOrg) {
+            console.log(
+              "[POST /api/workspaces/[id]/invites] Adding user to organization"
+            );
+            // Add user to organization with default role
+            const defaultRoleId = await AuthService.getRoleId("user");
+            await createUserOrganization({
+              user_id: existingUser.user_id,
+              organization_id: workspace.organization_id,
+              role_id: defaultRoleId,
+              joined_at: new Date().toISOString(),
+            });
+          }
+
+          // Create workspace member
+          console.log(
+            "[POST /api/workspaces/[id]/invites] Creating workspace member"
+          );
+          await createWorkspaceMember({
+            user_id: existingUser.user_id,
+            workspace_id: workspaceId,
+            email: normalizedEmail,
+            role_id: roleId,
+            invited_by: currentUserId,
+            status: "accepted",
+            is_deleted: false,
+          });
+        }
+
+        // Create invite with accepted status (only if one doesn't already exist)
+        let invite;
+        if (!existingInvite) {
+          console.log(
+            "[POST /api/workspaces/[id]/invites] Creating invite with accepted status"
+          );
+          invite = await createWorkspaceInvite({
+            email: normalizedEmail,
+            workspace_id: workspaceId,
+            role_id: roleId,
+            invited_by: currentUserId,
+            status: "accepted",
+          });
+        } else {
+          console.log(
+            "[POST /api/workspaces/[id]/invites] Updating existing invite to accepted"
+          );
+          const { getWorkspaceInviteById, updateWorkspaceInvite } =
+            await import("@/lib/data/workspace-invites");
+          const existingInviteFull = await getWorkspaceInviteById(
+            existingInvite.id
+          );
+          if (existingInviteFull) {
+            invite = await updateWorkspaceInvite(existingInvite.id, {
+              status: "accepted",
+            });
+          } else {
+            invite = await createWorkspaceInvite({
+              email: normalizedEmail,
+              workspace_id: workspaceId,
+              role_id: roleId,
+              invited_by: currentUserId,
+              status: "accepted",
+            });
+          }
+        }
+
+        console.log(
+          "[POST /api/workspaces/[id]/invites] Successfully auto-added user and created invite:",
+          invite?.id
+        );
+
+        return NextResponse.json({
+          success: true,
+          message: "User added to workspace successfully",
+          invite: invite
+            ? {
+                id: invite.id,
+                email: invite.email,
+                workspaceId: invite.workspace_id,
+                roleId: invite.role_id,
+                invitedBy: invite.invited_by,
+                status: invite.status,
+                createdAt: invite.created_at,
+                updatedAt: invite.updated_at,
+              }
+            : null,
+          autoAdded: true,
+        });
+      } catch (error: any) {
+        console.error(
+          "[POST /api/workspaces/[id]/invites] Error auto-adding user to workspace:",
+          error
+        );
+        // If auto-add fails, create pending invite anyway (for debugging)
+        console.log(
+          "[POST /api/workspaces/[id]/invites] Falling back to creating pending invite"
+        );
+      }
+    }
+
+    // Create workspace invite (user doesn't exist or auto-add failed)
     const invite = await createWorkspaceInvite({
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
       workspace_id: workspaceId,
       role_id: roleId,
       invited_by: currentUserId,

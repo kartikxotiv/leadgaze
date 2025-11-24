@@ -58,13 +58,3 @@ VALUES
 )
 ON CONFLICT (role) DO NOTHING;
 
--- Verify the insert
-SELECT 
-  role, 
-  display_name, 
-  hierarchy_level, 
-  is_system_role,
-  is_active
-FROM public.organization_roles 
-ORDER BY hierarchy_level DESC;
-

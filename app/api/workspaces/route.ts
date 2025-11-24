@@ -158,7 +158,14 @@ export async function GET(request: NextRequest) {
       userId: workspace.user_id,
       createdAt: workspace.created_at,
       updatedAt: workspace.updated_at,
-      organization: workspace.organization,
+      organization: workspace.organization
+        ? {
+            organizationId: workspace.organization.organization_id,
+            id: workspace.organization.organization_id,
+            name: workspace.organization.name,
+            slug: workspace.organization.slug,
+          }
+        : null,
     }));
 
     return NextResponse.json({
