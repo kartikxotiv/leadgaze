@@ -1,5 +1,3 @@
-
-
 export interface User {
   user_id: string;
   email: string;
@@ -14,7 +12,7 @@ export interface User {
   login_attempts: number;
   lock_until?: string;
   password_reset_token?: string;
-  password_reset_expires?: string; 
+  password_reset_expires?: string;
   password_changed_at?: string;
   created_at: string;
   updated_at: string;
@@ -58,17 +56,12 @@ export interface Organization {
 export interface WorkspaceRole {
   id: string;
   name: string;
-  description?: string;
   permissions: Record<string, any>;
-  hierarchy_level: number;
   is_deleted: boolean;
   created_by: string;
-  workspace_id: string;
   created_at: string;
   updated_at: string;
 }
-
-
 
 export interface UserOrganization {
   user_organization_id: string;
@@ -92,7 +85,7 @@ export interface UserSession {
 }
 
 export interface OrganizationRole {
-    id: string;
+  id: string;
   role: string;
   display_name: string;
   description?: string;
@@ -222,7 +215,7 @@ export interface LeadScore {
   score_id: string;
   lead_id: string;
   total_score: number;
-  tier: 'cold' | 'warm' | 'hot' | 'burning';
+  tier: "cold" | "warm" | "hot" | "burning";
   last_calculated: string;
   score_breakdown?: Record<string, any>;
   user_id: string;
@@ -374,26 +367,32 @@ export interface LeadWithRelations extends Lead {
   industry?: LeadConfig;
   company_size?: LeadConfig;
   score_grade?: LeadConfig;
-  assigned_user?: Pick<User, 'user_id' | 'first_name' | 'last_name' | 'email'>;
-  created_user?: Pick<User, 'user_id' | 'first_name' | 'last_name'>;
+  assigned_user?: Pick<User, "user_id" | "first_name" | "last_name" | "email">;
+  created_user?: Pick<User, "user_id" | "first_name" | "last_name">;
   score_data?: LeadScore;
 }
 
 export interface DealWithRelations extends Deal {
-  lead?: Pick<Lead, 'lead_id' | 'first_name' | 'last_name' | 'business_name' | 'email' | 'phone'>;
-  user?: Pick<User, 'user_id' | 'first_name' | 'last_name' | 'email'>;
+  lead?: Pick<
+    Lead,
+    "lead_id" | "first_name" | "last_name" | "business_name" | "email" | "phone"
+  >;
+  user?: Pick<User, "user_id" | "first_name" | "last_name" | "email">;
 }
 
 export interface TaskWithRelations extends Task {
-  assigned_user?: Pick<User, 'user_id' | 'first_name' | 'last_name' | 'email'>;
-  created_user?: Pick<User, 'user_id' | 'first_name' | 'last_name' | 'email'>;
-  lead?: Pick<Lead, 'lead_id' | 'first_name' | 'last_name' | 'business_name' | 'meta_data'>;
-  deal?: Pick<Deal, 'deal_id' | 'title' | 'metadata'>;
+  assigned_user?: Pick<User, "user_id" | "first_name" | "last_name" | "email">;
+  created_user?: Pick<User, "user_id" | "first_name" | "last_name" | "email">;
+  lead?: Pick<
+    Lead,
+    "lead_id" | "first_name" | "last_name" | "business_name" | "meta_data"
+  >;
+  deal?: Pick<Deal, "deal_id" | "title" | "metadata">;
 }
 
 export interface ActivityWithRelations extends Activity {
-  lead?: Pick<Lead, 'lead_id' | 'first_name' | 'last_name' | 'business_name'>;
-  user?: Pick<User, 'user_id' | 'first_name' | 'last_name' | 'email'>;
+  lead?: Pick<Lead, "lead_id" | "first_name" | "last_name" | "business_name">;
+  user?: Pick<User, "user_id" | "first_name" | "last_name" | "email">;
 }
 
 export interface Workspace {
@@ -437,15 +436,14 @@ export interface Contact {
 }
 
 export interface WorkspaceWithRelations extends Workspace {
-  organization?: Pick<Organization, 'organization_id' | 'name' | 'slug'>;
+  organization?: Pick<Organization, "organization_id" | "name" | "slug">;
 }
 
 export interface CompanyWithRelations extends Company {
-  contacts?: Pick<Contact, 'id' | 'first_name' | 'last_name' | 'email'>[];
+  contacts?: Pick<Contact, "id" | "first_name" | "last_name" | "email">[];
 }
 
 export interface ContactWithRelations extends Contact {
-  workspace?: Pick<Workspace, 'id' | 'name' | 'description'>;
-  company?: Pick<Company, 'id' | 'title' | 'location'>;
+  workspace?: Pick<Workspace, "id" | "name" | "description">;
+  company?: Pick<Company, "id" | "title" | "location">;
 }
-

@@ -3,6 +3,7 @@ import {
   getWorkspacesPaginated,
   createWorkspace,
   getWorkspaceById,
+  getWorkspacesByUserId,
 } from "@/lib/data/workspaces";
 import jwt from "jsonwebtoken";
 
@@ -32,17 +33,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    let decoded: any;
+    let userId: string | undefined;
     try {
-      const decoded: any = jwt.verify(authHeader.substring(7), JWT_SECRET);
+      decoded = jwt.verify(authHeader.substring(7), JWT_SECRET) as any;
+      userId = decoded?.userId || decoded?.user_id;
+
+      // Check if user has access to the requested organization
+      // But allow if user is a member of workspaces in other organizations
       const hasOrgAccess = Array.isArray(decoded?.availableOrganizations)
         ? decoded.availableOrganizations.some(
             (o: any) => o.id === organizationId
           )
         : decoded?.currentOrganizationId === organizationId;
+
+      // Note: We don't block here even if user doesn't have org access
+      // because they might be a member of workspaces in other orgs
+      // We'll filter the results appropriately below
       if (!hasOrgAccess) {
-        return NextResponse.json(
-          { success: false, error: "Access denied to this organization" },
-          { status: 403 }
+        console.log(
+          `[Workspaces API] User ${userId} doesn't have direct access to org ${organizationId}, but will check for member workspaces`
         );
       }
     } catch {
@@ -52,16 +62,95 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const result = await getWorkspacesPaginated(
-      organizationId,
-      page,
-      limit,
-      undefined,
-      search || undefined
+    // Get workspaces where user is a member (this includes workspaces from all organizations)
+    let userMemberWorkspaces: any[] = [];
+    if (userId) {
+      try {
+        const memberWorkspaces = await getWorkspacesByUserId(userId);
+        userMemberWorkspaces = memberWorkspaces || [];
+        console.log(
+          `[Workspaces API] Found ${userMemberWorkspaces.length} workspaces where user ${userId} is a member`
+        );
+      } catch (error: any) {
+        console.error(
+          "[Workspaces API] Failed to fetch user member workspaces:",
+          error?.message || error
+        );
+        // Continue without user member workspaces if there's an error
+      }
+    } else {
+      console.warn("[Workspaces API] No userId found in token");
+    }
+
+    // Get workspaces for the current organization (if user has access)
+    let orgWorkspaces: any[] = [];
+    const hasOrgAccess = Array.isArray(decoded?.availableOrganizations)
+      ? decoded.availableOrganizations.some((o: any) => o.id === organizationId)
+      : decoded?.currentOrganizationId === organizationId;
+
+    if (hasOrgAccess) {
+      try {
+        const orgResult = await getWorkspacesPaginated(
+          organizationId,
+          page,
+          limit,
+          undefined,
+          search || undefined
+        );
+        orgWorkspaces = orgResult.data || [];
+        console.log(
+          `[Workspaces API] Found ${orgWorkspaces.length} workspaces for organization ${organizationId}`
+        );
+      } catch (error: any) {
+        console.error(
+          "[Workspaces API] Failed to fetch organization workspaces:",
+          error?.message || error
+        );
+      }
+    }
+
+    // Combine and deduplicate workspaces
+    const workspaceMap = new Map();
+
+    // Add organization workspaces first
+    orgWorkspaces.forEach((ws: any) => {
+      workspaceMap.set(ws.id, ws);
+    });
+
+    // Add user member workspaces (will overwrite duplicates, which is fine)
+    // This ensures workspaces from other organizations are included
+    userMemberWorkspaces.forEach((ws: any) => {
+      workspaceMap.set(ws.id, ws);
+    });
+
+    console.log(
+      `[Workspaces API] Combined ${workspaceMap.size} unique workspaces (${orgWorkspaces.length} from org, ${userMemberWorkspaces.length} from memberships)`
     );
 
+    // Apply search filter if provided (after combining)
+    let allWorkspaces = Array.from(workspaceMap.values());
+    if (search && search.trim()) {
+      const searchLower = search.toLowerCase();
+      allWorkspaces = allWorkspaces.filter(
+        (ws: any) =>
+          ws.name?.toLowerCase().includes(searchLower) ||
+          ws.description?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Sort by created_at descending
+    allWorkspaces.sort(
+      (a: any, b: any) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    // Apply pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedWorkspaces = allWorkspaces.slice(startIndex, endIndex);
+
     // Transform snake_case to camelCase
-    const transformedWorkspaces = (result.data || []).map((workspace: any) => ({
+    const transformedWorkspaces = paginatedWorkspaces.map((workspace: any) => ({
       id: workspace.id,
       name: workspace.name,
       description: workspace.description,
@@ -69,7 +158,14 @@ export async function GET(request: NextRequest) {
       userId: workspace.user_id,
       createdAt: workspace.created_at,
       updatedAt: workspace.updated_at,
-      organization: workspace.organization,
+      organization: workspace.organization
+        ? {
+            organizationId: workspace.organization.organization_id,
+            id: workspace.organization.organization_id,
+            name: workspace.organization.name,
+            slug: workspace.organization.slug,
+          }
+        : null,
     }));
 
     return NextResponse.json({
@@ -77,10 +173,10 @@ export async function GET(request: NextRequest) {
       data: {
         workspaces: transformedWorkspaces,
         pagination: {
-          count: result.count,
-          page: result.page,
-          limit: result.limit,
-          totalPages: result.totalPages,
+          count: allWorkspaces.length,
+          page: page,
+          limit: limit,
+          totalPages: Math.ceil(allWorkspaces.length / limit),
         },
       },
     });
@@ -100,9 +196,9 @@ export async function POST(request: NextRequest) {
       body = await request.json();
     } catch (parseError: any) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: "Invalid JSON in request body. Please check your JSON format." 
+        {
+          success: false,
+          error: "Invalid JSON in request body. Please check your JSON format.",
         },
         { status: 400 }
       );
@@ -179,4 +275,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

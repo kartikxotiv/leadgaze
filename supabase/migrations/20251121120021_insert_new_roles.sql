@@ -1,5 +1,4 @@
--- Insert new roles into organization_roles table
--- This can be run directly in Supabase SQL Editor
+
 
 INSERT INTO public.organization_roles (role, display_name, description, permissions, hierarchy_level, is_system_role, is_active)
 VALUES
@@ -58,14 +57,4 @@ VALUES
   true
 )
 ON CONFLICT (role) DO NOTHING;
-
--- Verify the insert
-SELECT 
-  role, 
-  display_name, 
-  hierarchy_level, 
-  is_system_role,
-  is_active
-FROM public.organization_roles 
-ORDER BY hierarchy_level DESC;
 
