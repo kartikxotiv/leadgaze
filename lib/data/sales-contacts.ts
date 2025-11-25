@@ -1,22 +1,25 @@
-import { supabase } from '../supabase-client';
-import type { Database } from '../../database.types';
+import { supabase } from "../supabase-client";
+import type { Database } from "../../database.types";
 import {
   paginateQuery,
   buildSearchQuery,
   buildWhereFilters,
   type PaginationResult,
-} from '../utils/supabase-queries';
+} from "../utils/supabase-queries";
 
-export type SalesContact = Database['public']['Tables']['sales_contacts']['Row'];
-export type SalesContactInsert = Database['public']['Tables']['sales_contacts']['Insert'];
-export type SalesContactUpdate = Database['public']['Tables']['sales_contacts']['Update'];
+export type SalesContact =
+  Database["public"]["Tables"]["sales_contacts"]["Row"];
+export type SalesContactInsert =
+  Database["public"]["Tables"]["sales_contacts"]["Insert"];
+export type SalesContactUpdate =
+  Database["public"]["Tables"]["sales_contacts"]["Update"];
 
 type CompanySummary = Pick<
-  Database['public']['Tables']['companies']['Row'],
-  'id' | 'title' | 'location'
+  Database["public"]["Tables"]["companies"]["Row"],
+  "id" | "title" | "location"
 >;
 
-type ContactPlatform = Database['public']['Tables']['contact_platforms']['Row'];
+type ContactPlatform = Database["public"]["Tables"]["contact_platforms"]["Row"];
 
 export type SalesContactWithRelations = SalesContact & {
   company?: CompanySummary | null;
@@ -25,10 +28,10 @@ export type SalesContactWithRelations = SalesContact & {
 
 export async function getSalesContacts(): Promise<SalesContact[]> {
   const { data, error } = await supabase
-    .from('sales_contacts')
-    .select('*')
-    .eq('is_deleted', false)
-    .order('created_at', { ascending: false });
+    .from("sales_contacts")
+    .select("*")
+    .eq("is_deleted", false)
+    .order("created_at", { ascending: false });
 
   if (error) throw error;
   return data || [];
@@ -38,13 +41,13 @@ export async function getSalesContactById(
   contactId: string
 ): Promise<SalesContact | null> {
   const { data, error } = await supabase
-    .from('sales_contacts')
-    .select('*')
-    .eq('id', contactId)
-    .eq('is_deleted', false)
+    .from("sales_contacts")
+    .select("*")
+    .eq("id", contactId)
+    .eq("is_deleted", false)
     .single();
 
-  if (error && error.code !== 'PGRST116') throw error;
+  if (error && error.code !== "PGRST116") throw error;
   return data || null;
 }
 
@@ -52,7 +55,7 @@ export async function getSalesContactWithRelations(
   contactId: string
 ): Promise<SalesContactWithRelations | null> {
   const { data, error } = await supabase
-    .from('sales_contacts')
+    .from("sales_contacts")
     .select(
       `
         *,
@@ -67,11 +70,11 @@ export async function getSalesContactWithRelations(
         )
       `
     )
-    .eq('id', contactId)
-    .eq('is_deleted', false)
+    .eq("id", contactId)
+    .eq("is_deleted", false)
     .single();
 
-  if (error && error.code !== 'PGRST116') throw error;
+  if (error && error.code !== "PGRST116") throw error;
   return (data as SalesContactWithRelations) || null;
 }
 
@@ -86,7 +89,7 @@ export async function getSalesContactsPaginated(
     ...(filters || {}),
   };
 
-  let query = supabase.from('sales_contacts').select('*');
+  let query = supabase.from("sales_contacts").select("*");
 
   if (effectiveFilters) {
     query = buildWhereFilters(query, effectiveFilters);
@@ -94,15 +97,15 @@ export async function getSalesContactsPaginated(
 
   if (search) {
     query = buildSearchQuery(query, search, [
-      'first_name',
-      'last_name',
-      'email',
-      'phone_number',
-      'location',
+      "first_name",
+      "last_name",
+      "email",
+      "phone_number",
+      "location",
     ]);
   }
 
-  query = query.order('created_at', { ascending: false });
+  query = query.order("created_at", { ascending: false });
 
   return paginateQuery(query, { page, limit });
 }
@@ -116,7 +119,7 @@ export async function createSalesContact(
   };
 
   const { data, error } = await supabase
-    .from('sales_contacts')
+    .from("sales_contacts")
     .insert([payload])
     .select()
     .single();
@@ -130,13 +133,13 @@ export async function updateSalesContact(
   updates: SalesContactUpdate
 ): Promise<SalesContact> {
   const { data, error } = await supabase
-    .from('sales_contacts')
+    .from("sales_contacts")
     .update({
       ...updates,
       updated_at: updates.updated_at ?? new Date().toISOString(),
     })
-    .eq('id', contactId)
-    .eq('is_deleted', false)
+    .eq("id", contactId)
+    .eq("is_deleted", false)
     .select()
     .single();
 
@@ -146,15 +149,14 @@ export async function updateSalesContact(
 
 export async function deleteSalesContact(contactId: string): Promise<boolean> {
   const { error } = await supabase
-    .from('sales_contacts')
+    .from("sales_contacts")
     .update({
       is_deleted: true,
       deleted_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .eq('id', contactId);
+    .eq("id", contactId);
 
   if (error) throw error;
   return true;
 }
-

@@ -768,6 +768,7 @@ export type Database = {
       }
       leads_assignees: {
         Row: {
+          assigned_by: string | null
           created_at: string
           id: string
           lead_id: string
@@ -775,6 +776,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_by?: string | null
           created_at?: string
           id?: string
           lead_id: string
@@ -782,6 +784,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_by?: string | null
           created_at?: string
           id?: string
           lead_id?: string
@@ -789,6 +792,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "leads_assignees_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "leads_assignees_lead_id_fkey"
             columns: ["lead_id"]
@@ -1417,6 +1427,12 @@ export type Database = {
       }
       sales_contacts: {
         Row: {
+          alternative_email: string | null
+          alternative_phone_number: string | null
+          business_contact: string | null
+          business_linkedin: string | null
+          business_name: string | null
+          comment: string | null
           company_id: string | null
           contact_time_zone: string | null
           created_at: string
@@ -1427,6 +1443,7 @@ export type Database = {
           id: string
           is_deleted: boolean
           last_name: string | null
+          linkedin_url: string | null
           location: string | null
           phone_number: string | null
           platform: number | null
@@ -1435,6 +1452,12 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          alternative_email?: string | null
+          alternative_phone_number?: string | null
+          business_contact?: string | null
+          business_linkedin?: string | null
+          business_name?: string | null
+          comment?: string | null
           company_id?: string | null
           contact_time_zone?: string | null
           created_at?: string
@@ -1445,6 +1468,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           last_name?: string | null
+          linkedin_url?: string | null
           location?: string | null
           phone_number?: string | null
           platform?: number | null
@@ -1453,6 +1477,12 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          alternative_email?: string | null
+          alternative_phone_number?: string | null
+          business_contact?: string | null
+          business_linkedin?: string | null
+          business_name?: string | null
+          comment?: string | null
           company_id?: string | null
           contact_time_zone?: string | null
           created_at?: string
@@ -1463,6 +1493,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           last_name?: string | null
+          linkedin_url?: string | null
           location?: string | null
           phone_number?: string | null
           platform?: number | null
@@ -2120,7 +2151,8 @@ export type Database = {
           role_id: string
           status: Database["public"]["Enums"]["workspace_member_status"]
           updated_at: string
-          user_id: string
+          user_id: string | null
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string
@@ -2131,7 +2163,8 @@ export type Database = {
           role_id: string
           status?: Database["public"]["Enums"]["workspace_member_status"]
           updated_at?: string
-          user_id: string
+          user_id?: string | null
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string
@@ -2142,7 +2175,8 @@ export type Database = {
           role_id?: string
           status?: Database["public"]["Enums"]["workspace_member_status"]
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -2165,6 +2199,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2253,10 +2294,73 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      organization_members_view: {
+        Row: {
+          email: string | null
+          first_name: string | null
+          id: string | null
+          invited_by: string | null
+          invited_by_email: string | null
+          invited_by_first_name: string | null
+          invited_by_last_name: string | null
+          joined_at: string | null
+          last_name: string | null
+          organization_id: string | null
+          organization_name: string | null
+          phone_number: string | null
+          role: string | null
+          role_display_name: string | null
+          role_id: string | null
+          role_permissions: Json | null
+          status: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_organizations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_organizations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["organization_id"]
+          },
+          {
+            foreignKeyName: "user_organizations_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "organization_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_organizations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Functions: {
-      [_ in never]: never
+      add_organization_member: {
+        Args: {
+          p_invited_by_email?: string
+          p_invited_by_id?: string
+          p_organization_id?: string
+          p_organization_name?: string
+          p_role_id?: string
+          p_role_name?: string
+          p_user_email?: string
+          p_user_id?: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       activity_related_type: "lead" | "deal" | "contact" | "company"

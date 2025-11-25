@@ -72,7 +72,7 @@ async function requestJSON<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export function useSalesLeads(filters?: SalesLeadFilters) {
-  const { currentOrganization } = useAuthStore();
+  const { currentOrganization, token } = useAuthStore();
   return useQuery({
     queryKey: [
       "sales-leads",
@@ -82,28 +82,44 @@ export function useSalesLeads(filters?: SalesLeadFilters) {
     ],
     queryFn: async () => {
       const queryString = buildQueryString(filters);
-      const url = queryString ? `/api/sales-leads?${queryString}` : "/api/sales-leads";
-      return requestJSON<PaginationResult<SalesLead>>(url);
+      const url = queryString
+        ? `/api/sales-leads?${queryString}`
+        : "/api/sales-leads";
+      return requestJSON<PaginationResult<SalesLead>>(url, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
     },
     enabled: !!filters,
   });
 }
 
 export function useSalesLead(leadId: string) {
+  const { token } = useAuthStore();
   return useQuery({
     queryKey: ["sales-lead", leadId],
-    queryFn: () => requestJSON<SalesLeadWithRelations | null>(`/api/sales-leads/${leadId}`),
+    queryFn: () =>
+      requestJSON<SalesLeadWithRelations | null>(`/api/sales-leads/${leadId}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      }),
     enabled: !!leadId,
   });
 }
 
 export function useCreateSalesLead() {
   const queryClient = useQueryClient();
+  const { token } = useAuthStore();
   return useMutation({
     mutationFn: (data: SalesLeadInsert) =>
       requestJSON<SalesLead>("/api/sales-leads", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(data),
       }),
     onSuccess: (data: SalesLead) => {
@@ -117,11 +133,15 @@ export function useCreateSalesLead() {
 
 export function useUpdateSalesLead() {
   const queryClient = useQueryClient();
+  const { token } = useAuthStore();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: SalesLeadUpdate }) =>
       requestJSON<SalesLead>(`/api/sales-leads/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(data),
       }),
     onSuccess: (data: SalesLead) => {
@@ -135,10 +155,14 @@ export function useUpdateSalesLead() {
 
 export function useDeleteSalesLead() {
   const queryClient = useQueryClient();
+  const { token } = useAuthStore();
   return useMutation({
     mutationFn: (id: string) =>
       requestJSON<boolean>(`/api/sales-leads/${id}`, {
         method: "DELETE",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
       }),
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: ["sales-leads"] });

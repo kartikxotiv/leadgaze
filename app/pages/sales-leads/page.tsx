@@ -735,22 +735,31 @@ export default function SalesLeadsPage() {
   const { data: permissionsData, isLoading: isLoadingPermissions } =
     useWorkspacePermissions();
   const canViewSalesLeads = useWorkspaceRoutePermission("Sales Leads", "view");
+
+  // Check if user has assigned leads (even without explicit view permission, they should see their assigned leads)
+  const hasAssignedLeads = salesLeads && salesLeads.count > 0;
+
+  // IMPORTANT: Only bypass view permission if user has assigned leads
+  // Other permissions (create, update, delete) should still be checked normally
+  const effectiveCanViewSalesLeads = canViewSalesLeads || hasAssignedLeads;
+
   const canCreateSalesLeads = useWorkspaceRoutePermission(
     "Sales Leads",
     "create"
   );
+  // Don't bypass create permission - user must have explicit permission
   const canUpdateSalesLeads = useWorkspaceRoutePermission(
     "Sales Leads",
     "update"
   );
+  // Don't bypass update permission
   const canDeleteSalesLeads = useWorkspaceRoutePermission(
     "Sales Leads",
     "delete"
   );
-  const isSalesLeadsVisible = useWorkspaceRoutePermission(
-    "Sales Leads",
-    "visible"
-  );
+  // Don't bypass delete permission
+  const isSalesLeadsVisible =
+    useWorkspaceRoutePermission("Sales Leads", "visible") || hasAssignedLeads; // Only bypass visible permission
 
   const { data: priorityList } = useLeadPriorities();
   const { data: platformList, isLoading: platformsLoading } =
@@ -1940,7 +1949,9 @@ export default function SalesLeadsPage() {
   }
 
   // Check if user has permission to view (only after permissions are loaded)
-  if (permissionsData && !canViewSalesLeads && !isSalesLeadsVisible) {
+  // BUT: If user has assigned leads, allow them to view those leads even without explicit permission
+  // IMPORTANT: Only bypass view permission, not other permissions
+  if (permissionsData && !effectiveCanViewSalesLeads && !isSalesLeadsVisible) {
     return (
       <DashboardLayout>
         <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-6 text-sm text-muted-foreground text-center">

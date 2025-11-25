@@ -724,18 +724,41 @@ export class AuthService {
 
     // Validate password
     if (!skipPasswordCheck && password) {
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      if (!isValidPassword) {
-        // Increment login attempts
+      // Check if user has a password set
+      if (!user.password) {
+        throw new Error(
+          "Password not set for this account. Please use password reset or contact administrator."
+        );
+      }
+
+      try {
+        const isValidPassword = await bcrypt.compare(password, user.password);
+        if (!isValidPassword) {
+          // Increment login attempts
+          const newAttempts = (user.login_attempts || 0) + 1;
+          const lockUntil =
+            newAttempts >= 5
+              ? new Date(Date.now() + 30 * 60 * 1000).toISOString() // Lock for 30 minutes
+              : undefined;
+
+          await updateUserLoginAttempts(user.user_id, newAttempts, lockUntil);
+          throw new Error("Invalid email or password");
+        }
+      } catch (bcryptError: any) {
+        // If bcrypt.compare throws an error (e.g., invalid hash), treat as invalid password
+        console.error("Password comparison error:", bcryptError);
         const newAttempts = (user.login_attempts || 0) + 1;
         const lockUntil =
           newAttempts >= 5
-            ? new Date(Date.now() + 30 * 60 * 1000).toISOString() // Lock for 30 minutes
+            ? new Date(Date.now() + 30 * 60 * 1000).toISOString()
             : undefined;
 
         await updateUserLoginAttempts(user.user_id, newAttempts, lockUntil);
         throw new Error("Invalid email or password");
       }
+    } else if (!skipPasswordCheck && !password) {
+      // Password required but not provided
+      throw new Error("Password is required");
     }
 
     // Reset login attempts on successful login
