@@ -255,6 +255,8 @@ export function NoteDialog({
       await refetchNotes();
       onSuccess?.();
     } catch (error) {}
+
+    handleClose();
   };
 
   const handleDelete = async (noteIdToDelete?: string) => {
@@ -289,7 +291,7 @@ export function NoteDialog({
     <>
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0 [&>button]:hidden">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b">
+          <DialogHeader className="px-4 pt-6 pb-4 border-b">
             <div className="flex items-center justify-between">
               <div>
                 <DialogTitle className="flex items-center gap-2">
@@ -307,8 +309,8 @@ export function NoteDialog({
                 onClick={() => setViewNotesModalOpen(true)}
                 className="flex items-center gap-2"
               >
-                <Eye className="h-4 w-4" />
-                View Notes
+                View Notes{" "}
+                <span className="text-sm text-red-500 ">{notes.length}</span>
               </Button>
             </div>
           </DialogHeader>
@@ -362,10 +364,10 @@ export function NoteDialog({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={handleCancelEdit}
-                  disabled={isLoading}
+                  onClick={() => handleClose()}
+                  // disabled={isLoading}
                 >
-                  {isEditMode ? "Cancel" : "Clear"}
+                  Close
                 </Button>
                 <Button
                   type="submit"
@@ -387,7 +389,7 @@ export function NoteDialog({
           <DialogHeader className="px-6 pt-6 pb-4 border-b">
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              View Notes ({notes.length})
+              View Notes
             </DialogTitle>
             <DialogDescription>
               Click on a note to edit it or use the actions to manage notes.

@@ -28,18 +28,12 @@ interface OrganizationMember {
   email: string;
 }
 
-/**
- * Get initials from first and last name
- */
 function getInitials(firstName: string, lastName: string): string {
   const first = firstName?.charAt(0)?.toUpperCase() || "";
   const last = lastName?.charAt(0)?.toUpperCase() || "";
   return `${first}${last}`;
 }
 
-/**
- * Get a consistent color for a user based on their user ID
- */
 function getUserColor(userId: string): string {
   const colors = [
     "bg-blue-500",
@@ -70,37 +64,178 @@ export function AssigneeSelector({
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const { token, currentOrganization } = useAuthStore();
 
   useEffect(() => {
-    if (currentOrganization?.organizationId) {
+    if (leadId && token) {
+      fetchLeadWorkspace();
+    }
+  }, [leadId, token]);
+
+  useEffect(() => {
+    if (workspaceId && token) {
       fetchMembers();
     }
-  }, [currentOrganization?.organizationId]);
+  }, [workspaceId, token]);
+
+  const fetchLeadWorkspace = async () => {
+    try {
+      if (!token || !leadId) {
+        return;
+      }
+
+      const response = await fetch(`/api/sales-leads/${leadId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data?.workspace_id) {
+        setWorkspaceId(data.data.workspace_id);
+      } else {
+        toast.error("Failed to get workspace information");
+      }
+    } catch (error) {
+      console.error("Failed to fetch lead workspace:", error);
+      toast.error("Failed to get workspace information");
+    }
+  };
 
   const fetchMembers = async () => {
     try {
       setIsLoading(true);
-      if (!token || !currentOrganization?.organizationId) {
+      if (!token) {
         toast.error("Authentication required");
         return;
       }
 
-      const response = await fetch(
-        `/api/organizations/${currentOrganization.organizationId}/members`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      if (!workspaceId && !currentOrganization?.organizationId) {
+        toast.error("Workspace or organization information required");
+        return;
+      }
+
+      const allEmails = new Set<string>();
+      const membersMap = new Map<string, OrganizationMember>();
+
+      if (workspaceId) {
+        const invitesResponse = await fetch(
+          `/api/workspaces/${workspaceId}/invites`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const invitesData = await invitesResponse.json();
+
+        if (invitesData.success) {
+          const acceptedInvites = (invitesData.invites || []).filter(
+            (invite: any) => invite.status === "accepted"
+          );
+          acceptedInvites.forEach((invite: any) => {
+            if (invite.email) {
+              allEmails.add(invite.email);
+            }
+          });
         }
-      );
+      }
 
-      const data = await response.json();
+      if (currentOrganization?.organizationId) {
+        const orgMembersResponse = await fetch(
+          `/api/organizations/${currentOrganization.organizationId}/members`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-      if (data.success) {
-        setMembers(data.members || []);
+        const orgMembersData = await orgMembersResponse.json();
+
+        if (orgMembersData.success && orgMembersData.members) {
+          orgMembersData.members.forEach((member: any) => {
+            if (member.email) {
+              allEmails.add(member.email);
+              // Also store the member directly if it has userId
+              if (member.userId) {
+                membersMap.set(member.email, {
+                  userId: member.userId,
+                  firstName: member.firstName || "",
+                  lastName: member.lastName || "",
+                  fullName: member.fullName || member.email,
+                  email: member.email,
+                });
+              }
+            }
+          });
+        }
+      }
+
+      selectedAssignees.forEach((assignee) => {
+        if (assignee.email) {
+          allEmails.add(assignee.email);
+        }
+      });
+
+      if (allEmails.size === 0) {
+        setMembers([]);
+        return;
+      }
+
+      const usersResponse = await fetch(`/api/users/by-emails`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ emails: Array.from(allEmails) }),
+      });
+
+      const usersData = await usersResponse.json();
+
+      if (usersData.success) {
+        // Step 5: Map users to OrganizationMember format with actual user_id (UUID)
+        (usersData.users || []).forEach((user: any) => {
+          if (user.user_id && user.email) {
+            membersMap.set(user.email, {
+              userId: user.user_id,
+              firstName: user.first_name || "",
+              lastName: user.last_name || "",
+              fullName:
+                `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+                user.email,
+              email: user.email,
+            });
+          }
+        });
+
+        selectedAssignees.forEach((assignee) => {
+          if (
+            assignee.user_id &&
+            assignee.email &&
+            !membersMap.has(assignee.email)
+          ) {
+            membersMap.set(assignee.email, {
+              userId: assignee.user_id,
+              firstName: assignee.first_name || "",
+              lastName: assignee.last_name || "",
+              fullName:
+                `${assignee.first_name || ""} ${
+                  assignee.last_name || ""
+                }`.trim() || assignee.email,
+              email: assignee.email,
+            });
+          }
+        });
+
+        setMembers(Array.from(membersMap.values()));
       } else {
-        toast.error(data.error || "Failed to load team members");
+        toast.error(usersData.error || "Failed to load users");
+        setMembers([]);
       }
     } catch (error) {
       console.error("Failed to fetch members:", error);

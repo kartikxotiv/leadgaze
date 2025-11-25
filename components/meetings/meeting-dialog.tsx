@@ -134,6 +134,11 @@ export function MeetingDialog({
       return;
     }
 
+    if (!link.trim()) {
+      toast.error("Meeting link is required");
+      return;
+    }
+
     try {
       const meetingIdToUpdate = meetingId || selectedMeeting?.id;
 
@@ -166,6 +171,7 @@ export function MeetingDialog({
 
       handleCancelEdit();
       onSuccess?.();
+      onOpenChange(false);
     } catch (error) {}
   };
 
@@ -243,7 +249,7 @@ export function MeetingDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="meeting-link">Link</Label>
+              <Label htmlFor="meeting-link">Link *</Label>
               <Input
                 id="meeting-link"
                 type="url"
@@ -251,6 +257,7 @@ export function MeetingDialog({
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
                 disabled={isLoading}
+                required
               />
             </div>
 
@@ -289,7 +296,7 @@ export function MeetingDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={isLoading || !title.trim() || !time}
+                disabled={isLoading || !title.trim() || !time || !link.trim()}
               >
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isEditMode ? "Update Meeting" : "Create Meeting"}

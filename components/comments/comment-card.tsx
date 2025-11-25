@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { ThumbsUp, Trash2 } from "lucide-react";
+import { Trash2, Edit2, X, Check } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 export interface CommentData {
@@ -33,8 +34,10 @@ interface CommentCardProps {
   comment: CommentData;
   currentUser?: CommentUser;
   onDelete?: (commentId: string) => void;
+  onEdit?: (commentId: string, newComment: string) => void;
   onReply?: (commentId: string) => void;
   isDeleting?: boolean;
+  isEditing?: boolean;
   className?: string;
 }
 
@@ -118,11 +121,22 @@ export function CommentCard({
   comment,
   currentUser,
   onDelete,
+  onEdit,
   onReply,
   isDeleting = false,
+  isEditing: externalIsEditing = false,
   className,
 }: CommentCardProps) {
-  const [isLiked, setIsLiked] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(comment.comment);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Update editText when comment changes (e.g., after successful edit)
+  useEffect(() => {
+    if (!isEditing) {
+      setEditText(comment.comment);
+    }
+  }, [comment.comment, isEditing]);
 
   // Get user display name
   const userName = comment.created_by_user
@@ -134,7 +148,36 @@ export function CommentCard({
   const colorClass = getUserColor(comment.created_by || userName);
   const timestamp = formatTimestamp(comment.created_at);
 
+  const canEdit = currentUser && comment.created_by === currentUser.user_id;
   const canDelete = currentUser && comment.created_by === currentUser.user_id;
+  const editing = isEditing || externalIsEditing;
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setEditText(comment.comment);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditText(comment.comment);
+  };
+
+  const handleSave = async () => {
+    if (!editText.trim()) {
+      return;
+    }
+    if (onEdit) {
+      setIsSaving(true);
+      try {
+        await onEdit(comment.id, editText.trim());
+        setIsEditing(false);
+      } catch (error) {
+        // Error handling is done by parent component
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
 
   return (
     <div
@@ -165,30 +208,83 @@ export function CommentCard({
                 {timestamp}
               </span>
             </div>
-            {canDelete && onDelete && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => onDelete(comment.id)}
-                disabled={isDeleting}
-              >
-                <Trash2 className="h-3.5 w-3.5 text-gray-500 hover:text-red-600" />
-              </Button>
-            )}
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {canEdit && onEdit && !editing && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={handleEdit}
+                  disabled={isDeleting || isSaving}
+                >
+                  <Edit2 className="h-3.5 w-3.5 text-gray-500 hover:text-blue-600" />
+                </Button>
+              )}
+              {canDelete && onDelete && !editing && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => onDelete(comment.id)}
+                  disabled={isDeleting || isSaving}
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-gray-500 hover:text-red-600" />
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Content */}
           <div className="space-y-2">
-            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words leading-relaxed">
-              {comment.comment}
-            </p>
-
-            {/* Parse and display duration if present */}
-            {comment.comment.toLowerCase().includes("hour") && (
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                {comment.comment.match(/\d+\s*hour/i)?.[0]}
+            {editing ? (
+              <div className="space-y-2">
+                <Textarea
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  className="min-h-[80px] text-sm resize-none"
+                  disabled={isSaving}
+                  autoFocus
+                />
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={handleSave}
+                    disabled={
+                      isSaving ||
+                      !editText.trim() ||
+                      editText.trim() === comment.comment
+                    }
+                    className="h-7 px-3"
+                  >
+                    <Check className="h-3.5 w-3.5 mr-1" />
+                    Save
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleCancel}
+                    disabled={isSaving}
+                    className="h-7 px-3"
+                  >
+                    <X className="h-3.5 w-3.5 mr-1" />
+                    Cancel
+                  </Button>
+                </div>
               </div>
+            ) : (
+              <>
+                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words leading-relaxed">
+                  {comment.comment}
+                </p>
+
+                {/* Parse and display duration if present */}
+                {comment.comment.toLowerCase().includes("hour") && (
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    {comment.comment.match(/\d+\s*hour/i)?.[0]}
+                  </div>
+                )}
+              </>
             )}
           </div>
 

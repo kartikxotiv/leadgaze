@@ -90,7 +90,7 @@
 }
 
 .bgworkspace {
-background: #FFEFBA; 
-background: -webkit-linear-gradient(to top, #FFFFFF, #FFEFBA);  
-background: linear-gradient(to top, #FFFFFF, #FFEFBA); 
+  background: #ffefba;
+  background: -webkit-linear-gradient(to top, #ffffff, #ffefba);
+  background: linear-gradient(to top, #ffffff, #ffefba);
 }

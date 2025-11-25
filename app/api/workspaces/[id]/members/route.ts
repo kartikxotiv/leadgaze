@@ -49,7 +49,6 @@ export async function GET(
       );
     }
 
-    // Check if user has access to the organization
     const hasAccess = await AuthService.userHasAccessToOrganization(
       userId,
       workspace.organization_id
@@ -62,8 +61,24 @@ export async function GET(
       );
     }
 
-    // Get workspace members
     const members = await getWorkspaceMembersByWorkspaceId(workspaceId);
+
+    console.log(
+      `🔍 [Workspace Members API] Raw members from DB: ${members.length}`
+    );
+    console.log(
+      `🔍 [Workspace Members API] Members with user_id:`,
+      members.filter((m) => m.user_id).length
+    );
+    console.log(
+      `🔍 [Workspace Members API] Members without user_id:`,
+      members.filter((m) => !m.user_id).length
+    );
+    console.log(`🔍 [Workspace Members API] Members by status:`, {
+      accepted: members.filter((m) => m.status === "accepted").length,
+      pending: members.filter((m) => m.status === "pending").length,
+      rejected: members.filter((m) => m.status === "rejected").length,
+    });
 
     // Format response
     const formattedMembers = members.map((member) => ({
