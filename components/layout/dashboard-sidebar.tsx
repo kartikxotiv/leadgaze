@@ -267,17 +267,94 @@ export function DashboardSidebar({
     [pathname]
   );
 
-  const toggleDropdown = useCallback((itemId: string) => {
-    setOpenDropdowns((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId);
-      } else {
-        newSet.add(itemId);
+  // Helper function to find parent IDs of a given item
+  const findParentIds = useCallback(
+    (itemId: string, items: SidebarItem[], path: string[] = []): string[] => {
+      for (const item of items) {
+        if (item.id === itemId) {
+          return path;
+        }
+        if (item.children && item.children.length > 0) {
+          const result = findParentIds(itemId, item.children, [
+            ...path,
+            item.id,
+          ]);
+          if (result.length > 0) {
+            return result;
+          }
+        }
       }
-      return newSet;
-    });
-  }, []);
+      return [];
+    },
+    []
+  );
+
+  // Auto-open parent dropdowns when a child route is active
+  useEffect(() => {
+    const findAndOpenParents = (
+      items: SidebarItem[],
+      path: string[] = []
+    ): string[] => {
+      for (const item of items) {
+        // Skip items with href="#"
+        if (item.href !== "#" && pathname.startsWith(item.href)) {
+          return path;
+        }
+        if (item.children && item.children.length > 0) {
+          const result = findAndOpenParents(item.children, [...path, item.id]);
+          if (
+            result.length > 0 ||
+            item.children.some(
+              (child) => child.href !== "#" && pathname.startsWith(child.href)
+            )
+          ) {
+            return result.length > 0 ? result : [...path, item.id];
+          }
+        }
+      }
+      return [];
+    };
+
+    const parentIds = findAndOpenParents(menuItems);
+    if (parentIds.length > 0) {
+      setOpenDropdowns((prev) => {
+        // Only update if we need to add new parent IDs
+        const needsUpdate = parentIds.some((id) => !prev.has(id));
+        if (!needsUpdate) {
+          return prev; // No change needed
+        }
+        const newSet = new Set(prev);
+        parentIds.forEach((id) => newSet.add(id));
+        return newSet;
+      });
+    }
+  }, [pathname, menuItems]);
+
+  const toggleDropdown = useCallback(
+    (itemId: string) => {
+      setOpenDropdowns((prev) => {
+        const newSet = new Set(prev);
+        // Only toggle the clicked dropdown, don't close it when clicking child links
+        if (newSet.has(itemId)) {
+          newSet.delete(itemId);
+          // Also close all child dropdowns when closing a parent
+          const parentIds = findParentIds(itemId, menuItems);
+          const itemsToRemove: string[] = [];
+          newSet.forEach((id) => {
+            const idParents = findParentIds(id, menuItems);
+            if (idParents.includes(itemId)) {
+              itemsToRemove.push(id);
+            }
+          });
+          itemsToRemove.forEach((id) => newSet.delete(id));
+        } else {
+          newSet.add(itemId);
+        }
+        return newSet;
+      });
+    },
+    [menuItems, findParentIds]
+  );
 
   const renderMenuItem = useCallback(
     (item: SidebarItem, level: number = 0) => {
@@ -344,12 +421,6 @@ export function DashboardSidebar({
                 }`}
                 style={{ marginLeft: `${marginLeft}px` }}
               >
-                {}
-                {/* {!collapsed && level === 0 && (
-                <GripVertical className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
-              )} */}
-
-                {}
                 {(() => {
                   const Icon = item.icon as React.ElementType;
                   return (
