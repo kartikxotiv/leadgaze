@@ -13,6 +13,12 @@ export type LeadAssigneeWithUser = LeadAssignee & {
     last_name: string;
     email: string;
   };
+  assigned_by_user?: {
+    user_id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  } | null;
 };
 
 export async function getLeadAssignees(
@@ -24,6 +30,12 @@ export async function getLeadAssignees(
       `
       *,
       user:users!leads_assignees_user_id_fkey (
+        user_id,
+        first_name,
+        last_name,
+        email
+      ),
+      assigned_by_user:users!leads_assignees_assigned_by_fkey (
         user_id,
         first_name,
         last_name,
@@ -40,7 +52,8 @@ export async function getLeadAssignees(
 
 export async function addLeadAssignee(
   leadId: string,
-  userId: string
+  userId: string,
+  assignedBy?: string
 ): Promise<LeadAssignee> {
   const { data: existing } = await supabase
     .from("leads_assignees")
@@ -59,6 +72,7 @@ export async function addLeadAssignee(
       {
         lead_id: leadId,
         user_id: userId,
+        assigned_by: assignedBy || null,
       },
     ])
     .select()
@@ -84,7 +98,8 @@ export async function removeLeadAssignee(
 
 export async function updateLeadAssignees(
   leadId: string,
-  userIds: string[]
+  userIds: string[],
+  assignedBy?: string
 ): Promise<LeadAssigneeWithUser[]> {
   await supabase.from("leads_assignees").delete().eq("lead_id", leadId);
 
@@ -95,6 +110,7 @@ export async function updateLeadAssignees(
   const inserts = userIds.map((userId) => ({
     lead_id: leadId,
     user_id: userId,
+    assigned_by: assignedBy || null,
   }));
 
   const { data, error } = await supabase
@@ -104,6 +120,12 @@ export async function updateLeadAssignees(
       `
       *,
       user:users!leads_assignees_user_id_fkey (
+        user_id,
+        first_name,
+        last_name,
+        email
+      ),
+      assigned_by_user:users!leads_assignees_assigned_by_fkey (
         user_id,
         first_name,
         last_name,
