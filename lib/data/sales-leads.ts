@@ -8,8 +8,10 @@ import {
 } from "../utils/supabase-queries";
 
 export type SalesLead = Database["public"]["Tables"]["sales_leads"]["Row"];
-export type SalesLeadInsert = Database["public"]["Tables"]["sales_leads"]["Insert"];
-export type SalesLeadUpdate = Database["public"]["Tables"]["sales_leads"]["Update"];
+export type SalesLeadInsert =
+  Database["public"]["Tables"]["sales_leads"]["Insert"];
+export type SalesLeadUpdate =
+  Database["public"]["Tables"]["sales_leads"]["Update"];
 
 type SalesContactSummary = Pick<
   Database["public"]["Tables"]["sales_contacts"]["Row"],
@@ -52,7 +54,9 @@ export async function getSalesLeads(): Promise<SalesLead[]> {
   return data ?? [];
 }
 
-export async function getSalesLeadById(leadId: string): Promise<SalesLead | null> {
+export async function getSalesLeadById(
+  leadId: string
+): Promise<SalesLead | null> {
   const { data, error } = await supabase
     .from("sales_leads")
     .select("*")
@@ -114,20 +118,131 @@ export async function getSalesLeadsPaginated(
   page: number = 1,
   limit: number = 20,
   filters?: Record<string, any>,
-  search?: string
+  search?: string,
+  userId?: string
 ): Promise<PaginationResult<SalesLead>> {
-  const effectiveFilters = {
+  let effectiveFilters: Record<string, any> = {
     is_deleted: false,
     ...(filters ?? {}),
   };
 
-  let query = supabase.from("sales_leads").select("*");
+  let query = supabase.from("sales_leads").select("*", { count: "exact" });
+
+  // If userId is provided, filter leads assigned to that user
+  if (userId) {
+    console.log(`🔍 Filtering leads for userId: ${userId}`);
+
+    // Get workspace_id from filters if present
+    const workspaceId = effectiveFilters.workspace_id;
+    console.log(`🏢 Workspace filter: ${workspaceId || "none"}`);
+
+    // First get all lead IDs assigned to this user, along with workspace_id
+    let assignedLeadsQuery = supabase
+      .from("leads_assignees")
+      .select(
+        `
+        lead_id,
+        sales_lead:sales_leads!leads_assignees_lead_id_fkey (
+          id,
+          workspace_id
+        )
+      `
+      )
+      .eq("user_id", userId);
+
+    const { data: assignedLeads, error: assigneesError } =
+      await assignedLeadsQuery;
+
+    if (assigneesError) {
+      console.error("❌ Error fetching assigned leads:", assigneesError);
+      throw assigneesError;
+    }
+
+    console.log(
+      `✅ Found ${
+        assignedLeads?.length || 0
+      } assigned leads for user ${userId}`,
+      assignedLeads
+    );
+
+    if (assignedLeads && assignedLeads.length > 0) {
+      // If workspace filter is present, filter by both assigned leads AND workspace
+      // Otherwise, show all assigned leads
+      let leadIds: string[] = [];
+
+      if (workspaceId) {
+        // Filter assigned leads by workspace
+        leadIds = assignedLeads
+          .filter((item: any) => {
+            const leadWorkspaceId = item.sales_lead?.workspace_id;
+            const matches = leadWorkspaceId === workspaceId;
+            if (!matches) {
+              console.log(
+                `⚠️ Lead ${item.lead_id} is in workspace ${leadWorkspaceId}, but current workspace is ${workspaceId}`
+              );
+            }
+            return matches;
+          })
+          .map((item: any) => item.lead_id);
+        console.log(
+          `📋 After workspace filter: ${leadIds.length} leads match workspace ${workspaceId}`
+        );
+      } else {
+        // No workspace filter - show all assigned leads
+        leadIds = assignedLeads.map((item: any) => item.lead_id);
+        console.log(
+          `📋 No workspace filter - showing all ${leadIds.length} assigned leads`
+        );
+      }
+
+      if (leadIds.length > 0) {
+        console.log(
+          `📋 Filtering sales_leads by ${leadIds.length} assigned lead IDs:`,
+          leadIds
+        );
+        query = query.in("id", leadIds);
+        // Remove workspace_id from filters since we already filtered by it
+        const { workspace_id, ...otherFilters } = effectiveFilters;
+        effectiveFilters = { ...otherFilters, is_deleted: false };
+      } else {
+        // User has assigned leads but none in current workspace
+        console.log(
+          `⚠️ User has ${assignedLeads.length} assigned leads but none in workspace ${workspaceId} - returning empty result`
+        );
+        return {
+          data: [],
+          count: 0,
+          page,
+          limit,
+          totalPages: 0,
+        };
+      }
+    } else {
+      // User has no assigned leads, return empty result
+      console.log(
+        `⚠️ No assigned leads found for user ${userId} - returning empty result`
+      );
+      return {
+        data: [],
+        count: 0,
+        page,
+        limit,
+        totalPages: 0,
+      };
+    }
+  } else {
+    console.log(
+      "ℹ️ No userId provided - showing all leads (if no workspace filter)"
+    );
+  }
 
   if (effectiveFilters) {
+    console.log(`🔍 Applying remaining filters:`, effectiveFilters);
     query = buildWhereFilters(query, effectiveFilters);
   }
 
   if (search) {
+    console.log(`🔍 Applying search: ${search}`);
     query = buildSearchQuery(query, search, [
       "first_name",
       "last_name",
@@ -139,10 +254,37 @@ export async function getSalesLeadsPaginated(
 
   query = query.order("created_at", { ascending: false });
 
-  return paginateQuery(query, { page, limit });
+  // Apply pagination manually since we're using count
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+  query = query.range(from, to);
+
+  console.log(
+    `📊 Executing query - page: ${page}, limit: ${limit}, from: ${from}, to: ${to}`
+  );
+  const { data, error, count } = await query;
+
+  console.log(
+    `✅ Query result - found ${data?.length || 0} leads, total count: ${count}`
+  );
+
+  if (error) throw error;
+
+  const total = count ?? 0;
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    data: (data as SalesLead[]) ?? [],
+    count: total,
+    page,
+    limit,
+    totalPages,
+  };
 }
 
-export async function createSalesLead(input: SalesLeadInsert): Promise<SalesLead> {
+export async function createSalesLead(
+  input: SalesLeadInsert
+): Promise<SalesLead> {
   const payload: SalesLeadInsert = {
     ...input,
     is_deleted: input.is_deleted ?? false,
