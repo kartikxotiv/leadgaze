@@ -84,6 +84,12 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 import {
@@ -126,6 +132,14 @@ interface FormData {
   priorityId: string;
   contactId: string;
   ownerId: string;
+
+  alternativeEmail: string;
+  alternativePhoneNumber: string;
+  linkedinUrl: string;
+  businessName: string;
+  businessLinkedin: string;
+  businessContact: string;
+  comment: string;
 }
 
 const INITIAL_FORM_STATE: FormData = {
@@ -141,6 +155,13 @@ const INITIAL_FORM_STATE: FormData = {
   priorityId: NO_SELECTION_VALUE,
   contactId: NO_SELECTION_VALUE,
   ownerId: NO_SELECTION_VALUE,
+  alternativeEmail: "",
+  alternativePhoneNumber: "",
+  linkedinUrl: "",
+  businessName: "",
+  businessLinkedin: "",
+  businessContact: "",
+  comment: "",
 };
 
 const INITIAL_FORM_ERRORS: Record<keyof FormData, string> = {
@@ -156,6 +177,13 @@ const INITIAL_FORM_ERRORS: Record<keyof FormData, string> = {
   priorityId: "",
   contactId: "",
   ownerId: "",
+  alternativeEmail: "",
+  alternativePhoneNumber: "",
+  linkedinUrl: "",
+  businessName: "",
+  businessLinkedin: "",
+  businessContact: "",
+  comment: "",
 };
 
 const STATUS_OPTIONS: Array<{ value: StatusOptionValue; label: string }> = [
@@ -694,6 +722,133 @@ const SalesLeadFormFields = ({
           </div>
         </div>
       </div>
+
+      <div className="space-y-4">
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="additional-fields">
+            <AccordionTrigger className="text-base font-medium text-muted-foreground">
+              Additional Information
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-6 pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="alternativePhoneNumber">
+                      Alternative Phone Number
+                    </Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+                      <Input
+                        id="alternativePhoneNumber"
+                        type="tel"
+                        value={data.alternativePhoneNumber}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          const digitsOnly = value.replace(/\D/g, "");
+                          const limitedDigits = digitsOnly.slice(0, 10);
+                          onChange("alternativePhoneNumber", limitedDigits);
+                        }}
+                        placeholder="1234567890"
+                        maxLength={10}
+                        className="pl-10 bg-gray-100"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="alternativeEmail">Alternative Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+                      <Input
+                        id="alternativeEmail"
+                        type="email"
+                        value={data.alternativeEmail}
+                        onChange={(event) =>
+                          onChange("alternativeEmail", event.target.value)
+                        }
+                        placeholder="alt.email@example.com"
+                        className="pl-10 bg-gray-100"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
+                    <Input
+                      id="linkedinUrl"
+                      type="url"
+                      value={data.linkedinUrl}
+                      onChange={(event) =>
+                        onChange("linkedinUrl", event.target.value)
+                      }
+                      placeholder="https://linkedin.com/in/username"
+                      className="bg-gray-100"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="businessName">Business Name</Label>
+                    <Input
+                      id="businessName"
+                      value={data.businessName}
+                      onChange={(event) =>
+                        onChange("businessName", event.target.value)
+                      }
+                      placeholder="Company Name"
+                      className="bg-gray-100"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="businessLinkedin">Business LinkedIn</Label>
+                    <Input
+                      id="businessLinkedin"
+                      type="url"
+                      value={data.businessLinkedin}
+                      onChange={(event) =>
+                        onChange("businessLinkedin", event.target.value)
+                      }
+                      placeholder="https://linkedin.com/company/companyname"
+                      className="bg-gray-100"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="businessContact">Business Contact</Label>
+                    <Input
+                      id="businessContact"
+                      value={data.businessContact}
+                      onChange={(event) =>
+                        onChange("businessContact", event.target.value)
+                      }
+                      placeholder="Business contact person"
+                      className="bg-gray-100"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="comment">Comment</Label>
+                  <Textarea
+                    id="comment"
+                    value={data.comment}
+                    onChange={(event) =>
+                      onChange("comment", event.target.value)
+                    }
+                    placeholder="Additional notes or comments..."
+                    rows={4}
+                    className="bg-gray-100"
+                  />
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
     </div>
   );
 };
@@ -1229,6 +1384,13 @@ export default function SalesLeadsPage() {
         priorityId: "",
         contactId: "",
         ownerId: "",
+        alternativeEmail: "",
+        alternativePhoneNumber: "",
+        linkedinUrl: "",
+        businessName: "",
+        businessLinkedin: "",
+        businessContact: "",
+        comment: "",
       };
 
       return newErrors;
@@ -1272,17 +1434,41 @@ export default function SalesLeadsPage() {
   }, [buildValidationErrors, formData]);
 
   const validateEditForm = useCallback(() => {
-    const allErrors = buildValidationErrors(editFormData);
+    // For updates, only validate fields that are actually being edited
+    // Since the form fields (firstName, lastName, email, phoneNumber) are commented out,
+    // we only validate visible/editable fields: status, priority, platform
+    const newErrors: Record<keyof FormData, string> = {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phoneNumber: "",
+      location: validateField("location", editFormData.location),
+      contactTimeZone: "",
+      platformId: "",
+      platformCustom: "",
+      status: "",
+      priorityId: "",
+      contactId: "",
+      ownerId: "",
+      alternativeEmail: "",
+      alternativePhoneNumber: "",
+      linkedinUrl: "",
+      businessName: "",
+      businessLinkedin: "",
+      businessContact: "",
+      comment: "",
+    };
+
     const filteredErrors = Object.fromEntries(
-      Object.entries(allErrors).filter(([, value]) => value !== "")
+      Object.entries(newErrors).filter(([, value]) => value !== "")
     ) as Record<keyof FormData, string>;
 
     if (Object.keys(filteredErrors).length > 0) {
-      setEditErrors((prev) => ({ ...prev, ...allErrors }));
+      setEditErrors((prev) => ({ ...prev, ...newErrors }));
       return false;
     }
     return true;
-  }, [buildValidationErrors, editFormData]);
+  }, [editFormData.location, validateField]);
 
   const resetFormState = useCallback(() => {
     setFormData(() => ({ ...INITIAL_FORM_STATE }));
@@ -1315,6 +1501,13 @@ export default function SalesLeadsPage() {
       priorityId: lead.priority ?? NO_SELECTION_VALUE,
       contactId: lead.contact_id ?? NO_SELECTION_VALUE,
       ownerId: lead.owner_id ?? NO_SELECTION_VALUE,
+      alternativeEmail: lead.alternative_email ?? "",
+      alternativePhoneNumber: lead.alternative_phone_number ?? "",
+      linkedinUrl: lead.linkedin_url ?? "",
+      businessName: lead.business_name ?? "",
+      businessLinkedin: lead.business_linkedin ?? "",
+      businessContact: lead.business_contact ?? "",
+      comment: lead.comment ?? "",
     };
   }, []);
 
@@ -1516,6 +1709,14 @@ export default function SalesLeadsPage() {
           formData.contactId !== NO_SELECTION_VALUE ? formData.contactId : null,
         owner_id:
           formData.ownerId !== NO_SELECTION_VALUE ? formData.ownerId : null,
+        alternative_email: formData.alternativeEmail.trim() || null,
+        alternative_phone_number:
+          formData.alternativePhoneNumber.trim() || null,
+        linkedin_url: formData.linkedinUrl.trim() || null,
+        business_name: formData.businessName.trim() || null,
+        business_linkedin: formData.businessLinkedin.trim() || null,
+        business_contact: formData.businessContact.trim() || null,
+        comment: formData.comment.trim() || null,
       };
 
       try {
@@ -1582,13 +1783,10 @@ export default function SalesLeadsPage() {
       }
     }
 
-    const payload = {
-      first_name: editFormData.firstName.trim(),
-      last_name: editFormData.lastName.trim() || null,
-      email: editFormData.email.trim() || null,
-      phone_number: normalizePhoneNumber(editFormData.phoneNumber),
-      location: editFormData.location.trim() || null,
-      contact_time_zone: editFormData.contactTimeZone.trim() || null,
+    // Only include fields that are actually being updated
+    // Don't send firstName, lastName, email, phoneNumber if they're empty
+    // since those fields are not visible/editable in the form
+    const payload: any = {
       status: editFormData.status,
       platform: platformId,
       priority:
@@ -1604,6 +1802,49 @@ export default function SalesLeadsPage() {
           ? editFormData.ownerId
           : null,
     };
+
+    // Only include these fields if they have values (to preserve existing data)
+    if (editFormData.firstName.trim()) {
+      payload.first_name = editFormData.firstName.trim();
+    }
+    if (editFormData.lastName.trim()) {
+      payload.last_name = editFormData.lastName.trim();
+    }
+    if (editFormData.email.trim()) {
+      payload.email = editFormData.email.trim();
+    }
+    const normalizedPhone = normalizePhoneNumber(editFormData.phoneNumber);
+    if (normalizedPhone) {
+      payload.phone_number = normalizedPhone;
+    }
+    if (editFormData.location.trim()) {
+      payload.location = editFormData.location.trim();
+    }
+    if (editFormData.contactTimeZone.trim()) {
+      payload.contact_time_zone = editFormData.contactTimeZone.trim();
+    }
+    if (editFormData.alternativeEmail.trim()) {
+      payload.alternative_email = editFormData.alternativeEmail.trim();
+    }
+    if (editFormData.alternativePhoneNumber.trim()) {
+      payload.alternative_phone_number =
+        editFormData.alternativePhoneNumber.trim();
+    }
+    if (editFormData.linkedinUrl.trim()) {
+      payload.linkedin_url = editFormData.linkedinUrl.trim();
+    }
+    if (editFormData.businessName.trim()) {
+      payload.business_name = editFormData.businessName.trim();
+    }
+    if (editFormData.businessLinkedin.trim()) {
+      payload.business_linkedin = editFormData.businessLinkedin.trim();
+    }
+    if (editFormData.businessContact.trim()) {
+      payload.business_contact = editFormData.businessContact.trim();
+    }
+    if (editFormData.comment.trim()) {
+      payload.comment = editFormData.comment.trim();
+    }
 
     try {
       const updatedLead = await updateSalesLeadMutation.mutateAsync({
@@ -1629,6 +1870,8 @@ export default function SalesLeadsPage() {
     } catch (error: any) {
       toast.error(error?.message || "Failed to update sales lead.");
     }
+
+    setPreviewDialogOpen(false);
   }, [
     createContactPlatformMutation,
     editFormData,
@@ -1736,6 +1979,7 @@ export default function SalesLeadsPage() {
         selector: (row: SalesLeadRow) => row.email || "",
         sortable: true,
       },
+
       {
         id: "phone_number",
         name: "Phone",
@@ -1806,6 +2050,51 @@ export default function SalesLeadsPage() {
         selector: (row: SalesLeadRow) => row.location || "",
         sortable: true,
       },
+
+      {
+        id: "alternative_email",
+        name: "Alternative Email",
+        selector: (row: SalesLeadRow) => row.alternative_email || "",
+        sortable: true,
+      },
+      {
+        id: "alternative_phone_number",
+        name: "Alternative Phone Number",
+        selector: (row: SalesLeadRow) => row.alternative_phone_number || "",
+        sortable: true,
+      },
+      {
+        id: "linkedin_url",
+        name: "LinkedIn URL",
+        selector: (row: SalesLeadRow) => row.linkedin_url || "",
+        sortable: true,
+      },
+      {
+        id: "business_name",
+        name: "Business Name",
+        selector: (row: SalesLeadRow) => row.business_name || "",
+        sortable: true,
+      },
+      {
+        id: "business_linkedin",
+        name: "Business LinkedIn",
+        selector: (row: SalesLeadRow) => row.business_linkedin || "",
+        sortable: true,
+      },
+      {
+        id: "business_contact",
+        name: "Business Contact",
+        selector: (row: SalesLeadRow) => row.business_contact || "",
+        sortable: true,
+      },
+
+      {
+        id: "comment",
+        name: "Comment",
+        selector: (row: SalesLeadRow) => row.comment || "",
+        sortable: true,
+      },
+
       {
         id: "updated_at",
         name: "Updated",

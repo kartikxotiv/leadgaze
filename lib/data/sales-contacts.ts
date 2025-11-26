@@ -110,9 +110,46 @@ export async function getSalesContactsPaginated(
   return paginateQuery(query, { page, limit });
 }
 
+export async function checkEmailExists(
+  email: string | null | undefined,
+  workspaceId: string,
+  excludeContactId?: string
+): Promise<boolean> {
+  if (!email || !email.trim()) {
+    return false; // Empty emails are allowed (email is nullable)
+  }
+
+  let query = supabase
+    .from("sales_contacts")
+    .select("id")
+    .eq("email", email.trim().toLowerCase())
+    .eq("workspace_id", workspaceId)
+    .eq("is_deleted", false)
+    .limit(1);
+
+  if (excludeContactId) {
+    query = query.neq("id", excludeContactId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) throw error;
+  return (data?.length ?? 0) > 0;
+}
+
 export async function createSalesContact(
   input: SalesContactInsert
 ): Promise<SalesContact> {
+  // Check for duplicate email in the same workspace
+  if (input.email && input.workspace_id) {
+    const emailExists = await checkEmailExists(input.email, input.workspace_id);
+    if (emailExists) {
+      throw new Error(
+        "A contact with this email already exists in this workspace."
+      );
+    }
+  }
+
   const payload = {
     ...input,
     is_deleted: input.is_deleted ?? false,
@@ -132,6 +169,28 @@ export async function updateSalesContact(
   contactId: string,
   updates: SalesContactUpdate
 ): Promise<SalesContact> {
+  // Check for duplicate email if email is being updated
+  if (updates.email !== undefined) {
+    // First get the current contact to get workspace_id
+    const currentContact = await getSalesContactById(contactId);
+    if (!currentContact) {
+      throw new Error("Contact not found");
+    }
+
+    if (updates.email && currentContact.workspace_id) {
+      const emailExists = await checkEmailExists(
+        updates.email,
+        currentContact.workspace_id,
+        contactId // Exclude current contact from check
+      );
+      if (emailExists) {
+        throw new Error(
+          "A contact with this email already exists in this workspace."
+        );
+      }
+    }
+  }
+
   const { data, error } = await supabase
     .from("sales_contacts")
     .update({

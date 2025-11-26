@@ -66,14 +66,19 @@ export default function AddMemberPage() {
   });
   const workspaces = workspacesData?.workspaces || [];
 
-  // Set default workspace if available
+  // Sync selectedWorkspaceId with currentWorkspace whenever it changes
+  // This ensures the page updates when workspace is changed from header/switcher
   useEffect(() => {
-    if (currentWorkspace?.id && !selectedWorkspaceId) {
-      setSelectedWorkspaceId(currentWorkspace.id);
+    if (currentWorkspace?.id) {
+      // Always sync with currentWorkspace from context (even if selectedWorkspaceId already has a value)
+      if (currentWorkspace.id !== selectedWorkspaceId) {
+        setSelectedWorkspaceId(currentWorkspace.id);
+      }
     } else if (workspaces.length > 0 && !selectedWorkspaceId) {
+      // If no currentWorkspace but workspaces available, use first one
       setSelectedWorkspaceId(workspaces[0].id);
     }
-  }, [currentWorkspace, workspaces, selectedWorkspaceId]);
+  }, [currentWorkspace?.id, workspaces, selectedWorkspaceId]);
 
   // Fetch invites when workspace changes
   useEffect(() => {

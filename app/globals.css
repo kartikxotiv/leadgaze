@@ -166,11 +166,11 @@
   max-height: 69vh;
   overflow-y: auto;
 }
-.bgworkspace {
+/* .bgworkspace {
   background: #ffefba;
   background: -webkit-linear-gradient(to top, #ffffff, #ffefba);
   background: linear-gradient(to top, #ffffff, #ffefba);
-}
+} */
 /* .notes_dialog svg {
   top: 10px !important;
   right: 10px !important;
