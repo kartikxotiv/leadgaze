@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  createSalesContact,
-  checkEmailExists,
-} from "@/lib/data/sales-contacts";
+import { createSalesLead, checkEmailExists } from "@/lib/data/sales-leads";
 import {
   getContactPlatforms,
   createContactPlatform,
 } from "@/lib/data/contact-platforms";
+import { getLeadPriorities } from "@/lib/data/lead-priorities";
 import { verifyAuth } from "@/lib/rbac/api-helpers";
 
-interface IncomingContactRow {
+interface IncomingLeadRow {
   firstName: string;
   lastName: string;
   email: string;
@@ -23,12 +21,12 @@ interface IncomingContactRow {
   comment?: string;
   linkedinUrl?: string;
   platform?: string; // Platform name (not ID)
-  status?: "pending" | "moved_to_lead" | "rejected";
+  status?: "pipeline" | "in_progress" | "won" | "lost";
+  priority?: string; // Priority name (not ID)
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Use verifyAuth helper - handles both userId and user_id formats
     const authResult = await verifyAuth(request);
     if (authResult instanceof NextResponse) {
       return authResult;
@@ -38,9 +36,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const workspaceId: string | undefined = body?.workspaceId;
-    const rows: IncomingContactRow[] = Array.isArray(body?.rows)
-      ? body.rows
-      : [];
+    const rows: IncomingLeadRow[] = Array.isArray(body?.rows) ? body.rows : [];
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -69,6 +65,15 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // Get all priorities for name matching
+    const priorities = await getLeadPriorities();
+    const priorityMap = new Map<string, string>();
+    priorities.forEach((p) => {
+      if (p.id && p.name) {
+        priorityMap.set(p.name.toLowerCase().trim(), p.id);
+      }
+    });
+
     const normalize = (s: string) => (s || "").trim().toLowerCase();
 
     // Helper function to safely convert to string and trim
@@ -82,7 +87,6 @@ export async function POST(request: NextRequest) {
       value?: string | number | null
     ): number | null {
       if (!value) return null;
-      // Convert to string first in case it's a number from Excel
       const strValue = String(value);
       const digits = strValue.replace(/\D/g, "");
       if (!digits) return null;
@@ -119,12 +123,10 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Phone validation - non-blocking (phone number is optional)
-      // Just log a warning if phone number format is invalid, but don't skip the row
+      // Phone validation - non-blocking
       if (phoneNumber) {
         const digits = phoneNumber.replace(/\D/g, "");
         if (digits.length > 0 && digits.length !== 10) {
-          // Log warning but don't block import
           errors.push(
             `Row ${rowIdx}: Phone number has ${digits.length} digits (expected 10), will be stored as-is`
           );
@@ -144,7 +146,6 @@ export async function POST(request: NextRequest) {
         const platformName = normalize(String(row.platform || ""));
         platformId = platformMap.get(platformName) || null;
 
-        // If platform not found, create it
         if (!platformId && platformName) {
           try {
             const newPlatform = await createContactPlatform(
@@ -155,7 +156,6 @@ export async function POST(request: NextRequest) {
               platformMap.set(platformName, platformId);
             }
           } catch (e: any) {
-            // Platform might already exist (race condition), try to find it again
             const updatedPlatforms = await getContactPlatforms();
             const found = updatedPlatforms.find(
               (p) => normalize(p.name || "") === platformName
@@ -168,23 +168,32 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Resolve priority
+      let priorityId: string | null = null;
+      if (row.priority) {
+        const priorityName = normalize(String(row.priority || ""));
+        priorityId = priorityMap.get(priorityName) || null;
+      }
+
       try {
         const normalizedPhone = normalizePhoneNumber(phoneNumber);
         const normalizedAlternativePhone = normalizePhoneNumber(
           safeStringTrim(row.alternativePhoneNumber)
         );
 
-        await createSalesContact({
+        const createdLead = await createSalesLead({
           first_name: firstName,
           last_name: lastName || null,
           email: email || null,
-          phone_number:
-            normalizedPhone != null ? String(normalizedPhone) : null,
+          phone_number: normalizedPhone,
           location: safeStringTrim(row.location),
           contact_time_zone: null,
-          status: row.status || "pending",
+          status: row.status || "pipeline",
           workspace_id: workspaceId,
           platform: platformId,
+          priority: priorityId,
+          contact_id: null,
+          owner_id: null,
           alternative_email: safeStringTrim(row.alternativeEmail),
           alternative_phone_number:
             normalizedAlternativePhone != null
@@ -196,6 +205,26 @@ export async function POST(request: NextRequest) {
           comment: safeStringTrim(row.comment),
           linkedin_url: safeStringTrim(row.linkedinUrl),
         });
+
+        // Automatically assign the lead to the importer (like POST endpoint does)
+        // This ensures imported leads show up in the frontend when filtered by userId
+        try {
+          const { addLeadAssignee } = await import("@/lib/data/lead-assignees");
+          await addLeadAssignee(
+            createdLead.id,
+            requesterUserId,
+            requesterUserId
+          );
+        } catch (assignError: any) {
+          // Log error but don't fail the import
+          console.error("Failed to auto-assign imported lead:", {
+            leadId: createdLead.id,
+            userId: requesterUserId,
+            error: assignError?.message || assignError,
+          });
+          // If it's just a duplicate assignment, that's okay - continue
+        }
+
         successful++;
       } catch (e: any) {
         failed++;
@@ -209,11 +238,11 @@ export async function POST(request: NextRequest) {
       data: { successful, failed, duplicates, errors: errors.slice(0, 50) },
     });
   } catch (error) {
-    console.error("Error importing sales contacts:", error);
+    console.error("Error importing sales leads:", error);
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to import sales contacts",
+        error: "Failed to import sales leads",
         details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }

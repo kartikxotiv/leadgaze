@@ -4,6 +4,7 @@ import {
   paginateQuery,
   buildSearchQuery,
   buildWhereFilters,
+  buildDateRange,
   type PaginationResult,
 } from "../utils/supabase-queries";
 
@@ -82,17 +83,24 @@ export async function getSalesContactsPaginated(
   page: number = 1,
   limit: number = 20,
   filters?: Record<string, any>,
-  search?: string
+  search?: string,
+  dateFrom?: string,
+  dateTo?: string
 ): Promise<PaginationResult<SalesContact>> {
   const effectiveFilters = {
     is_deleted: false,
     ...(filters || {}),
   };
 
-  let query = supabase.from("sales_contacts").select("*");
+  let query = supabase.from("sales_contacts").select("*", { count: "exact" });
 
   if (effectiveFilters) {
     query = buildWhereFilters(query, effectiveFilters);
+  }
+
+  // Apply date range filter on created_at
+  if (dateFrom || dateTo) {
+    query = buildDateRange(query, "created_at", dateFrom, dateTo);
   }
 
   if (search) {
@@ -107,7 +115,25 @@ export async function getSalesContactsPaginated(
 
   query = query.order("created_at", { ascending: false });
 
-  return paginateQuery(query, { page, limit });
+  // Apply pagination manually since we're using count
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+  query = query.range(from, to);
+
+  const { data, error, count } = await query;
+
+  if (error) throw error;
+
+  const total = count ?? 0;
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    data: (data as SalesContact[]) ?? [],
+    count: total,
+    page,
+    limit,
+    totalPages,
+  };
 }
 
 export async function checkEmailExists(
