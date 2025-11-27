@@ -47,6 +47,7 @@ import {
   Loader2,
   Save,
   MoveRight,
+  LayoutGrid,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -75,6 +76,11 @@ import type {
 } from "@/components/reuseableComponent/bulk-import-export-dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { Switch } from "@/components/ui/switch";
+import { ColumnCustomizer } from "@/components/common/column-customizer";
+import type { ColumnDefinition } from "@/components/common/column-customizer";
+import { DateRangeFilter } from "@/components/common/date-range-filter";
+import type { DateRange } from "@/components/common/date-range-filter";
 
 type StatusOptionValue = NonNullable<SalesContactInsert["status"]>;
 
@@ -575,14 +581,19 @@ export default function SalesContactsPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
+  // Date range filter state
+  const [dateRange, setDateRange] = useState<DateRange | null>(null);
+
   const filters = useMemo(() => {
     if (!workspaceId) return undefined;
     return {
       page,
       limit: pageSize,
       workspaceId,
+      dateFrom: dateRange?.from ? dateRange.from.toISOString() : undefined,
+      dateTo: dateRange?.to ? dateRange.to.toISOString() : undefined,
     };
-  }, [workspaceId, page, pageSize]);
+  }, [workspaceId, page, pageSize, dateRange]);
 
   const [addPlatformDialog, setAddPlatformDialog] = useState<{
     open: boolean;
@@ -668,6 +679,23 @@ export default function SalesContactsPage() {
     string | null
   >(null);
   const [importExportDialogOpen, setImportExportDialogOpen] = useState(false);
+
+  // Column customization state
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([
+    "phone_number",
+    "email",
+    "location",
+    "platform",
+    "alternative_email",
+    "alternative_phone_number",
+    "business_contact",
+    "business_linkedin",
+    "business_name",
+    "comment",
+    "linkedin_url",
+    "status",
+  ]);
+
   const [formData, setFormData] = useState<FormData>({ ...INITIAL_FORM_STATE });
   const [errors, setErrors] = useState<Record<keyof FormData, string>>({
     ...INITIAL_FORM_ERRORS,
@@ -1289,8 +1317,26 @@ export default function SalesContactsPage() {
     [handleAddPlatformDialogOpenChange, handleEditFormChange]
   );
 
-  const columns = useMemo(
+  const tableColumnDefinitions: ColumnDefinition[] = useMemo(
     () => [
+      { id: "phone_number", label: "Phone Number" },
+      { id: "email", label: "Email" },
+      { id: "location", label: "Location" },
+      { id: "platform", label: "Platform" },
+      { id: "alternative_email", label: "Alternative Email" },
+      { id: "alternative_phone_number", label: "Alternative Phone Number" },
+      { id: "business_contact", label: "Business Contact" },
+      { id: "business_linkedin", label: "Business LinkedIn" },
+      { id: "business_name", label: "Business Name" },
+      { id: "comment", label: "Comment" },
+      { id: "linkedin_url", label: "LinkedIn URL" },
+      { id: "status", label: "Status" },
+    ],
+    []
+  );
+
+  const columns = useMemo(() => {
+    const allColumns = [
       {
         id: "full name",
         name: "Full Name",
@@ -1298,7 +1344,6 @@ export default function SalesContactsPage() {
           `${row.first_name || ""} ${row.last_name || ""}`.trim(),
         sortable: true,
       },
-
       {
         id: "phone_number",
         name: "Phone Number",
@@ -1486,17 +1531,26 @@ export default function SalesContactsPage() {
         allowOverflow: true,
         button: true,
       },
-    ],
-    [
-      handleDeleteSalesContact,
-      handleMoveToLead,
-      movingToLeadContactId,
-      router,
-      canUpdateSalesContacts,
-      canDeleteSalesContacts,
-      canCreateSalesContacts,
-    ]
-  );
+    ];
+
+    // Filter columns based on visibleColumns state
+    // Always show 'full name' and 'actions'
+    return allColumns.filter(
+      (col) =>
+        col.id === "full name" ||
+        col.id === "actions" ||
+        visibleColumns.includes(col.id)
+    );
+  }, [
+    handleDeleteSalesContact,
+    handleMoveToLead,
+    movingToLeadContactId,
+    router,
+    canUpdateSalesContacts,
+    canDeleteSalesContacts,
+    canCreateSalesContacts,
+    visibleColumns,
+  ]);
 
   const totalRows = salesContacts?.count ?? 0;
   const currentPage = salesContacts?.page ?? page;
@@ -1512,6 +1566,20 @@ export default function SalesContactsPage() {
     },
     []
   );
+
+  // Column customization handlers
+  const handleToggleColumn = useCallback((columnId: string) => {
+    setVisibleColumns((prev) =>
+      prev.includes(columnId)
+        ? prev.filter((id) => id !== columnId)
+        : [...prev, columnId]
+    );
+  }, []);
+
+  const handleApplyColumns = useCallback(() => {
+    // Columns are already filtered in the columns useMemo
+    toast.success("Column preferences applied");
+  }, []);
 
   // Import/Export configuration
   const importFields: FieldDefinition[] = useMemo(
@@ -1701,6 +1769,14 @@ export default function SalesContactsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <DateRangeFilter
+            value={dateRange}
+            onChange={(range) => {
+              setDateRange(range);
+              setPage(1); // Reset to first page when filter changes
+            }}
+            onClear={() => setPage(1)}
+          />
           <Button
             variant="outline"
             size="sm"
@@ -1719,6 +1795,13 @@ export default function SalesContactsPage() {
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
+          <ColumnCustomizer
+            columns={tableColumnDefinitions}
+            visibleColumns={visibleColumns}
+            onToggleColumn={handleToggleColumn}
+            onApply={handleApplyColumns}
+            alwaysVisibleColumns={["full name", "actions"]}
+          />
           {canCreateSalesContacts && (
             <Button
               onClick={() => handleAddSalesContactSidebarOpenChange(true)}
