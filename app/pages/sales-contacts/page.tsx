@@ -68,6 +68,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { BulkImportExportDialog } from "@/components/reuseableComponent/bulk-import-export-dialog";
+import type {
+  FieldDefinition,
+  ImportResult,
+} from "@/components/reuseableComponent/bulk-import-export-dialog";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 type StatusOptionValue = NonNullable<SalesContactInsert["status"]>;
 
@@ -81,6 +88,14 @@ interface FormData {
   platformId: string;
   platformCustom: string;
   status: StatusOptionValue;
+
+  alternativeEmail: string;
+  alternativePhoneNumber: string;
+  businessContact: string;
+  businessLinkedin: string;
+  businessName: string;
+  comment: string;
+  linkedinUrl: string;
 }
 
 const INITIAL_FORM_STATE: FormData = {
@@ -93,6 +108,13 @@ const INITIAL_FORM_STATE: FormData = {
   platformId: "",
   platformCustom: "",
   status: "pending",
+  alternativeEmail: "",
+  alternativePhoneNumber: "",
+  businessContact: "",
+  businessLinkedin: "",
+  businessName: "",
+  comment: "",
+  linkedinUrl: "",
 };
 
 const INITIAL_FORM_ERRORS: Record<keyof FormData, string> = {
@@ -105,6 +127,13 @@ const INITIAL_FORM_ERRORS: Record<keyof FormData, string> = {
   platformId: "",
   platformCustom: "",
   status: "",
+  alternativeEmail: "",
+  alternativePhoneNumber: "",
+  businessContact: "",
+  businessLinkedin: "",
+  businessName: "",
+  comment: "",
+  linkedinUrl: "",
 };
 
 const STATUS_OPTIONS: Array<{ value: StatusOptionValue; label: string }> = [
@@ -356,6 +385,115 @@ function SalesContactFormFields({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
+            <Label htmlFor="alternativePhoneNumber">
+              Alternative Phone Number
+            </Label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+              <Input
+                id="alternativePhoneNumber"
+                type="tel"
+                value={data.alternativePhoneNumber}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  const digitsOnly = value.replace(/\D/g, "");
+                  const limitedDigits = digitsOnly.slice(0, 10);
+                  onChange("alternativePhoneNumber", limitedDigits);
+                }}
+                placeholder="1234567890"
+                maxLength={10}
+                className="pl-10 bg-gray-100"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="alternativeEmail">Alternative Email</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+              <Input
+                id="alternativeEmail"
+                type="email"
+                value={data.alternativeEmail}
+                onChange={(event) =>
+                  onChange("alternativeEmail", event.target.value)
+                }
+                placeholder="alt.email@example.com"
+                className="pl-10 bg-gray-100"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
+            <Input
+              id="linkedinUrl"
+              type="url"
+              value={data.linkedinUrl}
+              onChange={(event) => onChange("linkedinUrl", event.target.value)}
+              placeholder="https://linkedin.com/in/username"
+              className="bg-gray-100"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="businessName">Business Name</Label>
+            <Input
+              id="businessName"
+              value={data.businessName}
+              onChange={(event) => onChange("businessName", event.target.value)}
+              placeholder="Company Name"
+              className="bg-gray-100"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="businessLinkedin">Business LinkedIn</Label>
+            <Input
+              id="businessLinkedin"
+              type="url"
+              value={data.businessLinkedin}
+              onChange={(event) =>
+                onChange("businessLinkedin", event.target.value)
+              }
+              placeholder="https://linkedin.com/company/companyname"
+              className="bg-gray-100"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="businessContact">Business Contact</Label>
+            <Input
+              id="businessContact"
+              value={data.businessContact}
+              onChange={(event) =>
+                onChange("businessContact", event.target.value)
+              }
+              placeholder="Business contact person"
+              className="bg-gray-100"
+              maxLength={10}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="comment">Comment</Label>
+          <textarea
+            id="comment"
+            value={data.comment}
+            onChange={(event) => onChange("comment", event.target.value)}
+            placeholder="Additional notes or comments..."
+            rows={4}
+            className="w-full rounded-md border border-input bg-gray-100 px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
             <Label htmlFor="platformId">Lead Platform</Label>
             <Select
               value={data.platformId}
@@ -376,7 +514,11 @@ function SalesContactFormFields({
               <SelectContent>
                 {platformOptions.length > 0 ? (
                   platformOptions.map((platform) => (
-                    <SelectItem key={platform.id} value={String(platform.id)}>
+                    <SelectItem
+                      key={platform.id}
+                      value={String(platform.id)}
+                      className={` hover:bg-gray-200 hover:text-black`}
+                    >
                       {platform.name}
                     </SelectItem>
                   ))
@@ -404,6 +546,8 @@ function SalesContactFormFields({
 export default function SalesContactsPage() {
   const { currentWorkspace } = useWorkspaceContext();
   const workspaceId = currentWorkspace?.id;
+  const queryClient = useQueryClient();
+  const { token } = useAuthStore();
 
   // Get workspace permissions
   const { data: permissionsData } = useWorkspacePermissions();
@@ -523,6 +667,7 @@ export default function SalesContactsPage() {
   const [movingToLeadContactId, setMovingToLeadContactId] = useState<
     string | null
   >(null);
+  const [importExportDialogOpen, setImportExportDialogOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({ ...INITIAL_FORM_STATE });
   const [errors, setErrors] = useState<Record<keyof FormData, string>>({
     ...INITIAL_FORM_ERRORS,
@@ -593,6 +738,22 @@ export default function SalesContactsPage() {
         platformId: "",
         platformCustom: "",
         status: "",
+        alternativeEmail: validateField(
+          "alternativeEmail",
+          data.alternativeEmail
+        ),
+        alternativePhoneNumber: validateField(
+          "alternativePhoneNumber",
+          data.alternativePhoneNumber
+        ),
+        businessContact: validateField("businessContact", data.businessContact),
+        businessLinkedin: validateField(
+          "businessLinkedin",
+          data.businessLinkedin
+        ),
+        businessName: validateField("businessName", data.businessName),
+        comment: validateField("comment", data.comment),
+        linkedinUrl: validateField("linkedinUrl", data.linkedinUrl),
       };
 
       return newErrors;
@@ -676,6 +837,14 @@ export default function SalesContactsPage() {
           : "",
       platformCustom: "",
       status: (contact.status as StatusOptionValue) ?? "pending",
+
+      alternativeEmail: contact.alternative_email ?? "",
+      alternativePhoneNumber: contact.alternative_phone_number ?? "",
+      businessContact: contact.business_contact ?? "",
+      businessLinkedin: contact.business_linkedin ?? "",
+      businessName: contact.business_name ?? "",
+      comment: contact.comment ?? "",
+      linkedinUrl: contact.linkedin_url ?? "",
     };
   }, []);
   const [previewContact, setPreviewContact] = useState<any | null>(null);
@@ -715,6 +884,11 @@ export default function SalesContactsPage() {
       const normalizedPhone = normalizePhoneNumberFromString(
         contact.phone_number != null ? String(contact.phone_number) : null
       );
+      const normalizedAlternativePhone = normalizePhoneNumberFromString(
+        contact.alternative_phone_number != null
+          ? String(contact.alternative_phone_number)
+          : null
+      );
       const rawPlatformId =
         contact.platform !== undefined && contact.platform !== null
           ? Number(contact.platform)
@@ -736,6 +910,16 @@ export default function SalesContactsPage() {
         platform: platformId,
         priority: null,
         contact_id: contactId,
+        alternative_email: contact.alternative_email?.trim() || null,
+        alternative_phone_number:
+          normalizedAlternativePhone != null
+            ? String(normalizedAlternativePhone)
+            : null,
+        linkedin_url: contact.linkedin_url?.trim() || null,
+        business_name: contact.business_name?.trim() || null,
+        business_linkedin: contact.business_linkedin?.trim() || null,
+        business_contact: contact.business_contact?.trim() || null,
+        comment: contact.comment?.trim() || null,
       };
 
       try {
@@ -948,6 +1132,15 @@ export default function SalesContactsPage() {
         status: formData.status,
         workspace_id: currentWorkspace.id,
         platform: platformId,
+
+        alternative_email: formData.alternativeEmail.trim() || null,
+        alternative_phone_number:
+          formData.alternativePhoneNumber.trim() || null,
+        business_contact: formData.businessContact.trim() || null,
+        business_linkedin: formData.businessLinkedin.trim() || null,
+        business_name: formData.businessName.trim() || null,
+        comment: formData.comment.trim() || null,
+        linkedin_url: formData.linkedinUrl.trim() || null,
       };
 
       try {
@@ -1022,6 +1215,14 @@ export default function SalesContactsPage() {
       contact_time_zone: editFormData.contactTimeZone.trim() || null,
       status: editFormData.status,
       platform: platformId,
+      alternative_email: editFormData.alternativeEmail.trim() || null,
+      alternative_phone_number:
+        editFormData.alternativePhoneNumber.trim() || null,
+      business_contact: editFormData.businessContact.trim() || null,
+      business_linkedin: editFormData.businessLinkedin.trim() || null,
+      business_name: editFormData.businessName.trim() || null,
+      comment: editFormData.comment.trim() || null,
+      linkedin_url: editFormData.linkedinUrl.trim() || null,
     };
 
     try {
@@ -1053,7 +1254,9 @@ export default function SalesContactsPage() {
     } catch (error: any) {
       toast.error(error?.message || "Failed to update sales contact.");
     }
+    handleSidebarOpenChange(false);
   }, [
+    deleteDialog,
     createContactPlatformMutation,
     editFormData,
     mapContactToFormData,
@@ -1102,6 +1305,12 @@ export default function SalesContactsPage() {
         selector: (row: any) => row.phone_number || "",
         sortable: true,
       },
+      {
+        id: "email",
+        name: "Email",
+        selector: (row: any) => row.email || "",
+        sortable: true,
+      },
 
       {
         id: "location",
@@ -1127,6 +1336,49 @@ export default function SalesContactsPage() {
             </span>
           );
         },
+        sortable: true,
+      },
+
+      {
+        id: "alternative_email",
+        name: "Alternative Email",
+        selector: (row: any) => row.alternative_email || "",
+        sortable: true,
+      },
+      {
+        id: "alternative_phone_number",
+        name: "Alternative Phone Number",
+        selector: (row: any) => row.alternative_phone_number || "",
+        sortable: true,
+      },
+      {
+        id: "business_contact",
+        name: "Business Contact",
+        selector: (row: any) => row.business_contact || "",
+        sortable: true,
+      },
+      {
+        id: "business_linkedin",
+        name: "Business LinkedIn",
+        selector: (row: any) => row.business_linkedin || "",
+        sortable: true,
+      },
+      {
+        id: "business_name",
+        name: "Business Name",
+        selector: (row: any) => row.business_name || "",
+        sortable: true,
+      },
+      {
+        id: "comment",
+        name: "Comment",
+        selector: (row: any) => row.comment || "",
+        sortable: true,
+      },
+      {
+        id: "linkedin_url",
+        name: "LinkedIn URL",
+        selector: (row: any) => row.linkedin_url || "",
         sortable: true,
       },
 
@@ -1261,6 +1513,123 @@ export default function SalesContactsPage() {
     []
   );
 
+  // Import/Export configuration
+  const importFields: FieldDefinition[] = useMemo(
+    () => [
+      { key: "firstName", label: "First Name", required: true },
+      { key: "lastName", label: "Last Name", required: true },
+      { key: "email", label: "Email", required: true },
+      { key: "phoneNumber", label: "Phone Number", required: false },
+      { key: "location", label: "Location", required: false },
+      { key: "alternativeEmail", label: "Alternative Email", required: false },
+      {
+        key: "alternativePhoneNumber",
+        label: "Alternative Phone Number",
+        required: false,
+      },
+      { key: "businessName", label: "Business Name", required: false },
+      { key: "businessLinkedin", label: "Business LinkedIn", required: false },
+      { key: "businessContact", label: "Business Contact", required: false },
+      { key: "linkedinUrl", label: "LinkedIn URL", required: false },
+      { key: "comment", label: "Comment", required: false },
+      { key: "status", label: "Status", required: false },
+      { key: "platform", label: "Platform", required: false },
+    ],
+    []
+  );
+
+  const exportFields: FieldDefinition[] = useMemo(
+    () => [
+      { key: "first_name", label: "First Name", required: false },
+      { key: "last_name", label: "Last Name", required: false },
+      { key: "email", label: "Email", required: false },
+      { key: "phone_number", label: "Phone Number", required: false },
+      { key: "location", label: "Location", required: false },
+      { key: "alternative_email", label: "Alternative Email", required: false },
+      {
+        key: "alternative_phone_number",
+        label: "Alternative Phone Number",
+        required: false,
+      },
+      { key: "business_name", label: "Business Name", required: false },
+      { key: "business_linkedin", label: "Business LinkedIn", required: false },
+      { key: "business_contact", label: "Business Contact", required: false },
+      { key: "linkedin_url", label: "LinkedIn URL", required: false },
+      { key: "comment", label: "Comment", required: false },
+      { key: "status", label: "Status", required: false },
+      { key: "platform_label", label: "Platform", required: false },
+    ],
+    []
+  );
+
+  const importSampleData = useMemo(
+    () => [
+      [
+        "John",
+        "Doe",
+        "john.doe@example.com",
+        "1234567890",
+        "New York, USA",
+        "alt.john@example.com",
+        "9876543210",
+        "Acme Corp",
+        "https://linkedin.com/company/acme",
+        "Jane Smith",
+        "https://linkedin.com/in/johndoe",
+        "Interested in product",
+        "pending",
+        "LinkedIn",
+      ],
+      [
+        "Jane",
+        "Smith",
+        "jane.smith@techcorp.com",
+        "2345678901",
+        "San Francisco, CA",
+        "",
+        "",
+        "TechCorp Inc",
+        "https://linkedin.com/company/techcorp",
+        "Mike Johnson",
+        "https://linkedin.com/in/janesmith",
+        "Need follow up",
+        "pending",
+        "Website",
+      ],
+    ],
+    []
+  );
+
+  const handleImportComplete = useCallback(
+    (results: ImportResult) => {
+      // Refetch sales contacts after import
+      queryClient.invalidateQueries({ queryKey: ["sales-contacts"] });
+      toast.success(
+        `Import completed: ${results.successful} successful, ${results.failed} failed, ${results.duplicates} duplicates`
+      );
+    },
+    [queryClient]
+  );
+
+  const exportDataTransform = useCallback((row: any) => {
+    return [
+      row.first_name || "",
+      row.last_name || "",
+      row.email || "",
+      row.phone_number || "",
+      row.location || "",
+      row.alternative_email || "",
+      row.alternative_phone_number || "",
+      row.business_name || "",
+      row.business_linkedin || "",
+      row.business_contact || "",
+      row.linkedin_url || "",
+      row.comment || "",
+      row.status_label || "",
+      row.platform_label || "",
+    ];
+  }, []);
+
   const renderTable = () => {
     if (!workspaceId) {
       return (
@@ -1332,11 +1701,21 @@ export default function SalesContactsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setImportExportDialogOpen(true)}
+            disabled={!workspaceId}
+          >
             <Upload className="mr-2 h-4 w-4" />
             Import
           </Button>
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setImportExportDialogOpen(true)}
+            disabled={!tableData || tableData.length === 0}
+          >
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
@@ -1571,6 +1950,24 @@ export default function SalesContactsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <BulkImportExportDialog
+        open={importExportDialogOpen}
+        onOpenChange={setImportExportDialogOpen}
+        title="Import / Export Sales Contacts"
+        description="Import contacts from Excel/CSV files or export existing contacts"
+        importFields={importFields}
+        importApiEndpoint="/api/sales-contacts/import"
+        importSampleData={importSampleData}
+        importFileName="sales-contacts"
+        exportData={tableData}
+        exportFields={exportFields}
+        exportFileName="sales-contacts"
+        exportDataTransform={exportDataTransform}
+        workspaceId={workspaceId}
+        onImportComplete={handleImportComplete}
+        token={token || undefined}
+      />
     </DashboardLayout>
   );
 }

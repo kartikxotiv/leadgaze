@@ -10,10 +10,10 @@ import { getSalesLeadById } from "@/lib/data/sales-leads";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const assignees = await getLeadAssignees(id);
     return NextResponse.json({ success: true, data: assignees });
   } catch (error: any) {
@@ -30,7 +30,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get current user from token
@@ -40,7 +40,7 @@ export async function POST(
     }
     const { userId: currentUserId } = authResult;
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     if (!body.userId) {
@@ -211,7 +211,7 @@ export async function POST(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get current user from token
@@ -221,7 +221,7 @@ export async function PUT(
     }
     const { userId: currentUserId } = authResult;
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     if (!Array.isArray(body.userIds)) {
@@ -410,10 +410,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
 

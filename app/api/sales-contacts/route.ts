@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSalesContactsPaginated, createSalesContact, updateSalesContact, deleteSalesContact } from "@/lib/data/sales-contacts";
+import {
+  getSalesContactsPaginated,
+  createSalesContact,
+  updateSalesContact,
+  deleteSalesContact,
+} from "@/lib/data/sales-contacts";
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,12 +26,20 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const result = await getSalesContactsPaginated(page, limit, filters, search);
+    const result = await getSalesContactsPaginated(
+      page,
+      limit,
+      filters,
+      search
+    );
     return NextResponse.json({ success: true, data: result });
   } catch (error: any) {
     console.error("Error fetching sales contacts:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to fetch sales contacts" },
+      {
+        success: false,
+        error: error.message || "Failed to fetch sales contacts",
+      },
       { status: 500 }
     );
   }
@@ -39,12 +52,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: salesContact });
   } catch (error: any) {
     console.error("Error creating sales contact:", error);
+    const statusCode = error.message?.includes("already exists") ? 409 : 500;
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to create sales contact" },
-      { status: 500 }
+      {
+        success: false,
+        error: error.message || "Failed to create sales contact",
+      },
+      { status: statusCode }
     );
   }
-}       
+}
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
@@ -53,11 +70,14 @@ export async function PUT(request: NextRequest) {
   } catch (error: any) {
     console.error("Error updating sales contact:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to update sales contact" },
+      {
+        success: false,
+        error: error.message || "Failed to update sales contact",
+      },
       { status: 500 }
     );
   }
-}   
+}
 export async function DELETE(request: NextRequest) {
   try {
     const body = await request.json();
@@ -66,7 +86,10 @@ export async function DELETE(request: NextRequest) {
   } catch (error: any) {
     console.error("Error deleting sales contact:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to delete sales contact" },
+      {
+        success: false,
+        error: error.message || "Failed to delete sales contact",
+      },
       { status: 500 }
     );
   }
