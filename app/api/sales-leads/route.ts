@@ -113,12 +113,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: salesLead });
   } catch (error: any) {
     console.error("Error creating sales lead:", error);
+    const statusCode = error.message?.includes("already exists") ? 409 : 500;
     return NextResponse.json(
       {
         success: false,
         error: error?.message ?? "Failed to create sales lead",
       },
-      { status: 500 }
+      { status: statusCode }
     );
   }
 }
@@ -136,12 +137,13 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true, data: salesLead });
   } catch (error: any) {
     console.error("Error updating sales lead:", error);
+    const statusCode = error.message?.includes("already exists") ? 409 : 500;
     return NextResponse.json(
       {
         success: false,
         error: error?.message ?? "Failed to update sales lead",
       },
-      { status: 500 }
+      { status: statusCode }
     );
   }
 }

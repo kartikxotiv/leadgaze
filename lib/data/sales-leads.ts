@@ -282,9 +282,46 @@ export async function getSalesLeadsPaginated(
   };
 }
 
+export async function checkEmailExists(
+  email: string | null | undefined,
+  workspaceId: string,
+  excludeLeadId?: string
+): Promise<boolean> {
+  if (!email || !email.trim()) {
+    return false; // Empty emails are allowed (email is nullable)
+  }
+
+  let query = supabase
+    .from("sales_leads")
+    .select("id")
+    .eq("email", email.trim().toLowerCase())
+    .eq("workspace_id", workspaceId)
+    .eq("is_deleted", false)
+    .limit(1);
+
+  if (excludeLeadId) {
+    query = query.neq("id", excludeLeadId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) throw error;
+  return (data?.length ?? 0) > 0;
+}
+
 export async function createSalesLead(
   input: SalesLeadInsert
 ): Promise<SalesLead> {
+  // Check for duplicate email in the same workspace
+  if (input.email && input.workspace_id) {
+    const emailExists = await checkEmailExists(input.email, input.workspace_id);
+    if (emailExists) {
+      throw new Error(
+        "A lead with this email already exists in this workspace."
+      );
+    }
+  }
+
   const payload: SalesLeadInsert = {
     ...input,
     is_deleted: input.is_deleted ?? false,
@@ -304,6 +341,28 @@ export async function updateSalesLead(
   leadId: string,
   updates: SalesLeadUpdate
 ): Promise<SalesLead> {
+  // Check for duplicate email if email is being updated
+  if (updates.email !== undefined) {
+    // First get the current lead to get workspace_id
+    const currentLead = await getSalesLeadById(leadId);
+    if (!currentLead) {
+      throw new Error("Lead not found");
+    }
+
+    if (updates.email && currentLead.workspace_id) {
+      const emailExists = await checkEmailExists(
+        updates.email,
+        currentLead.workspace_id,
+        leadId // Exclude current lead from check
+      );
+      if (emailExists) {
+        throw new Error(
+          "A lead with this email already exists in this workspace."
+        );
+      }
+    }
+  }
+
   const { data, error } = await supabase
     .from("sales_leads")
     .update({

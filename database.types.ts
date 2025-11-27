@@ -1534,6 +1534,12 @@ export type Database = {
       }
       sales_leads: {
         Row: {
+          alternative_email: string | null
+          alternative_phone_number: string | null
+          business_contact: string | null
+          business_linkedin: string | null
+          business_name: string | null
+          comment: string | null
           contact_id: string | null
           contact_time_zone: string | null
           created_at: string
@@ -1544,6 +1550,7 @@ export type Database = {
           id: string
           is_deleted: boolean
           last_name: string | null
+          linkedin_url: string | null
           location: string | null
           owner_id: string | null
           phone_number: number | null
@@ -1554,6 +1561,12 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          alternative_email?: string | null
+          alternative_phone_number?: string | null
+          business_contact?: string | null
+          business_linkedin?: string | null
+          business_name?: string | null
+          comment?: string | null
           contact_id?: string | null
           contact_time_zone?: string | null
           created_at?: string
@@ -1564,6 +1577,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           last_name?: string | null
+          linkedin_url?: string | null
           location?: string | null
           owner_id?: string | null
           phone_number?: number | null
@@ -1574,6 +1588,12 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          alternative_email?: string | null
+          alternative_phone_number?: string | null
+          business_contact?: string | null
+          business_linkedin?: string | null
+          business_name?: string | null
+          comment?: string | null
           contact_id?: string | null
           contact_time_zone?: string | null
           created_at?: string
@@ -1584,6 +1604,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           last_name?: string | null
+          linkedin_url?: string | null
           location?: string | null
           owner_id?: string | null
           phone_number?: number | null
