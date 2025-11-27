@@ -12,6 +12,8 @@ export interface SalesContactFilters {
   page?: number;
   limit?: number;
   workspaceId?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 function buildQueryString(filters?: SalesContactFilters): string {
@@ -20,6 +22,12 @@ function buildQueryString(filters?: SalesContactFilters): string {
   params.set("limit", String(filters?.limit ?? 20));
   if (filters?.search) {
     params.set("search", filters.search);
+  }
+  if (filters?.dateFrom) {
+    params.set("dateFrom", filters.dateFrom);
+  }
+  if (filters?.dateTo) {
+    params.set("dateTo", filters.dateTo);
   }
 
   const filterPayload: Record<string, string> = {};
@@ -40,8 +48,7 @@ async function requestJSON<T>(url: string, init?: RequestInit): Promise<T> {
 
   try {
     payload = await response.json();
-  } catch {
-  }
+  } catch {}
 
   const errorMessage =
     payload?.error ||

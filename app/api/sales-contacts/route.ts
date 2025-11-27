@@ -12,6 +12,8 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "50");
     const search = searchParams.get("search") || "";
+    const dateFrom = searchParams.get("dateFrom") || undefined;
+    const dateTo = searchParams.get("dateTo") || undefined;
     let filters = {};
 
     const rawFilters = searchParams.get("filters");
@@ -30,7 +32,9 @@ export async function GET(request: NextRequest) {
       page,
       limit,
       filters,
-      search
+      search,
+      dateFrom,
+      dateTo
     );
     return NextResponse.json({ success: true, data: result });
   } catch (error: any) {

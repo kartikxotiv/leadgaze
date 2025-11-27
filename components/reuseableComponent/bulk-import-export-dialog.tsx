@@ -141,7 +141,14 @@ export function BulkImportExportDialog({
         });
 
         if (matchingHeader) {
-          transformedData[field.key] = row[matchingHeader] || "";
+          const value = row[matchingHeader];
+          // Preserve the actual value (including 0 and numbers) instead of defaulting to ""
+          // Convert to string for phone numbers to ensure proper handling
+          if (value !== undefined && value !== null) {
+            transformedData[field.key] = String(value);
+          } else {
+            transformedData[field.key] = "";
+          }
         }
       });
 

@@ -62,6 +62,9 @@ import {
   Smile,
   AtSign,
   Hash,
+  Download,
+  Upload,
+  LayoutGrid,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -91,6 +94,15 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { BulkImportExportDialog } from "@/components/reuseableComponent/bulk-import-export-dialog";
+import type {
+  FieldDefinition,
+  ImportResult,
+} from "@/components/reuseableComponent/bulk-import-export-dialog";
+import { useQueryClient } from "@tanstack/react-query";
+import { Switch } from "@/components/ui/switch";
+import { ColumnCustomizer } from "@/components/common/column-customizer";
+import type { ColumnDefinition } from "@/components/common/column-customizer";
 
 import {
   X,
@@ -856,7 +868,8 @@ const SalesLeadFormFields = ({
 export default function SalesLeadsPage() {
   const { currentWorkspace } = useWorkspaceContext();
   const workspaceId = currentWorkspace?.id;
-  const { user, token } = useAuthStore();
+  const { user, token, currentOrganization } = useAuthStore();
+  const queryClient = useQueryClient();
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -884,14 +897,13 @@ export default function SalesLeadsPage() {
     isLoading,
     isError,
     error,
+    refetch: refetchSalesLeads,
   } = useSalesLeads(filters);
 
-  // Get workspace permissions
   const { data: permissionsData, isLoading: isLoadingPermissions } =
     useWorkspacePermissions();
   const canViewSalesLeads = useWorkspaceRoutePermission("Sales Leads", "view");
 
-  // Check if user has assigned leads (even without explicit view permission, they should see their assigned leads)
   const hasAssignedLeads = salesLeads && salesLeads.count > 0;
 
   // IMPORTANT: Only bypass view permission if user has assigned leads
@@ -1069,6 +1081,24 @@ export default function SalesLeadsPage() {
   });
   const [previewLead, setPreviewLead] = useState<any | null>(null);
   const [newCommentText, setNewCommentText] = useState("");
+  const [importExportDialogOpen, setImportExportDialogOpen] = useState(false);
+
+  // Column customization state
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([
+    "email",
+    "phone_number",
+    "status",
+    "priority",
+    "Location",
+    "alternative_email",
+    "alternative_phone_number",
+    "linkedin_url",
+    "business_name",
+    "business_linkedin",
+    "business_contact",
+    "comment",
+    "updated_at",
+  ]);
   const previewLeadDisplayName = useMemo(() => {
     if (!previewLead) return "";
     const name = `${previewLead.first_name ?? ""} ${
@@ -1963,8 +1993,169 @@ export default function SalesLeadsPage() {
     []
   );
 
-  const columns = useMemo(
+  // Column customization handlers
+  const handleToggleColumn = useCallback((columnId: string) => {
+    setVisibleColumns((prev) =>
+      prev.includes(columnId)
+        ? prev.filter((id) => id !== columnId)
+        : [...prev, columnId]
+    );
+  }, []);
+
+  const handleApplyColumns = useCallback(() => {
+    // Columns are already filtered in the columns useMemo
+    toast.success("Column preferences applied");
+  }, []);
+
+  // Import/Export configuration
+  const importFields: FieldDefinition[] = useMemo(
     () => [
+      { key: "firstName", label: "First Name", required: true },
+      { key: "lastName", label: "Last Name", required: true },
+      { key: "email", label: "Email", required: true },
+      { key: "phoneNumber", label: "Phone Number", required: false },
+      { key: "location", label: "Location", required: false },
+      { key: "alternativeEmail", label: "Alternative Email", required: false },
+      {
+        key: "alternativePhoneNumber",
+        label: "Alternative Phone Number",
+        required: false,
+      },
+      { key: "businessName", label: "Business Name", required: false },
+      { key: "businessLinkedin", label: "Business LinkedIn", required: false },
+      { key: "businessContact", label: "Business Contact", required: false },
+      { key: "linkedinUrl", label: "LinkedIn URL", required: false },
+      { key: "comment", label: "Comment", required: false },
+      { key: "status", label: "Status", required: false },
+      { key: "platform", label: "Platform", required: false },
+      { key: "priority", label: "Priority", required: false },
+    ],
+    []
+  );
+
+  const exportFields: FieldDefinition[] = useMemo(
+    () => [
+      { key: "first_name", label: "First Name", required: false },
+      { key: "last_name", label: "Last Name", required: false },
+      { key: "email", label: "Email", required: false },
+      { key: "phone_display", label: "Phone Number", required: false },
+      { key: "location", label: "Location", required: false },
+      { key: "alternative_email", label: "Alternative Email", required: false },
+      {
+        key: "alternative_phone_number",
+        label: "Alternative Phone Number",
+        required: false,
+      },
+      { key: "business_name", label: "Business Name", required: false },
+      { key: "business_linkedin", label: "Business LinkedIn", required: false },
+      { key: "business_contact", label: "Business Contact", required: false },
+      { key: "linkedin_url", label: "LinkedIn URL", required: false },
+      { key: "comment", label: "Comment", required: false },
+      { key: "status_label", label: "Status", required: false },
+      { key: "platform_label", label: "Platform", required: false },
+      { key: "priority_label", label: "Priority", required: false },
+    ],
+    []
+  );
+
+  const importSampleData = useMemo(
+    () => [
+      [
+        "John",
+        "Doe",
+        "john.doe@example.com",
+        "1234567890",
+        "New York, USA",
+        "alt.john@example.com",
+        "9876543210",
+        "Acme Corp",
+        "https://linkedin.com/company/acme",
+        "Jane Smith",
+        "https://linkedin.com/in/johndoe",
+        "Interested in product",
+        "pipeline",
+        "LinkedIn",
+        "High",
+      ],
+      [
+        "Jane",
+        "Smith",
+        "jane.smith@techcorp.com",
+        "2345678901",
+        "San Francisco, CA",
+        "",
+        "",
+        "TechCorp Inc",
+        "https://linkedin.com/company/techcorp",
+        "Mike Johnson",
+        "https://linkedin.com/in/janesmith",
+        "Need follow up",
+        "in_progress",
+        "Website",
+        "Normal",
+      ],
+    ],
+    []
+  );
+
+  const handleImportComplete = useCallback(
+    async (results: ImportResult) => {
+      // Invalidate all sales-leads queries
+      queryClient.invalidateQueries({ queryKey: ["sales-leads"] });
+
+      // Reset to page 1 to see newly imported leads (they appear first due to created_at DESC order)
+      // This will automatically trigger a refetch because filters will change
+      setPage(1);
+
+      toast.success(
+        `Import completed: ${results.successful} successful, ${results.failed} failed, ${results.duplicates} duplicates`
+      );
+    },
+    [queryClient]
+  );
+
+  const exportDataTransform = useCallback((row: any) => {
+    return [
+      row.first_name || "",
+      row.last_name || "",
+      row.email || "",
+      row.phone_display || "",
+      row.location || "",
+      row.alternative_email || "",
+      row.alternative_phone_number || "",
+      row.business_name || "",
+      row.business_linkedin || "",
+      row.business_contact || "",
+      row.linkedin_url || "",
+      row.comment || "",
+      row.status_label || "",
+      row.platform_label || "",
+      row.priority_label || "",
+    ];
+  }, []);
+
+  // Define table columns for customization
+  const tableColumnDefinitions: ColumnDefinition[] = useMemo(
+    () => [
+      { id: "email", label: "Email" },
+      { id: "phone_number", label: "Phone" },
+      { id: "status", label: "Status" },
+      { id: "priority", label: "Priority" },
+      { id: "Location", label: "Location" },
+      { id: "alternative_email", label: "Alternative Email" },
+      { id: "alternative_phone_number", label: "Alternative Phone Number" },
+      { id: "linkedin_url", label: "LinkedIn URL" },
+      { id: "business_name", label: "Business Name" },
+      { id: "business_linkedin", label: "Business LinkedIn" },
+      { id: "business_contact", label: "Business Contact" },
+      { id: "comment", label: "Comment" },
+      { id: "updated_at", label: "Updated" },
+    ],
+    []
+  );
+
+  const columns = useMemo(() => {
+    const allColumns = [
       {
         id: "name",
         name: "Lead Name",
@@ -2159,15 +2350,24 @@ export default function SalesLeadsPage() {
         allowOverflow: true,
         button: true,
       },
-    ],
-    [
-      handleDeleteSalesLead,
-      handlePreviewLead,
-      canUpdateSalesLeads,
-      canDeleteSalesLeads,
-      canCreateSalesLeads,
-    ]
-  );
+    ];
+
+    // Filter columns based on visibleColumns state
+    // Always show 'name' and 'actions'
+    return allColumns.filter(
+      (col) =>
+        col.id === "name" ||
+        col.id === "actions" ||
+        visibleColumns.includes(col.id)
+    );
+  }, [
+    handleDeleteSalesLead,
+    handlePreviewLead,
+    canUpdateSalesLeads,
+    canDeleteSalesLeads,
+    canCreateSalesLeads,
+    visibleColumns,
+  ]);
 
   const totalRows = salesLeads?.count ?? 0;
   const currentPage = salesLeads?.page ?? page;
@@ -2266,6 +2466,31 @@ export default function SalesLeadsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setImportExportDialogOpen(true)}
+            disabled={!workspaceId}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Import
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setImportExportDialogOpen(true)}
+            disabled={!tableData || tableData.length === 0}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export
+          </Button>
+          <ColumnCustomizer
+            columns={tableColumnDefinitions}
+            visibleColumns={visibleColumns}
+            onToggleColumn={handleToggleColumn}
+            onApply={handleApplyColumns}
+            alwaysVisibleColumns={["name", "actions"]}
+          />
           {canCreateSalesLeads && (
             <Button onClick={() => handleAddSalesLeadSidebarOpenChange(true)}>
               <Plus className="h-4 w-4" />
@@ -3128,6 +3353,24 @@ export default function SalesLeadsPage() {
         isLoading={deleteMeetingMutation.isPending}
         title="Delete Meeting"
         description={`Are you sure you want to delete "${meetingDeleteDialog.meetingTitle}"? This action cannot be undone.`}
+      />
+
+      <BulkImportExportDialog
+        open={importExportDialogOpen}
+        onOpenChange={setImportExportDialogOpen}
+        title="Import / Export Sales Leads"
+        description="Import leads from Excel/CSV files or export existing leads"
+        importFields={importFields}
+        importApiEndpoint="/api/sales-leads/import"
+        importSampleData={importSampleData}
+        importFileName="sales-leads"
+        exportData={tableData}
+        exportFields={exportFields}
+        exportFileName="sales-leads"
+        exportDataTransform={exportDataTransform}
+        workspaceId={workspaceId}
+        onImportComplete={handleImportComplete}
+        token={token || undefined}
       />
     </DashboardLayout>
   );
