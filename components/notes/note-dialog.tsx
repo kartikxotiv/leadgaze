@@ -22,13 +22,10 @@ import {
   type Note,
 } from "@/hooks/use-notes";
 import { useWorkspaceContext } from "@/hooks/use-workspace-context";
-import { Loader2, FileText, Edit, Trash2, Plus, Eye } from "lucide-react";
+import { Loader2, FileText, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
+import { NoteCard as ExternalNoteCard } from "@/components/sales-leads/note-card";
 
 interface NoteDialogProps {
   open: boolean;
@@ -36,103 +33,6 @@ interface NoteDialogProps {
   leadId: string;
   noteId?: string;
   onSuccess?: () => void;
-}
-
-function formatTimestamp(dateString: string): string {
-  try {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-
-    if (diffInHours < 24) {
-      return formatDistanceToNow(date, { addSuffix: true });
-    }
-
-    return (
-      date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      }) +
-      " at " +
-      date.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      })
-    );
-  } catch (error) {
-    return "Recently";
-  }
-}
-
-function NoteCard({
-  note,
-  onEdit,
-  onDelete,
-  isDeleting,
-}: {
-  note: Note;
-  onEdit: (note: Note) => void;
-  onDelete: (noteId: string) => void;
-  isDeleting?: boolean;
-}) {
-  const timestamp = formatTimestamp(note.createdAt);
-
-  return (
-    <Card
-      className="group hover:shadow-md transition-all duration-200 cursor-pointer"
-      onClick={() => onEdit(note)}
-    >
-      <CardContent className="p-4">
-        <div className="flex gap-3">
-          <Avatar className="h-10 w-10 flex-shrink-0">
-            <AvatarFallback className="bg-blue-500 text-white font-medium text-sm">
-              <FileText className="h-5 w-5" />
-            </AvatarFallback>
-          </Avatar>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
-                  {note.title}
-                </h4>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {timestamp}
-                </span>
-              </div>
-              <div
-                className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => onEdit(note)}
-                >
-                  <Edit className="h-3.5 w-3.5 text-gray-500 hover:text-blue-600" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => onDelete(note.id)}
-                  disabled={isDeleting}
-                >
-                  <Trash2 className="h-3.5 w-3.5 text-gray-500 hover:text-red-600" />
-                </Button>
-              </div>
-            </div>
-
-            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words leading-relaxed line-clamp-3">
-              {note.description}
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
 }
 
 export function NoteDialog({
@@ -194,6 +94,40 @@ export function NoteDialog({
     }
   }, [open, leadId, refetchNotes]);
 
+  // Populate form when noteId is provided or when notes are loaded
+  useEffect(() => {
+    if (!open) return;
+
+    // If noteId is provided, find and populate the note
+    if (noteId && notes.length > 0) {
+      const noteToEdit = notes.find((note) => note.id === noteId);
+      if (noteToEdit) {
+        setSelectedNote(noteToEdit);
+        setTitle(noteToEdit.title);
+        setDescription(noteToEdit.description);
+        return;
+      }
+    }
+
+    // If selectedNote is set but form doesn't match, populate it
+    if (selectedNote) {
+      if (
+        title !== selectedNote.title ||
+        description !== selectedNote.description
+      ) {
+        setTitle(selectedNote.title);
+        setDescription(selectedNote.description);
+        return;
+      }
+    }
+
+    // Reset form when creating new note (no noteId and no selectedNote)
+    if (!noteId && !selectedNote && (title || description)) {
+      setTitle("");
+      setDescription("");
+    }
+  }, [open, noteId, notes, selectedNote]);
+
   useEffect(() => {
     if (viewNotesModalOpen && leadId) {
       refetchNotes();
@@ -254,9 +188,17 @@ export function NoteDialog({
       handleCancelEdit();
       await refetchNotes();
       onSuccess?.();
-    } catch (error) {}
-
-    handleClose();
+      handleClose(); // Only close on success
+    } catch (error: any) {
+      console.error("Error saving note:", error);
+      const errorMessage =
+        error?.response?.data?.error ||
+        error?.message ||
+        error?.data?.error ||
+        "Failed to save note. Please try again.";
+      toast.error(errorMessage);
+      // Don't close dialog on error - let user see the error and retry
+    }
   };
 
   const handleDelete = async (noteIdToDelete?: string) => {
@@ -268,7 +210,15 @@ export function NoteDialog({
       setDeleteDialog({ open: false });
       await refetchNotes();
       onSuccess?.();
-    } catch (error) {}
+    } catch (error: any) {
+      console.error("Error deleting note:", error);
+      const errorMessage =
+        error?.response?.data?.error ||
+        error?.message ||
+        error?.data?.error ||
+        "Failed to delete note. Please try again.";
+      toast.error(errorMessage);
+    }
   };
 
   const handleClose = () => {
@@ -290,7 +240,7 @@ export function NoteDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0 [&>button]:hidden">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0 ">
           <DialogHeader className="px-4 pt-6 pb-4 border-b">
             <div className="flex items-center justify-between">
               <div>
@@ -303,7 +253,7 @@ export function NoteDialog({
                   ones.
                 </DialogDescription>
               </div>
-              <Button
+              {/* <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setViewNotesModalOpen(true)}
@@ -311,7 +261,7 @@ export function NoteDialog({
               >
                 View Notes{" "}
                 <span className="text-sm text-red-500 ">{notes.length}</span>
-              </Button>
+              </Button> */}
             </div>
           </DialogHeader>
 
@@ -414,7 +364,7 @@ export function NoteDialog({
             ) : (
               <div className="space-y-3">
                 {notes.map((note: Note) => (
-                  <NoteCard
+                  <ExternalNoteCard
                     key={note.id}
                     note={note}
                     onEdit={handleEdit}

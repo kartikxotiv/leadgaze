@@ -3,6 +3,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Plus, Download, Upload } from "lucide-react";
 import { useWorkspaceContext } from "@/hooks/use-workspace-context";
 import {
   useWorkspacePermissions,
@@ -18,10 +20,10 @@ import type { ImportResult } from "@/components/reuseableComponent/bulk-import-e
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import type { ColumnDefinition } from "@/components/common/column-customizer";
+import { ColumnCustomizer } from "@/components/common/column-customizer";
 import { formatStatus } from "@/lib/utils/sales-lead-utils";
 import { STATUS_STYLE_MAP } from "@/lib/constants/sales-leads";
 import { useSalesLeadTableColumns } from "@/components/sales-leads/sales-lead-table-columns";
-import { SalesLeadsHeader } from "@/components/sales-leads/sales-leads-header";
 import { SalesLeadsTable } from "@/components/sales-leads/sales-leads-table";
 import { AddLeadSidebar } from "@/components/sales-leads/add-lead-sidebar";
 import { AddPlatformDialog } from "@/components/sales-leads/add-platform-dialog";
@@ -38,11 +40,8 @@ import { NoteDialog } from "@/components/notes/note-dialog";
 import { MeetingDialog } from "@/components/meetings/meeting-dialog";
 import { MeetingDetailsDialog } from "@/components/meetings/meeting-details-dialog";
 import { LeadMediaDialog } from "@/components/lead-media/lead-media-dialog";
-import { useBusinesses } from "@/hooks/use-business";
-import AddBusiness from "@/components/business/add-business";
-import { ADD_BUSINESS_SELECT_VALUE } from "@/lib/constants/sales-leads";
 
-export default function SalesLeadsPage() {
+export default function OpportunitiesPage() {
   const { currentWorkspace } = useWorkspaceContext();
   const workspaceId = currentWorkspace?.id;
   const queryClient = useQueryClient();
@@ -73,7 +72,6 @@ export default function SalesLeadsPage() {
     salesLeadId?: string;
     salesLeadName?: string;
   }>({ open: false });
-  const [addBusinessDialogOpen, setAddBusinessDialogOpen] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
     "email",
     "phone_number",
@@ -106,11 +104,13 @@ export default function SalesLeadsPage() {
     "delete"
   );
 
+  // Filter by status = "opportunities"
   const dataHook = useSalesLeadsData(
     workspaceId,
     page,
     pageSize,
-    previewLead?.id
+    previewLead?.id,
+    "opportunities"
   );
 
   const hasAssignedLeads = dataHook.salesLeads && dataHook.salesLeads.count > 0;
@@ -136,14 +136,12 @@ export default function SalesLeadsPage() {
   const formHook = useSalesLeadForm();
 
   const statusLabel = useMemo(() => {
-    // Use editFormData.status if available (when editing), otherwise use previewLead.status
     const status = formHook.editFormData.status || previewLead?.status;
     if (!status) return "";
     return formatStatus(status);
   }, [formHook.editFormData.status, previewLead?.status]);
 
   const statusClassName = useMemo(() => {
-    // Use editFormData.status if available (when editing), otherwise use previewLead.status
     const status = formHook.editFormData.status || previewLead?.status;
     if (!status) return "bg-gray-100 text-gray-700";
     return (
@@ -227,32 +225,6 @@ export default function SalesLeadsPage() {
     [deleteMeetingMutation]
   );
 
-  // Fetch businesses for dropdown
-  const { data: businessesData, isLoading: businessesLoading } = useBusinesses({
-    page: 1,
-    limit: 1000, // Get all businesses for dropdown
-  });
-  const businessOptions = useMemo(() => {
-    return businessesData?.data ?? [];
-  }, [businessesData?.data]);
-
-  // Handle add business click
-  const handleAddBusinessClick = useCallback(() => {
-    setAddBusinessDialogOpen(true);
-  }, []);
-
-  // Handle business select change
-  const handleBusinessSelectChange = useCallback(
-    (value: string) => {
-      if (value === ADD_BUSINESS_SELECT_VALUE) {
-        handleAddBusinessClick();
-        return;
-      }
-      formHook.handleFormChange("businessId", value);
-    },
-    [formHook.handleFormChange, handleAddBusinessClick]
-  );
-
   const tableColumnDefinitions: ColumnDefinition[] = useMemo(
     () => [
       { id: "email", label: "Email" },
@@ -286,9 +258,11 @@ export default function SalesLeadsPage() {
       <DashboardLayout>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-medium tracking-tight">Sales Leads</h1>
+            <h1 className="text-2xl font-medium tracking-tight">
+              Opportunities
+            </h1>
             <p className="text-sm text-muted-foreground">
-              Manage your sales pipeline
+              Manage your opportunities pipeline
             </p>
           </div>
         </div>
@@ -305,7 +279,7 @@ export default function SalesLeadsPage() {
         <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-6 text-sm text-muted-foreground text-center">
           <AlertCircle className="h-8 w-8 mx-auto mb-2 text-muted-foreground/60" />
           <p>
-            You don't have permission to view sales leads in this workspace.
+            You don't have permission to view opportunities in this workspace.
           </p>
           <p className="text-xs mt-1">
             Contact your workspace administrator to grant access.
@@ -317,20 +291,51 @@ export default function SalesLeadsPage() {
 
   return (
     <DashboardLayout>
-      <SalesLeadsHeader
-        onImportClick={() => setImportExportDialogOpen(true)}
-        onExportClick={() => setImportExportDialogOpen(true)}
-        canImport={!!workspaceId}
-        canExport={!!dataHook.tableData && dataHook.tableData.length > 0}
-        tableColumnDefinitions={tableColumnDefinitions}
-        visibleColumns={visibleColumns}
-        onToggleColumn={handleToggleColumn}
-        onApplyColumns={handleApplyColumns}
-        canCreateSalesLeads={canCreateSalesLeads}
-        onAddLeadClick={() =>
-          actionsHook.handleAddSalesLeadSidebarOpenChange(true)
-        }
-      />
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-medium tracking-tight">Opportunities</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage your opportunities pipeline
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setImportExportDialogOpen(true)}
+            disabled={!workspaceId}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Import
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setImportExportDialogOpen(true)}
+            disabled={!dataHook.tableData || dataHook.tableData.length === 0}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export
+          </Button>
+          <ColumnCustomizer
+            columns={tableColumnDefinitions}
+            visibleColumns={visibleColumns}
+            onToggleColumn={handleToggleColumn}
+            onApply={handleApplyColumns}
+            alwaysVisibleColumns={["name", "actions"]}
+          />
+          {canCreateSalesLeads && (
+            <Button
+              onClick={() =>
+                actionsHook.handleAddSalesLeadSidebarOpenChange(true)
+              }
+            >
+              <Plus className="h-4 w-4" />
+              Add Lead
+            </Button>
+          )}
+        </div>
+      </div>
 
       <div className="mt-6 border border-muted-foreground/30 overflow-hidden">
         <SalesLeadsTable
@@ -365,7 +370,7 @@ export default function SalesLeadsPage() {
         itemId={deleteDialog.salesLeadId}
         onConfirm={actionsHook.confirmDeleteSalesLead}
         isLoading={actionsHook.deleteSalesLeadMutation.isPending}
-        title="Delete Sales Lead"
+        title="Delete Opportunity"
       />
 
       <EditLeadDialog
@@ -446,22 +451,6 @@ export default function SalesLeadsPage() {
         platformsLoading={dataHook.platformsLoading}
         onSave={() => actionsHook.handleSubmit(true)}
         isSaving={actionsHook.isSaving}
-        businessOptions={businessOptions}
-        businessesLoading={businessesLoading}
-        onBusinessSelectChange={handleBusinessSelectChange}
-        onAddBusinessClick={handleAddBusinessClick}
-      />
-
-      {/* Add Business Dialog */}
-      <AddBusiness
-        open={addBusinessDialogOpen}
-        onOpenChange={(open) => {
-          setAddBusinessDialogOpen(open);
-          if (!open) {
-            // Refresh businesses when dialog closes
-            queryClient.invalidateQueries({ queryKey: ["businesses"] });
-          }
-        }}
       />
 
       <AddPlatformDialog
@@ -553,15 +542,15 @@ export default function SalesLeadsPage() {
       <BulkImportExportDialog
         open={importExportDialogOpen}
         onOpenChange={setImportExportDialogOpen}
-        title="Import / Export Sales Leads"
-        description="Import leads from Excel/CSV files or export existing leads"
+        title="Import / Export Opportunities"
+        description="Import opportunities from Excel/CSV files or export existing opportunities"
         importFields={importFields}
         importApiEndpoint="/api/sales-leads/import"
         importSampleData={importSampleData}
-        importFileName="sales-leads"
+        importFileName="opportunities"
         exportData={dataHook.tableData}
         exportFields={exportFields}
-        exportFileName="sales-leads"
+        exportFileName="opportunities"
         exportDataTransform={exportDataTransform}
         workspaceId={workspaceId}
         onImportComplete={handleImportComplete}

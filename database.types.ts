@@ -1542,6 +1542,7 @@ export type Database = {
           comment: string | null
           contact_id: string | null
           contact_time_zone: string | null
+          converted_to_opportunity_at: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -1569,6 +1570,7 @@ export type Database = {
           comment?: string | null
           contact_id?: string | null
           contact_time_zone?: string | null
+          converted_to_opportunity_at?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -1596,6 +1598,7 @@ export type Database = {
           comment?: string | null
           contact_id?: string | null
           contact_time_zone?: string | null
+          converted_to_opportunity_at?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -2460,7 +2463,12 @@ export type Database = {
       enum_user_organizations_status: "active" | "inactive" | "pending"
       enum_users_status: "active" | "inactive" | "suspended"
       sales_contact_status: "pending" | "moved_to_lead" | "rejected"
-      sales_lead_status: "in_progress" | "pipeline" | "won" | "lost"
+      sales_lead_status:
+        | "in_progress"
+        | "opportunities"
+        | "won"
+        | "lost"
+        | "qualified_lead"
       task_priority: "Low" | "Medium" | "High" | "Urgent"
       task_status: "Pending" | "In Progress" | "Completed" | "Cancelled"
       task_type: "Task" | "Call" | "Email" | "Meeting" | "Note"
@@ -2676,7 +2684,13 @@ export const Constants = {
       enum_user_organizations_status: ["active", "inactive", "pending"],
       enum_users_status: ["active", "inactive", "suspended"],
       sales_contact_status: ["pending", "moved_to_lead", "rejected"],
-      sales_lead_status: ["in_progress", "pipeline", "won", "lost"],
+      sales_lead_status: [
+        "in_progress",
+        "opportunities",
+        "won",
+        "lost",
+        "qualified_lead",
+      ],
       task_priority: ["Low", "Medium", "High", "Urgent"],
       task_status: ["Pending", "In Progress", "Completed", "Cancelled"],
       task_type: ["Task", "Call", "Email", "Meeting", "Note"],

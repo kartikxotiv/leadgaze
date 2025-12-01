@@ -27,6 +27,7 @@ const protectedRoutes = [
   "/pages/roles",
   "/pages/add-member",
   "/pages/account",
+  "/pages/opportunities",
 ];
 const authRoutes = [
   "/pages/auth/sign-in",
