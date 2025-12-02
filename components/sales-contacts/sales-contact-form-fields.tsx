@@ -360,37 +360,7 @@ export function SalesContactFormFields({
               className="bg-gray-100"
             />
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* <div className="space-y-2">
-            <Label htmlFor="businessContact">Business Contact</Label>
-            <Input
-              id="businessContact"
-              value={data.businessContact}
-              onChange={(event) =>
-                onChange("businessContact", event.target.value)
-              }
-              placeholder="Business contact person"
-              className="bg-gray-100"
-              maxLength={10}
-            />
-          </div> */}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="comment">Comment</Label>
-          <textarea
-            id="comment"
-            value={data.comment}
-            onChange={(event) => onChange("comment", event.target.value)}
-            placeholder="Additional notes or comments..."
-            rows={4}
-            className="w-full rounded-md border border-input bg-gray-100 px-3 py-2 text-sm"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="platformId">Lead Platform</Label>
             <Select
@@ -436,6 +406,67 @@ export function SalesContactFormFields({
             </Select>
           </div>
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+
+        <div className="space-y-2">
+          <Label htmlFor="comment">Comment</Label>
+          <textarea
+            id="comment"
+            value={data.comment}
+            onChange={(event) => onChange("comment", event.target.value)}
+            placeholder="Additional notes or comments..."
+            rows={4}
+            className="w-full rounded-md border border-input bg-gray-100 px-3 py-2 text-sm"
+          />
+        </div>
+
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="platformId">Lead Platform</Label>
+              <Select
+                value={data.platformId}
+                onValueChange={onPlatformSelectChange}
+                disabled={platformsLoading}
+              >
+                <SelectTrigger className="bg-gray-100">
+                  <SelectValue
+                    placeholder={
+                      platformsLoading
+                        ? "Loading platforms..."
+                        : platformOptions.length === 0
+                        ? "No saved platforms"
+                        : "Select a platform"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {platformOptions.length > 0 ? (
+                    platformOptions.map((platform) => (
+                      <SelectItem
+                        key={platform.id}
+                        value={String(platform.id)}
+                        className={` hover:bg-gray-200 hover:text-black`}
+                      >
+                        {platform.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-platforms" disabled>
+                      No saved platforms
+                    </SelectItem>
+                  )}
+                  <div className="my-1 border-t border-muted-foreground/20" />
+                  <SelectItem
+                    value={ADD_PLATFORM_SELECT_VALUE}
+                    className="text-sm text-muted-foreground"
+                  >
+                    + Add platform
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div> */}
       </div>
     </div>
   );

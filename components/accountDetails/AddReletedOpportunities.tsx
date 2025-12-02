@@ -1,9 +1,18 @@
 import { IdCard } from "lucide-react";
 import React from "react";
-export default function AddReletedOpportunities() {
+
+interface AddReletedOpportunitiesProps {
+  accountId?: string;
+  salesLeadId?: string;
+}
+
+export default function AddReletedOpportunities({
+  accountId,
+  salesLeadId,
+}: AddReletedOpportunitiesProps) {
   return (
     <>
-      <div className="flex bg-[#f3f3f3] justify-between p-2 rounded-[2px] items-center border-b border-[#c9c9c9]">
+      <div className="flex bg-[#e1effc] justify-between p-2 rounded-[2px] items-center border-b border-[#e1ecfe]">
         <div className="font-semibold text-md flex gap-2 items-center">
           <IdCard className="w-5 h-5 text-[#2563eb]" />
           Opportunities
@@ -19,7 +28,9 @@ export default function AddReletedOpportunities() {
         <div className=""> jack Rogerbar</div>
         <div className="">
           <div className="flex gap-4 mt-2">
-            <h5 className="text-xs   w-28">Title</h5>
+            <h5 className="text-xs font-semibold text-muted-foreground  w-28">
+              Title
+            </h5>
             <p className=" text-xs ">Development</p>
           </div>
           <div className="flex gap-4 mt-2">

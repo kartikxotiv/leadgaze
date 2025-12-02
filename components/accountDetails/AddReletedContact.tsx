@@ -1,10 +1,16 @@
 import { IdCard } from "lucide-react";
 import React from "react";
 
-export default function AddReletedContact() {
+interface AddReletedContactProps {
+  accountId?: string;
+}
+
+export default function AddReletedContact({
+  accountId,
+}: AddReletedContactProps) {
   return (
     <>
-      <div className="flex bg-[#f3f3f3] justify-between p-2 rounded-[2px] items-center border-b border-[#c9c9c9]">
+      <div className="flex bg-[#e1effc] justify-between p-2 rounded-[2px] items-center border-b border-[#e1ecfe]">
         <div className="font-semibold text-md flex gap-2 items-center">
           <IdCard className="w-5 h-5 text-[#2563eb]" />
           Contacts
