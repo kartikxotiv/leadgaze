@@ -31,7 +31,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatDateTimeWithTime } from "@/lib/utils/sales-lead-utils";
+import {
+  formatDateTime,
+  formatDateTimeWithTime,
+} from "@/lib/utils/sales-lead-utils";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import Link from "next/link";
@@ -208,7 +211,7 @@ export default function AccountDetailPage() {
     <DashboardLayout>
       <>
         <div className="bg-white rounded-md  border bg-card text-card-foreground shadow-sm">
-          <div className="bg-[#e1effc] p-2 flex items-center">
+          <div className="bg-[#e1effc] px-4 p-2 flex items-center">
             <Building2 className="h-5 w-5 mr-2" />
             <div className="">
               <h4 className="bg-emerald-100 inline-block px-2 py-1 text-[11px] rounded-full text-emerald-700 hover:bg-emerald-900 hover:text-white">
@@ -219,7 +222,7 @@ export default function AccountDetailPage() {
               </div>
             </div>
           </div>
-          <div className="p-4 flex gap-5 flex-wrap">
+          <div className="px-4 py-5 flex gap-5 flex-wrap">
             <div className="min-w-24">
               <h5 className="text-xs font-semibold text-muted-foreground">
                 Business Type
@@ -259,7 +262,7 @@ export default function AccountDetailPage() {
               </h5>
               <p className="text-xs mt-1 text-muted-foreground">
                 {account.converted_at
-                  ? formatDateTimeWithTime(account.converted_at)
+                  ? formatDateTime(account.converted_at)
                   : "N/A"}
               </p>
             </div>
@@ -331,13 +334,16 @@ export default function AccountDetailPage() {
               {Detailviewtab === "Related" && (
                 <>
                   <div className="my-3 border border-[#c9c9c9] rounded-[3px] mb-6">
-                    <AddReletedContact accountId={account.id} />
+                    <AddReletedContact
+                      accountId={account.id}
+                      businessId={account.business_id || undefined}
+                    />
                   </div>
                   <div className="my-3 border border-[#c9c9c9] rounded-[3px]">
-                    <AddReletedOpportunities
+                    {/* <AddReletedOpportunities
                       accountId={account.id}
                       salesLeadId={account.sales_lead_id}
-                    />
+                    /> */}
                   </div>
                 </>
               )}

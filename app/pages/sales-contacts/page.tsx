@@ -54,7 +54,6 @@ export default function SalesContactsPage() {
   const workspaceId = currentWorkspace?.id;
   const queryClient = useQueryClient();
   const { token } = useAuthStore();
-
   const { data: permissionsData } = useWorkspacePermissions();
   const canViewSalesContacts = useWorkspaceRoutePermission(
     "Sales Contacts",
@@ -76,13 +75,9 @@ export default function SalesContactsPage() {
     "Sales Contacts",
     "visible"
   );
-
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-
-  // Date range filter state
   const [dateRange, setDateRange] = useState<DateRange | null>(null);
-
   const filters = useMemo(() => {
     if (!workspaceId) return undefined;
     return {
@@ -137,7 +132,6 @@ export default function SalesContactsPage() {
     useContactPlatforms();
   const platformOptions = useMemo(() => platformList ?? [], [platformList]);
 
-  // Fetch businesses for dropdown
   const { data: businessesData, isLoading: businessesLoading } = useBusinesses({
     page: 1,
     limit: 1000, // Get all businesses for dropdown
@@ -180,8 +174,6 @@ export default function SalesContactsPage() {
     useState(false);
   const [importExportDialogOpen, setImportExportDialogOpen] = useState(false);
   const [addBusinessDialogOpen, setAddBusinessDialogOpen] = useState(false);
-
-  // Column customization state
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
     "phone_number",
     "email",
@@ -196,10 +188,7 @@ export default function SalesContactsPage() {
     "linkedin_url",
     "status",
   ]);
-
   const [previewContact, setPreviewContact] = useState<any | null>(null);
-
-  // Form hook
   const {
     formData,
     setFormData,
@@ -217,8 +206,6 @@ export default function SalesContactsPage() {
     resetEditFormState,
     mapContactToFormData,
   } = useSalesContactForm();
-
-  // Actions hook
   const {
     handleDeleteSalesContact,
     handleMoveToLead,

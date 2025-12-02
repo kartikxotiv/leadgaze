@@ -218,6 +218,8 @@ export default function AccountInformation({
           </div>
         </div>
       )}
+
+      <h3 className="text-sm font-semibold text-gray-900 mb-3">User Details</h3>
     </div>
   );
 }

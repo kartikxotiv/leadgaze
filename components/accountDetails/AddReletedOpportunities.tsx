@@ -28,7 +28,7 @@ export default function AddReletedOpportunities({
         <div className=""> jack Rogerbar</div>
         <div className="">
           <div className="flex gap-4 mt-2">
-            <h5 className="text-xs font-semibold text-muted-foreground  w-28">
+            <h5 className="text-xs font-semibold text-muted-foreground w-28">
               Title
             </h5>
             <p className=" text-xs ">Development</p>
