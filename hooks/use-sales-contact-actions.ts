@@ -163,11 +163,11 @@ export function useSalesContactActions({
           ? null
           : rawPlatformId;
 
-      const payload: SalesLeadInsert = {
+      const payload: SalesLeadInsert & { business_id?: string | null } = {
         first_name: firstName || "Unnamed Contact",
         last_name: contact.last_name?.trim() || null,
         email: contact.email?.trim() || null,
-        phone_number: normalizedPhone,
+        phone_number: normalizedPhone, // Keep as number for now, will be converted by DB after migration
         location: contact.location?.trim() || null,
         contact_time_zone: contact.contact_time_zone?.trim() || null,
         status: "opportunities",
@@ -185,6 +185,7 @@ export function useSalesContactActions({
         business_linkedin: contact.business_linkedin?.trim() || null,
         business_contact: contact.business_contact?.trim() || null,
         comment: contact.comment?.trim() || null,
+        business_id: contact.business_id || null,
       };
 
       try {
