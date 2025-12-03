@@ -149,11 +149,11 @@ export function useSalesContactActions({
       const normalizedPhone = normalizePhoneNumberFromString(
         contact.phone_number != null ? String(contact.phone_number) : null
       );
-      const normalizedAlternativePhone = normalizePhoneNumberFromString(
-        contact.alternative_phone_number != null
-          ? String(contact.alternative_phone_number)
-          : null
-      );
+      // Keep alternative_phone_number as string - don't normalize to number
+      // The database column is VARCHAR(255), so we should store it as string directly
+      const alternativePhoneNumber = contact.alternative_phone_number
+        ? String(contact.alternative_phone_number).trim()
+        : null;
       const rawPlatformId =
         contact.platform !== undefined && contact.platform !== null
           ? Number(contact.platform)
@@ -167,19 +167,16 @@ export function useSalesContactActions({
         first_name: firstName || "Unnamed Contact",
         last_name: contact.last_name?.trim() || null,
         email: contact.email?.trim() || null,
-        phone_number: normalizedPhone, // Keep as number for now, will be converted by DB after migration
+        phone_number: normalizedPhone,
         location: contact.location?.trim() || null,
         contact_time_zone: contact.contact_time_zone?.trim() || null,
-        status: "opportunities",
+        status: "in_progress",
         workspace_id: currentWorkspace.id,
         platform: platformId,
         priority: null,
         contact_id: contactId,
         alternative_email: contact.alternative_email?.trim() || null,
-        alternative_phone_number:
-          normalizedAlternativePhone != null
-            ? String(normalizedAlternativePhone)
-            : null,
+        alternative_phone_number: alternativePhoneNumber,
         linkedin_url: contact.linkedin_url?.trim() || null,
         business_name: contact.business_name?.trim() || null,
         business_linkedin: contact.business_linkedin?.trim() || null,

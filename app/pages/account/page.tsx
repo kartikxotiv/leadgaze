@@ -38,7 +38,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import Link from "next/link";
 
-// API function to fetch accounts
 async function fetchAccounts(
   workspaceId: string,
   page: number = 1,
@@ -130,7 +129,6 @@ export default function AccountPage() {
           <div className="flex items-center gap-3"></div>
         </div>
 
-        {/* Content */}
         {isLoadingAccounts ? (
           <div className="grid gap-4 ">
             {[1, 2, 3].map((i) => (
@@ -163,7 +161,6 @@ export default function AccountPage() {
           </Card>
         ) : viewMode === "cards" ? (
           <>
-            {/* Cards View */}
             <div className="grid gap-4 ">
               {accounts.map((account: any) => {
                 return (

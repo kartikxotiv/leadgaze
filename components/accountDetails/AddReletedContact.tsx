@@ -166,7 +166,7 @@ export default function AddReletedContact({
 
   return (
     <>
-      <div className="flex bg-[#e1effc] justify-between p-2 rounded-[2px] items-center border-b border-[#e1ecfe]">
+      <div className="flex bg-[#e1effc] justify-between p-4 rounded-[2px] items-center border-b border-[#e1ecfe]">
         <div className="font-semibold text-md flex gap-2 items-center">
           <IdCard className="w-5 h-5 text-[#2563eb]" />
           Contacts
@@ -181,7 +181,7 @@ export default function AddReletedContact({
         </div>
       </div>
 
-      <div className="p-2">
+      <div className="p-4">
         {isLoading ? (
           <div className="flex items-center justify-center py-4">
             <Loader2 className="h-4 w-4 animate-spin" />

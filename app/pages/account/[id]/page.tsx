@@ -58,6 +58,7 @@ import AllMeeting from "@/components/accountDetails/AllMeeting";
 import AddReletedOpportunities from "@/components/accountDetails/AddReletedOpportunities";
 import AddReletedContact from "@/components/accountDetails/AddReletedContact";
 import AccountInformation from "@/components/accountDetails/AccountInformation";
+import Projectinfo from "@/components/accountDetails/Projectinfo";
 
 // API function to fetch single account
 async function fetchAccount(accountId: string, token?: string) {
@@ -101,9 +102,9 @@ export default function AccountDetailPage() {
   const [newOpportunityOpen, setNewOpportunityOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("related");
   const [selecttab, setselecttab] = useState("All Notes");
-  const [Detailviewtab, setDetailviewtab] = useState("Related");
-
-  const detailstab = ["Related", "Details"];
+  const [Detailviewtab, setDetailviewtab] = useState("Business Related");
+  const [projectInfoOpen, setProjectInfoOpen] = useState(false);
+  const detailstab = ["Business Related", "Details", "Project Info"];
 
   const tabs = ["All Notes", "All Files", "All Meeting"];
 
@@ -210,7 +211,7 @@ export default function AccountDetailPage() {
   return (
     <DashboardLayout>
       <>
-        <div className="bg-white rounded-md  border bg-card text-card-foreground shadow-sm">
+        <div className="bg-white rounded-md  border bg-card text-card-foreground shadow-sm ">
           <div className="bg-[#e1effc] px-4 p-2 flex items-center">
             <Building2 className="h-5 w-5 mr-2" />
             <div className="">
@@ -222,88 +223,98 @@ export default function AccountDetailPage() {
               </div>
             </div>
           </div>
-          <div className="px-4 py-5 flex gap-5 flex-wrap">
-            <div className="min-w-24">
-              <h5 className="text-xs font-semibold text-muted-foreground">
-                Business Type
-              </h5>
-              <p className="text-xs mt-1 text-muted-foreground">
-                {business?.business_type || account.business_name || "N/A"}
-              </p>
-            </div>
-            <div className="min-w-24">
-              <h5 className="text-xs font-semibold text-muted-foreground">
-                Phone
-              </h5>
-              <p className="text-xs mt-1 text-muted-foreground">
-                {account.phone_number || "N/A"}
-              </p>
-            </div>
+          <div className=" flex justify-between ">
+            <div className="px-4 py-5 flex gap-5 flex-wrap">
+              <div className="min-w-24">
+                <h5 className="text-xs font-semibold text-muted-foreground">
+                  Business Type
+                </h5>
+                <p className="text-xs mt-1 text-muted-foreground">
+                  {business?.business_type || account.business_name || "N/A"}
+                </p>
+              </div>
+              <div className="min-w-24">
+                <h5 className="text-xs font-semibold text-muted-foreground">
+                  Phone
+                </h5>
+                <p className="text-xs mt-1 text-muted-foreground">
+                  {account.phone_number || "N/A"}
+                </p>
+              </div>
 
-            <div className="min-w-24">
-              <h5 className="text-xs font-semibold text-muted-foreground">
-                Industry
-              </h5>
-              <p className="text-xs mt-1 text-muted-foreground">
-                {business?.industry || "N/A"}
-              </p>
-            </div>
-            <div className="min-w-24">
-              <h5 className="text-xs font-semibold text-muted-foreground">
-                Business Name
-              </h5>
-              <p className="text-xs mt-1 text-muted-foreground">
-                {business?.business_name || account.business_name || "N/A"}
-              </p>
-            </div>
-            <div className="min-w-24">
-              <h5 className="text-xs font-semibold text-muted-foreground">
-                Converted At
-              </h5>
-              <p className="text-xs mt-1 text-muted-foreground">
-                {account.converted_at
-                  ? formatDateTime(account.converted_at)
-                  : "N/A"}
-              </p>
-            </div>
-            {account.email && (
               <div className="min-w-24">
                 <h5 className="text-xs font-semibold text-muted-foreground">
-                  Email
+                  Industry
                 </h5>
                 <p className="text-xs mt-1 text-muted-foreground">
-                  {account.email}
+                  {business?.industry || "N/A"}
                 </p>
               </div>
-            )}
-            {account.location && (
               <div className="min-w-24">
                 <h5 className="text-xs font-semibold text-muted-foreground">
-                  Location
+                  Business Name
                 </h5>
                 <p className="text-xs mt-1 text-muted-foreground">
-                  {account.location}
+                  {business?.business_name || account.business_name || "N/A"}
                 </p>
               </div>
-            )}
-            <div className="min-w-24">
-              <h5 className="text-xs font-semibold text-muted-foreground">
-                Website
-              </h5>
-              <p className="text-xs mt-1 text-muted-foreground">
-                {business?.website ? (
-                  <a
-                    href={business.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    {business.website}
-                  </a>
-                ) : (
-                  "N/A"
-                )}
-              </p>
+              <div className="min-w-24">
+                <h5 className="text-xs font-semibold text-muted-foreground">
+                  Converted At
+                </h5>
+                <p className="text-xs mt-1 text-muted-foreground">
+                  {account.converted_at
+                    ? formatDateTime(account.converted_at)
+                    : "N/A"}
+                </p>
+              </div>
+              {account.email && (
+                <div className="min-w-24">
+                  <h5 className="text-xs font-semibold text-muted-foreground">
+                    Email
+                  </h5>
+                  <p className="text-xs mt-1 text-muted-foreground">
+                    {account.email}
+                  </p>
+                </div>
+              )}
+              {account.location && (
+                <div className="min-w-24">
+                  <h5 className="text-xs font-semibold text-muted-foreground">
+                    Location
+                  </h5>
+                  <p className="text-xs mt-1 text-muted-foreground">
+                    {account.location}
+                  </p>
+                </div>
+              )}
+              <div className="min-w-24">
+                <h5 className="text-xs font-semibold text-muted-foreground">
+                  Website
+                </h5>
+                <p className="text-xs mt-1 text-muted-foreground">
+                  {business?.website ? (
+                    <a
+                      href={business.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      {business.website}
+                    </a>
+                  ) : (
+                    "N/A"
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="px-4 py-5 flex gap-5 flex-wrap">
+              <button
+                onClick={() => setProjectInfoOpen(true)}
+                className="border-[#2563eb] flex items-center gap-1 text-[#2563eb] text-xs px-3 rounded-[4px] py-2  border hover:bg-[#2563eb] hover:text-white transition"
+              >
+                Client Intake Form
+              </button>
             </div>
           </div>
         </div>
@@ -331,7 +342,7 @@ export default function AccountDetailPage() {
                   ))}
                 </ul>
               </div>
-              {Detailviewtab === "Related" && (
+              {Detailviewtab === "Business Related" && (
                 <>
                   <div className="my-3 border border-[#c9c9c9] rounded-[3px] mb-6">
                     <AddReletedContact
@@ -339,12 +350,12 @@ export default function AccountDetailPage() {
                       businessId={account.business_id || undefined}
                     />
                   </div>
-                  <div className="my-3 border border-[#c9c9c9] rounded-[3px]">
-                    {/* <AddReletedOpportunities
+                  {/* <div className="my-3 border border-[#c9c9c9] rounded-[3px]">
+                    <AddReletedOpportunities
                       accountId={account.id}
                       salesLeadId={account.sales_lead_id}
-                    /> */}
-                  </div>
+                    />
+                  </div> */}
                 </>
               )}
 
@@ -386,6 +397,15 @@ export default function AccountDetailPage() {
           </div>
         </div>
       </>
+
+      <Dialog open={projectInfoOpen} onOpenChange={setProjectInfoOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Client Intake Form — Website / App</DialogTitle>
+          </DialogHeader>
+          <Projectinfo />
+        </DialogContent>
+      </Dialog>
       <div className="space-y-6"></div>
     </DashboardLayout>
   );

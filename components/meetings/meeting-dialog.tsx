@@ -234,6 +234,7 @@ export function MeetingDialog({
                 onChange={(e) => setTime(e.target.value)}
                 disabled={isLoading}
                 required
+                min={new Date().toISOString().split("T")[0]}
               />
             </div>
 
