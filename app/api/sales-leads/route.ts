@@ -27,6 +27,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Extract dateFrom and dateTo from filters and remove them
+    const dateFrom = filters.date_from || undefined;
+    const dateTo = filters.date_to || undefined;
+    const { date_from, date_to, ...otherFilters } = filters;
+    filters = otherFilters;
+
     // Get current user from token if available
     let userId: string | undefined;
     try {
@@ -53,7 +59,9 @@ export async function GET(request: NextRequest) {
       limit,
       filters,
       search,
-      userIdToFilter
+      userIdToFilter,
+      dateFrom,
+      dateTo
     );
     return NextResponse.json({ success: true, data: result });
   } catch (error: any) {

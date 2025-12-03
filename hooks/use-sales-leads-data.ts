@@ -9,13 +9,16 @@ import type { LeadPriority } from "@/lib/data/lead-priorities";
 import { mapLeadToTableRow } from "@/lib/utils/sales-lead-utils";
 import { formatStatus } from "@/lib/utils/sales-lead-utils";
 import { STATUS_STYLE_MAP } from "@/lib/constants/sales-leads";
+import type { DateRange } from "@/components/common/date-range-filter";
 
 export function useSalesLeadsData(
   workspaceId: string | undefined,
   page: number,
   pageSize: number,
   previewLeadId: string | null | undefined,
-  statusFilter?: string
+  statusFilter?: string,
+  dateRange?: DateRange | null,
+  search?: string
 ) {
   const filters = useMemo(() => {
     if (!workspaceId) return undefined;
@@ -24,8 +27,11 @@ export function useSalesLeadsData(
       limit: pageSize,
       workspaceId,
       ...(statusFilter ? { status: statusFilter } : {}),
+      ...(dateRange?.from ? { dateFrom: dateRange.from.toISOString() } : {}),
+      ...(dateRange?.to ? { dateTo: dateRange.to.toISOString() } : {}),
+      ...(search ? { search } : {}),
     };
-  }, [workspaceId, page, pageSize, statusFilter]);
+  }, [workspaceId, page, pageSize, statusFilter, dateRange, search]);
 
   const contactLookupFilters = useMemo(() => {
     if (!workspaceId) return undefined;

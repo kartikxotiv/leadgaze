@@ -127,75 +127,8 @@ export default function AccountPage() {
                 : "View your won leads converted to accounts"}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            {/* {accounts.length > 0 && (
-              <div className="flex items-center gap-2 border rounded-md p-1">
-                <Button
-                  variant={viewMode === "cards" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("cards")}
-                >
-                  Cards
-                </Button>
-                <Button
-                  variant={viewMode === "table" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("table")}
-                >
-                  Table
-                </Button>
-              </div>
-            )} */}
-            <Button variant="outline" onClick={() => setAddBusinessOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Business
-            </Button>
-          </div>
+          <div className="flex items-center gap-3"></div>
         </div>
-
-        {/* Stats Cards */}
-        {/* {totalAccounts > 0 && (
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Accounts
-                </CardTitle>
-                <Database className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{totalAccounts}</div>
-                <p className="text-xs text-muted-foreground">
-                  Won leads converted
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">This Page</CardTitle>
-                <User className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{accounts.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  Accounts displayed
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Source</CardTitle>
-                <Briefcase className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">Won Leads</div>
-                <p className="text-xs text-muted-foreground">
-                  All from sales leads
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        )} */}
 
         {/* Content */}
         {isLoadingAccounts ? (
@@ -395,6 +328,7 @@ export default function AccountPage() {
                                       Contact: {account.business_contact}
                                     </div>
                                   )}
+
                                   {account.business_linkedin && (
                                     <div className="flex items-center gap-2 text-sm">
                                       <ExternalLink className="h-3 w-3 text-muted-foreground" />
@@ -413,125 +347,6 @@ export default function AccountPage() {
                             )}
                           </div>
                         </div>
-
-                        {/* <div className="space-y-2">
-                          {account.email && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <Mail className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-muted-foreground truncate">
-                                {account.email}
-                              </span>
-                            </div>
-                          )}
-                          {account.phone_number && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <Phone className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">
-                                {String(account.phone_number)}
-                              </span>
-                            </div>
-                          )}
-                          {account.location && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <MapPin className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">
-                                {account.location}
-                              </span>
-                            </div>
-                          )}
-                        </div> */}
-
-                        {/* {(account.business_name ||
-                          account.business_linkedin ||
-                          account.business_contact) && (
-                          <>
-                            <Separator />
-                            <div className="space-y-2">
-                              <div className="text-xs font-semibold text-muted-foreground uppercase">
-                                Business Details
-                              </div>
-                              {account.business_name && (
-                                <div className="flex items-center gap-2 text-sm font-medium">
-                                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                                  <span>{account.business_name}</span>
-                                </div>
-                              )}
-                              {account.business_contact && (
-                                <div className="text-sm text-muted-foreground">
-                                  Contact: {account.business_contact}
-                                </div>
-                              )}
-                              {account.business_linkedin && (
-                                <div className="flex items-center gap-2 text-sm">
-                                  <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                                  <a
-                                    href={account.business_linkedin}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 hover:underline truncate"
-                                  >
-                                    Business LinkedIn
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-                          </>
-                        )}
-
-                        {(account.alternative_email ||
-                          account.alternative_phone_number ||
-                          account.linkedin_url) && (
-                          <>
-                            <Separator />
-                            <div className="space-y-1 text-xs text-muted-foreground">
-                              {account.alternative_email && (
-                                <div>
-                                  Alt Email: {account.alternative_email}
-                                </div>
-                              )}
-                              {account.alternative_phone_number && (
-                                <div>
-                                  Alt Phone: {account.alternative_phone_number}
-                                </div>
-                              )}
-                              {account.linkedin_url && (
-                                <div className="flex items-center gap-1">
-                                  <ExternalLink className="h-3 w-3" />
-                                  <a
-                                    href={account.linkedin_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 hover:underline truncate"
-                                  >
-                                    Personal LinkedIn
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-                          </>
-                        )}
-
-                        {account.comment && (
-                          <>
-                            <Separator />
-                            <div className="text-xs text-muted-foreground line-clamp-2">
-                              {account.comment}
-                            </div>
-                          </>
-                        )}
-
-                        <Separator />
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            <span>
-                              Converted{" "}
-                              {account.converted_at
-                                ? formatDateTimeWithTime(account.converted_at)
-                                : "recently"}
-                            </span>
-                          </div>
-                        </div> */}
                       </CardContent>
                     </Card>
                   </Link>

@@ -28,7 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { DateRange as DateRangeType } from "react-day-picker";
-
+// import "react-day-picker/style.css";
 export type DateRangePreset =
   | "all"
   | "last_2_days"
@@ -111,28 +111,36 @@ export function DateRangeFilter({
 }: DateRangeFilterProps) {
   const [selectedPreset, setSelectedPreset] = useState<DateRangePreset>("all");
   const [isCustomPopoverOpen, setIsCustomPopoverOpen] = useState(false);
-  // Temporary state for date selection before applying
   const [tempDateRange, setTempDateRange] = useState<DateRangeType | undefined>(
     value?.from && value?.to ? { from: value.from, to: value.to } : undefined
   );
+  const [calendarMonth, setCalendarMonth] = useState<Date>(() => {
+    // If we have a selected range, show the month of the 'from' date
+    if (value?.from) {
+      return startOfMonth(value.from);
+    }
+    // Otherwise default to last month
+    return startOfMonth(subMonths(new Date(), 1));
+  });
 
-  // Update temp state when value changes externally
   useEffect(() => {
     if (value?.from && value?.to) {
       setTempDateRange({ from: value.from, to: value.to });
+      // Update calendar month to show the month of the 'from' date
+      setCalendarMonth(startOfMonth(value.from));
     } else {
       setTempDateRange(undefined);
+      // Reset to default when no range is selected
+      setCalendarMonth(startOfMonth(subMonths(new Date(), 1)));
     }
   }, [value]);
 
-  // Detect preset from current value
   useEffect(() => {
     if (!value || (!value.from && !value.to)) {
       setSelectedPreset("all");
       return;
     }
 
-    // Check if current range matches any preset
     const now = new Date();
     const todayEnd = endOfDay(now);
 
@@ -150,7 +158,6 @@ export function DateRangeFilter({
         return;
       }
 
-      // Check last 7 days
       const last7Days = {
         from: startOfDay(subDays(now, 7)).getTime(),
         to: todayEnd.getTime(),
@@ -160,7 +167,6 @@ export function DateRangeFilter({
         return;
       }
 
-      // Check last 30 days
       const last30Days = {
         from: startOfDay(subDays(now, 30)).getTime(),
         to: todayEnd.getTime(),
@@ -178,7 +184,6 @@ export function DateRangeFilter({
         return;
       }
 
-      // Check last 3 months
       const last3Months = {
         from: startOfDay(subDays(now, 90)).getTime(),
         to: todayEnd.getTime(),
@@ -189,7 +194,6 @@ export function DateRangeFilter({
       }
     }
 
-    // If no preset matches, it's custom
     setSelectedPreset("custom");
   }, [value]);
 
@@ -197,18 +201,24 @@ export function DateRangeFilter({
     (preset: DateRangePreset) => {
       setSelectedPreset(preset);
       if (preset === "custom") {
-        // Open popover when custom is selected
         setIsCustomPopoverOpen(true);
-        // Initialize temp range with current value or empty
         if (value?.from && value?.to) {
           setTempDateRange({ from: value.from, to: value.to });
+          setCalendarMonth(startOfMonth(value.from));
         } else {
           setTempDateRange(undefined);
+          setCalendarMonth(startOfMonth(subMonths(new Date(), 1)));
         }
       } else {
         setIsCustomPopoverOpen(false);
         const range = getPresetRange(preset);
         onChange(range);
+        // Update calendar month when preset is selected
+        if (range?.from) {
+          setCalendarMonth(startOfMonth(range.from));
+        } else {
+          setCalendarMonth(startOfMonth(subMonths(new Date(), 1)));
+        }
       }
     },
     [onChange, value]
@@ -218,6 +228,10 @@ export function DateRangeFilter({
     (range: DateRangeType | undefined) => {
       if (range) {
         setTempDateRange(range);
+        // Update calendar month when user selects a date
+        if (range.from) {
+          setCalendarMonth(startOfMonth(range.from));
+        }
       } else {
         setTempDateRange(undefined);
       }
@@ -317,13 +331,13 @@ export function DateRangeFilter({
           <Button
             variant="outline"
             onClick={() => {
-              // When button is clicked, open popover
               setIsCustomPopoverOpen(true);
-              // Initialize temp range with current value or empty
               if (value?.from && value?.to) {
                 setTempDateRange({ from: value.from, to: value.to });
+                setCalendarMonth(startOfMonth(value.from));
               } else {
                 setTempDateRange(undefined);
+                setCalendarMonth(startOfMonth(subMonths(new Date(), 1)));
               }
             }}
             className={cn(
@@ -346,81 +360,8 @@ export function DateRangeFilter({
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <div className="p-4 space-y-4 relative">
-            {/* Header */}
-            {/* <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Date</span>
-                <Select defaultValue="is_in_between">
-                  <SelectTrigger className="w-[140px] h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="is_in_between">Is in between</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClearCustom}
-                className="h-8 text-sm text-muted-foreground hover:text-foreground"
-              >
-                Delete
-              </Button>
-            </div> */}
-
-            {/* Date Input Fields */}
-            {/* <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Input
-                  type="text"
-                  placeholder="Select Starting date..."
-                  value={formatDateForInput(tempDateRange?.from)}
-                  onChange={handleFromInputChange}
-                  className="pr-8"
-                />
-                {tempDateRange?.from && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setTempDateRange((prev) => ({
-                        from: undefined,
-                        to: prev?.to,
-                      }))
-                    }
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-              <div className="relative flex-1">
-                <Input
-                  type="text"
-                  placeholder="Select Ending date..."
-                  value={formatDateForInput(tempDateRange?.to)}
-                  onChange={handleToInputChange}
-                  className="pr-8"
-                />
-                {tempDateRange?.to && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setTempDateRange((prev) => ({
-                        from: prev?.from,
-                        to: undefined,
-                      }))
-                    }
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            </div> */}
-
-            {/* Calendar */}
             <Calendar
+              // animate
               mode="range"
               selected={tempDateRange}
               onSelect={handleDateRangeSelect}
@@ -430,6 +371,8 @@ export function DateRangeFilter({
                 return date > today;
               }}
               numberOfMonths={2}
+              month={calendarMonth}
+              onMonthChange={setCalendarMonth}
               className="rounded-md border-0 p-0"
               classNames={{
                 months: "flex flex-row gap-8 customcalenderrange",
@@ -448,12 +391,8 @@ export function DateRangeFilter({
                 week_number: "text-muted-foreground text-xs",
                 day_disabled:
                   "text-muted-foreground opacity-30 cursor-not-allowed",
-
-                // day_range_middle: "bg-primary text-primary-foreground",
               }}
             />
-
-            {/* Apply Button */}
             {canApply && (
               <div className="flex justify-end pt-2 border-t">
                 <Button

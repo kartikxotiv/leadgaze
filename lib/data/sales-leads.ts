@@ -3,6 +3,7 @@ import type { Database } from "../../database.types";
 import {
   buildSearchQuery,
   buildWhereFilters,
+  buildDateRange,
   paginateQuery,
   type PaginationResult,
 } from "../utils/supabase-queries";
@@ -119,7 +120,9 @@ export async function getSalesLeadsPaginated(
   limit: number = 20,
   filters?: Record<string, any>,
   search?: string,
-  userId?: string
+  userId?: string,
+  dateFrom?: string,
+  dateTo?: string
 ): Promise<PaginationResult<SalesLead>> {
   let effectiveFilters: Record<string, any> = {
     is_deleted: false,
@@ -239,6 +242,11 @@ export async function getSalesLeadsPaginated(
   if (effectiveFilters) {
     console.log(`🔍 Applying remaining filters:`, effectiveFilters);
     query = buildWhereFilters(query, effectiveFilters);
+  }
+
+  // Apply date range filter on created_at
+  if (dateFrom || dateTo) {
+    query = buildDateRange(query, "created_at", dateFrom, dateTo);
   }
 
   if (search) {
