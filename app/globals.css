@@ -166,11 +166,9 @@
   max-height: 69vh;
   overflow-y: auto;
 }
-/* .bgworkspace {
-  background: #ffefba;
-  background: -webkit-linear-gradient(to top, #ffffff, #ffefba);
-  background: linear-gradient(to top, #ffffff, #ffefba);
-} */
+.bgworkspace {
+  background: #f4f4f4;
+}
 /* .notes_dialog svg {
   top: 10px !important;
   right: 10px !important;
@@ -226,3 +224,20 @@
   height: 40px !important;
   width: 40px !important;
 }
+/* 
+.customcalenderrange .rdp-today {
+  height: 40px !important;
+  width: 40px !important;
+  border-radius: 30px !important;
+  background-color: #efedfd !important;
+}
+.customcalenderrange .rdp-day_outside[aria-selected="true"] {
+  background-color: transparent !important;
+  color: var(--muted-foreground) !important;
+} */
+/* .customcalenderrange .outside-displayed-months[aria-selected="true"] {
+  background-color: transparent !important;
+  color: #6b7280 !important;
+  opacity: 0.3 !important;
+  border-radius: 0 !important;
+} */

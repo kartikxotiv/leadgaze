@@ -21,7 +21,7 @@ interface IncomingLeadRow {
   comment?: string;
   linkedinUrl?: string;
   platform?: string; // Platform name (not ID)
-  status?: "pipeline" | "in_progress" | "won" | "lost";
+  status?: "opportunities" | "in_progress" | "won" | "lost" | "qualified_lead";
   priority?: string; // Priority name (not ID)
 }
 
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
           phone_number: normalizedPhone,
           location: safeStringTrim(row.location),
           contact_time_zone: null,
-          status: row.status || "pipeline",
+          status: row.status || "opportunities",
           workspace_id: workspaceId,
           platform: platformId,
           priority: priorityId,

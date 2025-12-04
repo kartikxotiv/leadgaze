@@ -68,10 +68,7 @@ export default function NewSalesContactPage() {
     useContactPlatforms();
   const createContactPlatformMutation = useCreateContactPlatform();
 
-  const platformOptions = useMemo(
-    () => platformsData ?? [],
-    [platformsData]
-  );
+  const platformOptions = useMemo(() => platformsData ?? [], [platformsData]);
   const isSaving =
     createSalesContactMutation.isPending ||
     createContactPlatformMutation.isPending;
@@ -102,20 +99,23 @@ export default function NewSalesContactPage() {
     status: "",
   });
 
-  const validateField = useCallback((fieldName: keyof FormData, value: string) => {
-    switch (fieldName) {
-      case "firstName":
-        return !value.trim() ? "First name is required" : "";
-      case "email":
-        if (value && value.trim()) {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          return emailRegex.test(value) ? "" : "Please enter a valid email";
-        }
-        return "";
-      default:
-        return "";
-    }
-  }, []);
+  const validateField = useCallback(
+    (fieldName: keyof FormData, value: string) => {
+      switch (fieldName) {
+        case "firstName":
+          return !value.trim() ? "First name is required" : "";
+        case "email":
+          if (value && value.trim()) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(value) ? "" : "Please enter a valid email";
+          }
+          return "";
+        default:
+          return "";
+      }
+    },
+    []
+  );
 
   const handleFormChange = useCallback(
     <K extends keyof FormData>(field: K, value: FormData[K]) => {
@@ -177,15 +177,13 @@ export default function NewSalesContactPage() {
           platformId = existingPlatform.id;
         } else {
           try {
-            const newPlatform =
-              await createContactPlatformMutation.mutateAsync(
-                manualPlatformName
-              );
+            const newPlatform = await createContactPlatformMutation.mutateAsync(
+              manualPlatformName
+            );
             platformId = newPlatform?.id ?? null;
           } catch (error: any) {
             toast.error(
-              error?.message ||
-                "Failed to create platform. Please try again."
+              error?.message || "Failed to create platform. Please try again."
             );
             return;
           }
@@ -252,16 +250,14 @@ export default function NewSalesContactPage() {
 
         <Card>
           <CardContent className="pt-6">
-          <div className="space-y-8">
-            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-50 rounded-lg">
+            <div className="space-y-8">
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-50 rounded-lg">
                     <User className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-medium">
-                      Contact Information
-                    </h3>
+                    <h3 className="text-lg font-medium">Contact Information</h3>
                     <p className="text-sm text-muted-foreground">
                       Provide the essential details to create a sales contact.
                     </p>
@@ -281,7 +277,9 @@ export default function NewSalesContactPage() {
                         }
                         placeholder="John"
                         className={`pl-10 ${
-                          errors.firstName ? "border-red-500 focus:border-red-500" : ""
+                          errors.firstName
+                            ? "border-red-500 focus:border-red-500"
+                            : ""
                         }`}
                       />
                     </div>
@@ -324,7 +322,9 @@ export default function NewSalesContactPage() {
                         }
                         placeholder="john.doe@example.com"
                         className={`pl-10 ${
-                          errors.email ? "border-red-500 focus:border-red-500" : ""
+                          errors.email
+                            ? "border-red-500 focus:border-red-500"
+                            : ""
                         }`}
                       />
                     </div>
@@ -378,7 +378,10 @@ export default function NewSalesContactPage() {
                         id="contactTimeZone"
                         value={formData.contactTimeZone}
                         onChange={(event) =>
-                          handleFormChange("contactTimeZone", event.target.value)
+                          handleFormChange(
+                            "contactTimeZone",
+                            event.target.value
+                          )
                         }
                         placeholder="America/New_York"
                         className="pl-10"
@@ -449,10 +452,7 @@ export default function NewSalesContactPage() {
                     <Select
                       value={formData.status}
                       onValueChange={(value) =>
-                        handleFormChange(
-                          "status",
-                          value as FormData["status"]
-                        )
+                        handleFormChange("status", value as FormData["status"])
                       }
                     >
                       <SelectTrigger>
@@ -516,6 +516,6 @@ export default function NewSalesContactPage() {
           </div>
         </div>
       </div>
-      </DashboardLayout>
+    </DashboardLayout>
   );
 }
