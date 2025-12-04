@@ -41,9 +41,6 @@ interface CommentCardProps {
   className?: string;
 }
 
-/**
- * Get initials from name or email
- */
 function getInitials(name?: string, email?: string): string {
   if (name) {
     const parts = name.trim().split(" ");
@@ -60,9 +57,6 @@ function getInitials(name?: string, email?: string): string {
   return "?";
 }
 
-/**
- * Get consistent color for a user
- */
 function getUserColor(identifier: string): string {
   const colors = [
     "bg-orange-500",
@@ -83,9 +77,6 @@ function getUserColor(identifier: string): string {
   return colors[Math.abs(hash) % colors.length];
 }
 
-/**
- * Format timestamp to relative time
- */
 function formatTimestamp(dateString: string): string {
   try {
     const date = new Date(dateString);
@@ -114,9 +105,6 @@ function formatTimestamp(dateString: string): string {
   }
 }
 
-/**
- * Modern comment card component matching the UI design
- */
 export function CommentCard({
   comment,
   currentUser,

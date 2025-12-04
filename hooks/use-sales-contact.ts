@@ -12,6 +12,7 @@ export interface SalesContactFilters {
   page?: number;
   limit?: number;
   workspaceId?: string;
+  businessId?: string;
   dateFrom?: string;
   dateTo?: string;
 }
@@ -33,6 +34,9 @@ function buildQueryString(filters?: SalesContactFilters): string {
   const filterPayload: Record<string, string> = {};
   if (filters?.workspaceId) {
     filterPayload.workspace_id = filters.workspaceId;
+  }
+  if (filters?.businessId) {
+    filterPayload.business_id = filters.businessId;
   }
 
   if (Object.keys(filterPayload).length > 0) {
@@ -70,6 +74,7 @@ export function useSalesContacts(filters?: SalesContactFilters) {
       "sales-contacts",
       currentOrganization?.organizationId,
       filters?.workspaceId,
+      filters?.businessId,
       filters,
     ],
     queryFn: async () => {
@@ -79,7 +84,7 @@ export function useSalesContacts(filters?: SalesContactFilters) {
         : "/api/sales-contacts";
       return requestJSON<PaginationResult<SalesContact>>(url);
     },
-    enabled: !!filters,
+    enabled: !!filters && (!!filters.workspaceId || !!filters.businessId),
   });
 }
 

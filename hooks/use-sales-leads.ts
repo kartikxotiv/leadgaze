@@ -16,6 +16,8 @@ export interface SalesLeadFilters {
   status?: string;
   ownerId?: string;
   priorityId?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 function buildQueryString(filters?: SalesLeadFilters): string {
@@ -39,6 +41,12 @@ function buildQueryString(filters?: SalesLeadFilters): string {
   }
   if (filters?.priorityId) {
     filterPayload.priority = filters.priorityId;
+  }
+  if (filters?.dateFrom) {
+    filterPayload.date_from = filters.dateFrom;
+  }
+  if (filters?.dateTo) {
+    filterPayload.date_to = filters.dateTo;
   }
 
   if (Object.keys(filterPayload).length > 0) {

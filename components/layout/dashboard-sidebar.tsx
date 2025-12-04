@@ -78,12 +78,12 @@ const defaultMenuItems: SidebarItem[] = [
         icon: UserPlus,
       },
 
-      // {
-      //   id: "Pipeline",
-      //   label: "Pipeline",
-      //   href: "/pages/pipeline",
-      //   icon: UserPlus,
-      // },
+      {
+        id: "opportunities",
+        label: "Opportunities",
+        href: "/pages/opportunities",
+        icon: BarChart3,
+      },
       {
         id: "account",
         label: "Account",
