@@ -9,7 +9,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Edit, Trash2, MoveRight, Loader2 } from "lucide-react";
+import {
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  MoveRight,
+  Loader2,
+  XCircle,
+} from "lucide-react";
 import { getPlatformBadgeColors } from "@/lib/utils/sales-contact-utils";
 import {
   CONTACT_STATUS_STYLE_MAP,
@@ -22,6 +29,7 @@ export interface SalesContactTableColumnsProps {
   canCreateSalesContacts: boolean;
   handlePreviewContact: (contact: any) => void;
   handleMoveToLead: (contact: any) => Promise<void>;
+  handleReject: (contact: any) => Promise<void>;
   handleDeleteSalesContact: (id: string, name: string) => void;
   movingToLeadContactId: string | null;
   visibleColumns: string[];
@@ -33,6 +41,7 @@ export function useSalesContactTableColumns({
   canCreateSalesContacts,
   handlePreviewContact,
   handleMoveToLead,
+  handleReject,
   handleDeleteSalesContact,
   movingToLeadContactId,
   visibleColumns,
@@ -64,6 +73,7 @@ export function useSalesContactTableColumns({
         selector: (row: any) => row.location || "",
         sortable: true,
       },
+
       {
         id: "platform",
         name: "Platform",
@@ -127,6 +137,12 @@ export function useSalesContactTableColumns({
         sortable: true,
       },
       {
+        id: "updated_at",
+        name: "Updated",
+        selector: (row: any) => row.updated_at || "",
+        sortable: true,
+      },
+      {
         id: "status",
         name: "Status",
         selector: (row: any) => row.status_label || "",
@@ -179,27 +195,42 @@ export function useSalesContactTableColumns({
                   </DropdownMenuItem>
                 )}
                 {canCreateSalesContacts && (
-                  <DropdownMenuItem
-                    onClick={() => {
-                      void handleMoveToLead(row);
-                    }}
-                    disabled={
-                      movingToLeadContactId !== null ||
-                      row.status === "moved_to_lead"
-                    }
-                  >
-                    {movingToLeadContactId === String(row.id) ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Moving...
-                      </>
-                    ) : (
-                      <>
-                        <MoveRight className="h-4 w-4 mr-2" />
-                        Move to Lead
-                      </>
-                    )}
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        void handleMoveToLead(row);
+                      }}
+                      disabled={
+                        movingToLeadContactId !== null ||
+                        row.status === "moved_to_lead"
+                      }
+                    >
+                      {movingToLeadContactId === String(row.id) ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Moving...
+                        </>
+                      ) : (
+                        <>
+                          <MoveRight className="h-4 w-4 mr-2" />
+                          Move to Lead
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        void handleReject(row);
+                      }}
+                      disabled={
+                        row.status === "rejected" ||
+                        row.status === "moved_to_lead"
+                      }
+                      className="text-orange-600"
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Reject
+                    </DropdownMenuItem>
+                  </>
                 )}
                 {canDeleteSalesContacts && (
                   <>
@@ -244,6 +275,7 @@ export function useSalesContactTableColumns({
     canCreateSalesContacts,
     handlePreviewContact,
     handleMoveToLead,
+    handleReject,
     handleDeleteSalesContact,
     movingToLeadContactId,
     visibleColumns,

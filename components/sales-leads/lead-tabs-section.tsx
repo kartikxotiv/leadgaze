@@ -5,7 +5,11 @@ import { NoteDialog } from "../notes/note-dialog";
 import { MeetingDialog } from "../meetings/meeting-dialog";
 import { useState, useEffect, useRef } from "react";
 import { useNotes, useDeleteNote, type Note } from "@/hooks/use-notes";
-import { useMeetings, type Meeting } from "@/hooks/use-meetings";
+import {
+  useMeetings,
+  useDeleteMeeting,
+  type Meeting,
+} from "@/hooks/use-meetings";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { NoteCard } from "./note-card";
@@ -60,6 +64,11 @@ export function LeadTabsSection({
     mediaId?: string;
     fileName?: string;
   }>({ open: false });
+  const [meetingDeleteDialog, setMeetingDeleteDialog] = useState<{
+    open: boolean;
+    meetingId?: string;
+    meetingTitle?: string;
+  }>({ open: false });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuthStore();
 
@@ -73,6 +82,7 @@ export function LeadTabsSection({
   });
 
   const deleteNoteMutation = useDeleteNote();
+  const deleteMeetingMutation = useDeleteMeeting();
 
   const notes: Note[] = (() => {
     if (notesData?.data?.notes && Array.isArray(notesData.data.notes)) {
@@ -276,9 +286,26 @@ export function LeadTabsSection({
     setMeetingDialogOpen(true);
   };
 
-  const handleMeetingDelete = async (meetingId: string) => {
-    // Meeting deletion will be handled by MeetingDialog or parent component
-    setMeetingDialogOpen(true);
+  const handleMeetingDelete = (meetingId: string) => {
+    const meeting = meetings.find((m) => m.id === meetingId);
+    setMeetingDeleteDialog({
+      open: true,
+      meetingId,
+      meetingTitle: meeting?.title || "this meeting",
+    });
+  };
+
+  const handleConfirmDeleteMeeting = async (meetingId?: string) => {
+    if (!meetingId) return;
+
+    try {
+      await deleteMeetingMutation.mutateAsync(meetingId);
+      toast.success("Meeting deleted successfully");
+      setMeetingDeleteDialog({ open: false });
+      refetchMeetings();
+    } catch (error) {
+      toast.error("Failed to delete meeting");
+    }
   };
 
   const handleMeetingDialogSuccess = () => {
@@ -558,24 +585,45 @@ export function LeadTabsSection({
                   meeting={meeting}
                   onEdit={handleMeetingEdit}
                   onDelete={handleMeetingDelete}
+                  isDeleting={deleteMeetingMutation.isPending}
                 />
               ))}
             </div>
           )}
 
           {previewLead?.id && (
-            <MeetingDialog
-              open={meetingDialogOpen}
-              onOpenChange={(open) => {
-                setMeetingDialogOpen(open);
-                if (!open) {
-                  setSelectedMeetingId(null);
+            <>
+              <MeetingDialog
+                open={meetingDialogOpen}
+                onOpenChange={(open) => {
+                  setMeetingDialogOpen(open);
+                  if (!open) {
+                    setSelectedMeetingId(null);
+                  }
+                }}
+                leadId={previewLead.id}
+                meetingId={selectedMeetingId || undefined}
+                onSuccess={handleMeetingDialogSuccess}
+              />
+              <DeleteConfirmDialog
+                open={meetingDeleteDialog.open}
+                onOpenChange={(open) =>
+                  setMeetingDeleteDialog({
+                    open,
+                    meetingId: open ? meetingDeleteDialog.meetingId : undefined,
+                    meetingTitle: open
+                      ? meetingDeleteDialog.meetingTitle
+                      : undefined,
+                  })
                 }
-              }}
-              leadId={previewLead.id}
-              meetingId={selectedMeetingId || undefined}
-              onSuccess={handleMeetingDialogSuccess}
-            />
+                itemName={meetingDeleteDialog.meetingTitle || "this meeting"}
+                itemId={meetingDeleteDialog.meetingId}
+                onConfirm={handleConfirmDeleteMeeting}
+                isLoading={deleteMeetingMutation.isPending}
+                title="Delete Meeting"
+                description={`Are you sure you want to delete "${meetingDeleteDialog.meetingTitle}"? This action cannot be undone.`}
+              />
+            </>
           )}
         </div>
       )}

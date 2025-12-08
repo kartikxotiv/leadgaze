@@ -238,6 +238,67 @@ export function useSalesContactActions({
     ]
   );
 
+  const handleReject = useCallback(
+    async (contact: any) => {
+      if (!contact?.id) {
+        toast.error("Select a sales contact to reject.");
+        return;
+      }
+
+      if (contact.status === "rejected") {
+        toast.info("This contact is already rejected.");
+        return;
+      }
+
+      const contactId = String(contact.id);
+
+      try {
+        const updatedContact = await updateSalesContactMutation.mutateAsync({
+          id: contactId,
+          data: { status: "rejected" },
+        });
+        toast.success("Sales contact rejected successfully!");
+
+        setPreviewContact((prev: any) => {
+          if (!prev || prev.id !== contact.id) {
+            return prev;
+          }
+          const platformLabel =
+            updatedContact?.platform !== undefined &&
+            updatedContact?.platform !== null
+              ? platformNameMap.get(updatedContact.platform) ??
+                prev.platform_label ??
+                ""
+              : "";
+          return {
+            ...prev,
+            ...updatedContact,
+            status_label: formatStatus(updatedContact.status),
+            platform_label: platformLabel,
+            created_at_label: formatDateTime(updatedContact.created_at),
+            updated_at_label: formatDateTime(updatedContact.updated_at),
+          };
+        });
+
+        if (previewContact?.id === contact.id) {
+          setEditFormData(mapContactToFormData(updatedContact));
+          setEditErrors({ ...INITIAL_FORM_ERRORS });
+        }
+      } catch (error: any) {
+        toast.error(error?.message || "Failed to reject contact.");
+      }
+    },
+    [
+      mapContactToFormData,
+      platformNameMap,
+      previewContact?.id,
+      updateSalesContactMutation,
+      setPreviewContact,
+      setEditFormData,
+      setEditErrors,
+    ]
+  );
+
   const confirmDeleteSalesContact = useCallback(
     async (salesContactId?: string) => {
       if (!salesContactId) return;
@@ -402,7 +463,7 @@ export function useSalesContactActions({
         phone_number: formData.phoneNumber.trim() || null,
         location: formData.location.trim() || null,
         contact_time_zone: formData.contactTimeZone.trim() || null,
-        status: formData.status,
+        status: "pending", // Force status to "pending" when creating new contact
         workspace_id: currentWorkspace.id,
         platform: platformId,
 
@@ -571,6 +632,7 @@ export function useSalesContactActions({
   return {
     handleDeleteSalesContact,
     handleMoveToLead,
+    handleReject,
     confirmDeleteSalesContact,
     handlePreviewContact,
     handleSidebarOpenChange,

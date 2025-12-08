@@ -324,7 +324,7 @@ export default function OpportunitiesPage() {
             onApply={handleApplyColumns}
             alwaysVisibleColumns={["name", "actions"]}
           />
-          {canCreateSalesLeads && (
+          {/* {canCreateSalesLeads && (
             <Button
               onClick={() =>
                 actionsHook.handleAddSalesLeadSidebarOpenChange(true)
@@ -333,7 +333,7 @@ export default function OpportunitiesPage() {
               <Plus className="h-4 w-4" />
               Add Lead
             </Button>
-          )}
+          )} */}
         </div>
       </div>
 

@@ -270,7 +270,7 @@ export function NoteDialog({
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {isEditMode ? "Edit Note" : "Create New Note"}
               </h3>
-              {isEditMode && (
+              {/* {isEditMode && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -280,7 +280,8 @@ export function NoteDialog({
                   <Plus className="h-4 w-4 mr-1" />
                   New Note
                 </Button>
-              )}
+              )} */}
+              &nbsp;
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
