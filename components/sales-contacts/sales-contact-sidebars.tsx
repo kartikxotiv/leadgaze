@@ -22,6 +22,10 @@ export interface EditContactSidebarProps {
   onUpdate: () => Promise<void>;
   onMoveToLead: (contact: any) => Promise<void>;
   movingToLeadContactId: string | null;
+  businessOptions?: Array<{ id: string; business_name: string | null }>;
+  businessesLoading?: boolean;
+  onBusinessSelectChange?: (value: string) => void;
+  onAddBusinessClick?: () => void;
 }
 
 export function EditContactSidebar({
@@ -38,6 +42,10 @@ export function EditContactSidebar({
   onUpdate,
   onMoveToLead,
   movingToLeadContactId,
+  businessOptions = [],
+  businessesLoading = false,
+  onBusinessSelectChange,
+  onAddBusinessClick,
 }: EditContactSidebarProps) {
   return (
     <SidebarPanel
@@ -72,6 +80,10 @@ export function EditContactSidebar({
             onPlatformSelectChange={onPlatformSelectChange}
             platformOptions={platformOptions}
             platformsLoading={platformsLoading}
+            businessOptions={businessOptions}
+            businessesLoading={businessesLoading}
+            onBusinessSelectChange={onBusinessSelectChange}
+            onAddBusinessClick={onAddBusinessClick}
           />
 
           <div className="flex items-center justify-between gap-3">

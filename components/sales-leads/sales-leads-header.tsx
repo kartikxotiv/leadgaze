@@ -50,7 +50,7 @@ export function SalesLeadsHeader({
           <SearchBar
             value={searchTerm}
             onChange={onSearchChange}
-            placeholder="Search leads by name, email, phone..."
+            placeholder="Search name, email, phone..."
             className="flex-1 max-w-md"
           />
         </div>

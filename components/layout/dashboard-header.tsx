@@ -45,9 +45,11 @@ interface DashboardHeaderProps {
   onCollapsedChange: (collapsed: boolean) => void;
 }
 
-export function DashboardHeader({ onMenuClick, collapsed, onCollapsedChange }: DashboardHeaderProps) {
-
-
+export function DashboardHeader({
+  onMenuClick,
+  collapsed,
+  onCollapsedChange,
+}: DashboardHeaderProps) {
   const [toggleworkspace, setToggleworkspace] = useState(false);
 
   const [isSoftwareMenuOpen, setIsSoftwareMenuOpen] = useState(false);
@@ -57,30 +59,30 @@ export function DashboardHeader({ onMenuClick, collapsed, onCollapsedChange }: D
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch workspaces for current organization
-  const organizationId = orgFromStore?.organizationId || currentOrganization?.organizationId;
-  const { data: workspacesData, isLoading: isLoadingWorkspaces } = useWorkspaces({
-    organizationId,
-  });
+  const organizationId =
+    orgFromStore?.organizationId || currentOrganization?.organizationId;
+  const { data: workspacesData, isLoading: isLoadingWorkspaces } =
+    useWorkspaces({
+      organizationId,
+    });
   const workspaces = workspacesData?.workspaces || [];
-  
-  // Get current workspace context
+
   const { currentWorkspace, setCurrentWorkspace } = useWorkspaceContext();
-  
-  // Ref for dropdown to handle click outside
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Auto-select workspace if only one exists
   useEffect(() => {
     if (!isLoadingWorkspaces && workspaces.length === 1 && !currentWorkspace) {
       setCurrentWorkspace(workspaces[0]);
     }
   }, [workspaces, isLoadingWorkspaces, currentWorkspace, setCurrentWorkspace]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsSoftwareMenuOpen(false);
       }
     };
@@ -111,7 +113,6 @@ export function DashboardHeader({ onMenuClick, collapsed, onCollapsedChange }: D
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-     
       console.log("Searching for:", searchQuery);
     }
   };
@@ -148,9 +149,7 @@ export function DashboardHeader({ onMenuClick, collapsed, onCollapsedChange }: D
 
       <header className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between px-6 py-[12px]">
-         
           <div className="flex items-center gap-4">
-           
             <Button
               variant="ghost"
               size="sm"
@@ -175,83 +174,71 @@ export function DashboardHeader({ onMenuClick, collapsed, onCollapsedChange }: D
             </Button>
 
             <div className="relative" ref={dropdownRef}>
-              <div 
+              <div
                 className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-md px-4 py-1 cursor-pointer   "
                 onClick={() => setIsSoftwareMenuOpen(!isSoftwareMenuOpen)}
               >
                 <span className="text-sm font-medium dark:text-white">
-                  {isLoadingWorkspaces ? "Loading..." : getWorkspaceDisplayName()}
+                  {isLoadingWorkspaces
+                    ? "Loading..."
+                    : getWorkspaceDisplayName()}
                 </span>
                 <ChevronDown className="w-4 h-4" />
               </div>
-              {isSoftwareMenuOpen && (  
+              {isSoftwareMenuOpen && (
                 <div className="absolute top-[65px] left-0 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg z-50 w-[300px] border border-gray-200 dark:border-gray-700">
-                <div className="mb-2">
-                  
-                  
-                  {isLoadingWorkspaces ? (
-                    <div className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
-                      Loading workspaces...
-                    </div>
-                  ) : workspaces.length === 0 ? (
-                    <div className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
-                      No workspaces found
-                    </div>
-                  ) : (
-                    <div className="max-h-64 overflow-y-auto space-y-1">
-                      {workspaces.map((workspace: any) => (
-                        <div
-                          key={workspace.id}
-                          onClick={() => handleWorkspaceSelect(workspace)}
-                          className={`p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                            currentWorkspace?.id === workspace.id
-                              ? "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
-                              : ""
-                          }`}
-                        >
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            {workspace.name}
-                          </p>
-                          {workspace.description && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
-                              {workspace.description}
+                  <div className="mb-2">
+                    {isLoadingWorkspaces ? (
+                      <div className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
+                        Loading workspaces...
+                      </div>
+                    ) : workspaces.length === 0 ? (
+                      <div className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
+                        No workspaces found
+                      </div>
+                    ) : (
+                      <div className="max-h-64 overflow-y-auto space-y-1">
+                        {workspaces.map((workspace: any) => (
+                          <div
+                            key={workspace.id}
+                            onClick={() => handleWorkspaceSelect(workspace)}
+                            className={`p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                              currentWorkspace?.id === workspace.id
+                                ? "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
+                                : ""
+                            }`}
+                          >
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              {workspace.name}
                             </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                            {workspace.description && (
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
+                                {workspace.description}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <div 
-                    className="flex items-center justify-center gap-2 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2"
-                    onClick={handleCreateWorkspace}
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Create workspace
-                    </span>
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div
+                      className="flex items-center justify-center gap-2 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2"
+                      onClick={handleCreateWorkspace}
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Create workspace
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
             </div>
           </div>
 
-
-
-
-
-
-
-
-
-
-
-          
           <div className="flex items-center gap-4">
-            
             {/* {orgFromStore?.organizationId && (
               <InviteUserDialog
                 currentUserOrganization={orgFromStore}
@@ -269,10 +256,14 @@ export function DashboardHeader({ onMenuClick, collapsed, onCollapsedChange }: D
                 }
               />
             )} */}
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="relative bg-[#f1f5f9]">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="relative bg-[#f1f5f9]"
+                >
                   <Bell className="w-5 h-5" />
                   {}
                   <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">
@@ -325,10 +316,7 @@ export function DashboardHeader({ onMenuClick, collapsed, onCollapsedChange }: D
                   className="flex items-center gap-2 px-2"
                 >
                   <Avatar className="w-8 h-8">
-                    <AvatarImage
-                      src={undefined}
-                      alt={getUserDisplayName()}
-                    />
+                    <AvatarImage src={undefined} alt={getUserDisplayName()} />
                     <AvatarFallback className="bg-[#45a2ff] text-white text-sm">
                       {getUserInitials()}
                     </AvatarFallback>
@@ -338,9 +326,7 @@ export function DashboardHeader({ onMenuClick, collapsed, onCollapsedChange }: D
                       {getUserDisplayName()}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                      
                       {currentOrganization?.name}
-
                     </div>
                   </div>
                 </Button>

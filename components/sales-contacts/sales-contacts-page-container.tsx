@@ -83,6 +83,7 @@ export function SalesContactsPageContainer({
     canCreateSalesContacts,
     handlePreviewContact: actionsHook.handlePreviewContact,
     handleMoveToLead: actionsHook.handleMoveToLead,
+    handleReject: actionsHook.handleReject,
     handleDeleteSalesContact: actionsHook.handleDeleteSalesContact,
     movingToLeadContactId: actionsHook.movingToLeadContactId,
     visibleColumns,
@@ -160,6 +161,10 @@ export function SalesContactsPageContainer({
         onUpdate={actionsHook.handleUpdateSubmit}
         onMoveToLead={actionsHook.handleMoveToLead}
         movingToLeadContactId={actionsHook.movingToLeadContactId}
+        businessOptions={businessOptions}
+        businessesLoading={businessesLoading}
+        onBusinessSelectChange={handleBusinessSelectChange}
+        onAddBusinessClick={handleAddBusinessClick}
       />
 
       <AddContactSidebar

@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useCallback } from 'react';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { AlertCircle, Loader2 } from 'lucide-react';
-import { useCreateWorkspace } from '@/hooks/use-workspaces';
-import { useAuthStore } from '@/lib/stores/auth-store';
-import { toast } from 'sonner';
+import React, { useState, useCallback } from "react";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { useCreateWorkspace } from "@/hooks/use-workspaces";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { toast } from "sonner";
 
 interface CreateWorkspaceFormProps {
   onSuccess?: (workspace: any) => void;
@@ -25,17 +25,17 @@ export function CreateWorkspaceForm({
   showCancelButton = false,
   cancelButtonText = "Cancel",
   submitButtonText = "Submit",
-  title = "Create Workspace",
+  title = "Invite people to your Workspace",
   className = "",
 }: CreateWorkspaceFormProps) {
   const createWorkspaceMutation = useCreateWorkspace();
   const { currentOrganization } = useAuthStore();
-  
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
   });
-  
+
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validateField = useCallback(
@@ -53,70 +53,84 @@ export function CreateWorkspaceForm({
   const validateForm = useCallback((): boolean => {
     const newErrors: Record<string, string> = {};
     newErrors.name = validateField("name", formData.name);
-    
+
     const filteredErrors = Object.fromEntries(
       Object.entries(newErrors).filter(([_, value]) => value !== "")
     );
-    
+
     setErrors(filteredErrors);
     return Object.keys(filteredErrors).length === 0;
   }, [formData.name, validateField]);
 
-  const handleFormChange = useCallback((field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
-  }, [errors]);
+  const handleFormChange = useCallback(
+    (field: string, value: string) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
 
-  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    if (!currentOrganization?.organizationId) {
-      toast.error("Organization not found. Please select an organization.");
-      return;
-    }
-
-    try {
-      const workspaceData = {
-        name: formData.name.trim(),
-        description: formData.description.trim() || undefined,
-        organizationId: currentOrganization.organizationId,
-      };
-
-      const result = await createWorkspaceMutation.mutateAsync(workspaceData);
-      toast.success("Workspace created successfully!");
-      
-      // Reset form
-      setFormData({
-        name: "",
-        description: "",
-      });
-      setErrors({});
-
-      // Call success callback if provided
-      if (onSuccess) {
-        onSuccess(result);
+      if (errors[field]) {
+        setErrors((prev) => ({ ...prev, [field]: "" }));
       }
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to create workspace");
-    }
-  }, [validateForm, formData, createWorkspaceMutation, currentOrganization, onSuccess]);
+    },
+    [errors]
+  );
+
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+
+      if (!validateForm()) {
+        toast.error("Please fill in all required fields");
+        return;
+      }
+
+      if (!currentOrganization?.organizationId) {
+        toast.error("Organization not found. Please select an organization.");
+        return;
+      }
+
+      try {
+        const workspaceData = {
+          name: formData.name.trim(),
+          description: formData.description.trim() || undefined,
+          organizationId: currentOrganization.organizationId,
+        };
+
+        const result = await createWorkspaceMutation.mutateAsync(workspaceData);
+        toast.success("Workspace created successfully!");
+
+        // Reset form
+        setFormData({
+          name: "",
+          description: "",
+        });
+        setErrors({});
+
+        // Call success callback if provided
+        if (onSuccess) {
+          onSuccess(result);
+        }
+      } catch (error: any) {
+        toast.error(error?.message || "Failed to create workspace");
+      }
+    },
+    [
+      validateForm,
+      formData,
+      createWorkspaceMutation,
+      currentOrganization,
+      onSuccess,
+    ]
+  );
 
   return (
     <form onSubmit={handleSubmit} className={className}>
       {title && (
         <h2 className="text-2xl font-bold mb-8 text-center">{title}</h2>
       )}
-      
+
       <div className="mb-8">
-        <Label htmlFor="name" className="mb-2 block">Name *</Label>
+        <Label htmlFor="name" className="mb-2 block">
+          Name *
+        </Label>
         <Input
           id="name"
           placeholder="Workspace Name"
@@ -134,7 +148,9 @@ export function CreateWorkspaceForm({
       </div>
 
       <div className="mb-8">
-        <Label htmlFor="description" className="mb-2 block">Description</Label>
+        <Label htmlFor="description" className="mb-2 block">
+          Description
+        </Label>
         <Textarea
           id="description"
           placeholder="Description"
@@ -155,8 +171,8 @@ export function CreateWorkspaceForm({
             {cancelButtonText}
           </button>
         )}
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           className="bg-blue-500 text-white px-4 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           disabled={createWorkspaceMutation.isPending}
         >
@@ -173,5 +189,3 @@ export function CreateWorkspaceForm({
     </form>
   );
 }
-
-

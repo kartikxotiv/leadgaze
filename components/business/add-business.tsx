@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import type { BusinessInsert } from "@/lib/data/business";
 import { AddBusinessTypeDialog } from "./add-business-type-dialog";
 import { AddIndustryDialog } from "./add-industry-dialog";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 // Business size options
 const BUSINESS_SIZE_OPTIONS = [
@@ -84,6 +85,36 @@ export default function AddBusiness({ open, onOpenChange }: AddBusinessProps) {
     {}
   );
   const createBusinessMutation = useCreateBusiness();
+
+  // Check if user is admin
+  const { currentOrganization } = useAuthStore();
+  const isAdmin = useMemo(() => {
+    if (!currentOrganization) {
+      console.log("[AddBusiness] No current organization found");
+      return false;
+    }
+    const userRole = currentOrganization.role?.toLowerCase()?.trim();
+    const roleDisplayName = currentOrganization.roleDisplayName
+      ?.toLowerCase()
+      ?.trim();
+
+    // Check both role and roleDisplayName
+    const isAdminUser =
+      ["owner", "system_admin", "admin"].includes(userRole || "") ||
+      ["owner", "system admin", "administrator"].includes(
+        roleDisplayName || ""
+      );
+
+    console.log("[AddBusiness] Admin check:", {
+      role: currentOrganization.role,
+      roleDisplayName: currentOrganization.roleDisplayName,
+      userRole,
+      roleDisplayNameLower: roleDisplayName,
+      isAdminUser,
+    });
+
+    return isAdminUser;
+  }, [currentOrganization]);
 
   // State for custom business types and industries
   const [customBusinessTypes, setCustomBusinessTypes] = useState<string[]>([]);
@@ -164,6 +195,11 @@ export default function AddBusiness({ open, onOpenChange }: AddBusinessProps) {
   // Handler for business type select change
   const handleBusinessTypeSelectChange = (value: string) => {
     if (value === ADD_BUSINESS_TYPE_SELECT_VALUE) {
+      // Check if user is admin before allowing to add business type
+      if (!isAdmin) {
+        toast.error("Only administrators can add business types");
+        return;
+      }
       setAddBusinessTypeDialog({
         open: true,
         businessTypeName: "",
@@ -176,6 +212,17 @@ export default function AddBusiness({ open, onOpenChange }: AddBusinessProps) {
 
   // Handler for adding business type
   const handleAddBusinessType = () => {
+    // Check if user is admin
+    if (!isAdmin) {
+      toast.error("Only administrators can add business types");
+      setAddBusinessTypeDialog({
+        open: false,
+        businessTypeName: "",
+        error: "",
+      });
+      return;
+    }
+
     const businessTypeName = addBusinessTypeDialog.businessTypeName.trim();
 
     if (!businessTypeName) {
@@ -220,6 +267,11 @@ export default function AddBusiness({ open, onOpenChange }: AddBusinessProps) {
   // Handler for industry select change
   const handleIndustrySelectChange = (value: string) => {
     if (value === ADD_INDUSTRY_SELECT_VALUE) {
+      // Check if user is admin before allowing to add industry
+      if (!isAdmin) {
+        toast.error("Only administrators can add industries");
+        return;
+      }
       setAddIndustryDialog({
         open: true,
         industryName: "",
@@ -232,6 +284,17 @@ export default function AddBusiness({ open, onOpenChange }: AddBusinessProps) {
 
   // Handler for adding industry
   const handleAddIndustry = () => {
+    // Check if user is admin
+    if (!isAdmin) {
+      toast.error("Only administrators can add industries");
+      setAddIndustryDialog({
+        open: false,
+        industryName: "",
+        error: "",
+      });
+      return;
+    }
+
     const industryName = addIndustryDialog.industryName.trim();
 
     if (!industryName) {
@@ -377,16 +440,20 @@ export default function AddBusiness({ open, onOpenChange }: AddBusinessProps) {
                           {type}
                         </SelectItem>
                       ))}
-                      {(existingBusinessTypes.length > 0 ||
-                        customBusinessTypes.length > 0) && (
-                        <div className="my-1 border-t border-muted-foreground/20" />
+                      {/* Only show "Add Business Type" option if user is admin */}
+                      {isAdmin &&
+                        (existingBusinessTypes.length > 0 ||
+                          customBusinessTypes.length > 0) && (
+                          <div className="my-1 border-t border-muted-foreground/20" />
+                        )}
+                      {isAdmin && (
+                        <SelectItem
+                          value={ADD_BUSINESS_TYPE_SELECT_VALUE}
+                          className="text-sm text-muted-foreground"
+                        >
+                          + Add Business Type
+                        </SelectItem>
                       )}
-                      <SelectItem
-                        value={ADD_BUSINESS_TYPE_SELECT_VALUE}
-                        className="text-sm text-muted-foreground"
-                      >
-                        + Add Business Type
-                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -423,16 +490,20 @@ export default function AddBusiness({ open, onOpenChange }: AddBusinessProps) {
                           {industry}
                         </SelectItem>
                       ))}
-                      {(existingIndustries.length > 0 ||
-                        customIndustries.length > 0) && (
-                        <div className="my-1 border-t border-muted-foreground/20" />
+                      {/* Only show "Add Industry" option if user is admin */}
+                      {isAdmin &&
+                        (existingIndustries.length > 0 ||
+                          customIndustries.length > 0) && (
+                          <div className="my-1 border-t border-muted-foreground/20" />
+                        )}
+                      {isAdmin && (
+                        <SelectItem
+                          value={ADD_INDUSTRY_SELECT_VALUE}
+                          className="text-sm text-muted-foreground"
+                        >
+                          + Add Industry
+                        </SelectItem>
                       )}
-                      <SelectItem
-                        value={ADD_INDUSTRY_SELECT_VALUE}
-                        className="text-sm text-muted-foreground"
-                      >
-                        + Add Industry
-                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -470,6 +541,7 @@ export default function AddBusiness({ open, onOpenChange }: AddBusinessProps) {
                     <Phone className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
                     <Input
                       id="business_contact"
+                      type="number"
                       value={formData.business_contact}
                       onChange={(e) =>
                         handleChange("business_contact", e.target.value)
@@ -481,28 +553,19 @@ export default function AddBusiness({ open, onOpenChange }: AddBusinessProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="website">Website</Label>
+                  <Label htmlFor="business_address">Business Address</Label>
                   <div className="relative">
-                    <Globe className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
-                      id="website"
-                      type="url"
-                      value={formData.website}
-                      onChange={(e) => handleChange("website", e.target.value)}
-                      placeholder="https://example.com"
-                      className={`pl-10 bg-gray-100 ${
-                        errors.website
-                          ? "border-red-500 focus:border-red-500"
-                          : ""
-                      }`}
+                      id="business_address"
+                      value={formData.business_address}
+                      onChange={(e) =>
+                        handleChange("business_address", e.target.value)
+                      }
+                      placeholder="Enter full business address"
+                      className="pl-10 bg-gray-100 "
                     />
                   </div>
-                  {errors.website && (
-                    <p className="text-xs text-red-500 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3" />
-                      {errors.website}
-                    </p>
-                  )}
                 </div>
               </div>
             </div>
@@ -525,38 +588,6 @@ export default function AddBusiness({ open, onOpenChange }: AddBusinessProps) {
                       className="pl-10 bg-gray-100"
                     />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="account_owner">Account Owner</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
-                    <Input
-                      id="account_owner"
-                      value={formData.account_owner}
-                      onChange={(e) =>
-                        handleChange("account_owner", e.target.value)
-                      }
-                      placeholder="Enter account owner name"
-                      className="pl-10 bg-gray-100"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="business_address">Business Address</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="business_address"
-                    value={formData.business_address}
-                    onChange={(e) =>
-                      handleChange("business_address", e.target.value)
-                    }
-                    placeholder="Enter full business address"
-                    className="pl-10 bg-gray-100 "
-                  />
                 </div>
               </div>
             </div>

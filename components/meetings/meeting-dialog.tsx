@@ -290,10 +290,10 @@ export function MeetingDialog({
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleCancelEdit}
-                disabled={isLoading}
+                onClick={handleClose}
+                // disabled={isLoading}
               >
-                {isEditMode ? "Cancel" : "Clear"}
+                Cancel
               </Button>
               <Button
                 type="submit"
