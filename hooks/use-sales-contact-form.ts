@@ -44,6 +44,24 @@ export function useSalesContactForm() {
             return "Phone number must be exactly 10 digits";
           }
           return "";
+        case "alternativeEmail":
+          // Alternative email is optional, but if provided, must be valid
+          if (value && value.trim()) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value.trim())) {
+              return "Please enter a valid email address";
+            }
+          }
+          return "";
+        case "alternativePhoneNumber":
+          // Alternative phone number is optional, but if provided, must be exactly 10 digits
+          if (value && value.trim()) {
+            const digits = value.replace(/\D/g, "");
+            if (digits.length !== 10) {
+              return "Phone number must be exactly 10 digits";
+            }
+          }
+          return "";
         case "location":
           // Location is optional, but if provided, should only contain alphabets, spaces, commas, and hyphens
           if (value && value.trim()) {

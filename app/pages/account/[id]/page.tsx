@@ -403,6 +403,7 @@ export default function AccountDetailPage() {
           <DialogHeader>
             <DialogTitle>Client Intake Form — Website / App</DialogTitle>
           </DialogHeader>
+
           <Projectinfo />
         </DialogContent>
       </Dialog>

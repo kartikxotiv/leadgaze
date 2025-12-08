@@ -19,6 +19,7 @@ import {
   Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CountrySelect } from "@/components/common/country-select";
 import type { ContactPlatform } from "@/lib/data/contact-platforms";
 import type { FormData } from "@/lib/constants/sales-contacts";
 import {
@@ -130,6 +131,35 @@ export function SalesContactFormFields({
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="alternativeEmail">Alternative Email</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+              <Input
+                id="alternativeEmail"
+                type="email"
+                value={data.alternativeEmail}
+                onChange={(event) =>
+                  onChange("alternativeEmail", event.target.value)
+                }
+                placeholder="alt.email@example.com"
+                className={`pl-10 bg-gray-100 ${
+                  formErrors.alternativeEmail
+                    ? "border-red-500 focus:border-red-500"
+                    : ""
+                }`}
+              />
+            </div>
+            {formErrors.alternativeEmail && (
+              <p className="text-xs text-red-500 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {formErrors.alternativeEmail}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
             <Label htmlFor="phoneNumber">Phone Number *</Label>
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
@@ -139,9 +169,7 @@ export function SalesContactFormFields({
                 value={data.phoneNumber}
                 onChange={(event) => {
                   const value = event.target.value;
-                  // Only allow digits
                   const digitsOnly = value.replace(/\D/g, "");
-                  // Limit to 10 digits
                   const limitedDigits = digitsOnly.slice(0, 10);
                   onChange("phoneNumber", limitedDigits);
                 }}
@@ -161,62 +189,7 @@ export function SalesContactFormFields({
               </p>
             )}
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
-              <Input
-                id="location"
-                value={data.location}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  // Only allow alphabets, spaces, commas, and hyphens
-                  const locationRegex = /^[a-zA-Z\s,\-]*$/;
-                  if (locationRegex.test(value) || value === "") {
-                    onChange("location", value);
-                  }
-                }}
-                placeholder="New York, USA"
-                className={`pl-10 bg-gray-100 ${
-                  formErrors.location
-                    ? "border-red-500 focus:border-red-500"
-                    : ""
-                }`}
-              />
-            </div>
-            {formErrors.location && (
-              <p className="text-xs text-red-500 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {formErrors.location}
-              </p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <Select
-              value={data.status}
-              onValueChange={(value) =>
-                onChange("status", value as FormData["status"])
-              }
-            >
-              <SelectTrigger className="bg-gray-100">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="alternativePhoneNumber">
               Alternative Phone Number
@@ -235,30 +208,37 @@ export function SalesContactFormFields({
                 }}
                 placeholder="1234567890"
                 maxLength={10}
-                className="pl-10 bg-gray-100"
+                className={`pl-10 bg-gray-100 ${
+                  formErrors.alternativePhoneNumber
+                    ? "border-red-500 focus:border-red-500"
+                    : ""
+                }`}
               />
             </div>
+            {formErrors.alternativePhoneNumber && (
+              <p className="text-xs text-red-500 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {formErrors.alternativePhoneNumber}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="alternativeEmail">Alternative Email</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
-              <Input
-                id="alternativeEmail"
-                type="email"
-                value={data.alternativeEmail}
-                onChange={(event) =>
-                  onChange("alternativeEmail", event.target.value)
-                }
-                placeholder="alt.email@example.com"
-                className="pl-10 bg-gray-100"
-              />
-            </div>
+            <Label htmlFor="location">Location</Label>
+            <CountrySelect
+              value={data.location}
+              onValueChange={(value) => onChange("location", value)}
+              placeholder="Select country"
+              error={!!formErrors.location}
+            />
+            {formErrors.location && (
+              <p className="text-xs text-red-500 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {formErrors.location}
+              </p>
+            )}
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="businessId">Business</Label>
             {businessOptions.length === 0 && !businessesLoading ? (
@@ -295,7 +275,7 @@ export function SalesContactFormFields({
                       }
                     />
                   </SelectTrigger>
-                  <SelectContent>
+                  {/* <SelectContent>
                     {businessOptions.length > 0 ? (
                       <>
                         {businessOptions.map((business) => (
@@ -311,10 +291,40 @@ export function SalesContactFormFields({
                         <div className="my-1 border-t border-muted-foreground/20" />
                         <SelectItem
                           value={ADD_BUSINESS_SELECT_VALUE}
-                          className="text-sm text-muted-foreground"
+                          className="text-sm hover:bg-gray-200 hover:text-black cursor-pointer"
                         >
-                          + Add Business
+                          + Add Business 555
                         </SelectItem>
+                      </>
+                    ) : (
+                      <SelectItem value="no-businesses" disabled>
+                        No businesses available
+                      </SelectItem>
+                    )}
+                  </SelectContent> */}
+                  <SelectContent className="max-h-[300px]">
+                    {businessOptions.length > 0 ? (
+                      <>
+                        <div className="max-h-[250px] overflow-y-auto">
+                          {businessOptions.map((business) => (
+                            <SelectItem
+                              key={business.id}
+                              value={business.id}
+                              className="hover:bg-gray-200 hover:text-black"
+                            >
+                              {business.business_name ||
+                                `Business ${business.id}`}
+                            </SelectItem>
+                          ))}
+                        </div>
+                        <div className="sticky bottom-0 bg-popover border-t border-muted-foreground/20 -mx-1 px-1">
+                          <SelectItem
+                            value={ADD_BUSINESS_SELECT_VALUE}
+                            className="text-sm hover:bg-gray-200 hover:text-black cursor-pointer"
+                          >
+                            + Add Business
+                          </SelectItem>
+                        </div>
                       </>
                     ) : (
                       <SelectItem value="no-businesses" disabled>
@@ -332,7 +342,19 @@ export function SalesContactFormFields({
               </p>
             )}
           </div>
-
+          <div className="space-y-2">
+            <Label htmlFor="businessLinkedin">Business LinkedIn</Label>
+            <Input
+              id="businessLinkedin"
+              type="url"
+              value={data.businessLinkedin}
+              onChange={(event) =>
+                onChange("businessLinkedin", event.target.value)
+              }
+              placeholder="https://linkedin.com/company/companyname"
+              className="bg-gray-100"
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
             <Input
@@ -346,19 +368,88 @@ export function SalesContactFormFields({
           </div>
         </div>
 
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="alternativePhoneNumber">
+              Alternative Phone Number
+            </Label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+              <Input
+                id="alternativePhoneNumber"
+                type="tel"
+                value={data.alternativePhoneNumber}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  const digitsOnly = value.replace(/\D/g, "");
+                  const limitedDigits = digitsOnly.slice(0, 10);
+                  onChange("alternativePhoneNumber", limitedDigits);
+                }}
+                placeholder="1234567890"
+                maxLength={10}
+                className={`pl-10 bg-gray-100 ${
+                  formErrors.alternativePhoneNumber
+                    ? "border-red-500 focus:border-red-500"
+                    : ""
+                }`}
+              />
+            </div>
+            {formErrors.alternativePhoneNumber && (
+              <p className="text-xs text-red-500 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {formErrors.alternativePhoneNumber}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="alternativeEmail">Alternative Email</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+              <Input
+                id="alternativeEmail"
+                type="email"
+                value={data.alternativeEmail}
+                onChange={(event) =>
+                  onChange("alternativeEmail", event.target.value)
+                }
+                placeholder="alt.email@example.com"
+                className={`pl-10 bg-gray-100 ${
+                  formErrors.alternativeEmail
+                    ? "border-red-500 focus:border-red-500"
+                    : ""
+                }`}
+              />
+            </div>
+            {formErrors.alternativeEmail && (
+              <p className="text-xs text-red-500 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {formErrors.alternativeEmail}
+              </p>
+            )}
+          </div>
+        </div> */}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="businessLinkedin">Business LinkedIn</Label>
-            <Input
-              id="businessLinkedin"
-              type="url"
-              value={data.businessLinkedin}
-              onChange={(event) =>
-                onChange("businessLinkedin", event.target.value)
+            <Label htmlFor="status">Status</Label>
+            <Select
+              value={data.status}
+              onValueChange={(value) =>
+                onChange("status", value as FormData["status"])
               }
-              placeholder="https://linkedin.com/company/companyname"
-              className="bg-gray-100"
-            />
+            >
+              <SelectTrigger className="bg-gray-100">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -398,7 +489,7 @@ export function SalesContactFormFields({
                 <div className="my-1 border-t border-muted-foreground/20" />
                 <SelectItem
                   value={ADD_PLATFORM_SELECT_VALUE}
-                  className="text-sm text-muted-foreground"
+                  className="text-sm hover:bg-gray-200 hover:text-black cursor-pointer"
                 >
                   + Add platform
                 </SelectItem>
