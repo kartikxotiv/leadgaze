@@ -235,6 +235,9 @@ export default function RolesPage() {
     async (roleId: string) => {
       try {
         const permissionsData: Record<string, any> = {};
+
+        // IMPORTANT: Save ALL routes from editingPermissions
+        // editingPermissions should contain all AVAILABLE_ROUTES (loaded in handleStartEdit)
         Object.values(editingPermissions).forEach((perm) => {
           permissionsData[perm.route] = {
             visible: perm.visible,
@@ -243,6 +246,26 @@ export default function RolesPage() {
             update: perm.update,
             delete: perm.delete,
           };
+        });
+
+        // Validate that we have all routes
+        const expectedRoutesCount = AVAILABLE_ROUTES.length;
+        const actualRoutesCount = Object.keys(permissionsData).length;
+
+        if (actualRoutesCount !== expectedRoutesCount) {
+          console.warn(
+            `[handleUpdateRole] Route count mismatch: expected ${expectedRoutesCount}, got ${actualRoutesCount}`
+          );
+        }
+
+        console.log("[handleUpdateRole] Updating role permissions:", {
+          roleId,
+          permissionsCount: actualRoutesCount,
+          permissionsKeys: Object.keys(permissionsData),
+          hasSalesLeads: !!permissionsData["Sales Leads"],
+          hasSalesContacts: !!permissionsData["Sales Contacts"],
+          salesLeadsPerm: permissionsData["Sales Leads"],
+          salesContactsPerm: permissionsData["Sales Contacts"],
         });
 
         await updateRoleMutation.mutateAsync({
@@ -254,6 +277,7 @@ export default function RolesPage() {
         setEditingRoleId(null);
         setEditingPermissions({});
       } catch (error: any) {
+        console.error("[handleUpdateRole] Error updating role:", error);
         toast.error(error?.message || "Failed to update role permissions");
       }
     },
@@ -264,6 +288,16 @@ export default function RolesPage() {
     const rolePermissions = role.permissions || {};
     const initialPermissions: Record<string, RoutePermission> = {};
 
+    console.log("[handleStartEdit] Loading role for edit:", {
+      roleId: role.id,
+      roleName: role.name,
+      existingPermissions: rolePermissions,
+      existingPermissionsKeys: Object.keys(rolePermissions),
+      availableRoutesCount: AVAILABLE_ROUTES.length,
+    });
+
+    // IMPORTANT: Load ALL available routes, not just existing ones
+    // This ensures all routes are available for editing
     AVAILABLE_ROUTES.forEach((route) => {
       const existingPerm = rolePermissions[route];
       initialPermissions[route] = {
@@ -274,6 +308,15 @@ export default function RolesPage() {
         update: existingPerm?.update ?? false,
         delete: existingPerm?.delete ?? false,
       };
+    });
+
+    console.log("[handleStartEdit] Initial permissions loaded:", {
+      permissionsCount: Object.keys(initialPermissions).length,
+      permissionsKeys: Object.keys(initialPermissions),
+      hasSalesLeads: !!initialPermissions["Sales Leads"],
+      hasSalesContacts: !!initialPermissions["Sales Contacts"],
+      salesLeadsPerm: initialPermissions["Sales Leads"],
+      salesContactsPerm: initialPermissions["Sales Contacts"],
     });
 
     setEditingPermissions(initialPermissions);

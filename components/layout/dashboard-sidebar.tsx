@@ -53,12 +53,12 @@ const logo = "/image/leadgaze.png";
 const logoicon = "/image/leadgaze_icon.png";
 
 const defaultMenuItems: SidebarItem[] = [
-  {
-    id: "dashboard",
-    label: "Dashboard",
-    href: "/pages/dashboard",
-    icon: Home,
-  },
+  // {
+  //   id: "dashboard",
+  //   label: "Dashboard",
+  //   href: "/pages/dashboard",
+  //   icon: Home,
+  // },
   {
     id: "CRM",
     label: "Sales Ops",
@@ -117,67 +117,67 @@ const defaultMenuItems: SidebarItem[] = [
       // },
     ],
   },
-  {
-    id: "tasks",
-    label: "Tasks",
-    href: "/tasks",
-    icon: CheckSquare,
-    badgeVariant: "destructive",
-  },
-  {
-    id: "reports",
-    label: "Reports",
-    href: "/pages/reports",
-    icon: BarChart3,
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    href: "/pages/settings",
-    icon: Settings,
-    children: [
-      {
-        id: "team-management",
-        label: "Sales Team",
-        href: "#",
-        icon: Users,
-        children: [
-          {
-            id: "create-organization",
-            label: "Create New Organization",
-            href: "/pages/settings/create-organization",
-            icon: Plus,
-          },
-          {
-            id: "manage-team",
-            label: "Manage Team",
-            href: "/pages/settings/manage-team",
-            icon: UserPlus,
-          },
-        ],
-      },
-      {
-        id: "select-workspace",
-        label: "Select Workspace",
-        href: "#",
-        icon: Users,
-        children: [
-          {
-            id: "Create-Workspace",
-            label: "Create a Organization",
-            href: "/pages/settings/create-organization",
-            icon: Plus,
-          },
-          {
-            id: "manage-workspace",
-            label: "Manage Workspaces",
-            href: "/pages/settings/manage-team",
-            icon: UserPlus,
-          },
-        ],
-      },
-    ],
-  },
+  // {
+  //   id: "tasks",
+  //   label: "Tasks",
+  //   href: "/tasks",
+  //   icon: CheckSquare,
+  //   badgeVariant: "destructive",
+  // },
+  // {
+  //   id: "reports",
+  //   label: "Reports",
+  //   href: "/pages/reports",
+  //   icon: BarChart3,
+  // },
+  // {
+  //   id: "settings",
+  //   label: "Settings",
+  //   href: "/pages/settings",
+  //   icon: Settings,
+  //   children: [
+  //     {
+  //       id: "team-management",
+  //       label: "Sales Team",
+  //       href: "#",
+  //       icon: Users,
+  //       children: [
+  //         {
+  //           id: "create-organization",
+  //           label: "Create New Organization",
+  //           href: "/pages/settings/create-organization",
+  //           icon: Plus,
+  //         },
+  //         {
+  //           id: "manage-team",
+  //           label: "Manage Team",
+  //           href: "/pages/settings/manage-team",
+  //           icon: UserPlus,
+  //         },
+  //       ],
+  //     },
+  //     {
+  //       id: "select-workspace",
+  //       label: "Select Workspace",
+  //       href: "#",
+  //       icon: Users,
+  //       children: [
+  //         {
+  //           id: "Create-Workspace",
+  //           label: "Create a Organization",
+  //           href: "/pages/settings/create-organization",
+  //           icon: Plus,
+  //         },
+  //         {
+  //           id: "manage-workspace",
+  //           label: "Manage Workspaces",
+  //           href: "/pages/settings/manage-team",
+  //           icon: UserPlus,
+  //         },
+  //       ],
+  //     },
+  //   ],
+  // },
   {
     id: "roles",
     label: "Roles",
