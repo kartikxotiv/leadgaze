@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 // Define protected and auth routes
 const protectedRoutes = [
   "/pages/dashboard",
-  "/pages/leads",
+
   "/pages/team",
   "/pages/deals",
   "/pages/tasks",
@@ -22,12 +22,12 @@ const protectedRoutes = [
   "/pages/companies",
   "/pages/contacts",
   "/pages/createworkspace",
-  "/pages/sales-contacts",
   "/pages/sales-leads",
   "/pages/roles",
   "/pages/add-member",
   "/pages/account",
   "/pages/opportunities",
+  "/page/team-member",
 ];
 const authRoutes = [
   "/pages/auth/sign-in",

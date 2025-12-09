@@ -285,7 +285,7 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
   } = useUpcomingFollowUps();
   const updateActivityMutation = useUpdateActivity();
   const deleteActivityMutation = useDeleteActivity();
-  const { data: leadsData } = useLeads({ limit: "50" });
+  const { data: leadsData } = useLeads({ limit: 50 } as { limit: number });
 
   const handleCompleteTask = async (activityId: string) => {
     try {
@@ -358,105 +358,10 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
   const totalOverdue = overdueTasks?.length || 0;
   const totalUpcoming = upcomingTasks?.length || 0;
   const completedToday =
-    todaysTasks?.filter((task) => task.completedAt)?.length || 0;
+    todaysTasks?.filter((task: any) => task.completedAt)?.length || 0;
 
   return (
     <div className={cn("w-full space-y-6", className)}>
-      {}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-950 rounded-full flex items-center justify-center">
-                <Clock className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  Today's Tasks
-                </p>
-                <p className="text-xl font-bold">{totalToday}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-red-100 dark:bg-red-950 rounded-full flex items-center justify-center">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  Overdue
-                </p>
-                <p className="text-xl font-bold text-red-600">
-                  {totalOverdue}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-100 dark:bg-green-950 rounded-full flex items-center justify-center">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  Completed Today
-                </p>
-                <p className="text-xl font-bold text-green-600">
-                  {completedToday}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-950 rounded-full flex items-center justify-center">
-                <Calendar className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  Upcoming
-                </p>
-                <p className="text-xl font-bold text-blue-600">
-                  {totalUpcoming}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-purple-100 dark:bg-purple-950 rounded-full flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  Completion Rate
-                </p>
-                <p className="text-xl font-bold text-purple-600">
-                  {totalToday > 0
-                    ? Math.round((completedToday / totalToday) * 100)
-                    : 0}
-                  %
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -466,91 +371,38 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
             </CardTitle>
             <CardDescription className="mt-2 text-xs">
               Stay on top of your pipeline with scheduled follow-ups and
-              reminders 
+              reminders
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
-            
-            {}
-
-
-            <Dialog open={showScheduler} onOpenChange={setShowScheduler}>
-              <DialogTrigger asChild>
-                <Button className="bg-[#45a2ff] from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Schedule Follow-up
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Schedule Follow-up</DialogTitle>
-                </DialogHeader>
-
-                {}
-                <div className="mb-4">
-                  <label className="text-sm font-medium mb-2 block">
-                    Select Lead <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={selectedLeadId}
-                    onChange={(e) => setSelectedLeadId(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  >
-                    <option value="">Select a lead...</option>
-                    {leadsData?.leads?.map((lead: any) => (
-                      <option key={lead.leadId} value={lead.leadId}>
-                        {lead.firstName} {lead.lastName} -{" "}
-                        {lead.businessName || lead.email}
-                      </option>
-                    ))}
-                  </select>
-                  {!selectedLeadId && (
-                    <p className="text-sm text-red-600 ">
-                      Please select a lead to create a follow-up task
-                    </p>
-                  )}
-                </div>
-
-                {selectedLeadId && (
-                  <FollowUpScheduler
-                    leadId={selectedLeadId}
-                    onSuccess={() => {
-                      setShowScheduler(false);
-                      setSelectedLeadId("");
-                      refetchToday();
-                      refetchOverdue();
-                      refetchUpcoming();
-                    }}
-                    onCancel={() => setShowScheduler(false)}
-                  />
-                )}
-              </DialogContent>
-            </Dialog>
-          </div>
+          <div className="flex items-center gap-2">{}</div>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="today" className="w-full">
-            
-            
-          <div className="lg:w-1/3 md:w-1/2 w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="today" className="flex items-center gap-2 py-3">
-                <Clock className="h-4 w-4" />
-                Today ({totalToday})
-              </TabsTrigger>
-              <TabsTrigger value="overdue" className="flex items-center gap-2 py-3">
-                <AlertTriangle className="h-4 w-4" />
-                Overdue ({totalOverdue})
-              </TabsTrigger>
-              <TabsTrigger value="upcoming" className="flex items-center gap-2 py-3">
-                <Calendar className="h-4 w-4" />
-                Upcoming ({totalUpcoming})
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-
+            <div className="lg:w-1/3 md:w-1/2 w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger
+                  value="today"
+                  className="flex items-center gap-2 py-3"
+                >
+                  <Clock className="h-4 w-4" />
+                  Today ({totalToday})
+                </TabsTrigger>
+                <TabsTrigger
+                  value="overdue"
+                  className="flex items-center gap-2 py-3"
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  Overdue ({totalOverdue})
+                </TabsTrigger>
+                <TabsTrigger
+                  value="upcoming"
+                  className="flex items-center gap-2 py-3"
+                >
+                  <Calendar className="h-4 w-4" />
+                  Upcoming ({totalUpcoming})
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="today" className="mt-6">
               {loadingToday ? (
@@ -559,7 +411,7 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
                 </div>
               ) : todaysTasks && todaysTasks.length > 0 ? (
                 <div className="space-y-4">
-                  {todaysTasks.map((task) => (
+                  {todaysTasks.map((task: any) => (
                     <TaskCard
                       key={task.activityId}
                       activity={task}
@@ -582,7 +434,7 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
                     variant="outline"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Schedule a Follow-up
+                    Schedule a Follow-up asdfasdf
                   </Button>
                 </div>
               )}
@@ -595,7 +447,7 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
                 </div>
               ) : overdueTasks && overdueTasks.length > 0 ? (
                 <div className="space-y-4">
-                  {overdueTasks.map((task) => (
+                  {overdueTasks.map((task: any) => (
                     <TaskCard
                       key={task.activityId}
                       activity={task}
@@ -626,7 +478,7 @@ export function FollowUpDashboard({ className }: FollowUpDashboardProps) {
                 </div>
               ) : upcomingTasks && upcomingTasks.length > 0 ? (
                 <div className="space-y-4">
-                  {upcomingTasks.map((task) => (
+                  {upcomingTasks.map((task: any) => (
                     <TaskCard
                       key={task.activityId}
                       activity={task}

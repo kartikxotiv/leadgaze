@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -13,103 +12,102 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCreateContact, useUpdateContact, useContact } from "@/hooks/use-contacts";
-import { useCompanies } from "@/hooks/use-companies";
-import { useWorkspaceContext } from "@/hooks/use-workspace-context";
-import { useState, useCallback, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useState } from "react";
 import {
+  AlertCircle,
   ArrowLeft,
+  Loader2,
+  MapPin,
+  Phone,
   Save,
   User,
   Mail,
-  Phone,
-  MapPin,
-  FileText,
-  Loader2,
-  AlertCircle,
-  Building2,
+  Globe,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+
+import { useCreateSalesContact } from "@/hooks/use-sales-contact";
+import {
+  useContactPlatforms,
+  useCreateContactPlatform,
+} from "@/hooks/use-contact-platforms";
+import { useWorkspaceContext } from "@/hooks/use-workspace-context";
+import type { SalesContactInsert } from "@/lib/data/sales-contacts";
 
 interface FormData {
   firstName: string;
   lastName: string;
   email: string;
   phoneNumber: string;
-  companyId: string;
   location: string;
-  description: string;
   contactTimeZone: string;
+  platformId: string;
+  platformCustom: string;
+  status: SalesContactInsert["status"];
 }
 
-export default function NewContactPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const editContactId = searchParams.get("edit");
-  const isEditMode = !!editContactId;
-  
-  const createContactMutation = useCreateContact();
-  const updateContactMutation = useUpdateContact();
-  const { currentWorkspace } = useWorkspaceContext();
-  
-  const { data: companiesData, isLoading: companiesLoading } = useCompanies({
-    workspaceId: currentWorkspace?.id,
-    limit: 100,
-  });
-  const companies = companiesData?.companies || [];
+const INITIAL_FORM_STATE: FormData = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phoneNumber: "",
+  location: "",
+  contactTimeZone: "",
+  platformId: "",
+  platformCustom: "",
+  status: "pending",
+};
 
-  const { data: contactData, isLoading: isLoadingContact } = useContact(
-    editContactId || ""
+export default function NewSalesContactPage() {
+  const router = useRouter();
+  const { currentWorkspace } = useWorkspaceContext();
+  const createSalesContactMutation = useCreateSalesContact();
+  const { data: platformsData, isLoading: platformsLoading } =
+    useContactPlatforms();
+  const createContactPlatformMutation = useCreateContactPlatform();
+
+  const platformOptions = useMemo(() => platformsData ?? [], [platformsData]);
+  const isSaving =
+    createSalesContactMutation.isPending ||
+    createContactPlatformMutation.isPending;
+
+  const statusOptions = useMemo(
+    () =>
+      [
+        { value: "pending", label: "Pending" },
+        { value: "moved_to_lead", label: "Moved to Lead" },
+        { value: "rejected", label: "Rejected" },
+      ] satisfies Array<{
+        value: SalesContactInsert["status"];
+        label: string;
+      }>,
+    []
   );
 
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<FormData>(INITIAL_FORM_STATE);
+  const [errors, setErrors] = useState<Record<keyof FormData, string>>({
     firstName: "",
     lastName: "",
     email: "",
     phoneNumber: "",
-    companyId: "",
     location: "",
-    description: "",
     contactTimeZone: "",
+    platformId: "",
+    platformCustom: "",
+    status: "",
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Removed auto-selection - let users manually select a company
-  // useEffect(() => {
-  //   if (companies.length > 0 && !formData.companyId && !isEditMode) {
-  //     setFormData((prev) => ({
-  //       ...prev,
-  //       companyId: companies[0].id,
-  //     }));
-  //   }
-  // }, [companies, isEditMode]);
-
-  useEffect(() => {
-    if (isEditMode && contactData) {
-      setFormData({
-        firstName: contactData.firstName || "",
-        lastName: contactData.lastName || "",
-        email: contactData.email || "",
-        phoneNumber: contactData.phoneNumber || "",
-        companyId: contactData.companyId || "",
-        location: contactData.location || "",
-        description: contactData.description || "",
-        contactTimeZone: contactData.contactTimeZone || "",
-      });
-    }
-  }, [isEditMode, contactData]);
 
   const validateField = useCallback(
-    (fieldName: string, value: string): string => {
+    (fieldName: keyof FormData, value: string) => {
       switch (fieldName) {
         case "firstName":
           return !value.trim() ? "First name is required" : "";
         case "email":
           if (value && value.trim()) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return !emailRegex.test(value) ? "Please enter a valid email address" : "";
+            return emailRegex.test(value) ? "" : "Please enter a valid email";
           }
           return "";
         default:
@@ -119,22 +117,8 @@ export default function NewContactPage() {
     []
   );
 
-  const validateForm = useCallback((): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    newErrors.firstName = validateField("firstName", formData.firstName);
-    newErrors.email = validateField("email", formData.email);
-
-    const filteredErrors = Object.fromEntries(
-      Object.entries(newErrors).filter(([_, value]) => value !== "")
-    );
-
-    setErrors(filteredErrors);
-    return Object.keys(filteredErrors).length === 0;
-  }, [formData.firstName, formData.email, validateField]);
-
   const handleFormChange = useCallback(
-    (field: string, value: string) => {
+    <K extends keyof FormData>(field: K, value: FormData[K]) => {
       setFormData((prev) => ({ ...prev, [field]: value }));
 
       if (errors[field]) {
@@ -144,357 +128,350 @@ export default function NewContactPage() {
     [errors]
   );
 
+  const validateForm = useCallback(() => {
+    const newErrors: Record<keyof FormData, string> = {
+      firstName: validateField("firstName", formData.firstName),
+      email: validateField("email", formData.email),
+      lastName: "",
+      phoneNumber: "",
+      location: "",
+      contactTimeZone: "",
+      platformId: "",
+      platformCustom: "",
+      status: "",
+    };
+
+    const filteredErrors = Object.fromEntries(
+      Object.entries(newErrors).filter(([, value]) => value !== "")
+    ) as Record<keyof FormData, string>;
+
+    setErrors((prev) => ({ ...prev, ...filteredErrors }));
+    return Object.keys(filteredErrors).length === 0;
+  }, [formData, validateField]);
+
   const handleSubmit = useCallback(
-    async (saveAndExit: boolean = false) => {
-      if (!validateForm()) {
-        toast.error("Please fill in all required fields");
+    async (saveAndExit: boolean = true) => {
+      if (!currentWorkspace?.id) {
+        toast.error("Please select a workspace before creating contacts.");
         return;
       }
 
-      try {
-        const contactData = {
-          firstName: formData.firstName.trim(),
-          lastName: formData.lastName.trim() || undefined,
-          email: formData.email.trim() || undefined,
-          phoneNumber: formData.phoneNumber.trim() || undefined,
-          companyId: formData.companyId || undefined,
-          workspaceId: currentWorkspace?.id || undefined,
-          location: formData.location.trim() || undefined,
-          description: formData.description.trim() || undefined,
-          contactTimeZone: formData.contactTimeZone.trim() || undefined,
-        };
+      if (!validateForm()) {
+        toast.error("Please fix the highlighted errors.");
+        return;
+      }
 
-        const cleanedData = Object.fromEntries(
-          Object.entries(contactData).filter(([_, value]) => value !== undefined)
-        ) as any;
+      let platformId: number | null = formData.platformId
+        ? Number(formData.platformId)
+        : null;
 
-        if (isEditMode && editContactId) {
-          await updateContactMutation.mutateAsync({
-            contactId: editContactId,
-            data: cleanedData,
-          });
-          toast.success("Contact updated successfully!");
-          router.push("/pages/contacts");
+      const manualPlatformName = formData.platformCustom.trim();
+
+      if (!platformId && manualPlatformName) {
+        const existingPlatform = platformOptions.find(
+          (platform) =>
+            platform.name.toLowerCase() === manualPlatformName.toLowerCase()
+        );
+
+        if (existingPlatform) {
+          platformId = existingPlatform.id;
         } else {
-          await createContactMutation.mutateAsync(cleanedData);
-          toast.success("Contact created successfully!");
-
-          if (saveAndExit) {
-            router.push("/pages/contacts");
-          } else {
-            setFormData({
-              firstName: "",
-              lastName: "",
-              email: "",
-              phoneNumber: "",
-              companyId: "",
-              location: "",
-              description: "",
-              contactTimeZone: "",
-            });
-            setErrors({});
-            toast.success("Ready to add another contact!");
+          try {
+            const newPlatform = await createContactPlatformMutation.mutateAsync(
+              manualPlatformName
+            );
+            platformId = newPlatform?.id ?? null;
+          } catch (error: any) {
+            toast.error(
+              error?.message || "Failed to create platform. Please try again."
+            );
+            return;
           }
         }
+      }
+
+      const payload: SalesContactInsert = {
+        first_name: formData.firstName.trim(),
+        last_name: formData.lastName.trim() || null,
+        email: formData.email.trim() || null,
+        phone_number: formData.phoneNumber.trim() || null,
+        location: formData.location.trim() || null,
+        contact_time_zone: formData.contactTimeZone.trim() || null,
+        status: formData.status,
+        workspace_id: currentWorkspace.id,
+        platform: platformId,
+      };
+
+      try {
+        await createSalesContactMutation.mutateAsync(payload);
+        toast.success("Sales contact created successfully!");
+
+        if (saveAndExit) {
+          router.push("/pages/contacts");
+        } else {
+          setFormData(INITIAL_FORM_STATE);
+          setErrors({
+            firstName: "",
+            lastName: "",
+            email: "",
+            phoneNumber: "",
+            location: "",
+            contactTimeZone: "",
+            platformId: "",
+            platformCustom: "",
+            status: "",
+          });
+        }
       } catch (error: any) {
-        toast.error(error?.message || (isEditMode ? "Failed to update contact" : "Failed to create contact"));
+        toast.error(error?.message || "Failed to create sales contact.");
       }
     },
-    [validateForm, formData, createContactMutation, updateContactMutation, router, isEditMode, editContactId, companies, currentWorkspace?.id]
+    [
+      currentWorkspace?.id,
+      createSalesContactMutation,
+      createContactPlatformMutation,
+      formData,
+      platformOptions,
+      router,
+      validateForm,
+    ]
   );
-
-  const renderForm = () => {
-    return (
-      <div className="space-y-8">
-        <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-50 rounded-lg">
-              <User className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-medium">Essential Information</h3>
-              <p className="text-sm text-gray-600 font-regular">
-                {isEditMode ? "Update contact information" : "Required fields to create the contact"}
-              </p>
-            </div>
-          </div>
-
-          {/* <div className="space-y-2">
-            <Label htmlFor="companyId">Company *</Label>
-            {companies.length === 0 && !companiesLoading ? (
-              <div className="space-y-2">
-                <div className="p-4 border border-dashed border-gray-300 rounded-lg bg-gray-50">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <AlertCircle className="h-4 w-4 text-amber-500" />
-                    <span>No companies available. Please create a company first.</span>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  asChild
-                  className="w-full"
-                >
-                  <Link href="/pages/companies/new">
-                    <Building2 className="h-4 w-4 mr-2" />
-                    Create Company
-                  </Link>
-                </Button>
-              </div>
-            ) : (
-              <>
-                <Select
-                  value={formData.companyId}
-                  onValueChange={(value) => handleFormChange("companyId", value)}
-                  disabled={companiesLoading || isEditMode}
-                >
-                  <SelectTrigger className={errors.companyId ? "border-red-500 focus:border-red-500" : ""}>
-                    <SelectValue
-                      placeholder={
-                        companiesLoading
-                          ? "Loading companies..."
-                          : companies.length === 0
-                          ? "No companies available"
-                          : "Select a company"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {companies.length > 0 ? (
-                      companies.map((company: any) => (
-                        <SelectItem key={company.id} value={company.id}>
-                          {company.title}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="no-companies" disabled>
-                        No companies available
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-                {errors.companyId && (
-                  <p className="text-xs text-red-500 flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    {errors.companyId}
-                  </p>
-                )}
-              </>
-            )}
-          </div> */}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First Name *</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(e) => handleFormChange("firstName", e.target.value)}
-                  placeholder="John"
-                  className={`pl-10 ${
-                    errors.firstName ? "border-red-500 focus:border-red-500" : ""
-                  }`}
-                />
-              </div>
-              {errors.firstName && (
-                <p className="text-xs text-red-500 flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  {errors.firstName}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) => handleFormChange("lastName", e.target.value)}
-                  placeholder="Doe"
-                  className="pl-10"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleFormChange("email", e.target.value)}
-                  placeholder="john.doe@example.com"
-                  className={`pl-10 ${
-                    errors.email ? "border-red-500 focus:border-red-500" : ""
-                  }`}
-                />
-              </div>
-              {errors.email && (
-                <p className="text-xs text-red-500 flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  {errors.email}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phoneNumber">Phone Number</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  id="phoneNumber"
-                  type="tel"
-                  value={formData.phoneNumber}
-                  onChange={(e) => handleFormChange("phoneNumber", e.target.value)}
-                  placeholder="+1 (555) 123-4567"
-                  className="pl-10"
-                />
-              </div>
-            </div>
-          </div>
-
-
-
-<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-          <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) => handleFormChange("location", e.target.value)}
-                placeholder="New York, NY"
-                className="pl-10"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-                        <Label htmlFor="companyId">Select Company</Label>
-                        {companies.length === 0 && !companiesLoading ? (
-                          <div className="space-y-2">
-                            <div className="p-4 border border-dashed border-gray-300 rounded-lg bg-gray-50">
-                              <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <AlertCircle className="h-4 w-4 text-amber-500" />
-                                <span>No companies available. Please create a company first.</span>
-                              </div>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              asChild
-                              className="w-full"
-                            >
-                              <Link href="/pages/companies/new">
-                                <Building2 className="h-4 w-4 mr-2" />
-                                Create Company
-                              </Link>
-                            </Button>
-                          </div>
-                        ) : (
-                          <>
-                            <Select
-                              value={formData.companyId || undefined}
-                              onValueChange={(value) => handleFormChange("companyId", value)}
-                              disabled={companiesLoading}
-                            >
-                              <SelectTrigger>
-                                <SelectValue
-                                  placeholder={
-                                    companiesLoading
-                                      ? "Loading companies..."
-                                      : companies.length === 0 
-                                      ? "No companies available"
-                                      : "Select Company"
-                                  }
-                                />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {companies.length > 0 ? (
-                                  companies.map((company: any) => (
-                                    <SelectItem key={company.id} value={company.id}>
-                                      {company.title}
-                                    </SelectItem>
-                                  ))
-                                ) : (
-                                  <SelectItem value="no-companies" disabled>
-                                    No companies available
-                                  </SelectItem>
-                                )}
-                              </SelectContent>
-                            </Select>
-                          </>
-                        )}
-                      </div>
-
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <div className="relative">
-              <FileText className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleFormChange("description", e.target.value)}
-                placeholder="Additional notes and information about the contact..."
-                rows={3}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          {/* <div className="space-y-2">
-            <Label htmlFor="contactTimeZone">Time Zone</Label>
-            <Input
-              id="contactTimeZone"
-              value={formData.contactTimeZone}
-              onChange={(e) => handleFormChange("contactTimeZone", e.target.value)}
-              placeholder="America/New_York"
-              className="max-w-md"
-            />
-          </div> */}
-        </div>
-      </div>
-    );
-  };
 
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-medium tracking-tight">
-                {isEditMode ? "Edit Contact" : "Add New Contact"}
-              </h1>
-            </div>
+          <div>
+            <h1 className="text-2xl font-medium tracking-tight">
+              Add Sales Contact
+            </h1>
           </div>
         </div>
 
-        {isLoadingContact && isEditMode ? (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-gray-400" />
-                <p className="text-muted-foreground">Loading contact data...</p>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-8">
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-50 rounded-lg">
+                    <User className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium">Contact Information</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Provide the essential details to create a sales contact.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">First Name *</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+                      <Input
+                        id="firstName"
+                        value={formData.firstName}
+                        onChange={(event) =>
+                          handleFormChange("firstName", event.target.value)
+                        }
+                        placeholder="John"
+                        className={`pl-10 ${
+                          errors.firstName
+                            ? "border-red-500 focus:border-red-500"
+                            : ""
+                        }`}
+                      />
+                    </div>
+                    {errors.firstName && (
+                      <p className="text-xs text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.firstName}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+                      <Input
+                        id="lastName"
+                        value={formData.lastName}
+                        onChange={(event) =>
+                          handleFormChange("lastName", event.target.value)
+                        }
+                        placeholder="Doe"
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(event) =>
+                          handleFormChange("email", event.target.value)
+                        }
+                        placeholder="john.doe@example.com"
+                        className={`pl-10 ${
+                          errors.email
+                            ? "border-red-500 focus:border-red-500"
+                            : ""
+                        }`}
+                      />
+                    </div>
+                    {errors.email && (
+                      <p className="text-xs text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.email}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phoneNumber">Phone Number</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+                      <Input
+                        id="phoneNumber"
+                        value={formData.phoneNumber}
+                        onChange={(event) =>
+                          handleFormChange("phoneNumber", event.target.value)
+                        }
+                        placeholder="+1 (555) 123-4567"
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Location</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+                      <Input
+                        id="location"
+                        value={formData.location}
+                        onChange={(event) =>
+                          handleFormChange("location", event.target.value)
+                        }
+                        placeholder="New York, USA"
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="contactTimeZone">Contact Time Zone</Label>
+                    <div className="relative">
+                      <Globe className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+                      <Input
+                        id="contactTimeZone"
+                        value={formData.contactTimeZone}
+                        onChange={(event) =>
+                          handleFormChange(
+                            "contactTimeZone",
+                            event.target.value
+                          )
+                        }
+                        placeholder="America/New_York"
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="platformId">Lead Platform</Label>
+                    <Select
+                      value={formData.platformId}
+                      onValueChange={(value) =>
+                        handleFormChange("platformId", value)
+                      }
+                      disabled={platformsLoading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={
+                            platformsLoading
+                              ? "Loading platforms..."
+                              : platformOptions.length === 0
+                              ? "No saved platforms"
+                              : "Select a platform"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {platformOptions.length > 0 ? (
+                          platformOptions.map((platform) => (
+                            <SelectItem
+                              key={platform.id}
+                              value={String(platform.id)}
+                            >
+                              {platform.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-platforms" disabled>
+                            No saved platforms
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="platformCustom">Platform (manual)</Label>
+                    <Input
+                      id="platformCustom"
+                      value={formData.platformCustom}
+                      onChange={(event) =>
+                        handleFormChange("platformCustom", event.target.value)
+                      }
+                      placeholder="Enter a new platform name"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      We'll add it to the list automatically if it's new.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) =>
+                        handleFormChange("status", value as FormData["status"])
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardContent className="pt-6">{renderForm()}</CardContent>
-          </Card>
-        )}
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="flex items-center justify-between">
           <Button variant="outline" asChild>
@@ -505,30 +482,34 @@ export default function NewContactPage() {
           </Button>
 
           <div className="flex items-center gap-3">
-            {!isEditMode && (
-              <Button
-                variant="outline"
-                onClick={() => handleSubmit(false)}
-                disabled={createContactMutation.isPending || updateContactMutation.isPending}
-              >
-                Save & Add Another
-              </Button>
-            )}
-
             <Button
-              onClick={() => handleSubmit(true)}
-              disabled={createContactMutation.isPending || updateContactMutation.isPending || isLoadingContact}
-              className="min-w-[140px] bg-[#45a2ff] hover:bg-[#45a2ff]/90"
+              variant="outline"
+              onClick={() => handleSubmit(false)}
+              disabled={isSaving}
             >
-              {(createContactMutation.isPending || updateContactMutation.isPending) ? (
+              {isSaving ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {isEditMode ? "Updating..." : "Creating..."}
+                  Saving...
+                </>
+              ) : (
+                "Save & Add Another"
+              )}
+            </Button>
+            <Button
+              className="min-w-[140px] bg-[#45a2ff] hover:bg-[#45a2ff]/90"
+              onClick={() => handleSubmit(true)}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  {isEditMode ? "Update Contact" : "Save & Exit"}
+                  Save & Exit
                 </>
               )}
             </Button>
