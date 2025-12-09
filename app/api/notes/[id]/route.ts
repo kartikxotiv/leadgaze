@@ -55,6 +55,11 @@ export async function PUT(
     if (body.description !== undefined)
       updateData.description = body.description;
     if (body.leadId !== undefined) updateData.lead_id = body.leadId;
+    if (body.dueDate !== undefined)
+      updateData.due_date = body.dueDate
+        ? new Date(body.dueDate).toISOString()
+        : null;
+    if (body.status !== undefined) updateData.status = body.status;
 
     const updatedNote = await updateNote(id, updateData);
 
@@ -108,4 +113,3 @@ export async function DELETE(
     );
   }
 }
-

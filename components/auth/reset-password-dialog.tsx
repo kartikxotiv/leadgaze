@@ -25,10 +25,8 @@ export function ResetPasswordDialog({
   open,
   onOpenChange,
 }: ResetPasswordDialogProps) {
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -63,7 +61,7 @@ export function ResetPasswordDialog({
     setIsLoading(true);
 
     // Validation
-    if (!currentPassword || !newPassword || !confirmPassword) {
+    if (!newPassword || !confirmPassword) {
       setError("Please fill in all fields");
       setIsLoading(false);
       return;
@@ -96,7 +94,6 @@ export function ResetPasswordDialog({
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          currentPassword,
           newPassword,
           confirmPassword,
         }),
@@ -108,7 +105,6 @@ export function ResetPasswordDialog({
         setSuccess(true);
         toast.success("Password changed successfully!");
         // Reset form
-        setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
         setPasswordStrength({
@@ -134,7 +130,6 @@ export function ResetPasswordDialog({
 
   const handleClose = () => {
     if (!isLoading) {
-      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
       setError("");
@@ -152,8 +147,7 @@ export function ResetPasswordDialog({
         <DialogHeader>
           <DialogTitle>Reset Password</DialogTitle>
           <DialogDescription>
-            Enter your current password and choose a new secure password for
-            your account.
+            Choose a new secure password for your account.
           </DialogDescription>
         </DialogHeader>
 
@@ -177,36 +171,6 @@ export function ResetPasswordDialog({
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword">Current Password</Label>
-              <div className="relative">
-                <Input
-                  id="currentPassword"
-                  type={showCurrentPassword ? "text" : "password"}
-                  value={currentPassword}
-                  onChange={(e) => {
-                    setCurrentPassword(e.target.value);
-                    if (error) setError("");
-                  }}
-                  placeholder="Enter your current password"
-                  disabled={isLoading}
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  disabled={isLoading}
-                >
-                  {showCurrentPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-            </div>
 
             <div className="space-y-2">
               <Label htmlFor="newPassword">New Password</Label>
@@ -300,10 +264,10 @@ export function ResetPasswordDialog({
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Changing Password...
+                    Updating Password...
                   </>
                 ) : (
-                  "Change Password"
+                  "Update Password"
                 )}
               </Button>
             </DialogFooter>

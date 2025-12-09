@@ -88,23 +88,77 @@ export async function POST(request: NextRequest) {
       created_by: body.createdBy || null,
     };
 
-    const note = await createNote(noteData);
+    // Try to create note with optional fields first (if migration has been run)
+    // If it fails due to missing columns, retry without them
+    let note;
+    try {
+      // Add optional fields if provided
+      if (body.dueDate !== undefined) {
+        noteData.due_date = body.dueDate ? new Date(body.dueDate).toISOString() : null;
+      }
+      if (body.status !== undefined) {
+        noteData.status = body.status;
+      }
+      
+      note = await createNote(noteData);
+    } catch (firstError: any) {
+      // If error is about missing columns (migration not run), retry without optional fields
+      if (
+        firstError?.code === "42703" ||
+        firstError?.message?.includes("column") ||
+        firstError?.message?.includes("does not exist")
+      ) {
+        console.warn(
+          "Optional fields (due_date, status) not available - migration may not have been run. Creating note without them."
+        );
+        
+        // Retry with only required fields
+        const basicNoteData = {
+          lead_id: body.leadId,
+          title: body.title,
+          description: body.description,
+          workspace_id: body.workspaceId,
+          created_by: body.createdBy || null,
+        };
+        
+        note = await createNote(basicNoteData);
+      } else {
+        // Re-throw if it's a different error
+        throw firstError;
+      }
+    }
 
     return NextResponse.json({
       success: true,
       data: note,
       message: "Note created successfully",
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating note:", error);
+    
+    // Provide more detailed error information
+    let errorMessage = "Failed to create note";
+    let errorDetails = error?.message || "Unknown error";
+    
+    // Check for common database errors
+    if (error?.code === "42703" || error?.message?.includes("column") || error?.message?.includes("does not exist")) {
+      errorMessage = "Database schema error - migration may not have been run";
+      errorDetails = "The notes table is missing required columns. Please run the migration: 20251204000000_add_task_features.sql";
+    } else if (error?.code === "23503" || error?.message?.includes("foreign key")) {
+      errorMessage = "Invalid reference - lead or workspace not found";
+      errorDetails = error?.message || "The referenced lead or workspace does not exist";
+    } else if (error?.code === "23502" || error?.message?.includes("not null")) {
+      errorMessage = "Missing required field";
+      errorDetails = error?.message || "A required field is missing";
+    }
+    
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to create note",
-        details: error instanceof Error ? error.message : "Unknown error",
+        error: errorMessage,
+        details: errorDetails,
       },
       { status: 500 }
     );
   }
 }
-
