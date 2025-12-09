@@ -269,7 +269,7 @@ export function useSalesContactsPage() {
 
   const handleImportComplete = useCallback(
     (results: ImportResult) => {
-      queryClient.invalidateQueries({ queryKey: ["sales-contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
       toast.success(
         `Import completed: ${results.successful} successful, ${results.failed} failed, ${results.duplicates} duplicates`
       );

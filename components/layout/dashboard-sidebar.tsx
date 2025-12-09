@@ -53,12 +53,12 @@ const logo = "/image/leadgaze.png";
 const logoicon = "/image/leadgaze_icon.png";
 
 const defaultMenuItems: SidebarItem[] = [
-  {
-    id: "dashboard",
-    label: "Dashboard",
-    href: "/pages/dashboard",
-    icon: Home,
-  },
+  // {
+  //   id: "dashboard",
+  //   label: "Dashboard",
+  //   href: "/pages/dashboard",
+  //   icon: Home,
+  // },
   {
     id: "CRM",
     label: "Sales Ops",
@@ -67,13 +67,13 @@ const defaultMenuItems: SidebarItem[] = [
     children: [
       {
         id: "sales-contacts",
-        label: "Sales Contacts",
-        href: "/pages/sales-contacts",
+        label: "Contacts",
+        href: "/pages/contacts",
         icon: Users,
       },
       {
         id: "sales-leads",
-        label: "Sales Leads",
+        label: "Leads",
         href: "/pages/sales-leads",
         icon: UserPlus,
       },
@@ -124,60 +124,60 @@ const defaultMenuItems: SidebarItem[] = [
     icon: CheckSquare,
     badgeVariant: "destructive",
   },
-  {
-    id: "reports",
-    label: "Reports",
-    href: "/pages/reports",
-    icon: BarChart3,
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    href: "/pages/settings",
-    icon: Settings,
-    children: [
-      {
-        id: "team-management",
-        label: "Sales Team",
-        href: "#",
-        icon: Users,
-        children: [
-          {
-            id: "create-organization",
-            label: "Create New Organization",
-            href: "/pages/settings/create-organization",
-            icon: Plus,
-          },
-          {
-            id: "manage-team",
-            label: "Manage Team",
-            href: "/pages/settings/manage-team",
-            icon: UserPlus,
-          },
-        ],
-      },
-      {
-        id: "select-workspace",
-        label: "Select Workspace",
-        href: "#",
-        icon: Users,
-        children: [
-          {
-            id: "Create-Workspace",
-            label: "Create a Organization",
-            href: "/pages/settings/create-organization",
-            icon: Plus,
-          },
-          {
-            id: "manage-workspace",
-            label: "Manage Workspaces",
-            href: "/pages/settings/manage-team",
-            icon: UserPlus,
-          },
-        ],
-      },
-    ],
-  },
+  // {
+  //   id: "reports",
+  //   label: "Reports",
+  //   href: "/pages/reports",
+  //   icon: BarChart3,
+  // },
+  // {
+  //   id: "settings",
+  //   label: "Settings",
+  //   href: "/pages/settings",
+  //   icon: Settings,
+  //   children: [
+  //     {
+  //       id: "team-management",
+  //       label: "Sales Team",
+  //       href: "#",
+  //       icon: Users,
+  //       children: [
+  //         {
+  //           id: "create-organization",
+  //           label: "Create New Organization",
+  //           href: "/pages/settings/create-organization",
+  //           icon: Plus,
+  //         },
+  //         {
+  //           id: "manage-team",
+  //           label: "Manage Team",
+  //           href: "/pages/settings/manage-team",
+  //           icon: UserPlus,
+  //         },
+  //       ],
+  //     },
+  //     {
+  //       id: "select-workspace",
+  //       label: "Select Workspace",
+  //       href: "#",
+  //       icon: Users,
+  //       children: [
+  //         {
+  //           id: "Create-Workspace",
+  //           label: "Create a Organization",
+  //           href: "/pages/settings/create-organization",
+  //           icon: Plus,
+  //         },
+  //         {
+  //           id: "manage-workspace",
+  //           label: "Manage Workspaces",
+  //           href: "/pages/settings/manage-team",
+  //           icon: UserPlus,
+  //         },
+  //       ],
+  //     },
+  //   ],
+  // },
   {
     id: "roles",
     label: "Roles",
@@ -186,8 +186,8 @@ const defaultMenuItems: SidebarItem[] = [
   },
   {
     id: "add member",
-    label: "Add Member",
-    href: "/pages/add-member",
+    label: "Team Member",
+    href: "/pages/team-member",
     icon: UserPlus,
   },
 ];

@@ -1,12 +1,12 @@
 "use client";
-import { useSalesContactTableColumns } from "@/components/sales-contacts/sales-contact-table-columns";
+import { useSalesContactTableColumns } from "@/components/contacts/sales-contact-table-columns";
 import {
   EditContactSidebar,
   AddContactSidebar,
-} from "@/components/sales-contacts/sales-contact-sidebars";
-import { AddPlatformDialog } from "@/components/sales-contacts/add-platform-dialog";
-import { SalesContactsHeader } from "@/components/sales-contacts/sales-contacts-header";
-import { SalesContactsTable } from "@/components/sales-contacts/sales-contacts-table";
+} from "@/components/contacts/sales-contact-sidebars";
+import { AddPlatformDialog } from "@/components/contacts/add-platform-dialog";
+import { SalesContactsHeader } from "@/components/contacts/sales-contacts-header";
+import { SalesContactsTable } from "@/components/contacts/sales-contacts-table";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import AddBusiness from "@/components/business/add-business";
 import { BulkImportExportDialog } from "@/components/reuseableComponent/bulk-import-export-dialog";
@@ -210,12 +210,12 @@ export function SalesContactsPageContainer({
         title="Import / Export Sales Contacts"
         description="Import contacts from Excel/CSV files or export existing contacts"
         importFields={importFields}
-        importApiEndpoint="/api/sales-contacts/import"
+        importApiEndpoint="/api/contacts/import"
         importSampleData={importSampleData}
-        importFileName="sales-contacts"
+        importFileName="contacts"
         exportData={tableData}
         exportFields={exportFields}
-        exportFileName="sales-contacts"
+        exportFileName="contacts"
         exportDataTransform={exportDataTransform}
         workspaceId={workspaceId}
         onImportComplete={handleImportComplete}

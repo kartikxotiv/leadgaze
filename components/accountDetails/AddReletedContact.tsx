@@ -16,12 +16,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { SalesContactFormFields } from "@/components/sales-contacts/sales-contact-form-fields";
+import { SalesContactFormFields } from "@/components/contacts/sales-contact-form-fields";
 import { useSalesContactForm } from "@/hooks/use-sales-contact-form";
 import { useContactPlatforms } from "@/hooks/use-contact-platforms";
 import { useBusinesses } from "@/hooks/use-business";
 import { useSalesContactActions } from "@/hooks/use-sales-contact-actions";
-import { AddPlatformDialog } from "@/components/sales-contacts/add-platform-dialog";
+import { AddPlatformDialog } from "@/components/contacts/add-platform-dialog";
 
 interface AddReletedContactProps {
   accountId?: string;
