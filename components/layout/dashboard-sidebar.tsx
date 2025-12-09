@@ -120,7 +120,7 @@ const defaultMenuItems: SidebarItem[] = [
   {
     id: "tasks",
     label: "Tasks",
-    href: "/tasks",
+    href: "/pages/tasks",
     icon: CheckSquare,
     badgeVariant: "destructive",
   },
