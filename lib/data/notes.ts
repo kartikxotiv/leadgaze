@@ -9,6 +9,8 @@ export interface Note {
   updated_at: string;
   created_at: string;
   workspace_id: string;
+  status: string | null;
+  due_date: string | null;
 }
 
 export async function getNoteById(noteId: string): Promise<Note | null> {
@@ -101,4 +103,3 @@ export async function deleteNote(noteId: string): Promise<boolean> {
   if (error) throw error;
   return true;
 }
-

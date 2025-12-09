@@ -10,6 +10,8 @@ export interface Meeting {
   link: string | null;
   type: string | null;
   created_by: string | null;
+  workspace_id: string | null;
+  status: string | null;
   updated_at: string;
   created_at: string;
 }
@@ -111,4 +113,40 @@ export async function deleteMeeting(meetingId: string): Promise<boolean> {
 
   if (error) throw error;
   return true;
+}
+
+export async function getMeetingsByWorkspaceId(
+  workspaceId: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<{
+  data: Meeting[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  offset: number;
+}> {
+  let query = supabase
+    .from("meetings")
+    .select("*", { count: "exact" })
+    .eq("workspace_id", workspaceId);
+
+  query = query.order("time", { ascending: false });
+
+  const offset = (page - 1) * limit;
+  query = query.range(offset, offset + limit - 1);
+
+  const { data, error, count } = await query;
+
+  if (error) throw error;
+
+  return {
+    data: data || [],
+    total: count || 0,
+    page,
+    limit,
+    totalPages: Math.ceil((count || 0) / limit),
+    offset,
+  };
 }
