@@ -38,6 +38,7 @@ import {
   PlusCircle,
   Plus,
 } from "lucide-react";
+import { ResetPasswordDialog } from "@/components/auth/reset-password-dialog";
 
 interface DashboardHeaderProps {
   onMenuClick: () => void;
@@ -58,6 +59,7 @@ export function DashboardHeader({
   const { logout, isLoggingOut } = useSmoothLogout();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
 
   const organizationId =
     orgFromStore?.organizationId || currentOrganization?.organizationId;
@@ -146,6 +148,11 @@ export function DashboardHeader({
           </div>
         </div>
       )}
+
+      <ResetPasswordDialog
+        open={isResetPasswordOpen}
+        onOpenChange={setIsResetPasswordOpen}
+      />
 
       <header className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between px-6 py-[12px]">
@@ -257,7 +264,7 @@ export function DashboardHeader({
               />
             )} */}
 
-            <DropdownMenu>
+            {/* <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
@@ -306,7 +313,7 @@ export function DashboardHeader({
                   View all notifications
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
+            </DropdownMenu> */}
 
             {}
             <DropdownMenu>
@@ -344,7 +351,7 @@ export function DashboardHeader({
 
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem onClick={() => router.push("/profile")}>
+                {/* <DropdownMenuItem onClick={() => router.push("/profile")}>
                   <User className="w-4 h-4 mr-2" />
                   Profile Settings
                 </DropdownMenuItem>
@@ -362,13 +369,11 @@ export function DashboardHeader({
                 <DropdownMenuItem onClick={() => router.push("/security")}>
                   <Shield className="w-4 h-4 mr-2" />
                   Security
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
 
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem onClick={() => router.push("/help")}>
+                <DropdownMenuItem onClick={() => setIsResetPasswordOpen(true)}>
                   <HelpCircle className="w-4 h-4 mr-2" />
-                  Help & Support
+                  Reset Password
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />

@@ -17,6 +17,7 @@ import {
   AlertCircle,
   Building2,
   Plus,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/common/country-select";
@@ -224,7 +225,7 @@ export function SalesContactFormFields({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
+            <Label htmlFor="location">Select country</Label>
             <CountrySelect
               value={data.location}
               onValueChange={(value) => onChange("location", value)}
@@ -264,7 +265,7 @@ export function SalesContactFormFields({
                   onValueChange={onBusinessSelectChange}
                   disabled={businessesLoading}
                 >
-                  <SelectTrigger className="bg-gray-100 pl-10">
+                  <SelectTrigger className="bg-gray-100 pl-10 pr-10">
                     <SelectValue
                       placeholder={
                         businessesLoading
@@ -274,6 +275,7 @@ export function SalesContactFormFields({
                           : "Select a business"
                       }
                     />
+                    <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
                   </SelectTrigger>
                   {/* <SelectContent>
                     {businessOptions.length > 0 ? (
@@ -441,6 +443,7 @@ export function SalesContactFormFields({
             >
               <SelectTrigger className="bg-gray-100">
                 <SelectValue placeholder="Select status" />
+                <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
               </SelectTrigger>
               <SelectContent>
                 {STATUS_OPTIONS.map((option) => (
@@ -469,6 +472,7 @@ export function SalesContactFormFields({
                       : "Select a platform"
                   }
                 />
+                <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
               </SelectTrigger>
               <SelectContent>
                 {platformOptions.length > 0 ? (

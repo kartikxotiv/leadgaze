@@ -1,130 +1,66 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  getContactById,
-  updateContact,
-  deleteContact,
-} from "@/lib/data/contacts";
+  deleteSalesContact,
+  getSalesContactById,
+  updateSalesContact,
+} from "@/lib/data/sales-contacts";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const contact = await getContactById(params.id);
-
-    if (!contact) {
-      return NextResponse.json(
-        { success: false, error: "Contact not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        id: contact.id,
-        workspaceId: contact.workspace_id,
-        firstName: contact.first_name,
-        lastName: contact.last_name,
-        email: contact.email,
-        userId: contact.user_id,
-        phoneNumber: contact.phone_number,
-        companyId: contact.company_id,
-        location: contact.location,
-        description: contact.description,
-        contactTimeZone: contact.contact_time_zone,
-        createdAt: contact.created_at,
-        updatedAt: contact.updated_at,
-      },
-    });
+    const { id } = await params;
+    const salesContact = await getSalesContactById(id);
+    return NextResponse.json({ success: true, data: salesContact });
   } catch (error: any) {
-    console.error("Error fetching contact:", error);
+    console.error("Error fetching sales contact:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to fetch contact" },
+      {
+        success: false,
+        error: error.message || "Failed to fetch sales contact",
+      },
       { status: 500 }
     );
   }
 }
-
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    let body;
-    try {
-      body = await request.json();
-    } catch (parseError: any) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: "Invalid JSON in request body. Please check your JSON format." 
-        },
-        { status: 400 }
-      );
-    }
-
-    const updateData: any = {
-      first_name: body.firstName,
-      last_name: body.lastName,
-      email: body.email?.toLowerCase(),
-      phone_number: body.phoneNumber,
-      location: body.location,
-      description: body.description,
-      contact_time_zone: body.contactTimeZone,
-    };
-
-    // Handle company_id - allow setting to null/undefined to remove it
-    if (body.hasOwnProperty('companyId')) {
-      updateData.company_id = body.companyId || null;
-    }
-
-    const contact = await updateContact(params.id, updateData);
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        id: contact.id,
-        workspaceId: contact.workspace_id,
-        firstName: contact.first_name,
-        lastName: contact.last_name,
-        email: contact.email,
-        userId: contact.user_id,
-        phoneNumber: contact.phone_number,
-        companyId: contact.company_id,
-        location: contact.location,
-        description: contact.description,
-        contactTimeZone: contact.contact_time_zone,
-        createdAt: contact.created_at,
-        updatedAt: contact.updated_at,
-      },
-    });
+    const { id } = await params;
+    const body = await request.json();
+    const salesContact = await updateSalesContact(id, body);
+    return NextResponse.json({ success: true, data: salesContact });
   } catch (error: any) {
-    console.error("Error updating contact:", error);
+    console.error("Error updating sales contact:", error);
+    const statusCode = error.message?.includes("already exists") ? 409 : 500;
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to update contact" },
-      { status: 500 }
+      {
+        success: false,
+        error: error.message || "Failed to update sales contact",
+      },
+      { status: statusCode }
     );
   }
 }
-
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await deleteContact(params.id);
-
-    return NextResponse.json({
-      success: true,
-      message: "Contact deleted successfully",
-    });
+    const { id } = await params;
+    const salesContact = await deleteSalesContact(id);
+    return NextResponse.json({ success: true, data: salesContact });
   } catch (error: any) {
-    console.error("Error deleting contact:", error);
+    console.error("Error deleting sales contact:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to delete contact" },
+      {
+        success: false,
+        error: error.message || "Failed to delete sales contact",
+      },
       { status: 500 }
     );
   }
 }
-

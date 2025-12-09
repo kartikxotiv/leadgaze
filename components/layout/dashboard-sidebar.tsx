@@ -67,13 +67,13 @@ const defaultMenuItems: SidebarItem[] = [
     children: [
       {
         id: "sales-contacts",
-        label: "Sales Contacts",
-        href: "/pages/sales-contacts",
+        label: "Contacts",
+        href: "/pages/contacts",
         icon: Users,
       },
       {
         id: "sales-leads",
-        label: "Sales Leads",
+        label: "Leads",
         href: "/pages/sales-leads",
         icon: UserPlus,
       },
@@ -117,13 +117,13 @@ const defaultMenuItems: SidebarItem[] = [
       // },
     ],
   },
-  // {
-  //   id: "tasks",
-  //   label: "Tasks",
-  //   href: "/tasks",
-  //   icon: CheckSquare,
-  //   badgeVariant: "destructive",
-  // },
+  {
+    id: "tasks",
+    label: "Tasks",
+    href: "/tasks",
+    icon: CheckSquare,
+    badgeVariant: "destructive",
+  },
   // {
   //   id: "reports",
   //   label: "Reports",
@@ -186,8 +186,8 @@ const defaultMenuItems: SidebarItem[] = [
   },
   {
     id: "add member",
-    label: "Add Member",
-    href: "/pages/add-member",
+    label: "Team Member",
+    href: "/pages/team-member",
     icon: UserPlus,
   },
 ];

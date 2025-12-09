@@ -71,7 +71,7 @@ export function useSalesContacts(filters?: SalesContactFilters) {
   const { currentOrganization } = useAuthStore();
   return useQuery({
     queryKey: [
-      "sales-contacts",
+      "contacts",
       currentOrganization?.organizationId,
       filters?.workspaceId,
       filters?.businessId,
@@ -80,8 +80,8 @@ export function useSalesContacts(filters?: SalesContactFilters) {
     queryFn: async () => {
       const queryString = buildQueryString(filters);
       const url = queryString
-        ? `/api/sales-contacts?${queryString}`
-        : "/api/sales-contacts";
+        ? `/api/contacts?${queryString}`
+        : "/api/contacts";
       return requestJSON<PaginationResult<SalesContact>>(url);
     },
     enabled: !!filters && (!!filters.workspaceId || !!filters.businessId),
@@ -90,8 +90,8 @@ export function useSalesContacts(filters?: SalesContactFilters) {
 
 export function useSalesContact(id: string) {
   return useQuery({
-    queryKey: ["sales-contact", id],
-    queryFn: () => requestJSON<SalesContact>(`/api/sales-contacts/${id}`),
+    queryKey: ["contact", id],
+    queryFn: () => requestJSON<SalesContact>(`/api/contacts/${id}`),
     enabled: !!id,
   });
 }
@@ -100,15 +100,15 @@ export function useCreateSalesContact() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: SalesContactInsert) =>
-      requestJSON<SalesContact>("/api/sales-contacts", {
+      requestJSON<SalesContact>("/api/contacts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       }),
     onSuccess: (data: SalesContact) => {
-      queryClient.invalidateQueries({ queryKey: ["sales-contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
       if (data?.id) {
-        queryClient.invalidateQueries({ queryKey: ["sales-contact", data.id] });
+        queryClient.invalidateQueries({ queryKey: ["contact", data.id] });
       }
     },
   });
@@ -118,15 +118,15 @@ export function useUpdateSalesContact() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: SalesContactUpdate }) =>
-      requestJSON<SalesContact>(`/api/sales-contacts/${id}`, {
+      requestJSON<SalesContact>(`/api/contacts/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       }),
     onSuccess: (data: SalesContact) => {
-      queryClient.invalidateQueries({ queryKey: ["sales-contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
       if (data?.id) {
-        queryClient.invalidateQueries({ queryKey: ["sales-contact", data.id] });
+        queryClient.invalidateQueries({ queryKey: ["contact", data.id] });
       }
     },
   });
@@ -136,12 +136,12 @@ export function useDeleteSalesContact() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) =>
-      requestJSON<boolean>(`/api/sales-contacts/${id}`, {
+      requestJSON<boolean>(`/api/contacts/${id}`, {
         method: "DELETE",
       }),
     onSuccess: (_data, id) => {
-      queryClient.invalidateQueries({ queryKey: ["sales-contacts"] });
-      queryClient.invalidateQueries({ queryKey: ["sales-contact", id] });
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["contact", id] });
     },
   });
 }

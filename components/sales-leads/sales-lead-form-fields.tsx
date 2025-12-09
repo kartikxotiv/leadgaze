@@ -26,13 +26,14 @@ import {
   Flag,
   Building2,
   Plus,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CountrySelect } from "@/components/common/country-select";
 import type { FormData } from "@/lib/constants/sales-leads";
 import type { LeadPriority } from "@/lib/data/lead-priorities";
 import type { ContactPlatform } from "@/lib/data/contact-platforms";
 import {
-  STATUS_OPTIONS,
   NO_SELECTION_VALUE,
   ADD_BUSINESS_SELECT_VALUE,
 } from "@/lib/constants/sales-leads";
@@ -158,6 +159,35 @@ export function SalesLeadFormFields({
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="alternativeEmail">Alternative Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+                <Input
+                  id="alternativeEmail"
+                  type="email"
+                  value={data.alternativeEmail}
+                  onChange={(event) =>
+                    onChange("alternativeEmail", event.target.value)
+                  }
+                  placeholder="alt.email@example.com"
+                  className={`pl-10 bg-gray-100 ${
+                    formErrors.alternativeEmail
+                      ? "border-red-500 focus:border-red-500"
+                      : ""
+                  }`}
+                />
+              </div>
+              {formErrors.alternativeEmail && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {formErrors.alternativeEmail}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
               <Label htmlFor="phoneNumber">Phone Number *</Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
@@ -187,30 +217,164 @@ export function SalesLeadFormFields({
                 </p>
               )}
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="alternativePhoneNumber">
+                Alternative Phone Number
+              </Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
+                <Input
+                  id="alternativePhoneNumber"
+                  type="tel"
+                  value={data.alternativePhoneNumber}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    const digitsOnly = value.replace(/\D/g, "");
+                    const limitedDigits = digitsOnly.slice(0, 10);
+                    onChange("alternativePhoneNumber", limitedDigits);
+                  }}
+                  placeholder="1234567890"
+                  maxLength={10}
+                  className={`pl-10 bg-gray-100 ${
+                    formErrors.alternativePhoneNumber
+                      ? "border-red-500 focus:border-red-500"
+                      : ""
+                  }`}
+                />
+              </div>
+              {formErrors.alternativePhoneNumber && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {formErrors.alternativePhoneNumber}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="location">Select country</Label>
+              <CountrySelect
+                value={data.location}
+                onValueChange={(value) => onChange("location", value)}
+                placeholder="Select country"
+                error={!!formErrors.location}
+              />
+              {formErrors.location && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {formErrors.location}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="businessId">Business</Label>
+              {businessOptions.length === 0 && !businessesLoading ? (
+                <div className="space-y-2">
+                  <div className="text-sm text-muted-foreground mb-2">
+                    No businesses available
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onAddBusinessClick}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Business
+                  </Button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2 z-10" />
+                  <Select
+                    value={data.businessId}
+                    onValueChange={onBusinessSelectChange}
+                    disabled={businessesLoading}
+                  >
+                    <SelectTrigger className="bg-gray-100 pl-10 pr-10">
+                      <SelectValue
+                        placeholder={
+                          businessesLoading
+                            ? "Loading businesses..."
+                            : businessOptions.length === 0
+                            ? "No businesses available"
+                            : "Select a business"
+                        }
+                      />
+                      <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {businessOptions.length > 0 ? (
+                        <>
+                          <div className="max-h-[250px] overflow-y-auto">
+                            {businessOptions.map((business) => (
+                              <SelectItem
+                                key={business.id}
+                                value={business.id}
+                                className="hover:bg-gray-200 hover:text-black"
+                              >
+                                {business.business_name ||
+                                  `Business ${business.id}`}
+                              </SelectItem>
+                            ))}
+                          </div>
+                          <div className="sticky bottom-0 bg-popover border-t border-muted-foreground/20 -mx-1 px-1">
+                            <SelectItem
+                              value={ADD_BUSINESS_SELECT_VALUE}
+                              className="text-sm hover:bg-gray-200 hover:text-black cursor-pointer"
+                            >
+                              + Add Business
+                            </SelectItem>
+                          </div>
+                        </>
+                      ) : (
+                        <SelectItem value="no-businesses" disabled>
+                          No businesses available
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {formErrors.businessId && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {formErrors.businessId}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="businessLinkedin">Business LinkedIn</Label>
+              <Input
+                id="businessLinkedin"
+                type="url"
+                value={data.businessLinkedin}
+                onChange={(event) =>
+                  onChange("businessLinkedin", event.target.value)
+                }
+                placeholder="https://linkedin.com/company/companyname"
+                className="bg-gray-100"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
+              <Input
+                id="linkedinUrl"
+                type="url"
+                value={data.linkedinUrl}
+                onChange={(event) =>
+                  onChange("linkedinUrl", event.target.value)
+                }
+                placeholder="https://linkedin.com/in/username"
+                className="bg-gray-100"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={data.status}
-                onValueChange={(value) =>
-                  onChange("status", value as FormData["status"])
-                }
-              >
-                <SelectTrigger className="bg-gray-100">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="priority">Priority</Label>
               <Select
@@ -258,6 +422,7 @@ export function SalesLeadFormFields({
                       }
                     />
                   )}
+                  <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NO_SELECTION_VALUE}>
@@ -282,44 +447,6 @@ export function SalesLeadFormFields({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="text-base font-medium text-muted-foreground">
-          Additional Information
-        </h3>
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="contact">Linked Contact</Label>
-              <Select
-                value={data.contactId}
-                onValueChange={onContactSelectChange}
-                disabled={contactOptions.length === 0}
-              >
-                <SelectTrigger className="bg-gray-100">
-                  <SelectValue
-                    placeholder={
-                      contactOptions.length === 0
-                        ? "No contacts available"
-                        : "Select a contact"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_SELECTION_VALUE}>
-                    No linked contact
-                  </SelectItem>
-                  {contactOptions.map((contact: any) => (
-                    <SelectItem key={contact.id} value={contact.id}>
-                      {buildContactLabel(contact)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
             <div className="space-y-2">
               <Label htmlFor="platformId">Lead Platform</Label>
@@ -338,6 +465,7 @@ export function SalesLeadFormFields({
                         : "Select a platform"
                     }
                   />
+                  <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NO_SELECTION_VALUE}>
@@ -372,212 +500,20 @@ export function SalesLeadFormFields({
               </Select>
             </div>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-6 pt-4">
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
-                <Input
-                  id="location"
-                  value={data.location}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    const locationRegex = /^[a-zA-Z\s,\-]*$/;
-                    if (locationRegex.test(value) || value === "") {
-                      onChange("location", value);
-                    }
-                  }}
-                  placeholder="New York, USA"
-                  className={`pl-10 bg-gray-100 ${
-                    formErrors.location
-                      ? "border-red-500 focus:border-red-500"
-                      : ""
-                  }`}
-                />
-              </div>
-              {formErrors.location && (
-                <p className="text-xs text-red-500 flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  {formErrors.location}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="businessId">Business</Label>
-              {businessOptions.length === 0 && !businessesLoading ? (
-                <div className="space-y-2">
-                  <div className="text-sm text-muted-foreground mb-2">
-                    No businesses available
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={onAddBusinessClick}
-                    className="w-full"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Business
-                  </Button>
-                </div>
-              ) : (
-                <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2 z-10" />
-                  <Select
-                    value={data.businessId}
-                    onValueChange={onBusinessSelectChange}
-                    disabled={businessesLoading}
-                  >
-                    <SelectTrigger className="bg-gray-100 pl-10">
-                      <SelectValue
-                        placeholder={
-                          businessesLoading
-                            ? "Loading businesses..."
-                            : businessOptions.length === 0
-                            ? "No businesses available"
-                            : "Select a business"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {businessOptions.length > 0 ? (
-                        <>
-                          {businessOptions.map((business) => (
-                            <SelectItem
-                              key={business.id}
-                              value={business.id}
-                              className="hover:bg-gray-200 hover:text-black"
-                            >
-                              {business.business_name ||
-                                `Business ${business.id}`}
-                            </SelectItem>
-                          ))}
-                          <div className="my-1 border-t border-muted-foreground/20" />
-                          <SelectItem
-                            value={ADD_BUSINESS_SELECT_VALUE}
-                            className="text-sm text-muted-foreground"
-                          >
-                            + Add Business
-                          </SelectItem>
-                        </>
-                      ) : (
-                        <SelectItem value="no-businesses" disabled>
-                          No businesses available
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              {formErrors.businessId && (
-                <p className="text-xs text-red-500 flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  {formErrors.businessId}
-                </p>
-              )}
+              <Label htmlFor="comment">Comment</Label>
+              <Textarea
+                id="comment"
+                value={data.comment}
+                onChange={(event) => onChange("comment", event.target.value)}
+                placeholder="Additional notes or comments..."
+                rows={4}
+                className="bg-gray-100"
+              />
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="space-y-4">
-        <Accordion type="single" collapsible className="w-full">
-          <AccordionItem value="additional-fields">
-            <AccordionTrigger className="text-base font-medium text-muted-foreground">
-              Additional Information
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-6 pt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="alternativePhoneNumber">
-                      Alternative Phone Number
-                    </Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
-                      <Input
-                        id="alternativePhoneNumber"
-                        type="tel"
-                        value={data.alternativePhoneNumber}
-                        onChange={(event) => {
-                          const value = event.target.value;
-                          const digitsOnly = value.replace(/\D/g, "");
-                          const limitedDigits = digitsOnly.slice(0, 10);
-                          onChange("alternativePhoneNumber", limitedDigits);
-                        }}
-                        placeholder="1234567890"
-                        maxLength={10}
-                        className="pl-10 bg-gray-100"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="alternativeEmail">Alternative Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
-                      <Input
-                        id="alternativeEmail"
-                        type="email"
-                        value={data.alternativeEmail}
-                        onChange={(event) =>
-                          onChange("alternativeEmail", event.target.value)
-                        }
-                        placeholder="alt.email@example.com"
-                        className="pl-10 bg-gray-100"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
-                    <Input
-                      id="linkedinUrl"
-                      type="url"
-                      value={data.linkedinUrl}
-                      onChange={(event) =>
-                        onChange("linkedinUrl", event.target.value)
-                      }
-                      placeholder="https://linkedin.com/in/username"
-                      className="bg-gray-100"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="businessLinkedin">Business LinkedIn</Label>
-                    <Input
-                      id="businessLinkedin"
-                      type="url"
-                      value={data.businessLinkedin}
-                      onChange={(event) =>
-                        onChange("businessLinkedin", event.target.value)
-                      }
-                      placeholder="https://linkedin.com/company/companyname"
-                      className="bg-gray-100"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="comment">Comment</Label>
-                  <Textarea
-                    id="comment"
-                    value={data.comment}
-                    onChange={(event) =>
-                      onChange("comment", event.target.value)
-                    }
-                    placeholder="Additional notes or comments..."
-                    rows={4}
-                    className="bg-gray-100"
-                  />
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
       </div>
     </div>
   );
