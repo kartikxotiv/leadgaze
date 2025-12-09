@@ -16,8 +16,16 @@ import { useTaskAssignees } from "@/hooks/use-task-assignees";
 import { useNoteAssignees } from "@/hooks/use-note-assignees";
 import { useMeetingAssignees } from "@/hooks/use-meeting-assignees";
 import { format } from "date-fns";
-import { FileText, Calendar, CheckSquare, Clock, User } from "lucide-react";
+import {
+  FileText,
+  Calendar,
+  CheckSquare,
+  Clock,
+  User,
+  UserPlus,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import type { UnifiedTask } from "@/hooks/use-unified-tasks";
 
 interface TaskCardProps {
@@ -181,7 +189,9 @@ export function TaskCard({ task, onAssigneeClick }: TaskCardProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="NEW">NEW</SelectItem>
-                <SelectItem value="INPROGRESS">INPROGRESS</SelectItem>
+                <hr className="my-2" />
+                <SelectItem value="INPROGRESS">IN PROGRESS</SelectItem>
+                <hr className="my-2" />
                 <SelectItem value="DONE">DONE</SelectItem>
               </SelectContent>
             </Select>
@@ -189,12 +199,29 @@ export function TaskCard({ task, onAssigneeClick }: TaskCardProps) {
             {(task.type === "task" ||
               task.type === "note" ||
               task.type === "meeting") && (
-              <div onClick={onAssigneeClick} className="cursor-pointer">
-                <AssigneeAvatarGroup
-                  assignees={formattedAssignees}
-                  maxVisible={3}
-                  size="sm"
-                />
+              <div className="cursor-pointer">
+                {formattedAssignees.length > 0 ? (
+                  <div onClick={onAssigneeClick}>
+                    <AssigneeAvatarGroup
+                      assignees={formattedAssignees}
+                      maxVisible={3}
+                      size="sm"
+                    />
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAssigneeClick?.();
+                    }}
+                  >
+                    <UserPlus className="h-3 w-3 mr-1" />
+                    Assign
+                  </Button>
+                )}
               </div>
             )}
           </div>

@@ -29,7 +29,10 @@ export function TaskAssigneeDialog({
   onOpenChange,
   onClose,
 }: TaskAssigneeDialogProps) {
-  const { data: assignees = [], isLoading } = useTaskAssignees(taskId);
+  // Only fetch if taskId is valid and dialog is open
+  const { data: assignees = [], isLoading } = useTaskAssignees(
+    taskId && open ? taskId : ""
+  );
   const updateAssigneesMutation = useUpdateTaskAssignees();
   const { currentWorkspace } = useWorkspaceContext();
   const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([]);
@@ -55,7 +58,6 @@ export function TaskAssigneeDialog({
       userIds,
     });
     onClose?.();
-    onOpenChange(false);
   };
 
   // Use a dummy lead ID that points to the workspace - the AssigneeSelector will fetch workspace members
@@ -93,7 +95,6 @@ export function TaskAssigneeDialog({
             variant="outline"
             onClick={() => {
               onClose?.();
-              onOpenChange(false);
             }}
           >
             Cancel

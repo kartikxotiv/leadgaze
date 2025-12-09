@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -283,14 +283,30 @@ export function UnifiedTasksList({ className }: UnifiedTasksListProps) {
     done: tasks.filter((t) => t.status.toUpperCase() === "DONE").length,
   };
 
-  const handleAssigneeClick = (
-    taskId: string,
-    taskType: "task" | "note" | "meeting"
-  ) => {
-    setSelectedTaskId(taskId);
-    setSelectedTaskType(taskType);
-    setShowAssigneeDialog(true);
-  };
+  const handleAssigneeClick = useCallback(
+    (taskId: string, taskType: "task" | "note" | "meeting") => {
+      setSelectedTaskId(taskId);
+      setSelectedTaskType(taskType);
+      setShowAssigneeDialog(true);
+    },
+    []
+  );
+
+  const handleDialogClose = useCallback(() => {
+    setShowAssigneeDialog(false);
+    setSelectedTaskId(null);
+    setSelectedTaskType(null);
+  }, []);
+
+  const handleDialogOpenChange = useCallback((open: boolean) => {
+    if (!open) {
+      setShowAssigneeDialog(false);
+      setSelectedTaskId(null);
+      setSelectedTaskType(null);
+    } else {
+      setShowAssigneeDialog(true);
+    }
+  }, []);
 
   if (isLoading) {
     return (
@@ -449,42 +465,33 @@ export function UnifiedTasksList({ className }: UnifiedTasksListProps) {
       </Card>
 
       {/* Assignee Dialogs */}
-      {selectedTaskId && showAssigneeDialog && selectedTaskType === "task" && (
+      {selectedTaskId && selectedTaskType === "task" && showAssigneeDialog && (
         <TaskAssigneeDialog
+          key={`task-${selectedTaskId}`}
           taskId={selectedTaskId.replace("task-", "")}
           open={showAssigneeDialog}
-          onOpenChange={setShowAssigneeDialog}
-          onClose={() => {
-            setShowAssigneeDialog(false);
-            setSelectedTaskId(null);
-            setSelectedTaskType(null);
-          }}
+          onOpenChange={handleDialogOpenChange}
+          onClose={handleDialogClose}
         />
       )}
-      {selectedTaskId && showAssigneeDialog && selectedTaskType === "note" && (
+      {selectedTaskId && selectedTaskType === "note" && showAssigneeDialog && (
         <NoteAssigneeDialog
+          key={`note-${selectedTaskId}`}
           noteId={selectedTaskId.replace("note-", "")}
           open={showAssigneeDialog}
-          onOpenChange={setShowAssigneeDialog}
-          onClose={() => {
-            setShowAssigneeDialog(false);
-            setSelectedTaskId(null);
-            setSelectedTaskType(null);
-          }}
+          onOpenChange={handleDialogOpenChange}
+          onClose={handleDialogClose}
         />
       )}
       {selectedTaskId &&
-        showAssigneeDialog &&
-        selectedTaskType === "meeting" && (
+        selectedTaskType === "meeting" &&
+        showAssigneeDialog && (
           <MeetingAssigneeDialog
+            key={`meeting-${selectedTaskId}`}
             meetingId={selectedTaskId.replace("meeting-", "")}
             open={showAssigneeDialog}
-            onOpenChange={setShowAssigneeDialog}
-            onClose={() => {
-              setShowAssigneeDialog(false);
-              setSelectedTaskId(null);
-              setSelectedTaskType(null);
-            }}
+            onOpenChange={handleDialogOpenChange}
+            onClose={handleDialogClose}
           />
         )}
     </div>
