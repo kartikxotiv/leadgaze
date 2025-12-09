@@ -72,6 +72,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Get workspace_id from lead if leadId is provided
+    let workspaceId = body.workspaceId || null;
+    if (body.leadId && !workspaceId) {
+      const { getSalesLeadById } = await import("@/lib/data/sales-leads");
+      const lead = await getSalesLeadById(body.leadId);
+      if (lead) {
+        workspaceId = lead.workspace_id;
+      }
+    }
+
     // Convert camelCase to snake_case
     const meetingData: any = {
       lead_id: body.leadId || null,
@@ -82,6 +92,8 @@ export async function POST(request: NextRequest) {
       link: body.link || null,
       type: body.type || null,
       created_by: body.createdBy || null,
+      workspace_id: workspaceId,
+      status: body.status || "Pending",
     };
 
     const meeting = await createMeeting(meetingData);

@@ -2,13 +2,13 @@
 
 import React from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { FollowUpDashboard } from "@/components/tasks/follow-up-dashboard";
+import { UnifiedTasksList } from "@/components/tasks/unified-tasks-list";
 
 export default function TasksPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <FollowUpDashboard />
+        <UnifiedTasksList />
       </div>
     </DashboardLayout>
   );

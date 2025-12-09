@@ -32,15 +32,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { currentPassword, newPassword, confirmPassword } = body;
+    const { newPassword, confirmPassword } = body;
 
     // Validate required fields
-    if (!currentPassword || !newPassword || !confirmPassword) {
+    if (!newPassword || !confirmPassword) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "Current password, new password, and confirm password are required",
+          error: "New password and confirm password are required",
         },
         { status: 400 }
       );
@@ -79,39 +78,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify current password
-    if (!user.password) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Password not set for this account. Please use password reset.",
-        },
-        { status: 400 }
-      );
-    }
-
-    const isValidPassword = await bcrypt.compare(
-      currentPassword,
-      user.password
-    );
-    if (!isValidPassword) {
-      return NextResponse.json(
-        { success: false, error: "Current password is incorrect" },
-        { status: 401 }
-      );
-    }
-
-    // Check if new password is same as current
-    const isSamePassword = await bcrypt.compare(newPassword, user.password);
-    if (isSamePassword) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "New password must be different from current password",
-        },
-        { status: 400 }
-      );
+    // Check if user has a password set (optional check)
+    if (user.password) {
+      // Check if new password is same as current
+      const isSamePassword = await bcrypt.compare(newPassword, user.password);
+      if (isSamePassword) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "New password must be different from current password",
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Hash new password
