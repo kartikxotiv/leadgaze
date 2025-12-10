@@ -1,22 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronsUpDown, MapPin } from "lucide-react";
+import { Check, ChevronDown, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { COUNTRIES } from "@/lib/constants/countries";
 
 interface CountrySelectProps {
@@ -36,65 +29,41 @@ export function CountrySelect({
   disabled = false,
   error = false,
 }: CountrySelectProps) {
-  const [open, setOpen] = React.useState(false);
-
   const selectedCountry = React.useMemo(
     () => COUNTRIES.find((country) => country.value === value),
     [value]
   );
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          disabled={disabled}
+    <div className="relative">
+      <MapPin className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2 z-10" />
+      <Select value={value} onValueChange={onValueChange} disabled={disabled}>
+        <SelectTrigger
           className={cn(
-            "w-full justify-between bg-gray-100 hover:bg-gray-100 h-10",
+            "bg-gray-100 pl-10 pr-10",
             error && "border-red-500 focus:border-red-500",
             className
           )}
         >
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-gray-400" />
-            <span className={cn(!selectedCountry && "text-muted-foreground")}>
-              {selectedCountry ? selectedCountry.label : placeholder}
-            </span>
+          <SelectValue placeholder={placeholder}>
+            {selectedCountry ? selectedCountry.label : placeholder}
+          </SelectValue>
+          <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+        </SelectTrigger>
+        <SelectContent className="max-h-[300px]">
+          <div className="max-h-[280px] overflow-y-auto">
+            {COUNTRIES.map((country) => (
+              <SelectItem
+                key={country.value}
+                value={country.value}
+                className="hover:bg-gray-200 hover:text-black"
+              >
+                {country.label}
+              </SelectItem>
+            ))}
           </div>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0" align="start">
-        <Command shouldFilter={true}>
-          <CommandInput placeholder="Search country..." />
-          <CommandList>
-            <CommandEmpty>No country found.</CommandEmpty>
-            <CommandGroup className="!overflow-visible">
-              {COUNTRIES.map((country) => (
-                <CommandItem
-                  key={country.value}
-                  value={`${country.label} ${country.code}`}
-                  onSelect={() => {
-                    onValueChange(country.value);
-                    setOpen(false);
-                  }}
-                  className="cursor-pointer"
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === country.value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <span className="flex-1">{country.label}</span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
