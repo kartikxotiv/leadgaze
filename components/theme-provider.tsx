@@ -11,8 +11,8 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
     <NextThemesProvider
       {...props}
       attribute="class"
-      defaultTheme="system"
-      enableSystem
+      defaultTheme="light"
+      enableSystem={false}
       storageKey="crm-theme"
       disableTransitionOnChange
       suppressColorSchemeWarn={true}

@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
-import { User } from "@/models";
+import { supabase } from "@/lib/supabase-client";
 
 export async function GET() {
   try {
-   
-    const userCount = await User.count();
+    const { count: userCount } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true });
 
     return NextResponse.json({
       success: true,
       message: "Database connection successful",
-      userCount,
+      userCount: userCount || 0,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

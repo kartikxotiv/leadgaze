@@ -1,0 +1,7 @@
+
+ALTER TABLE public.meetings
+ADD COLUMN IF NOT EXISTS link TEXT,
+ADD COLUMN IF NOT EXISTS type TEXT;
+
+
+

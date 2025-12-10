@@ -2,8 +2,20 @@
 class ApiClient {
   private baseUrl: string;
 
-  constructor(baseUrl = "/api") {
-    this.baseUrl = baseUrl;
+  constructor(baseUrl?: string) {
+    // Use live URL from environment variable if available
+    if (baseUrl) {
+      this.baseUrl = baseUrl;
+    } else if (process.env.NEXT_PUBLIC_API_URL) {
+      // Use live API URL (e.g., https://leadgaze.vercel.app)
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL.endsWith('/')
+        ? process.env.NEXT_PUBLIC_API_URL.slice(0, -1)
+        : process.env.NEXT_PUBLIC_API_URL;
+      this.baseUrl = `${apiUrl}/api`;
+    } else {
+      // Fallback to relative path
+      this.baseUrl = "/api";
+    }
   }
 
   private getAuthHeaders(): Record<string, string> {
@@ -25,7 +37,9 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
+    // Ensure endpoint starts with /
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const url = `${this.baseUrl}${cleanEndpoint}`;
 
     const authHeaders = this.getAuthHeaders();
 

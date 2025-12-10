@@ -88,3 +88,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* .bgworkspace {
+  background: #ffefba;
+  background: -webkit-linear-gradient(to top, #ffffff, #ffefba);
+  background: linear-gradient(to top, #ffffff, #ffefba);
+} */

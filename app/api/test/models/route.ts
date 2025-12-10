@@ -1,15 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  User,
-  Organization,
-  UserOrganization,
-  UserSession,
-  UserConfig,
-  OrganizationConfig,
-  OrganizationRole,
-  Lead,
-  LeadConfig,
-} from "@/models";
+import { supabase } from "@/lib/supabase-client";
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,120 +8,61 @@ export async function GET(request: NextRequest) {
    
     const tests = [];
 
-   
-    try {
-      const userCount = await User.count();
-      tests.push({ model: "User", status: "✅", count: userCount });
-    } catch (error) {
-      tests.push({
-        model: "User",
-        status: "❌",
-        error: (error as Error).message,
-      });
+    // Test each table
+    const models = [
+      'users',
+      'organizations',
+      'user_organizations',
+      'user_sessions',
+      'user_config',
+      'organization_config',
+      'organization_roles',
+      'leads',
+      'leads_config',
+    ];
+
+    for (const model of models) {
+      try {
+        const { count } = await supabase
+          .from(model)
+          .select('*', { count: 'exact', head: true });
+        tests.push({ model: model, status: "✅", count: count || 0 });
+      } catch (error) {
+        tests.push({
+          model: model,
+          status: "❌",
+          error: (error as Error).message,
+        });
+      }
     }
 
-   
-    try {
-      const orgCount = await Organization.count();
-      tests.push({ model: "Organization", status: "✅", count: orgCount });
-    } catch (error) {
-      tests.push({
-        model: "Organization",
-        status: "❌",
-        error: (error as Error).message,
-      });
+    // Additional tests for other tables
+    const additionalModels = [
+      'tasks',
+      'deals',
+      'activities',
+      'notifications',
+      'automation_rules',
+      'scoring_rules',
+      'lead_scores',
+    ];
+
+    for (const model of additionalModels) {
+      try {
+        const { count } = await supabase
+          .from(model)
+          .select('*', { count: 'exact', head: true });
+        tests.push({ model: model, status: "✅", count: count || 0 });
+      } catch (error) {
+        tests.push({
+          model: model,
+          status: "❌",
+          error: (error as Error).message,
+        });
+      }
     }
 
-   
-    try {
-      const userOrgCount = await UserOrganization.count();
-      tests.push({
-        model: "UserOrganization",
-        status: "✅",
-        count: userOrgCount,
-      });
-    } catch (error) {
-      tests.push({
-        model: "UserOrganization",
-        status: "❌",
-        error: (error as Error).message,
-      });
-    }
-
-   
-    try {
-      const sessionCount = await UserSession.count();
-      tests.push({ model: "UserSession", status: "✅", count: sessionCount });
-    } catch (error) {
-      tests.push({
-        model: "UserSession",
-        status: "❌",
-        error: (error as Error).message,
-      });
-    }
-
-   
-    try {
-      const userConfigCount = await UserConfig.count();
-      tests.push({ model: "UserConfig", status: "✅", count: userConfigCount });
-    } catch (error) {
-      tests.push({
-        model: "UserConfig",
-        status: "❌",
-        error: (error as Error).message,
-      });
-    }
-
-    try {
-      const orgConfigCount = await OrganizationConfig.count();
-      tests.push({
-        model: "OrganizationConfig",
-        status: "✅",
-        count: orgConfigCount,
-      });
-    } catch (error) {
-      tests.push({
-        model: "OrganizationConfig",
-        status: "❌",
-        error: (error as Error).message,
-      });
-    }
-
-    try {
-      const roleCount = await OrganizationRole.count();
-      tests.push({ model: "OrganizationRole", status: "✅", count: roleCount });
-    } catch (error) {
-      tests.push({
-        model: "OrganizationRole",
-        status: "❌",
-        error: (error as Error).message,
-      });
-    }
-
-   
-    try {
-      const leadCount = await Lead.count();
-      tests.push({ model: "Lead", status: "✅", count: leadCount });
-    } catch (error) {
-      tests.push({
-        model: "Lead",
-        status: "❌",
-        error: (error as Error).message,
-      });
-    }
-
-    try {
-      const leadConfigCount = await LeadConfig.count();
-      tests.push({ model: "LeadConfig", status: "✅", count: leadConfigCount });
-    } catch (error) {
-      tests.push({
-        model: "LeadConfig",
-        status: "❌",
-        error: (error as Error).message,
-      });
-    }
-
-   
+    // Calculate summary
     const passed = tests.filter((t) => t.status === "✅").length;
     const failed = tests.filter((t) => t.status === "❌").length;
 

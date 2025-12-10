@@ -1,16 +1,13 @@
-import sequelize from "./database";
-import {
-  User,
-  Organization,
-  UserOrganization,
-  OrganizationWorkspace,
-  UserInvitation,
-  UserSession,
-  EmailOTP,
-  PipelineStage,
-  Deal,
-  Task,
-} from "@/models";
+/**
+ * @deprecated This file is deprecated. 
+ * Supabase handles database schema through migrations in supabase/migrations/
+ * Use Supabase migrations instead of Sequelize sync.
+ * 
+ * For seeding data, use supabase/seed.sql or create a new seeding script.
+ */
+
+// DEPRECATED: This file is kept for reference only
+// All Sequelize models and sync operations have been migrated to Supabase
 
 export const syncDatabase = async (force = false) => {
   try {

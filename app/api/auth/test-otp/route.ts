@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { EmailOTP } from "@/models";
+import { createEmailOTP } from "@/lib/data/email-otp";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,22 +14,21 @@ export async function POST(request: NextRequest) {
 
     console.log("Testing OTP generation for:", email);
 
-   
-    const otpRecord = await EmailOTP.createOTP(email, purpose, 10);
+    const otpRecord = await createEmailOTP(email, purpose, 10);
     
     console.log("OTP created:", {
-      email: (otpRecord as any).email,
-      otp: (otpRecord as any).otp,
-      purpose: (otpRecord as any).purpose,
-      expiresAt: (otpRecord as any).expiresAt
+      email: otpRecord.email,
+      otp: otpRecord.otp,
+      purpose: otpRecord.purpose,
+      expiresAt: otpRecord.expires_at
     });
 
     return NextResponse.json({
       success: true,
       message: "OTP generated successfully (test mode)",
       email,
-      otp: (otpRecord as any).otp,
-      expiresAt: (otpRecord as any).expiresAt
+      otp: otpRecord.otp,
+      expiresAt: otpRecord.expires_at
     });
 
   } catch (error) {

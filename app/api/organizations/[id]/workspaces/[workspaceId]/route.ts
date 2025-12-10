@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { AuthService } from "@/lib/auth-service";
-import { OrganizationWorkspace, User } from "@/models";
-import { Op } from "sequelize";
+import { getWorkspaceById, updateWorkspace, deleteWorkspace, getWorkspacesByOrganization } from "@/lib/data/organization-workspaces";
+import { getUserById } from "@/lib/data/users";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
@@ -50,46 +50,33 @@ export async function GET(
       );
     }
 
-   
-    const workspace = await OrganizationWorkspace.findOne({
-      where: {
-        id: workspaceId,
-        organizationId: organizationId,
-      },
-      include: [
-        {
-          model: User,
-          as: "creator",
-          attributes: ["userId", "email", "firstName", "lastName"],
-        },
-      ],
-    });
+    const workspace = await getWorkspaceById(workspaceId);
 
-    if (!workspace) {
+    if (!workspace || workspace.organization_id !== organizationId) {
       return NextResponse.json(
         { success: false, error: "Workspace not found" },
         { status: 404 }
       );
     }
 
-   
+    // Get creator info
+    const creator = workspace.created_by ? await getUserById(workspace.created_by) : null;
+
     const formattedWorkspace = {
-      id: (workspace as any).id,
-      organizationId: (workspace as any).organizationId,
-      name: (workspace as any).name,
-      slug: (workspace as any).slug,
-      description: (workspace as any).description,
-      status: (workspace as any).status || (workspace as any).statusId || null,
-      createdBy: (workspace as any).createdBy,
-      createdAt: (workspace as any).createdAt,
-      updatedAt: (workspace as any).updatedAt,
-      creator: (workspace as any).creator
+      id: workspace.workspace_id,
+      organizationId: workspace.organization_id,
+      name: workspace.name,
+      slug: workspace.slug,
+      description: workspace.description,
+      status: workspace.status_id || null,
+      createdBy: workspace.created_by,
+      createdAt: workspace.created_at,
+      updatedAt: workspace.updated_at,
+      creator: creator
         ? {
-            id: (workspace as any).creator.userId,
-            email: (workspace as any).creator.email,
-            name: `${(workspace as any).creator.firstName} ${
-              (workspace as any).creator.lastName
-            }`.trim(),
+            id: creator.user_id,
+            email: creator.email,
+            name: `${creator.first_name} ${creator.last_name}`.trim(),
           }
         : null,
     };
@@ -159,29 +146,23 @@ export async function PUT(
       );
     }
 
-   
-    const workspace = await OrganizationWorkspace.findOne({
-      where: {
-        id: workspaceId,
-        organizationId: organizationId,
-      },
-    });
+    const workspace = await getWorkspaceById(workspaceId);
 
-    if (!workspace) {
+    if (!workspace || workspace.organization_id !== organizationId) {
       return NextResponse.json(
         { success: false, error: "Workspace not found" },
         { status: 404 }
       );
     }
 
-   
+    // Build update data
     const updateData: any = {};
 
     if (body.name && body.name.trim()) {
       updateData.name = body.name.trim();
 
-     
-      if (updateData.name !== (workspace as any).name) {
+      // Generate new slug if name changed
+      if (updateData.name !== workspace.name) {
         const generateSlug = (name: string): string => {
           return name
             .toLowerCase()
@@ -193,16 +174,9 @@ export async function PUT(
         let slug = generateSlug(updateData.name);
         let counter = 1;
 
-       
-        while (
-          await OrganizationWorkspace.findOne({
-            where: {
-              organizationId,
-              slug,
-              id: { [Op.ne]: workspaceId },
-            },
-          })
-        ) {
+        // Check for existing slug
+        const existingWorkspaces = await getWorkspacesByOrganization(organizationId);
+        while (existingWorkspaces.some((w: any) => w.slug === slug && w.workspace_id !== workspaceId)) {
           slug = `${generateSlug(updateData.name)}-${counter}`;
           counter++;
         }
@@ -216,41 +190,30 @@ export async function PUT(
     }
 
     if (body.statusId) {
-      updateData.statusId = body.statusId;
+      updateData.status_id = body.statusId;
     }
 
-   
-    await workspace.update(updateData);
+    // Update workspace
+    const updatedWorkspace = await updateWorkspace(workspaceId, updateData);
 
-   
-    const updatedWorkspace = await OrganizationWorkspace.findByPk(workspaceId, {
-      include: [
-        {
-          model: User,
-          as: "creator",
-          attributes: ["userId", "email", "firstName", "lastName"],
-        },
-      ],
-    });
+    // Get creator info
+    const creator = updatedWorkspace.created_by ? await getUserById(updatedWorkspace.created_by) : null;
 
-   
     const formattedWorkspace = {
-      id: (updatedWorkspace as any).id,
-      organizationId: (updatedWorkspace as any).organizationId,
-      name: (updatedWorkspace as any).name,
-      slug: (updatedWorkspace as any).slug,
-      description: (updatedWorkspace as any).description,
-      status: (updatedWorkspace as any).status,
-      createdBy: (updatedWorkspace as any).createdBy,
-      createdAt: (updatedWorkspace as any).createdAt,
-      updatedAt: (updatedWorkspace as any).updatedAt,
-      creator: (updatedWorkspace as any).creator
+      id: updatedWorkspace.workspace_id,
+      organizationId: updatedWorkspace.organization_id,
+      name: updatedWorkspace.name,
+      slug: updatedWorkspace.slug,
+      description: updatedWorkspace.description,
+      status: updatedWorkspace.status_id,
+      createdBy: updatedWorkspace.created_by,
+      createdAt: updatedWorkspace.created_at,
+      updatedAt: updatedWorkspace.updated_at,
+      creator: creator
         ? {
-            id: (updatedWorkspace as any).creator.userId,
-            email: (updatedWorkspace as any).creator.email,
-            name: `${(updatedWorkspace as any).creator.firstName} ${
-              (updatedWorkspace as any).creator.lastName
-            }`.trim(),
+            id: creator.user_id,
+            email: creator.email,
+            name: `${creator.first_name} ${creator.last_name}`.trim(),
           }
         : null,
     };
@@ -320,23 +283,17 @@ export async function DELETE(
       );
     }
 
-   
-    const workspace = await OrganizationWorkspace.findOne({
-      where: {
-        id: workspaceId,
-        organizationId: organizationId,
-      },
-    });
+    const workspace = await getWorkspaceById(workspaceId);
 
-    if (!workspace) {
+    if (!workspace || workspace.organization_id !== organizationId) {
       return NextResponse.json(
         { success: false, error: "Workspace not found" },
         { status: 404 }
       );
     }
 
-   
-    await workspace.update({ status: "archived" });
+    // Archive workspace (update status_id or delete based on requirements)
+    await updateWorkspace(workspaceId, { status_id: null }); // Or set to archived status_id if exists
 
     return NextResponse.json({
       success: true,
