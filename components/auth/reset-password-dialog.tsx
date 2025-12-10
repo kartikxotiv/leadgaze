@@ -15,6 +15,7 @@ import {
 import { Eye, EyeOff, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSmoothLogout } from "@/hooks/use-smooth-logout";
 
 interface ResetPasswordDialogProps {
   open: boolean;
@@ -32,6 +33,7 @@ export function ResetPasswordDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const { logout } = useSmoothLogout();
 
   // Password strength requirements
   const [passwordStrength, setPasswordStrength] = useState({
@@ -103,17 +105,16 @@ export function ResetPasswordDialog({
 
       if (data.success) {
         setSuccess(true);
-        toast.success("Password changed successfully!");
+        toast.success("Password changed successfully! Logging out...");
         // Reset form
         setNewPassword("");
         setConfirmPassword("");
         setPasswordStrength({
           length: false,
         });
-        // Close dialog after 2 seconds
+        // Logout and redirect after 2 seconds
         setTimeout(() => {
-          setSuccess(false);
-          onOpenChange(false);
+          logout();
         }, 2000);
       } else {
         setError(data.error || "Failed to change password. Please try again.");

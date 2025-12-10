@@ -37,6 +37,11 @@ import { formatDateTimeWithTime } from "@/lib/utils/sales-lead-utils";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import Link from "next/link";
+import { ReactTable } from "@/components/reuseableComponent/ReactTable";
+import { useRouter } from "next/navigation";
+import { useAccountTableColumns } from "@/components/accounts/account-table-columns";
+import { ColumnDefinition } from "@/components/common/column-customizer";
+import { ColumnCustomizer } from "@/components/common/column-customizer";
 
 async function fetchAccounts(
   workspaceId: string,
@@ -71,7 +76,21 @@ export default function AccountPage() {
   const [addBusinessOpen, setAddBusinessOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  const router = useRouter();
+
+  // Column visibility state
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([
+    "email",
+    "phone",
+    "business",
+    "location",
+    "alternative_email",
+    "alternative_phone",
+    "linkedin",
+    "comment",
+    "business_linkedin",
+    "converted_at",
+  ]);
 
   const { data: permissionsData, isLoading: isLoadingPermissions } =
     useWorkspacePermissions();
@@ -92,6 +111,52 @@ export default function AccountPage() {
 
   const accounts = accountsData?.data || [];
   const totalAccounts = accountsData?.count || 0;
+
+  // Table column definitions for column customizer
+  const tableColumnDefinitions: ColumnDefinition[] = useMemo(
+    () => [
+      { id: "email", label: "Email" },
+      { id: "phone", label: "Phone" },
+      { id: "business", label: "Business" },
+      { id: "location", label: "Location" },
+      { id: "alternative_email", label: "Alternative Email" },
+      { id: "alternative_phone", label: "Alternative Phone" },
+      { id: "linkedin", label: "LinkedIn" },
+      { id: "business_linkedin", label: "Business LinkedIn" },
+      { id: "business_contact", label: "Business Contact" },
+      { id: "comment", label: "Comment" },
+      { id: "converted_at", label: "Converted" },
+    ],
+    []
+  );
+
+  // Get table columns using the hook
+  const columns = useAccountTableColumns({
+    page,
+    pageSize,
+    visibleColumns,
+  });
+
+  const handleRowClick = (row: any) => {
+    router.push(`/pages/account/${row.id}`);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleToggleColumn = useCallback((columnId: string) => {
+    setVisibleColumns((prev) =>
+      prev.includes(columnId)
+        ? prev.filter((id) => id !== columnId)
+        : [...prev, columnId]
+    );
+  }, []);
+
+  const handleApplyColumns = useCallback(() => {
+    // Columns are already updated via handleToggleColumn
+    console.log("Applied columns:", visibleColumns);
+  }, [visibleColumns]);
 
   if (isLoadingPermissions && !permissionsData) {
     return (
@@ -126,14 +191,20 @@ export default function AccountPage() {
                 : "View your won leads converted to accounts"}
             </p>
           </div>
-          <div className="flex items-center gap-3"></div>
+          <div className="flex items-center gap-3">
+            <ColumnCustomizer
+              columns={tableColumnDefinitions}
+              visibleColumns={visibleColumns}
+              onToggleColumn={handleToggleColumn}
+              onApply={handleApplyColumns}
+              alwaysVisibleColumns={["name"]}
+            />
+          </div>
         </div>
 
         {isLoadingAccounts ? (
-          <div className="grid gap-4 ">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-[300px] w-full" />
-            ))}
+          <div className="border border-muted-foreground/30 overflow-hidden">
+            <Skeleton className="h-[420px] w-full" />
           </div>
         ) : isAccountsError ? (
           <Card>
@@ -159,235 +230,32 @@ export default function AccountPage() {
               </p>
             </CardContent>
           </Card>
-        ) : viewMode === "cards" ? (
+        ) : (
           <>
-            <div className="grid gap-4 ">
-              {accounts.map((account: any) => {
-                return (
-                  <Link key={account.id} href={`/pages/account/${account.id}`}>
-                    <Card
-                      key={account.id}
-                      className="hover:shadow-lg transition-shadow cursor-pointer w-[70%]"
-                    >
-                      <CardHeader className="p-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <CardTitle className="text-lg mb-1">
-                              {`${account.first_name || ""} ${
-                                account.last_name || ""
-                              }`.trim() || "Unnamed Account"}
-                            </CardTitle>
-                            <CardDescription className="flex items-center gap-2 mt-1">
-                              <Badge className="bg-emerald-100 text-emerald-700">
-                                Account
-                              </Badge>
-                              {account.business_name && (
-                                <Badge
-                                  variant="outline"
-                                  className="flex items-center gap-1"
-                                >
-                                  <Building2 className="h-3 w-3" />
-                                  {account.business_name}
-                                </Badge>
-                              )}
-                            </CardDescription>
-                          </div>
-                        </div>
-                      </CardHeader>
-
-                      <CardContent className="space-y-3 p-3">
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="col-span-1">
-                            {account.email && (
-                              <div className="flex items-center gap-2 text-xs mb-2">
-                                <span className="font-semibold text-muted-foreground">
-                                  Email:
-                                </span>
-                                &nbsp;
-                                <span className="text-muted-foreground truncate">
-                                  {account.email}
-                                </span>
-                              </div>
-                            )}
-                            {account.phone_number && (
-                              <div className="flex items-center gap-2 text-xs mb-2">
-                                <span className="font-semibold text-muted-foreground">
-                                  Phone:
-                                </span>
-                                &nbsp;
-                                <span className="text-muted-foreground">
-                                  {String(account.phone_number)}
-                                </span>
-                              </div>
-                            )}
-                            {account.location && (
-                              <div className="flex items-center gap-2 text-xs mb-2">
-                                <span className="font-semibold text-muted-foreground">
-                                  Location:
-                                </span>
-                                &nbsp;
-                                <span className="text-muted-foreground ">
-                                  {account.location}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="col-span-1">
-                            {(account.alternative_email ||
-                              account.alternative_phone_number ||
-                              account.linkedin_url) && (
-                              <>
-                                <div className="text-xs text-muted-foreground">
-                                  {account.alternative_email && (
-                                    <div className="mb-2">
-                                      <span className="font-semibold">
-                                        {" "}
-                                        Alt Email:
-                                      </span>
-                                      &nbsp;
-                                      {account.alternative_email}
-                                    </div>
-                                  )}
-                                  {account.alternative_phone_number && (
-                                    <div className="mb-2">
-                                      <span className="font-semibold">
-                                        {" "}
-                                        Alt Phone:
-                                      </span>
-                                      &nbsp;
-                                      <span className="text-muted-foreground">
-                                        {account.alternative_phone_number}
-                                      </span>
-                                    </div>
-                                  )}
-                                  {account.linkedin_url && (
-                                    <div className="flex items-center gap-1 mb-2">
-                                      <span className="font-semibold">
-                                        {" "}
-                                        LinkedIn:
-                                      </span>
-                                      &nbsp;
-                                      {/* <ExternalLink className="h-3 w-3" /> */}
-                                      <a
-                                        href={account.linkedin_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-blue-600 hover:underline truncate"
-                                      >
-                                        Personal LinkedIn
-                                      </a>
-                                    </div>
-                                  )}
-                                </div>
-                              </>
-                            )}
-                            <div className="text-xs text-muted-foreground line-clamp-2 mb-2">
-                              <span className="font-semibold">Comment:</span>
-                              &nbsp;
-                              {account.comment}
-                            </div>
-
-                            <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                              <div className="flex items-center gap-1">
-                                {/* <Calendar className="h-3 w-3" /> */}
-                                <span>
-                                  <span className="font-semibold">
-                                    Converted:
-                                  </span>
-                                  &nbsp;
-                                  {account.converted_at
-                                    ? formatDateTimeWithTime(
-                                        account.converted_at
-                                      )
-                                    : "recently"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="col-span-1">
-                            {(account.business_name ||
-                              account.business_linkedin ||
-                              account.business_contact) && (
-                              <>
-                                <div className="space-y-2">
-                                  <div className="text-xs font-semibold text-muted-foreground uppercase">
-                                    Business Details
-                                  </div>
-                                  {account.business_name && (
-                                    <div className="flex items-center gap-2 text-sm font-medium">
-                                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                                      <span>{account.business_name}</span>
-                                    </div>
-                                  )}
-                                  {account.business_contact && (
-                                    <div className="text-sm text-muted-foreground">
-                                      Contact: {account.business_contact}
-                                    </div>
-                                  )}
-
-                                  {account.business_linkedin && (
-                                    <div className="flex items-center gap-2 text-sm">
-                                      <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                                      <a
-                                        href={account.business_linkedin}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-blue-600 hover:underline truncate"
-                                      >
-                                        Business LinkedIn
-                                      </a>
-                                    </div>
-                                  )}
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                );
-              })}
+            <div className="border border-muted-foreground/30 overflow-hidden">
+              <ReactTable
+                columns={columns}
+                data={accounts}
+                pagination={true}
+                paginationTotalRows={totalAccounts}
+                paginationPerPage={pageSize}
+                paginationDefaultPage={page}
+                onChangePage={handlePageChange}
+                onRowClicked={handleRowClick}
+              />
             </div>
 
-            {/* Pagination for Cards */}
+            {/* Pagination Info */}
             {totalAccounts > pageSize && (
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <div>
                   Showing {(page - 1) * pageSize + 1} to{" "}
                   {Math.min(page * pageSize, totalAccounts)} of {totalAccounts}{" "}
                   accounts
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(page - 1)}
-                    disabled={page === 1}
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(page + 1)}
-                    disabled={page * pageSize >= totalAccounts}
-                  >
-                    Next
-                  </Button>
-                </div>
               </div>
             )}
           </>
-        ) : (
-          <Card>
-            <CardContent className="p-6">
-              <p className="text-sm text-muted-foreground">
-                Table view coming soon. Please use cards view for now.
-              </p>
-            </CardContent>
-          </Card>
         )}
 
         <AddBusiness open={addBusinessOpen} onOpenChange={setAddBusinessOpen} />
