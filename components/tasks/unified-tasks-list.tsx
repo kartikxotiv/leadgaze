@@ -116,13 +116,33 @@ export function UnifiedTasksList({ className }: UnifiedTasksListProps) {
               task.status.toUpperCase() !== "DONE"
             );
           }
-          if (task.type === "note" && task.due_date) {
-            const dueDate = new Date(task.due_date);
-            return (
-              isPast(dueDate) &&
-              !isToday(dueDate) &&
-              task.status.toUpperCase() !== "DONE"
-            );
+          if (task.type === "note") {
+            // For notes, use due_date if available, otherwise use created_at as fallback
+            const dateToCheck = task.due_date || task.created_at;
+
+            if (!dateToCheck) {
+              return false;
+            }
+
+            // Handle string that might be empty or whitespace
+            const dateStr = String(dateToCheck).trim();
+            if (!dateStr || dateStr === "null" || dateStr === "undefined") {
+              return false;
+            }
+
+            const checkDate = new Date(dateStr);
+
+            // Check if date is valid
+            if (isNaN(checkDate.getTime())) {
+              return false;
+            }
+
+            // For overdue: date must be in the past and not today
+            const isPastDate = isPast(checkDate);
+            const isNotToday = !isToday(checkDate);
+            const isNotDone = task.status.toUpperCase() !== "DONE";
+
+            return isPastDate && isNotToday && isNotDone;
           }
           return false;
         });
@@ -225,11 +245,31 @@ export function UnifiedTasksList({ className }: UnifiedTasksListProps) {
           task.status.toUpperCase() !== "DONE"
         );
       }
-      if (task.type === "note" && task.due_date) {
-        const dueDate = new Date(task.due_date);
+      if (task.type === "note") {
+        // For notes, use due_date if available, otherwise use created_at as fallback
+        const dateToCheck = task.due_date || task.created_at;
+
+        if (!dateToCheck) {
+          return false;
+        }
+
+        // Handle string that might be empty or whitespace
+        const dateStr = String(dateToCheck).trim();
+        if (!dateStr || dateStr === "null" || dateStr === "undefined") {
+          return false;
+        }
+
+        const checkDate = new Date(dateStr);
+
+        // Check if date is valid
+        if (isNaN(checkDate.getTime())) {
+          return false;
+        }
+
+        // For overdue: date must be in the past and not today
         return (
-          isPast(dueDate) &&
-          !isToday(dueDate) &&
+          isPast(checkDate) &&
+          !isToday(checkDate) &&
           task.status.toUpperCase() !== "DONE"
         );
       }

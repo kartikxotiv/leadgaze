@@ -63,11 +63,11 @@ export function ColumnCustomizer({
             </div>
           ))}
         </div>
-        <div className="flex justify-end mt-2">
+        {/* <div className="flex justify-end mt-2">
           <Button size="sm" onClick={onApply}>
             Apply
           </Button>
-        </div>
+        </div> */}
       </DropdownMenuContent>
     </DropdownMenu>
   );
