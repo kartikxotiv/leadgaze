@@ -35,6 +35,14 @@ export interface MeetingReminderData {
   leadName?: string | null;
 }
 
+export interface ReminderEmailData {
+  to: string;
+  content: string;
+  remindAt: string;
+  recipientName: string;
+  leadName?: string | null;
+}
+
 export interface EmailOptions {
   to: string;
   subject: string;
@@ -713,6 +721,20 @@ Sent to: ${email}
     });
   }
 
+  async sendReminderEmail(data: ReminderEmailData): Promise<boolean> {
+    await this.ensureInitialized();
+    const subject =
+      `Reminder: ${data.content?.slice(0, 60) || "Due"}`.trim();
+    const html = this.generateReminderEmailHTML(data);
+    const text = this.generateReminderEmailText(data);
+    return this.sendEmail({
+      to: data.to,
+      subject,
+      html,
+      text,
+    });
+  }
+
   private generateMeetingReminderHTML(data: MeetingReminderData): string {
     const { meetingTitle, meetingTime, meetingLink, assignedUserName, leadName } = data;
 
@@ -773,6 +795,60 @@ Time: ${new Date(meetingTime).toLocaleString()}
 ${leadName ? `Lead: ${leadName}` : ""}
 
 Join Meeting: ${meetingLink || "No link provided"}
+
+--
+Sent from Leadgaze CRM System.
+`;
+  }
+
+  private generateReminderEmailHTML(data: ReminderEmailData): string {
+    const { content, remindAt, recipientName, leadName } = data;
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reminder</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #10b981; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: white; padding: 30px; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; }
+        .info { margin-bottom: 10px; }
+        .info strong { color: #2d3748; }
+        .box { background: #f9fafb; padding: 16px; border-radius: 6px; border: 1px solid #e5e7eb; }
+    </style>
+    </head>
+<body>
+    <div class="header">
+        <h1>⏰ Reminder Due</h1>
+    </div>
+    <div class="content">
+        <p>Hello ${recipientName},</p>
+        <p class="info"><strong>Time:</strong> ${new Date(remindAt).toLocaleString()}</p>
+        ${leadName ? `<p class="info"><strong>Lead:</strong> ${leadName}</p>` : ""}
+        <div class="box">
+            ${content}
+        </div>
+        <p style="margin-top: 30px; font-size: 14px; color: #718096;">
+            This is an automated message from Leadgaze CRM System.
+        </p>
+    </div>
+</body>
+</html>`;
+  }
+
+  private generateReminderEmailText(data: ReminderEmailData): string {
+    const { content, remindAt, recipientName, leadName } = data;
+    return `
+Reminder Due
+
+Hello ${recipientName},
+
+Time: ${new Date(remindAt).toLocaleString()}
+${leadName ? `Lead: ${leadName}` : ""}
+
+${content}
 
 --
 Sent from Leadgaze CRM System.
