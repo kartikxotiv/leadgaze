@@ -47,7 +47,13 @@ export function useReminders(filters: ReminderFilters = {}) {
   const workspaceId = filters.workspaceId || currentWorkspace?.id;
 
   return useQuery({
-    queryKey: ["reminders", filters.leadId, workspaceId, filters.page, filters.limit],
+    queryKey: [
+      "reminders",
+      filters.leadId,
+      workspaceId,
+      filters.page,
+      filters.limit,
+    ],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (filters.leadId) {
@@ -103,7 +109,9 @@ export function useCreateReminder() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["reminders"] });
       if (variables.leadId) {
-        queryClient.invalidateQueries({ queryKey: ["reminders", variables.leadId] });
+        queryClient.invalidateQueries({
+          queryKey: ["reminders", variables.leadId],
+        });
       }
     },
   });
@@ -112,7 +120,13 @@ export function useCreateReminder() {
 export function useUpdateReminder() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ reminderId, data }: { reminderId: string; data: Partial<CreateReminderData> }) => {
+    mutationFn: async ({
+      reminderId,
+      data,
+    }: {
+      reminderId: string;
+      data: Partial<CreateReminderData>;
+    }) => {
       const response = await apiClient.put(`/reminders/${reminderId}`, data);
       const result = (response as any).data;
       if (result?.data) {
@@ -125,7 +139,9 @@ export function useUpdateReminder() {
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["reminders"] });
-      queryClient.invalidateQueries({ queryKey: ["reminders", variables.reminderId] });
+      queryClient.invalidateQueries({
+        queryKey: ["reminders", variables.reminderId],
+      });
     },
   });
 }
@@ -143,4 +159,3 @@ export function useDeleteReminder() {
     },
   });
 }
-

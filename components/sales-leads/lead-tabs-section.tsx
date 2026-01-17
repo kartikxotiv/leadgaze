@@ -1,5 +1,5 @@
- "use client";
- 
+"use client";
+
 import { Plus, Upload, Calendar, FileText, Loader2, Clock } from "lucide-react";
 import { NoteDialog } from "../notes/note-dialog";
 import { MeetingDialog } from "../meetings/meeting-dialog";
@@ -137,7 +137,7 @@ export function LeadTabsSection({
     }
     return [];
   })();
- 
+
   // Reminders
   const {
     data: remindersData,
@@ -146,7 +146,7 @@ export function LeadTabsSection({
   } = useReminders({
     leadId: previewLead?.id ? String(previewLead.id) : undefined,
   });
- 
+
   const reminders: Reminder[] = (() => {
     if (
       remindersData?.data?.reminders &&
@@ -291,7 +291,13 @@ export function LeadTabsSection({
     if (activeTab === "reminders" && previewLead?.id) {
       refetchReminders();
     }
-  }, [activeTab, previewLead?.id, refetchNotes, refetchMeetings, refetchReminders]);
+  }, [
+    activeTab,
+    previewLead?.id,
+    refetchNotes,
+    refetchMeetings,
+    refetchReminders,
+  ]);
 
   const handleNoteEdit = (note: Note) => {
     setSelectedNote(note);
@@ -356,19 +362,19 @@ export function LeadTabsSection({
     refetchMeetings();
     setSelectedMeetingId(null);
   };
- 
+
   const handleReminderEdit = (reminder: Reminder) => {
     setSelectedReminderId(reminder.id);
     setReminderDialogOpen(true);
   };
- 
+
   const handleReminderDelete = (reminderId: string) => {
     setReminderDeleteDialog({
       open: true,
       reminderId,
     });
   };
- 
+
   const handleConfirmDeleteReminder = async (reminderId?: string) => {
     if (!reminderId) return;
     try {
@@ -380,7 +386,7 @@ export function LeadTabsSection({
       toast.error("Failed to delete reminder");
     }
   };
- 
+
   const handleReminderDialogSuccess = () => {
     refetchReminders();
     setSelectedReminderId(null);
@@ -705,7 +711,7 @@ export function LeadTabsSection({
           )}
         </div>
       )}
- 
+
       {/* Reminders Tab Content */}
       {activeTab === "reminders" && (
         <div className="mt-6">
@@ -713,7 +719,7 @@ export function LeadTabsSection({
             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               Reminders {reminders.length > 0 && `(${reminders.length})`}
             </h3>
- 
+
             <button
               className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
               onClick={() => {
@@ -725,7 +731,7 @@ export function LeadTabsSection({
               Create Reminder
             </button>
           </div>
- 
+
           {isLoadingReminders ? (
             <div className="space-y-3">
               <Skeleton className="h-24 w-full rounded-lg" />
@@ -756,7 +762,7 @@ export function LeadTabsSection({
               ))}
             </div>
           )}
- 
+
           {previewLead?.id && (
             <>
               <ReminderDialog
@@ -776,7 +782,9 @@ export function LeadTabsSection({
                 onOpenChange={(open) =>
                   setReminderDeleteDialog({
                     open,
-                    reminderId: open ? reminderDeleteDialog.reminderId : undefined,
+                    reminderId: open
+                      ? reminderDeleteDialog.reminderId
+                      : undefined,
                   })
                 }
                 itemName={"this reminder"}

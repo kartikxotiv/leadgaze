@@ -79,7 +79,7 @@ export function ReminderDialog({
       if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) {
         s = `${s}:00`;
       }
-      if (!/[zZ]|[+-]\d{2}:\d{2}$/.test(s)) {
+      if (!/[zZ]/.test(s) && !/[+-]\d{2}(:?\d{2})?$/.test(s)) {
         s = `${s}Z`;
       }
       const d = new Date(s);

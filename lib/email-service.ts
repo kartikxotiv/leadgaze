@@ -54,18 +54,14 @@ class EmailService {
   private transporter: Transporter | null = null;
   private isConfigured = false;
 
-  constructor() {
-   
-  }
+  constructor() {}
 
-  
   async ensureInitialized(): Promise<void> {
     if (!this.isConfigured && !this.transporter) {
       await this.initializeTransporter();
     }
   }
 
-  
   private async initializeTransporter(): Promise<void> {
     try {
       const emailConfig = this.getEmailConfig();
@@ -79,7 +75,6 @@ class EmailService {
 
       this.transporter = createTransport(emailConfig);
 
-     
       await this.transporter.verify();
       this.isConfigured = true;
 
@@ -90,7 +85,6 @@ class EmailService {
     }
   }
 
-  
   private getEmailConfig(): EmailConfig | null {
     const {
       EMAIL_HOST,
@@ -98,14 +92,13 @@ class EmailService {
       EMAIL_SECURE,
       EMAIL_USER,
       EMAIL_PASS,
-     
+
       GMAIL_USER,
       GMAIL_PASS,
-     
+
       SENDGRID_API_KEY,
     } = process.env;
 
-   
     if (SENDGRID_API_KEY) {
       return {
         host: "smtp.sendgrid.net",
@@ -118,7 +111,6 @@ class EmailService {
       };
     }
 
-   
     if (GMAIL_USER && GMAIL_PASS) {
       return {
         host: "smtp.gmail.com",
@@ -131,7 +123,6 @@ class EmailService {
       };
     }
 
-   
     if (EMAIL_HOST && EMAIL_USER && EMAIL_PASS) {
       return {
         host: EMAIL_HOST,
@@ -147,7 +138,6 @@ class EmailService {
     return null;
   }
 
-  
   async sendEmail(options: EmailOptions): Promise<boolean> {
     if (!this.isConfigured || !this.transporter) {
       console.error("Email service not configured. Cannot send email.");
@@ -175,12 +165,10 @@ class EmailService {
     }
   }
 
-  
   async sendRawEmail(options: EmailOptions): Promise<boolean> {
     return this.sendEmail(options);
   }
 
-  
   async sendInvitationEmail(
     email: string,
     invitationData: {
@@ -207,7 +195,6 @@ class EmailService {
     });
   }
 
-  
   private generatePasswordResetHTML(data: PasswordResetEmailData): string {
     const { firstName, lastName, resetUrl, expiresInHours, organizationName } =
       data;
@@ -363,7 +350,6 @@ class EmailService {
 </html>`;
   }
 
-  
   private generatePasswordResetText(data: PasswordResetEmailData): string {
     const { firstName, lastName, resetUrl, expiresInHours, organizationName } =
       data;
@@ -395,7 +381,6 @@ This email was sent from your CRM system. Please do not reply to this email.
 `;
   }
 
-  
   async sendPasswordResetEmail(
     email: string,
     resetData: PasswordResetEmailData
@@ -415,7 +400,6 @@ This email was sent from your CRM system. Please do not reply to this email.
     });
   }
 
-  
   async sendPasswordChangedEmail(
     email: string,
     firstName: string,
@@ -477,7 +461,6 @@ Thank you for keeping your account secure!
     });
   }
 
-  
   private generateOTPHTML(data: OTPEmailData): string {
     const { email, otp, purpose, expiresInMinutes } = data;
 
@@ -644,7 +627,6 @@ Thank you for keeping your account secure!
 </html>`;
   }
 
-  
   private generateOTPText(data: OTPEmailData): string {
     const { email, otp, purpose, expiresInMinutes } = data;
 
@@ -683,7 +665,6 @@ Sent to: ${email}
 `;
   }
 
-  
   async sendOTPEmail(data: OTPEmailData): Promise<boolean> {
     await this.ensureInitialized();
 
@@ -723,8 +704,7 @@ Sent to: ${email}
 
   async sendReminderEmail(data: ReminderEmailData): Promise<boolean> {
     await this.ensureInitialized();
-    const subject =
-      `Reminder: ${data.content?.slice(0, 60) || "Due"}`.trim();
+    const subject = `Reminder: ${data.content?.slice(0, 60) || "Due"}`.trim();
     const html = this.generateReminderEmailHTML(data);
     const text = this.generateReminderEmailText(data);
     return this.sendEmail({
@@ -736,7 +716,13 @@ Sent to: ${email}
   }
 
   private generateMeetingReminderHTML(data: MeetingReminderData): string {
-    const { meetingTitle, meetingTime, meetingLink, assignedUserName, leadName } = data;
+    const {
+      meetingTitle,
+      meetingTime,
+      meetingLink,
+      assignedUserName,
+      leadName,
+    } = data;
 
     return `
 <!DOCTYPE html>
@@ -763,14 +749,24 @@ Sent to: ${email}
         <p>This is a reminder that your meeting is starting in 5 minutes.</p>
         
         <div class="info"><strong>Meeting:</strong> ${meetingTitle}</div>
-        <div class="info"><strong>Time:</strong> ${new Date(meetingTime).toLocaleString()}</div>
-        ${leadName ? `<div class="info"><strong>Lead:</strong> ${leadName}</div>` : ""}
+        <div class="info"><strong>Time:</strong> ${new Date(
+          meetingTime
+        ).toLocaleString()}</div>
+        ${
+          leadName
+            ? `<div class="info"><strong>Lead:</strong> ${leadName}</div>`
+            : ""
+        }
         
-        ${meetingLink ? `
+        ${
+          meetingLink
+            ? `
         <div style="text-align: center;">
             <a href="${meetingLink}" class="button">Join Meeting</a>
         </div>
-        ` : ""}
+        `
+            : ""
+        }
         
         <p style="margin-top: 30px; font-size: 14px; color: #718096;">
             If you're having trouble with the button, you can use the link below: <br>
@@ -782,7 +778,13 @@ Sent to: ${email}
   }
 
   private generateMeetingReminderText(data: MeetingReminderData): string {
-    const { meetingTitle, meetingTime, meetingLink, assignedUserName, leadName } = data;
+    const {
+      meetingTitle,
+      meetingTime,
+      meetingLink,
+      assignedUserName,
+      leadName,
+    } = data;
     return `
 Meeting Reminder
 
@@ -825,8 +827,14 @@ Sent from Leadgaze CRM System.
     </div>
     <div class="content">
         <p>Hello ${recipientName},</p>
-        <p class="info"><strong>Time:</strong> ${new Date(remindAt).toLocaleString()}</p>
-        ${leadName ? `<p class="info"><strong>Lead:</strong> ${leadName}</p>` : ""}
+        <p class="info"><strong>Time:</strong> ${new Date(
+          remindAt
+        ).toLocaleString()}</p>
+        ${
+          leadName
+            ? `<p class="info"><strong>Lead:</strong> ${leadName}</p>`
+            : ""
+        }
         <div class="box">
             ${content}
         </div>

@@ -11,7 +11,9 @@ export interface Reminder {
   created_at: string;
 }
 
-export async function getReminderById(reminderId: string): Promise<Reminder | null> {
+export async function getReminderById(
+  reminderId: string
+): Promise<Reminder | null> {
   const { data, error } = await supabase
     .from("reminders")
     .select("*")
@@ -22,7 +24,9 @@ export async function getReminderById(reminderId: string): Promise<Reminder | nu
   return data || null;
 }
 
-export async function getRemindersByLeadId(leadId: string): Promise<Reminder[]> {
+export async function getRemindersByLeadId(
+  leadId: string
+): Promise<Reminder[]> {
   const { data, error } = await supabase
     .from("reminders")
     .select("*")
@@ -69,7 +73,9 @@ export async function getRemindersByWorkspaceId(
   };
 }
 
-export async function createReminder(reminderData: Partial<Reminder>): Promise<Reminder> {
+export async function createReminder(
+  reminderData: Partial<Reminder>
+): Promise<Reminder> {
   const { data, error } = await supabase
     .from("reminders")
     .insert([reminderData])
@@ -104,4 +110,3 @@ export async function deleteReminder(reminderId: string): Promise<boolean> {
   if (error) throw error;
   return true;
 }
-

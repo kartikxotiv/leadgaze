@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getReminderById, updateReminder, deleteReminder } from "@/lib/data/reminders";
+import {
+  getReminderById,
+  updateReminder,
+  deleteReminder,
+} from "@/lib/data/reminders";
 
 export async function GET(
   _request: NextRequest,
@@ -91,4 +95,3 @@ export async function DELETE(
     );
   }
 }
-

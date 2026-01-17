@@ -21,17 +21,13 @@ export function ReminderCard({
   const parseDateSafe = (input?: string): Date | null => {
     if (!input) return null;
     let s = input.trim();
-    // Normalize common non-ISO formats returned by databases
-    // "YYYY-MM-DD HH:mm:ss+00" -> "YYYY-MM-DDTHH:mm:ss+00"
     if (s.includes(" ") && !s.includes("T")) {
       s = s.replace(" ", "T");
     }
-    // Ensure seconds component if missing
     if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) {
       s = `${s}:00`;
     }
-    // If timezone offset/Z is missing, assume UTC
-    if (!/[zZ]|[+-]\d{2}:\d{2}$/.test(s)) {
+    if (!/[zZ]/.test(s) && !/[+-]\d{2}(:?\d{2})?$/.test(s)) {
       s = `${s}Z`;
     }
     const d = new Date(s);

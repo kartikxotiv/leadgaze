@@ -10,7 +10,8 @@ export async function GET() {
 
     const { data: reminders, error: remindersError } = await supabase
       .from("reminders")
-      .select(`
+      .select(
+        `
         id,
         content,
         remind_at,
@@ -23,7 +24,8 @@ export async function GET() {
           first_name,
           last_name
         )
-      `)
+      `
+      )
       .gte("remind_at", windowStart.toISOString())
       .lte("remind_at", windowEnd.toISOString());
 
@@ -52,8 +54,7 @@ export async function GET() {
         continue;
       }
       const recipientName =
-        `${user?.first_name || ""} ${user?.last_name || ""}`.trim() ||
-        toEmail;
+        `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || toEmail;
       const lead = reminder.leads;
       const leadName =
         lead && (lead.first_name || lead.last_name)
@@ -87,4 +88,3 @@ export async function GET() {
     );
   }
 }
-
