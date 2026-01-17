@@ -3,6 +3,10 @@
     {
       "path": "/api/meetings/reminders",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/reminders/send",
+      "schedule": "* * * * *"
     }
   ]
 }

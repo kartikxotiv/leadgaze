@@ -1,6 +1,6 @@
-"use client";
-
-import { Plus, Upload, Calendar, FileText, Loader2 } from "lucide-react";
+ "use client";
+ 
+import { Plus, Upload, Calendar, FileText, Loader2, Clock } from "lucide-react";
 import { NoteDialog } from "../notes/note-dialog";
 import { MeetingDialog } from "../meetings/meeting-dialog";
 import { useState, useEffect, useRef } from "react";
@@ -10,11 +10,17 @@ import {
   useDeleteMeeting,
   type Meeting,
 } from "@/hooks/use-meetings";
+import {
+  useReminders,
+  useDeleteReminder,
+  type Reminder,
+} from "@/hooks/use-reminders";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { NoteCard } from "./note-card";
 import { MediaCard, type LeadMedia } from "./media-card";
 import { MeetingCard } from "./meeting-card";
+import { ReminderCard } from "./reminder-card";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import {
@@ -22,8 +28,9 @@ import {
   DialogContent,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { ReminderDialog } from "@/components/reminders/reminder-dialog";
 
-export type TabValue = "notes" | "files" | "meetings";
+export type TabValue = "notes" | "files" | "meetings" | "reminders";
 
 export interface Tab {
   label: string;
@@ -50,6 +57,10 @@ export function LeadTabsSection({
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(
     null
   );
+  const [reminderDialogOpen, setReminderDialogOpen] = useState(false);
+  const [selectedReminderId, setSelectedReminderId] = useState<string | null>(
+    null
+  );
   const [mediaList, setMediaList] = useState<LeadMedia[]>([]);
   const [isLoadingMedia, setIsLoadingMedia] = useState(false);
   const [isDeletingMedia, setIsDeletingMedia] = useState(false);
@@ -69,6 +80,10 @@ export function LeadTabsSection({
     meetingId?: string;
     meetingTitle?: string;
   }>({ open: false });
+  const [reminderDeleteDialog, setReminderDeleteDialog] = useState<{
+    open: boolean;
+    reminderId?: string;
+  }>({ open: false });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuthStore();
 
@@ -83,6 +98,7 @@ export function LeadTabsSection({
 
   const deleteNoteMutation = useDeleteNote();
   const deleteMeetingMutation = useDeleteMeeting();
+  const deleteReminderMutation = useDeleteReminder();
 
   const notes: Note[] = (() => {
     if (notesData?.data?.notes && Array.isArray(notesData.data.notes)) {
@@ -118,6 +134,31 @@ export function LeadTabsSection({
     }
     if (Array.isArray(meetingsData?.data)) {
       return meetingsData.data;
+    }
+    return [];
+  })();
+ 
+  // Reminders
+  const {
+    data: remindersData,
+    isLoading: isLoadingReminders,
+    refetch: refetchReminders,
+  } = useReminders({
+    leadId: previewLead?.id ? String(previewLead.id) : undefined,
+  });
+ 
+  const reminders: Reminder[] = (() => {
+    if (
+      remindersData?.data?.reminders &&
+      Array.isArray(remindersData.data.reminders)
+    ) {
+      return remindersData.data.reminders;
+    }
+    if (Array.isArray(remindersData?.reminders)) {
+      return remindersData.reminders;
+    }
+    if (Array.isArray(remindersData?.data)) {
+      return remindersData.data;
     }
     return [];
   })();
@@ -247,7 +288,10 @@ export function LeadTabsSection({
     if (activeTab === "meetings" && previewLead?.id) {
       refetchMeetings();
     }
-  }, [activeTab, previewLead?.id, refetchNotes, refetchMeetings]);
+    if (activeTab === "reminders" && previewLead?.id) {
+      refetchReminders();
+    }
+  }, [activeTab, previewLead?.id, refetchNotes, refetchMeetings, refetchReminders]);
 
   const handleNoteEdit = (note: Note) => {
     setSelectedNote(note);
@@ -312,6 +356,35 @@ export function LeadTabsSection({
     refetchMeetings();
     setSelectedMeetingId(null);
   };
+ 
+  const handleReminderEdit = (reminder: Reminder) => {
+    setSelectedReminderId(reminder.id);
+    setReminderDialogOpen(true);
+  };
+ 
+  const handleReminderDelete = (reminderId: string) => {
+    setReminderDeleteDialog({
+      open: true,
+      reminderId,
+    });
+  };
+ 
+  const handleConfirmDeleteReminder = async (reminderId?: string) => {
+    if (!reminderId) return;
+    try {
+      await deleteReminderMutation.mutateAsync(reminderId);
+      toast.success("Reminder deleted successfully");
+      setReminderDeleteDialog({ open: false });
+      refetchReminders();
+    } catch (error) {
+      toast.error("Failed to delete reminder");
+    }
+  };
+ 
+  const handleReminderDialogSuccess = () => {
+    refetchReminders();
+    setSelectedReminderId(null);
+  };
 
   const tabs: Tab[] = [
     {
@@ -328,6 +401,11 @@ export function LeadTabsSection({
       label: "Create Meetings",
       value: "meetings",
       icon: <Calendar className="h-4 w-4" />,
+    },
+    {
+      label: "Create Reminders",
+      value: "reminders",
+      icon: <Clock className="h-4 w-4" />,
     },
   ];
 
@@ -622,6 +700,91 @@ export function LeadTabsSection({
                 isLoading={deleteMeetingMutation.isPending}
                 title="Delete Meeting"
                 description={`Are you sure you want to delete "${meetingDeleteDialog.meetingTitle}"? This action cannot be undone.`}
+              />
+            </>
+          )}
+        </div>
+      )}
+ 
+      {/* Reminders Tab Content */}
+      {activeTab === "reminders" && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              Reminders {reminders.length > 0 && `(${reminders.length})`}
+            </h3>
+ 
+            <button
+              className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+              onClick={() => {
+                setSelectedReminderId(null);
+                setReminderDialogOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              Create Reminder
+            </button>
+          </div>
+ 
+          {isLoadingReminders ? (
+            <div className="space-y-3">
+              <Skeleton className="h-24 w-full rounded-lg" />
+              <Skeleton className="h-24 w-full rounded-lg" />
+            </div>
+          ) : reminders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
+                <Clock className="h-5 w-5 text-gray-400 dark:text-gray-600" />
+              </div>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                No reminders yet
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Create your first reminder using the button above
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              {reminders.map((reminder) => (
+                <ReminderCard
+                  key={reminder.id}
+                  reminder={reminder}
+                  onEdit={handleReminderEdit}
+                  onDelete={handleReminderDelete}
+                  isDeleting={deleteReminderMutation.isPending}
+                />
+              ))}
+            </div>
+          )}
+ 
+          {previewLead?.id && (
+            <>
+              <ReminderDialog
+                open={reminderDialogOpen}
+                onOpenChange={(open) => {
+                  setReminderDialogOpen(open);
+                  if (!open) {
+                    setSelectedReminderId(null);
+                  }
+                }}
+                leadId={previewLead.id}
+                reminderId={selectedReminderId || undefined}
+                onSuccess={handleReminderDialogSuccess}
+              />
+              <DeleteConfirmDialog
+                open={reminderDeleteDialog.open}
+                onOpenChange={(open) =>
+                  setReminderDeleteDialog({
+                    open,
+                    reminderId: open ? reminderDeleteDialog.reminderId : undefined,
+                  })
+                }
+                itemName={"this reminder"}
+                itemId={reminderDeleteDialog.reminderId}
+                onConfirm={handleConfirmDeleteReminder}
+                isLoading={deleteReminderMutation.isPending}
+                title="Delete Reminder"
+                description="Are you sure you want to delete this reminder? This action cannot be undone."
               />
             </>
           )}
