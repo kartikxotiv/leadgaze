@@ -40,6 +40,33 @@ export async function getLeadComments(
   return data ?? [];
 }
 
+export async function getLeadCommentById(
+  commentId: string
+): Promise<LeadCommentWithUser | null> {
+  const { data, error } = await supabase
+    .from("lead_comments")
+    .select(
+      `
+      *,
+      created_by_user:users!lead_comments_created_by_fkey(
+        user_id,
+        first_name,
+        last_name,
+        email
+      )
+    `
+    )
+    .eq("id", commentId)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") return null; // Not found
+    throw error;
+  }
+
+  return data as LeadCommentWithUser;
+}
+
 export async function createLeadComment(
   leadId: string,
   comment: string,
