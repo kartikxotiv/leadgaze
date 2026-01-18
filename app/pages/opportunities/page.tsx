@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Plus, Download, Upload } from "lucide-react";
+import { Plus, Download, Upload, Building2 } from "lucide-react";
 import { useWorkspaceContext } from "@/hooks/use-workspace-context";
 import {
   useWorkspacePermissions,
@@ -40,6 +40,7 @@ import { NoteDialog } from "@/components/notes/note-dialog";
 import { MeetingDialog } from "@/components/meetings/meeting-dialog";
 import { MeetingDetailsDialog } from "@/components/meetings/meeting-details-dialog";
 import { LeadMediaDialog } from "@/components/lead-media/lead-media-dialog";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function OpportunitiesPage() {
   const { currentWorkspace } = useWorkspaceContext();
@@ -338,23 +339,37 @@ export default function OpportunitiesPage() {
       </div>
 
       <div className="mt-6 border border-muted-foreground/30 overflow-hidden">
-        <SalesLeadsTable
-          workspaceId={workspaceId}
-          isLoading={dataHook.isLoading}
-          isError={dataHook.isError}
-          error={dataHook.error}
-          tableData={dataHook.tableData}
-          columns={columns}
-          totalRows={dataHook.totalRows}
-          pageSize={pageSize}
-          currentPage={dataHook.currentPage}
-          onPageChange={handlePageChange}
-          onRowsPerPageChange={handleRowsPerPageChange}
-          onRowClick={handlePreviewLead}
-          canViewSalesLeads={canViewSalesLeads}
-          isSalesLeadsVisible={isSalesLeadsVisible ?? false}
-          permissionsData={permissionsData}
-        />
+        {!dataHook.isLoading &&
+        !dataHook.isError &&
+        (dataHook.tableData?.length ?? 0) === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Building2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
+              <h3 className="text-lg font-medium mb-2">No Opportunities Yet</h3>
+              <p className="text-sm text-muted-foreground text-center max-w-md">
+                You don't have any opportunities yet. Change a lead to "Opportunity" status to see it here.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <SalesLeadsTable
+            workspaceId={workspaceId}
+            isLoading={dataHook.isLoading}
+            isError={dataHook.isError}
+            error={dataHook.error}
+            tableData={dataHook.tableData}
+            columns={columns}
+            totalRows={dataHook.totalRows}
+            pageSize={pageSize}
+            currentPage={dataHook.currentPage}
+            onPageChange={handlePageChange}
+            onRowsPerPageChange={handleRowsPerPageChange}
+            onRowClick={handlePreviewLead}
+            canViewSalesLeads={canViewSalesLeads}
+            isSalesLeadsVisible={isSalesLeadsVisible ?? false}
+            permissionsData={permissionsData}
+          />
+        )}
       </div>
 
       <DeleteConfirmDialog

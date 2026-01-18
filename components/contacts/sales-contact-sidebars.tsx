@@ -190,8 +190,9 @@ export function AddContactSidebar({
     <SidebarPanel
       open={open}
       onOpenChange={onOpenChange}
-      title="Add Sales Contact"
-      description={"Add a new sales contact to your workspace"}
+      title="Add Contact"
+      description={"Add a new contact to your workspace"}
+
     >
       <div className="space-y-6">
         <CardContent className="p-1">

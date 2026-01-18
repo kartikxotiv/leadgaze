@@ -4,12 +4,11 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { AssigneeAvatarGroup } from "@/components/assignees/assignee-avatar-group";
 import { useUpdateTaskStatus } from "@/hooks/use-unified-tasks";
 import { useTaskAssignees } from "@/hooks/use-task-assignees";
@@ -23,6 +22,7 @@ import {
   Clock,
   User,
   UserPlus,
+  MoreVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,20 @@ const getStatusColor = (status: string) => {
       return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-200";
     default:
       return "bg-gray-100 text-gray-800 border-gray-200";
+  }
+};
+
+const getStatusLabel = (status: string) => {
+  switch (status.toUpperCase()) {
+    case "NEW":
+      return "New";
+    case "INPROGRESS":
+    case "IN_PROGRESS":
+      return "In Progress";
+    case "DONE":
+      return "Done";
+    default:
+      return status;
   }
 };
 
@@ -174,27 +188,36 @@ export function TaskCard({ task, onAssigneeClick }: TaskCardProps) {
           </div>
 
           <div className="flex flex-col items-end gap-2">
-            <Select
-              value={task.status}
-              onValueChange={handleStatusChange}
-              disabled={updateStatusMutation.isPending}
-            >
-              <SelectTrigger
+            <div className="flex items-center gap-2">
+              <div
                 className={cn(
-                  " text-xs h-8 rounded-lg",
+                  "text-xs h-8 px-3 rounded-lg border flex items-center",
                   getStatusColor(task.status)
                 )}
               >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="NEW">NEW</SelectItem>
-                <hr className="my-2" />
-                <SelectItem value="INPROGRESS">IN PROGRESS</SelectItem>
-                <hr className="my-2" />
-                <SelectItem value="DONE">DONE</SelectItem>
-              </SelectContent>
-            </Select>
+                {getStatusLabel(task.status)}
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    disabled={updateStatusMutation.isPending}
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuItem onClick={() => handleStatusChange("INPROGRESS")}>
+                    In Progress
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleStatusChange("DONE")}>
+                    Done
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
             {(task.type === "task" ||
               task.type === "note" ||
