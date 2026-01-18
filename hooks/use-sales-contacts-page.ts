@@ -131,6 +131,16 @@ export function useSalesContactsPage() {
     return map;
   }, [platformOptions]);
 
+  const businessNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    businessOptions.forEach((business: any) => {
+      if (business.id) {
+        map.set(String(business.id), business.business_name ?? "");
+      }
+    });
+    return map;
+  }, [businessOptions]);
+
   const tableData = useMemo(() => {
     const contacts = salesContacts?.data ?? [];
     return contacts.map((contact) => ({
@@ -139,11 +149,15 @@ export function useSalesContactsPage() {
       platform_label: contact.platform
         ? platformNameMap.get(contact.platform) ?? `ID ${contact.platform}`
         : "",
+      business_label:
+        contact.business_id
+          ? businessNameMap.get(String(contact.business_id)) ?? ""
+          : contact.business_name ?? "",
       status_label: formatStatus(contact.status),
       created_at_label: formatDateTime(contact.created_at),
       updated_at_label: formatDateTime(contact.updated_at),
     }));
-  }, [salesContacts?.data, platformNameMap]);
+  }, [salesContacts?.data, platformNameMap, businessNameMap]);
 
   // Dialog States
   const [deleteDialog, setDeleteDialog] = useState<{

@@ -194,7 +194,7 @@ export function DashboardHeader({
               </div>
               {isSoftwareMenuOpen && (
                 <div className="absolute top-[65px] left-0 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg z-50 w-[300px] border border-gray-200 dark:border-gray-700">
-                  <div className="mb-2">
+                  <div>
                     {isLoadingWorkspaces ? (
                       <div className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
                         Loading workspaces...
@@ -229,7 +229,7 @@ export function DashboardHeader({
                     )}
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  {/* <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <div
                       className="flex items-center justify-center gap-2 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2"
                       onClick={handleCreateWorkspace}
@@ -239,7 +239,7 @@ export function DashboardHeader({
                         Create workspace
                       </span>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               )}
             </div>

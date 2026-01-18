@@ -171,7 +171,7 @@ export function SalesContactFormFields({
                 onChange={(event) => {
                   const value = event.target.value;
                   const digitsOnly = value.replace(/\D/g, "");
-                  const limitedDigits = digitsOnly.slice(0, 10);
+                  const limitedDigits = digitsOnly.slice(0, 15);
                   onChange("phoneNumber", limitedDigits);
                 }}
                 placeholder="1234567890"
@@ -204,7 +204,7 @@ export function SalesContactFormFields({
                 onChange={(event) => {
                   const value = event.target.value;
                   const digitsOnly = value.replace(/\D/g, "");
-                  const limitedDigits = digitsOnly.slice(0, 10);
+                  const limitedDigits = digitsOnly.slice(0, 15);
                   onChange("alternativePhoneNumber", limitedDigits);
                 }}
                 placeholder="1234567890"
@@ -241,7 +241,7 @@ export function SalesContactFormFields({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="businessId">Business</Label>
+            <Label htmlFor="businessId">Business Name</Label>
             {businessOptions.length === 0 && !businessesLoading ? (
               <div className="space-y-2">
                 <div className="text-sm text-muted-foreground mb-2">
