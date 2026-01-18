@@ -201,7 +201,7 @@ export default function CompaniesPage() {
           </DropdownMenu>
         ),
         ignoreRowClick: true,
-        allowOverflow: true,
+        allowoverflow: true,
         button: true,
         width: '100px',
         minWidth: '100px'

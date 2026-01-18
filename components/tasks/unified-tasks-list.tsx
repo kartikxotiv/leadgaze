@@ -312,6 +312,46 @@ export function UnifiedTasksList({ className }: UnifiedTasksListProps) {
     };
   }, [tasks, mainTab]);
 
+  const meetingCounts = useMemo(() => {
+    const today = startOfDay(new Date());
+    const nextWeek = addDays(today, 7);
+
+    const meetingTasks = tasks.filter((task) => task.type === "meeting");
+
+    const todayTasks = meetingTasks.filter((task) => {
+      if (task.time) {
+        return isToday(new Date(task.time)) && task.status.toUpperCase() !== "DONE";
+      }
+      return false;
+    });
+
+    const overdueTasks = meetingTasks.filter((task) => {
+      if (task.time) {
+        const meetingDate = new Date(task.time);
+        return (
+          isPast(meetingDate) &&
+          !isToday(meetingDate) &&
+          task.status.toUpperCase() !== "DONE"
+        );
+      }
+      return false;
+    });
+
+    const upcomingTasks = meetingTasks.filter((task) => {
+      if (task.time) {
+        const meetingDate = new Date(task.time);
+        return isFuture(meetingDate) && task.status.toUpperCase() !== "DONE";
+      }
+      return false;
+    });
+
+    return {
+      today: todayTasks.length,
+      overdue: overdueTasks.length,
+      upcoming: upcomingTasks.length,
+    };
+  }, [tasks]);
+
   const stats = {
     total: tasks.length,
     notes: tasks.filter((t) => t.type === "note").length,
@@ -388,7 +428,7 @@ export function UnifiedTasksList({ className }: UnifiedTasksListProps) {
                 )}
               >
                 <Calendar className="h-4 w-4" />
-                Meetings ({tasks.filter((t) => t.type === "meeting").length})
+                Meetings ({meetingCounts.today + meetingCounts.overdue + meetingCounts.upcoming})
               </button>
               <button
                 onClick={() => {

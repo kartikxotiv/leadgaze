@@ -78,7 +78,7 @@ export function SalesContactsTable({
   if (tableData.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center text-sm text-muted-foreground">
-        No sales contacts yet. Add your first contact to get started.
+        No contacts yet. Add your first contact to get started.
       </div>
     );
   }

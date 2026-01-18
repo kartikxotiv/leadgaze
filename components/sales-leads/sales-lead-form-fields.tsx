@@ -198,7 +198,7 @@ export function SalesLeadFormFields({
                   onChange={(event) => {
                     const value = event.target.value;
                     const digitsOnly = value.replace(/\D/g, "");
-                    const limitedDigits = digitsOnly.slice(0, 10);
+                    const limitedDigits = digitsOnly.slice(0, 15);
                     onChange("phoneNumber", limitedDigits);
                   }}
                   placeholder="1234567890"
@@ -231,7 +231,7 @@ export function SalesLeadFormFields({
                   onChange={(event) => {
                     const value = event.target.value;
                     const digitsOnly = value.replace(/\D/g, "");
-                    const limitedDigits = digitsOnly.slice(0, 10);
+                    const limitedDigits = digitsOnly.slice(0, 15);
                     onChange("alternativePhoneNumber", limitedDigits);
                   }}
                   placeholder="1234567890"

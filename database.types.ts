@@ -1427,6 +1427,7 @@ export type Database = {
       }
       sales_contacts: {
         Row: {
+          business_id: any
           alternative_email: string | null
           alternative_phone_number: string | null
           business_contact: string | null
