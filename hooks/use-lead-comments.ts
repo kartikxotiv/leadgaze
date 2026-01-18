@@ -12,7 +12,7 @@ export function useLeadComments(leadId?: string) {
     queryKey: ["lead-comments", leadId],
     enabled: !!leadId,
     queryFn: async () => {
-      const response = await fetch(`/api/leads/${leadId}/comments`);
+      const response = await fetch(`/api/lead-comments?leadId=${leadId}`);
       if (!response.ok) {
         throw new Error("Failed to fetch lead comments");
       }
@@ -31,10 +31,10 @@ export function useCreateLeadComment() {
 
   return useMutation({
     mutationFn: async ({ leadId, comment, createdBy }: LeadCommentInput) => {
-      const response = await fetch(`/api/leads/${leadId}/comments`, {
+      const response = await fetch(`/api/lead-comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ comment, createdBy }),
+        body: JSON.stringify({ comment, createdBy, leadId }),
       });
 
       if (!response.ok) {

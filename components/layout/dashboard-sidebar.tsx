@@ -61,7 +61,7 @@ const defaultMenuItems: SidebarItem[] = [
   // },
   {
     id: "CRM",
-    label: "Sales Ops",
+    label: "Sales",
     href: "#",
     icon: Settings,
     children: [

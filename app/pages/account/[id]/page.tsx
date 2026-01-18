@@ -309,12 +309,12 @@ export default function AccountDetailPage() {
               </div>
             </div>
             <div className="px-4 py-5 flex gap-5 flex-wrap">
-              <button
+              {/* <button
                 onClick={() => setProjectInfoOpen(true)}
                 className="border-[#2563eb] flex items-center gap-1 text-[#2563eb] text-xs px-3 rounded-[4px] py-2  border hover:bg-[#2563eb] hover:text-white transition"
               >
                 Client Intake Form
-              </button>
+              </button> */}
             </div>
           </div>
         </div>

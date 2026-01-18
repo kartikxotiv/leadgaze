@@ -26,6 +26,23 @@ export interface OTPEmailData {
   expiresInMinutes: number;
 }
 
+export interface MeetingReminderData {
+  to: string;
+  meetingTitle: string;
+  meetingTime: string;
+  meetingLink?: string | null;
+  assignedUserName: string;
+  leadName?: string | null;
+}
+
+export interface ReminderEmailData {
+  to: string;
+  content: string;
+  remindAt: string;
+  recipientName: string;
+  leadName?: string | null;
+}
+
 export interface EmailOptions {
   to: string;
   subject: string;
@@ -37,18 +54,14 @@ class EmailService {
   private transporter: Transporter | null = null;
   private isConfigured = false;
 
-  constructor() {
-   
-  }
+  constructor() {}
 
-  
   async ensureInitialized(): Promise<void> {
     if (!this.isConfigured && !this.transporter) {
       await this.initializeTransporter();
     }
   }
 
-  
   private async initializeTransporter(): Promise<void> {
     try {
       const emailConfig = this.getEmailConfig();
@@ -62,7 +75,6 @@ class EmailService {
 
       this.transporter = createTransport(emailConfig);
 
-     
       await this.transporter.verify();
       this.isConfigured = true;
 
@@ -73,7 +85,6 @@ class EmailService {
     }
   }
 
-  
   private getEmailConfig(): EmailConfig | null {
     const {
       EMAIL_HOST,
@@ -81,14 +92,13 @@ class EmailService {
       EMAIL_SECURE,
       EMAIL_USER,
       EMAIL_PASS,
-     
+
       GMAIL_USER,
       GMAIL_PASS,
-     
+
       SENDGRID_API_KEY,
     } = process.env;
 
-   
     if (SENDGRID_API_KEY) {
       return {
         host: "smtp.sendgrid.net",
@@ -101,7 +111,6 @@ class EmailService {
       };
     }
 
-   
     if (GMAIL_USER && GMAIL_PASS) {
       return {
         host: "smtp.gmail.com",
@@ -114,7 +123,6 @@ class EmailService {
       };
     }
 
-   
     if (EMAIL_HOST && EMAIL_USER && EMAIL_PASS) {
       return {
         host: EMAIL_HOST,
@@ -130,7 +138,6 @@ class EmailService {
     return null;
   }
 
-  
   async sendEmail(options: EmailOptions): Promise<boolean> {
     if (!this.isConfigured || !this.transporter) {
       console.error("Email service not configured. Cannot send email.");
@@ -149,14 +156,8 @@ class EmailService {
       text: options.text,
     };
 
-    console.log("mailOptions", mailOptions);
-
     try {
       const info = await this.transporter.sendMail(mailOptions);
-      console.log(
-        `✅ Email sent successfully to ${options.to}:`,
-        info.messageId
-      );
       return true;
     } catch (error) {
       console.error(`❌ Failed to send email to ${options.to}:`, error);
@@ -164,12 +165,10 @@ class EmailService {
     }
   }
 
-  
   async sendRawEmail(options: EmailOptions): Promise<boolean> {
     return this.sendEmail(options);
   }
 
-  
   async sendInvitationEmail(
     email: string,
     invitationData: {
@@ -196,7 +195,6 @@ class EmailService {
     });
   }
 
-  
   private generatePasswordResetHTML(data: PasswordResetEmailData): string {
     const { firstName, lastName, resetUrl, expiresInHours, organizationName } =
       data;
@@ -352,7 +350,6 @@ class EmailService {
 </html>`;
   }
 
-  
   private generatePasswordResetText(data: PasswordResetEmailData): string {
     const { firstName, lastName, resetUrl, expiresInHours, organizationName } =
       data;
@@ -384,7 +381,6 @@ This email was sent from your CRM system. Please do not reply to this email.
 `;
   }
 
-  
   async sendPasswordResetEmail(
     email: string,
     resetData: PasswordResetEmailData
@@ -404,7 +400,6 @@ This email was sent from your CRM system. Please do not reply to this email.
     });
   }
 
-  
   async sendPasswordChangedEmail(
     email: string,
     firstName: string,
@@ -466,7 +461,6 @@ Thank you for keeping your account secure!
     });
   }
 
-  
   private generateOTPHTML(data: OTPEmailData): string {
     const { email, otp, purpose, expiresInMinutes } = data;
 
@@ -633,7 +627,6 @@ Thank you for keeping your account secure!
 </html>`;
   }
 
-  
   private generateOTPText(data: OTPEmailData): string {
     const { email, otp, purpose, expiresInMinutes } = data;
 
@@ -672,7 +665,6 @@ Sent to: ${email}
 `;
   }
 
-  
   async sendOTPEmail(data: OTPEmailData): Promise<boolean> {
     await this.ensureInitialized();
 
@@ -695,7 +687,182 @@ Sent to: ${email}
     });
   }
 
-  
+  async sendMeetingReminder(data: MeetingReminderData): Promise<boolean> {
+    await this.ensureInitialized();
+
+    const subject = `Reminder: ${data.meetingTitle} starts in 5 minutes`;
+    const html = this.generateMeetingReminderHTML(data);
+    const text = this.generateMeetingReminderText(data);
+
+    return this.sendEmail({
+      to: data.to,
+      subject,
+      html,
+      text,
+    });
+  }
+
+  async sendReminderEmail(data: ReminderEmailData): Promise<boolean> {
+    await this.ensureInitialized();
+    const subject = `Reminder: ${data.content?.slice(0, 60) || "Due"}`.trim();
+    const html = this.generateReminderEmailHTML(data);
+    const text = this.generateReminderEmailText(data);
+    return this.sendEmail({
+      to: data.to,
+      subject,
+      html,
+      text,
+    });
+  }
+
+  private generateMeetingReminderHTML(data: MeetingReminderData): string {
+    const {
+      meetingTitle,
+      meetingTime,
+      meetingLink,
+      assignedUserName,
+      leadName,
+    } = data;
+
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Reminder</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #3182ce; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: white; padding: 30px; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; }
+        .button { display: inline-block; background: #3182ce; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 20px; }
+        .info { margin-bottom: 10px; }
+        .info strong { color: #2d3748; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⏰ Meeting Starting Soon</h1>
+    </div>
+    <div class="content">
+        <p>Hello ${assignedUserName},</p>
+        <p>This is a reminder that your meeting is starting in 5 minutes.</p>
+        
+        <div class="info"><strong>Meeting:</strong> ${meetingTitle}</div>
+        <div class="info"><strong>Time:</strong> ${new Date(
+          meetingTime
+        ).toLocaleString()}</div>
+        ${
+          leadName
+            ? `<div class="info"><strong>Lead:</strong> ${leadName}</div>`
+            : ""
+        }
+        
+        ${
+          meetingLink
+            ? `
+        <div style="text-align: center;">
+            <a href="${meetingLink}" class="button">Join Meeting</a>
+        </div>
+        `
+            : ""
+        }
+        
+        <p style="margin-top: 30px; font-size: 14px; color: #718096;">
+            If you're having trouble with the button, you can use the link below: <br>
+            ${meetingLink || "No link provided"}
+        </p>
+    </div>
+</body>
+</html>`;
+  }
+
+  private generateMeetingReminderText(data: MeetingReminderData): string {
+    const {
+      meetingTitle,
+      meetingTime,
+      meetingLink,
+      assignedUserName,
+      leadName,
+    } = data;
+    return `
+Meeting Reminder
+
+Hello ${assignedUserName},
+
+This is a reminder that your meeting is starting in 5 minutes.
+
+Meeting: ${meetingTitle}
+Time: ${new Date(meetingTime).toLocaleString()}
+${leadName ? `Lead: ${leadName}` : ""}
+
+Join Meeting: ${meetingLink || "No link provided"}
+
+--
+Sent from Leadgaze CRM System.
+`;
+  }
+
+  private generateReminderEmailHTML(data: ReminderEmailData): string {
+    const { content, remindAt, recipientName, leadName } = data;
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reminder</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #10b981; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: white; padding: 30px; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; }
+        .info { margin-bottom: 10px; }
+        .info strong { color: #2d3748; }
+        .box { background: #f9fafb; padding: 16px; border-radius: 6px; border: 1px solid #e5e7eb; }
+    </style>
+    </head>
+<body>
+    <div class="header">
+        <h1>⏰ Reminder Due</h1>
+    </div>
+    <div class="content">
+        <p>Hello ${recipientName},</p>
+        <p class="info"><strong>Time:</strong> ${new Date(
+          remindAt
+        ).toLocaleString()}</p>
+        ${
+          leadName
+            ? `<p class="info"><strong>Lead:</strong> ${leadName}</p>`
+            : ""
+        }
+        <div class="box">
+            ${content}
+        </div>
+        <p style="margin-top: 30px; font-size: 14px; color: #718096;">
+            This is an automated message from Leadgaze CRM System.
+        </p>
+    </div>
+</body>
+</html>`;
+  }
+
+  private generateReminderEmailText(data: ReminderEmailData): string {
+    const { content, remindAt, recipientName, leadName } = data;
+    return `
+Reminder Due
+
+Hello ${recipientName},
+
+Time: ${new Date(remindAt).toLocaleString()}
+${leadName ? `Lead: ${leadName}` : ""}
+
+${content}
+
+--
+Sent from Leadgaze CRM System.
+`;
+  }
+
   async testEmailConfiguration(): Promise<boolean> {
     if (!this.isConfigured || !this.transporter) {
       return false;
