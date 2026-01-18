@@ -59,7 +59,9 @@ const registerUser = async (userData: {
   organizationName: string;
   setupQuestions?: any;
 }) => {
-  const response = await fetch("/api/auth/register", {
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  const endpoint = apiBaseUrl ? `${apiBaseUrl}/api/auth/register` : "/api/auth/register";
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -76,7 +78,15 @@ const registerUser = async (userData: {
 };
 
 const loginUser = async (credentials: { email: string; password: string }) => {
-  const response = await fetch("/api/auth/login", {
+  // Use live URL from environment variable
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  const loginEndpoint = apiBaseUrl 
+    ? `${apiBaseUrl}/api/auth/login` 
+    : "/api/auth/login";
+  
+  console.log("🌐 Login endpoint:", loginEndpoint);
+  
+  const response = await fetch(loginEndpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -93,7 +103,9 @@ const loginUser = async (credentials: { email: string; password: string }) => {
 };
 
 const switchOrganization = async (organizationId: string, token: string) => {
-  const response = await fetch("/api/auth/switch-organization", {
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  const endpoint = apiBaseUrl ? `${apiBaseUrl}/api/auth/switch-organization` : "/api/auth/switch-organization";
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -119,7 +131,9 @@ const createOrganization = async (organizationData: {
   primaryUseCase?: string;
   currentTool?: string;
 }) => {
-  const response = await fetch("/api/auth/organization", {
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  const endpoint = apiBaseUrl ? `${apiBaseUrl}/api/auth/organization` : "/api/auth/organization";
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

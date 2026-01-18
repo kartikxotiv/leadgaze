@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS public.contact_platforms (
+  id SERIAL PRIMARY KEY,
+  user_id UUID REFERENCES public.users(user_id) ON UPDATE CASCADE ON DELETE SET NULL,
+  workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON UPDATE CASCADE ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.contact_platforms ENABLE ROW LEVEL SECURITY;

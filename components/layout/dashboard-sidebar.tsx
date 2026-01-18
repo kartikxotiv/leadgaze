@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 
-
 import { OrganizationSwitcher } from "@/components/organization-switcher";
 import { WorkspaceSwitcher } from "@/components/workspaces/workspace-switcher";
 import { Button } from "@/components/ui/button";
@@ -30,10 +29,10 @@ import {
   ChevronDown,
   Plus,
   UserPlus,
-  } from "lucide-react";
+  Calendar,
+  ShieldAlert,
+} from "lucide-react";
 // import Image from "next/image";
-
-
 
 interface SidebarItem {
   id: string;
@@ -54,126 +53,143 @@ const logo = "/image/leadgaze.png";
 const logoicon = "/image/leadgaze_icon.png";
 
 const defaultMenuItems: SidebarItem[] = [
+  // {
+  //   id: "dashboard",
+  //   label: "Dashboard",
+  //   href: "/pages/dashboard",
+  //   icon: Home,
+  // },
   {
-    id: "dashboard",
-    label: "Dashboard",
-    href: "/pages/dashboard",
-    icon: Home,
-  },
-  {
-    id: "leads",
-    label: "Leads",
-    href: "/pages/leads",
-    icon: Users,
-   
-    badgeVariant: "secondary",
-  },
-  // {
-  //   id: "deals",
-  //   label: "Deals",
-  //   href: "/deals",
-  //   icon: Target,
-   
-    
-  //   badgeVariant: "default",
-  // },
-  // {
-  //   id: "tasks",
-  //   label: "Tasks",
-  //   href: "/tasks",
-  //   icon: CheckSquare,
-   
-  //   badgeVariant: "destructive",
-  // },
-  // {
-  //   id: "pipeline",
-  //   label: "Pipeline",
-  //   href: "/pages/pipeline",
-  //   icon: BarChart3,
-  // },
-  // {
-  //   id: "sales",
-  //   label: "sales",
-  //   href: "/pages/sales",
-  //   icon: BarChart3,
-  // },
-  // {
-  //   id: "Marketing",
-  //   label: "Marketing",
-  //   href: "/pages/Marketing",
-  //   icon: Megaphone,
-    
-  // },
+    id: "CRM",
+    label: "Sales",
+    href: "#",
+    icon: Settings,
+    children: [
+      {
+        id: "sales-contacts",
+        label: "Contacts",
+        href: "/pages/contacts",
+        icon: Users,
+      },
+      {
+        id: "sales-leads",
+        label: "Leads",
+        href: "/pages/sales-leads",
+        icon: UserPlus,
+      },
 
-  // {
-  //   id: "communications",
-  //   label: "Communications",
-  //   href: "/pages/communications",
-  //   icon: MessageSquare,
-  // },
-  
-  // {
-  //   id: "team",
-  //   label: "Team",
-  //   href: "/pages/team",
-  //   icon: Users,
-  // },
+      {
+        id: "opportunities",
+        label: "Opportunities",
+        href: "/pages/opportunities",
+        icon: BarChart3,
+      },
+      {
+        id: "account",
+        label: "Account",
+        href: "/pages/account",
+        icon: UserPlus,
+      },
+
+      // {
+      //   id: "companies",
+      //   label: "Companies",
+      //   href: "/pages/companies",
+      //   icon: Users,
+      // },
+      // {
+      //   id: "Contacts",
+      //   label: "Contacts",
+      //   href: "/pages/contacts",
+      //   icon: Plus,
+      // },
+      // {
+      //   id: "leads",
+      //   label: "Leads",
+      //   href: "/pages/leads",
+      //   icon: UserPlus,
+      // },
+      // {
+      //   id: "Deals",
+      //   label: "Deals",
+      //   href: "/pages/deals",
+      //   icon: UserPlus,
+      // },
+    ],
+  },
+  {
+    id: "tasks",
+    label: "Tasks",
+    href: "/pages/tasks",
+    icon: CheckSquare,
+    badgeVariant: "destructive",
+  },
   // {
   //   id: "reports",
   //   label: "Reports",
   //   href: "/pages/reports",
   //   icon: BarChart3,
   // },
-  
   // {
   //   id: "settings",
   //   label: "Settings",
   //   href: "/pages/settings",
   //   icon: Settings,
   //   children: [
-  //       {
-  //         id: "team-management",
-  //         label: "Sales Team",
-  //         href: "#",
-  //         icon: Users,
-  //         children: [
-  //           {
-  //             id: "create-organization",
-  //             label: "Create New Organization",
-  //             href: "/pages/settings/create-organization",
-  //             icon: Plus,
-  //           },
-  //           {
-  //             id: "manage-team",
-  //             label: "Manage Team",
-  //             href: "/pages/settings/manage-team",
-  //             icon: UserPlus,
-  //           },
-            
-  //         ],
-  //       },
-  //       {
-  //         id: "select-workspace",
-  //         label: "Select Workspace" ,
-  //         href: "#",
-  //         icon: Users,
-  //         children: [
-  //           {
-  //             id: "Create-Workspace",
-  //             label: "Create a Organization",
-  //             href: "/pages/settings/create-organization",
-  //             icon: Plus,
-  //           },
-  //           {
-  //             id: "manage-workspace",
-  //             label: "Manage Workspaces",
-  //             href: "/pages/settings/manage-team",
-  //             icon: UserPlus,
-  //           },           
-  //         ],
-  //       },
-  //   ],  
+  //     {
+  //       id: "team-management",
+  //       label: "Sales Team",
+  //       href: "#",
+  //       icon: Users,
+  //       children: [
+  //         {
+  //           id: "create-organization",
+  //           label: "Create New Organization",
+  //           href: "/pages/settings/create-organization",
+  //           icon: Plus,
+  //         },
+  //         {
+  //           id: "manage-team",
+  //           label: "Manage Team",
+  //           href: "/pages/settings/manage-team",
+  //           icon: UserPlus,
+  //         },
+  //       ],
+  //     },
+  //     {
+  //       id: "select-workspace",
+  //       label: "Select Workspace",
+  //       href: "#",
+  //       icon: Users,
+  //       children: [
+  //         {
+  //           id: "Create-Workspace",
+  //           label: "Create a Organization",
+  //           href: "/pages/settings/create-organization",
+  //           icon: Plus,
+  //         },
+  //         {
+  //           id: "manage-workspace",
+  //           label: "Manage Workspaces",
+  //           href: "/pages/settings/manage-team",
+  //           icon: UserPlus,
+  //         },
+  //       ],
+  //     },
+  //   ],
   // },
+  {
+    id: "roles",
+    label: "Roles",
+    href: "/pages/roles",
+    icon: ShieldAlert,
+  },
+  {
+    id: "add member",
+    label: "Team Member",
+    href: "/pages/team-member",
+    icon: UserPlus,
+  },
 ];
 
 export function DashboardSidebar({
@@ -185,16 +201,12 @@ export function DashboardSidebar({
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [openDropdowns, setOpenDropdowns] = useState<Set<string>>(new Set());
 
- 
   useEffect(() => {
-   
     localStorage.removeItem("sidebar-menu-order");
     setMenuItems(defaultMenuItems);
   }, []);
 
- 
   const saveMenuOrder = useCallback((items: SidebarItem[]) => {
-   
     const itemsToSave = items.map((item) => ({
       id: item.id,
       label: item.label,
@@ -205,7 +217,6 @@ export function DashboardSidebar({
     localStorage.setItem("sidebar-menu-order", JSON.stringify(itemsToSave));
   }, []);
 
- 
   const handleDragStart = useCallback((e: React.DragEvent, itemId: string) => {
     setDraggedItem(itemId);
     e.dataTransfer.effectAllowed = "move";
@@ -256,143 +267,210 @@ export function DashboardSidebar({
     [pathname]
   );
 
-  const toggleDropdown = useCallback((itemId: string) => {
-    setOpenDropdowns(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId);
-      } else {
-        newSet.add(itemId);
+  // Helper function to find parent IDs of a given item
+  const findParentIds = useCallback(
+    (itemId: string, items: SidebarItem[], path: string[] = []): string[] => {
+      for (const item of items) {
+        if (item.id === itemId) {
+          return path;
+        }
+        if (item.children && item.children.length > 0) {
+          const result = findParentIds(itemId, item.children, [
+            ...path,
+            item.id,
+          ]);
+          if (result.length > 0) {
+            return result;
+          }
+        }
       }
-      return newSet;
-    });
-  }, []);
+      return [];
+    },
+    []
+  );
 
- 
-  const renderMenuItem = useCallback((item: SidebarItem, level: number = 0) => {
-    const hasChildren = item.children && item.children.length > 0;
-    const isOpen = openDropdowns.has(item.id);
-    const marginLeft = level * 24;
+  // Auto-open parent dropdowns when a child route is active
+  useEffect(() => {
+    const findAndOpenParents = (
+      items: SidebarItem[],
+      path: string[] = []
+    ): string[] => {
+      for (const item of items) {
+        // Skip items with href="#"
+        if (item.href !== "#" && pathname.startsWith(item.href)) {
+          return path;
+        }
+        if (item.children && item.children.length > 0) {
+          const result = findAndOpenParents(item.children, [...path, item.id]);
+          if (
+            result.length > 0 ||
+            item.children.some(
+              (child) => child.href !== "#" && pathname.startsWith(child.href)
+            )
+          ) {
+            return result.length > 0 ? result : [...path, item.id];
+          }
+        }
+      }
+      return [];
+    };
 
-    return (
-      <div key={item.id} className="group relative">
-        {}
-        <div
-          draggable={!collapsed && !hasChildren}
-          onDragStart={(e) => handleDragStart(e, item.id)}
-          onDragOver={handleDragOver}
-          onDrop={(e) => handleDrop(e, item.id)}
-          className="group relative"
-        >
-          {hasChildren ? (
-            <button
-              onClick={() => toggleDropdown(item.id)}
-              className={`flex items-center gap-3 px-3 py-1 rounded-lg text-sm font-medium transition-colors w-full ${
-                isActive(item.href)
-                  ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
-              style={{ marginLeft: `${marginLeft}px` }}
-            >
-              {}
-              {/* {!collapsed && level === 0 && (
+    const parentIds = findAndOpenParents(menuItems);
+    if (parentIds.length > 0) {
+      setOpenDropdowns((prev) => {
+        // Only update if we need to add new parent IDs
+        const needsUpdate = parentIds.some((id) => !prev.has(id));
+        if (!needsUpdate) {
+          return prev; // No change needed
+        }
+        const newSet = new Set(prev);
+        parentIds.forEach((id) => newSet.add(id));
+        return newSet;
+      });
+    }
+  }, [pathname, menuItems]);
 
-                <GripVertical className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
-              
-              )} */}
+  const toggleDropdown = useCallback(
+    (itemId: string) => {
+      setOpenDropdowns((prev) => {
+        const newSet = new Set(prev);
+        // Only toggle the clicked dropdown, don't close it when clicking child links
+        if (newSet.has(itemId)) {
+          newSet.delete(itemId);
+          // Also close all child dropdowns when closing a parent
+          const parentIds = findParentIds(itemId, menuItems);
+          const itemsToRemove: string[] = [];
+          newSet.forEach((id) => {
+            const idParents = findParentIds(id, menuItems);
+            if (idParents.includes(itemId)) {
+              itemsToRemove.push(id);
+            }
+          });
+          itemsToRemove.forEach((id) => newSet.delete(id));
+        } else {
+          newSet.add(itemId);
+        }
+        return newSet;
+      });
+    },
+    [menuItems, findParentIds]
+  );
 
-              {}
-              {(() => {
-                const Icon = item.icon as React.ElementType;
-                return (
-                  <Icon
-                    className={`w-4 h-4 ${collapsed ? "mx-auto" : ""}`}
-                  />
-                );
-              })()}
+  const renderMenuItem = useCallback(
+    (item: SidebarItem, level: number = 0) => {
+      const hasChildren = item.children && item.children.length > 0;
+      const isOpen = openDropdowns.has(item.id);
+      const marginLeft = level * 24;
 
-              {}
-              {!collapsed && (
-                <div className="flex items-center justify-between flex-1 font-regular text-[12px]">
-                  <span>{item.label}</span>
-                  <div className="flex items-center gap-2">
+      return (
+        <div key={item.id} className="group relative">
+          {}
+          <div
+            draggable={!collapsed && !hasChildren}
+            onDragStart={(e) => handleDragStart(e, item.id)}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, item.id)}
+            className="group relative"
+          >
+            {hasChildren ? (
+              <button
+                onClick={() => toggleDropdown(item.id)}
+                className={`flex items-center  gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full ${
+                  isActive(item.href)
+                    ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+                style={{ marginLeft: `${marginLeft}px` }}
+              >
+                {(() => {
+                  const Icon = item.icon as React.ElementType;
+                  return (
+                    <Icon className={`w-4 h-4 ${collapsed ? "mx-auto" : ""}`} />
+                  );
+                })()}
+
+                {}
+                {!collapsed && (
+                  <div className="flex items-center justify-between flex-1 font-regular text-[12px]">
+                    <span>{item.label}</span>
+                    <div className="flex items-center gap-2">
+                      {item.badge && (
+                        <Badge
+                          variant={item.badgeVariant || "secondary"}
+                          className="text-xs"
+                        >
+                          {item.badge}
+                        </Badge>
+                      )}
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform ${
+                          isOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </div>
+                  </div>
+                )}
+              </button>
+            ) : (
+              <Link
+                href={item.href}
+                className={`flex items-center rounded-sm gap-3 px-3 py-2 uronded-lg text-sm font-medium transition-colors ${
+                  isActive(item.href)
+                    ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+                style={{ marginLeft: `${marginLeft}px` }}
+              >
+                {(() => {
+                  const Icon = item.icon as React.ElementType;
+                  return (
+                    <Icon className={`w-4 h-4 ${collapsed ? "mx-auto" : ""}`} />
+                  );
+                })()}
+
+                {}
+                {!collapsed && (
+                  <div className="flex items-center justify-between flex-1 font-regular text-[13px]">
+                    <span>{item.label}</span>
                     {item.badge && (
                       <Badge
                         variant={item.badgeVariant || "secondary"}
-                        className="text-xs"
+                        className="ml-auto text-xs"
                       >
                         {item.badge}
                       </Badge>
                     )}
-                    <ChevronDown 
-                      className={`w-4 h-4 transition-transform ${
-                        isOpen ? "rotate-180" : ""
-                      }`} 
-                    />
                   </div>
-                </div>
-              )}
-            </button>
-          ) : (
-            <Link
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                isActive(item.href)
-                  ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
-              style={{ marginLeft: `${marginLeft}px` }}
-            >
-              {}
-              {/* {!collapsed && level === 0 && (
-                <GripVertical className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
-              )} */}
+                )}
+              </Link>
+            )}
 
-              {}
-              {(() => {
-                const Icon = item.icon as React.ElementType;
-                return (
-                  <Icon
-                    className={`w-4 h-4 ${collapsed ? "mx-auto" : ""}`}
-                  />
-                );
-              })()}
+            {collapsed && (
+              <div className="absolute left-full ml-2 px-2 py-2 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                {item.label}
+                {item.badge && ` (${item.badge})`}
+              </div>
+            )}
+          </div>
 
-              {}
-              {!collapsed && (
-                <div className="flex items-center justify-between flex-1 font-regular text-[13px]">
-                  <span>{item.label}</span>
-                  {item.badge && (
-                    <Badge
-                      variant={item.badgeVariant || "secondary"}
-                      className="ml-auto text-xs"
-                    >
-                      {item.badge}
-                    </Badge>
-                  )}
-                </div>
-              )}
-            </Link>
-          )}
-
-          {}
-          {collapsed && (
-            <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-              {item.label}
-              {item.badge && ` (${item.badge})`}
+          {hasChildren && !collapsed && isOpen && (
+            <div className="space-y-1 mt-2">
+              {item.children!.map((child) => renderMenuItem(child, level + 1))}
             </div>
           )}
         </div>
-
-        {}
-        {hasChildren && !collapsed && isOpen && (
-          <div className="space-y-1">
-            {item.children!.map((child) => renderMenuItem(child, level + 1))}
-          </div>
-        )}
-      </div>
-    );
-  }, [collapsed, openDropdowns, isActive, toggleDropdown, handleDragStart, handleDragOver, handleDrop]);
+      );
+    },
+    [
+      collapsed,
+      openDropdowns,
+      isActive,
+      toggleDropdown,
+      handleDragStart,
+      handleDragOver,
+      handleDrop,
+    ]
+  );
 
   return (
     <div
@@ -410,22 +488,17 @@ export function DashboardSidebar({
             <span className="font-bold text-lg text-gray-900 dark:text-white">
               MyCRM  
             </span> */}
-               <Image src={logo} alt="Leadgaze CRM" width={150} height={45} />
+            <Image src={logo} alt="Leadgaze CRM" width={150} height={45} />
           </div>
-        )}  
+        )}
         {collapsed && (
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
             {/* <Zap className="w-5 h-5 text-white" /> */}
             <Image src={logoicon} alt="Leadgaze CRM" width={150} height={45} />
-            
           </div>
         )}
       </div>
 
-      {}
-      {}
-
-      {}
       <div className="flex-1 overflow-hidden">
         <SafeScrollArea className="h-full px-3 py-4">
           <nav className="space-y-1">
@@ -433,9 +506,6 @@ export function DashboardSidebar({
           </nav>
         </SafeScrollArea>
       </div>
-
-      {}
-      {}
     </div>
   );
 }

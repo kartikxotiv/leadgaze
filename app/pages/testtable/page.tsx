@@ -28,13 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { LeadDetailsSheet } from "@/components/leads/lead-details-sheet";
 import {
   EnhancedFilters,
   type FilterConfig,
@@ -504,7 +498,7 @@ export default function TestTablePage() {
           </DropdownMenu>
         ),
         ignoreRowClick: true,
-        allowOverflow: true,
+        allowoverflow: true,
         button: true,
         width: '100px',
         minWidth: '100px'
@@ -935,146 +929,29 @@ export default function TestTablePage() {
 
 
 
-      
-      <Sheet 
-        open={leadDetailsSheet.open} 
-        onOpenChange={(open) => setLeadDetailsSheet({ open, leadId: open ? leadDetailsSheet.leadId : undefined })}
-      >
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Lead Details</SheetTitle>
-            <SheetDescription className="text-[12px] !mt-[0px]">
-              View detailed information about the selected lead 
-            </SheetDescription>
-          </SheetHeader>
-          
-          <div className="mt-3 space-y-6">
-            {safeLeads.length > 0 ? (
-              // Get first lead as example or selected lead
-              (() => {
-                const selectedLead = leadDetailsSheet.leadId 
-                  ? safeLeads.find(lead => lead.leadId === leadDetailsSheet.leadId)
-                  : safeLeads[0];
-                
-                if (!selectedLead) return <p className="text-muted-foreground">No lead selected</p>;
-                
-                return (
-                  <div className="space-y-4">
-                    {/* Basic Information */}
-                    <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                      <h3 className="font-meidum text-base mb-1">Basic Information</h3>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Full Name</p>
-                          <p className="font-medium text-xs" >{selectedLead.firstName} {selectedLead.lastName}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Email</p>
-                          <p className="font-medium text-xs">{selectedLead.email || "Not provided"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Phone</p>
-                          <p className="font-medium text-xs">{selectedLead.phone || "Not provided"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Job Title</p>
-                          <p className="font-medium text-xs">{selectedLead.jobTitle || "Not provided"}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Company Information */}
-                    <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                      <h3 className="font-meidum text-base mb-1">Company Information</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Company Name</p>
-                          <p className="font-medium text-xs">{selectedLead.businessName || "Not provided"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Website</p>
-                          <p className="font-medium text-xs">{selectedLead.companyWebsite || "Not provided"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">LinkedIn</p>
-                          <p className="font-medium text-xs">{selectedLead.linkedinProfile || "Not provided"}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Lead Information */}
-                    <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                      <h3 className="font-meidum text-base mb-1">Lead Information</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Status</p>
-                          <p className="font-medium text-xs">
-                            {(() => {
-                              const status = statuses.find((s: any) => s.id === selectedLead.statusId);
-                              return status?.entityValue || "Unknown";
-                            })()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Source</p>
-                          <p className="font-medium text-xs">
-                            {(() => {
-                              const source = sources.find((s: any) => s.id === selectedLead.sourceId);
-                              return source?.entityValue || "Unknown";
-                            })()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Grade</p>
-                          <p className="font-medium text-xs">
-                            {(() => {
-                              const grade = grades.find((g: any) => g.id === selectedLead.scoreGradeId);
-                              return grade?.entityValue || "Ungraded";
-                            })()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Score</p>
-                          <p className="font-medium text-xs">{selectedLead.leadScore || 0}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Notes */}
-                    {selectedLead.qualificationNotes && (
-                      <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                        <h3 className="font-meidum text-base mb-1">Notes</h3>
-                        <p className="text-xs text-muted-foreground">{selectedLead.qualificationNotes}</p>
-                      </div>
-                    )}
-
-                    {/* Dates */}
-                    <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                      <h3 className="font-meidum text-base mb-1">Dates</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Created</p>
-                          <p className="font-medium text-xs">
-                            {new Date(selectedLead.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Last Updated</p>
-                          <p className="font-medium text-xs">
-                            {new Date(selectedLead.updatedAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()
-            ) : (
-              <p className="text-muted-foreground">No leads available to display</p>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+      <LeadDetailsSheet
+        open={leadDetailsSheet.open}
+        onOpenChange={(open) =>
+          setLeadDetailsSheet({
+            open,
+            leadId: open ? leadDetailsSheet.leadId : undefined,
+          })
+        }
+        lead={
+          leadDetailsSheet.leadId
+            ? safeLeads.find(
+                (lead) => lead.leadId === leadDetailsSheet.leadId
+              ) || null
+            : safeLeads.length > 0
+            ? safeLeads[0]
+            : null
+        }
+        configs={{
+          status: statuses,
+          source: sources,
+          score_grade: grades,
+        }}
+      />
 
       <BulkImportDialog
         open={bulkImportDialog}

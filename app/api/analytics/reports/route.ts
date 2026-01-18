@@ -1,6 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { User, Lead, Deal, Task, PipelineStage, LeadConfig } from "@/models";
-import { Op } from "sequelize";
+import { getUsers } from "@/lib/data/users";
+import { getLeads } from "@/lib/data/leads";
+import { getDeals } from "@/lib/data/deals";
+import { getTasksPaginated } from "@/lib/data/tasks";
+import { getLeadConfigByTypeAndValue } from "@/lib/data/lead-config";
+import { supabase } from "@/lib/supabase-client";
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,70 +37,67 @@ async function getTeamPerformanceReport(
   dateFrom?: string | null,
   dateTo?: string | null
 ) {
-  const users = await User.findAll({
-    attributes: ["userId", "firstName", "lastName", "email"],
-  });
+  // Get all users (or filter by organization if needed)
+  const allUsers = await getUsers();
 
   const performanceData = await Promise.all(
-    users.map(async (user) => {
-     
-      const dateFilter: any = {};
-      if (dateFrom) dateFilter[Op.gte] = new Date(dateFrom);
-      if (dateTo) dateFilter[Op.lte] = new Date(dateTo);
+    allUsers.map(async (user) => {
+      const userId = user.user_id;
 
-     
-      const userLeads = await Lead.findAll({
-        where: {
-          assignedTo: (user as any).userId,
-          ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
-        },
-      });
+      // Get user leads
+      let leadsQuery = supabase
+        .from('leads')
+        .select('*')
+        .eq('assigned_to', userId);
+      if (dateFrom) leadsQuery = leadsQuery.gte('created_at', new Date(dateFrom).toISOString());
+      if (dateTo) leadsQuery = leadsQuery.lte('created_at', new Date(dateTo).toISOString());
+      const { data: userLeads } = await leadsQuery;
 
-     
-      const userDeals = await Deal.findAll({
-        where: {
-          userId: (user as any).userId,
-          ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
-        },
-      });
+      // Get user deals
+      let dealsQuery = supabase
+        .from('deals')
+        .select('*')
+        .eq('user_id', userId);
+      if (dateFrom) dealsQuery = dealsQuery.gte('created_at', new Date(dateFrom).toISOString());
+      if (dateTo) dealsQuery = dealsQuery.lte('created_at', new Date(dateTo).toISOString());
+      const { data: userDeals } = await dealsQuery;
 
-     
-      const completedTasks = await Task.findAll({
-        where: {
-          assignedTo: (user as any).userId,
-          status: "Completed",
-          ...(Object.keys(dateFilter).length > 0 && {
-            completedAt: dateFilter,
-          }),
-        },
-      });
+      // Get completed tasks
+      let tasksQuery = supabase
+        .from('tasks')
+        .select('*')
+        .eq('assigned_to', userId)
+        .eq('status', 'Completed');
+      if (dateFrom) tasksQuery = tasksQuery.gte('completed_at', new Date(dateFrom).toISOString());
+      if (dateTo) tasksQuery = tasksQuery.lte('completed_at', new Date(dateTo).toISOString());
+      const { data: completedTasks } = await tasksQuery;
 
-     
-      const qualifiedStatus = await LeadConfig.findOne({
-        where: { entityType: "status", entityValue: "qualified" },
-      });
+      // Get qualified status
+      const qualifiedStatus = await getLeadConfigByTypeAndValue("status", "qualified");
 
+      const leads = (userLeads || []).map((lead: any) => ({
+        status_id: lead.status_id,
+        ...lead,
+      }));
       const convertedLeads = qualifiedStatus
-        ? userLeads.filter(
-            (lead: any) => lead.statusId === (qualifiedStatus as any).id
-          )
+        ? leads.filter((lead: any) => lead.status_id === qualifiedStatus.id)
         : [];
 
-      const totalDealValue = userDeals.reduce(
+      const totalDealValue = (userDeals || []).reduce(
         (sum: number, deal: any) => sum + (deal.value || 0),
         0
       );
 
       return {
-        user: `${(user as any).firstName} ${(user as any).lastName}`,
-        userId: (user as any).userId,
-        leadsAdded: userLeads.length,
+        user: `${user.first_name} ${user.last_name}`,
+        userId: user.user_id,
+        leadsAdded: leads.length,
         leadsConverted: convertedLeads.length,
-        conversionRate: userLeads.length
-          ? (convertedLeads.length / userLeads.length) * 100
+        conversionRate: leads.length
+          ? (convertedLeads.length / leads.length) * 100
           : 0,
         dealValue: totalDealValue,
-        tasksCompleted: completedTasks.length,
+        tasksCompleted: (completedTasks || []).length,
       };
     })
   );
@@ -111,34 +112,25 @@ async function getLeadSourcesReport(
   dateFrom?: string | null,
   dateTo?: string | null
 ) {
- 
-  const dateFilter: any = {};
-  if (dateFrom) dateFilter[Op.gte] = new Date(dateFrom);
-  if (dateTo) dateFilter[Op.lte] = new Date(dateTo);
-
-  const leads = await Lead.findAll({
-    where: {
-      ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
-    },
-    include: [
-      {
-        model: LeadConfig,
-        as: "sourceConfig",
-        attributes: ["entityValue"],
-      },
-      {
-        model: LeadConfig,
-        as: "statusConfig",
-        attributes: ["entityValue"],
-      },
-    ],
-  });
+  // Get all leads with source and status configs
+  let leadsQuery = supabase
+    .from('leads')
+    .select(`
+      *,
+      source_config:leads_config!leads_source_id_fkey(entity_value),
+      status_config:leads_config!leads_status_id_fkey(entity_value)
+    `);
+  
+  if (dateFrom) leadsQuery = leadsQuery.gte('created_at', new Date(dateFrom).toISOString());
+  if (dateTo) leadsQuery = leadsQuery.lte('created_at', new Date(dateTo).toISOString());
+  
+  const { data: leads } = await leadsQuery;
 
   const sourceMap = new Map();
 
-  leads.forEach((lead: any) => {
-    const source = lead.sourceConfig?.entityValue || "unknown";
-    const status = lead.statusConfig?.entityValue || "new";
+  (leads || []).forEach((lead: any) => {
+    const source = lead.source_config?.entity_value || "unknown";
+    const status = lead.status_config?.entity_value || "new";
 
     if (!sourceMap.has(source)) {
       sourceMap.set(source, {
@@ -151,7 +143,7 @@ async function getLeadSourcesReport(
 
     const sourceData = sourceMap.get(source);
     sourceData.leads++;
-    sourceData.totalValue += lead.dealValue || 0;
+    sourceData.totalValue += lead.deal_value || 0;
 
     if (status === "qualified") {
       sourceData.converted++;
@@ -170,7 +162,6 @@ async function getLeadSourcesReport(
 }
 
 async function getPipelineAnalysisReport() {
- 
   const stageNames = [
     "qualification",
     "proposal",
@@ -182,20 +173,24 @@ async function getPipelineAnalysisReport() {
 
   const pipelineData = await Promise.all(
     stageNames.map(async (stageName) => {
-      const stageDeals = await Deal.findAll({
-        where: { stage: stageName },
-      });
+      // Get deals by stage (using stage_id or stage field)
+      const { data: stageDeals } = await supabase
+        .from('deals')
+        .select('*')
+        .or(`stage_id.eq.${stageName},stage.eq.${stageName}`);
 
-      const totalValue = stageDeals.reduce(
+      const deals = stageDeals || [];
+
+      const totalValue = deals.reduce(
         (sum: number, deal: any) => sum + (deal.value || 0),
         0
       );
 
-      const avgProbability = stageDeals.length
-        ? stageDeals.reduce(
+      const avgProbability = deals.length
+        ? deals.reduce(
             (sum: number, deal: any) => sum + (deal.probability || 0),
             0
-          ) / stageDeals.length
+          ) / deals.length
         : 0;
 
       return {
@@ -203,7 +198,7 @@ async function getPipelineAnalysisReport() {
           stageName.charAt(0).toUpperCase() +
           stageName.slice(1).replace("_", " "),
         stageId: stageName,
-        count: stageDeals.length,
+        count: deals.length,
         totalValue,
         avgProbability,
       };
@@ -220,23 +215,17 @@ async function getConversionFunnelReport(
   dateFrom?: string | null,
   dateTo?: string | null
 ) {
- 
-  const dateFilter: any = {};
-  if (dateFrom) dateFilter[Op.gte] = new Date(dateFrom);
-  if (dateTo) dateFilter[Op.lte] = new Date(dateTo);
-
-  const leads = await Lead.findAll({
-    where: {
-      ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
-    },
-    include: [
-      {
-        model: LeadConfig,
-        as: "statusConfig",
-        attributes: ["entityValue"],
-      },
-    ],
-  });
+  let leadsQuery = supabase
+    .from('leads')
+    .select(`
+      *,
+      status_config:leads_config!leads_status_id_fkey(entity_value)
+    `);
+  
+  if (dateFrom) leadsQuery = leadsQuery.gte('created_at', new Date(dateFrom).toISOString());
+  if (dateTo) leadsQuery = leadsQuery.lte('created_at', new Date(dateTo).toISOString());
+  
+  const { data: leads } = await leadsQuery;
 
   const statusCounts = {
     new: 0,
@@ -246,8 +235,8 @@ async function getConversionFunnelReport(
     disqualified: 0,
   };
 
-  leads.forEach((lead: any) => {
-    const status = lead.statusConfig?.entityValue || "new";
+  (leads || []).forEach((lead: any) => {
+    const status = lead.status_config?.entity_value || "new";
     if (statusCounts.hasOwnProperty(status)) {
       statusCounts[status as keyof typeof statusCounts]++;
     }
@@ -256,7 +245,7 @@ async function getConversionFunnelReport(
   const funnelData = Object.entries(statusCounts).map(([status, count]) => ({
     stage: status.charAt(0).toUpperCase() + status.slice(1).replace("_", " "),
     count,
-    percentage: leads.length ? (count / leads.length) * 100 : 0,
+    percentage: leads?.length ? (count / leads.length) * 100 : 0,
   }));
 
   return NextResponse.json({

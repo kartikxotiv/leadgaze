@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
-import { Op } from "sequelize";
-import { Task, User, Lead, Deal } from "@/models";
+import { getTasksPaginated, createTask, getTaskById } from "@/lib/data/tasks";
 import type {
   CreateTaskRequest,
   TaskFilters,
@@ -34,78 +33,44 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
     const workspaceId = searchParams.get("workspaceId") || undefined;
 
-    const whereClause: any = {};
-    if (filters.status) whereClause.status = filters.status;
-    if (filters.priority) whereClause.priority = filters.priority;
-    if (filters.type) whereClause.type = filters.type;
-    if (filters.assigned_to) whereClause.assignedTo = filters.assigned_to;
-    if (filters.lead_id) whereClause.leadId = filters.lead_id;
-    if (filters.completed !== undefined) {
-      whereClause.status = filters.completed
-        ? "Completed"
-        : { [Op.ne]: "Completed" };
-    }
-    if (filters.search) {
-      whereClause[Op.or] = [
-        { title: { [Op.iLike]: `%${filters.search}%` } },
-        { description: { [Op.iLike]: `%${filters.search}%` } },
-      ];
-    }
+    // Build filters
+    const taskFilters: Record<string, any> = {};
+    if (filters.status) taskFilters.status = filters.status;
+    if (filters.priority) taskFilters.priority = filters.priority;
+    if (filters.type) taskFilters.type = filters.type;
+    if (filters.assigned_to) taskFilters.assigned_to = filters.assigned_to;
+    if (filters.lead_id) taskFilters.lead_id = filters.lead_id;
+    // Handle completed filter - need to query differently for this
+    // For now, we'll filter after fetching
 
-    const { count, rows } = await (Task as any).findAndCountAll({
-      where: whereClause,
-      include: [
-        {
-          model: User,
-          as: "assignedUser",
-          attributes: ["firstName", "lastName", "email"],
-        },
-        {
-          model: User,
-          as: "createdUser",
-          attributes: ["firstName", "lastName", "email"],
-        },
-        {
-          model: Lead,
-          as: "lead",
-          attributes: [
-            "leadId",
-            "firstName",
-            "lastName",
-            "businessName",
-            "metaData",
-          ],
-          required: false,
-        },
-        {
-          model: Deal,
-          as: "deal",
-          attributes: ["dealId", "title", "metadata"],
-          required: false,
-        },
-      ],
-      order: [
-        ["dueDate", "ASC"],
-        ["createdAt", "DESC"],
-      ],
+    const result = await getTasksPaginated(
+      Object.keys(taskFilters).length > 0 ? taskFilters : undefined,
+      page,
       limit,
-      offset,
-    });
+      filters.search
+    );
 
-   
-    let filteredRows = rows;
+    // Filter by completed status if specified
+    let filteredData = result.data;
+    if (filters.completed !== undefined) {
+      filteredData = filteredData.filter((t: any) => {
+        return filters.completed ? t.status === "Completed" : t.status !== "Completed";
+      });
+    }
+
+    // Filter by workspaceId if provided (client-side filtering for now)
     if (workspaceId) {
-      filteredRows = rows.filter((t: any) => {
-        const leadWs = t?.lead?.metaData?.workspaceId;
+      filteredData = filteredData.filter((t: any) => {
+        const leadWs = t?.lead?.metadata?.workspaceId;
         const dealWs = t?.deal?.metadata?.workspaceId;
         return leadWs === workspaceId || dealWs === workspaceId;
       });
     }
 
-    const total = workspaceId ? filteredRows.length : count || 0;
-    const pagedData = workspaceId
-      ? filteredRows.slice(0, limit)
-      : rows;
+    const total = (workspaceId || filters.completed !== undefined) ? filteredData.length : result.total;
+    const pagedData = (workspaceId || filters.completed !== undefined)
+      ? filteredData.slice((page - 1) * limit, page * limit)
+      : result.data;
 
     const response: PaginatedResponse<any> = {
       data: pagedData,
@@ -163,37 +128,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const payload: any = {
+    // Convert to snake_case
+    const taskData: any = {
       title: body.title,
       description: body.description || null,
       type: (body.type as any) || "Task",
       priority: (body.priority as any) || "Medium",
       status: (body.status as any) || "Pending",
-      dueDate: body.due_date ? new Date(body.due_date) : null,
-      leadId: body.lead_id || null,
-      dealId: body.deal_id || null,
-      assignedTo: body.assigned_to || null,
-      createdBy,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      due_date: body.due_date ? new Date(body.due_date).toISOString() : null,
+      lead_id: body.lead_id || null,
+      deal_id: body.deal_id || null,
+      assigned_to: body.assigned_to || null,
+      created_by: createdBy,
     };
 
-    const created = await (Task as any).create(payload);
-
-    const createdTask = await (Task as any).findByPk((created as any).taskId, {
-      include: [
-        {
-          model: User,
-          as: "assignedUser",
-          attributes: ["firstName", "lastName", "email"],
-        },
-        {
-          model: User,
-          as: "createdUser",
-          attributes: ["firstName", "lastName", "email"],
-        },
-      ],
-    });
+    const createdTask = await createTask(taskData);
 
     return NextResponse.json({
       data: createdTask,

@@ -1,0 +1,149 @@
+import { supabase } from "../supabase-client";
+import type { Database } from "../../database.types";
+
+export type LeadAssignee =
+  Database["public"]["Tables"]["leads_assignees"]["Row"];
+export type LeadAssigneeInsert =
+  Database["public"]["Tables"]["leads_assignees"]["Insert"];
+
+export type LeadAssigneeWithUser = LeadAssignee & {
+  user: {
+    user_id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+  assigned_by_user?: {
+    user_id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  } | null;
+};
+
+export async function getLeadAssignees(
+  leadId: string
+): Promise<LeadAssigneeWithUser[]> {
+  const { data, error } = await supabase
+    .from("leads_assignees")
+    .select(
+      `
+      *,
+      user:users!leads_assignees_user_id_fkey (
+        user_id,
+        first_name,
+        last_name,
+        email
+      ),
+      assigned_by_user:users!leads_assignees_assigned_by_fkey (
+        user_id,
+        first_name,
+        last_name,
+        email
+      )
+    `
+    )
+    .eq("lead_id", leadId)
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return (data as LeadAssigneeWithUser[]) ?? [];
+}
+
+export async function addLeadAssignee(
+  leadId: string,
+  userId: string,
+  assignedBy?: string
+): Promise<LeadAssignee> {
+  const { data: existing } = await supabase
+    .from("leads_assignees")
+    .select("id")
+    .eq("lead_id", leadId)
+    .eq("user_id", userId)
+    .single();
+
+  if (existing) {
+    throw new Error("User is already assigned to this lead");
+  }
+
+  const { data, error } = await supabase
+    .from("leads_assignees")
+    .insert([
+      {
+        lead_id: leadId,
+        user_id: userId,
+        assigned_by: assignedBy || null,
+      },
+    ])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as LeadAssignee;
+}
+
+export async function removeLeadAssignee(
+  leadId: string,
+  userId: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from("leads_assignees")
+    .delete()
+    .eq("lead_id", leadId)
+    .eq("user_id", userId);
+
+  if (error) throw error;
+  return true;
+}
+
+export async function updateLeadAssignees(
+  leadId: string,
+  userIds: string[],
+  assignedBy?: string
+): Promise<LeadAssigneeWithUser[]> {
+  await supabase.from("leads_assignees").delete().eq("lead_id", leadId);
+
+  if (userIds.length === 0) {
+    return [];
+  }
+
+  const inserts = userIds.map((userId) => ({
+    lead_id: leadId,
+    user_id: userId,
+    assigned_by: assignedBy || null,
+  }));
+
+  const { data, error } = await supabase
+    .from("leads_assignees")
+    .insert(inserts)
+    .select(
+      `
+      *,
+      user:users!leads_assignees_user_id_fkey (
+        user_id,
+        first_name,
+        last_name,
+        email
+      ),
+      assigned_by_user:users!leads_assignees_assigned_by_fkey (
+        user_id,
+        first_name,
+        last_name,
+        email
+      )
+    `
+    );
+
+  if (error) throw error;
+  return (data as LeadAssigneeWithUser[]) ?? [];
+}
+
+export async function getLeadsForUser(userId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("leads_assignees")
+    .select("lead_id")
+    .eq("user_id", userId);
+
+  if (error) throw error;
+  return data?.map((item) => item.lead_id) ?? [];
+}

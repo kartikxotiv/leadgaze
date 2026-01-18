@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 // Define protected and auth routes
 const protectedRoutes = [
   "/pages/dashboard",
-  "/pages/leads",
+
   "/pages/team",
   "/pages/deals",
   "/pages/tasks",
@@ -19,6 +19,15 @@ const protectedRoutes = [
   "/pipeline",
   "/communications",
   "/reports",
+  "/pages/companies",
+  "/pages/contacts",
+  "/pages/createworkspace",
+  "/pages/sales-leads",
+  "/pages/roles",
+  "/pages/add-member",
+  "/pages/account",
+  "/pages/opportunities",
+  "/page/team-member",
 ];
 const authRoutes = [
   "/pages/auth/sign-in",
@@ -27,7 +36,7 @@ const authRoutes = [
   "/pages/auth/reset-password",
 ];
 const publicRoutes = ["/auth/accept-invitation"];
-const welcomeRoutes = ["/pages/auth/sign-in"]; // Special handling for welcome page
+const welcomeRoutes = ["/pages/auth/sign-in"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

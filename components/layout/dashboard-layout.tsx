@@ -14,28 +14,26 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {}
-      <DashboardSidebar 
-        collapsed={sidebarCollapsed} 
+      <DashboardSidebar
+        collapsed={sidebarCollapsed}
         onCollapsedChange={setSidebarCollapsed}
       />
-      
+
       {}
-      <div 
+      <div
         className={`transition-all duration-300 ${
-          sidebarCollapsed ? 'ml-16' : 'ml-64'
+          sidebarCollapsed ? "ml-16" : "ml-64"
         }`}
       >
         {}
-        <DashboardHeader 
+        <DashboardHeader
           onMenuClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
         />
-        
+
         {}
-        <main className="p-2">
-          {children}
-        </main>
+        <main className="p-4">{children}</main>
       </div>
     </div>
   );
