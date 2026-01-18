@@ -1,10 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
-import { deleteLeadComment, updateLeadComment } from "@/lib/data/lead-comments";
+import { deleteLeadComment, getLeadCommentById, updateLeadComment } from "@/lib/data/lead-comments";
 
 interface RouteContext {
   params: {
     commentId: string;
   };
+}
+
+export async function GET(_request: NextRequest, { params }: RouteContext) {
+  try {
+    const { commentId } = params;
+    if (!commentId) {
+      return NextResponse.json(
+        { success: false, error: "Comment id is required" },
+        { status: 400 }
+      );
+    }
+
+    const comment = await getLeadCommentById(commentId);
+    if (!comment) {
+      return NextResponse.json(
+        { success: false, error: "Comment not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, data: comment });
+  } catch (error: any) {
+    console.error("Error fetching lead comment:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error?.message ?? "Failed to fetch lead comment",
+      },
+      { status: 500 }
+    );
+  }
 }
 
 export async function PUT(request: NextRequest, { params }: RouteContext) {

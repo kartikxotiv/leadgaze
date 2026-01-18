@@ -29,9 +29,6 @@ DROP TABLE IF EXISTS public.users_config CASCADE;
 DROP FUNCTION IF EXISTS public.prt_sync_reset_token() CASCADE;
 DROP FUNCTION IF EXISTS public.update_updated_at_column() CASCADE;
 
--- Drop triggers
-DROP TRIGGER IF EXISTS prt_sync_reset_token_trg ON public.password_reset_tokens;
-
 -- Drop all enum types
 DROP TYPE IF EXISTS public.activity_related_type CASCADE;
 DROP TYPE IF EXISTS public.activity_type CASCADE;
