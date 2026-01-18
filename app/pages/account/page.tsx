@@ -182,8 +182,8 @@ export default function AccountPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Accounts</h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <h1 className="text-2xl font-mediu tracking-tight">Accounts</h1>
+            <p className="text-sm text-muted-foreground">
               {totalAccounts > 0
                 ? `${totalAccounts} ${
                     totalAccounts === 1 ? "account" : "accounts"
@@ -210,7 +210,7 @@ export default function AccountPage() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-              <h3 className="text-lg font-semibold mb-2">
+              <h3 className="text-lg font-medium mb-2">
                 Error Loading Accounts
               </h3>
               <p className="text-sm text-muted-foreground text-center max-w-md">
@@ -223,7 +223,7 @@ export default function AccountPage() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Building2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Accounts Yet</h3>
+              <h3 className="text-lg font-medium mb-2">No Accounts Yet</h3>
               <p className="text-sm text-muted-foreground text-center max-w-md">
                 You don't have any accounts yet. Convert a lead to "won" status
                 to see it here as an account.

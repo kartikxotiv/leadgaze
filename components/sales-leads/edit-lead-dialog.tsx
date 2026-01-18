@@ -1,6 +1,6 @@
 "use client";
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { LeadDetailsSection } from "./lead-details-section";
 import { LeadCommentSection } from "./lead-comment-section";
 import type { FormData } from "@/lib/constants/sales-leads";
@@ -110,6 +110,9 @@ export function EditLeadDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="min-w-[90%] p-0">
+        <div className="sr-only">
+          <DialogTitle>{previewLeadDisplayName || "Lead Details"}</DialogTitle>
+        </div>
         <div className="bg-white rounded-lg shadow-xl min-w-[80%] h-[90vh] overflow-hidden flex flex-col relative">
           <div className="flex-1 overflow-hidden flex">
             <div className="flex-1 relative">
