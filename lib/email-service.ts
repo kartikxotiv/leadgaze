@@ -1,5 +1,5 @@
-import nodemailer from "nodemailer";
-import { createTransport, Transporter } from "nodemailer";
+import { transporter } from "./mail";
+import { type Transporter } from "nodemailer";
 
 interface EmailConfig {
   host: string;
@@ -51,116 +51,39 @@ export interface EmailOptions {
 }
 
 class EmailService {
-  private transporter: Transporter | null = null;
-  private isConfigured = false;
-
   constructor() {}
 
-  async ensureInitialized(): Promise<void> {
-    if (!this.isConfigured && !this.transporter) {
-      await this.initializeTransporter();
-    }
-  }
-
-  private async initializeTransporter(): Promise<void> {
-    try {
-      const emailConfig = this.getEmailConfig();
-
-      if (!emailConfig) {
-        console.warn(
-          "Email service not configured. Email sending will be disabled."
-        );
-        return;
-      }
-
-      this.transporter = createTransport(emailConfig);
-
-      await this.transporter.verify();
-      this.isConfigured = true;
-
-      console.log("✅ Email service initialized successfully");
-    } catch (error) {
-      console.error("❌ Failed to initialize email service:", error);
-      this.isConfigured = false;
-    }
-  }
-
-  private getEmailConfig(): EmailConfig | null {
-    const {
-      EMAIL_HOST,
-      EMAIL_PORT,
-      EMAIL_SECURE,
-      EMAIL_USER,
-      EMAIL_PASS,
-
-      GMAIL_USER,
-      GMAIL_PASS,
-
-      SENDGRID_API_KEY,
-    } = process.env;
-
-    if (SENDGRID_API_KEY) {
-      return {
-        host: "smtp.sendgrid.net",
-        port: 587,
-        secure: false,
-        auth: {
-          user: "apikey",
-          pass: SENDGRID_API_KEY,
-        },
-      };
-    }
-
-    if (GMAIL_USER && GMAIL_PASS) {
-      return {
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false,
-        auth: {
-          user: GMAIL_USER,
-          pass: GMAIL_PASS,
-        },
-      };
-    }
-
-    if (EMAIL_HOST && EMAIL_USER && EMAIL_PASS) {
-      return {
-        host: EMAIL_HOST,
-        port: parseInt(EMAIL_PORT || "587"),
-        secure: EMAIL_SECURE === "true",
-        auth: {
-          user: EMAIL_USER,
-          pass: EMAIL_PASS,
-        },
-      };
-    }
-
-    return null;
-  }
-
   async sendEmail(options: EmailOptions): Promise<boolean> {
-    if (!this.isConfigured || !this.transporter) {
-      console.error("Email service not configured. Cannot send email.");
-      return false;
-    }
-
     const fromEmail =
-      process.env.EMAIL_FROM || process.env.GMAIL_USER || "noreply@yourcrm.com";
+      process.env.SMTP_FROM ||
+      process.env.EMAIL_FROM ||
+      process.env.SMTP_USER ||
+      process.env.EMAIL_USER ||
+      "noreply@yourcrm.com";
     const fromName = process.env.EMAIL_FROM_NAME || "CRM System";
 
-    const mailOptions = {
-      from: `"${fromName}" <${fromEmail}>`,
-      to: options.to,
-      subject: options.subject,
-      html: options.html,
-      text: options.text,
-    };
-
     try {
-      const info = await this.transporter.sendMail(mailOptions);
+      await new Promise((resolve, reject) => {
+        transporter.sendMail(
+          {
+            from: `"${fromName}" <${fromEmail}>`,
+            to: options.to,
+            subject: options.subject,
+            html: options.html,
+            text: options.text,
+          },
+          (err, info) => {
+            if (err) {
+              console.error(`❌ Failed to send email to ${options.to}:`, err);
+              reject(err);
+            } else {
+              resolve(info);
+            }
+          },
+        );
+      });
       return true;
     } catch (error) {
-      console.error(`❌ Failed to send email to ${options.to}:`, error);
       return false;
     }
   }
@@ -178,10 +101,8 @@ class EmailService {
       inviteUrl: string;
       message?: string;
       expiryDays?: number;
-    }
+    },
   ): Promise<boolean> {
-    await this.ensureInitialized();
-
     const subject = `You're invited to join ${invitationData.organizationName}`;
 
     const { renderInviteEmail } = await import("./emails/invite");
@@ -326,8 +247,8 @@ class EmailService {
             <div class="security-notice">
                 <p><strong>🛡️ Security Notice:</strong></p>
                 <p>• This link will expire in ${expiresInHours} hour${
-      expiresInHours !== 1 ? "s" : ""
-    }</p>
+                  expiresInHours !== 1 ? "s" : ""
+                }</p>
                 <p>• The link can only be used once</p>
                 <p>• If you didn't request this reset, please ignore this email</p>
             </div>
@@ -383,7 +304,7 @@ This email was sent from your CRM system. Please do not reply to this email.
 
   async sendPasswordResetEmail(
     email: string,
-    resetData: PasswordResetEmailData
+    resetData: PasswordResetEmailData,
   ): Promise<boolean> {
     const subject = `Reset Your Password - ${
       resetData.organizationName || "CRM System"
@@ -404,7 +325,7 @@ This email was sent from your CRM system. Please do not reply to this email.
     email: string,
     firstName: string,
     lastName: string,
-    organizationName?: string
+    organizationName?: string,
   ): Promise<boolean> {
     const subject = `Password Changed Successfully - ${
       organizationName || "CRM System"
@@ -666,8 +587,6 @@ Sent to: ${email}
   }
 
   async sendOTPEmail(data: OTPEmailData): Promise<boolean> {
-    await this.ensureInitialized();
-
     const purposeTitle =
       {
         signup: "Email Verification Code",
@@ -688,8 +607,6 @@ Sent to: ${email}
   }
 
   async sendMeetingReminder(data: MeetingReminderData): Promise<boolean> {
-    await this.ensureInitialized();
-
     const subject = `Reminder: ${data.meetingTitle} starts in 5 minutes`;
     const html = this.generateMeetingReminderHTML(data);
     const text = this.generateMeetingReminderText(data);
@@ -703,7 +620,6 @@ Sent to: ${email}
   }
 
   async sendReminderEmail(data: ReminderEmailData): Promise<boolean> {
-    await this.ensureInitialized();
     const subject = `Reminder: ${data.content?.slice(0, 60) || "Due"}`.trim();
     const html = this.generateReminderEmailHTML(data);
     const text = this.generateReminderEmailText(data);
@@ -750,7 +666,7 @@ Sent to: ${email}
         
         <div class="info"><strong>Meeting:</strong> ${meetingTitle}</div>
         <div class="info"><strong>Time:</strong> ${new Date(
-          meetingTime
+          meetingTime,
         ).toLocaleString()}</div>
         ${
           leadName
@@ -828,7 +744,7 @@ Sent from Leadgaze CRM System.
     <div class="content">
         <p>Hello ${recipientName},</p>
         <p class="info"><strong>Time:</strong> ${new Date(
-          remindAt
+          remindAt,
         ).toLocaleString()}</p>
         ${
           leadName
@@ -864,12 +780,8 @@ Sent from Leadgaze CRM System.
   }
 
   async testEmailConfiguration(): Promise<boolean> {
-    if (!this.isConfigured || !this.transporter) {
-      return false;
-    }
-
     try {
-      await this.transporter.verify();
+      await transporter.verify();
       return true;
     } catch (error) {
       console.error("Email configuration test failed:", error);
