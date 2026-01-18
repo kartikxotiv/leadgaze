@@ -118,12 +118,12 @@ export function useSalesContactTableColumns({
         selector: (row: any) => row.business_linkedin || "",
         sortable: true,
       },
-      // {
-      //   id: "business_name",
-      //   name: "Business Name",
-      //   selector: (row: any) => row.business_name || "",
-      //   sortable: true,
-      // },
+      {
+        id: "business_name",
+        name: "Business Name",
+        selector: (row: any) => row.business_label || "",
+        sortable: true,
+      },
       {
         id: "comment",
         name: "Comment",
@@ -258,7 +258,7 @@ export function useSalesContactTableColumns({
           );
         },
         ignoreRowClick: true,
-        allowOverflow: true,
+        allowoverflow: true,
         button: true,
       },
     ];

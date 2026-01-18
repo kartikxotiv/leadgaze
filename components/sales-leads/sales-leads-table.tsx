@@ -76,7 +76,7 @@ export function SalesLeadsTable({
   if (tableData.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center text-sm text-muted-foreground">
-        No sales leads yet. Add your first lead to get started.
+        No leads yet. Add your first lead to get started.
       </div>
     );
   }

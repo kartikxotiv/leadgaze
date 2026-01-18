@@ -124,7 +124,12 @@ export function LeadDetailsSection({
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                {STATUS_OPTIONS.map((option) => (
+                {(previewLead?.status === "opportunities"
+                  ? STATUS_OPTIONS.filter(
+                      (opt) => opt.value === "won" || opt.value === "lost"
+                    )
+                  : STATUS_OPTIONS
+                ).map((option) => (
                   <DropdownMenuItem
                     key={option.value}
                     onClick={() => onEditFormChange("status", option.value)}
