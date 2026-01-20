@@ -515,6 +515,7 @@ export default function OpportunitiesPage() {
         isSubmitting={actionsHook.createLeadCommentMutation.isPending ?? false}
         isDeleting={actionsHook.deleteLeadCommentMutation.isPending ?? false}
         isEditing={actionsHook.updateLeadCommentMutation.isPending ?? false}
+        isOpportunityPage={true}
       />
 
       <AddLeadSidebar
@@ -636,7 +637,7 @@ export default function OpportunitiesPage() {
         workspaceId={workspaceId}
         onImportComplete={handleImportComplete}
         token={token || undefined}
-        initialTab={importExportTab}
+        defaultTab={importExportTab}
       />
     </DashboardLayout>
   );

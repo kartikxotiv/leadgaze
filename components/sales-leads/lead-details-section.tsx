@@ -73,6 +73,7 @@ export interface LeadDetailsSectionProps {
   onUpdate: () => void;
   isUpdating: boolean;
   submitButtonText?: string;
+  isOpportunityPage?: boolean;
 }
 
 export function LeadDetailsSection({
@@ -100,6 +101,7 @@ export function LeadDetailsSection({
   onUpdate,
   isUpdating,
   submitButtonText = "Update Lead",
+  isOpportunityPage = false,
 }: LeadDetailsSectionProps) {
   const [tabSelected, setTabSelected] = useState<TabValue>("notes");
 
@@ -126,9 +128,9 @@ export function LeadDetailsSection({
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                {(previewLead?.status === "opportunities"
+                {(isOpportunityPage
                   ? STATUS_OPTIONS.filter(
-                      (opt) => opt.value === "won" || opt.value === "lost",
+                      (opt) => opt.value !== "qualified_lead",
                     )
                   : STATUS_OPTIONS.filter(
                       (opt) =>

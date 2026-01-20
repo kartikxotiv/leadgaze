@@ -55,6 +55,7 @@ export interface EditLeadDialogProps {
   isDeleting: boolean;
   isEditing: boolean;
   submitButtonText?: string;
+  isOpportunityPage?: boolean;
 }
 
 export function EditLeadDialog({
@@ -96,6 +97,7 @@ export function EditLeadDialog({
   isDeleting,
   isEditing,
   submitButtonText,
+  isOpportunityPage = false,
 }: EditLeadDialogProps) {
   if (!previewLead) {
     return (
@@ -151,6 +153,7 @@ export function EditLeadDialog({
                 onUpdate={onUpdate}
                 isUpdating={isUpdating}
                 submitButtonText={submitButtonText}
+                isOpportunityPage={isOpportunityPage}
               />
             </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
@@ -32,10 +32,6 @@ interface SalesLeadsPageContainerProps {
 export function SalesLeadsPageContainer({
   pageHook,
 }: SalesLeadsPageContainerProps) {
-  const [importExportTab, setImportExportTab] = useState<"import" | "export">(
-    "import",
-  );
-
   const {
     workspaceId,
     token,
@@ -302,6 +298,7 @@ export function SalesLeadsPageContainer({
         isSubmitting={actionsHook.createLeadCommentMutation.isPending ?? false}
         isDeleting={actionsHook.deleteLeadCommentMutation.isPending ?? false}
         isEditing={actionsHook.updateLeadCommentMutation.isPending ?? false}
+        isOpportunityPage={false}
       />
 
       <AddLeadSidebar
