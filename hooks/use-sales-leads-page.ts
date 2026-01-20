@@ -38,12 +38,15 @@ export function useSalesLeadsPage() {
   const [addSalesLeadSidebarOpen, setAddSalesLeadSidebarOpen] = useState(false);
   const [previewLead, setPreviewLead] = useState<any | null>(null);
   const [importExportDialogOpen, setImportExportDialogOpen] = useState(false);
+  const [importExportTab, setImportExportTab] = useState<"import" | "export">(
+    "import",
+  );
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [meetingDialogOpen, setMeetingDialogOpen] = useState(false);
   const [meetingDetailsDialogOpen, setMeetingDetailsDialogOpen] =
     useState(false);
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(
-    null
+    null,
   );
   const [meetingDeleteDialog, setMeetingDeleteDialog] = useState<{
     open: boolean;
@@ -79,15 +82,15 @@ export function useSalesLeadsPage() {
   const canViewSalesLeads = useWorkspaceRoutePermission("Sales Leads", "view");
   const canCreateSalesLeads = useWorkspaceRoutePermission(
     "Sales Leads",
-    "create"
+    "create",
   );
   const canUpdateSalesLeads = useWorkspaceRoutePermission(
     "Sales Leads",
-    "update"
+    "update",
   );
   const canDeleteSalesLeads = useWorkspaceRoutePermission(
     "Sales Leads",
-    "delete"
+    "delete",
   );
 
   // Data Hook
@@ -98,7 +101,7 @@ export function useSalesLeadsPage() {
     previewLead?.id,
     undefined, // statusFilter
     dateRange,
-    searchTerm
+    searchTerm,
   );
 
   const hasAssignedLeads = dataHook.salesLeads && dataHook.salesLeads.count > 0;
@@ -167,7 +170,7 @@ export function useSalesLeadsPage() {
   });
   const businessOptions = useMemo(
     () => businessesData?.data ?? [],
-    [businessesData?.data]
+    [businessesData?.data],
   );
 
   // Table Column Definitions
@@ -187,7 +190,7 @@ export function useSalesLeadsPage() {
       { id: "comment", label: "Comment" },
       { id: "updated_at", label: "Updated" },
     ],
-    []
+    [],
   );
 
   // Handlers
@@ -195,7 +198,7 @@ export function useSalesLeadsPage() {
     (lead: any) => {
       actionsHook.handlePreviewLead(lead, setIsLoadingPreview);
     },
-    [actionsHook]
+    [actionsHook],
   );
 
   const handlePageChange = useCallback((nextPage: number) => {
@@ -207,14 +210,14 @@ export function useSalesLeadsPage() {
       setPageSize(nextRowsPerPage);
       setPage(nextPage);
     },
-    []
+    [],
   );
 
   const handleToggleColumn = useCallback((columnId: string) => {
     setVisibleColumns((prev) =>
       prev.includes(columnId)
         ? prev.filter((id) => id !== columnId)
-        : [...prev, columnId]
+        : [...prev, columnId],
     );
   }, []);
 
@@ -227,10 +230,10 @@ export function useSalesLeadsPage() {
       queryClient.invalidateQueries({ queryKey: ["sales-leads"] });
       setPage(1);
       toast.success(
-        `Import completed: ${results.successful} successful, ${results.failed} failed, ${results.duplicates} duplicates`
+        `Import completed: ${results.successful} successful, ${results.failed} failed, ${results.duplicates} duplicates`,
       );
     },
-    [queryClient]
+    [queryClient],
   );
 
   const handleDeleteMeeting = useCallback(
@@ -244,7 +247,7 @@ export function useSalesLeadsPage() {
         toast.error(error?.message || "Failed to delete meeting");
       }
     },
-    [deleteMeetingMutation]
+    [deleteMeetingMutation],
   );
 
   const handleAddBusinessClick = useCallback(() => {
@@ -259,7 +262,7 @@ export function useSalesLeadsPage() {
       }
       formHook.handleFormChange("businessId", value);
     },
-    [formHook.handleFormChange, handleAddBusinessClick]
+    [formHook.handleFormChange, handleAddBusinessClick],
   );
 
   const handleDateRangeChange = useCallback((range: DateRange | null) => {
@@ -325,6 +328,8 @@ export function useSalesLeadsPage() {
     addSalesLeadSidebarOpen,
     importExportDialogOpen,
     setImportExportDialogOpen,
+    importExportTab,
+    setImportExportTab,
     noteDialogOpen,
     setNoteDialogOpen,
     meetingDialogOpen,

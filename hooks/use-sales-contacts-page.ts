@@ -168,6 +168,9 @@ export function useSalesContactsPage() {
   const [addSalesContactSidebarOpen, setAddSalesContactSidebarOpen] =
     useState(false);
   const [importExportDialogOpen, setImportExportDialogOpen] = useState(false);
+  const [importExportTab, setImportExportTab] = useState<"import" | "export">(
+    "import",
+  );
   const [addBusinessDialogOpen, setAddBusinessDialogOpen] = useState(false);
   const [previewContact, setPreviewContact] = useState<any | null>(null);
 
@@ -395,6 +398,8 @@ export function useSalesContactsPage() {
     addSalesContactSidebarOpen,
     importExportDialogOpen,
     setImportExportDialogOpen,
+    importExportTab,
+    setImportExportTab,
     addBusinessDialogOpen,
     setAddBusinessDialogOpen,
     addPlatformDialog,

@@ -192,7 +192,9 @@ export function useSalesContactActions({
           id: contactId,
           data: { status: "moved_to_lead" },
         });
-        toast.success("Sales contact moved to Sales Leads successfully!");
+        toast.success(
+          "Contact moved to Lead successfully. You can view it in the Leads page",
+        );
 
         setPreviewContact((prev: any) => {
           if (!prev || prev.id !== contact.id) {
@@ -257,7 +259,7 @@ export function useSalesContactActions({
           id: contactId,
           data: { status: "rejected" },
         });
-        toast.success("Sales contact rejected successfully!");
+        toast.success("Contact rejected successfully!");
 
         setPreviewContact((prev: any) => {
           if (!prev || prev.id !== contact.id) {
@@ -304,9 +306,9 @@ export function useSalesContactActions({
       if (!salesContactId) return;
       try {
         await deleteSalesContactMutation.mutateAsync(salesContactId);
-        toast.success("Sales contact deleted successfully");
+        toast.success("Contact deleted successfully");
       } catch (err: any) {
-        toast.error(err?.message || "Failed to delete sales contact");
+        toast.error(err?.message || "Failed to delete contact");
         throw err;
       }
     },
@@ -480,7 +482,7 @@ export function useSalesContactActions({
 
       try {
         await createSalesContactMutation.mutateAsync(payload);
-        toast.success("Sales contact created successfully!");
+        toast.success("Contact saved success fully");
         resetFormState();
         if (saveAndExit) {
           setAddSalesContactSidebarOpen(false);
@@ -566,7 +568,7 @@ export function useSalesContactActions({
         id: String(contactId),
         data: payload,
       });
-      toast.success("Sales contact updated successfully!");
+      toast.success("Contact saved success fully");
       setPreviewContact((prev: any) => {
         if (!prev) return prev;
         const platformLabel =

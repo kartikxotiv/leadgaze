@@ -263,7 +263,7 @@ export function useSalesContactTableColumns({
         },
         ignoreRowClick: true,
         allowoverflow: true,
-        button: true,
+        center: "true",
       },
     ];
 
