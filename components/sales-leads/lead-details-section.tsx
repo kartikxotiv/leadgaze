@@ -56,7 +56,7 @@ export interface LeadDetailsSectionProps {
   platformsLoading: boolean;
   onEditFormChange: <K extends keyof FormData>(
     field: K,
-    value: FormData[K]
+    value: FormData[K],
   ) => void;
   onEditPlatformSelectChange: (value: string) => void;
   onEditPrioritySelectChange: (value: string) => void;
@@ -126,9 +126,12 @@ export function LeadDetailsSection({
               <DropdownMenuContent align="start">
                 {(previewLead?.status === "opportunities"
                   ? STATUS_OPTIONS.filter(
-                      (opt) => opt.value === "won" || opt.value === "lost"
+                      (opt) => opt.value === "won" || opt.value === "lost",
                     )
-                  : STATUS_OPTIONS
+                  : STATUS_OPTIONS.filter(
+                      (opt) =>
+                        !["qualified_lead", "won", "lost"].includes(opt.value),
+                    )
                 ).map((option) => (
                   <DropdownMenuItem
                     key={option.value}
@@ -153,12 +156,12 @@ export function LeadDetailsSection({
                 editFormData.priorityId !== NO_SELECTION_VALUE ? (
                   (() => {
                     const selectedPriority = priorityOptions.find(
-                      (p) => p.id === editFormData.priorityId
+                      (p) => p.id === editFormData.priorityId,
                     );
                     if (selectedPriority) {
                       const priorityColor = resolvePriorityColor(
                         selectedPriority.name,
-                        selectedPriority.color
+                        selectedPriority.color,
                       );
                       return (
                         <div className="flex items-center gap-2 w-full">
@@ -200,7 +203,7 @@ export function LeadDetailsSection({
                         style={{
                           color: resolvePriorityColor(
                             priority.name,
-                            priority.color
+                            priority.color,
                           ),
                         }}
                       />
@@ -231,8 +234,8 @@ export function LeadDetailsSection({
                     platformsLoading
                       ? "Loading platforms..."
                       : platformOptions.length === 0
-                      ? "No saved platforms"
-                      : "Select a platform"
+                        ? "No saved platforms"
+                        : "Select a platform"
                   }
                 />
               </SelectTrigger>
