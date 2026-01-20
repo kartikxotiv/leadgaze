@@ -97,6 +97,28 @@ export async function POST(request: NextRequest) {
       return parsed;
     }
 
+    const mapStatus = (status?: string): any => {
+      if (!status) return "opportunities";
+      const normalized = status.toLowerCase().trim().replace(/\s+/g, "_");
+
+      const validStatuses = [
+        "opportunities",
+        "in_progress",
+        "won",
+        "lost",
+        "qualified_lead",
+      ];
+      if (validStatuses.includes(normalized)) {
+        return normalized;
+      }
+
+      // Handle common label variations
+      if (normalized === "progress") return "in_progress";
+      if (normalized === "qualified") return "qualified_lead";
+
+      return "opportunities"; // default
+    };
+
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const rowIdx = i + 1;
@@ -188,9 +210,7 @@ export async function POST(request: NextRequest) {
           phone_number: normalizedPhone,
           location: safeStringTrim(row.location),
           contact_time_zone: null,
-          status: (row.status || "opportunities").toLowerCase() as
-            | "opportunities"
-            | "in_progress",
+          status: mapStatus(row.status),
           workspace_id: workspaceId,
           platform: platformId,
           priority: priorityId,

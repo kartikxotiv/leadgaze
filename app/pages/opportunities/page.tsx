@@ -140,7 +140,7 @@ export default function OpportunitiesPage() {
     page,
     pageSize,
     previewLead?.id,
-    "opportunities",
+    ["opportunities", "won"],
   );
 
   const hasAssignedLeads = dataHook.salesLeads && dataHook.salesLeads.count > 0;
@@ -498,6 +498,7 @@ export default function OpportunitiesPage() {
         onCancel={() => actionsHook.handlePreviewDialogOpenChange(false)}
         onUpdate={actionsHook.handleUpdateSubmit}
         isUpdating={actionsHook.isUpdating}
+        submitButtonText="Update Opportunity"
         leadComments={dataHook.leadComments}
         leadCommentsLoading={dataHook.leadCommentsLoading}
         currentUser={{

@@ -21,7 +21,7 @@ export interface EditLeadDialogProps {
   platformsLoading: boolean;
   onEditFormChange: <K extends keyof FormData>(
     field: K,
-    value: FormData[K]
+    value: FormData[K],
   ) => void;
   onEditPlatformSelectChange: (value: string) => void;
   onEditPrioritySelectChange: (value: string) => void;
@@ -54,6 +54,7 @@ export interface EditLeadDialogProps {
   isSubmitting: boolean;
   isDeleting: boolean;
   isEditing: boolean;
+  submitButtonText?: string;
 }
 
 export function EditLeadDialog({
@@ -94,6 +95,7 @@ export function EditLeadDialog({
   isSubmitting,
   isDeleting,
   isEditing,
+  submitButtonText,
 }: EditLeadDialogProps) {
   if (!previewLead) {
     return (
@@ -148,6 +150,7 @@ export function EditLeadDialog({
                 onCancel={onCancel}
                 onUpdate={onUpdate}
                 isUpdating={isUpdating}
+                submitButtonText={submitButtonText}
               />
             </div>
 
