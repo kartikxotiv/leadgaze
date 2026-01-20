@@ -20,17 +20,7 @@ export function ReminderCard({
 }: ReminderCardProps) {
   const parseDateSafe = (input?: string): Date | null => {
     if (!input) return null;
-    let s = input.trim();
-    if (s.includes(" ") && !s.includes("T")) {
-      s = s.replace(" ", "T");
-    }
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) {
-      s = `${s}:00`;
-    }
-    if (!/[zZ]/.test(s) && !/[+-]\d{2}(:?\d{2})?$/.test(s)) {
-      s = `${s}Z`;
-    }
-    const d = new Date(s);
+    const d = new Date(input);
     return isNaN(d.getTime()) ? null : d;
   };
 
