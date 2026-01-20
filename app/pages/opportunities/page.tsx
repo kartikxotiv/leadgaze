@@ -108,7 +108,6 @@ export default function OpportunitiesPage() {
     "delete",
   );
 
-  // Filter by status = "opportunities"
   const dataHook = useSalesLeadsData(
     workspaceId,
     page,
