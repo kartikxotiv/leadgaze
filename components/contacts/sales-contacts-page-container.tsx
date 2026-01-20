@@ -207,7 +207,7 @@ export function SalesContactsPageContainer({
       <BulkImportExportDialog
         open={importExportDialogOpen}
         onOpenChange={setImportExportDialogOpen}
-        title="Import / Export Sales Contacts"
+        title="Import / Export Contacts"
         description="Import contacts from Excel/CSV files or export existing contacts"
         importFields={importFields}
         importApiEndpoint="/api/contacts/import"
