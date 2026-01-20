@@ -50,7 +50,7 @@ export function UnifiedTasksList({ className }: UnifiedTasksListProps) {
 
   // Sub-tabs: today, overdue, upcoming
   const [activeTab, setActiveTab] = useState<"today" | "overdue" | "upcoming">(
-    "today"
+    "today",
   );
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -320,7 +320,9 @@ export function UnifiedTasksList({ className }: UnifiedTasksListProps) {
 
     const todayTasks = meetingTasks.filter((task) => {
       if (task.time) {
-        return isToday(new Date(task.time)) && task.status.toUpperCase() !== "DONE";
+        return (
+          isToday(new Date(task.time)) && task.status.toUpperCase() !== "DONE"
+        );
       }
       return false;
     });
@@ -353,10 +355,16 @@ export function UnifiedTasksList({ className }: UnifiedTasksListProps) {
   }, [tasks]);
 
   const stats = {
-    total: tasks.length,
-    notes: tasks.filter((t) => t.type === "note").length,
-    meetings: tasks.filter((t) => t.type === "meeting").length,
-    tasks: tasks.filter((t) => t.type === "task").length,
+    total: tasks.filter((t) => t.status.toUpperCase() !== "DONE").length,
+    notes: tasks.filter(
+      (t) => t.type === "note" && t.status.toUpperCase() !== "DONE",
+    ).length,
+    meetings: tasks.filter(
+      (t) => t.type === "meeting" && t.status.toUpperCase() !== "DONE",
+    ).length,
+    tasks: tasks.filter(
+      (t) => t.type === "task" && t.status.toUpperCase() !== "DONE",
+    ).length,
     new: tasks.filter((t) => t.status.toUpperCase() === "NEW").length,
     inProgress: tasks.filter((t) => t.status.toUpperCase() === "INPROGRESS")
       .length,
@@ -369,7 +377,7 @@ export function UnifiedTasksList({ className }: UnifiedTasksListProps) {
       setSelectedTaskType(taskType);
       setShowAssigneeDialog(true);
     },
-    []
+    [],
   );
 
   const handleDialogClose = useCallback(() => {
@@ -424,11 +432,15 @@ export function UnifiedTasksList({ className }: UnifiedTasksListProps) {
                   "flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors",
                   mainTab === "meetings"
                     ? "bg-purple-100 text-purple-900 dark:bg-purple-900 dark:text-purple-100"
-                    : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700",
                 )}
               >
                 <Calendar className="h-4 w-4" />
-                Meetings ({meetingCounts.today + meetingCounts.overdue + meetingCounts.upcoming})
+                Meetings (
+                {meetingCounts.today +
+                  meetingCounts.overdue +
+                  meetingCounts.upcoming}
+                )
               </button>
               <button
                 onClick={() => {
@@ -439,11 +451,18 @@ export function UnifiedTasksList({ className }: UnifiedTasksListProps) {
                   "flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors",
                   mainTab === "notes"
                     ? "bg-blue-100 text-blue-900 dark:bg-blue-900 dark:text-blue-100"
-                    : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700",
                 )}
               >
                 <FileText className="h-4 w-4" />
-                Notes ({tasks.filter((t) => t.type === "note").length})
+                Notes (
+                {
+                  tasks.filter(
+                    (t) =>
+                      t.type === "note" && t.status.toUpperCase() !== "DONE",
+                  ).length
+                }
+                )
               </button>
             </div>
           </div>
