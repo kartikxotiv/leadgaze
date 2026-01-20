@@ -202,7 +202,7 @@ export function SalesLeadsPageContainer({
         itemId={deleteDialog.salesLeadId}
         onConfirm={actionsHook.confirmDeleteSalesLead}
         isLoading={actionsHook.deleteSalesLeadMutation.isPending}
-        title="Delete Sales Lead"
+        title="Delete Lead"
       />
 
       <EditLeadDialog
