@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { useWorkspaceContext } from "@/hooks/use-workspace-context";
 import {
   useWorkspacePermissions,
@@ -29,23 +29,23 @@ export function useSalesContactsPage() {
   // Permissions
   const canViewSalesContacts = useWorkspaceRoutePermission(
     "Sales Contacts",
-    "view"
+    "view",
   );
   const canCreateSalesContacts = useWorkspaceRoutePermission(
     "Sales Contacts",
-    "create"
+    "create",
   );
   const canUpdateSalesContacts = useWorkspaceRoutePermission(
     "Sales Contacts",
-    "update"
+    "update",
   );
   const canDeleteSalesContacts = useWorkspaceRoutePermission(
     "Sales Contacts",
-    "delete"
+    "delete",
   );
   const isSalesContactsVisible = useWorkspaceRoutePermission(
     "Sales Contacts",
-    "visible"
+    "visible",
   );
 
   // Pagination & Filters
@@ -86,18 +86,18 @@ export function useSalesContactsPage() {
         platformName: open ? (prev.open ? prev.platformName : "") : "",
         error: "",
         targetForm: open
-          ? targetForm ?? prev.targetForm ?? "add"
-          : prev.targetForm ?? "add",
+          ? (targetForm ?? prev.targetForm ?? "add")
+          : (prev.targetForm ?? "add"),
       }));
     },
-    []
+    [],
   );
 
   const handleAddPlatformDialogPlatformNameChange = useCallback(
     (platformName: string) => {
       setAddPlatformDialog((prev) => ({ ...prev, platformName, error: "" }));
     },
-    []
+    [],
   );
 
   // Data Fetching
@@ -118,7 +118,7 @@ export function useSalesContactsPage() {
   });
   const businessOptions = useMemo(
     () => businessesData?.data ?? [],
-    [businessesData?.data]
+    [businessesData?.data],
   );
 
   const platformNameMap = useMemo(() => {
@@ -147,12 +147,11 @@ export function useSalesContactsPage() {
       ...contact,
       company_label: contact.company_id ?? "",
       platform_label: contact.platform
-        ? platformNameMap.get(contact.platform) ?? `ID ${contact.platform}`
+        ? (platformNameMap.get(contact.platform) ?? `ID ${contact.platform}`)
         : "",
-      business_label:
-        contact.business_id
-          ? businessNameMap.get(String(contact.business_id)) ?? ""
-          : contact.business_name ?? "",
+      business_label: contact.business_id
+        ? (businessNameMap.get(String(contact.business_id)) ?? "")
+        : (contact.business_name ?? ""),
       status_label: formatStatus(contact.status),
       created_at_label: formatDateTime(contact.created_at),
       updated_at_label: formatDateTime(contact.updated_at),
@@ -186,6 +185,33 @@ export function useSalesContactsPage() {
     "linkedin_url",
     "status",
   ]);
+  const [isColumnInitialized, setIsColumnInitialized] = useState(false);
+
+  // Load columns from local storage on mount
+  useEffect(() => {
+    const savedColumns = localStorage.getItem("sales_contacts_visible_columns");
+    if (savedColumns) {
+      try {
+        const parsed = JSON.parse(savedColumns);
+        if (Array.isArray(parsed)) {
+          setVisibleColumns(parsed);
+        }
+      } catch (e) {
+        console.error("Failed to parse saved columns", e);
+      }
+    }
+    setIsColumnInitialized(true);
+  }, []);
+
+  // Save columns to local storage whenever they change
+  useEffect(() => {
+    if (isColumnInitialized) {
+      localStorage.setItem(
+        "sales_contacts_visible_columns",
+        JSON.stringify(visibleColumns),
+      );
+    }
+  }, [visibleColumns, isColumnInitialized]);
 
   // Form Management
   const formHook = useSalesContactForm();
@@ -250,7 +276,7 @@ export function useSalesContactsPage() {
       { id: "linkedin_url", label: "LinkedIn URL" },
       { id: "status", label: "Status" },
     ],
-    []
+    [],
   );
 
   // Handlers
@@ -266,14 +292,14 @@ export function useSalesContactsPage() {
       setPageSize(nextRowsPerPage);
       setPage(nextPage);
     },
-    []
+    [],
   );
 
   const handleToggleColumn = useCallback((columnId: string) => {
     setVisibleColumns((prev) =>
       prev.includes(columnId)
         ? prev.filter((id) => id !== columnId)
-        : [...prev, columnId]
+        : [...prev, columnId],
     );
   }, []);
 
@@ -285,10 +311,10 @@ export function useSalesContactsPage() {
     (results: ImportResult) => {
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
       toast.success(
-        `Import completed: ${results.successful} successful, ${results.failed} failed, ${results.duplicates} duplicates`
+        `Import completed: ${results.successful} successful, ${results.failed} failed, ${results.duplicates} duplicates`,
       );
     },
-    [queryClient]
+    [queryClient],
   );
 
   const handleAddBusinessClick = useCallback(() => {
@@ -303,7 +329,7 @@ export function useSalesContactsPage() {
       }
       handleFormChange("businessId", value);
     },
-    [handleFormChange, handleAddBusinessClick]
+    [handleFormChange, handleAddBusinessClick],
   );
 
   const handleDateRangeChange = useCallback((range: DateRange | null) => {
