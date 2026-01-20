@@ -268,7 +268,7 @@ export function SalesLeadFormFields({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="businessId">Business</Label>
+              <Label htmlFor="businessId">Business Name</Label>
               {businessOptions.length === 0 && !businessesLoading ? (
                 <div className="space-y-2">
                   <div className="text-sm text-muted-foreground mb-2">
@@ -298,8 +298,8 @@ export function SalesLeadFormFields({
                           businessesLoading
                             ? "Loading businesses..."
                             : businessOptions.length === 0
-                            ? "No businesses available"
-                            : "Select a business"
+                              ? "No businesses available"
+                              : "Select a business"
                         }
                       />
                       <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
@@ -386,12 +386,12 @@ export function SalesLeadFormFields({
                   {data.priorityId && data.priorityId !== NO_SELECTION_VALUE ? (
                     (() => {
                       const selectedPriority = priorityOptions.find(
-                        (p) => p.id === data.priorityId
+                        (p) => p.id === data.priorityId,
                       );
                       if (selectedPriority) {
                         const priorityColor = resolvePriorityColor(
                           selectedPriority.name,
-                          selectedPriority.color
+                          selectedPriority.color,
                         );
                         return (
                           <div className="flex items-center gap-2 w-full">
@@ -436,7 +436,7 @@ export function SalesLeadFormFields({
                           style={{
                             color: resolvePriorityColor(
                               priority.name,
-                              priority.color
+                              priority.color,
                             ),
                           }}
                         />
@@ -461,8 +461,8 @@ export function SalesLeadFormFields({
                       platformsLoading
                         ? "Loading platforms..."
                         : platformOptions.length === 0
-                        ? "No saved platforms"
-                        : "Select a platform"
+                          ? "No saved platforms"
+                          : "Select a platform"
                     }
                   />
                   <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
