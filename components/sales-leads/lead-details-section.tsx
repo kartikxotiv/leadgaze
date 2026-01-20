@@ -128,10 +128,7 @@ export function LeadDetailsSection({
                   ? STATUS_OPTIONS.filter(
                       (opt) => opt.value === "won" || opt.value === "lost",
                     )
-                  : STATUS_OPTIONS.filter(
-                      (opt) =>
-                        !["qualified_lead", "won", "lost"].includes(opt.value),
-                    )
+                  : STATUS_OPTIONS
                 ).map((option) => (
                   <DropdownMenuItem
                     key={option.value}
