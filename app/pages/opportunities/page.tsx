@@ -257,6 +257,34 @@ export default function OpportunitiesPage() {
     visibleColumns,
   });
 
+  const filteredExportFields = useMemo(() => {
+    return exportFields.filter((field) => {
+      if (field.key === "first_name" || field.key === "last_name") {
+        return true;
+      }
+
+      // Map export field keys to table column IDs
+      const fieldToColumnMap: Record<string, string> = {
+        email: "email",
+        phone_display: "phone_number",
+        location: "Location",
+        alternative_email: "alternative_email",
+        alternative_phone_number: "alternative_phone_number",
+        business_name: "business_name",
+        business_linkedin: "business_linkedin",
+        business_contact: "business_contact",
+        linkedin_url: "linkedin_url",
+        comment: "comment",
+        status_label: "status",
+        platform_label: "platform",
+        priority_label: "priority",
+      };
+
+      const columnId = fieldToColumnMap[field.key] || field.key;
+      return visibleColumns.includes(columnId);
+    });
+  }, [visibleColumns]);
+
   if (isLoadingPermissions && !permissionsData) {
     return (
       <DashboardLayout>
@@ -574,7 +602,7 @@ export default function OpportunitiesPage() {
         importSampleData={importSampleData}
         importFileName="opportunities"
         exportData={dataHook.tableData}
-        exportFields={exportFields}
+        exportFields={filteredExportFields}
         exportFileName="opportunities"
         exportDataTransform={exportDataTransform}
         workspaceId={workspaceId}

@@ -73,7 +73,7 @@ export interface BulkImportExportDialogProps {
   exportData?: any[]; // Data to export
   exportFields: FieldDefinition[];
   exportFileName?: string; // e.g., "sales-contacts"
-  exportDataTransform?: (row: any) => any[]; // Transform function for export
+  exportDataTransform?: (row: any) => any[] | Record<string, any>; // Transform function for export
 
   // Additional props
   workspaceId?: string;
@@ -367,7 +367,17 @@ export function BulkImportExportDialog({
 
       let data: any[][];
       if (exportDataTransform) {
-        data = exportData.map((row) => exportDataTransform(row));
+        data = exportData.map((row) => {
+          const transformed = exportDataTransform(row);
+          if (Array.isArray(transformed)) {
+            return transformed;
+          }
+          // If it's an object, map it to the exportFields in order
+          return exportFields.map((field) => {
+            const value = transformed[field.key];
+            return value !== undefined && value !== null ? String(value) : "";
+          });
+        });
       } else {
         data = exportData.map((row) => {
           return exportFields.map((field) => {
