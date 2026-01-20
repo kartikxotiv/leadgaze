@@ -163,7 +163,7 @@ export function SalesContactFormFields({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="phoneNumber">Phone Number *</Label>
-            <div className="relative">
+            <div className="relative z-50">
               <PhoneInput
                 country={"in"}
                 value={data.phoneNumber}
@@ -190,7 +190,7 @@ export function SalesContactFormFields({
             <Label htmlFor="alternativePhoneNumber">
               Alternative Phone Number
             </Label>
-            <div className="relative">
+            <div className="relative z-40">
               <PhoneInput
                 country={"in"}
                 value={data.alternativePhoneNumber}
@@ -213,7 +213,7 @@ export function SalesContactFormFields({
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 relative z-30">
             <Label htmlFor="location">Select country</Label>
             <CountrySelect
               value={data.location}
@@ -247,7 +247,7 @@ export function SalesContactFormFields({
                 </Button>
               </div>
             ) : (
-              <div className="relative">
+              <div className="relative z-20">
                 <Building2 className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2 z-10" />
                 <Select
                   value={data.businessId}
