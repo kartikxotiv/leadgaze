@@ -376,7 +376,7 @@ export function SalesLeadsPageContainer({
       <BulkImportExportDialog
         open={importExportDialogOpen}
         onOpenChange={setImportExportDialogOpen}
-        title="Import / Export Sales Leads"
+        title="Import / Export Leads"
         description="Import leads from Excel/CSV files or export existing leads"
         importFields={importFields}
         importApiEndpoint="/api/sales-leads/import"
