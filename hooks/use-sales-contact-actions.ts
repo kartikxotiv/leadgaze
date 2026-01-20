@@ -192,7 +192,9 @@ export function useSalesContactActions({
           id: contactId,
           data: { status: "moved_to_lead" },
         });
-        toast.success("Sales contact moved to Sales Leads successfully!");
+        toast.success(
+          "Contact moved to Lead successfully. You can view it in the Leads page",
+        );
 
         setPreviewContact((prev: any) => {
           if (!prev || prev.id !== contact.id) {
