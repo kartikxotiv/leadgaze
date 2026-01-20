@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useState } from "react";
 import { useSalesContactTableColumns } from "@/components/contacts/sales-contact-table-columns";
 import {
   EditContactSidebar,
@@ -26,6 +26,10 @@ interface SalesContactsPageContainerProps {
 export function SalesContactsPageContainer({
   pageHook,
 }: SalesContactsPageContainerProps) {
+  const [importExportTab, setImportExportTab] = useState<"import" | "export">(
+    "import",
+  );
+
   const {
     workspaceId,
     token,
@@ -258,7 +262,7 @@ export function SalesContactsPageContainer({
         workspaceId={workspaceId}
         onImportComplete={handleImportComplete}
         token={token || undefined}
-        initialTab={importExportTab}
+        defaultTab={importExportTab}
       />
     </>
   );

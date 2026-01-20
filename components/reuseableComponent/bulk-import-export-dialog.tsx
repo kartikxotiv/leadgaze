@@ -81,7 +81,7 @@ export interface BulkImportExportDialogProps {
   onImportComplete?: (results: ImportResult) => void;
   onExportComplete?: () => void;
   token?: string;
-  initialTab?: "import" | "export";
+  defaultTab?: "import" | "export";
 }
 
 export function BulkImportExportDialog({
@@ -102,15 +102,15 @@ export function BulkImportExportDialog({
   onImportComplete,
   onExportComplete,
   token,
-  initialTab = "import",
+  defaultTab = "import",
 }: BulkImportExportDialogProps) {
-  const [activeTab, setActiveTab] = useState<"import" | "export">(initialTab);
+  const [activeTab, setActiveTab] = useState<"import" | "export">(defaultTab);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (open) {
-      setActiveTab(initialTab);
+      setActiveTab(defaultTab);
     }
-  }, [open, initialTab]);
+  }, [open, defaultTab]);
 
   // Simplified Import States
   const [file, setFile] = useState<File | null>(null);

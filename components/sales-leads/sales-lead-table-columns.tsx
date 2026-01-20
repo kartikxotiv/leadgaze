@@ -245,7 +245,6 @@ export function useSalesLeadTableColumns({
         },
         ignoreRowClick: true,
         allowoverflow: true,
-        center: "true",
       },
     ];
 

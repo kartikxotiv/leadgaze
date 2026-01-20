@@ -16,7 +16,7 @@ export interface AddLeadSidebarProps {
   errors: Record<keyof FormData, string>;
   onFormChange: <K extends keyof FormData>(
     field: K,
-    value: FormData[K]
+    value: FormData[K],
   ) => void;
   onPlatformSelectChange: (value: string) => void;
   onPrioritySelectChange: (value: string) => void;
@@ -57,8 +57,8 @@ export function AddLeadSidebar({
     <SidebarPanel
       open={open}
       onOpenChange={onOpenChange}
-      title="Add Sales Lead"
-      description="Add a new sales lead to your workspace"
+      title="Add Lead"
+      description="Add a new lead to your workspace"
     >
       <div className="space-y-6">
         <CardContent className="p-1">
