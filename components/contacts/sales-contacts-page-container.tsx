@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { useSalesContactTableColumns } from "@/components/contacts/sales-contact-table-columns";
 import {
   EditContactSidebar,
@@ -25,6 +26,10 @@ interface SalesContactsPageContainerProps {
 export function SalesContactsPageContainer({
   pageHook,
 }: SalesContactsPageContainerProps) {
+  const [importExportTab, setImportExportTab] = useState<"import" | "export">(
+    "import",
+  );
+
   const {
     workspaceId,
     token,
@@ -97,8 +102,14 @@ export function SalesContactsPageContainer({
         onDateRangeClear={handleDateRangeClear}
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange}
-        onImportClick={() => setImportExportDialogOpen(true)}
-        onExportClick={() => setImportExportDialogOpen(true)}
+        onImportClick={() => {
+          setImportExportTab("import");
+          setImportExportDialogOpen(true);
+        }}
+        onExportClick={() => {
+          setImportExportTab("export");
+          setImportExportDialogOpen(true);
+        }}
         canImport={!!workspaceId}
         canExport={!!tableData && tableData.length > 0}
         tableColumnDefinitions={tableColumnDefinitions}
@@ -220,6 +231,7 @@ export function SalesContactsPageContainer({
         workspaceId={workspaceId}
         onImportComplete={handleImportComplete}
         token={token || undefined}
+        defaultTab={importExportTab}
       />
     </>
   );

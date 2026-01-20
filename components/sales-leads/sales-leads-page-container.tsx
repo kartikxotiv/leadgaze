@@ -1,4 +1,6 @@
 "use client";
+
+import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
@@ -30,6 +32,10 @@ interface SalesLeadsPageContainerProps {
 export function SalesLeadsPageContainer({
   pageHook,
 }: SalesLeadsPageContainerProps) {
+  const [importExportTab, setImportExportTab] = useState<"import" | "export">(
+    "import",
+  );
+
   const {
     workspaceId,
     token,
@@ -143,8 +149,14 @@ export function SalesLeadsPageContainer({
         onDateRangeClear={handleDateRangeClear}
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange}
-        onImportClick={() => setImportExportDialogOpen(true)}
-        onExportClick={() => setImportExportDialogOpen(true)}
+        onImportClick={() => {
+          setImportExportTab("import");
+          setImportExportDialogOpen(true);
+        }}
+        onExportClick={() => {
+          setImportExportTab("export");
+          setImportExportDialogOpen(true);
+        }}
         canImport={!!workspaceId}
         canExport={!!dataHook.tableData && dataHook.tableData.length > 0}
         tableColumnDefinitions={tableColumnDefinitions}
@@ -389,6 +401,7 @@ export function SalesLeadsPageContainer({
         workspaceId={workspaceId}
         onImportComplete={handleImportComplete}
         token={token || undefined}
+        defaultTab={importExportTab}
       />
     </>
   );
