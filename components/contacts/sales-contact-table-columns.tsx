@@ -58,7 +58,8 @@ export function useSalesContactTableColumns({
       {
         id: "phone_number",
         name: "Phone Number",
-        selector: (row: any) => row.phone_number || "",
+        selector: (row: any) =>
+          row.phone_number ? `+${row.phone_number}` : "",
         sortable: true,
       },
       {
@@ -103,7 +104,10 @@ export function useSalesContactTableColumns({
       {
         id: "alternative_phone_number",
         name: "Alternative Phone Number",
-        selector: (row: any) => row.alternative_phone_number || "",
+        selector: (row: any) =>
+          row.alternative_phone_number
+            ? `+${row.alternative_phone_number}`
+            : "",
         sortable: true,
       },
       // {
@@ -244,7 +248,7 @@ export function useSalesContactTableColumns({
                           row.id,
                           `${row.first_name || ""} ${
                             row.last_name || ""
-                          }`.trim()
+                          }`.trim(),
                         )
                       }
                     >
@@ -267,7 +271,7 @@ export function useSalesContactTableColumns({
       (col) =>
         col.id === "full name" ||
         col.id === "actions" ||
-        visibleColumns.includes(col.id)
+        visibleColumns.includes(col.id),
     );
   }, [
     canUpdateSalesContacts,

@@ -39,9 +39,9 @@ export function useSalesContactForm() {
           }
           // Remove common phone number characters for validation
           const digits = value.replace(/\D/g, "");
-          // Phone must have exactly 10 digits
-          if (digits.length !== 10) {
-            return "Phone number must be exactly 10 digits";
+          // Phone must have between 7 and 15 digits to account for international numbers
+          if (digits.length < 7 || digits.length > 15) {
+            return "Phone number must be between 7 and 15 digits";
           }
           return "";
         case "alternativeEmail":
@@ -57,8 +57,8 @@ export function useSalesContactForm() {
           // Alternative phone number is optional, but if provided, must be exactly 10 digits
           if (value && value.trim()) {
             const digits = value.replace(/\D/g, "");
-            if (digits.length !== 10) {
-              return "Phone number must be exactly 10 digits";
+            if (digits.length < 7 || digits.length > 15) {
+              return "Phone number must be between 7 and 15 digits";
             }
           }
           return "";
@@ -75,7 +75,7 @@ export function useSalesContactForm() {
           return "";
       }
     },
-    []
+    [],
   );
 
   const buildValidationErrors = useCallback(
@@ -92,16 +92,16 @@ export function useSalesContactForm() {
         status: "",
         alternativeEmail: validateField(
           "alternativeEmail",
-          data.alternativeEmail
+          data.alternativeEmail,
         ),
         alternativePhoneNumber: validateField(
           "alternativePhoneNumber",
-          data.alternativePhoneNumber
+          data.alternativePhoneNumber,
         ),
         businessContact: validateField("businessContact", data.businessContact),
         businessLinkedin: validateField(
           "businessLinkedin",
-          data.businessLinkedin
+          data.businessLinkedin,
         ),
         businessName: validateField("businessName", data.businessName),
         comment: validateField("comment", data.comment),
@@ -111,7 +111,7 @@ export function useSalesContactForm() {
 
       return newErrors;
     },
-    [validateField]
+    [validateField],
   );
 
   const handleFormChange = useCallback(
@@ -122,7 +122,7 @@ export function useSalesContactForm() {
         setErrors((prev) => ({ ...prev, [field]: "" }));
       }
     },
-    [errors]
+    [errors],
   );
 
   const handleEditFormChange = useCallback(
@@ -133,13 +133,13 @@ export function useSalesContactForm() {
         setEditErrors((prev) => ({ ...prev, [field]: "" }));
       }
     },
-    [editErrors]
+    [editErrors],
   );
 
   const validateForm = useCallback(() => {
     const allErrors = buildValidationErrors(formData);
     const filteredErrors = Object.fromEntries(
-      Object.entries(allErrors).filter(([, value]) => value !== "")
+      Object.entries(allErrors).filter(([, value]) => value !== ""),
     ) as Record<keyof FormData, string>;
 
     if (Object.keys(filteredErrors).length > 0) {
@@ -152,7 +152,7 @@ export function useSalesContactForm() {
   const validateEditForm = useCallback(() => {
     const allErrors = buildValidationErrors(editFormData);
     const filteredErrors = Object.fromEntries(
-      Object.entries(allErrors).filter(([, value]) => value !== "")
+      Object.entries(allErrors).filter(([, value]) => value !== ""),
     ) as Record<keyof FormData, string>;
 
     if (Object.keys(filteredErrors).length > 0) {

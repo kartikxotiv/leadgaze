@@ -40,8 +40,8 @@ export function useSalesLeadForm() {
             return "Phone number is required";
           }
           const digits = value.replace(/\D/g, "");
-          if (digits.length !== 10) {
-            return "Phone number must be exactly 10 digits";
+          if (digits.length < 7 || digits.length > 15) {
+            return "Phone number must be between 7 and 15 digits";
           }
           return "";
         case "location":
@@ -56,7 +56,7 @@ export function useSalesLeadForm() {
           return "";
       }
     },
-    []
+    [],
   );
 
   const buildValidationErrors = useCallback(
@@ -85,7 +85,7 @@ export function useSalesLeadForm() {
       };
       return newErrors;
     },
-    [validateField]
+    [validateField],
   );
 
   const handleFormChange = useCallback(
@@ -95,7 +95,7 @@ export function useSalesLeadForm() {
         setErrors((prev) => ({ ...prev, [field]: "" }));
       }
     },
-    [errors]
+    [errors],
   );
 
   const handleEditFormChange = useCallback(
@@ -105,13 +105,13 @@ export function useSalesLeadForm() {
         setEditErrors((prev) => ({ ...prev, [field]: "" }));
       }
     },
-    [editErrors]
+    [editErrors],
   );
 
   const validateForm = useCallback(() => {
     const allErrors = buildValidationErrors(formData);
     const filteredErrors = Object.fromEntries(
-      Object.entries(allErrors).filter(([, value]) => value !== "")
+      Object.entries(allErrors).filter(([, value]) => value !== ""),
     ) as Record<keyof FormData, string>;
 
     if (Object.keys(filteredErrors).length > 0) {
@@ -146,7 +146,7 @@ export function useSalesLeadForm() {
     };
 
     const filteredErrors = Object.fromEntries(
-      Object.entries(newErrors).filter(([, value]) => value !== "")
+      Object.entries(newErrors).filter(([, value]) => value !== ""),
     ) as Record<keyof FormData, string>;
 
     if (Object.keys(filteredErrors).length > 0) {

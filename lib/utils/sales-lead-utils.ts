@@ -23,7 +23,7 @@ export const PRIORITY_COLOR_ARRAY = [
 
 export function resolvePriorityColor(
   name?: string | null,
-  fallback?: string | null
+  fallback?: string | null,
 ): string {
   if (fallback && fallback.trim() !== "") {
     return fallback;
@@ -72,11 +72,8 @@ export function normalizePhoneNumber(value: string): number | null {
   if (Number.isNaN(parsed)) {
     return null;
   }
-  const INT32_MAX = 2_147_483_647;
-  const INT32_MIN = -2_147_483_648;
-  if (parsed > INT32_MAX || parsed < INT32_MIN) {
-    return null;
-  }
+  // Removed Int32 check as phone numbers can be larger than Int32
+  return parsed;
   return parsed;
 }
 
@@ -115,17 +112,17 @@ export function mapLeadToTableRow(
     platformMap: Map<number, string>;
     contactNameMap: Map<string, string>;
     contactPhoneMap: Map<string, string>;
-  }
+  },
 ) {
   const priority = lead.priority
     ? options.priorityMap.get(lead.priority)
     : undefined;
   const platformLabel =
     lead.platform !== undefined && lead.platform !== null
-      ? options.platformMap.get(lead.platform) ?? `ID ${lead.platform}`
+      ? (options.platformMap.get(lead.platform) ?? `ID ${lead.platform}`)
       : "";
   const contactLabel = lead.contact_id
-    ? options.contactNameMap.get(lead.contact_id) ?? ""
+    ? (options.contactNameMap.get(lead.contact_id) ?? "")
     : "";
   const contactPhone =
     lead.contact_id && options.contactPhoneMap.has(lead.contact_id)
@@ -136,7 +133,7 @@ export function mapLeadToTableRow(
     lead.phone_number !== null &&
     lead.phone_number !== ""
       ? formatPhoneNumber(lead.phone_number)
-      : contactPhone ?? "";
+      : (contactPhone ?? "");
 
   return {
     ...lead,
