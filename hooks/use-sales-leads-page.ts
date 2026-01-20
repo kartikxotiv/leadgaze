@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { useWorkspaceContext } from "@/hooks/use-workspace-context";
 import {
   useWorkspacePermissions,
@@ -75,6 +75,33 @@ export function useSalesLeadsPage() {
     "comment",
     "updated_at",
   ]);
+  const [isColumnInitialized, setIsColumnInitialized] = useState(false);
+
+  // Load columns from local storage on mount
+  useEffect(() => {
+    const savedColumns = localStorage.getItem("sales_leads_visible_columns");
+    if (savedColumns) {
+      try {
+        const parsed = JSON.parse(savedColumns);
+        if (Array.isArray(parsed)) {
+          setVisibleColumns(parsed);
+        }
+      } catch (e) {
+        console.error("Failed to parse saved columns", e);
+      }
+    }
+    setIsColumnInitialized(true);
+  }, []);
+
+  // Save columns to local storage whenever they change
+  useEffect(() => {
+    if (isColumnInitialized) {
+      localStorage.setItem(
+        "sales_leads_visible_columns",
+        JSON.stringify(visibleColumns),
+      );
+    }
+  }, [visibleColumns, isColumnInitialized]);
 
   // Permissions
   const { data: permissionsData, isLoading: isLoadingPermissions } =

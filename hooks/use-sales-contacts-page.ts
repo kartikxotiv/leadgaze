@@ -187,6 +187,7 @@ export function useSalesContactsPage() {
     "comment",
     "linkedin_url",
     "status",
+    "updated_at",
   ]);
   const [isColumnInitialized, setIsColumnInitialized] = useState(false);
 
@@ -278,6 +279,7 @@ export function useSalesContactsPage() {
       { id: "comment", label: "Comment" },
       { id: "linkedin_url", label: "LinkedIn URL" },
       { id: "status", label: "Status" },
+      { id: "updated_at", label: "Updated" },
     ],
     [],
   );

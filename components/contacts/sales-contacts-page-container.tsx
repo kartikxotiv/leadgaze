@@ -113,6 +113,7 @@ export function SalesContactsPageContainer({
         comment: "comment",
         status: "status",
         platform_label: "platform",
+        updated_at: "updated_at",
       };
 
       const columnId = fieldToColumnMap[field.key] || field.key;

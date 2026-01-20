@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -91,6 +91,33 @@ export default function OpportunitiesPage() {
     "comment",
     "updated_at",
   ]);
+  const [isColumnInitialized, setIsColumnInitialized] = useState(false);
+
+  // Load columns from local storage on mount
+  useEffect(() => {
+    const savedColumns = localStorage.getItem("opportunities_visible_columns");
+    if (savedColumns) {
+      try {
+        const parsed = JSON.parse(savedColumns);
+        if (Array.isArray(parsed)) {
+          setVisibleColumns(parsed);
+        }
+      } catch (e) {
+        console.error("Failed to parse saved columns", e);
+      }
+    }
+    setIsColumnInitialized(true);
+  }, []);
+
+  // Save columns to local storage whenever they change
+  useEffect(() => {
+    if (isColumnInitialized) {
+      localStorage.setItem(
+        "opportunities_visible_columns",
+        JSON.stringify(visibleColumns),
+      );
+    }
+  }, [visibleColumns, isColumnInitialized]);
 
   const { data: permissionsData, isLoading: isLoadingPermissions } =
     useWorkspacePermissions();
@@ -277,6 +304,7 @@ export default function OpportunitiesPage() {
         status_label: "status",
         platform_label: "platform",
         priority_label: "priority",
+        updated_at: "updated_at",
       };
 
       const columnId = fieldToColumnMap[field.key] || field.key;

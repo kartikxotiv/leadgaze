@@ -42,6 +42,7 @@ export const exportFields: FieldDefinition[] = [
   { key: "status_label", label: "Status", required: false },
   { key: "platform_label", label: "Platform", required: false },
   { key: "priority_label", label: "Priority", required: false },
+  { key: "updated_at", label: "Updated", required: false },
 ];
 
 export const importSampleData = [
@@ -98,5 +99,6 @@ export const exportDataTransform = (row: any) => {
     status_label: row.status_label || "",
     platform_label: row.platform_label || "",
     priority_label: row.priority_label || "",
+    updated_at: row.updated_at_label || row.updated_at || "",
   };
 };

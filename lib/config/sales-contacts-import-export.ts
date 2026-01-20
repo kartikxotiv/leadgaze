@@ -40,6 +40,7 @@ export const exportFields: FieldDefinition[] = [
   { key: "comment", label: "Comment", required: false },
   { key: "status", label: "Status", required: false },
   { key: "platform_label", label: "Platform", required: false },
+  { key: "updated_at", label: "Updated", required: false },
 ];
 
 export const importSampleData = [
@@ -93,5 +94,6 @@ export function exportDataTransform(row: any) {
     comment: row.comment || "",
     status: row.status_label || "",
     platform_label: row.platform_label || "",
+    updated_at: row.updated_at_label || row.updated_at || "",
   };
 }
