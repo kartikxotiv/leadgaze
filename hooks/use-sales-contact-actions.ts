@@ -306,9 +306,9 @@ export function useSalesContactActions({
       if (!salesContactId) return;
       try {
         await deleteSalesContactMutation.mutateAsync(salesContactId);
-        toast.success("Sales contact deleted successfully");
+        toast.success("Contact deleted successfully");
       } catch (err: any) {
-        toast.error(err?.message || "Failed to delete sales contact");
+        toast.error(err?.message || "Failed to delete contact");
         throw err;
       }
     },
