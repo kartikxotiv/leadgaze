@@ -65,6 +65,8 @@ export function SalesLeadsPageContainer({
     addSalesLeadSidebarOpen,
     importExportDialogOpen,
     setImportExportDialogOpen,
+    importExportTab,
+    setImportExportTab,
     noteDialogOpen,
     setNoteDialogOpen,
     meetingDialogOpen,
@@ -143,8 +145,14 @@ export function SalesLeadsPageContainer({
         onDateRangeClear={handleDateRangeClear}
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange}
-        onImportClick={() => setImportExportDialogOpen(true)}
-        onExportClick={() => setImportExportDialogOpen(true)}
+        onImportClick={() => {
+          setImportExportTab("import");
+          setImportExportDialogOpen(true);
+        }}
+        onExportClick={() => {
+          setImportExportTab("export");
+          setImportExportDialogOpen(true);
+        }}
         canImport={!!workspaceId}
         canExport={!!dataHook.tableData && dataHook.tableData.length > 0}
         tableColumnDefinitions={tableColumnDefinitions}
@@ -389,6 +397,7 @@ export function SalesLeadsPageContainer({
         workspaceId={workspaceId}
         onImportComplete={handleImportComplete}
         token={token || undefined}
+        initialTab={importExportTab}
       />
     </>
   );

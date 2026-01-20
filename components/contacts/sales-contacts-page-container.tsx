@@ -63,6 +63,8 @@ export function SalesContactsPageContainer({
     addSalesContactSidebarOpen,
     importExportDialogOpen,
     setImportExportDialogOpen,
+    importExportTab,
+    setImportExportTab,
     addBusinessDialogOpen,
     setAddBusinessDialogOpen,
     addPlatformDialog,
@@ -97,8 +99,14 @@ export function SalesContactsPageContainer({
         onDateRangeClear={handleDateRangeClear}
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange}
-        onImportClick={() => setImportExportDialogOpen(true)}
-        onExportClick={() => setImportExportDialogOpen(true)}
+        onImportClick={() => {
+          setImportExportTab("import");
+          setImportExportDialogOpen(true);
+        }}
+        onExportClick={() => {
+          setImportExportTab("export");
+          setImportExportDialogOpen(true);
+        }}
         canImport={!!workspaceId}
         canExport={!!tableData && tableData.length > 0}
         tableColumnDefinitions={tableColumnDefinitions}
@@ -220,6 +228,7 @@ export function SalesContactsPageContainer({
         workspaceId={workspaceId}
         onImportComplete={handleImportComplete}
         token={token || undefined}
+        initialTab={importExportTab}
       />
     </>
   );

@@ -244,8 +244,8 @@ export function useSalesLeadTableColumns({
           );
         },
         ignoreRowClick: true,
-        allowOverflow: true,
-        center: true,
+        allowoverflow: true,
+        center: "true",
       },
     ];
 

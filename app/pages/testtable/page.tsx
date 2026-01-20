@@ -495,8 +495,8 @@ export default function TestTablePage() {
           </DropdownMenu>
         ),
         ignoreRowClick: true,
-        allowOverflow: true,
-        center: true,
+        allowoverflow: true,
+        center: "true",
         width: "100px",
         minWidth: "100px",
       },

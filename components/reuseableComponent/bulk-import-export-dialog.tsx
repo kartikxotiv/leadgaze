@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -81,6 +81,7 @@ export interface BulkImportExportDialogProps {
   onImportComplete?: (results: ImportResult) => void;
   onExportComplete?: () => void;
   token?: string;
+  initialTab?: "import" | "export";
 }
 
 export function BulkImportExportDialog({
@@ -101,8 +102,15 @@ export function BulkImportExportDialog({
   onImportComplete,
   onExportComplete,
   token,
+  initialTab = "import",
 }: BulkImportExportDialogProps) {
-  const [activeTab, setActiveTab] = useState<"import" | "export">("import");
+  const [activeTab, setActiveTab] = useState<"import" | "export">(initialTab);
+
+  useEffect(() => {
+    if (open) {
+      setActiveTab(initialTab);
+    }
+  }, [open, initialTab]);
 
   // Simplified Import States
   const [file, setFile] = useState<File | null>(null);
@@ -154,7 +162,7 @@ export function BulkImportExportDialog({
 
       return transformedData;
     },
-    [importFields]
+    [importFields],
   );
 
   // Start import directly after parsing
@@ -223,7 +231,7 @@ export function BulkImportExportDialog({
         onImportComplete?.(result);
 
         toast.success(
-          `Import completed! ${result.successful} records imported, ${result.failed} failed, ${result.duplicates} duplicates.`
+          `Import completed! ${result.successful} records imported, ${result.failed} failed, ${result.duplicates} duplicates.`,
         );
       } catch (e: any) {
         toast.error(e?.message || "Import failed");
@@ -240,7 +248,7 @@ export function BulkImportExportDialog({
       importApiEndpoint,
       transformRowData,
       onImportComplete,
-    ]
+    ],
   );
 
   // Simplified File Parsing - Direct Import
@@ -293,16 +301,16 @@ export function BulkImportExportDialog({
           toast.error(
             `Error reading Excel file: ${
               error instanceof Error ? error.message : "Unknown error"
-            }`
+            }`,
           );
         }
       } else {
         toast.error(
-          "Unsupported file format. Please upload CSV or Excel files."
+          "Unsupported file format. Please upload CSV or Excel files.",
         );
       }
     },
-    [startImport]
+    [startImport],
   );
 
   const onDrop = useCallback(
@@ -315,7 +323,7 @@ export function BulkImportExportDialog({
         parseFile(file);
       }
     },
-    [parseFile, isImporting]
+    [parseFile, isImporting],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -378,7 +386,7 @@ export function BulkImportExportDialog({
           .map((row) =>
             row
               .map((field) => `"${String(field).replace(/"/g, '""')}"`)
-              .join(",")
+              .join(","),
           )
           .join("\n");
 
@@ -399,14 +407,14 @@ export function BulkImportExportDialog({
       }
 
       toast.success(
-        `Data exported as ${exportFormat.toUpperCase()} successfully!`
+        `Data exported as ${exportFormat.toUpperCase()} successfully!`,
       );
       onExportComplete?.();
     } catch (error) {
       toast.error(
         `Export failed: ${
           error instanceof Error ? error.message : "Unknown error"
-        }`
+        }`,
       );
     } finally {
       setIsExporting(false);
@@ -425,7 +433,6 @@ export function BulkImportExportDialog({
     setIsImporting(false);
     setImportProgress(0);
     setImportResults(null);
-    setActiveTab("import");
   };
 
   return (
@@ -474,7 +481,7 @@ export function BulkImportExportDialog({
                     isDragActive
                       ? "border-blue-500 bg-blue-50"
                       : "border-gray-300 hover:border-gray-400",
-                    isImporting && "opacity-50 cursor-not-allowed"
+                    isImporting && "opacity-50 cursor-not-allowed",
                   )}
                 >
                   <input {...getInputProps()} />
