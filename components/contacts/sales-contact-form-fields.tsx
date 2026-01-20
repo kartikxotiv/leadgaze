@@ -12,7 +12,6 @@ import {
 import {
   User,
   Mail,
-  Phone,
   MapPin,
   AlertCircle,
   Building2,
@@ -20,6 +19,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
 import { CountrySelect } from "@/components/common/country-select";
 import type { ContactPlatform } from "@/lib/data/contact-platforms";
 import type { FormData } from "@/lib/constants/sales-contacts";
@@ -162,25 +163,19 @@ export function SalesContactFormFields({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="phoneNumber">Phone Number *</Label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
-              <Input
-                id="phoneNumber"
-                type="tel"
+            <div className="relative z-50">
+              <PhoneInput
+                country={"in"}
                 value={data.phoneNumber}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  const digitsOnly = value.replace(/\D/g, "");
-                  const limitedDigits = digitsOnly.slice(0, 15);
-                  onChange("phoneNumber", limitedDigits);
-                }}
-                placeholder="1234567890"
-                maxLength={10}
-                className={`pl-10 bg-gray-100 ${
+                onChange={(phone) => onChange("phoneNumber", phone)}
+                inputClass="!w-full !h-10 !text-sm !pl-[48px] !bg-gray-100 !border-input !rounded-md focus:!border-ring focus:!ring-1 focus:!ring-ring"
+                containerClass={`${
                   formErrors.phoneNumber
-                    ? "border-red-500 focus:border-red-500"
+                    ? "!border-red-500 focus-within:!border-red-500"
                     : ""
                 }`}
+                buttonClass="!bg-gray-100 !border-input !rounded-l-md"
+                dropdownClass="!bg-background !text-foreground"
               />
             </div>
             {formErrors.phoneNumber && (
@@ -195,25 +190,19 @@ export function SalesContactFormFields({
             <Label htmlFor="alternativePhoneNumber">
               Alternative Phone Number
             </Label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2" />
-              <Input
-                id="alternativePhoneNumber"
-                type="tel"
+            <div className="relative z-40">
+              <PhoneInput
+                country={"in"}
                 value={data.alternativePhoneNumber}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  const digitsOnly = value.replace(/\D/g, "");
-                  const limitedDigits = digitsOnly.slice(0, 15);
-                  onChange("alternativePhoneNumber", limitedDigits);
-                }}
-                placeholder="1234567890"
-                maxLength={10}
-                className={`pl-10 bg-gray-100 ${
+                onChange={(phone) => onChange("alternativePhoneNumber", phone)}
+                inputClass="!w-full !h-10 !text-sm !pl-[48px] !bg-gray-100 !border-input !rounded-md focus:!border-ring focus:!ring-1 focus:!ring-ring"
+                containerClass={`${
                   formErrors.alternativePhoneNumber
-                    ? "border-red-500 focus:border-red-500"
+                    ? "!border-red-500 focus-within:!border-red-500"
                     : ""
                 }`}
+                buttonClass="!bg-gray-100 !border-input !rounded-l-md"
+                dropdownClass="!bg-background !text-foreground"
               />
             </div>
             {formErrors.alternativePhoneNumber && (
@@ -224,7 +213,7 @@ export function SalesContactFormFields({
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 relative z-30">
             <Label htmlFor="location">Select country</Label>
             <CountrySelect
               value={data.location}
@@ -258,7 +247,7 @@ export function SalesContactFormFields({
                 </Button>
               </div>
             ) : (
-              <div className="relative">
+              <div className="relative z-20">
                 <Building2 className="absolute left-3 top-1/2 h-4 w-4 text-gray-400 -translate-y-1/2 z-10" />
                 <Select
                   value={data.businessId}
@@ -271,8 +260,8 @@ export function SalesContactFormFields({
                         businessesLoading
                           ? "Loading businesses..."
                           : businessOptions.length === 0
-                          ? "No businesses available"
-                          : "Select a business"
+                            ? "No businesses available"
+                            : "Select a business"
                       }
                     />
                     <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
@@ -468,8 +457,8 @@ export function SalesContactFormFields({
                     platformsLoading
                       ? "Loading platforms..."
                       : platformOptions.length === 0
-                      ? "No saved platforms"
-                      : "Select a platform"
+                        ? "No saved platforms"
+                        : "Select a platform"
                   }
                 />
                 <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />

@@ -1,4 +1,6 @@
 "use client";
+
+import { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
@@ -65,6 +67,8 @@ export function SalesLeadsPageContainer({
     addSalesLeadSidebarOpen,
     importExportDialogOpen,
     setImportExportDialogOpen,
+    importExportTab,
+    setImportExportTab,
     noteDialogOpen,
     setNoteDialogOpen,
     meetingDialogOpen,
@@ -100,6 +104,40 @@ export function SalesLeadsPageContainer({
     handleDeleteSalesLead: actionsHook.handleDeleteSalesLead,
     visibleColumns,
   });
+
+  const filteredExportFields = useMemo(() => {
+    return exportFields.filter((field) => {
+      // Full Name (first_name, last_name) is always visible if it map to name
+      // but in leads we have first_name and last_name separately?
+      // Actually in leads table columns:
+      // it doesn't have "full name" as ID, it has "email", "phone_number", etc.
+
+      if (field.key === "first_name" || field.key === "last_name") {
+        return true;
+      }
+
+      // Map export field keys to table column IDs
+      const fieldToColumnMap: Record<string, string> = {
+        email: "email",
+        phone_display: "phone_number",
+        location: "Location",
+        alternative_email: "alternative_email",
+        alternative_phone_number: "alternative_phone_number",
+        business_name: "business_name",
+        business_linkedin: "business_linkedin",
+        business_contact: "business_contact",
+        linkedin_url: "linkedin_url",
+        comment: "comment",
+        status_label: "status",
+        platform_label: "platform",
+        priority_label: "priority",
+        updated_at: "updated_at",
+      };
+
+      const columnId = fieldToColumnMap[field.key] || field.key;
+      return visibleColumns.includes(columnId);
+    });
+  }, [visibleColumns]);
 
   if (isLoadingPermissions && !permissionsData) {
     return (
@@ -143,8 +181,14 @@ export function SalesLeadsPageContainer({
         onDateRangeClear={handleDateRangeClear}
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange}
-        onImportClick={() => setImportExportDialogOpen(true)}
-        onExportClick={() => setImportExportDialogOpen(true)}
+        onImportClick={() => {
+          setImportExportTab("import");
+          setImportExportDialogOpen(true);
+        }}
+        onExportClick={() => {
+          setImportExportTab("export");
+          setImportExportDialogOpen(true);
+        }}
         canImport={!!workspaceId}
         canExport={!!dataHook.tableData && dataHook.tableData.length > 0}
         tableColumnDefinitions={tableColumnDefinitions}
@@ -190,7 +234,7 @@ export function SalesLeadsPageContainer({
         itemId={deleteDialog.salesLeadId}
         onConfirm={actionsHook.confirmDeleteSalesLead}
         isLoading={actionsHook.deleteSalesLeadMutation.isPending}
-        title="Delete Sales Lead"
+        title="Delete Lead"
       />
 
       <EditLeadDialog
@@ -254,6 +298,7 @@ export function SalesLeadsPageContainer({
         isSubmitting={actionsHook.createLeadCommentMutation.isPending ?? false}
         isDeleting={actionsHook.deleteLeadCommentMutation.isPending ?? false}
         isEditing={actionsHook.updateLeadCommentMutation.isPending ?? false}
+        isOpportunityPage={false}
       />
 
       <AddLeadSidebar
@@ -376,19 +421,20 @@ export function SalesLeadsPageContainer({
       <BulkImportExportDialog
         open={importExportDialogOpen}
         onOpenChange={setImportExportDialogOpen}
-        title="Import / Export Sales Leads"
+        title="Import / Export Leads"
         description="Import leads from Excel/CSV files or export existing leads"
         importFields={importFields}
         importApiEndpoint="/api/sales-leads/import"
         importSampleData={importSampleData}
         importFileName="sales-leads"
         exportData={dataHook.tableData}
-        exportFields={exportFields}
+        exportFields={filteredExportFields}
         exportFileName="sales-leads"
         exportDataTransform={exportDataTransform}
         workspaceId={workspaceId}
         onImportComplete={handleImportComplete}
         token={token || undefined}
+        defaultTab={importExportTab}
       />
     </>
   );

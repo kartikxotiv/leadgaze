@@ -42,6 +42,7 @@ export const exportFields: FieldDefinition[] = [
   { key: "status_label", label: "Status", required: false },
   { key: "platform_label", label: "Platform", required: false },
   { key: "priority_label", label: "Priority", required: false },
+  { key: "updated_at", label: "Updated", required: false },
 ];
 
 export const importSampleData = [
@@ -82,21 +83,22 @@ export const importSampleData = [
 ];
 
 export const exportDataTransform = (row: any) => {
-  return [
-    row.first_name || "",
-    row.last_name || "",
-    row.email || "",
-    row.phone_display || "",
-    row.location || "",
-    row.alternative_email || "",
-    row.alternative_phone_number || "",
-    row.business_name || "",
-    row.business_linkedin || "",
-    row.business_contact || "",
-    row.linkedin_url || "",
-    row.comment || "",
-    row.status_label || "",
-    row.platform_label || "",
-    row.priority_label || "",
-  ];
+  return {
+    first_name: row.first_name || "",
+    last_name: row.last_name || "",
+    email: row.email || "",
+    phone_display: row.phone_display || "",
+    location: row.location || "",
+    alternative_email: row.alternative_email || "",
+    alternative_phone_number: row.alternative_phone_number || "",
+    business_name: row.business_name || "",
+    business_linkedin: row.business_linkedin || "",
+    business_contact: row.business_contact || "",
+    linkedin_url: row.linkedin_url || "",
+    comment: row.comment || "",
+    status_label: row.status_label || "",
+    platform_label: row.platform_label || "",
+    priority_label: row.priority_label || "",
+    updated_at: row.updated_at_label || row.updated_at || "",
+  };
 };

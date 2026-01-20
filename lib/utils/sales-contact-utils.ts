@@ -24,7 +24,7 @@ export function formatDateTime(value?: string | null) {
 }
 
 export function normalizePhoneNumberFromString(
-  value?: string | null
+  value?: string | null,
 ): number | null {
   if (!value) return null;
   const digits = value.replace(/\D/g, "");
@@ -33,11 +33,8 @@ export function normalizePhoneNumberFromString(
   if (Number.isNaN(parsed)) {
     return null;
   }
-  const INT32_MAX = 2_147_483_647;
-  const INT32_MIN = -2_147_483_648;
-  if (parsed > INT32_MAX || parsed < INT32_MIN) {
-    return null;
-  }
+  // Removed Int32 check as phone numbers can be larger than Int32
+  return parsed;
   return parsed;
 }
 

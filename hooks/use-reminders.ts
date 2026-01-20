@@ -67,9 +67,10 @@ export function useReminders(filters: ReminderFilters = {}) {
       if (filters.limit) params.append("limit", String(filters.limit));
 
       const response = await apiClient.get(`/reminders?${params.toString()}`);
-      const result = (response as any).data;
+      const result = response as any;
 
-      if (result?.data?.reminders) {
+      // Structure: { success: true, data: { reminders: [...] } }
+      if (result?.data?.reminders && Array.isArray(result.data.reminders)) {
         return {
           ...result,
           data: {
@@ -78,6 +79,20 @@ export function useReminders(filters: ReminderFilters = {}) {
           },
         };
       }
+
+      // Structure: { success: true, data: [...] }
+      if (Array.isArray(result?.data)) {
+        return {
+          ...result,
+          data: result.data.map(transformReminder),
+        };
+      }
+
+      // Structure: [...]
+      if (Array.isArray(result)) {
+        return result.map(transformReminder);
+      }
+
       return result;
     },
     enabled: !!(filters.leadId || workspaceId),
@@ -97,12 +112,15 @@ export function useCreateReminder() {
         createdBy: data.createdBy ?? user?.userId ?? null,
       };
       const response = await apiClient.post("/reminders", payload);
-      const result = (response as any).data;
+      const result = response as any;
       if (result?.data) {
         return {
           ...result,
           data: transformReminder(result.data),
         };
+      }
+      if (result?.id) {
+        return transformReminder(result);
       }
       return result;
     },
@@ -128,12 +146,15 @@ export function useUpdateReminder() {
       data: Partial<CreateReminderData>;
     }) => {
       const response = await apiClient.put(`/reminders/${reminderId}`, data);
-      const result = (response as any).data;
+      const result = response as any;
       if (result?.data) {
         return {
           ...result,
           data: transformReminder(result.data),
         };
+      }
+      if (result?.id) {
+        return transformReminder(result);
       }
       return result;
     },

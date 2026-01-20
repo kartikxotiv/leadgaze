@@ -1,34 +1,48 @@
 "use client";
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
-import { ReactTable } from '@/components/reuseableComponent/ReactTable';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { DropdownMenu, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { useCompanies, useDeleteCompany } from '@/hooks/use-companies';
-import { useWorkspaceContext } from '@/hooks/use-workspace-context';
-import { Download, Plus, Upload, MoreHorizontal, Edit, Trash2, Building2 } from 'lucide-react';
-import Link from 'next/link';
-import React, { useState, useEffect } from 'react';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
-import { DeleteConfirmDialog } from '@/components/common/delete-confirm-dialog';
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { ReactTable } from "@/components/reuseableComponent/ReactTable";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { useCompanies, useDeleteCompany } from "@/hooks/use-companies";
+import { useWorkspaceContext } from "@/hooks/use-workspace-context";
+import {
+  Download,
+  Plus,
+  Upload,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  Building2,
+} from "lucide-react";
+import Link from "next/link";
+import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 
 export default function CompaniesPage() {
   const router = useRouter();
   const { currentWorkspace } = useWorkspaceContext();
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const deleteCompanyMutation = useDeleteCompany();
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     companyId?: string;
     companyName?: string;
   }>({ open: false });
-  
+
   // Add debounced search term
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -41,26 +55,37 @@ export default function CompaniesPage() {
     setCurrentPage(1);
   }, [debouncedSearchTerm, currentWorkspace?.id]);
 
-  const { data: companiesData, isLoading, error } = useCompanies({ 
-    page: currentPage, 
+  const {
+    data: companiesData,
+    isLoading,
+    error,
+  } = useCompanies({
+    page: currentPage,
     limit: pageSize,
     search: debouncedSearchTerm,
-    workspaceId: currentWorkspace?.id
+    workspaceId: currentWorkspace?.id,
   });
 
   // Extract companies array and pagination info from the response data structure
   const companies = companiesData?.companies || [];
-  const safeCompanies = Array.isArray(companies) ? companies.map((company: any) => ({
-    id: company.id,
-    name: company.title,
-    description: company.description || '',
-    location: company.location || '',
-    industry: company.industry || '',
-    contacts: company.contacts?.length || 0,
-    createdAt: company.createdAt,
-    updatedAt: company.updatedAt,
-  })) : [];
-  const pagination = companiesData?.pagination || { count: 0, page: 1, totalPages: 1, limit: pageSize };
+  const safeCompanies = Array.isArray(companies)
+    ? companies.map((company: any) => ({
+        id: company.id,
+        name: company.title,
+        description: company.description || "",
+        location: company.location || "",
+        industry: company.industry || "",
+        contacts: company.contacts?.length || 0,
+        createdAt: company.createdAt,
+        updatedAt: company.updatedAt,
+      }))
+    : [];
+  const pagination = companiesData?.pagination || {
+    count: 0,
+    page: 1,
+    totalPages: 1,
+    limit: pageSize,
+  };
 
   const handleDeleteCompany = (companyId: string, companyName: string) => {
     setDeleteDialog({
@@ -109,64 +134,63 @@ export default function CompaniesPage() {
   //   }
   // };
 
-
-
-    const getTableColumns = () => {
+  const getTableColumns = () => {
     return [
-      { 
-        id: 'sno',
-        name: 'S.no', 
-        selector: (row: any, index: number) => ((currentPage - 1) * pageSize) + index + 1, 
-        sortable: false, 
-        width: '80px' 
+      {
+        id: "sno",
+        name: "S.no",
+        selector: (row: any, index: number) =>
+          (currentPage - 1) * pageSize + index + 1,
+        sortable: false,
+        width: "80px",
       },
-      { 
-        id: 'name',
-        name: 'Company Name', 
-        selector: (row: any) => row.name || '', 
+      {
+        id: "name",
+        name: "Company Name",
+        selector: (row: any) => row.name || "",
         sortable: true,
-        width: '200px',
-        minWidth: '200px',
+        width: "200px",
+        minWidth: "200px",
         cell: (row: any) => (
           <div className="flex items-center gap-2">
             <Building2 className="h-4 w-4 text-gray-400" />
-            <span className="font-medium">{row.name || ''}</span>
+            <span className="font-medium">{row.name || ""}</span>
           </div>
-        )
+        ),
       },
-      { 
-        id: 'description',
-        name: 'Description', 
-        selector: (row: any) => row.description || '', 
+      {
+        id: "description",
+        name: "Description",
+        selector: (row: any) => row.description || "",
         sortable: true,
-        width: '300px',
-        minWidth: '200px',
+        width: "300px",
+        minWidth: "200px",
         cell: (row: any) => (
           <div className="truncate max-w-[300px]" title={row.description}>
-            {row.description || '-'}
+            {row.description || "-"}
           </div>
-        )
+        ),
       },
-      { 
-        id: 'location',
-        name: 'Location', 
-        selector: (row: any) => row.location || '', 
+      {
+        id: "location",
+        name: "Location",
+        selector: (row: any) => row.location || "",
         sortable: true,
-        width: '150px',
-        minWidth: '150px'
+        width: "150px",
+        minWidth: "150px",
       },
-      { 
-        id: 'industry',
-        name: 'Industry', 
-        selector: (row: any) => row.industry || '', 
+      {
+        id: "industry",
+        name: "Industry",
+        selector: (row: any) => row.industry || "",
         sortable: true,
-        width: '150px',
-        minWidth: '150px'
+        width: "150px",
+        minWidth: "150px",
       },
-      // { 
+      // {
       //   id: 'contacts',
-      //   name: 'Contacts', 
-      //   selector: (row: any) => row.contacts || 0, 
+      //   name: 'Contacts',
+      //   selector: (row: any) => row.contacts || 0,
       //   sortable: true,
       //   width: '300px',
       //   minWidth: '300px',
@@ -175,8 +199,8 @@ export default function CompaniesPage() {
       //   )
       // },
       {
-        id: 'actions',
-        name: 'Actions', 
+        id: "actions",
+        name: "Actions",
         cell: (row: any) => (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -190,8 +214,8 @@ export default function CompaniesPage() {
                 Edit
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                className="text-destructive" 
+              <DropdownMenuItem
+                className="text-destructive"
                 onClick={() => handleDeleteCompany(row.id, row.name)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -202,16 +226,11 @@ export default function CompaniesPage() {
         ),
         ignoreRowClick: true,
         allowoverflow: true,
-        button: true,
-        width: '100px',
-        minWidth: '100px'
+        width: "100px",
+        minWidth: "100px",
       },
     ];
   };
-
-
-
-
 
   return (
     <DashboardLayout>
@@ -262,22 +281,27 @@ export default function CompaniesPage() {
         {/* Error State */}
         {error && (
           <div className="text-center py-8">
-            <p className="text-red-500">Error loading companies: {error.message}</p>
+            <p className="text-red-500">
+              Error loading companies: {error.message}
+            </p>
           </div>
         )}
 
         {/* Companies Table */}
         {!isLoading && !error && currentWorkspace && (
           <div className="mt-4">
-            <ReactTable 
-              columns={getTableColumns()} 
+            <ReactTable
+              columns={getTableColumns()}
               data={safeCompanies}
               pagination={true}
               paginationTotalRows={pagination?.count || 0}
               paginationPerPage={pageSize}
               paginationDefaultPage={currentPage}
               onChangePage={(page: number) => setCurrentPage(page)}
-              onChangeRowsPerPage={(currentRowsPerPage: number, currentPage: number) => {
+              onChangeRowsPerPage={(
+                currentRowsPerPage: number,
+                currentPage: number,
+              ) => {
                 setCurrentPage(currentPage);
               }}
             />
@@ -287,22 +311,29 @@ export default function CompaniesPage() {
         {/* No Workspace Selected */}
         {!currentWorkspace && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">Please select a workspace to view companies</p>
+            <p className="text-muted-foreground mb-4">
+              Please select a workspace to view companies
+            </p>
           </div>
         )}
 
         {/* Empty State */}
-        {!isLoading && !error && currentWorkspace && safeCompanies.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">No companies found in this workspace</p>
-            <Button asChild>
-              <Link href="/pages/companies/new">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Your First Company
-              </Link>
-            </Button>
-          </div>
-        )}
+        {!isLoading &&
+          !error &&
+          currentWorkspace &&
+          safeCompanies.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground mb-4">
+                No companies found in this workspace
+              </p>
+              <Button asChild>
+                <Link href="/pages/companies/new">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Your First Company
+                </Link>
+              </Button>
+            </div>
+          )}
 
         {/* Delete Confirmation Dialog */}
         <DeleteConfirmDialog
@@ -322,6 +353,5 @@ export default function CompaniesPage() {
         />
       </div>
     </DashboardLayout>
-  )
+  );
 }
-

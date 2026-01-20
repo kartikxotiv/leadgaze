@@ -41,13 +41,13 @@ export async function POST(request: NextRequest) {
     if (!workspaceId) {
       return NextResponse.json(
         { success: false, error: "workspaceId is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     if (!rows.length) {
       return NextResponse.json(
         { success: false, error: "rows must be a non-empty array" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     };
 
     function normalizePhoneNumber(
-      value?: string | number | null
+      value?: string | number | null,
     ): number | null {
       if (!value) return null;
       const strValue = String(value);
@@ -92,10 +92,32 @@ export async function POST(request: NextRequest) {
       if (!digits) return null;
       const parsed = Number(digits);
       if (Number.isNaN(parsed)) return null;
-      const INT32_MAX = 2_147_483_647;
-      if (parsed > INT32_MAX || parsed < 0) return null;
+      // Removed INT32_MAX check to support larger international numbers
+      if (parsed < 0) return null;
       return parsed;
     }
+
+    const mapStatus = (status?: string): any => {
+      if (!status) return "opportunities";
+      const normalized = status.toLowerCase().trim().replace(/\s+/g, "_");
+
+      const validStatuses = [
+        "opportunities",
+        "in_progress",
+        "won",
+        "lost",
+        "qualified_lead",
+      ];
+      if (validStatuses.includes(normalized)) {
+        return normalized;
+      }
+
+      // Handle common label variations
+      if (normalized === "progress") return "in_progress";
+      if (normalized === "qualified") return "qualified_lead";
+
+      return "opportunities"; // default
+    };
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -110,7 +132,7 @@ export async function POST(request: NextRequest) {
       if (!firstName || !lastName || !email) {
         failed++;
         errors.push(
-          `Row ${rowIdx}: Missing required fields (firstName/lastName/email)`
+          `Row ${rowIdx}: Missing required fields (firstName/lastName/email)`,
         );
         continue;
       }
@@ -126,9 +148,9 @@ export async function POST(request: NextRequest) {
       // Phone validation - non-blocking
       if (phoneNumber) {
         const digits = phoneNumber.replace(/\D/g, "");
-        if (digits.length > 0 && digits.length !== 10) {
+        if (digits.length > 0 && (digits.length < 7 || digits.length > 15)) {
           errors.push(
-            `Row ${rowIdx}: Phone number has ${digits.length} digits (expected 10), will be stored as-is`
+            `Row ${rowIdx}: Phone number has ${digits.length} digits (expected 7-15), will be stored as-is`,
           );
         }
       }
@@ -149,7 +171,7 @@ export async function POST(request: NextRequest) {
         if (!platformId && platformName) {
           try {
             const newPlatform = await createContactPlatform(
-              safeStringTrim(row.platform) || ""
+              safeStringTrim(row.platform) || "",
             );
             if (newPlatform.id !== undefined && newPlatform.id !== null) {
               platformId = newPlatform.id;
@@ -158,7 +180,7 @@ export async function POST(request: NextRequest) {
           } catch (e: any) {
             const updatedPlatforms = await getContactPlatforms();
             const found = updatedPlatforms.find(
-              (p) => normalize(p.name || "") === platformName
+              (p) => normalize(p.name || "") === platformName,
             );
             if (found?.id !== undefined && found?.id !== null) {
               platformId = found.id;
@@ -178,7 +200,7 @@ export async function POST(request: NextRequest) {
       try {
         const normalizedPhone = normalizePhoneNumber(phoneNumber);
         const normalizedAlternativePhone = normalizePhoneNumber(
-          safeStringTrim(row.alternativePhoneNumber)
+          safeStringTrim(row.alternativePhoneNumber),
         );
 
         const createdLead = await createSalesLead({
@@ -188,7 +210,7 @@ export async function POST(request: NextRequest) {
           phone_number: normalizedPhone,
           location: safeStringTrim(row.location),
           contact_time_zone: null,
-          status: row.status || "opportunities",
+          status: mapStatus(row.status),
           workspace_id: workspaceId,
           platform: platformId,
           priority: priorityId,
@@ -213,7 +235,7 @@ export async function POST(request: NextRequest) {
           await addLeadAssignee(
             createdLead.id,
             requesterUserId,
-            requesterUserId
+            requesterUserId,
           );
         } catch (assignError: any) {
           // Log error but don't fail the import
@@ -245,7 +267,7 @@ export async function POST(request: NextRequest) {
         error: "Failed to import sales leads",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

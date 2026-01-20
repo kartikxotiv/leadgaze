@@ -16,9 +16,9 @@ export function useSalesLeadsData(
   page: number,
   pageSize: number,
   previewLeadId: string | null | undefined,
-  statusFilter?: string,
+  statusFilter?: string | string[],
   dateRange?: DateRange | null,
-  search?: string
+  search?: string,
 ) {
   const filters = useMemo(() => {
     if (!workspaceId) return undefined;
@@ -50,7 +50,7 @@ export function useSalesLeadsData(
     useContactPlatforms();
   const contactLookup = useSalesContacts(contactLookupFilters);
   const { data: leadComments = [], isLoading: leadCommentsLoading } =
-    useLeadComments(previewLeadId);
+    useLeadComments(previewLeadId || undefined);
   const { data: meetingsData, isLoading: meetingsLoading } = useMeetings({
     leadId: previewLeadId ? String(previewLeadId) : undefined,
   });
@@ -77,7 +77,7 @@ export function useSalesLeadsData(
 
   const contactOptions = useMemo(
     () => contactLookup.data?.data ?? [],
-    [contactLookup.data?.data]
+    [contactLookup.data?.data],
   );
   const contactNameMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -109,7 +109,7 @@ export function useSalesLeadsData(
         platformMap,
         contactNameMap,
         contactPhoneMap,
-      })
+      }),
     );
   }, [
     salesLeads?.data,

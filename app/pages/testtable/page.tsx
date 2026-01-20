@@ -3,10 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { usePreventAuthBack } from "@/hooks/use-prevent-auth-back";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ReactTable } from "@/components/reuseableComponent/ReactTable";
@@ -34,7 +31,12 @@ import {
   type FilterConfig,
   type ActiveFilter,
 } from "@/components/leads/enhanced-filters";
-import { useLeads, useLeadConfigs, useUpdateLead, useDeleteLead } from "@/hooks/use-leads";
+import {
+  useLeads,
+  useLeadConfigs,
+  useUpdateLead,
+  useDeleteLead,
+} from "@/hooks/use-leads";
 import { useQueryClient } from "@tanstack/react-query";
 import { ActivityLogForm } from "@/components/activities/activity-log-form";
 import { FollowUpScheduler } from "@/components/tasks/follow-up-scheduler";
@@ -67,30 +69,34 @@ import { BulkImportDialog } from "@/components/leads/bulk-import-dialog";
 export default function TestTablePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
-  
+
   // State management
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
-  
+
   // Reset to page 1 when search term changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
-  
+
   // Add debounced search term
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
     }, 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
-  
-  const { data: leadsData, isLoading, error } = useLeads({ 
-    page: currentPage, 
+
+  const {
+    data: leadsData,
+    isLoading,
+    error,
+  } = useLeads({
+    page: currentPage,
     limit: pageSize,
-    search: debouncedSearchTerm
+    search: debouncedSearchTerm,
   });
   const { data: configs } = useLeadConfigs();
   const updateLeadMutation = useUpdateLead();
@@ -127,13 +133,17 @@ export default function TestTablePage() {
   // Extract leads array and pagination info from the response data structure
   const leads = leadsData?.leads || [];
   const safeLeads = Array.isArray(leads) ? leads : [];
-  const pagination = leadsData?.pagination || { total: 0, page: 1, totalPages: 1, limit: pageSize };
+  const pagination = leadsData?.pagination || {
+    total: 0,
+    page: 1,
+    totalPages: 1,
+    limit: pageSize,
+  };
 
   // Get configurations (note: API returns data grouped by entity type)
   const statuses = configs?.status || [];
   const sources = configs?.source || [];
   const grades = configs?.score_grade || [];
-
 
   // Status color mapping for badges
   const getStatusColor = (statusName: string): string => {
@@ -158,7 +168,7 @@ export default function TestTablePage() {
   // Status color mapping for dropdown items
   const getStatusColorForDropdown = (statusLabel: string): string => {
     const normalizedLabel = statusLabel?.toLowerCase().trim();
-    
+
     switch (normalizedLabel) {
       case "new":
       case "contact attempted":
@@ -217,135 +227,126 @@ export default function TestTablePage() {
     );
   };
 
-
   // Column customization state
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
-    'name', 
-    'email',
-    'company', 
-    'contact', 
-    'status', 
-    'grade', 
-    'score',
-    'source',
+    "name",
+    "email",
+    "company",
+    "contact",
+    "status",
+    "grade",
+    "score",
+    "source",
     // 'lastActivity'
   ]);
 
   // Define table columns
   const tableColumns = [
-    { id: 'name', label: 'Lead Name' },
-    { id: 'email', label: 'Email' },
-    { id: 'company', label: 'Company' },
-    { id: 'contact', label: 'Contact' },
-    { id: 'status', label: 'Status' },
-    { id: 'grade', label: 'Grade' },
-    { id: 'score', label: 'Score' },
-    { id: 'source', label: 'Source' },
+    { id: "name", label: "Lead Name" },
+    { id: "email", label: "Email" },
+    { id: "company", label: "Company" },
+    { id: "contact", label: "Contact" },
+    { id: "status", label: "Status" },
+    { id: "grade", label: "Grade" },
+    { id: "score", label: "Score" },
+    { id: "source", label: "Source" },
     // { id: 'lastActivity', label: 'Last Activity' },
   ];
   // Column toggle handlers
   const handleToggleColumn = (columnId: string) => {
-    setVisibleColumns(prev => 
-      prev.includes(columnId) 
-        ? prev.filter(id => id !== columnId)
-        : [...prev, columnId]
+    setVisibleColumns((prev) =>
+      prev.includes(columnId)
+        ? prev.filter((id) => id !== columnId)
+        : [...prev, columnId],
     );
   };
 
   const handleApplyColumns = () => {
     // Columns are already updated via handleToggleColumn
     // This function can be used for additional logic if needed
-    console.log('Applied columns:', visibleColumns);
+    console.log("Applied columns:", visibleColumns);
   };
 
   // Create dynamic columns based on visibleColumns state
   const getTableColumns = () => {
     const allColumns = [
-      { 
-        id: 'sno',
-        name: 'S.no', 
-        selector: (row: any, index: number) => index + 1, 
-        sortable: false, 
-        width: '80px' 
+      {
+        id: "sno",
+        name: "S.no",
+        selector: (row: any, index: number) => index + 1,
+        sortable: false,
+        width: "80px",
       },
-      { 
-        id: 'name',
-        name: 'Name', 
-        selector: (row: any) => `${row.firstName || ''} ${row.lastName || ''} `.trim(), 
+      {
+        id: "name",
+        name: "Name",
+        selector: (row: any) =>
+          `${row.firstName || ""} ${row.lastName || ""} `.trim(),
         sortable: true,
-        width: '150px',
-        minWidth: '150px',
+        width: "150px",
+        minWidth: "150px",
         cell: (row: any) => (
-          <div 
-            onClick={() => setLeadDetailsSheet({ open: true, leadId: row.leadId })} 
+          <div
+            onClick={() =>
+              setLeadDetailsSheet({ open: true, leadId: row.leadId })
+            }
             className="cursor-pointer hover:text-blue-600"
           >
-            {`${row.firstName || ''} ${row.lastName || ''}`.trim()}
+            {`${row.firstName || ""} ${row.lastName || ""}`.trim()}
           </div>
-        )
+        ),
       },
-      { 
-        id: 'email',
-        name: 'Email', 
-        selector: (row: any) => row.email || '', 
+      {
+        id: "email",
+        name: "Email",
+        selector: (row: any) => row.email || "",
         sortable: true,
-        width: '250px',
-        minWidth: '250px',
+        width: "250px",
+        minWidth: "250px",
         cell: (row: any) => (
           <InlineEditEmail
-            value={row.email || ''}
-            onSave={(value) =>
-              handleFieldUpdate(
-                row.leadId,
-                "email",
-                value
-              )
-            }
+            value={row.email || ""}
+            onSave={(value) => handleFieldUpdate(row.leadId, "email", value)}
             placeholder="Enter email..."
-            
           />
-        )
+        ),
       },
-      { 
-        id: 'contact',
-        name: 'Contact', 
-        selector: (row: any) => row.phone || '', 
+      {
+        id: "contact",
+        name: "Contact",
+        selector: (row: any) => row.phone || "",
         sortable: true,
-        width: '200px',
-        minWidth: '200px'
+        width: "200px",
+        minWidth: "200px",
       },
-      { 
-        id: 'company',
-        name: 'Company', 
-        selector: (row: any) => row.businessName || '', 
+      {
+        id: "company",
+        name: "Company",
+        selector: (row: any) => row.businessName || "",
         sortable: true,
-        width: '200px',
-        minWidth: '200px',
+        width: "200px",
+        minWidth: "200px",
         cell: (row: any) => (
           <DirectText
-            value={row.businessName || ''}
+            value={row.businessName || ""}
             onSave={(value) =>
-              handleFieldUpdate(
-                row.leadId,
-                "businessName",
-                value
-              )
+              handleFieldUpdate(row.leadId, "businessName", value)
             }
             placeholder="Enter company name..."
             className="font-regular !text-[13px] !p-0 h-[20px]"
           />
-        )
+        ),
       },
-      { 
-        id: 'status',
-        name: 'Status', 
+      {
+        id: "status",
+        name: "Status",
         selector: (row: any) => {
           const status = statuses.find((s: any) => s.id === row.statusId);
           return getShortStatusName(status?.entityValue || "");
-        }, 
+        },
         sortable: true,
-        width: '120px',
-        minWidth: '120px',
+        width: "120px",
+        minWidth: "120px",
         cell: (row: any) => (
           <DirectSelect
             value={row.statusId}
@@ -354,50 +355,44 @@ export default function TestTablePage() {
               value: getShortStatusName(s.value || s.entityValue || ""),
               label: getShortStatusName(s.value || s.entityValue || ""),
             }))}
-            onSave={(value) =>
-              handleFieldUpdate(
-                row.leadId,
-                "statusId",
-                value
-              )
-            }
+            onSave={(value) => handleFieldUpdate(row.leadId, "statusId", value)}
             getItemColor={getStatusColorForDropdown}
           />
-        )
+        ),
       },
-      { 
-        id: 'grade',
-        name: 'Grade', 
+      {
+        id: "grade",
+        name: "Grade",
         selector: (row: any) => {
           const grade = grades.find((g: any) => g.id === row.scoreGradeId);
           return grade?.entityValue || "Ungraded";
-        }, 
+        },
         sortable: true,
-        width: '100px',
-        minWidth: '100px'
+        width: "100px",
+        minWidth: "100px",
       },
-      { 
-        id: 'score',
-        name: 'Score', 
-        selector: (row: any) => row.scoreData?.totalScore || row.leadScore || 0, 
+      {
+        id: "score",
+        name: "Score",
+        selector: (row: any) => row.scoreData?.totalScore || row.leadScore || 0,
         sortable: true,
-        width: '120px',
-        minWidth: '120px'
+        width: "120px",
+        minWidth: "120px",
       },
-      { 
-        id: 'source',
-        name: 'Source', 
+      {
+        id: "source",
+        name: "Source",
         selector: (row: any) => {
           const source = sources.find((s: any) => s.id === row.sourceId);
           return source?.entityValue || "Unknown";
-        }, 
+        },
         sortable: true,
-        width: '120px',
-        minWidth: '120px'
+        width: "120px",
+        minWidth: "120px",
       },
-      { 
-        id: 'actions',
-        name: 'Actions', 
+      {
+        id: "actions",
+        name: "Actions",
         cell: (row: any) => (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -432,64 +427,66 @@ export default function TestTablePage() {
                 <Mail className="h-4 w-4 mr-2" />
                 Send Email
               </DropdownMenuItem>
-                <DropdownMenuItem
-                    onClick={() =>
-                      setActivityDialog({
-                        open: true,
-                        leadId: row.leadId,
-                      })
-                    }
-                  >
-                    <Activity className="h-4 w-4 mr-2" />
-                    Log Activity
+              <DropdownMenuItem
+                onClick={() =>
+                  setActivityDialog({
+                    open: true,
+                    leadId: row.leadId,
+                  })
+                }
+              >
+                <Activity className="h-4 w-4 mr-2" />
+                Log Activity
               </DropdownMenuItem>
-               <DropdownMenuItem
-                        onClick={() =>
-                          setFollowUpDialog({
-                            open: true,
-                            leadId: row.leadId,
-                            leadName: `${row.firstName} ${row.lastName}`,
-                          })
-                        }
-                      >
-                        <Clock className="h-4 w-4 mr-2" />
-                        Schedule Follow-up
-                      </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() =>
+                  setFollowUpDialog({
+                    open: true,
+                    leadId: row.leadId,
+                    leadName: `${row.firstName} ${row.lastName}`,
+                  })
+                }
+              >
+                <Clock className="h-4 w-4 mr-2" />
+                Schedule Follow-up
+              </DropdownMenuItem>
 
               <DropdownMenuSeparator />
 
               <DropdownMenuItem
-                  onClick={() =>
-                    setCreateDealDialog({
-                      open: true,
-                      leadId: row.leadId,
-                    })
-                  }
-                >
-                  <Target className="h-4 w-4 mr-2" />
-                  Create Deal
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Schedule Call
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Add Note
-                </DropdownMenuItem>
+                onClick={() =>
+                  setCreateDealDialog({
+                    open: true,
+                    leadId: row.leadId,
+                  })
+                }
+              >
+                <Target className="h-4 w-4 mr-2" />
+                Create Deal
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Calendar className="h-4 w-4 mr-2" />
+                Schedule Call
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Add Note
+              </DropdownMenuItem>
 
-
-                <DropdownMenuSeparator />
-
-
+              <DropdownMenuSeparator />
 
               <DropdownMenuItem onClick={() => handleEditLead(row.leadId)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="text-destructive" 
-                onClick={() => handeldeletelead(row.leadId, `${row.firstName} ${row.lastName}`)}
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() =>
+                  handeldeletelead(
+                    row.leadId,
+                    `${row.firstName} ${row.lastName}`,
+                  )
+                }
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
@@ -499,22 +496,19 @@ export default function TestTablePage() {
         ),
         ignoreRowClick: true,
         allowoverflow: true,
-        button: true,
-        width: '100px',
-        minWidth: '100px'
+        width: "100px",
+        minWidth: "100px",
       },
     ];
 
     // Filter columns based on visibleColumns state
-    return allColumns.filter(col => 
-      col.id === 'sno' || col.id === 'actions' || visibleColumns.includes(col.id)
+    return allColumns.filter(
+      (col) =>
+        col.id === "sno" ||
+        col.id === "actions" ||
+        visibleColumns.includes(col.id),
     );
   };
-
-
-
-
-
 
   // Filter configurations
   const filterConfigs: FilterConfig[] = useMemo(
@@ -544,24 +538,24 @@ export default function TestTablePage() {
           count: safeLeads.filter((lead) => lead.scoreGradeId === grade.id)
             .length,
           color: getGradeColor(grade.value || grade.entityValue || "").includes(
-            "red"
+            "red",
           )
             ? "#ef4444"
             : getGradeColor(grade.value || grade.entityValue || "").includes(
-                "orange"
-              )
-            ? "#f97316"
-            : getGradeColor(grade.value || grade.entityValue || "").includes(
-                "blue"
-              )
-            ? "#3b82f6"
-            : "#6b7280",
+                  "orange",
+                )
+              ? "#f97316"
+              : getGradeColor(grade.value || grade.entityValue || "").includes(
+                    "blue",
+                  )
+                ? "#3b82f6"
+                : "#6b7280",
         })),
         multiple: false,
         searchable: false,
       },
     ],
-    [statuses, sources, grades, safeLeads]
+    [statuses, sources, grades, safeLeads],
   );
 
   // Note: Filtering and sorting is now handled by the backend
@@ -590,7 +584,7 @@ export default function TestTablePage() {
   const handleFieldUpdate = async (
     leadId: string,
     field: string,
-    value: string
+    value: string,
   ) => {
     try {
       const updateData: Record<string, any> = {};
@@ -625,7 +619,7 @@ export default function TestTablePage() {
 
   const confirmDeleteLead = async () => {
     if (!deleteDialog.leadId) return;
-    
+
     try {
       await deleteLeadMutation.mutateAsync(deleteDialog.leadId);
       toast.success("Lead deleted successfully!");
@@ -635,28 +629,36 @@ export default function TestTablePage() {
     }
   };
 
-  const handleExportLeads = (format: 'csv' | 'excel') => {
-    const headers = ['Name', 'Email', 'Phone', 'Company', 'Status', 'Source', 'Score'];
-    const data = safeLeads.map(lead => [
+  const handleExportLeads = (format: "csv" | "excel") => {
+    const headers = [
+      "Name",
+      "Email",
+      "Phone",
+      "Company",
+      "Status",
+      "Source",
+      "Score",
+    ];
+    const data = safeLeads.map((lead) => [
       `${lead.firstName} ${lead.lastName} `,
-      lead.email || '',
-      lead.phone || '',
-      lead.businessName || '',
-      statuses.find((s: any) => s.id === lead.statusId)?.entityValue || '',
-      sources.find((s: any)  => s.id === lead.sourceId)?.entityValue || '',
-      lead.leadScore || 0
+      lead.email || "",
+      lead.phone || "",
+      lead.businessName || "",
+      statuses.find((s: any) => s.id === lead.statusId)?.entityValue || "",
+      sources.find((s: any) => s.id === lead.sourceId)?.entityValue || "",
+      lead.leadScore || 0,
     ]);
-    
-    const fileName = `leads-export-${new Date().toISOString().split('T')[0]}`;
-    
-    if (format === 'csv') {
+
+    const fileName = `leads-export-${new Date().toISOString().split("T")[0]}`;
+
+    if (format === "csv") {
       const csvContent = [headers, ...data]
-        .map(row => row.map(field => `"${field}"`).join(','))
-        .join('\n');
-      
-      const blob = new Blob([csvContent], { type: 'text/csv' });
+        .map((row) => row.map((field) => `"${field}"`).join(","))
+        .join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv" });
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = `${fileName}.csv`;
       link.click();
@@ -664,18 +666,20 @@ export default function TestTablePage() {
     } else {
       // Excel format (XLSX)
       const excelContent = [headers, ...data]
-        .map(row => row.join('\t'))
-        .join('\n');
-      
-      const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
+        .map((row) => row.join("\t"))
+        .join("\n");
+
+      const blob = new Blob([excelContent], {
+        type: "application/vnd.ms-excel",
+      });
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = `${fileName}.xls`;
       link.click();
       window.URL.revokeObjectURL(url);
     }
-    
+
     toast.success(`Leads exported as ${format.toUpperCase()} successfully!`);
   };
 
@@ -717,7 +721,7 @@ export default function TestTablePage() {
 
   const handleSortChange = (
     newSortBy: string,
-    newSortOrder: "asc" | "desc"
+    newSortOrder: "asc" | "desc",
   ) => {
     setSortBy(newSortBy);
     setSortOrder(newSortOrder);
@@ -755,10 +759,7 @@ export default function TestTablePage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-      
-
         {/* Stats Cards */}
-      
 
         {/* Filters and Table */}
         <Card>
@@ -780,20 +781,17 @@ export default function TestTablePage() {
                 />
               </div>
               <div className="flex gap-2 items-center">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex items-center gap-2 !font-regular"
+                  onClick={() => setBulkImportDialog(true)}
+                >
+                  <Upload className="h-4 w-4" />
+                  Import
+                </Button>
 
-              <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex items-center gap-2 !font-regular"
-                    onClick={() => setBulkImportDialog(true)}
-                  >
-                    <Upload className="h-4 w-4" />
-                    Import
-                  </Button>
-
-  {/* Columns Customizer Dropdown */}
-                 
-
+                {/* Columns Customizer Dropdown */}
 
                 {/* Export Dropdown */}
                 <DropdownMenu>
@@ -808,114 +806,134 @@ export default function TestTablePage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleExportLeads('csv')}>
+                    <DropdownMenuItem onClick={() => handleExportLeads("csv")}>
                       <Download className="h-4 w-4 mr-2" />
                       Export as CSV
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleExportLeads('excel')}>
+                    <DropdownMenuItem
+                      onClick={() => handleExportLeads("excel")}
+                    >
                       <Download className="h-4 w-4 mr-2" />
                       Export as Excel
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                
-                 <DropdownMenu>
-                     <DropdownMenuTrigger asChild>
-                       <Button
-                         size="sm"
-                         variant="outline"
-                         className="flex items-center gap-2 !font-regular !text-[14px]"
-                       >
-                         <LayoutGrid className="h-4 w-4" />
-                          Columns
-                       </Button>
-                     </DropdownMenuTrigger>
-                     <DropdownMenuContent 
-                       side="bottom" 
-                       align="end" 
-                       className="w-64 p-2"
-                     >
-                       <p className="text-sm font-semibold px-2 pb-2">Customize Columns</p>
-                       <div className="flex flex-col gap-2">
-                         {tableColumns.map((col, idx) => (
-                           <div key={col.id} className="flex items-center justify-between px-2 py-1 hover:bg-accent rounded">
-                             <span className="text-sm">{col.label}</span>
-                             <Switch
-                               checked={visibleColumns.includes(col.id)}
-                               onCheckedChange={() => handleToggleColumn(col.id)}
-                             />
-                           </div>
-                         ))}
-                       </div>
-                       <div className="flex justify-end mt-2">
-                         <Button size="sm" onClick={handleApplyColumns}>
-                           Apply
-                         </Button>
-                       </div>
-                     </DropdownMenuContent>
-                   </DropdownMenu>
 
-                <Button asChild size="sm" className="bg-[#45a2ff] hover:bg-[#45a2ff]/90 px-2">
-                <Link href="/pages/testtable/newlead">
-                <Plus className="h-3 w-3 " />
-                Add Lead
-              </Link>
-            </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex items-center gap-2 !font-regular !text-[14px]"
+                    >
+                      <LayoutGrid className="h-4 w-4" />
+                      Columns
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    side="bottom"
+                    align="end"
+                    className="w-64 p-2"
+                  >
+                    <p className="text-sm font-semibold px-2 pb-2">
+                      Customize Columns
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {tableColumns.map((col, idx) => (
+                        <div
+                          key={col.id}
+                          className="flex items-center justify-between px-2 py-1 hover:bg-accent rounded"
+                        >
+                          <span className="text-sm">{col.label}</span>
+                          <Switch
+                            checked={visibleColumns.includes(col.id)}
+                            onCheckedChange={() => handleToggleColumn(col.id)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-end mt-2">
+                      <Button size="sm" onClick={handleApplyColumns}>
+                        Apply
+                      </Button>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
+                <Button
+                  asChild
+                  size="sm"
+                  className="bg-[#45a2ff] hover:bg-[#45a2ff]/90 px-2"
+                >
+                  <Link href="/pages/testtable/newlead">
+                    <Plus className="h-3 w-3 " />
+                    Add Lead
+                  </Link>
+                </Button>
               </div>
             </div>
 
             {/* Data Table */}
             <div className="mt-4">
-              <ReactTable 
-                columns={getTableColumns()} 
-                data={safeLeads} 
-              />
+              <ReactTable columns={getTableColumns()} data={safeLeads} />
             </div>
 
             {/* Pagination Controls */}
             <div className="flex items-center justify-between mt-4">
               <div className="text-[12px] text-muted-foreground">
-                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, pagination.total)} of {pagination.total} leads
+                Showing {(currentPage - 1) * pageSize + 1} to{" "}
+                {Math.min(currentPage * pageSize, pagination.total)} of{" "}
+                {pagination.total} leads
               </div>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
                   disabled={currentPage === 1}
                 >
                   Previous
                 </Button>
                 <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                    let pageNum;
-                    if (pagination.totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNum = i + 1;
-                    } else if (currentPage >= pagination.totalPages - 2) {
-                      pageNum = pagination.totalPages - 4 + i;
-                    } else {
-                      pageNum = currentPage - 2 + i;
-                    }
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={currentPage === pageNum ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCurrentPage(pageNum)}
-                        className="min-w-[40px]"
-                      >
-                        {pageNum}
-                      </Button>
-                    );
-                  })}
+                  {Array.from(
+                    { length: Math.min(5, pagination.totalPages) },
+                    (_, i) => {
+                      let pageNum;
+                      if (pagination.totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= pagination.totalPages - 2) {
+                        pageNum = pagination.totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={
+                            currentPage === pageNum ? "default" : "outline"
+                          }
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className="min-w-[40px]"
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    },
+                  )}
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) =>
+                      Math.min(pagination.totalPages, prev + 1),
+                    )
+                  }
                   disabled={currentPage >= pagination.totalPages}
                 >
                   Next
@@ -925,9 +943,6 @@ export default function TestTablePage() {
           </CardContent>
         </Card>
       </div>
-
-
-
 
       <LeadDetailsSheet
         open={leadDetailsSheet.open}
@@ -940,11 +955,11 @@ export default function TestTablePage() {
         lead={
           leadDetailsSheet.leadId
             ? safeLeads.find(
-                (lead) => lead.leadId === leadDetailsSheet.leadId
+                (lead) => lead.leadId === leadDetailsSheet.leadId,
               ) || null
             : safeLeads.length > 0
-            ? safeLeads[0]
-            : null
+              ? safeLeads[0]
+              : null
         }
         configs={{
           status: statuses,
@@ -963,7 +978,6 @@ export default function TestTablePage() {
         }}
       />
 
-
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialog.open}
@@ -981,8 +995,9 @@ export default function TestTablePage() {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Are you sure you want to delete <strong>{deleteDialog.leadName}</strong>? 
-              This action cannot be undone.
+              Are you sure you want to delete{" "}
+              <strong>{deleteDialog.leadName}</strong>? This action cannot be
+              undone.
             </p>
             <div className="flex justify-end gap-2">
               <Button

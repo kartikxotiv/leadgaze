@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -67,22 +67,26 @@ export function NoteDialog({
   const updateNoteMutation = useUpdateNote();
   const deleteNoteMutation = useDeleteNote();
 
-  const notes: Note[] = (() => {
-    if (notesData && process.env.NODE_ENV === "development") {
-      console.log("Notes data structure:", notesData);
+  const notes: Note[] = useMemo(() => {
+    let rawNotes: any[] = [];
+    if (notesData?.data?.notes && Array.isArray(notesData.data.notes)) {
+      rawNotes = notesData.data.notes;
+    } else if (Array.isArray(notesData?.notes)) {
+      rawNotes = notesData.notes;
+    } else if (Array.isArray(notesData?.data)) {
+      rawNotes = notesData.data;
     }
 
-    if (notesData?.data?.notes && Array.isArray(notesData.data.notes)) {
-      return notesData.data.notes;
-    }
-    if (Array.isArray(notesData?.notes)) {
-      return notesData.notes;
-    }
-    if (Array.isArray(notesData?.data)) {
-      return notesData.data;
-    }
-    return [];
-  })();
+    // Deduplicate by id
+    const uniqueNotesMap = new Map();
+    rawNotes.forEach((note) => {
+      if (!uniqueNotesMap.has(note.id)) {
+        uniqueNotesMap.set(note.id, note);
+      }
+    });
+
+    return Array.from(uniqueNotesMap.values());
+  }, [notesData]);
 
   useEffect(() => {
     if (open && leadId) {

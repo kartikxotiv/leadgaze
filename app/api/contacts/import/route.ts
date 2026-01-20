@@ -45,13 +45,13 @@ export async function POST(request: NextRequest) {
     if (!workspaceId) {
       return NextResponse.json(
         { success: false, error: "workspaceId is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     if (!rows.length) {
       return NextResponse.json(
         { success: false, error: "rows must be a non-empty array" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     };
 
     function normalizePhoneNumber(
-      value?: string | number | null
+      value?: string | number | null,
     ): number | null {
       if (!value) return null;
       // Convert to string first in case it's a number from Excel
@@ -88,8 +88,7 @@ export async function POST(request: NextRequest) {
       if (!digits) return null;
       const parsed = Number(digits);
       if (Number.isNaN(parsed)) return null;
-      const INT32_MAX = 2_147_483_647;
-      if (parsed > INT32_MAX || parsed < 0) return null;
+      // Removed Int32 check for international numbers
       return parsed;
     }
 
@@ -106,7 +105,7 @@ export async function POST(request: NextRequest) {
       if (!firstName || !lastName || !email) {
         failed++;
         errors.push(
-          `Row ${rowIdx}: Missing required fields (firstName/lastName/email)`
+          `Row ${rowIdx}: Missing required fields (firstName/lastName/email)`,
         );
         continue;
       }
@@ -123,10 +122,10 @@ export async function POST(request: NextRequest) {
       // Just log a warning if phone number format is invalid, but don't skip the row
       if (phoneNumber) {
         const digits = phoneNumber.replace(/\D/g, "");
-        if (digits.length > 0 && digits.length !== 10) {
+        if (digits.length > 0 && (digits.length < 7 || digits.length > 15)) {
           // Log warning but don't block import
           errors.push(
-            `Row ${rowIdx}: Phone number has ${digits.length} digits (expected 10), will be stored as-is`
+            `Row ${rowIdx}: Phone number has ${digits.length} digits (expected 7-15), will be stored as-is`,
           );
         }
       }
@@ -148,7 +147,7 @@ export async function POST(request: NextRequest) {
         if (!platformId && platformName) {
           try {
             const newPlatform = await createContactPlatform(
-              safeStringTrim(row.platform) || ""
+              safeStringTrim(row.platform) || "",
             );
             if (newPlatform.id !== undefined && newPlatform.id !== null) {
               platformId = newPlatform.id;
@@ -158,7 +157,7 @@ export async function POST(request: NextRequest) {
             // Platform might already exist (race condition), try to find it again
             const updatedPlatforms = await getContactPlatforms();
             const found = updatedPlatforms.find(
-              (p) => normalize(p.name || "") === platformName
+              (p) => normalize(p.name || "") === platformName,
             );
             if (found?.id !== undefined && found?.id !== null) {
               platformId = found.id;
@@ -171,7 +170,7 @@ export async function POST(request: NextRequest) {
       try {
         const normalizedPhone = normalizePhoneNumber(phoneNumber);
         const normalizedAlternativePhone = normalizePhoneNumber(
-          safeStringTrim(row.alternativePhoneNumber)
+          safeStringTrim(row.alternativePhoneNumber),
         );
 
         await createSalesContact({
@@ -182,7 +181,7 @@ export async function POST(request: NextRequest) {
             normalizedPhone != null ? String(normalizedPhone) : null,
           location: safeStringTrim(row.location),
           contact_time_zone: null,
-          status: row.status || "pending",
+          status: (row.status?.toLowerCase() as any) || "pending",
           workspace_id: workspaceId,
           platform: platformId,
           alternative_email: safeStringTrim(row.alternativeEmail),
@@ -216,7 +215,7 @@ export async function POST(request: NextRequest) {
         error: "Failed to import sales contacts",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

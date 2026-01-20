@@ -241,3 +241,7 @@
   opacity: 0.3 !important;
   border-radius: 0 !important;
 } */
+
+.react-tel-input .country-list {
+  z-index: 9999 !important;
+}

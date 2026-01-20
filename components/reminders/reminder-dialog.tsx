@@ -41,7 +41,7 @@ export function ReminderDialog({
   const [content, setContent] = useState("");
   const [remindAt, setRemindAt] = useState("");
   const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(
-    null
+    null,
   );
   const { currentWorkspace } = useWorkspaceContext();
 
@@ -54,45 +54,36 @@ export function ReminderDialog({
   const updateReminderMutation = useUpdateReminder();
 
   const reminders: Reminder[] = (() => {
-    if (
-      remindersData?.data?.reminders &&
-      Array.isArray(remindersData.data.reminders)
-    ) {
+    if (Array.isArray(remindersData?.data?.reminders)) {
       return remindersData.data.reminders;
+    }
+    if (Array.isArray(remindersData?.data)) {
+      return remindersData.data;
     }
     if (Array.isArray(remindersData?.reminders)) {
       return remindersData.reminders;
     }
-    if (Array.isArray(remindersData?.data)) {
-      return remindersData.data;
+    if (Array.isArray(remindersData)) {
+      return remindersData;
     }
     return [];
   })();
 
   const formatDateTimeLocal = (isoString: string): string => {
     if (!isoString) return "";
-    const normalize = (input: string): Date | null => {
-      let s = input.trim();
-      if (s.includes(" ") && !s.includes("T")) {
-        s = s.replace(" ", "T");
-      }
-      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) {
-        s = `${s}:00`;
-      }
-      if (!/[zZ]/.test(s) && !/[+-]\d{2}(:?\d{2})?$/.test(s)) {
-        s = `${s}Z`;
-      }
-      const d = new Date(s);
-      return isNaN(d.getTime()) ? null : d;
-    };
-    const date = normalize(isoString);
-    if (!date) return "";
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    try {
+      const date = new Date(isoString);
+      if (isNaN(date.getTime())) return "";
+
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch (e) {
+      return "";
+    }
   };
 
   useEffect(() => {

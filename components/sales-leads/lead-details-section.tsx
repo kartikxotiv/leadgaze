@@ -56,7 +56,7 @@ export interface LeadDetailsSectionProps {
   platformsLoading: boolean;
   onEditFormChange: <K extends keyof FormData>(
     field: K,
-    value: FormData[K]
+    value: FormData[K],
   ) => void;
   onEditPlatformSelectChange: (value: string) => void;
   onEditPrioritySelectChange: (value: string) => void;
@@ -72,6 +72,8 @@ export interface LeadDetailsSectionProps {
   onCancel: () => void;
   onUpdate: () => void;
   isUpdating: boolean;
+  submitButtonText?: string;
+  isOpportunityPage?: boolean;
 }
 
 export function LeadDetailsSection({
@@ -98,6 +100,8 @@ export function LeadDetailsSection({
   onCancel,
   onUpdate,
   isUpdating,
+  submitButtonText = "Update Lead",
+  isOpportunityPage = false,
 }: LeadDetailsSectionProps) {
   const [tabSelected, setTabSelected] = useState<TabValue>("notes");
 
@@ -124,11 +128,14 @@ export function LeadDetailsSection({
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                {(previewLead?.status === "opportunities"
+                {(isOpportunityPage
                   ? STATUS_OPTIONS.filter(
-                      (opt) => opt.value === "won" || opt.value === "lost"
+                      (opt) => opt.value !== "qualified_lead",
                     )
-                  : STATUS_OPTIONS
+                  : STATUS_OPTIONS.filter(
+                      (opt) =>
+                        !["qualified_lead", "won", "lost"].includes(opt.value),
+                    )
                 ).map((option) => (
                   <DropdownMenuItem
                     key={option.value}
@@ -153,12 +160,12 @@ export function LeadDetailsSection({
                 editFormData.priorityId !== NO_SELECTION_VALUE ? (
                   (() => {
                     const selectedPriority = priorityOptions.find(
-                      (p) => p.id === editFormData.priorityId
+                      (p) => p.id === editFormData.priorityId,
                     );
                     if (selectedPriority) {
                       const priorityColor = resolvePriorityColor(
                         selectedPriority.name,
-                        selectedPriority.color
+                        selectedPriority.color,
                       );
                       return (
                         <div className="flex items-center gap-2 w-full">
@@ -200,7 +207,7 @@ export function LeadDetailsSection({
                         style={{
                           color: resolvePriorityColor(
                             priority.name,
-                            priority.color
+                            priority.color,
                           ),
                         }}
                       />
@@ -231,8 +238,8 @@ export function LeadDetailsSection({
                     platformsLoading
                       ? "Loading platforms..."
                       : platformOptions.length === 0
-                      ? "No saved platforms"
-                      : "Select a platform"
+                        ? "No saved platforms"
+                        : "Select a platform"
                   }
                 />
               </SelectTrigger>
@@ -392,7 +399,7 @@ export function LeadDetailsSection({
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Update Lead
+                  {submitButtonText}
                 </>
               )}
             </Button>

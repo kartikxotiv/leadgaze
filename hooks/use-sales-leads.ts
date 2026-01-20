@@ -13,7 +13,7 @@ export interface SalesLeadFilters {
   page?: number;
   limit?: number;
   workspaceId?: string;
-  status?: string;
+  status?: string | string[];
   ownerId?: string;
   priorityId?: string;
   dateFrom?: string;

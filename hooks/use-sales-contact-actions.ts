@@ -35,11 +35,11 @@ interface UseSalesContactActionsProps {
   >;
   handleFormChange: <K extends keyof FormData>(
     field: K,
-    value: FormData[K]
+    value: FormData[K],
   ) => void;
   handleEditFormChange: <K extends keyof FormData>(
     field: K,
-    value: FormData[K]
+    value: FormData[K],
   ) => void;
   validateForm: () => boolean;
   validateEditForm: () => boolean;
@@ -75,7 +75,7 @@ interface UseSalesContactActionsProps {
   };
   handleAddPlatformDialogOpenChange: (
     open: boolean,
-    targetForm?: "add" | "edit"
+    targetForm?: "add" | "edit",
   ) => void;
 }
 
@@ -122,7 +122,7 @@ export function useSalesContactActions({
         salesContactName,
       });
     },
-    [setDeleteDialog]
+    [setDeleteDialog],
   );
 
   const handleMoveToLead = useCallback(
@@ -134,7 +134,7 @@ export function useSalesContactActions({
 
       if (!currentWorkspace?.id) {
         toast.error(
-          "Please select a workspace before moving contacts to leads."
+          "Please select a workspace before moving contacts to leads.",
         );
         return;
       }
@@ -147,7 +147,7 @@ export function useSalesContactActions({
       const contactId = String(contact.id);
       const firstName = (contact.first_name ?? "").trim();
       const normalizedPhone = normalizePhoneNumberFromString(
-        contact.phone_number != null ? String(contact.phone_number) : null
+        contact.phone_number != null ? String(contact.phone_number) : null,
       );
       // Keep alternative_phone_number as string - don't normalize to number
       // The database column is VARCHAR(255), so we should store it as string directly
@@ -192,7 +192,9 @@ export function useSalesContactActions({
           id: contactId,
           data: { status: "moved_to_lead" },
         });
-        toast.success("Sales contact moved to Sales Leads successfully!");
+        toast.success(
+          "Contact moved to Lead successfully. You can view it in the Leads page",
+        );
 
         setPreviewContact((prev: any) => {
           if (!prev || prev.id !== contact.id) {
@@ -201,9 +203,9 @@ export function useSalesContactActions({
           const platformLabel =
             updatedContact?.platform !== undefined &&
             updatedContact?.platform !== null
-              ? platformNameMap.get(updatedContact.platform) ??
+              ? (platformNameMap.get(updatedContact.platform) ??
                 prev.platform_label ??
-                ""
+                "")
               : "";
           return {
             ...prev,
@@ -235,7 +237,7 @@ export function useSalesContactActions({
       setPreviewContact,
       setEditFormData,
       setEditErrors,
-    ]
+    ],
   );
 
   const handleReject = useCallback(
@@ -257,7 +259,7 @@ export function useSalesContactActions({
           id: contactId,
           data: { status: "rejected" },
         });
-        toast.success("Sales contact rejected successfully!");
+        toast.success("Contact rejected successfully!");
 
         setPreviewContact((prev: any) => {
           if (!prev || prev.id !== contact.id) {
@@ -266,9 +268,9 @@ export function useSalesContactActions({
           const platformLabel =
             updatedContact?.platform !== undefined &&
             updatedContact?.platform !== null
-              ? platformNameMap.get(updatedContact.platform) ??
+              ? (platformNameMap.get(updatedContact.platform) ??
                 prev.platform_label ??
-                ""
+                "")
               : "";
           return {
             ...prev,
@@ -296,7 +298,7 @@ export function useSalesContactActions({
       setPreviewContact,
       setEditFormData,
       setEditErrors,
-    ]
+    ],
   );
 
   const confirmDeleteSalesContact = useCallback(
@@ -304,13 +306,13 @@ export function useSalesContactActions({
       if (!salesContactId) return;
       try {
         await deleteSalesContactMutation.mutateAsync(salesContactId);
-        toast.success("Sales contact deleted successfully");
+        toast.success("Contact deleted successfully");
       } catch (err: any) {
-        toast.error(err?.message || "Failed to delete sales contact");
+        toast.error(err?.message || "Failed to delete contact");
         throw err;
       }
     },
-    [deleteSalesContactMutation]
+    [deleteSalesContactMutation],
   );
 
   const handlePreviewContact = useCallback(
@@ -326,7 +328,7 @@ export function useSalesContactActions({
       setPreviewSidebarOpen,
       setEditFormData,
       setEditErrors,
-    ]
+    ],
   );
 
   const handleSidebarOpenChange = useCallback(
@@ -337,7 +339,7 @@ export function useSalesContactActions({
         resetEditFormState();
       }
     },
-    [resetEditFormState, setPreviewSidebarOpen, setPreviewContact]
+    [resetEditFormState, setPreviewSidebarOpen, setPreviewContact],
   );
 
   const handleAddSalesContactSidebarOpenChange = useCallback(
@@ -347,7 +349,7 @@ export function useSalesContactActions({
         resetFormState();
       }
     },
-    [resetFormState, setAddSalesContactSidebarOpen]
+    [resetFormState, setAddSalesContactSidebarOpen],
   );
 
   const handleAddPlatformDialogAddPlatform = useCallback(async () => {
@@ -363,7 +365,7 @@ export function useSalesContactActions({
     }
 
     const existingPlatform = platformOptions.find(
-      (platform) => platform.name.toLowerCase() === platformName.toLowerCase()
+      (platform) => platform.name.toLowerCase() === platformName.toLowerCase(),
     );
 
     if (existingPlatform?.id !== undefined && existingPlatform?.id !== null) {
@@ -383,9 +385,8 @@ export function useSalesContactActions({
     }
 
     try {
-      const newPlatform = await createContactPlatformMutation.mutateAsync(
-        platformName
-      );
+      const newPlatform =
+        await createContactPlatformMutation.mutateAsync(platformName);
       if (newPlatform?.id !== undefined && newPlatform?.id !== null) {
         if (targetForm === "edit") {
           handleEditFormChange("platformId", String(newPlatform.id));
@@ -436,20 +437,21 @@ export function useSalesContactActions({
       if (!platformId && manualPlatformName) {
         const existingPlatform = platformOptions.find(
           (platform) =>
-            platform.name.toLowerCase() === manualPlatformName.toLowerCase()
+            platform.name.toLowerCase() === manualPlatformName.toLowerCase(),
         );
 
         if (existingPlatform) {
           platformId = existingPlatform.id ?? null;
         } else {
           try {
-            const newPlatform = await createContactPlatformMutation.mutateAsync(
-              manualPlatformName
-            );
+            const newPlatform =
+              await createContactPlatformMutation.mutateAsync(
+                manualPlatformName,
+              );
             platformId = newPlatform?.id ?? null;
           } catch (error: any) {
             toast.error(
-              error?.message || "Failed to create platform. Please try again."
+              error?.message || "Failed to create platform. Please try again.",
             );
             return;
           }
@@ -460,7 +462,7 @@ export function useSalesContactActions({
         first_name: formData.firstName.trim(),
         last_name: formData.lastName.trim() || null,
         email: formData.email.trim() || null,
-        phone_number: formData.phoneNumber.trim() || null,
+        phone_number: formData.phoneNumber.replace(/\D/g, "") || null,
         location: formData.location.trim() || null,
         contact_time_zone: formData.contactTimeZone.trim() || null,
         status: "pending", // Force status to "pending" when creating new contact
@@ -469,7 +471,7 @@ export function useSalesContactActions({
 
         alternative_email: formData.alternativeEmail.trim() || null,
         alternative_phone_number:
-          formData.alternativePhoneNumber.trim() || null,
+          formData.alternativePhoneNumber.replace(/\D/g, "") || null,
         business_contact: formData.businessContact.trim() || null,
         business_linkedin: formData.businessLinkedin.trim() || null,
         business_name: formData.businessName.trim() || null,
@@ -480,7 +482,7 @@ export function useSalesContactActions({
 
       try {
         await createSalesContactMutation.mutateAsync(payload);
-        toast.success("Sales contact created successfully!");
+        toast.success("Contact saved success fully");
         resetFormState();
         if (saveAndExit) {
           setAddSalesContactSidebarOpen(false);
@@ -498,7 +500,7 @@ export function useSalesContactActions({
       resetFormState,
       validateForm,
       setAddSalesContactSidebarOpen,
-    ]
+    ],
   );
 
   const handleUpdateSubmit = useCallback(async () => {
@@ -522,20 +524,19 @@ export function useSalesContactActions({
     if (!platformId && manualPlatformName) {
       const existingPlatform = platformOptions.find(
         (platform) =>
-          platform.name.toLowerCase() === manualPlatformName.toLowerCase()
+          platform.name.toLowerCase() === manualPlatformName.toLowerCase(),
       );
 
       if (existingPlatform) {
         platformId = existingPlatform.id ?? null;
       } else {
         try {
-          const newPlatform = await createContactPlatformMutation.mutateAsync(
-            manualPlatformName
-          );
+          const newPlatform =
+            await createContactPlatformMutation.mutateAsync(manualPlatformName);
           platformId = newPlatform?.id ?? null;
         } catch (error: any) {
           toast.error(
-            error?.message || "Failed to create platform. Please try again."
+            error?.message || "Failed to create platform. Please try again.",
           );
           return;
         }
@@ -546,14 +547,14 @@ export function useSalesContactActions({
       first_name: editFormData.firstName.trim(),
       last_name: editFormData.lastName.trim() || null,
       email: editFormData.email.trim() || null,
-      phone_number: editFormData.phoneNumber.trim() || null,
+      phone_number: editFormData.phoneNumber.replace(/\D/g, "") || null,
       location: editFormData.location.trim() || null,
       contact_time_zone: editFormData.contactTimeZone.trim() || null,
       status: editFormData.status,
       platform: platformId,
       alternative_email: editFormData.alternativeEmail.trim() || null,
       alternative_phone_number:
-        editFormData.alternativePhoneNumber.trim() || null,
+        editFormData.alternativePhoneNumber.replace(/\D/g, "") || null,
       business_contact: editFormData.businessContact.trim() || null,
       business_linkedin: editFormData.businessLinkedin.trim() || null,
       business_name: editFormData.businessName.trim() || null,
@@ -567,15 +568,15 @@ export function useSalesContactActions({
         id: String(contactId),
         data: payload,
       });
-      toast.success("Sales contact updated successfully!");
+      toast.success("Contact saved success fully");
       setPreviewContact((prev: any) => {
         if (!prev) return prev;
         const platformLabel =
           updatedContact?.platform !== undefined &&
           updatedContact?.platform !== null
-            ? platformNameMap.get(updatedContact.platform) ??
+            ? (platformNameMap.get(updatedContact.platform) ??
               prev.platform_label ??
-              ""
+              "")
             : "";
         return {
           ...prev,
@@ -615,7 +616,7 @@ export function useSalesContactActions({
       }
       handleFormChange("platformId", value);
     },
-    [handleAddPlatformDialogOpenChange, handleFormChange]
+    [handleAddPlatformDialogOpenChange, handleFormChange],
   );
 
   const handleEditPlatformSelectChange = useCallback(
@@ -626,7 +627,7 @@ export function useSalesContactActions({
       }
       handleEditFormChange("platformId", value);
     },
-    [handleAddPlatformDialogOpenChange, handleEditFormChange]
+    [handleAddPlatformDialogOpenChange, handleEditFormChange],
   );
 
   return {

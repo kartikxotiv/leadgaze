@@ -3,7 +3,7 @@
 import { Plus, Upload, Calendar, FileText, Loader2, Clock } from "lucide-react";
 import { NoteDialog } from "../notes/note-dialog";
 import { MeetingDialog } from "../meetings/meeting-dialog";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNotes, useDeleteNote, type Note } from "@/hooks/use-notes";
 import {
   useMeetings,
@@ -55,11 +55,11 @@ export function LeadTabsSection({
   const [meetingDialogOpen, setMeetingDialogOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(
-    null
+    null,
   );
   const [reminderDialogOpen, setReminderDialogOpen] = useState(false);
   const [selectedReminderId, setSelectedReminderId] = useState<string | null>(
-    null
+    null,
   );
   const [mediaList, setMediaList] = useState<LeadMedia[]>([]);
   const [isLoadingMedia, setIsLoadingMedia] = useState(false);
@@ -100,18 +100,32 @@ export function LeadTabsSection({
   const deleteMeetingMutation = useDeleteMeeting();
   const deleteReminderMutation = useDeleteReminder();
 
-  const notes: Note[] = (() => {
+  const notes: Note[] = useMemo(() => {
+    let rawNotes: any[] = [];
     if (notesData?.data?.notes && Array.isArray(notesData.data.notes)) {
-      return notesData.data.notes;
+      rawNotes = notesData.data.notes;
+    } else if (Array.isArray(notesData?.notes)) {
+      rawNotes = notesData.notes;
+    } else if (Array.isArray(notesData?.data)) {
+      rawNotes = notesData.data;
     }
-    if (Array.isArray(notesData?.notes)) {
-      return notesData.notes;
-    }
-    if (Array.isArray(notesData?.data)) {
-      return notesData.data;
-    }
-    return [];
-  })();
+
+    // Strict filter by leadId and deduplicate by id
+    const leadId = previewLead?.id;
+    if (!leadId) return [];
+
+    const uniqueNotesMap = new Map();
+    rawNotes.forEach((note) => {
+      if (
+        (note.lead_id === leadId || note.leadId === leadId) &&
+        !uniqueNotesMap.has(note.id)
+      ) {
+        uniqueNotesMap.set(note.id, note);
+      }
+    });
+
+    return Array.from(uniqueNotesMap.values());
+  }, [notesData, previewLead?.id]);
 
   // Meetings
   const {
@@ -122,21 +136,37 @@ export function LeadTabsSection({
     leadId: previewLead?.id ? String(previewLead.id) : undefined,
   });
 
-  const meetings: Meeting[] = (() => {
+  const meetings: Meeting[] = useMemo(() => {
+    let rawMeetings: any[] = [];
     if (
       meetingsData?.data?.meetings &&
       Array.isArray(meetingsData.data.meetings)
     ) {
-      return meetingsData.data.meetings;
+      rawMeetings = meetingsData.data.meetings;
+    } else if (Array.isArray(meetingsData?.meetings)) {
+      rawMeetings = meetingsData.meetings;
+    } else if (Array.isArray(meetingsData?.data)) {
+      rawMeetings = meetingsData.data;
     }
-    if (Array.isArray(meetingsData?.meetings)) {
-      return meetingsData.meetings;
-    }
-    if (Array.isArray(meetingsData?.data)) {
-      return meetingsData.data;
-    }
-    return [];
-  })();
+
+    // Strict filter by leadId and deduplicate by id
+    const leadId = previewLead?.id;
+    if (!leadId) return [];
+
+    const uniqueMeetingsMap = new Map();
+    rawMeetings.forEach((meeting) => {
+      // API might return leadId or lead_id
+      const mLeadId = meeting.lead_id || meeting.leadId;
+      if (
+        String(mLeadId) === String(leadId) &&
+        !uniqueMeetingsMap.has(meeting.id)
+      ) {
+        uniqueMeetingsMap.set(meeting.id, meeting);
+      }
+    });
+
+    return Array.from(uniqueMeetingsMap.values());
+  }, [meetingsData, previewLead?.id]);
 
   // Reminders
   const {
@@ -147,21 +177,37 @@ export function LeadTabsSection({
     leadId: previewLead?.id ? String(previewLead.id) : undefined,
   });
 
-  const reminders: Reminder[] = (() => {
+  const reminders: Reminder[] = useMemo(() => {
+    let rawReminders: any[] = [];
     if (
       remindersData?.data?.reminders &&
       Array.isArray(remindersData.data.reminders)
     ) {
-      return remindersData.data.reminders;
+      rawReminders = remindersData.data.reminders;
+    } else if (Array.isArray(remindersData?.reminders)) {
+      rawReminders = remindersData.reminders;
+    } else if (Array.isArray(remindersData?.data)) {
+      rawReminders = remindersData.data;
     }
-    if (Array.isArray(remindersData?.reminders)) {
-      return remindersData.reminders;
-    }
-    if (Array.isArray(remindersData?.data)) {
-      return remindersData.data;
-    }
-    return [];
-  })();
+
+    // Strict filter by leadId and deduplicate by id
+    const leadId = previewLead?.id;
+    if (!leadId) return [];
+
+    const uniqueRemindersMap = new Map();
+    rawReminders.forEach((reminder) => {
+      // API might return leadId or lead_id
+      const rLeadId = reminder.lead_id || reminder.leadId;
+      if (
+        String(rLeadId) === String(leadId) &&
+        !uniqueRemindersMap.has(reminder.id)
+      ) {
+        uniqueRemindersMap.set(reminder.id, reminder);
+      }
+    });
+
+    return Array.from(uniqueRemindersMap.values());
+  }, [remindersData, previewLead?.id]);
 
   // Fetch Media
   const fetchMedia = async () => {
@@ -213,7 +259,7 @@ export function LeadTabsSection({
 
   // Handle File Upload
   const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -239,7 +285,7 @@ export function LeadTabsSection({
     const isValidType = allowedTypes.some((type) => file.type.startsWith(type));
     if (!isValidType) {
       toast.error(
-        "File type not supported. Please upload images, PDFs, or documents."
+        "File type not supported. Please upload images, PDFs, or documents.",
       );
       return;
     }
