@@ -83,7 +83,7 @@ export default function NewSalesContactPage() {
         value: SalesContactInsert["status"];
         label: string;
       }>,
-    []
+    [],
   );
 
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_STATE);
@@ -114,7 +114,7 @@ export default function NewSalesContactPage() {
           return "";
       }
     },
-    []
+    [],
   );
 
   const handleFormChange = useCallback(
@@ -125,7 +125,7 @@ export default function NewSalesContactPage() {
         setErrors((prev) => ({ ...prev, [field]: "" }));
       }
     },
-    [errors]
+    [errors],
   );
 
   const validateForm = useCallback(() => {
@@ -142,7 +142,7 @@ export default function NewSalesContactPage() {
     };
 
     const filteredErrors = Object.fromEntries(
-      Object.entries(newErrors).filter(([, value]) => value !== "")
+      Object.entries(newErrors).filter(([, value]) => value !== ""),
     ) as Record<keyof FormData, string>;
 
     setErrors((prev) => ({ ...prev, ...filteredErrors }));
@@ -170,20 +170,21 @@ export default function NewSalesContactPage() {
       if (!platformId && manualPlatformName) {
         const existingPlatform = platformOptions.find(
           (platform) =>
-            platform.name.toLowerCase() === manualPlatformName.toLowerCase()
+            platform.name.toLowerCase() === manualPlatformName.toLowerCase(),
         );
 
         if (existingPlatform) {
           platformId = existingPlatform.id;
         } else {
           try {
-            const newPlatform = await createContactPlatformMutation.mutateAsync(
-              manualPlatformName
-            );
+            const newPlatform =
+              await createContactPlatformMutation.mutateAsync(
+                manualPlatformName,
+              );
             platformId = newPlatform?.id ?? null;
           } catch (error: any) {
             toast.error(
-              error?.message || "Failed to create platform. Please try again."
+              error?.message || "Failed to create platform. Please try again.",
             );
             return;
           }
@@ -204,7 +205,7 @@ export default function NewSalesContactPage() {
 
       try {
         await createSalesContactMutation.mutateAsync(payload);
-        toast.success("Sales contact created successfully!");
+        toast.success("Contact saved success fully");
 
         if (saveAndExit) {
           router.push("/pages/contacts");
@@ -234,7 +235,7 @@ export default function NewSalesContactPage() {
       platformOptions,
       router,
       validateForm,
-    ]
+    ],
   );
 
   return (
@@ -380,7 +381,7 @@ export default function NewSalesContactPage() {
                         onChange={(event) =>
                           handleFormChange(
                             "contactTimeZone",
-                            event.target.value
+                            event.target.value,
                           )
                         }
                         placeholder="America/New_York"
@@ -406,8 +407,8 @@ export default function NewSalesContactPage() {
                             platformsLoading
                               ? "Loading platforms..."
                               : platformOptions.length === 0
-                              ? "No saved platforms"
-                              : "Select a platform"
+                                ? "No saved platforms"
+                                : "Select a platform"
                           }
                         />
                       </SelectTrigger>

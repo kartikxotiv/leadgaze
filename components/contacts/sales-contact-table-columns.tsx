@@ -244,7 +244,7 @@ export function useSalesContactTableColumns({
                           row.id,
                           `${row.first_name || ""} ${
                             row.last_name || ""
-                          }`.trim()
+                          }`.trim(),
                         )
                       }
                     >
@@ -259,7 +259,7 @@ export function useSalesContactTableColumns({
         },
         ignoreRowClick: true,
         allowoverflow: true,
-        button: true,
+        center: "true",
       },
     ];
 
@@ -267,7 +267,7 @@ export function useSalesContactTableColumns({
       (col) =>
         col.id === "full name" ||
         col.id === "actions" ||
-        visibleColumns.includes(col.id)
+        visibleColumns.includes(col.id),
     );
   }, [
     canUpdateSalesContacts,

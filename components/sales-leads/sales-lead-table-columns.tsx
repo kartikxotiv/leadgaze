@@ -120,7 +120,7 @@ export function useSalesLeadTableColumns({
           }
           const badgeColor = resolvePriorityColor(
             row.priority_label,
-            row.priority_color
+            row.priority_color,
           );
           const background = badgeColor
             ? hexToRgba(badgeColor, 0.15)
@@ -230,7 +230,7 @@ export function useSalesLeadTableColumns({
                           row.id,
                           `${row.first_name || ""} ${
                             row.last_name || ""
-                          }`.trim() || "this lead"
+                          }`.trim() || "this lead",
                         )
                       }
                     >
@@ -245,7 +245,7 @@ export function useSalesLeadTableColumns({
         },
         ignoreRowClick: true,
         allowoverflow: true,
-        button: true,
+        center: "true",
       },
     ];
 
@@ -253,7 +253,7 @@ export function useSalesLeadTableColumns({
       (col) =>
         col.id === "name" ||
         col.id === "actions" ||
-        visibleColumns.includes(col.id)
+        visibleColumns.includes(col.id),
     );
   }, [
     canUpdateSalesLeads,

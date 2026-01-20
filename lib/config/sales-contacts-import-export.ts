@@ -78,20 +78,20 @@ export const importSampleData = [
 ];
 
 export function exportDataTransform(row: any) {
-  return [
-    row.first_name || "",
-    row.last_name || "",
-    row.email || "",
-    row.phone_number || "",
-    row.location || "",
-    row.alternative_email || "",
-    row.alternative_phone_number || "",
-    row.business_name || "",
-    row.business_linkedin || "",
-    row.business_contact || "",
-    row.linkedin_url || "",
-    row.comment || "",
-    row.status_label || "",
-    row.platform_label || "",
-  ];
+  return {
+    first_name: row.first_name || "",
+    last_name: row.last_name || "",
+    email: row.email || "",
+    phone_number: row.phone_number || "",
+    location: row.location || "",
+    alternative_email: row.alternative_email || "",
+    alternative_phone_number: row.alternative_phone_number || "",
+    business_name: row.business_name || "",
+    business_linkedin: row.business_linkedin || "",
+    business_contact: row.business_contact || "",
+    linkedin_url: row.linkedin_url || "",
+    comment: row.comment || "",
+    status: row.status_label || "",
+    platform_label: row.platform_label || "",
+  };
 }
