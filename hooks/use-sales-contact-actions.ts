@@ -259,7 +259,7 @@ export function useSalesContactActions({
           id: contactId,
           data: { status: "rejected" },
         });
-        toast.success("Sales contact rejected successfully!");
+        toast.success("Contact rejected successfully!");
 
         setPreviewContact((prev: any) => {
           if (!prev || prev.id !== contact.id) {
