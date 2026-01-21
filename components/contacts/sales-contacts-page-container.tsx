@@ -182,7 +182,7 @@ export function SalesContactsPageContainer({
         itemId={deleteDialog.salesContactId}
         onConfirm={actionsHook.confirmDeleteSalesContact}
         isLoading={actionsHook.deleteSalesContactMutation.isPending}
-        title="Delete Sales Contact"
+        title="Delete Contact"
       />
 
       <EditContactSidebar
