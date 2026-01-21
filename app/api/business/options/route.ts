@@ -4,32 +4,27 @@ import { supabase } from "@/lib/supabase-client";
 export async function GET() {
   try {
     // Fetch all businesses with business_type and industry
-    const { data, error } = await supabase
-      .from("business")
-      .select("business_type, industry");
+    const { data: businessTypes, error: businessTypesError } = await supabase
+      .from("business_type")
+      .select("name").order("name", { ascending: true });
 
-    if (error) {
-      throw error;
+    if (businessTypesError) {
+      throw businessTypesError;
     }
 
-    // Extract unique business types
-    const businessTypes = new Set<string>();
-    const industries = new Set<string>();
+    const { data: industries, error: industriesError } = await supabase
+      .from("industry")
+      .select("name").order("name", { ascending: true });
 
-    data?.forEach((business) => {
-      if (business.business_type && business.business_type.trim()) {
-        businessTypes.add(business.business_type.trim());
-      }
-      if (business.industry && business.industry.trim()) {
-        industries.add(business.industry.trim());
-      }
-    });
+    if (industriesError) {
+      throw industriesError;
+    }
 
     return NextResponse.json({
       success: true,
       data: {
-        businessTypes: Array.from(businessTypes).sort(),
-        industries: Array.from(industries).sort(),
+        businessTypes: businessTypes.map((item) => item.name),
+        industries: industries.map((item) => item.name),
       },
     });
   } catch (error: any) {

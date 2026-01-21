@@ -166,4 +166,20 @@ INSERT INTO public.user_organizations (id, user_id, organization_id, role_id, st
 -- INSERT INTO public.user_sessions (id, user_id, current_organization_id, last_activity_at, created_at, updated_at) VALUES ('8b80fc0e-6790-4a72-b3c0-d37c1a627138', '2e8709c8-97c7-40f3-a5e6-385f303956a8', '6e664ad0-6ff0-44eb-9533-4780964309f1', '2025-10-23 11:11:48.957+05:30', '2025-10-23 11:11:48.958+05:30', '2025-10-23 11:11:48.958+05:30') ON CONFLICT DO NOTHING;
 -- INSERT INTO public.user_sessions (id, user_id, current_organization_id, last_activity_at, created_at, updated_at) VALUES ('77f32061-216b-48c6-8ac2-2f3807724e1e', '86d9eab6-29b7-44e3-8df5-0717bf74b612', 'cac213db-0e91-45f7-9f33-c539415ebbba', '2025-10-24 11:37:32.239+05:30', '2025-10-24 11:37:32.24+05:30', '2025-10-24 11:37:32.24+05:30') ON CONFLICT DO NOTHING;
 
+-- Seed data for business_type table
+INSERT INTO public.business_type (name) VALUES 
+('StartUp'),
+('Small'),
+('Large'),
+('Enterprise')
+ON CONFLICT DO NOTHING;
+
+-- Seed data for industry table
+INSERT INTO public.industry (name) VALUES 
+('Logistics'),
+('Healthcare'),
+('Manufacturing'),
+('Retail')
+ON CONFLICT DO NOTHING;
+
 COMMIT;
