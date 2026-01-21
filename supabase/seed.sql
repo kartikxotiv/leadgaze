@@ -182,4 +182,117 @@ INSERT INTO public.industry (name) VALUES
 ('Retail')
 ON CONFLICT DO NOTHING;
 
+INSERT INTO organization_config (
+  id,
+  entity_type,
+  entity_value,
+  display_name,
+  description,
+  config_data,
+  is_active,
+  sort_order,
+  created_at,
+  updated_at
+) VALUES
+('0344190a-cddd-4a05-b735-b62f66a97f45','company_size','startup','Startup','Early-stage startup (1-10 employees)',NULL,true,1,'2025-10-15 11:11:03.16032+00','2025-10-15 11:11:03.16032+00'),
+('0b358eb8-1517-4053-bafa-085c77b77b93','industry','consulting','Consulting','Consulting and professional services',NULL,true,7,'2025-10-15 11:11:35.88769+00','2025-10-15 11:11:35.88769+00'),
+('10303428-1375-472a-8792-c6d74bf88140','lead_source','trade_show','Trade Show','Trade show or conference',NULL,true,6,'2025-10-15 11:11:45.361315+00','2025-10-15 11:11:45.361315+00'),
+('1b3dbada-1f5f-4972-bafc-ee5a992980d8','lead_source','linkedin','LinkedIn','LinkedIn outreach',NULL,true,4,'2025-10-15 11:11:45.361315+00','2025-10-15 11:11:45.361315+00'),
+('219533ed-7aba-44f6-8a03-9443da1870d1','status','inactive','Inactive','Organization is temporarily inactive',NULL,true,2,'2025-10-15 11:00:28.175872+00','2025-10-15 11:00:28.175872+00'),
+('23209bd8-95ca-4510-a701-668c1fc90d1e','company_size','enterprise','Enterprise','Enterprise (1000+ employees)',NULL,true,5,'2025-10-15 11:11:03.16032+00','2025-10-15 11:11:03.16032+00'),
+('26be9d1e-da2d-4eb8-96ca-9b4fa0518390','status','suspended','Suspended','Organization is suspended',NULL,true,3,'2025-10-15 11:00:28.175872+00','2025-10-15 11:00:28.175872+00'),
+('3fbae789-95a1-4ee7-9903-958222c0d526','industry','healthcare','Healthcare','Healthcare and medical companies',NULL,true,2,'2025-10-15 11:11:35.88769+00','2025-10-15 11:11:35.88769+00'),
+('42a4d87b-2ec4-4b44-b49c-aeebfe9e930d','subscription_status','past_due','Past Due','Payment is past due',NULL,true,4,'2025-10-15 11:00:28.175872+00','2025-10-15 11:00:28.175872+00'),
+('4658f185-c358-4ff9-9bdc-e858fb3acd2d','lead_source','website','Website','Company website',NULL,true,1,'2025-10-15 11:11:45.361315+00','2025-10-15 11:11:45.361315+00'),
+('4e1a5c55-fd7e-4ecc-a7a2-5da05c66e7e5','industry','finance','Finance','Financial services and banking',NULL,true,3,'2025-10-15 11:11:35.88769+00','2025-10-15 11:11:35.88769+00'),
+('528d7cf5-c267-4c5f-b431-741d12a93011','plan_type','basic','Basic','Basic plan for small teams',NULL,true,2,'2025-10-15 11:00:28.175872+00','2025-10-15 11:00:28.175872+00'),
+('6258b6f5-66df-4a3e-ace4-1e95c1f3ca70','company_size','medium','Medium Business','Medium business (51-200 employees)',NULL,true,3,'2025-10-15 11:11:03.16032+00','2025-10-15 11:11:03.16032+00'),
+('6273c02c-5eb9-4fdd-b1d1-5e424219e00d','company_size','growing','Growing Business','Growing business (11-50 employees)',NULL,true,2,'2025-10-15 11:11:26.302207+00','2025-10-15 11:11:26.302207+00'),
+('6b9d0070-32c4-40ac-93e7-e79d66daff24','industry','technology','Technology','Technology and software companies',NULL,true,1,'2025-10-15 11:11:35.88769+00','2025-10-15 11:11:35.88769+00'),
+('6dc97c48-c1bc-4e6d-969d-1769c4e7af0c','lead_source','other','Other','Other sources',NULL,true,9,'2025-10-15 11:11:45.361315+00','2025-10-15 11:11:45.361315+00'),
+('78e7d8b5-7f17-44e1-91f4-2c6c295882d6','company_size','small','Small Business','Small business (11-50 employees)',NULL,true,2,'2025-10-15 11:11:03.16032+00','2025-10-15 11:11:03.16032+00'),
+('7a5eb18a-e082-4fd0-a70e-73015b094af7','status','active','Active','Organization is active and operational',NULL,true,1,'2025-10-15 11:00:28.175872+00','2025-10-15 11:00:28.175872+00'),
+('8bcca232-89ff-4b37-9b2a-c4cd84811201','industry','manufacturing','Manufacturing','Manufacturing and production',NULL,true,6,'2025-10-15 11:11:35.88769+00','2025-10-15 11:11:35.88769+00'),
+('91a19fb0-090a-4e8b-8c3c-28d9ec523428','plan_type','enterprise','Enterprise','Enterprise plan for large organizations',NULL,true,4,'2025-10-15 11:00:28.175872+00','2025-10-15 11:00:28.175872+00'),
+('99ae2f72-03e1-407b-8d67-210e4ad61aca','lead_source','advertisement','Advertisement','Online or offline advertisement',NULL,true,7,'2025-10-15 11:11:45.361315+00','2025-10-15 11:11:45.361315+00'),
+('9ad1b5e6-e90f-4dfd-bb8f-1074c0ecbace','lead_source','referral','Referral','Customer or partner referral',NULL,true,2,'2025-10-15 11:11:45.361315+00','2025-10-15 11:11:45.361315+00'),
+('9dc22038-5f86-489d-84b2-e2c69054486c','subscription_status','trial','Trial','14-day free trial period',NULL,true,1,'2025-10-15 11:00:28.175872+00','2025-10-15 11:00:28.175872+00'),
+('a0a6a9e7-0f31-4a45-b150-e39f59bdd284','subscription_status','active','Active','Active paid subscription',NULL,true,2,'2025-10-15 11:00:28.175872+00','2025-10-15 11:00:28.175872+00'),
+('a6adea93-bf61-4b36-825f-d3b3cb19bbbd','plan_type','pro','Pro','Professional plan for growing businesses',NULL,true,3,'2025-10-15 11:00:28.175872+00','2025-10-15 11:00:28.175872+00'),
+('b5e415b2-0f32-44b6-885f-3cfa093a3319','subscription_status','unpaid','Unpaid','Payment failed',NULL,true,5,'2025-10-15 11:00:28.175872+00','2025-10-15 11:00:28.175872+00'),
+('b9b2f595-231b-4432-8186-add2acf15ed0','plan_type','trial','Trial','14-day trial with basic features',NULL,true,1,'2025-10-15 11:00:28.175872+00','2025-10-15 11:00:28.175872+00'),
+('bec16f69-7a0c-45f6-89bb-22967b5dabc1','company_size','solo','Just Me','Just me (1 employee)',NULL,true,0,'2025-10-15 11:11:26.302207+00','2025-10-15 11:11:26.302207+00'),
+('c73ccff1-5904-42b6-bf5e-d11fc04a7d2f','industry','education','Education','Educational institutions and services',NULL,true,4,'2025-10-15 11:11:35.88769+00','2025-10-15 11:11:35.88769+00'),
+('cd2a7bef-c9c8-4d4a-9e1e-46e15d6f6631','company_size','large','Large Business','Large business (201-1000 employees)',NULL,true,4,'2025-10-15 11:11:03.16032+00','2025-10-15 11:11:03.16032+00'),
+('dbc0c229-f702-4319-b84b-5755115ef00b','company_size','mega_enterprise','Mega Enterprise','Mega enterprise (5000+ employees)',NULL,true,6,'2025-10-15 11:11:26.302207+00','2025-10-15 11:11:26.302207+00'),
+('e0ea70b9-17ee-42db-acd4-175b0f87d9b6','industry','other','Other','Other industries',NULL,true,9,'2025-10-15 11:11:35.88769+00','2025-10-15 11:11:35.88769+00'),
+('e185f20e-3e64-4704-8c67-e6a93b49c284','subscription_status','cancelled','Cancelled','Subscription cancelled by user',NULL,true,3,'2025-10-15 11:00:28.175872+00','2025-10-15 11:00:28.175872+00'),
+('e962b7be-f7e9-49d6-b520-cdc7ee94b54f','lead_source','cold_call','Cold Call','Outbound cold calling',NULL,true,3,'2025-10-15 11:11:45.361315+00','2025-10-15 11:11:45.361315+00'),
+('ea49d6ed-66ee-441b-8741-2f497288739c','industry','retail','Retail','Retail and e-commerce',NULL,true,5,'2025-10-15 11:11:35.88769+00','2025-10-15 11:11:35.88769+00'),
+('ee9fc3df-c3b3-4c24-9541-7f1017ba578c','industry','nonprofit','Non-profit','Non-profit organizations',NULL,true,8,'2025-10-15 11:11:35.88769+00','2025-10-15 11:11:35.88769+00'),
+('f3e1e5f9-698f-4f08-8fd7-7742ac1aeae3','lead_source','social_media','Social Media','Social media platforms',NULL,true,8,'2025-10-15 11:11:45.361315+00','2025-10-15 11:11:45.361315+00'),
+('f557a49c-6ab1-445b-9e6a-2118da7d8a6c','lead_source','email','Email','Email marketing campaign',NULL,true,5,'2025-10-15 11:11:45.361315+00','2025-10-15 11:11:45.361315+00')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO organization_roles (
+  id,
+  role,
+  display_name,
+  description,
+  permissions,
+  hierarchy_level,
+  is_system_role,
+  is_active,
+  created_at,
+  updated_at
+) VALUES (
+  'a7648af6-4869-4aa6-afa2-66949316dff0',
+  'owner',
+  'Owner',
+  'Full access to organization settings, billing, and all data',
+  '{
+    "can_export_data": true,
+    "can_invite_users": true,
+    "can_remove_users": true,
+    "can_view_reports": true,
+    "can_edit_all_data": true,
+    "can_view_all_data": true,
+    "can_delete_all_data": true,
+    "can_change_user_roles": true,
+    "can_create_workspaces": true,
+    "can_delete_workspaces": true,
+    "can_manage_workspaces": true,
+    "can_delete_organization": true,
+    "can_manage_organization": true,
+    "can_manage_subscription": true
+  }'::jsonb,
+  100,
+  true,
+  true,
+  '2025-10-15 11:00:53.1045+00',
+  '2025-10-15 11:00:53.1045+00'
+)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO users_config (
+  id,
+  entity_type,
+  entity_value,
+  display_name,
+  description,
+  is_active,
+  sort_order,
+  created_at,
+  updated_at
+) VALUES
+('0cec4a95-147f-4b6c-a277-4186158a9aa3','status','active','Active','User account is active and can access the system',true,0,'2025-10-15 05:29:32.578+00','2025-10-15 05:29:32.578+00'),
+('169713bd-6747-47fb-9ad2-d4e07d6a952e','invitation_status','expired','Expired','Invitation expired before acceptance',true,0,'2025-10-15 05:29:32.621+00','2025-10-15 05:29:32.621+00'),
+('1af7f334-f09e-4724-bd70-66fb2337dcc5','invitation_status','pending','Pending','Invitation sent, awaiting user response',true,0,'2025-10-15 05:29:32.605+00','2025-10-15 05:29:32.605+00'),
+('84f6aec8-7a2c-4f14-ad37-33ac3fe1153c','invitation_status','accepted','Accepted','User accepted the invitation',true,0,'2025-10-15 05:29:32.612+00','2025-10-15 05:29:32.612+00'),
+('ac7ab64e-df27-4c98-a301-d023f4d60875','status','inactive','Inactive','User account is temporarily inactive',true,0,'2025-10-15 05:29:32.594+00','2025-10-15 05:29:32.594+00'),
+('bf55398b-3e4d-4b06-9343-27966a4a4d5e','status','suspended','Suspended','User account is suspended due to policy violation',true,0,'2025-10-15 05:29:32.6+00','2025-10-15 05:29:32.6+00'),
+('dfe8d02e-fb96-421f-a299-e5e03a07877e','invitation_status','cancelled','Cancelled','Admin cancelled the invitation',true,0,'2025-10-15 05:29:32.627+00','2025-10-15 05:29:32.627+00'),
+('fb29e56b-d06b-48c5-9deb-00347a235793','invitation_status','declined','Declined','User declined the invitation',true,0,'2025-10-15 05:29:32.617+00','2025-10-15 05:29:32.617+00')
+ON CONFLICT DO NOTHING;
+
 COMMIT;
