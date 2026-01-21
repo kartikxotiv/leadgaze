@@ -130,7 +130,7 @@ export function LeadDetailsSection({
               <DropdownMenuContent align="start">
                 {(isOpportunityPage
                   ? STATUS_OPTIONS.filter(
-                      (opt) => opt.value !== "qualified_lead",
+                      (opt) => opt.value === "won" || opt.value === "lost",
                     )
                   : STATUS_OPTIONS.filter(
                       (opt) =>
