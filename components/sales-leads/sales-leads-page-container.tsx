@@ -1,6 +1,5 @@
 "use client";
-
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
@@ -31,10 +30,7 @@ interface SalesLeadsPageContainerProps {
 
 export function SalesLeadsPageContainer({
   pageHook,
-}: SalesLeadsPageContainerProps) {
-  const [importExportTab, setImportExportTab] = useState<"import" | "export">(
-    "import",
-  );
+}: SalesLeadsPageContainerProps) {  
 
   const {
     workspaceId,
@@ -71,6 +67,8 @@ export function SalesLeadsPageContainer({
     addSalesLeadSidebarOpen,
     importExportDialogOpen,
     setImportExportDialogOpen,
+    importExportTab,
+    setImportExportTab,
     noteDialogOpen,
     setNoteDialogOpen,
     meetingDialogOpen,
@@ -106,6 +104,39 @@ export function SalesLeadsPageContainer({
     handleDeleteSalesLead: actionsHook.handleDeleteSalesLead,
     visibleColumns,
   });
+
+  const filteredExportFields = useMemo(() => {
+    return exportFields.filter((field) => {
+      // Full Name (first_name, last_name) is always visible if it map to name
+      // but in leads we have first_name and last_name separately?
+      // Actually in leads table columns:
+      // it doesn't have "full name" as ID, it has "email", "phone_number", etc.
+
+      if (field.key === "first_name" || field.key === "last_name") {
+        return true;
+      }
+
+      // Map export field keys to table column IDs
+      const fieldToColumnMap: Record<string, string> = {
+        email: "email",
+        phone_display: "phone_number",
+        location: "Location",
+        alternative_email: "alternative_email",
+        alternative_phone_number: "alternative_phone_number",
+        business_name: "business_name",
+        business_linkedin: "business_linkedin",
+        business_contact: "business_contact",
+        linkedin_url: "linkedin_url",
+        comment: "comment",
+        status_label: "status",
+        platform_label: "platform",
+        priority_label: "priority",
+      };
+
+      const columnId = fieldToColumnMap[field.key] || field.key;
+      return visibleColumns.includes(columnId);
+    });
+  }, [visibleColumns]);
 
   if (isLoadingPermissions && !permissionsData) {
     return (
@@ -395,13 +426,13 @@ export function SalesLeadsPageContainer({
         importSampleData={importSampleData}
         importFileName="sales-leads"
         exportData={dataHook.tableData}
-        exportFields={exportFields}
+        exportFields={filteredExportFields}
         exportFileName="sales-leads"
         exportDataTransform={exportDataTransform}
         workspaceId={workspaceId}
         onImportComplete={handleImportComplete}
         token={token || undefined}
-        defaultTab={importExportTab}
+        initialTab={importExportTab}
       />
     </>
   );

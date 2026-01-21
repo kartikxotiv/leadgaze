@@ -55,12 +55,15 @@ export default function OpportunitiesPage() {
   const [addSalesLeadSidebarOpen, setAddSalesLeadSidebarOpen] = useState(false);
   const [previewLead, setPreviewLead] = useState<any | null>(null);
   const [importExportDialogOpen, setImportExportDialogOpen] = useState(false);
+  const [importExportTab, setImportExportTab] = useState<"import" | "export">(
+    "import",
+  );
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [meetingDialogOpen, setMeetingDialogOpen] = useState(false);
   const [meetingDetailsDialogOpen, setMeetingDetailsDialogOpen] =
     useState(false);
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(
-    null
+    null,
   );
   const [meetingDeleteDialog, setMeetingDeleteDialog] = useState<{
     open: boolean;
@@ -94,24 +97,23 @@ export default function OpportunitiesPage() {
   const canViewSalesLeads = useWorkspaceRoutePermission("Sales Leads", "view");
   const canCreateSalesLeads = useWorkspaceRoutePermission(
     "Sales Leads",
-    "create"
+    "create",
   );
   const canUpdateSalesLeads = useWorkspaceRoutePermission(
     "Sales Leads",
-    "update"
+    "update",
   );
   const canDeleteSalesLeads = useWorkspaceRoutePermission(
     "Sales Leads",
-    "delete"
+    "delete",
   );
 
-  // Filter by status = "opportunities"
   const dataHook = useSalesLeadsData(
     workspaceId,
     page,
     pageSize,
     previewLead?.id,
-    "opportunities"
+    "opportunities",
   );
 
   const hasAssignedLeads = dataHook.salesLeads && dataHook.salesLeads.count > 0;
@@ -174,7 +176,7 @@ export default function OpportunitiesPage() {
     (lead: any) => {
       actionsHook.handlePreviewLead(lead, setIsLoadingPreview);
     },
-    [actionsHook]
+    [actionsHook],
   );
 
   const handlePageChange = useCallback((nextPage: number) => {
@@ -186,14 +188,14 @@ export default function OpportunitiesPage() {
       setPageSize(nextRowsPerPage);
       setPage(nextPage);
     },
-    []
+    [],
   );
 
   const handleToggleColumn = useCallback((columnId: string) => {
     setVisibleColumns((prev) =>
       prev.includes(columnId)
         ? prev.filter((id) => id !== columnId)
-        : [...prev, columnId]
+        : [...prev, columnId],
     );
   }, []);
 
@@ -206,10 +208,10 @@ export default function OpportunitiesPage() {
       queryClient.invalidateQueries({ queryKey: ["sales-leads"] });
       setPage(1);
       toast.success(
-        `Import completed: ${results.successful} successful, ${results.failed} failed, ${results.duplicates} duplicates`
+        `Import completed: ${results.successful} successful, ${results.failed} failed, ${results.duplicates} duplicates`,
       );
     },
-    [queryClient]
+    [queryClient],
   );
 
   const handleDeleteMeeting = useCallback(
@@ -223,7 +225,7 @@ export default function OpportunitiesPage() {
         toast.error(error?.message || "Failed to delete meeting");
       }
     },
-    [deleteMeetingMutation]
+    [deleteMeetingMutation],
   );
 
   const tableColumnDefinitions: ColumnDefinition[] = useMemo(
@@ -242,7 +244,7 @@ export default function OpportunitiesPage() {
       { id: "comment", label: "Comment" },
       { id: "updated_at", label: "Updated" },
     ],
-    []
+    [],
   );
 
   const columns = useSalesLeadTableColumns({
@@ -253,6 +255,34 @@ export default function OpportunitiesPage() {
     handleDeleteSalesLead: actionsHook.handleDeleteSalesLead,
     visibleColumns,
   });
+
+  const filteredExportFields = useMemo(() => {
+    return exportFields.filter((field) => {
+      if (field.key === "first_name" || field.key === "last_name") {
+        return true;
+      }
+
+      // Map export field keys to table column IDs
+      const fieldToColumnMap: Record<string, string> = {
+        email: "email",
+        phone_display: "phone_number",
+        location: "Location",
+        alternative_email: "alternative_email",
+        alternative_phone_number: "alternative_phone_number",
+        business_name: "business_name",
+        business_linkedin: "business_linkedin",
+        business_contact: "business_contact",
+        linkedin_url: "linkedin_url",
+        comment: "comment",
+        status_label: "status",
+        platform_label: "platform",
+        priority_label: "priority",
+      };
+
+      const columnId = fieldToColumnMap[field.key] || field.key;
+      return visibleColumns.includes(columnId);
+    });
+  }, [visibleColumns]);
 
   if (isLoadingPermissions && !permissionsData) {
     return (
@@ -303,7 +333,10 @@ export default function OpportunitiesPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setImportExportDialogOpen(true)}
+            onClick={() => {
+              setImportExportTab("import");
+              setImportExportDialogOpen(true);
+            }}
             disabled={!workspaceId}
           >
             <Upload className="mr-2 h-4 w-4" />
@@ -312,7 +345,10 @@ export default function OpportunitiesPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setImportExportDialogOpen(true)}
+            onClick={() => {
+              setImportExportTab("export");
+              setImportExportDialogOpen(true);
+            }}
             disabled={!dataHook.tableData || dataHook.tableData.length === 0}
           >
             <Download className="mr-2 h-4 w-4" />
@@ -347,7 +383,8 @@ export default function OpportunitiesPage() {
               <Building2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
               <h3 className="text-lg font-medium mb-2">No Opportunities Yet</h3>
               <p className="text-sm text-muted-foreground text-center max-w-md">
-                You don't have any opportunities yet. Change a lead to "Opportunity" status to see it here.
+                You don't have any opportunities yet. Change a lead to
+                "Opportunity" status to see it here.
               </p>
             </CardContent>
           </Card>
@@ -564,12 +601,13 @@ export default function OpportunitiesPage() {
         importSampleData={importSampleData}
         importFileName="opportunities"
         exportData={dataHook.tableData}
-        exportFields={exportFields}
+        exportFields={filteredExportFields}
         exportFileName="opportunities"
         exportDataTransform={exportDataTransform}
         workspaceId={workspaceId}
         onImportComplete={handleImportComplete}
         token={token || undefined}
+        initialTab={importExportTab}
       />
     </DashboardLayout>
   );

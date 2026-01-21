@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -73,7 +73,7 @@ export interface BulkImportExportDialogProps {
   exportData?: any[]; // Data to export
   exportFields: FieldDefinition[];
   exportFileName?: string; // e.g., "sales-contacts"
-  exportDataTransform?: (row: any) => any[]; // Transform function for export
+  exportDataTransform?: (row: any) => any[] | Record<string, any>; // Transform function for export
 
   // Additional props
   workspaceId?: string;
@@ -81,7 +81,7 @@ export interface BulkImportExportDialogProps {
   onImportComplete?: (results: ImportResult) => void;
   onExportComplete?: () => void;
   token?: string;
-  defaultTab?: "import" | "export";
+  initialTab?: "import" | "export";
 }
 
 export function BulkImportExportDialog({
@@ -102,15 +102,15 @@ export function BulkImportExportDialog({
   onImportComplete,
   onExportComplete,
   token,
-  defaultTab = "import",
+  initialTab = "import",
 }: BulkImportExportDialogProps) {
-  const [activeTab, setActiveTab] = useState<"import" | "export">(defaultTab);
+  const [activeTab, setActiveTab] = useState<"import" | "export">(initialTab);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
-      setActiveTab(defaultTab);
+      setActiveTab(initialTab);
     }
-  }, [open, defaultTab]);
+  }, [open, initialTab]);
 
   // Simplified Import States
   const [file, setFile] = useState<File | null>(null);
@@ -367,7 +367,17 @@ export function BulkImportExportDialog({
 
       let data: any[][];
       if (exportDataTransform) {
-        data = exportData.map((row) => exportDataTransform(row));
+        data = exportData.map((row) => {
+          const transformed = exportDataTransform(row);
+          if (Array.isArray(transformed)) {
+            return transformed;
+          }
+          // If it's an object, map it to the exportFields in order
+          return exportFields.map((field) => {
+            const value = transformed[field.key];
+            return value !== undefined && value !== null ? String(value) : "";
+          });
+        });
       } else {
         data = exportData.map((row) => {
           return exportFields.map((field) => {
@@ -433,7 +443,6 @@ export function BulkImportExportDialog({
     setIsImporting(false);
     setImportProgress(0);
     setImportResults(null);
-    setActiveTab("import");
   };
 
   return (

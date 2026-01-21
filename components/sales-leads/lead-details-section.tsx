@@ -124,11 +124,11 @@ export function LeadDetailsSection({
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                {(previewLead?.status === "opportunities"
-                  ? STATUS_OPTIONS.filter(
-                      (opt) => opt.value === "won" || opt.value === "lost",
-                    )
-                  : STATUS_OPTIONS
+                {STATUS_OPTIONS.filter(
+                  (opt) =>
+                    opt.value !== "qualified_lead" &&
+                    opt.value !== "won" &&
+                    opt.value !== "lost",
                 ).map((option) => (
                   <DropdownMenuItem
                     key={option.value}

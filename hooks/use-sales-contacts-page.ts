@@ -29,23 +29,23 @@ export function useSalesContactsPage() {
   // Permissions
   const canViewSalesContacts = useWorkspaceRoutePermission(
     "Sales Contacts",
-    "view"
+    "view",
   );
   const canCreateSalesContacts = useWorkspaceRoutePermission(
     "Sales Contacts",
-    "create"
+    "create",
   );
   const canUpdateSalesContacts = useWorkspaceRoutePermission(
     "Sales Contacts",
-    "update"
+    "update",
   );
   const canDeleteSalesContacts = useWorkspaceRoutePermission(
     "Sales Contacts",
-    "delete"
+    "delete",
   );
   const isSalesContactsVisible = useWorkspaceRoutePermission(
     "Sales Contacts",
-    "visible"
+    "visible",
   );
 
   // Pagination & Filters
@@ -86,18 +86,18 @@ export function useSalesContactsPage() {
         platformName: open ? (prev.open ? prev.platformName : "") : "",
         error: "",
         targetForm: open
-          ? targetForm ?? prev.targetForm ?? "add"
-          : prev.targetForm ?? "add",
+          ? (targetForm ?? prev.targetForm ?? "add")
+          : (prev.targetForm ?? "add"),
       }));
     },
-    []
+    [],
   );
 
   const handleAddPlatformDialogPlatformNameChange = useCallback(
     (platformName: string) => {
       setAddPlatformDialog((prev) => ({ ...prev, platformName, error: "" }));
     },
-    []
+    [],
   );
 
   // Data Fetching
@@ -118,7 +118,7 @@ export function useSalesContactsPage() {
   });
   const businessOptions = useMemo(
     () => businessesData?.data ?? [],
-    [businessesData?.data]
+    [businessesData?.data],
   );
 
   const platformNameMap = useMemo(() => {
@@ -147,12 +147,11 @@ export function useSalesContactsPage() {
       ...contact,
       company_label: contact.company_id ?? "",
       platform_label: contact.platform
-        ? platformNameMap.get(contact.platform) ?? `ID ${contact.platform}`
+        ? (platformNameMap.get(contact.platform) ?? `ID ${contact.platform}`)
         : "",
-      business_label:
-        contact.business_id
-          ? businessNameMap.get(String(contact.business_id)) ?? ""
-          : contact.business_name ?? "",
+      business_label: contact.business_id
+        ? (businessNameMap.get(String(contact.business_id)) ?? "")
+        : (contact.business_name ?? ""),
       status_label: formatStatus(contact.status),
       created_at_label: formatDateTime(contact.created_at),
       updated_at_label: formatDateTime(contact.updated_at),
@@ -169,6 +168,9 @@ export function useSalesContactsPage() {
   const [addSalesContactSidebarOpen, setAddSalesContactSidebarOpen] =
     useState(false);
   const [importExportDialogOpen, setImportExportDialogOpen] = useState(false);
+  const [importExportTab, setImportExportTab] = useState<"import" | "export">(
+    "import",
+  );
   const [addBusinessDialogOpen, setAddBusinessDialogOpen] = useState(false);
   const [previewContact, setPreviewContact] = useState<any | null>(null);
 
@@ -250,7 +252,7 @@ export function useSalesContactsPage() {
       { id: "linkedin_url", label: "LinkedIn URL" },
       { id: "status", label: "Status" },
     ],
-    []
+    [],
   );
 
   // Handlers
@@ -266,14 +268,14 @@ export function useSalesContactsPage() {
       setPageSize(nextRowsPerPage);
       setPage(nextPage);
     },
-    []
+    [],
   );
 
   const handleToggleColumn = useCallback((columnId: string) => {
     setVisibleColumns((prev) =>
       prev.includes(columnId)
         ? prev.filter((id) => id !== columnId)
-        : [...prev, columnId]
+        : [...prev, columnId],
     );
   }, []);
 
@@ -285,10 +287,10 @@ export function useSalesContactsPage() {
     (results: ImportResult) => {
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
       toast.success(
-        `Import completed: ${results.successful} successful, ${results.failed} failed, ${results.duplicates} duplicates`
+        `Import completed: ${results.successful} successful, ${results.failed} failed, ${results.duplicates} duplicates`,
       );
     },
-    [queryClient]
+    [queryClient],
   );
 
   const handleAddBusinessClick = useCallback(() => {
@@ -303,7 +305,7 @@ export function useSalesContactsPage() {
       }
       handleFormChange("businessId", value);
     },
-    [handleFormChange, handleAddBusinessClick]
+    [handleFormChange, handleAddBusinessClick],
   );
 
   const handleDateRangeChange = useCallback((range: DateRange | null) => {
@@ -369,6 +371,8 @@ export function useSalesContactsPage() {
     addSalesContactSidebarOpen,
     importExportDialogOpen,
     setImportExportDialogOpen,
+    importExportTab,
+    setImportExportTab,
     addBusinessDialogOpen,
     setAddBusinessDialogOpen,
     addPlatformDialog,

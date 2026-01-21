@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo } from "react";
 import { useSalesContactTableColumns } from "@/components/contacts/sales-contact-table-columns";
 import {
   EditContactSidebar,
@@ -25,10 +25,7 @@ interface SalesContactsPageContainerProps {
 
 export function SalesContactsPageContainer({
   pageHook,
-}: SalesContactsPageContainerProps) {
-  const [importExportTab, setImportExportTab] = useState<"import" | "export">(
-    "import",
-  );
+}: SalesContactsPageContainerProps) {  
 
   const {
     workspaceId,
@@ -68,6 +65,8 @@ export function SalesContactsPageContainer({
     addSalesContactSidebarOpen,
     importExportDialogOpen,
     setImportExportDialogOpen,
+    importExportTab,
+    setImportExportTab,
     addBusinessDialogOpen,
     setAddBusinessDialogOpen,
     addPlatformDialog,
@@ -93,6 +92,34 @@ export function SalesContactsPageContainer({
     movingToLeadContactId: actionsHook.movingToLeadContactId,
     visibleColumns,
   });
+
+  const filteredExportFields = useMemo(() => {
+    return exportFields.filter((field) => {
+      // Full Name (first_name, last_name) and Actions are special
+      if (field.key === "first_name" || field.key === "last_name") {
+        return true;
+      }
+
+      // Map export field keys to table column IDs
+      const fieldToColumnMap: Record<string, string> = {
+        email: "email",
+        phone_number: "phone_number",
+        location: "location",
+        alternative_email: "alternative_email",
+        alternative_phone_number: "alternative_phone_number",
+        business_name: "business_name",
+        business_linkedin: "business_linkedin",
+        business_contact: "business_contact",
+        linkedin_url: "linkedin_url",
+        comment: "comment",
+        status: "status",
+        platform_label: "platform",
+      };
+
+      const columnId = fieldToColumnMap[field.key] || field.key;
+      return visibleColumns.includes(columnId);
+    });
+  }, [visibleColumns]);
 
   return (
     <>
@@ -225,13 +252,13 @@ export function SalesContactsPageContainer({
         importSampleData={importSampleData}
         importFileName="contacts"
         exportData={tableData}
-        exportFields={exportFields}
+        exportFields={filteredExportFields}
         exportFileName="contacts"
         exportDataTransform={exportDataTransform}
         workspaceId={workspaceId}
         onImportComplete={handleImportComplete}
         token={token || undefined}
-        defaultTab={importExportTab}
+        initialTab={importExportTab}
       />
     </>
   );

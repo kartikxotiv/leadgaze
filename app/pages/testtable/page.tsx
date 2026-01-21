@@ -496,6 +496,7 @@ export default function TestTablePage() {
         ),
         ignoreRowClick: true,
         allowoverflow: true,
+        center: "true",
         width: "100px",
         minWidth: "100px",
       },
