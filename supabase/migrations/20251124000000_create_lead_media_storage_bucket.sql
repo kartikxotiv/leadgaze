@@ -8,6 +8,8 @@ BEGIN
     VALUES (
       'lead-media',
       'lead-media',
+      true,
+      NULL,
       ARRAY[
         'image/jpeg',
         'image/png',
