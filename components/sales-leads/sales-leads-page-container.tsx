@@ -123,7 +123,7 @@ export function SalesLeadsPageContainer({
         location: "Location",
         alternative_email: "alternative_email",
         alternative_phone_number: "alternative_phone_number",
-        business_name: "business_name",
+        // business_name: "business_name",
         business_linkedin: "business_linkedin",
         business_contact: "business_contact",
         linkedin_url: "linkedin_url",
