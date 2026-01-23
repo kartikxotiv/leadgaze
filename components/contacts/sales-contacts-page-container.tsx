@@ -1,5 +1,6 @@
 "use client";
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useSalesContactTableColumns } from "@/components/contacts/sales-contact-table-columns";
 import {
   EditContactSidebar,
@@ -26,6 +27,7 @@ interface SalesContactsPageContainerProps {
 export function SalesContactsPageContainer({
   pageHook,
 }: SalesContactsPageContainerProps) {
+  const router = useRouter();
   const {
     workspaceId,
     token,
@@ -162,7 +164,7 @@ export function SalesContactsPageContainer({
           currentPage={currentPage}
           onPageChange={handlePageChange}
           onRowsPerPageChange={handleRowsPerPageChange}
-          onRowClick={actionsHook.handlePreviewContact}
+          onRowClick={(row) => router.push(`/pages/contacts/${row.id}`)}
           canViewSalesContacts={canViewSalesContacts}
           isSalesContactsVisible={isSalesContactsVisible}
           permissionsData={permissionsData}
