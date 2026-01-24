@@ -64,9 +64,14 @@ export default function WorkspaceSetupPage() {
         return;
       }
 
-      // Invalidate the workspace check query to trigger a refresh
+      // Invalidate both queries to trigger a refresh
       await queryClient.invalidateQueries({ 
         queryKey: ['userHasWorkspace', user?.id] 
+      });
+      
+      // Invalidate the RBAC workspaces query and wait for refetch
+      await queryClient.invalidateQueries({ 
+        queryKey: ['userWorkspaces', user?.id] 
       });
 
       // Redirect to home

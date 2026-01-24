@@ -50,7 +50,7 @@ const { data: user, isPending } =useUser();
   const [currentWorkspaceId, setCurrentWorkspaceId] = React.useState<string | null>(null);
 
   // Fetch user's workspaces and permissions
-  const { data: workspaces = [], isLoading, error } = useQuery({
+  const { data: workspaces = [], isLoading, error, refetch } = useQuery({
     queryKey: ['userWorkspaces', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -131,6 +131,8 @@ const { data: user, isPending } =useUser();
       return workspacesData;
     },
     enabled: !!user?.id,
+    staleTime: 0, // Always consider data stale, refetch on invalidation
+    gcTime: 0, // Don't cache data in garbage collection
   });
 
   // Set default workspace (first one or from localStorage)
