@@ -12,6 +12,7 @@ import { If } from '@kit/ui/if';
 import { VersionUpdater } from '@kit/ui/version-updater';
 
 import { AuthProvider } from '~/components/auth-provider';
+import { RBACProvider } from '~/lib/rbac/rbac-provider';
 import appConfig from '~/config/app.config';
 import authConfig from '~/config/auth.config';
 import featuresFlagConfig from '~/config/feature-flags.config';
@@ -51,15 +52,17 @@ export function RootProviders({
           <CaptchaTokenSetter siteKey={captchaSiteKey} />
 
           <AuthProvider>
-            <ThemeProvider
-              attribute="class"
-              enableSystem
-              disableTransitionOnChange
-              defaultTheme={theme}
-              enableColorScheme={false}
-            >
-              {children}
-            </ThemeProvider>
+            <RBACProvider>
+              <ThemeProvider
+                attribute="class"
+                enableSystem
+                disableTransitionOnChange
+                defaultTheme={theme}
+                enableColorScheme={false}
+              >
+                {children}
+              </ThemeProvider>
+            </RBACProvider>
           </AuthProvider>
         </CaptchaProvider>
 

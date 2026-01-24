@@ -10,8 +10,8 @@ import {
 
 import { AppLogo } from '~/components/app-logo';
 import { ProfileAccountDropdownContainer } from '~/components/personal-account-dropdown-container';
-import { navigationConfig } from '~/config/navigation.config';
 import { Tables } from '~/lib/database.types';
+import { HomeSidebarClient } from './home-sidebar-client';
 
 export function HomeSidebar(props: {
   account?: Tables<'accounts'>;
@@ -28,7 +28,7 @@ export function HomeSidebar(props: {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarNavigation config={navigationConfig} />
+        <HomeSidebarClient user={props.user} />
       </SidebarContent>
 
       <SidebarFooter>
