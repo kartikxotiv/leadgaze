@@ -6,7 +6,8 @@
       "~/*": ["./app/*"],
       "~/config/*": ["./config/*"],
       "~/components/*": ["./components/*"],
-      "~/lib/*": ["./lib/*"]
+      "~/lib/*": ["./lib/*"],
+      "~/utils/*": ["./utils/*"]
     },
     "plugins": [
       {
