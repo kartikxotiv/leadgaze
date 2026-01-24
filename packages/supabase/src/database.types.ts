@@ -155,32 +155,53 @@ export type Database = {
       }
       role_permissions: {
         Row: {
+          access_level: Database["public"]["Enums"]["permission_access_level"]
+          can_access: boolean
+          can_override_owner: boolean
+          can_view_sensitive_data: boolean
+          conditions: Json | null
           created_at: string
           created_by: string | null
           id: string
-          permission_key: string
+          module_feature_id: string
           role_id: string
+          updated_at: string
+          workspace_id: string
         }
         Insert: {
+          access_level?: Database["public"]["Enums"]["permission_access_level"]
+          can_access?: boolean
+          can_override_owner?: boolean
+          can_view_sensitive_data?: boolean
+          conditions?: Json | null
           created_at?: string
           created_by?: string | null
           id?: string
-          permission_key: string
+          module_feature_id: string
           role_id: string
+          updated_at?: string
+          workspace_id: string
         }
         Update: {
+          access_level?: Database["public"]["Enums"]["permission_access_level"]
+          can_access?: boolean
+          can_override_owner?: boolean
+          can_view_sensitive_data?: boolean
+          conditions?: Json | null
           created_at?: string
           created_by?: string | null
           id?: string
-          permission_key?: string
+          module_feature_id?: string
           role_id?: string
+          updated_at?: string
+          workspace_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "role_permissions_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: "role_permissions_module_feature_id_fkey"
+            columns: ["module_feature_id"]
             isOneToOne: false
-            referencedRelation: "accounts"
+            referencedRelation: "crm_module_features"
             referencedColumns: ["id"]
           },
           {
@@ -190,58 +211,73 @@ export type Database = {
             referencedRelation: "workspace_roles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "role_permissions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
         ]
       }
       workspace_invitations: {
         Row: {
+          accepted_at: string | null
           created_at: string
           email: string
-          expires_at: string | null
           id: string
+          invited_at: string
           invited_by: string | null
-          status: Database["public"]["Enums"]["workspace_member_status"]
+          is_primary_contact: boolean
+          personal_settings: Json | null
+          role_id: string
+          status: Database["public"]["Enums"]["invitation_status"]
           token: string | null
+          token_expires_at: string | null
           updated_at: string
           user_id: string | null
           workspace_id: string
         }
         Insert: {
+          accepted_at?: string | null
           created_at?: string
           email: string
-          expires_at?: string | null
           id?: string
+          invited_at?: string
           invited_by?: string | null
-          status?: Database["public"]["Enums"]["workspace_member_status"]
+          is_primary_contact?: boolean
+          personal_settings?: Json | null
+          role_id: string
+          status?: Database["public"]["Enums"]["invitation_status"]
           token?: string | null
+          token_expires_at?: string | null
           updated_at?: string
           user_id?: string | null
           workspace_id: string
         }
         Update: {
+          accepted_at?: string | null
           created_at?: string
           email?: string
-          expires_at?: string | null
           id?: string
+          invited_at?: string
           invited_by?: string | null
-          status?: Database["public"]["Enums"]["workspace_member_status"]
+          is_primary_contact?: boolean
+          personal_settings?: Json | null
+          role_id?: string
+          status?: Database["public"]["Enums"]["invitation_status"]
           token?: string | null
+          token_expires_at?: string | null
           updated_at?: string
           user_id?: string | null
           workspace_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "workspace_invitations_invited_by_fkey"
-            columns: ["invited_by"]
+            foreignKeyName: "workspace_invitations_role_id_fkey"
+            columns: ["role_id"]
             isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "workspace_invitations_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
+            referencedRelation: "workspace_roles"
             referencedColumns: ["id"]
           },
           {
@@ -298,24 +334,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "workspace_members_invited_by_fkey"
-            columns: ["invited_by"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "workspace_members_role_id_fkey"
             columns: ["role_id"]
             isOneToOne: false
             referencedRelation: "workspace_roles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "workspace_members_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
           {
@@ -332,8 +354,11 @@ export type Database = {
           color: string | null
           created_at: string
           created_by: string | null
+          description: string | null
           hierarchy_level: number
           id: string
+          is_active: boolean
+          is_system: boolean
           role_key: string
           role_name: string
           updated_at: string
@@ -343,8 +368,11 @@ export type Database = {
           color?: string | null
           created_at?: string
           created_by?: string | null
+          description?: string | null
           hierarchy_level?: number
           id?: string
+          is_active?: boolean
+          is_system?: boolean
           role_key: string
           role_name: string
           updated_at?: string
@@ -354,21 +382,17 @@ export type Database = {
           color?: string | null
           created_at?: string
           created_by?: string | null
+          description?: string | null
           hierarchy_level?: number
           id?: string
+          is_active?: boolean
+          is_system?: boolean
           role_key?: string
           role_name?: string
           updated_at?: string
           workspace_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "workspace_roles_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "workspace_roles_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -381,7 +405,7 @@ export type Database = {
       workspaces: {
         Row: {
           created_at: string
-          created_by: string
+          created_by: string | null
           description: string | null
           icon_url: string | null
           id: string
@@ -395,7 +419,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          created_by: string
+          created_by?: string | null
           description?: string | null
           icon_url?: string | null
           id?: string
@@ -409,7 +433,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           description?: string | null
           icon_url?: string | null
           id?: string
@@ -422,13 +446,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "workspaces_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "workspaces_owner_id_fkey"
             columns: ["owner_id"]

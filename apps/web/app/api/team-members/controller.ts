@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import INVITE_MEMBER_TEMPLATE from '~/constants/email.templates/member-invite.template';
+import { transporter } from '~/utils/send-mail';
+
 import { Database } from '../../../lib/database.types';
 import {
   catchAsync,
@@ -64,7 +67,7 @@ const getMembers = catchAsync(
 
     // Fetch account details for all members
     if (members && members.length > 0) {
-      const userIds = members.map((m) => m.user_id).filter(Boolean);
+      const userIds = members.map((m: any) => m.user_id).filter(Boolean);
       if (userIds.length > 0) {
         const { data: accounts } = await supabase
           .from('accounts')
@@ -231,6 +234,18 @@ const inviteMember = catchAsync(
       );
     }
 
+    // Generate a unique invite token
+    const generateToken = () => {
+      return (
+        Math.random().toString(36).substring(2, 15) +
+        Math.random().toString(36).substring(2, 15) +
+        Math.random().toString(36).substring(2, 15)
+      );
+    };
+
+    const token = generateToken();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+
     // Create invitation record in workspace_invitations table
     const { data: invitation, error: inviteError } = await supabase
       .from('workspace_invitations')
@@ -239,6 +254,8 @@ const inviteMember = catchAsync(
         email,
         role_id,
         status: 'pending',
+        token,
+        token_expires_at: expiresAt.toISOString(),
       })
       .select()
       .single();
@@ -246,6 +263,29 @@ const inviteMember = catchAsync(
     if (inviteError) {
       console.error('Create invitation error:', inviteError);
       throw inviteError;
+    }
+
+    // Fetch workspace details for email
+    const { data: workspace } = await supabase
+      .from('workspaces')
+      .select('id, name')
+      .eq('id', workspaceId)
+      .single();
+
+    // Send invitation email
+    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/invite?token=${token}`;
+    try {
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to: email,
+        subject: `You've been invited to join a workspace - ${process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze'}`,
+        html: INVITE_MEMBER_TEMPLATE({
+          inviteLink: inviteUrl,
+        }),
+      });
+    } catch (error) {
+      console.error('Email sending error:', error);
+      // Still return success to prevent information leakage
     }
 
     return successDataResponse('Invitation sent successfully', invitation);

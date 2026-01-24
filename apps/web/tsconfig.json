@@ -8,7 +8,8 @@
       "~/components/*": ["./components/*"],
       "~/lib/*": ["./lib/*"],
       "~/utils/*": ["./utils/*"],
-      "~/services/*": ["./services/*"]
+      "~/services/*": ["./services/*"],
+      "~/constants/*": ["./constants/*"]
     },
     "plugins": [
       {
@@ -24,6 +25,8 @@
     "*.tsx",
     "./config/**/*.ts",
     "./services/**/*.ts",
+    "./utils/**/*.ts",
+    "./constants/**/*.ts",
     "components/**/*",
     "lib/**/*.ts",
     "app"

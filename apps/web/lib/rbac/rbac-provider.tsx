@@ -1,9 +1,11 @@
 'use client';
 
-import React, { createContext, useContext, ReactNode } from 'react';
-import { useUser } from '@kit/supabase/hooks/use-user';
+import React, { ReactNode, createContext, useContext } from 'react';
+
 import { useQuery } from '@tanstack/react-query';
+
 import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
+import { useUser } from '@kit/supabase/hooks/use-user';
 
 import { Tables } from '~/lib/database.types';
 
@@ -37,7 +39,10 @@ interface RBACContextType {
   workspaces: Workspace[];
   currentWorkspace: Workspace | null;
   selectWorkspace: (workspaceId: string) => void;
-  hasPermission: (feature: string, accessLevel?: 'own' | 'team' | 'all') => boolean;
+  hasPermission: (
+    feature: string,
+    accessLevel?: 'own' | 'team' | 'all',
+  ) => boolean;
   canAccess: (feature: string) => boolean;
   isLoading: boolean;
   error: Error | null;
@@ -46,27 +51,36 @@ interface RBACContextType {
 const RBACContext = createContext<RBACContextType | undefined>(undefined);
 
 export function RBACProvider({ children }: { children: ReactNode }) {
-const { data: user, isPending } =useUser();
-  const [currentWorkspaceId, setCurrentWorkspaceId] = React.useState<string | null>(null);
+  const { data: user, isPending } = useUser();
+  const [currentWorkspaceId, setCurrentWorkspaceId] = React.useState<
+    string | null
+  >(null);
 
   // Fetch user's workspaces and permissions
-  const { data: workspaces = [], isLoading, error, refetch } = useQuery({
+  const {
+    data: workspaces = [],
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ['userWorkspaces', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
 
       const supabase = getSupabaseBrowserClient();
-      
+
       // Get workspace memberships
       const { data: members, error: membersError } = await supabase
         .from('workspace_members')
-        .select(`
+        .select(
+          `
           id,
           workspace_id,
           status,
           workspace_id(*),
           role_id(id, role_key, role_name, hierarchy_level)
-        `)
+        `,
+        )
         .eq('user_id', user.id)
         .eq('status', 'accepted');
 
@@ -82,7 +96,8 @@ const { data: user, isPending } =useUser();
           // Get role permissions
           const { data: permissionsData, error: permError } = await supabase
             .from('role_permissions')
-            .select(`
+            .select(
+              `
               module_feature_id,
               access_level,
               can_access,
@@ -91,23 +106,26 @@ const { data: user, isPending } =useUser();
               crm_module_features!module_feature_id (
                 feature_key
               )
-            `)
+            `,
+            )
             .eq('role_id', role.id);
 
           if (permError) throw permError;
 
-          const permissions: Permission[] = (permissionsData || []).map((perm: any) => ({
-            feature: perm.crm_module_features?.feature_key || '',
-            access_level: perm.access_level,
-            can_access: perm.can_access,
-            can_view_sensitive_data: perm.can_view_sensitive_data,
-            can_override_owner: perm.can_override_owner,
-          }));
+          const permissions: Permission[] = (permissionsData || []).map(
+            (perm: any) => ({
+              feature: perm.crm_module_features?.feature_key || '',
+              access_level: perm.access_level,
+              can_access: perm.can_access,
+              can_view_sensitive_data: perm.can_view_sensitive_data,
+              can_override_owner: perm.can_override_owner,
+            }),
+          );
 
           console.log('Loaded permissions for role:', {
             roleKey: role.role_key,
             permissionCount: permissions.length,
-            features: permissions.map(p => p.feature),
+            features: permissions.map((p) => p.feature),
           });
 
           return {
@@ -125,7 +143,7 @@ const { data: user, isPending } =useUser();
               permissions,
             },
           };
-        })
+        }),
       );
 
       return workspacesData;
@@ -139,13 +157,15 @@ const { data: user, isPending } =useUser();
   React.useEffect(() => {
     if (workspaces.length > 0 && !currentWorkspaceId) {
       const savedWorkspaceId = localStorage.getItem('currentWorkspaceId');
-      const workspace = workspaces.find((w) => w.id === savedWorkspaceId) || workspaces[0];
+      const workspace =
+        workspaces.find((w) => w.id === savedWorkspaceId) || workspaces[0];
       console.log('Setting default workspace:', workspace);
-      setCurrentWorkspaceId(workspace.id);
+      setCurrentWorkspaceId(workspace?.id!);
     }
   }, [workspaces, currentWorkspaceId]);
 
-  const currentWorkspace = workspaces.find((w) => w.id === currentWorkspaceId) || null;
+  const currentWorkspace =
+    workspaces.find((w) => w.id === currentWorkspaceId) || null;
 
   React.useEffect(() => {
     if (currentWorkspace) {
@@ -158,11 +178,14 @@ const { data: user, isPending } =useUser();
     }
   }, [currentWorkspace]);
 
-  const hasPermission = (feature: string, accessLevel?: 'own' | 'team' | 'all'): boolean => {
+  const hasPermission = (
+    feature: string,
+    accessLevel?: 'own' | 'team' | 'all',
+  ): boolean => {
     if (!currentWorkspace) return false;
 
     const permission = currentWorkspace.role.permissions.find(
-      (p) => p.feature === feature
+      (p) => p.feature === feature,
     );
 
     if (!permission) return false;
@@ -182,7 +205,7 @@ const { data: user, isPending } =useUser();
     }
 
     const permission = currentWorkspace.role.permissions.find(
-      (p) => p.feature === feature
+      (p) => p.feature === feature,
     );
 
     const hasAccess = permission?.can_access ?? false;

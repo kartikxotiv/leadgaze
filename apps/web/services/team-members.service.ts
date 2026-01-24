@@ -83,6 +83,24 @@ const resendInvitationService = asyncHandlerClient(async (memberId: string) => {
   return response.data;
 });
 
+const acceptInviteService = asyncHandlerClient(
+  async (token: string, userId: string) => {
+    const response = await ApiClient.post('/team-members/invite/accept', {
+      token,
+      userId,
+    });
+    return response.data;
+  },
+);
+
+const validateInviteTokenService = asyncHandlerClient(async (token: string) => {
+  const response = await ApiClient.get(
+    `/team-members/invite/validate?token=${token}`,
+  );
+  console.log({ response });
+  return response.data;
+});
+
 export {
   getMembersService,
   getMemberByIdService,
@@ -90,6 +108,8 @@ export {
   updateMemberService,
   removeMemberService,
   resendInvitationService,
+  acceptInviteService,
+  validateInviteTokenService,
   type WorkspaceMember,
   type InviteMemberPayload,
   type UpdateMemberPayload,
