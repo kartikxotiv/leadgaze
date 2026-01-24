@@ -30,7 +30,7 @@ import {
   type Role,
   deleteRoleService,
   getRolesService,
-} from '~/services/roles-service';
+} from '~/services/roles.service';
 
 import { CreateRoleDialog } from './components/create-role-dialog';
 import { EditRoleDialog } from './components/edit-role-dialog';

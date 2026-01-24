@@ -26,7 +26,7 @@ import {
 } from '@kit/ui/select';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
-import { type Role, updateRoleService } from '~/services/roles-service';
+import { type Role, updateRoleService } from '~/services/roles.service';
 
 interface EditRoleDialogProps {
   role: Role;

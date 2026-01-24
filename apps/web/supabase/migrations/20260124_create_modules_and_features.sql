@@ -57,6 +57,14 @@ CREATE TABLE IF NOT EXISTS public.crm_modules (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Enable RLS and add basic policy for crm_modules
+ALTER TABLE public.crm_modules ENABLE ROW LEVEL SECURITY;
+CREATE POLICY crm_modules_policy ON public.crm_modules
+    FOR ALL
+    TO anon, authenticated, service_role
+    USING (true)
+    WITH CHECK (true);
+
 COMMENT ON TABLE public.crm_modules IS 'Defines all available CRM modules (Leads, Contacts, Accounts, Opportunities, Activities, Reports, Settings)';
 COMMENT ON COLUMN public.crm_modules.module_key IS 'Unique identifier for module (leads, contacts, accounts, opportunities, activities, reports, settings)';
 COMMENT ON COLUMN public.crm_modules.module_name IS 'Human-readable name of the module';
@@ -113,6 +121,14 @@ CREATE TABLE IF NOT EXISTS public.crm_module_features (
   -- Constraints
   CONSTRAINT crm_module_features_unique UNIQUE (module_id, feature_key)
 );
+
+-- Enable RLS and add basic policy for crm_module_features
+ALTER TABLE public.crm_module_features ENABLE ROW LEVEL SECURITY;
+CREATE POLICY crm_module_features_policy ON public.crm_module_features
+    FOR ALL
+    TO anon, authenticated, service_role
+    USING (true)
+    WITH CHECK (true);
 
 COMMENT ON TABLE public.crm_module_features IS 'Defines features/actions available within each CRM module';
 COMMENT ON COLUMN public.crm_module_features.feature_key IS 'Unique identifier for feature (view, create, edit, delete, export, import, convert, assign, etc.)';

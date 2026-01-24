@@ -72,6 +72,14 @@ CREATE TABLE IF NOT EXISTS public.workspaces (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Enable RLS and add basic policy for workspaces
+ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
+CREATE POLICY workspaces_policy ON public.workspaces
+    FOR ALL
+    TO anon, authenticated, service_role
+    USING (true)
+    WITH CHECK (true);
+
 COMMENT ON TABLE public.workspaces IS 'Represents a workspace/organization in the system. Each workspace is isolated for multi-tenancy.';
 COMMENT ON COLUMN public.workspaces.slug IS 'URL-friendly identifier for the workspace';
 COMMENT ON COLUMN public.workspaces.owner_id IS 'Account that owns this workspace';
@@ -124,6 +132,14 @@ CREATE TABLE IF NOT EXISTS public.workspace_roles (
   CONSTRAINT workspace_roles_unique UNIQUE (workspace_id, role_key)
 );
 
+-- Enable RLS and add basic policy for workspace_roles
+ALTER TABLE public.workspace_roles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY workspace_roles_policy ON public.workspace_roles
+    FOR ALL
+    TO anon, authenticated, service_role
+    USING (true)
+    WITH CHECK (true);
+
 COMMENT ON TABLE public.workspace_roles IS 'Defines roles available within a workspace with configurable permissions';
 COMMENT ON COLUMN public.workspace_roles.role_key IS 'Unique identifier for the role within workspace (e.g., admin, manager, user)';
 COMMENT ON COLUMN public.workspace_roles.hierarchy_level IS 'Role hierarchy: higher value = more authority. Admin: 100, Manager: 50, User: 10';
@@ -175,6 +191,14 @@ CREATE TABLE IF NOT EXISTS public.role_permissions (
   -- Constraints
   CONSTRAINT role_permissions_unique UNIQUE (role_id, module_feature_id)
 );
+
+-- Enable RLS and add basic policy for role_permissions
+ALTER TABLE public.role_permissions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY role_permissions_policy ON public.role_permissions
+    FOR ALL
+    TO anon, authenticated, service_role
+    USING (true)
+    WITH CHECK (true);
 
 COMMENT ON TABLE public.role_permissions IS 'Maps module features to workspace roles with granular access control';
 COMMENT ON COLUMN public.role_permissions.access_level IS 'Controls scope of access: own (only owned records), team (team records), all (all records)';
@@ -232,6 +256,14 @@ CREATE TABLE IF NOT EXISTS public.workspace_members (
   -- Constraints
   CONSTRAINT workspace_members_unique UNIQUE (workspace_id, user_id)
 );
+
+-- Enable RLS and add basic policy for workspace_members
+ALTER TABLE public.workspace_members ENABLE ROW LEVEL SECURITY;
+CREATE POLICY workspace_members_policy ON public.workspace_members
+    FOR ALL
+    TO anon, authenticated, service_role
+    USING (true)
+    WITH CHECK (true);
 
 COMMENT ON TABLE public.workspace_members IS 'Associates users with workspaces and manages their role and membership status';
 COMMENT ON COLUMN public.workspace_members.status IS 'Membership status: pending (invited), accepted (active), inactive, or removed';

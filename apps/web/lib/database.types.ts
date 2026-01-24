@@ -155,53 +155,32 @@ export type Database = {
       }
       role_permissions: {
         Row: {
-          access_level: Database["public"]["Enums"]["permission_access_level"]
-          can_access: boolean
-          can_override_owner: boolean
-          can_view_sensitive_data: boolean
-          conditions: Json | null
           created_at: string
           created_by: string | null
           id: string
-          module_feature_id: string
+          permission_key: string
           role_id: string
-          updated_at: string
-          workspace_id: string
         }
         Insert: {
-          access_level?: Database["public"]["Enums"]["permission_access_level"]
-          can_access?: boolean
-          can_override_owner?: boolean
-          can_view_sensitive_data?: boolean
-          conditions?: Json | null
           created_at?: string
           created_by?: string | null
           id?: string
-          module_feature_id: string
+          permission_key: string
           role_id: string
-          updated_at?: string
-          workspace_id: string
         }
         Update: {
-          access_level?: Database["public"]["Enums"]["permission_access_level"]
-          can_access?: boolean
-          can_override_owner?: boolean
-          can_view_sensitive_data?: boolean
-          conditions?: Json | null
           created_at?: string
           created_by?: string | null
           id?: string
-          module_feature_id?: string
+          permission_key?: string
           role_id?: string
-          updated_at?: string
-          workspace_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "role_permissions_module_feature_id_fkey"
-            columns: ["module_feature_id"]
+            foreignKeyName: "role_permissions_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "crm_module_features"
+            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
           {
@@ -211,8 +190,62 @@ export type Database = {
             referencedRelation: "workspace_roles"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      workspace_invitations: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string | null
+          id: string
+          invited_by: string | null
+          status: Database["public"]["Enums"]["workspace_member_status"]
+          token: string | null
+          updated_at: string
+          user_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at?: string | null
+          id?: string
+          invited_by?: string | null
+          status?: Database["public"]["Enums"]["workspace_member_status"]
+          token?: string | null
+          updated_at?: string
+          user_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string | null
+          id?: string
+          invited_by?: string | null
+          status?: Database["public"]["Enums"]["workspace_member_status"]
+          token?: string | null
+          updated_at?: string
+          user_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
           {
-            foreignKeyName: "role_permissions_workspace_id_fkey"
+            foreignKeyName: "workspace_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_invitations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_invitations_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -265,10 +298,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "workspace_members_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "workspace_members_role_id_fkey"
             columns: ["role_id"]
             isOneToOne: false
             referencedRelation: "workspace_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
           {
@@ -285,11 +332,8 @@ export type Database = {
           color: string | null
           created_at: string
           created_by: string | null
-          description: string | null
           hierarchy_level: number
           id: string
-          is_active: boolean
-          is_system: boolean
           role_key: string
           role_name: string
           updated_at: string
@@ -299,11 +343,8 @@ export type Database = {
           color?: string | null
           created_at?: string
           created_by?: string | null
-          description?: string | null
           hierarchy_level?: number
           id?: string
-          is_active?: boolean
-          is_system?: boolean
           role_key: string
           role_name: string
           updated_at?: string
@@ -313,17 +354,21 @@ export type Database = {
           color?: string | null
           created_at?: string
           created_by?: string | null
-          description?: string | null
           hierarchy_level?: number
           id?: string
-          is_active?: boolean
-          is_system?: boolean
           role_key?: string
           role_name?: string
           updated_at?: string
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "workspace_roles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "workspace_roles_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -336,7 +381,7 @@ export type Database = {
       workspaces: {
         Row: {
           created_at: string
-          created_by: string | null
+          created_by: string
           description: string | null
           icon_url: string | null
           id: string
@@ -350,7 +395,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          created_by?: string | null
+          created_by: string
           description?: string | null
           icon_url?: string | null
           id?: string
@@ -364,7 +409,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          created_by?: string | null
+          created_by?: string
           description?: string | null
           icon_url?: string | null
           id?: string
@@ -377,6 +422,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "workspaces_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "workspaces_owner_id_fkey"
             columns: ["owner_id"]
@@ -401,6 +453,12 @@ export type Database = {
         | "export"
         | "import"
         | "bulk"
+      invitation_status:
+        | "pending"
+        | "accepted"
+        | "expired"
+        | "declined"
+        | "revoked"
       permission_access_level: "none" | "own" | "team" | "all"
       workspace_member_status: "pending" | "accepted" | "inactive" | "removed"
     }
@@ -531,6 +589,13 @@ export const Constants = {
   public: {
     Enums: {
       crm_feature_type: ["crud", "action", "view", "export", "import", "bulk"],
+      invitation_status: [
+        "pending",
+        "accepted",
+        "expired",
+        "declined",
+        "revoked",
+      ],
       permission_access_level: ["none", "own", "team", "all"],
       workspace_member_status: ["pending", "accepted", "inactive", "removed"],
     },

@@ -101,6 +101,14 @@ create table if not exists
     primary key (id)
 );
 
+-- Enable RLS and add basic policy for accounts
+alter table public.accounts enable row level security;
+create policy accounts_policy on public.accounts
+    for all
+    to anon, authenticated, service_role
+    using (true)
+    with check (true);
+
 comment on table public.accounts is 'Accounts are the top level entity in the Supabase MakerKit';
 
 comment on column public.accounts.name is 'The name of the account';
@@ -275,7 +283,8 @@ execute procedure kit.new_user_created_setup();
 -- Storage
 -- Account Image
 insert into storage.buckets (id, name, PUBLIC)
-values ('account_image', 'account_image', true);
+values ('account_image', 'account_image', true)
+on conflict (id) do nothing;
 
 -- Function: get the storage filename as a UUID.
 -- Useful if you want to name files with UUIDs related to an account

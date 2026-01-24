@@ -36,7 +36,7 @@ import {
   type RolePermission,
   createRoleService,
   getModulesService,
-} from '~/services/roles-service';
+} from '~/services/roles.service';
 
 interface CreateRoleDialogProps {
   open: boolean;
