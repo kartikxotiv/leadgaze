@@ -12,13 +12,24 @@ import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { PageBody } from '@kit/ui/page';
 import { Separator } from '@kit/ui/separator';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@kit/ui/select';
+import { toast } from 'sonner';
 
 import { getOpportunityByIdService } from '~/services/opportunities.service';
 import { EntityNotes } from '../../_components/entity-notes';
 import { EntityDocuments, EntityMeetings, EntityReminders } from '../../_components/entity-activity';
 import { EditOpportunityDialog } from '../components/edit-opportunity-dialog';
+import { OpportunityStatusTimeline } from '../components/opportunity-status-timeline';
 import { usePermissionDetail, useCanAccessData } from '~/lib/permissions/use-permissions';
 import { useUser } from '@kit/supabase/hooks/use-user';
+import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { getOpportunityStatusesService } from '~/services/opportunities.service';
 
 export default function OpportunityDetailsPage() {
     const params = useParams();
@@ -29,10 +40,18 @@ export default function OpportunityDetailsPage() {
         data: opportunity,
         isLoading,
         error,
+        refetch
     } = useQuery({
         queryKey: ['opportunity', id],
         queryFn: () => getOpportunityByIdService(id),
         enabled: !!id,
+    });
+
+    const { currentWorkspace } = useRBAC();
+    const { data: stages = [] } = useQuery({
+        queryKey: ['opportunity-stages', currentWorkspace?.id],
+        queryFn: () => getOpportunityStatusesService(currentWorkspace!.id),
+        enabled: !!currentWorkspace?.id,
     });
 
     const { data: user } = useUser();
@@ -71,15 +90,47 @@ export default function OpportunityDetailsPage() {
                             Back
                         </Link>
                     </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsEditDialogOpen(true)}
-                        disabled={!canEdit}
-                        title={!canEdit ? "You do not have permission to edit this opportunity" : ""}
-                    >
-                        Edit Opportunity
-                    </Button>
+                    <div className="flex gap-2">
+                        <Select
+                            value={opportunity.stage_id}
+                            onValueChange={async (value) => {
+                                try {
+                                    await updateOpportunityService(id, { stage_id: value });
+                                    toast.success('Opportunity stage updated');
+                                    refetch();
+                                } catch (error) {
+                                    toast.error('Failed to update stage');
+                                }
+                            }}
+                            disabled={!canEdit}
+                        >
+                            <SelectTrigger className="w-[180px] h-9">
+                                <SelectValue placeholder="Update Stage" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {stages.map((stage: any) => (
+                                    <SelectItem key={stage.id} value={stage.id}>
+                                        <div className="flex items-center gap-2">
+                                            <div
+                                                className="h-2 w-2 rounded-full"
+                                                style={{ backgroundColor: stage.color }}
+                                            />
+                                            {stage.status_name}
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setIsEditDialogOpen(true)}
+                            disabled={!canEdit}
+                            title={!canEdit ? "You do not have permission to edit this opportunity" : ""}
+                        >
+                            Edit Opportunity
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="flex items-start justify-between">
@@ -119,6 +170,19 @@ export default function OpportunityDetailsPage() {
                             </Badge>
                         )}
                     </div>
+                </div>
+            </div>
+
+            <div className="bg-slate-50/50 border-b py-6 px-6">
+                <div className="max-w-5xl mx-auto overflow-hidden rounded-xl border bg-white/50 backdrop-blur-sm shadow-sm p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4 text-center">Opportunity Sales Pipeline</p>
+                    <OpportunityStatusTimeline
+                        opportunityId={id}
+                        currentStatusId={opportunity.stage_id}
+                        statuses={stages}
+                        onStatusChange={refetch}
+                        canEdit={canEdit}
+                    />
                 </div>
             </div>
 

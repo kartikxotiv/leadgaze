@@ -86,3 +86,46 @@ export const getOpportunities = catchAsync(
     );
   },
 );
+
+/**
+ * GET /api/opportunities/statuses
+ * Fetch all stages for opportunities
+ */
+export const getOpportunityStages = catchAsync(
+  async ({ request }: { request: NextRequest }) => {
+    const supabase = getSupabaseServerClient();
+    const url = new URL(request.url);
+    const workspaceId = url.searchParams.get('workspaceId');
+
+    if (!workspaceId) {
+      return NextResponse.json(
+        { message: 'workspaceId is required' },
+        { status: 400 },
+      );
+    }
+
+    const { data: stages, error } = await supabase
+      .from('entity_statuses')
+      .select('*')
+      .eq('workspace_id', workspaceId)
+      .eq(
+        'module_id',
+        (
+          await supabase
+            .from('crm_modules')
+            .select('id')
+            .eq('module_key', 'opportunities')
+            .single()
+        ).data?.id,
+      )
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      console.error('Get stages error:', error);
+      throw error;
+    }
+
+    return successDataResponse('Stages retrieved successfully', stages || []);
+  },
+);

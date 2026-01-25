@@ -55,8 +55,18 @@ const updateOpportunityService = asyncHandlerClient(
   },
 );
 
+const getOpportunityStatusesService = asyncHandlerClient(
+  async (workspaceId: string) => {
+    const response = await ApiClient.get(
+      `/opportunities/statuses?workspaceId=${workspaceId}`,
+    );
+    return response.data?.data || [];
+  },
+);
+
 export {
   getOpportunitiesService,
   getOpportunityByIdService,
   updateOpportunityService,
+  getOpportunityStatusesService,
 };
