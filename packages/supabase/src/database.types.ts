@@ -20,6 +20,7 @@ export type Database = {
           created_by: string | null
           email: string | null
           id: string
+          joined_via_invite: boolean
           name: string
           picture_url: string | null
           public_data: Json
@@ -31,6 +32,7 @@ export type Database = {
           created_by?: string | null
           email?: string | null
           id?: string
+          joined_via_invite?: boolean
           name: string
           picture_url?: string | null
           public_data?: Json
@@ -42,6 +44,7 @@ export type Database = {
           created_by?: string | null
           email?: string | null
           id?: string
+          joined_via_invite?: boolean
           name?: string
           picture_url?: string | null
           public_data?: Json
@@ -49,6 +52,179 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      crm_leads: {
+        Row: {
+          alt_email: string | null
+          annual_revenue: number | null
+          company_linkedin_url: string | null
+          company_name: string | null
+          company_size: Database["public"]["Enums"]["company_size"] | null
+          company_website: string | null
+          contacted_count: number
+          created_at: string
+          created_by: string
+          custom_fields: Json | null
+          deleted_at: string | null
+          deleted_by: string | null
+          department: string | null
+          email: string | null
+          first_name: string
+          id: string
+          industry: string | null
+          is_deleted: boolean
+          is_public: boolean
+          job_title: string | null
+          last_contact_date: string | null
+          last_name: string | null
+          lead_score: number | null
+          linkedin_url: string | null
+          location: string | null
+          mobile_number: string | null
+          next_followup_date: string | null
+          notes: string | null
+          owner_id: string | null
+          phone_number: string | null
+          source_id: string | null
+          status_id: string
+          tags: Json | null
+          timezone: string | null
+          trigger: string | null
+          updated_at: string
+          updated_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          alt_email?: string | null
+          annual_revenue?: number | null
+          company_linkedin_url?: string | null
+          company_name?: string | null
+          company_size?: Database["public"]["Enums"]["company_size"] | null
+          company_website?: string | null
+          contacted_count?: number
+          created_at?: string
+          created_by: string
+          custom_fields?: Json | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          department?: string | null
+          email?: string | null
+          first_name: string
+          id?: string
+          industry?: string | null
+          is_deleted?: boolean
+          is_public?: boolean
+          job_title?: string | null
+          last_contact_date?: string | null
+          last_name?: string | null
+          lead_score?: number | null
+          linkedin_url?: string | null
+          location?: string | null
+          mobile_number?: string | null
+          next_followup_date?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          phone_number?: string | null
+          source_id?: string | null
+          status_id: string
+          tags?: Json | null
+          timezone?: string | null
+          trigger?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          alt_email?: string | null
+          annual_revenue?: number | null
+          company_linkedin_url?: string | null
+          company_name?: string | null
+          company_size?: Database["public"]["Enums"]["company_size"] | null
+          company_website?: string | null
+          contacted_count?: number
+          created_at?: string
+          created_by?: string
+          custom_fields?: Json | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          department?: string | null
+          email?: string | null
+          first_name?: string
+          id?: string
+          industry?: string | null
+          is_deleted?: boolean
+          is_public?: boolean
+          job_title?: string | null
+          last_contact_date?: string | null
+          last_name?: string | null
+          lead_score?: number | null
+          linkedin_url?: string | null
+          location?: string | null
+          mobile_number?: string | null
+          next_followup_date?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          phone_number?: string | null
+          source_id?: string | null
+          status_id?: string
+          tags?: Json | null
+          timezone?: string | null
+          trigger?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_leads_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "lead_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "entity_statuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crm_module_features: {
         Row: {
@@ -149,6 +325,171 @@ export type Database = {
             columns: ["parent_module_id"]
             isOneToOne: false
             referencedRelation: "crm_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_statuses: {
+        Row: {
+          auto_actions: Json | null
+          color: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          is_closed: boolean
+          is_default: boolean
+          is_system: boolean
+          module_id: string
+          sort_order: number
+          status_key: string
+          status_name: string
+          updated_at: string
+          updated_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          auto_actions?: Json | null
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_closed?: boolean
+          is_default?: boolean
+          is_system?: boolean
+          module_id: string
+          sort_order?: number
+          status_key: string
+          status_name: string
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          auto_actions?: Json | null
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_closed?: boolean
+          is_default?: boolean
+          is_system?: boolean
+          module_id?: string
+          sort_order?: number
+          status_key?: string
+          status_name?: string
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_statuses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_statuses_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "crm_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_statuses_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_statuses_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_sources: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          is_system: boolean
+          sort_order: number
+          source_key: string
+          source_name: string
+          updated_at: string
+          updated_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          sort_order?: number
+          source_key: string
+          source_name: string
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          sort_order?: number
+          source_key?: string
+          source_name?: string
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_sources_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_sources_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_sources_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -341,6 +682,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "workspace_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "workspace_members_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
@@ -463,6 +811,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      company_size: "startup" | "small" | "medium" | "large" | "enterprise"
       crm_feature_type:
         | "crud"
         | "action"
@@ -605,6 +954,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      company_size: ["startup", "small", "medium", "large", "enterprise"],
       crm_feature_type: ["crud", "action", "view", "export", "import", "bulk"],
       invitation_status: [
         "pending",
