@@ -335,7 +335,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
     const { currentWorkspace: workspace } = useRBAC();
     const queryClient = useQueryClient();
     const [isOpen, setIsOpen] = useState(false);
-    const [fileName, setFileName] = useState('');
+    const [file, setFile] = useState<File | null>(null);
 
     const { data: documents = [], isLoading } = useQuery({
         queryKey: ['documents', entityType, entityId],
@@ -352,14 +352,12 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                 workspace_id: workspace!.id,
                 entity_type: entityType,
                 entity_id: entityId,
-                name: fileName,
-                file_path: '/mock/path/' + fileName, // Mocked for now as per instructions
-                file_type: 'application/pdf', // Mocked
+                file: file!,
             }),
         onSuccess: () => {
             toast.success('Document uploaded');
             setIsOpen(false);
-            setFileName('');
+            setFile(null);
             queryClient.invalidateQueries({ queryKey: ['documents', entityType, entityId] });
         },
         onError: () => toast.error('Failed to upload document'),
@@ -385,16 +383,15 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                         </DialogHeader>
                         <div className="space-y-4 pt-4">
                             <div className="space-y-2">
-                                <Label>File Name (Mock Upload)</Label>
+                                <Label>Select File</Label>
                                 <Input
-                                    value={fileName}
-                                    onChange={(e) => setFileName(e.target.value)}
-                                    placeholder="contract.pdf"
+                                    type="file"
+                                    onChange={(e) => setFile(e.target.files?.[0] || null)}
                                 />
                             </div>
                             <Button
                                 onClick={() => createMutation.mutate()}
-                                disabled={!fileName || createMutation.isPending}
+                                disabled={!file || createMutation.isPending}
                                 className="w-full"
                             >
                                 {createMutation.isPending ? 'Uploading...' : 'Upload'}

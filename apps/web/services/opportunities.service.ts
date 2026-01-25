@@ -33,10 +33,12 @@ export interface Opportunity {
 }
 
 const getOpportunitiesService = asyncHandlerClient(
-  async (workspaceId: string) => {
-    const response = await ApiClient.get(
-      `/opportunities?workspaceId=${workspaceId}`,
-    );
+  async (workspaceId: string, accountId?: string) => {
+    let url = `/opportunities?workspaceId=${workspaceId}`;
+    if (accountId) {
+      url += `&accountId=${accountId}`;
+    }
+    const response = await ApiClient.get(url);
     return response.data?.data || [];
   },
 );
@@ -46,4 +48,15 @@ const getOpportunityByIdService = asyncHandlerClient(async (id: string) => {
   return response.data?.data || null;
 });
 
-export { getOpportunitiesService, getOpportunityByIdService };
+const updateOpportunityService = asyncHandlerClient(
+  async (id: string, payload: Partial<Record<string, any>>) => {
+    const response = await ApiClient.patch(`/opportunities/${id}`, payload);
+    return response.data?.data;
+  },
+);
+
+export {
+  getOpportunitiesService,
+  getOpportunityByIdService,
+  updateOpportunityService,
+};

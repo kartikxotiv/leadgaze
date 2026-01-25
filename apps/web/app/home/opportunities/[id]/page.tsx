@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Building2, User, Calendar, FileText, CheckCircle, Wallet, Target, Flag, Tag } from 'lucide-react';
 import Link from 'next/link';
@@ -14,10 +16,12 @@ import { Separator } from '@kit/ui/separator';
 import { getOpportunityByIdService } from '~/services/opportunities.service';
 import { EntityNotes } from '../../_components/entity-notes';
 import { EntityDocuments, EntityMeetings, EntityReminders } from '../../_components/entity-activity';
+import { EditOpportunityDialog } from '../components/edit-opportunity-dialog';
 
 export default function OpportunityDetailsPage() {
     const params = useParams();
     const id = params?.id as string;
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     const {
         data: opportunity,
@@ -54,12 +58,15 @@ export default function OpportunityDetailsPage() {
     return (
         <>
             <div className="border-b bg-background px-6 py-4">
-                <div className="mb-4 flex items-center gap-2">
+                <div className="mb-4 flex items-center justify-between">
                     <Button variant="ghost" size="sm" asChild className="-ml-2">
                         <Link href="/home/opportunities">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back
                         </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
+                        Edit Opportunity
                     </Button>
                 </div>
 
@@ -220,6 +227,12 @@ export default function OpportunityDetailsPage() {
                     </div>
                 </div>
             </PageBody>
+
+            <EditOpportunityDialog
+                isOpen={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+                opportunity={opportunity}
+            />
         </>
     );
 }

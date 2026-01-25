@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Building2, Globe, Phone, Mail, Calendar, User, Briefcase, MapPin } from 'lucide-react';
 import Link from 'next/link';
@@ -14,10 +16,12 @@ import { Separator } from '@kit/ui/separator';
 import { getContactByIdService } from '~/services/contacts.service';
 import { EntityNotes } from '../../_components/entity-notes';
 import { EntityDocuments, EntityMeetings, EntityReminders } from '../../_components/entity-activity';
+import { EditContactDialog } from '../components/edit-contact-dialog';
 
 export default function ContactDetailsPage() {
     const params = useParams();
     const id = params?.id as string;
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     const {
         data: contact,
@@ -54,12 +58,15 @@ export default function ContactDetailsPage() {
     return (
         <>
             <div className="border-b bg-background px-6 py-4">
-                <div className="mb-4 flex items-center gap-2">
+                <div className="mb-4 flex items-center justify-between">
                     <Button variant="ghost" size="sm" asChild className="-ml-2">
                         <Link href="/home/contacts">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back
                         </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
+                        Edit Contact
                     </Button>
                 </div>
 
@@ -212,6 +219,12 @@ export default function ContactDetailsPage() {
                     </div>
                 </div>
             </PageBody>
+
+            <EditContactDialog
+                isOpen={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+                contact={contact}
+            />
         </>
     );
 }

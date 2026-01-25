@@ -39,4 +39,11 @@ const getAccountByIdService = asyncHandlerClient(async (id: string) => {
   return response.data?.data || null;
 });
 
-export { getAccountsService, getAccountByIdService };
+const updateAccountService = asyncHandlerClient(
+  async (id: string, payload: Partial<Record<string, any>>) => {
+    const response = await ApiClient.patch(`/accounts/${id}`, payload);
+    return response.data?.data;
+  },
+);
+
+export { getAccountsService, getAccountByIdService, updateAccountService };

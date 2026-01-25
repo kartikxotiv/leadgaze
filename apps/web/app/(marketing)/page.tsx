@@ -67,7 +67,7 @@ function Home() {
                 .{' '}
                 <span className="text-muted-foreground font-normal">
                   Unleash your creativity and build your SaaS faster than ever
-                  with Makerkit.
+                  with Leadgaze.
                 </span>
               </>
             }
@@ -82,7 +82,7 @@ function Home() {
               <FeatureCard
                 className={'relative col-span-2 overflow-hidden'}
                 label={'Beautiful Dashboard'}
-                description={`Makerkit provides a beautiful dashboard to manage your SaaS business.`}
+                description={`Leadgaze provides a beautiful dashboard to manage your SaaS business.`}
               />
 
               <FeatureCard
@@ -90,7 +90,7 @@ function Home() {
                   'relative col-span-2 w-full overflow-hidden lg:col-span-1'
                 }
                 label={'Authentication'}
-                description={`Makerkit provides a variety of providers to allow your users to sign in.`}
+                description={`Leadgaze provides a variety of providers to allow your users to sign in.`}
               />
 
               <FeatureCard
@@ -102,7 +102,7 @@ function Home() {
               <FeatureCard
                 className={'relative col-span-2 overflow-hidden'}
                 label={'Billing'}
-                description={`Makerkit supports multiple payment gateways to charge your customers.`}
+                description={`Leadgaze supports multiple payment gateways to charge your customers.`}
               />
             </FeatureGrid>
           </FeatureShowcase>

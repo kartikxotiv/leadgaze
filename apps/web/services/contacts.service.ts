@@ -31,14 +31,27 @@ export interface Contact {
   };
 }
 
-const getContactsService = asyncHandlerClient(async (workspaceId: string) => {
-  const response = await ApiClient.get(`/contacts?workspaceId=${workspaceId}`);
-  return response.data?.data || [];
-});
+const getContactsService = asyncHandlerClient(
+  async (workspaceId: string, accountId?: string) => {
+    let url = `/contacts?workspaceId=${workspaceId}`;
+    if (accountId) {
+      url += `&accountId=${accountId}`;
+    }
+    const response = await ApiClient.get(url);
+    return response.data?.data || [];
+  },
+);
 
 const getContactByIdService = asyncHandlerClient(async (id: string) => {
   const response = await ApiClient.get(`/contacts/${id}`);
   return response.data?.data || null;
 });
 
-export { getContactsService, getContactByIdService };
+const updateContactService = asyncHandlerClient(
+  async (id: string, payload: Partial<Record<string, any>>) => {
+    const response = await ApiClient.patch(`/contacts/${id}`, payload);
+    return response.data?.data;
+  },
+);
+
+export { getContactsService, getContactByIdService, updateContactService };

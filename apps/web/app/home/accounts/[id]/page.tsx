@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Building2, Globe, Phone, MapPin, Mail, Calendar, User, Users, DollarSign } from 'lucide-react';
 import Link from 'next/link';
@@ -12,12 +14,16 @@ import { PageBody } from '@kit/ui/page';
 import { Separator } from '@kit/ui/separator';
 
 import { getAccountByIdService } from '~/services/accounts.service';
+import { getContactsService } from '~/services/contacts.service';
+import { getOpportunitiesService } from '~/services/opportunities.service';
 import { EntityNotes } from '../../_components/entity-notes';
 import { EntityDocuments, EntityMeetings, EntityReminders } from '../../_components/entity-activity';
+import { EditAccountDialog } from '../components/edit-account-dialog';
 
 export default function AccountDetailsPage() {
     const params = useParams();
     const id = params?.id as string;
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     const {
         data: account,
@@ -27,6 +33,20 @@ export default function AccountDetailsPage() {
         queryKey: ['account', id],
         queryFn: () => getAccountByIdService(id),
         enabled: !!id,
+    });
+
+    const workspaceId = account?.workspace_id;
+
+    const { data: contacts } = useQuery({
+        queryKey: ['contacts', 'account', id],
+        queryFn: () => getContactsService(workspaceId, id),
+        enabled: !!workspaceId && !!id,
+    });
+
+    const { data: opportunities } = useQuery({
+        queryKey: ['opportunities', 'account', id],
+        queryFn: () => getOpportunitiesService(workspaceId, id),
+        enabled: !!workspaceId && !!id,
     });
 
     if (isLoading) {
@@ -54,12 +74,15 @@ export default function AccountDetailsPage() {
     return (
         <>
             <div className="border-b bg-background px-6 py-4">
-                <div className="mb-4 flex items-center gap-2">
+                <div className="mb-4 flex items-center justify-between">
                     <Button variant="ghost" size="sm" asChild className="-ml-2">
                         <Link href="/home/accounts">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back
                         </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
+                        Edit Account
                     </Button>
                 </div>
 
@@ -152,6 +175,11 @@ export default function AccountDetailsPage() {
                                 </div>
 
                                 <div className="space-y-1 sm:col-span-2">
+                                    <p className="text-sm font-medium text-muted-foreground">Description</p>
+                                    <p className="text-sm whitespace-pre-wrap">{account.description || 'No description provided.'}</p>
+                                </div>
+
+                                <div className="space-y-1 sm:col-span-2">
                                     <p className="text-sm font-medium text-muted-foreground">Billing Address</p>
                                     <div className="flex items-start gap-2">
                                         <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
@@ -182,7 +210,94 @@ export default function AccountDetailsPage() {
                                         </div>
                                     </div>
                                 </div>
+                            </CardContent>
+                        </Card>
 
+                        {/* Contacts Section */}
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle className="text-lg font-bold">Contacts</CardTitle>
+                                <Button size="sm" variant="outline" asChild>
+                                    <Link href={`/home/contacts/new?accountId=${id}`}>Add Contact</Link>
+                                </Button>
+                            </CardHeader>
+                            <CardContent>
+                                {contacts && contacts.length > 0 ? (
+                                    <div className="divide-y">
+                                        {contacts.map((contact: any) => (
+                                            <div key={contact.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                                                        {contact.first_name[0]}{contact.last_name?.[0]}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-medium">{contact.first_name} {contact.last_name}</p>
+                                                        <p className="text-xs text-muted-foreground">{contact.job_title} {contact.department ? `(${contact.department})` : ''}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="text-right text-xs text-muted-foreground hidden sm:block">
+                                                        <p>{contact.email}</p>
+                                                        <p>{contact.phone_number}</p>
+                                                    </div>
+                                                    <Button size="sm" variant="ghost" asChild>
+                                                        <Link href={`/home/contacts/${contact.id}`}>View</Link>
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="py-6 text-center text-sm text-muted-foreground">
+                                        No contacts associated with this account.
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Opportunities Section */}
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle className="text-lg font-bold">Opportunities</CardTitle>
+                                <Button size="sm" variant="outline" asChild>
+                                    <Link href={`/home/opportunities/new?accountId=${id}`}>Add Opportunity</Link>
+                                </Button>
+                            </CardHeader>
+                            <CardContent>
+                                {opportunities && opportunities.length > 0 ? (
+                                    <div className="divide-y">
+                                        {opportunities.map((opp: any) => (
+                                            <div key={opp.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                                                <div>
+                                                    <p className="text-sm font-medium">{opp.opportunity_name}</p>
+                                                    <div className="mt-1 flex items-center gap-2">
+                                                        {opp.stage && (
+                                                            <Badge variant="outline" className="text-[10px] h-4">
+                                                                {opp.stage.status_name}
+                                                            </Badge>
+                                                        )}
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: opp.currency || 'USD' }).format(opp.amount)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="text-right text-xs text-muted-foreground hidden sm:block">
+                                                        <p>Expected Close: {opp.expected_close_date ? new Date(opp.expected_close_date).toLocaleDateString() : '-'}</p>
+                                                        <p>Probability: {opp.probability}%</p>
+                                                    </div>
+                                                    <Button size="sm" variant="ghost" asChild>
+                                                        <Link href={`/home/opportunities/${opp.id}`}>View</Link>
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="py-6 text-center text-sm text-muted-foreground">
+                                        No opportunities associated with this account.
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
 
@@ -231,10 +346,34 @@ export default function AccountDetailsPage() {
                                     <>
                                         <Separator />
                                         <div className="space-y-1">
-                                            <p className="text-xs font-medium text-muted-foreground">Social</p>
-                                            <a href={account.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
-                                                LinkedIn Profile
+                                            <p className="text-xs font-medium text-muted-foreground">LinkedIn</p>
+                                            <a href={account.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline break-all">
+                                                {account.linkedin_url}
                                             </a>
+                                        </div>
+                                    </>
+                                )}
+                                {account.twitter_handle && (
+                                    <>
+                                        <Separator />
+                                        <div className="space-y-1">
+                                            <p className="text-xs font-medium text-muted-foreground">Twitter</p>
+                                            <a href={`https://twitter.com/${account.twitter_handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-400 hover:underline">
+                                                @{account.twitter_handle.replace('@', '')}
+                                            </a>
+                                        </div>
+                                    </>
+                                )}
+                                {(account.tags && account.tags.length > 0) && (
+                                    <>
+                                        <Separator />
+                                        <div className="space-y-2">
+                                            <p className="text-xs font-medium text-muted-foreground">Tags</p>
+                                            <div className="flex flex-wrap gap-1">
+                                                {account.tags.map((tag: string) => (
+                                                    <Badge key={tag} variant="outline" className="text-[10px]">{tag}</Badge>
+                                                ))}
+                                            </div>
                                         </div>
                                     </>
                                 )}
@@ -243,6 +382,12 @@ export default function AccountDetailsPage() {
                     </div>
                 </div>
             </PageBody>
+
+            <EditAccountDialog
+                isOpen={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+                account={account}
+            />
         </>
     );
 }

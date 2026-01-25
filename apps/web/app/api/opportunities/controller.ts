@@ -21,6 +21,7 @@ export const getOpportunities = catchAsync(
     const supabase = getSupabaseServerClient();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
+    const accountId = url.searchParams.get('accountId');
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -65,6 +66,10 @@ export const getOpportunities = catchAsync(
       )
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
+
+    if (accountId) {
+      query = query.eq('account_id', accountId);
+    }
 
     const { data: opportunities, error } = await query.order('created_at', {
       ascending: false,

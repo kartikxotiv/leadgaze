@@ -130,16 +130,11 @@ CREATE POLICY crm_documents_policy ON public.crm_documents FOR ALL TO anon, auth
 
 -- 5. Storage Bucket for Documents
 INSERT INTO storage.buckets (id, name, public)
-VALUES ('crm_documents', 'crm_documents', false)
+VALUES ('crm_documents', 'crm_documents', true)
 ON CONFLICT (id) DO NOTHING;
 
--- Storage Policies (Allow authenticated users to upload/read)
-CREATE POLICY "Authenticated can upload crm_documents"
-ON storage.objects FOR INSERT
-TO authenticated
-WITH CHECK ( bucket_id = 'crm_documents' );
-
-CREATE POLICY "Authenticated can select crm_documents"
-ON storage.objects FOR SELECT
-TO authenticated
-USING ( bucket_id = 'crm_documents' );
+-- Storage Policies (Permissive for now)
+CREATE POLICY "crm_documents_public_policy" ON storage.objects
+  FOR ALL TO anon, authenticated, service_role
+  USING (bucket_id = 'crm_documents')
+  WITH CHECK (bucket_id = 'crm_documents');
