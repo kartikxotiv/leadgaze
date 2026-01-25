@@ -36,4 +36,9 @@ const getContactsService = asyncHandlerClient(async (workspaceId: string) => {
   return response.data?.data || [];
 });
 
-export { getContactsService };
+const getContactByIdService = asyncHandlerClient(async (id: string) => {
+  const response = await ApiClient.get(`/contacts/${id}`);
+  return response.data?.data || null;
+});
+
+export { getContactsService, getContactByIdService };

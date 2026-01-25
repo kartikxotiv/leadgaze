@@ -232,10 +232,9 @@ export default function ContactsPage() {
                             {new Date(contact.created_at).toLocaleDateString()}
                           </TableCell>
                           <TableCell className="text-right">
-                            {/* <Link href={`/home/contacts/${contact.id}`} className="text-sm font-medium text-blue-600 hover:text-blue-700">
-                              View
-                            </Link> */}
-                            <span className="text-sm text-gray-400">View</span>
+                            <Button variant="link" asChild className="h-auto p-0 text-blue-600 hover:text-blue-700">
+                              <Link href={`/home/contacts/${contact.id}`}>View</Link>
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))

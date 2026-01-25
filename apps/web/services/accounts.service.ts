@@ -34,4 +34,9 @@ const getAccountsService = asyncHandlerClient(async (workspaceId: string) => {
   return response.data?.data || [];
 });
 
-export { getAccountsService };
+const getAccountByIdService = asyncHandlerClient(async (id: string) => {
+  const response = await ApiClient.get(`/accounts/${id}`);
+  return response.data?.data || null;
+});
+
+export { getAccountsService, getAccountByIdService };

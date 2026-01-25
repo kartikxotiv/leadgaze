@@ -231,10 +231,9 @@ export default function AccountsPage() {
                             {new Date(account.created_at).toLocaleDateString()}
                           </TableCell>
                           <TableCell className="text-right">
-                            {/* <Link href={`/home/accounts/${account.id}`} className="text-sm font-medium text-blue-600 hover:text-blue-700">
-                              View
-                            </Link> */}
-                            <span className="text-sm text-gray-400">View</span>
+                            <Button variant="link" asChild className="h-auto p-0 text-blue-600 hover:text-blue-700">
+                              <Link href={`/home/accounts/${account.id}`}>View</Link>
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
