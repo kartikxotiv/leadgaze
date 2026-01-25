@@ -17,6 +17,8 @@ import { getOpportunityByIdService } from '~/services/opportunities.service';
 import { EntityNotes } from '../../_components/entity-notes';
 import { EntityDocuments, EntityMeetings, EntityReminders } from '../../_components/entity-activity';
 import { EditOpportunityDialog } from '../components/edit-opportunity-dialog';
+import { usePermissionDetail, useCanAccessData } from '~/lib/permissions/use-permissions';
+import { useUser } from '@kit/supabase/hooks/use-user';
 
 export default function OpportunityDetailsPage() {
     const params = useParams();
@@ -32,6 +34,10 @@ export default function OpportunityDetailsPage() {
         queryFn: () => getOpportunityByIdService(id),
         enabled: !!id,
     });
+
+    const { data: user } = useUser();
+    const editPermission = usePermissionDetail('opportunities', 'edit');
+    const canEdit = useCanAccessData(editPermission, opportunity?.owner_id, user?.id);
 
     if (isLoading) {
         return (
@@ -65,7 +71,13 @@ export default function OpportunityDetailsPage() {
                             Back
                         </Link>
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEditDialogOpen(true)}
+                        disabled={!canEdit}
+                        title={!canEdit ? "You do not have permission to edit this opportunity" : ""}
+                    >
                         Edit Opportunity
                     </Button>
                 </div>

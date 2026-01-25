@@ -19,6 +19,8 @@ import { getOpportunitiesService } from '~/services/opportunities.service';
 import { EntityNotes } from '../../_components/entity-notes';
 import { EntityDocuments, EntityMeetings, EntityReminders } from '../../_components/entity-activity';
 import { EditAccountDialog } from '../components/edit-account-dialog';
+import { usePermissionDetail, useCanAccessData } from '~/lib/permissions/use-permissions';
+import { useUser } from '@kit/supabase/hooks/use-user';
 
 export default function AccountDetailsPage() {
     const params = useParams();
@@ -42,6 +44,10 @@ export default function AccountDetailsPage() {
         queryFn: () => getContactsService(workspaceId, id),
         enabled: !!workspaceId && !!id,
     });
+
+    const { data: user } = useUser();
+    const editPermission = usePermissionDetail('accounts', 'edit');
+    const canEdit = useCanAccessData(editPermission, account?.owner_id, user?.id);
 
     const { data: opportunities } = useQuery({
         queryKey: ['opportunities', 'account', id],
@@ -81,7 +87,13 @@ export default function AccountDetailsPage() {
                             Back
                         </Link>
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEditDialogOpen(true)}
+                        disabled={!canEdit}
+                        title={!canEdit ? "You do not have permission to edit this account" : ""}
+                    >
                         Edit Account
                     </Button>
                 </div>

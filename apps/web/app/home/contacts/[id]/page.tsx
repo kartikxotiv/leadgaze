@@ -17,6 +17,8 @@ import { getContactByIdService } from '~/services/contacts.service';
 import { EntityNotes } from '../../_components/entity-notes';
 import { EntityDocuments, EntityMeetings, EntityReminders } from '../../_components/entity-activity';
 import { EditContactDialog } from '../components/edit-contact-dialog';
+import { usePermissionDetail, useCanAccessData } from '~/lib/permissions/use-permissions';
+import { useUser } from '@kit/supabase/hooks/use-user';
 
 export default function ContactDetailsPage() {
     const params = useParams();
@@ -32,6 +34,10 @@ export default function ContactDetailsPage() {
         queryFn: () => getContactByIdService(id),
         enabled: !!id,
     });
+
+    const { data: user } = useUser();
+    const editPermission = usePermissionDetail('contacts', 'edit');
+    const canEdit = useCanAccessData(editPermission, contact?.owner_id, user?.id);
 
     if (isLoading) {
         return (
@@ -65,7 +71,13 @@ export default function ContactDetailsPage() {
                             Back
                         </Link>
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEditDialogOpen(true)}
+                        disabled={!canEdit}
+                        title={!canEdit ? "You do not have permission to edit this contact" : ""}
+                    >
                         Edit Contact
                     </Button>
                 </div>

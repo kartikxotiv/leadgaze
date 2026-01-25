@@ -41,6 +41,8 @@ import { LeadAssignees } from '../components/lead-assignees';
 import { ConvertLeadDialog } from '../components/convert-lead-dialog';
 import { EntityNotes } from '../../_components/entity-notes';
 import { EntityDocuments, EntityMeetings, EntityReminders } from '../../_components/entity-activity';
+import { usePermissionDetail, useCanAccessData } from '~/lib/permissions/use-permissions';
+import { useUser } from '@kit/supabase/hooks/use-user';
 
 export default function LeadDetailsPage() {
   const router = useRouter();
@@ -71,6 +73,10 @@ export default function LeadDetailsPage() {
     },
     enabled: !!leadId,
   });
+
+  const { data: user } = useUser();
+  const editPermission = usePermissionDetail('leads', 'edit');
+  const canEdit = useCanAccessData(editPermission, lead?.owner_id, user?.id);
 
   const { data: statuses = [], isLoading: statusesLoading } = useQuery({
     queryKey: ['lead-statuses', workspace?.id],
@@ -186,7 +192,7 @@ export default function LeadDetailsPage() {
           {value || '-'}
         </p>
       </div>
-      {value && (
+      {value && canEdit && (
         <Edit2
           className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           onClick={() => {
@@ -207,7 +213,8 @@ export default function LeadDetailsPage() {
             size="sm"
             onClick={() => setStatusModalOpen(true)}
             className="gap-2"
-            disabled={isSaving}
+            disabled={isSaving || !canEdit}
+            title={!canEdit ? "You do not have permission to edit this lead" : ""}
           >
             Change Status
           </Button>
@@ -216,7 +223,8 @@ export default function LeadDetailsPage() {
             size="sm"
             onClick={handleConvertLead}
             className="gap-2"
-            disabled={isSaving}
+            disabled={isSaving || !canEdit}
+            title={!canEdit ? "You do not have permission to convert this lead" : ""}
           >
             Convert Lead
           </Button>
@@ -225,6 +233,8 @@ export default function LeadDetailsPage() {
             size="sm"
             onClick={() => setIsEditDialogOpen(true)}
             className="gap-2"
+            disabled={!canEdit}
+            title={!canEdit ? "You do not have permission to edit this lead" : ""}
           >
             <Edit2 className="h-4 w-4" />
             Edit Full Profile
@@ -400,13 +410,15 @@ export default function LeadDetailsPage() {
                         {lead.company_website}
                       </a>
                     </div>
-                    <Edit2
-                      className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                      onClick={() => {
-                        setEditingField('company_website');
-                        setEditValue(lead.company_website || '');
-                      }}
-                    />
+                    {canEdit && (
+                      <Edit2
+                        className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        onClick={() => {
+                          setEditingField('company_website');
+                          setEditValue(lead.company_website || '');
+                        }}
+                      />
+                    )}
                   </div>
                 )}
                 {lead.department && (
@@ -438,13 +450,15 @@ export default function LeadDetailsPage() {
                         {lead.email}
                       </a>
                     </div>
-                    <Edit2
-                      className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                      onClick={() => {
-                        setEditingField('email');
-                        setEditValue(lead.email || '');
-                      }}
-                    />
+                    {canEdit && (
+                      <Edit2
+                        className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        onClick={() => {
+                          setEditingField('email');
+                          setEditValue(lead.email || '');
+                        }}
+                      />
+                    )}
                   </div>
                 )}
 
@@ -461,13 +475,15 @@ export default function LeadDetailsPage() {
                         {lead.alt_email}
                       </a>
                     </div>
-                    <Edit2
-                      className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                      onClick={() => {
-                        setEditingField('alt_email');
-                        setEditValue(lead.alt_email || '');
-                      }}
-                    />
+                    {canEdit && (
+                      <Edit2
+                        className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        onClick={() => {
+                          setEditingField('alt_email');
+                          setEditValue(lead.alt_email || '');
+                        }}
+                      />
+                    )}
                   </div>
                 )}
 
@@ -484,13 +500,15 @@ export default function LeadDetailsPage() {
                         {lead.phone_number}
                       </a>
                     </div>
-                    <Edit2
-                      className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                      onClick={() => {
-                        setEditingField('phone_number');
-                        setEditValue(lead.phone_number || '');
-                      }}
-                    />
+                    {canEdit && (
+                      <Edit2
+                        className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        onClick={() => {
+                          setEditingField('phone_number');
+                          setEditValue(lead.phone_number || '');
+                        }}
+                      />
+                    )}
                   </div>
                 )}
 
@@ -507,13 +525,15 @@ export default function LeadDetailsPage() {
                         {lead.mobile_number}
                       </a>
                     </div>
-                    <Edit2
-                      className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                      onClick={() => {
-                        setEditingField('mobile_number');
-                        setEditValue(lead.mobile_number || '');
-                      }}
-                    />
+                    {canEdit && (
+                      <Edit2
+                        className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        onClick={() => {
+                          setEditingField('mobile_number');
+                          setEditValue(lead.mobile_number || '');
+                        }}
+                      />
+                    )}
                   </div>
                 )}
 
@@ -551,13 +571,15 @@ export default function LeadDetailsPage() {
                         View Profile
                       </a>
                     </div>
-                    <Edit2
-                      className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                      onClick={() => {
-                        setEditingField('linkedin_url');
-                        setEditValue(lead.linkedin_url || '');
-                      }}
-                    />
+                    {canEdit && (
+                      <Edit2
+                        className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        onClick={() => {
+                          setEditingField('linkedin_url');
+                          setEditValue(lead.linkedin_url || '');
+                        }}
+                      />
+                    )}
                   </div>
                 )}
               </CardContent>

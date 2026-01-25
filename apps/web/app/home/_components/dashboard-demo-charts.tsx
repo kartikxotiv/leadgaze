@@ -15,6 +15,8 @@ import {
 } from 'recharts';
 
 import { Badge } from '@kit/ui/badge';
+import { Button } from '@kit/ui/button';
+import Link from 'next/link';
 import {
   Card,
   CardContent,
@@ -38,11 +40,33 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
+import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { getDashboardMetricsService } from '~/services/dashboard.service';
+import { useQuery } from '@tanstack/react-query';
+import { Building2, Users, Target, FileText } from 'lucide-react';
+
 export default function DashboardDemo() {
-  const mrr = useMemo(() => generateDemoData(), []);
-  const netRevenue = useMemo(() => generateDemoData(), []);
-  const fees = useMemo(() => generateDemoData(), []);
-  const newCustomers = useMemo(() => generateDemoData(), []);
+  const { currentWorkspace } = useRBAC();
+  const workspaceId = currentWorkspace?.id;
+
+  const { data: metrics, isLoading } = useQuery({
+    queryKey: ['dashboard-metrics', workspaceId],
+    queryFn: () => getDashboardMetricsService(workspaceId!),
+    enabled: !!workspaceId,
+  });
+
+  const leadsTrend = useMemo(() => generateDemoData(), []);
+  const contactsTrend = useMemo(() => generateDemoData(), []);
+  const accountsTrend = useMemo(() => generateDemoData(), []);
+  const opportunitiesTrend = useMemo(() => generateDemoData(), []);
+
+  if (isLoading || !metrics) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -58,84 +82,91 @@ export default function DashboardDemo() {
         <Card>
           <CardHeader>
             <CardTitle className={'flex items-center gap-2.5'}>
-              <span>MRR</span>
-              <Trend trend={'up'}>20%</Trend>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <span>Total Leads</span>
+              {metrics.leads.trend > 0 && <Trend trend={'up'}>{metrics.leads.trend}%</Trend>}
             </CardTitle>
 
             <CardDescription>
-              <span>Monthly recurring revenue</span>
+              <span>Potential customers in the funnel</span>
             </CardDescription>
 
             <div>
-              <Figure>{`$${mrr[1]}`}</Figure>
+              <Figure>{metrics.leads.total}</Figure>
             </div>
           </CardHeader>
 
           <CardContent className={'space-y-4'}>
-            <Chart data={mrr[0]} />
+            <Chart data={leadsTrend[0]} />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className={'flex items-center gap-2.5'}>
-              <span>Revenue</span>
-              <Trend trend={'up'}>12%</Trend>
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span>Contacts</span>
             </CardTitle>
 
             <CardDescription>
-              <span>Total revenue including fees</span>
+              <span>Total individual relationships</span>
             </CardDescription>
 
             <div>
-              <Figure>{`$${netRevenue[1]}`}</Figure>
+              <Figure>{metrics.contacts.total}</Figure>
             </div>
           </CardHeader>
 
           <CardContent>
-            <Chart data={netRevenue[0]} />
+            <Chart data={contactsTrend[0]} />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className={'flex items-center gap-2.5'}>
-              <span>Fees</span>
-              <Trend trend={'up'}>9%</Trend>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <span>Accounts</span>
             </CardTitle>
 
             <CardDescription>
-              <span>Total fees collected</span>
+              <span>Total company organizations</span>
             </CardDescription>
 
             <div>
-              <Figure>{`$${fees[1]}`}</Figure>
+              <Figure>{metrics.accounts.total}</Figure>
             </div>
           </CardHeader>
 
           <CardContent>
-            <Chart data={fees[0]} />
+            <Chart data={accountsTrend[0]} />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className={'flex items-center gap-2.5'}>
-              <span>New Customers</span>
-              <Trend trend={'down'}>-25%</Trend>
+              <Target className="h-4 w-4 text-muted-foreground" />
+              <span>Pipeline Value</span>
             </CardTitle>
 
             <CardDescription>
-              <span>Customers who signed up this month</span>
+              <span>Total value of opportunities</span>
             </CardDescription>
 
             <div>
-              <Figure>{`${Number(newCustomers[1]).toFixed(0)}`}</Figure>
+              <Figure>
+                {new Intl.NumberFormat('en-US', {
+                  style: 'currency',
+                  currency: 'USD',
+                  maximumFractionDigits: 0
+                }).format(metrics.opportunities.totalAmount)}
+              </Figure>
             </div>
           </CardHeader>
 
           <CardContent>
-            <Chart data={newCustomers[0]} />
+            <Chart data={opportunitiesTrend[0]} />
           </CardContent>
         </Card>
       </div>
@@ -147,12 +178,12 @@ export default function DashboardDemo() {
       <div>
         <Card>
           <CardHeader>
-            <CardTitle>Best Customers</CardTitle>
-            <CardDescription>Showing the top customers by MRR</CardDescription>
+            <CardTitle>Recent Contacts</CardTitle>
+            <CardDescription>Latest contacts added to your workspace</CardDescription>
           </CardHeader>
 
           <CardContent>
-            <CustomersTable />
+            <RecentContactsTable workspaceId={workspaceId!} />
           </CardContent>
         </Card>
       </div>
@@ -223,217 +254,66 @@ function Chart(
   );
 }
 
-function CustomersTable() {
-  const customers = [
-    {
-      name: 'John Doe',
-      email: 'john@Leadgaze.dev',
-      plan: 'Pro',
-      mrr: '$120.5',
-      logins: 1020,
-      status: 'Healthy',
-      trend: 'up',
+function RecentContactsTable({ workspaceId }: { workspaceId: string }) {
+  const { data: contacts, isLoading } = useQuery({
+    queryKey: ['contacts', 'recent', workspaceId],
+    queryFn: async () => {
+      const response = await fetch(`/api/contacts?workspaceId=${workspaceId}`);
+      const json = await response.json();
+      return json.data?.slice(0, 10) || [];
     },
-    {
-      name: 'Emma Smith',
-      email: 'emma@makerit.dev',
-      plan: 'Basic',
-      mrr: '$65.4',
-      logins: 570,
-      status: 'Possible Churn',
-      trend: 'stale',
-    },
-    {
-      name: 'Robert Johnson',
-      email: 'robert@Leadgaze.dev',
-      plan: 'Pro',
-      mrr: '$500.1',
-      logins: 2050,
-      status: 'Healthy',
-      trend: 'up',
-    },
-    {
-      name: 'Olivia Brown',
-      email: 'olivia@Leadgaze.dev',
-      plan: 'Basic',
-      mrr: '$10',
-      logins: 50,
-      status: 'Churn',
-      trend: 'down',
-    },
-    {
-      name: 'Michael Davis',
-      email: 'michael@Leadgaze.dev',
-      plan: 'Pro',
-      mrr: '$300.2',
-      logins: 1520,
-      status: 'Healthy',
-      trend: 'up',
-    },
-    {
-      name: 'Emily Jones',
-      email: 'emily@Leadgaze.dev',
-      plan: 'Pro',
-      mrr: '$75.7',
-      logins: 780,
-      status: 'Healthy',
-      trend: 'up',
-    },
-    {
-      name: 'Daniel Garcia',
-      email: 'daniel@Leadgaze.dev',
-      plan: 'Basic',
-      mrr: '$50',
-      logins: 320,
-      status: 'Possible Churn',
-      trend: 'stale',
-    },
-    {
-      name: 'Liam Miller',
-      email: 'liam@Leadgaze.dev',
-      plan: 'Pro',
-      mrr: '$90.8',
-      logins: 1260,
-      status: 'Healthy',
-      trend: 'up',
-    },
-    {
-      name: 'Emma Clark',
-      email: 'emma@Leadgaze.dev',
-      plan: 'Basic',
-      mrr: '$0',
-      logins: 20,
-      status: 'Churn',
-      trend: 'down',
-    },
-    {
-      name: 'Elizabeth Rodriguez',
-      email: 'liz@Leadgaze.dev',
-      plan: 'Pro',
-      mrr: '$145.3',
-      logins: 1380,
-      status: 'Healthy',
-      trend: 'up',
-    },
-    {
-      name: 'James Martinez',
-      email: 'james@Leadgaze.dev',
-      plan: 'Pro',
-      mrr: '$120.5',
-      logins: 940,
-      status: 'Healthy',
-      trend: 'up',
-    },
-    {
-      name: 'Charlotte Ryan',
-      email: 'carlotte@Leadgaze.dev',
-      plan: 'Basic',
-      mrr: '$80.6',
-      logins: 460,
-      status: 'Possible Churn',
-      trend: 'stale',
-    },
-    {
-      name: 'Lucas Evans',
-      email: 'lucas@Leadgaze.dev',
-      plan: 'Pro',
-      mrr: '$210.3',
-      logins: 1850,
-      status: 'Healthy',
-      trend: 'up',
-    },
-    {
-      name: 'Sophia Wilson',
-      email: 'sophia@Leadgaze.dev',
-      plan: 'Basic',
-      mrr: '$10',
-      logins: 35,
-      status: 'Churn',
-      trend: 'down',
-    },
-    {
-      name: 'William Kelly',
-      email: 'will@Leadgaze.dev',
-      plan: 'Pro',
-      mrr: '$350.2',
-      logins: 1760,
-      status: 'Healthy',
-      trend: 'up',
-    },
-    {
-      name: 'Oliver Thomas',
-      email: 'olly@Leadgaze.dev',
-      plan: 'Pro',
-      mrr: '$145.6',
-      logins: 1350,
-      status: 'Healthy',
-      trend: 'up',
-    },
-    {
-      name: 'Samantha White',
-      email: 'sam@Leadgaze.dev',
-      plan: 'Basic',
-      mrr: '$60.3',
-      logins: 425,
-      status: 'Possible Churn',
-      trend: 'stale',
-    },
-    {
-      name: 'Benjamin Lewis',
-      email: 'ben@Leadgaze.dev',
-      plan: 'Pro',
-      mrr: '$175.8',
-      logins: 1600,
-      status: 'Healthy',
-      trend: 'up',
-    },
-    {
-      name: 'Zoe Harris',
-      email: 'zoe@Leadgaze.dev',
-      plan: 'Basic',
-      mrr: '$0',
-      logins: 18,
-      status: 'Churn',
-      trend: 'down',
-    },
-    {
-      name: 'Zachary Nelson',
-      email: 'zac@Leadgaze.dev',
-      plan: 'Pro',
-      mrr: '$255.9',
-      logins: 1785,
-      status: 'Healthy',
-      trend: 'up',
-    },
-  ];
+    enabled: !!workspaceId,
+  });
+
+  if (isLoading) {
+    return <div className="py-8 text-center text-muted-foreground animate-pulse">Loading contacts...</div>;
+  }
+
+  if (!contacts || contacts.length === 0) {
+    return <div className="py-8 text-center text-muted-foreground">No contacts found.</div>;
+  }
 
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Customer</TableHead>
-          <TableHead>Plan</TableHead>
-          <TableHead>MRR</TableHead>
-          <TableHead>Logins</TableHead>
+          <TableHead>Contact</TableHead>
+          <TableHead>Company</TableHead>
+          <TableHead className="hidden md:table-cell">Job Title</TableHead>
           <TableHead>Status</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {customers.map((customer) => (
-          <TableRow key={customer.name}>
+        {contacts.map((contact: any) => (
+          <TableRow key={contact.id}>
             <TableCell className={'flex flex-col'}>
-              <span>{customer.name}</span>
-              <span className={'text-muted-foreground text-sm'}>
-                {customer.email}
+              <span className="font-medium">{contact.first_name} {contact.last_name}</span>
+              <span className={'text-muted-foreground text-xs hidden sm:inline'}>
+                {contact.email}
               </span>
             </TableCell>
-            <TableCell>{customer.plan}</TableCell>
-            <TableCell>{customer.mrr}</TableCell>
-            <TableCell>{customer.logins}</TableCell>
+            <TableCell>{contact.account?.account_name || '-'}</TableCell>
+            <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{contact.job_title || '-'}</TableCell>
             <TableCell>
-              <BadgeWithTrend trend={customer.trend}>
-                {customer.status}
-              </BadgeWithTrend>
+              {contact.status ? (
+                <Badge
+                  variant="outline"
+                  style={{
+                    color: contact.status.color,
+                    borderColor: contact.status.color + '40',
+                    backgroundColor: contact.status.color + '10'
+                  }}
+                  className="text-[10px] h-5"
+                >
+                  {contact.status.status_name}
+                </Badge>
+              ) : '-'}
+            </TableCell>
+            <TableCell className="text-right">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href={`/home/contacts/${contact.id}`}>View</Link>
+              </Button>
             </TableCell>
           </TableRow>
         ))}
@@ -615,9 +495,9 @@ export function VisitorsChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Visitors</CardTitle>
+        <CardTitle>Relationship Growth</CardTitle>
         <CardDescription>
-          Showing total visitors for the last 6 months
+          Showing total record growth for the last 6 months
         </CardDescription>
       </CardHeader>
 
@@ -822,10 +702,10 @@ export function PageViewsChart() {
     <Card>
       <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
-          <CardTitle>Page Views</CardTitle>
+          <CardTitle>Activity Trends</CardTitle>
 
           <CardDescription>
-            Showing total visitors for the last 3 months
+            Showing interaction trends for the last 3 months
           </CardDescription>
         </div>
 
