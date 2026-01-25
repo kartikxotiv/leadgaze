@@ -53,6 +53,408 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_accounts: {
+        Row: {
+          account_name: string
+          account_type: string | null
+          annual_revenue: number | null
+          billing_city: string | null
+          billing_country: string | null
+          billing_postal_code: string | null
+          billing_state: string | null
+          billing_street: string | null
+          company_size: string | null
+          created_at: string
+          created_by: string | null
+          created_from_lead_id: string | null
+          custom_fields: Json | null
+          customer_since: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          description: string | null
+          employee_count: number | null
+          id: string
+          industry_id: string | null
+          is_deleted: boolean
+          last_activity_date: string | null
+          linkedin_url: string | null
+          owner_id: string | null
+          parent_account_id: string | null
+          phone_number: string | null
+          shipping_city: string | null
+          shipping_country: string | null
+          shipping_postal_code: string | null
+          shipping_state: string | null
+          shipping_street: string | null
+          status_id: string
+          tags: Json | null
+          total_revenue: number | null
+          twitter_handle: string | null
+          updated_at: string
+          website: string | null
+          workspace_id: string
+        }
+        Insert: {
+          account_name: string
+          account_type?: string | null
+          annual_revenue?: number | null
+          billing_city?: string | null
+          billing_country?: string | null
+          billing_postal_code?: string | null
+          billing_state?: string | null
+          billing_street?: string | null
+          company_size?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_from_lead_id?: string | null
+          custom_fields?: Json | null
+          customer_since?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          employee_count?: number | null
+          id?: string
+          industry_id?: string | null
+          is_deleted?: boolean
+          last_activity_date?: string | null
+          linkedin_url?: string | null
+          owner_id?: string | null
+          parent_account_id?: string | null
+          phone_number?: string | null
+          shipping_city?: string | null
+          shipping_country?: string | null
+          shipping_postal_code?: string | null
+          shipping_state?: string | null
+          shipping_street?: string | null
+          status_id: string
+          tags?: Json | null
+          total_revenue?: number | null
+          twitter_handle?: string | null
+          updated_at?: string
+          website?: string | null
+          workspace_id: string
+        }
+        Update: {
+          account_name?: string
+          account_type?: string | null
+          annual_revenue?: number | null
+          billing_city?: string | null
+          billing_country?: string | null
+          billing_postal_code?: string | null
+          billing_state?: string | null
+          billing_street?: string | null
+          company_size?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_from_lead_id?: string | null
+          custom_fields?: Json | null
+          customer_since?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          employee_count?: number | null
+          id?: string
+          industry_id?: string | null
+          is_deleted?: boolean
+          last_activity_date?: string | null
+          linkedin_url?: string | null
+          owner_id?: string | null
+          parent_account_id?: string | null
+          phone_number?: string | null
+          shipping_city?: string | null
+          shipping_country?: string | null
+          shipping_postal_code?: string | null
+          shipping_state?: string | null
+          shipping_street?: string | null
+          status_id?: string
+          tags?: Json | null
+          total_revenue?: number | null
+          twitter_handle?: string | null
+          updated_at?: string
+          website?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_accounts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_accounts_created_from_lead_id_fkey"
+            columns: ["created_from_lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_accounts_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_accounts_industry_id_fkey"
+            columns: ["industry_id"]
+            isOneToOne: false
+            referencedRelation: "crm_industries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_accounts_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_accounts_parent_account_id_fkey"
+            columns: ["parent_account_id"]
+            isOneToOne: false
+            referencedRelation: "crm_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_accounts_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "entity_statuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_accounts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_contacts: {
+        Row: {
+          account_id: string | null
+          alt_email: string | null
+          alt_phone: string | null
+          created_at: string
+          created_by: string | null
+          created_from_lead_id: string | null
+          custom_fields: Json | null
+          deleted_at: string | null
+          deleted_by: string | null
+          department: string | null
+          do_not_call: boolean
+          do_not_email: boolean
+          email: string | null
+          email_bounced: boolean
+          first_name: string
+          id: string
+          is_deleted: boolean
+          is_primary: boolean
+          job_title: string | null
+          language: string | null
+          last_contact_date: string | null
+          last_name: string | null
+          linkedin_url: string | null
+          location: string | null
+          mobile_number: string | null
+          notes: string | null
+          owner_id: string | null
+          phone_number: string | null
+          preferred_contact_method: string | null
+          reporting_to_id: string | null
+          status_id: string
+          tags: Json | null
+          timezone: string | null
+          twitter_handle: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          alt_email?: string | null
+          alt_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_from_lead_id?: string | null
+          custom_fields?: Json | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          department?: string | null
+          do_not_call?: boolean
+          do_not_email?: boolean
+          email?: string | null
+          email_bounced?: boolean
+          first_name: string
+          id?: string
+          is_deleted?: boolean
+          is_primary?: boolean
+          job_title?: string | null
+          language?: string | null
+          last_contact_date?: string | null
+          last_name?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          mobile_number?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          phone_number?: string | null
+          preferred_contact_method?: string | null
+          reporting_to_id?: string | null
+          status_id: string
+          tags?: Json | null
+          timezone?: string | null
+          twitter_handle?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          account_id?: string | null
+          alt_email?: string | null
+          alt_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_from_lead_id?: string | null
+          custom_fields?: Json | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          department?: string | null
+          do_not_call?: boolean
+          do_not_email?: boolean
+          email?: string | null
+          email_bounced?: boolean
+          first_name?: string
+          id?: string
+          is_deleted?: boolean
+          is_primary?: boolean
+          job_title?: string | null
+          language?: string | null
+          last_contact_date?: string | null
+          last_name?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          mobile_number?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          phone_number?: string | null
+          preferred_contact_method?: string | null
+          reporting_to_id?: string | null
+          status_id?: string
+          tags?: Json | null
+          timezone?: string | null
+          twitter_handle?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contacts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "crm_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_created_from_lead_id_fkey"
+            columns: ["created_from_lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_reporting_to_id_fkey"
+            columns: ["reporting_to_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "entity_statuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_industries: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          industry_name: string
+          is_active: boolean
+          is_system: boolean
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          industry_name: string
+          is_active?: boolean
+          is_system?: boolean
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          industry_name?: string
+          is_active?: boolean
+          is_system?: boolean
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_industries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_industries_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_leads: {
         Row: {
           alt_email: string | null
@@ -325,6 +727,168 @@ export type Database = {
             columns: ["parent_module_id"]
             isOneToOne: false
             referencedRelation: "crm_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_opportunities: {
+        Row: {
+          account_id: string
+          actual_close_date: string | null
+          amount: number | null
+          campaign_id: string | null
+          close_reason: string | null
+          competitor: string | null
+          created_at: string
+          created_by: string | null
+          created_from_lead_id: string | null
+          currency: string | null
+          custom_fields: Json | null
+          deleted_at: string | null
+          deleted_by: string | null
+          description: string | null
+          expected_close_date: string | null
+          expected_revenue: number | null
+          id: string
+          is_closed: boolean
+          is_deleted: boolean
+          is_won: boolean
+          lead_source: string | null
+          opportunity_name: string
+          opportunity_type: string | null
+          owner_id: string
+          primary_contact_id: string | null
+          priority: string | null
+          probability: number | null
+          stage_history: Json | null
+          stage_id: string
+          tags: Json | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          account_id: string
+          actual_close_date?: string | null
+          amount?: number | null
+          campaign_id?: string | null
+          close_reason?: string | null
+          competitor?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_from_lead_id?: string | null
+          currency?: string | null
+          custom_fields?: Json | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          expected_close_date?: string | null
+          expected_revenue?: number | null
+          id?: string
+          is_closed?: boolean
+          is_deleted?: boolean
+          is_won?: boolean
+          lead_source?: string | null
+          opportunity_name: string
+          opportunity_type?: string | null
+          owner_id: string
+          primary_contact_id?: string | null
+          priority?: string | null
+          probability?: number | null
+          stage_history?: Json | null
+          stage_id: string
+          tags?: Json | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          account_id?: string
+          actual_close_date?: string | null
+          amount?: number | null
+          campaign_id?: string | null
+          close_reason?: string | null
+          competitor?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_from_lead_id?: string | null
+          currency?: string | null
+          custom_fields?: Json | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          expected_close_date?: string | null
+          expected_revenue?: number | null
+          id?: string
+          is_closed?: boolean
+          is_deleted?: boolean
+          is_won?: boolean
+          lead_source?: string | null
+          opportunity_name?: string
+          opportunity_type?: string | null
+          owner_id?: string
+          primary_contact_id?: string | null
+          priority?: string | null
+          probability?: number | null
+          stage_history?: Json | null
+          stage_id?: string
+          tags?: Json | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_opportunities_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "crm_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_opportunities_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_opportunities_created_from_lead_id_fkey"
+            columns: ["created_from_lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_opportunities_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_opportunities_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_opportunities_primary_contact_id_fkey"
+            columns: ["primary_contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_opportunities_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "entity_statuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_opportunities_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]

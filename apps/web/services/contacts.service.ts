@@ -1,0 +1,39 @@
+import { asyncHandlerClient } from '~/utils/async-handler';
+import ApiClient from '~/utils/axios-client';
+
+export interface Contact {
+  id: string;
+  workspace_id: string;
+  first_name: string;
+  last_name?: string;
+  email?: string;
+  phone_number?: string;
+  job_title?: string;
+  account_id?: string;
+  status_id: string;
+  owner_id?: string;
+  created_at: string;
+  updated_at: string;
+  // Relations
+  status?: {
+    id: string;
+    status_name: string;
+    color: string;
+  };
+  account?: {
+    id: string;
+    account_name: string;
+  };
+  owner?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
+const getContactsService = asyncHandlerClient(async (workspaceId: string) => {
+  const response = await ApiClient.get(`/contacts?workspaceId=${workspaceId}`);
+  return response.data?.data || [];
+});
+
+export { getContactsService };

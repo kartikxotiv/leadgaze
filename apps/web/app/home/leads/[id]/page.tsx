@@ -38,6 +38,7 @@ import {
 
 import EditLeadDialog from '../components/edit-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
+import { ConvertLeadDialog } from '../components/convert-lead-dialog';
 
 export default function LeadDetailsPage() {
   const router = useRouter();
@@ -51,6 +52,7 @@ export default function LeadDetailsPage() {
   const [selectedNewStatus, setSelectedNewStatus] = useState<string | null>(
     null,
   );
+  const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
 
   const leadId = params?.id as string;
 
@@ -121,25 +123,13 @@ export default function LeadDetailsPage() {
     }
   };
 
-  const handleConvertLead = async () => {
-    // Find a closed/converted status
-    const convertedStatus = statuses.find((s: any) => s.is_closed);
-    if (!convertedStatus) {
-      toast.error('No converted status available');
-      return;
-    }
+  const handleConvertLead = () => {
+    setIsConvertDialogOpen(true);
+  };
 
-    setIsSaving(true);
-    try {
-      await updateLeadService(leadId, { status_id: convertedStatus.id });
-      toast.success('Lead converted successfully');
-      await refetch();
-    } catch (err: any) {
-      console.error('Convert error:', err);
-      toast.error(err.message || 'Failed to convert lead');
-    } finally {
-      setIsSaving(false);
-    }
+  const handleConvertSuccess = () => {
+    refetch(); // usage of refetch() implies we stay on page, but converted lead might be locked or different view?
+    // For now, refreshing data is fine.
   };
 
   if (isLoading) {
@@ -836,6 +826,22 @@ export default function LeadDetailsPage() {
           </div>
         </div>
       </PageBody>
+
+      {/* Convert Lead Dialog */}
+      {lead && (
+        <ConvertLeadDialog
+          leadId={leadId}
+          leadData={{
+            first_name: lead.first_name,
+            last_name: lead.last_name,
+            company_name: lead.company_name,
+          }}
+          statuses={statuses}
+          open={isConvertDialogOpen}
+          onOpenChange={setIsConvertDialogOpen}
+          onSuccess={handleConvertSuccess}
+        />
+      )}
 
       {/* Edit Dialog */}
       <EditLeadDialog

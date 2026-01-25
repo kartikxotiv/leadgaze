@@ -179,10 +179,19 @@ const deleteLeadService = asyncHandlerClient(async (leadId: string) => {
   return response.data?.data || null;
 });
 
+const convertLeadService = asyncHandlerClient(
+  async (leadId: string, payload: any) => {
+    const response = await ApiClient.post(`/leads/${leadId}/convert`, payload);
+    // API returns { message, data } structure
+    return response.data?.data || null;
+  },
+);
+
 export {
   getLeadsService,
   getLeadByIdService,
   createLeadService,
+  convertLeadService,
   getLeadSourcesService,
   getLeadStatusesService,
   updateLeadService,
