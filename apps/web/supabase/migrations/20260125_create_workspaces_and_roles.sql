@@ -228,7 +228,7 @@ GRANT ALL ON public.role_permissions TO service_role;
 CREATE TABLE IF NOT EXISTS public.workspace_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES public.accounts(id) ON DELETE CASCADE,
   role_id UUID NOT NULL REFERENCES public.workspace_roles(id) ON DELETE RESTRICT,
   
   -- Membership Status

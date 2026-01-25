@@ -166,7 +166,9 @@ VALUES
   ('opportunities', 'Opportunities', 'Track and manage sales opportunities', 4, TRUE),
   ('activities', 'Activities', 'Log calls, meetings, and interactions', 5, TRUE),
   ('reports', 'Reports', 'View analytics and generate reports', 6, TRUE),
-  ('settings', 'Settings', 'Manage workspace configuration and settings', 7, TRUE)
+  ('settings', 'Settings', 'Manage workspace configuration and settings', 7, TRUE),
+  ('team_members', 'Team Members', 'View team members', 8, TRUE),
+  ('roles', 'Roles', 'View workspace roles', 9, TRUE)
 ON CONFLICT (module_key) DO NOTHING;
 
 /*
@@ -285,6 +287,48 @@ CROSS JOIN (
   UNION ALL SELECT 'export', 'Export Activities', 'Export activity data', 'export', 7
 ) f
 WHERE m.module_key = 'activities'
+ON CONFLICT (module_id, feature_key) DO NOTHING;
+
+/*
+ * -------------------------------------------------------
+ * Section: Seed Default Module Features for Team Members
+ * -------------------------------------------------------
+ */
+
+INSERT INTO public.crm_module_features (module_id, feature_key, feature_name, description, feature_type, display_order)
+SELECT m.id, f.feature_key, f.feature_name, f.description, f.feature_type::public.crm_feature_type, f.display_order
+FROM public.crm_modules m
+CROSS JOIN (
+  SELECT 'view' as feature_key, 'View Team Members' as feature_name, 'View team member list' as description, 'view' as feature_type, 1 as display_order
+  UNION ALL SELECT 'create', 'Invite Team Members', 'Invite new team members to workspace', 'crud', 2
+  UNION ALL SELECT 'edit', 'Edit Team Members', 'Edit team member details', 'crud', 3
+  UNION ALL SELECT 'delete', 'Remove Team Members', 'Remove team members from workspace', 'crud', 4
+  UNION ALL SELECT 'change_role', 'Change Role', 'Change team member roles', 'action', 5
+  UNION ALL SELECT 'resend_invite', 'Resend Invitation', 'Resend invitations to pending members', 'action', 6
+  UNION ALL SELECT 'export', 'Export Team Members', 'Export team member list', 'export', 7
+) f
+WHERE m.module_key = 'team_members'
+ON CONFLICT (module_id, feature_key) DO NOTHING;
+
+/*
+ * -------------------------------------------------------
+ * Section: Seed Default Module Features for Roles
+ * -------------------------------------------------------
+ */
+
+INSERT INTO public.crm_module_features (module_id, feature_key, feature_name, description, feature_type, display_order)
+SELECT m.id, f.feature_key, f.feature_name, f.description, f.feature_type::public.crm_feature_type, f.display_order
+FROM public.crm_modules m
+CROSS JOIN (
+  SELECT 'view' as feature_key, 'View Roles' as feature_name, 'View available roles' as description, 'view' as feature_type, 1 as display_order
+  UNION ALL SELECT 'create', 'Create Roles', 'Create new custom roles', 'crud', 2
+  UNION ALL SELECT 'edit', 'Edit Roles', 'Edit role details and permissions', 'crud', 3
+  UNION ALL SELECT 'delete', 'Delete Roles', 'Delete custom roles', 'crud', 4
+  UNION ALL SELECT 'manage_permissions', 'Manage Permissions', 'Configure role permissions', 'action', 5
+  UNION ALL SELECT 'duplicate', 'Duplicate Role', 'Create role from existing template', 'action', 6
+  UNION ALL SELECT 'export', 'Export Roles', 'Export role configuration', 'export', 7
+) f
+WHERE m.module_key = 'roles'
 ON CONFLICT (module_id, feature_key) DO NOTHING;
 
 /*

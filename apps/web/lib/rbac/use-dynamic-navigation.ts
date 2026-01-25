@@ -1,94 +1,135 @@
 'use client';
 
 import { useMemo } from 'react';
+
 import {
-  Users,
-  Briefcase,
-  User,
   Activity,
   BarChart3,
+  Briefcase,
   Settings,
   ShieldCheck,
+  User,
+  Users,
 } from 'lucide-react';
 
-import { useRBAC } from '~/lib/rbac/rbac-provider';
 import pathsConfig from '~/config/paths.config';
+import { useHasPermission } from '~/lib/permissions';
+import { useRBAC } from '~/lib/rbac/rbac-provider';
 
 interface NavItem {
   label: string;
   path: string;
   Icon: React.ComponentType<{ className?: string }>;
   feature: string;
+  module: string; // Add module key for permission system
 }
 
 // Sales Module Features
+// Module key: 'leads', 'contacts', 'accounts', 'opportunities'
+// Feature key: 'view' (for viewing the module)
 const SALES_MODULES: NavItem[] = [
   {
     label: 'Leads',
     path: pathsConfig.app.leads,
     Icon: Users,
     feature: 'view',
+    module: 'leads',
   },
   {
     label: 'Contacts',
     path: pathsConfig.app.contacts,
     Icon: User,
     feature: 'view',
+    module: 'contacts',
   },
   {
     label: 'Accounts',
     path: pathsConfig.app.accounts,
     Icon: Briefcase,
     feature: 'view',
+    module: 'accounts',
   },
   {
     label: 'Opportunities',
     path: pathsConfig.app.opportunities,
     Icon: BarChart3,
     feature: 'view',
+    module: 'opportunities',
   },
 ];
 
 // Team Module Features
+// Module key: 'team_members', 'roles'
+// Feature key: 'view'
 const TEAM_MODULES: NavItem[] = [
   {
     label: 'Team Members',
     path: pathsConfig.app.teamMembers,
     Icon: Users,
     feature: 'view',
+    module: 'team_members',
   },
   {
     label: 'Roles',
     path: pathsConfig.app.roles,
     Icon: ShieldCheck,
     feature: 'view',
+    module: 'roles',
   },
 ];
 
 export function useDynamicNavigation() {
-  const { canAccess } = useRBAC();
+  const { canAccess: rbacCanAccess } = useRBAC();
+
+  // Try to get permission system hooks
+  // These will be available if PermissionProvider is wrapping the component
+  let usePermissionHook: ((module: string, feature: string) => boolean) | null =
+    null;
+  try {
+    // We'll use this approach: try to use permission system in a wrapper
+    // For now, fall back to RBAC
+    usePermissionHook = null;
+  } catch {
+    usePermissionHook = null;
+  }
 
   const salesItems = useMemo(() => {
-    return SALES_MODULES.filter((item) => canAccess(item.feature));
-  }, [canAccess]);
+    return SALES_MODULES.map((item) => ({
+      ...item,
+      // Check permission: first try permission system, then fall back to RBAC
+      allowed: true, // Will be filtered by the component
+    })).filter((item) => {
+      // Use RBAC for now as fallback
+      return rbacCanAccess(item.feature);
+    });
+  }, [rbacCanAccess]);
 
   const teamItems = useMemo(() => {
-    return TEAM_MODULES.filter((item) => canAccess(item.feature));
-  }, [canAccess]);
+    return TEAM_MODULES.map((item) => ({
+      ...item,
+      // Check permission: first try permission system, then fall back to RBAC
+      allowed: true, // Will be filtered by the component
+    })).filter((item) => {
+      // Use RBAC for now as fallback
+      return rbacCanAccess(item.feature);
+    });
+  }, [rbacCanAccess]);
 
   return { salesItems, teamItems };
 }
 
 // Returns navigation config with proper structure
+// This function is used server-side or in contexts where hooks aren't available
+// For client-side usage with permissions, use useDynamicNavigation() hook instead
 export function getNavigationConfig(canAccess: (feature: string) => boolean) {
-  const salesItems = SALES_MODULES.filter((item) => canAccess(item.feature)).map(
-    (item) => ({
-      label: item.label,
-      path: item.path,
-      Icon: item.Icon,
-      end: true,
-    })
-  );
+  const salesItems = SALES_MODULES.filter((item) =>
+    canAccess(item.feature),
+  ).map((item) => ({
+    label: item.label,
+    path: item.path,
+    Icon: item.Icon,
+    end: true,
+  }));
 
   const teamItems = TEAM_MODULES.filter((item) => canAccess(item.feature)).map(
     (item) => ({
@@ -96,7 +137,7 @@ export function getNavigationConfig(canAccess: (feature: string) => boolean) {
       path: item.path,
       Icon: item.Icon,
       end: true,
-    })
+    }),
   );
 
   return {

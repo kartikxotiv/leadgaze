@@ -12,12 +12,13 @@ import { If } from '@kit/ui/if';
 import { VersionUpdater } from '@kit/ui/version-updater';
 
 import { AuthProvider } from '~/components/auth-provider';
-import { RBACProvider } from '~/lib/rbac/rbac-provider';
+import { PermissionProviderWrapper } from '~/components/permission-provider-wrapper';
 import appConfig from '~/config/app.config';
 import authConfig from '~/config/auth.config';
 import featuresFlagConfig from '~/config/feature-flags.config';
 import { i18nResolver } from '~/lib/i18n/i18n.resolver';
 import { getI18nSettings } from '~/lib/i18n/i18n.settings';
+import { RBACProvider } from '~/lib/rbac/rbac-provider';
 
 import { ReactQueryProvider } from './react-query-provider';
 
@@ -53,15 +54,17 @@ export function RootProviders({
 
           <AuthProvider>
             <RBACProvider>
-              <ThemeProvider
-                attribute="class"
-                enableSystem
-                disableTransitionOnChange
-                defaultTheme={theme}
-                enableColorScheme={false}
-              >
-                {children}
-              </ThemeProvider>
+              <PermissionProviderWrapper>
+                <ThemeProvider
+                  attribute="class"
+                  enableSystem
+                  disableTransitionOnChange
+                  defaultTheme={theme}
+                  enableColorScheme={false}
+                >
+                  {children}
+                </ThemeProvider>
+              </PermissionProviderWrapper>
             </RBACProvider>
           </AuthProvider>
         </CaptchaProvider>

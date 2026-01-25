@@ -1,27 +1,101 @@
 'use client';
 
+import { useMemo } from 'react';
+
 import type { JwtPayload } from '@supabase/supabase-js';
+
 import { Activity, Settings } from 'lucide-react';
+import { z } from 'zod';
+
+import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
 import { SidebarNavigation } from '@kit/ui/shadcn-sidebar';
 
+import pathsConfig from '~/config/paths.config';
+import { usePermissionBasedNavigationConfig } from '~/lib/permissions/use-navigation-permissions';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getNavigationConfig } from '~/lib/rbac/use-dynamic-navigation';
-import { WorkspaceSwitcher } from './workspace-switcher';
-import { useMemo } from 'react';
-import pathsConfig from '~/config/paths.config';
-import { z } from 'zod';
-import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
 
-export function HomeSidebarClient(props: {
-  user: JwtPayload;
-}) {
+import { WorkspaceSwitcher } from './workspace-switcher';
+
+export function HomeSidebarClient(props: { user: JwtPayload }) {
   const { canAccess } = useRBAC();
-  
+
+  // Try to use permission-based navigation first
+  let permissionNavConfig: ReturnType<
+    typeof usePermissionBasedNavigationConfig
+  > | null = null;
+  let usePermissions = true;
+
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    permissionNavConfig = usePermissionBasedNavigationConfig();
+    console.log({ permissionNavConfig });
+  } catch {
+    // Permission system not available, fall back to RBAC
+    usePermissions = false;
+  }
+
   const navConfig = useMemo(() => {
+    // Use permission-based navigation if available
+    if (usePermissions && permissionNavConfig) {
+      const { salesItems, teamItems } = permissionNavConfig;
+
+      return [
+        {
+          label: 'common:routes.application',
+          children: [
+            {
+              label: 'common:routes.home',
+              path: pathsConfig.app.home,
+              Icon: <Activity className="h-4 w-4" />,
+              end: true,
+            },
+          ],
+        },
+        ...(salesItems.length > 0
+          ? [
+              {
+                label: 'Sales',
+                children: salesItems.map((item) => {
+                  const IconComponent = item.Icon;
+                  return {
+                    ...item,
+                    Icon: <IconComponent className="h-4 w-4" />,
+                  };
+                }),
+              },
+            ]
+          : []),
+        ...(teamItems.length > 0
+          ? [
+              {
+                label: 'Team',
+                children: teamItems.map((item) => {
+                  const IconComponent = item.Icon;
+                  return {
+                    ...item,
+                    Icon: <IconComponent className="h-4 w-4" />,
+                  };
+                }),
+              },
+            ]
+          : []),
+        {
+          label: 'common:routes.settings',
+          children: [
+            {
+              label: 'common:routes.profile',
+              path: pathsConfig.app.profileSettings,
+              Icon: <Settings className="h-4 w-4" />,
+            },
+          ],
+        },
+      ];
+    }
+
+    // Fall back to RBAC-based navigation
     const { salesItems, teamItems } = getNavigationConfig(canAccess);
-    
-    // Build navigation with JSX in render context
-    // Always show Sales and Team sections since permissions are set up
+
     return [
       {
         label: 'common:routes.application',
@@ -29,44 +103,52 @@ export function HomeSidebarClient(props: {
           {
             label: 'common:routes.home',
             path: pathsConfig.app.home,
-            Icon: <Activity className="w-4 h-4" />,
+            Icon: <Activity className="h-4 w-4" />,
             end: true,
           },
         ],
       },
-      {
-        label: 'Sales',
-        children: salesItems.map((item) => {
-          const IconComponent = item.Icon;
-          return {
-            ...item,
-            Icon: <IconComponent className="w-4 h-4" />,
-          };
-        }),
-      },
-      {
-        label: 'Team',
-        children: teamItems.map((item) => {
-          const IconComponent = item.Icon;
-          return {
-            ...item,
-            Icon: <IconComponent className="w-4 h-4" />,
-          };
-        }),
-      },
+      ...(salesItems.length > 0
+        ? [
+            {
+              label: 'Sales',
+              children: salesItems.map((item) => {
+                const IconComponent = item.Icon;
+                return {
+                  ...item,
+                  Icon: <IconComponent className="h-4 w-4" />,
+                };
+              }),
+            },
+          ]
+        : []),
+      ...(teamItems.length > 0
+        ? [
+            {
+              label: 'Team',
+              children: teamItems.map((item) => {
+                const IconComponent = item.Icon;
+                return {
+                  ...item,
+                  Icon: <IconComponent className="h-4 w-4" />,
+                };
+              }),
+            },
+          ]
+        : []),
       {
         label: 'common:routes.settings',
         children: [
           {
             label: 'common:routes.profile',
             path: pathsConfig.app.profileSettings,
-            Icon: <Settings className="w-4 h-4" />,
+            Icon: <Settings className="h-4 w-4" />,
           },
         ],
       },
     ];
-  }, [canAccess]);
-  
+  }, [usePermissions, permissionNavConfig, canAccess]);
+
   // Parse the dynamic config to match NavigationConfigSchema
   const parsedConfig = useMemo(() => {
     try {
@@ -74,19 +156,21 @@ export function HomeSidebarClient(props: {
         routes: navConfig,
         style: 'sidebar',
         sidebarCollapsed: 'false',
+        sidebarCollapsedStyle: 'icon',
       });
     } catch (error) {
       console.error('Navigation config parse error:', error);
       return {
         routes: [],
         style: 'sidebar' as const,
-        sidebarCollapsed: 'false',
+        sidebarCollapsed: false,
+        sidebarCollapsedStyle: 'icon' as const,
       };
     }
   }, [navConfig]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col">
       <WorkspaceSwitcher />
       <div className="flex-1 overflow-y-auto">
         <SidebarNavigation config={parsedConfig} />
