@@ -37,6 +37,7 @@ import {
 } from '~/services/leads.service';
 
 import EditLeadDialog from '../components/edit-lead-dialog';
+import { LeadAssignees } from '../components/lead-assignees';
 
 export default function LeadDetailsPage() {
   const router = useRouter();
@@ -569,6 +570,11 @@ export default function LeadDetailsPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Lead Assignees Section */}
+            {workspace?.id && (
+              <LeadAssignees leadId={leadId} workspaceId={workspace.id} />
+            )}
 
             {/* Notes Section */}
             <Card>

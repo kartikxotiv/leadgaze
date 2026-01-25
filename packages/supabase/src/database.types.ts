@@ -421,6 +421,103 @@ export type Database = {
           },
         ]
       }
+      lead_assignees: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          assigned_to_user_id: string
+          assignment_reason: string | null
+          assignment_status: string
+          created_at: string
+          created_by: string
+          id: string
+          is_primary_assignee: boolean
+          lead_id: string
+          notes: string | null
+          unassigned_at: string | null
+          updated_at: string
+          updated_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          assigned_to_user_id: string
+          assignment_reason?: string | null
+          assignment_status?: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_primary_assignee?: boolean
+          lead_id: string
+          notes?: string | null
+          unassigned_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          assigned_to_user_id?: string
+          assignment_reason?: string | null
+          assignment_status?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_primary_assignee?: boolean
+          lead_id?: string
+          notes?: string | null
+          unassigned_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_assignees_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_assignees_assigned_to_user_id_fkey"
+            columns: ["assigned_to_user_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_assignees_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_assignees_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_assignees_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_assignees_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_sources: {
         Row: {
           color: string | null
@@ -805,7 +902,86 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      lead_assignees_with_details: {
+        Row: {
+          assigned_at: string | null
+          assigned_to_user_id: string | null
+          assignee_email: string | null
+          assignee_name: string | null
+          assignee_picture: string | null
+          assignment_reason: string | null
+          assignment_status: string | null
+          id: string | null
+          is_primary_assignee: boolean | null
+          lead_id: string | null
+          notes: string | null
+          workspace_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_assignees_assigned_to_user_id_fkey"
+            columns: ["assigned_to_user_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_assignees_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_assignees_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_primary_assignees: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          assigned_to_user_id: string | null
+          assignee_email: string | null
+          assignee_name: string | null
+          lead_id: string | null
+          workspace_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_assignees_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_assignees_assigned_to_user_id_fkey"
+            columns: ["assigned_to_user_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_assignees_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_assignees_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never

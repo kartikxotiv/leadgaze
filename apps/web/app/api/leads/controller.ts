@@ -54,9 +54,34 @@ const getLeads = catchAsync(
       );
     }
 
-    // Fetch leads with related data
-    const { data: leads, error } = await (
-      supabase.from('crm_leads').select(
+    // Get current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user is workspace owner
+    const { data: workspace, error: workspaceError } = await supabase
+      .from('workspaces')
+      .select('owner_id')
+      .eq('id', workspaceId)
+      .single();
+
+    if (workspaceError) {
+      console.error('Workspace fetch error:', workspaceError);
+      throw workspaceError;
+    }
+
+    const isOwner = workspace?.owner_id === user.id;
+
+    // Build the query based on user role
+    let query = supabase
+      .from('crm_leads')
+      .select(
         `
           *,
           status:entity_statuses(id, status_name, status_key, color, icon),
@@ -64,11 +89,31 @@ const getLeads = catchAsync(
           owner:accounts!crm_leads_owner_id_fkey(id, email, name),
           created_by_account:accounts!crm_leads_created_by_fkey(id, email, name)
         `,
-      ) as any
-    )
+      )
       .eq('workspace_id', workspaceId)
-      .eq('is_deleted', false)
-      .order('created_at', { ascending: false });
+      .eq('is_deleted', false);
+
+    // If not owner, filter for public leads or leads assigned to current user
+    if (!isOwner) {
+      // Get leads assigned to the current user
+      const { data: assignedLeadIds } = await supabase
+        .from('lead_assignees')
+        .select('lead_id')
+        .eq('workspace_id', workspaceId)
+        .eq('assigned_to_user_id', user.id)
+        .eq('assignment_status', 'active');
+
+      const assignedIds = assignedLeadIds?.map((a) => a.lead_id) || [];
+
+      // Filter: public leads OR assigned leads
+      query = query.or(
+        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'})`,
+      );
+    }
+
+    const { data: leads, error } = await query.order('created_at', {
+      ascending: false,
+    });
 
     if (error) {
       console.error('Get leads error:', error);
