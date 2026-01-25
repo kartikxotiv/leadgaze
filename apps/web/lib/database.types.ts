@@ -407,6 +407,69 @@ export type Database = {
           },
         ]
       }
+      crm_documents: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          entity_id: string
+          entity_type: string
+          file_path: string
+          file_type: string | null
+          id: string
+          is_deleted: boolean
+          name: string
+          size_bytes: number | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          entity_id: string
+          entity_type: string
+          file_path: string
+          file_type?: string | null
+          id?: string
+          is_deleted?: boolean
+          name: string
+          size_bytes?: number | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          entity_id?: string
+          entity_type?: string
+          file_path?: string
+          file_type?: string | null
+          id?: string
+          is_deleted?: boolean
+          name?: string
+          size_bytes?: number | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_documents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_documents_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_industries: {
         Row: {
           created_at: string
@@ -628,6 +691,75 @@ export type Database = {
           },
         ]
       }
+      crm_meetings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          end_time: string
+          entity_id: string
+          entity_type: string
+          id: string
+          is_deleted: boolean
+          location: string | null
+          meeting_link: string | null
+          start_time: string
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          end_time: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          is_deleted?: boolean
+          location?: string | null
+          meeting_link?: string | null
+          start_time: string
+          title: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          end_time?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          is_deleted?: boolean
+          location?: string | null
+          meeting_link?: string | null
+          start_time?: string
+          title?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_meetings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_meetings_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_module_features: {
         Row: {
           created_at: string
@@ -727,6 +859,60 @@ export type Database = {
             columns: ["parent_module_id"]
             isOneToOne: false
             referencedRelation: "crm_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_notes: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          is_deleted: boolean
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          is_deleted?: boolean
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          is_deleted?: boolean
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_notes_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -886,6 +1072,85 @@ export type Database = {
           },
           {
             foreignKeyName: "crm_opportunities_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_reminders: {
+        Row: {
+          assigned_to: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          due_date: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          is_completed: boolean
+          is_deleted: boolean
+          priority: string | null
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          is_completed?: boolean
+          is_deleted?: boolean
+          priority?: string | null
+          title: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          is_completed?: boolean
+          is_deleted?: boolean
+          priority?: string | null
+          title?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_reminders_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_reminders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_reminders_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"

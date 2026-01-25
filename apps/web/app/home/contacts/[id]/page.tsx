@@ -164,14 +164,14 @@ export default function ContactDetailsPage() {
 
                         {/* Notes Section */}
                         <EntityNotes
-                            notes={contact.notes}
-                            updatedAt={contact.updated_at}
+                            entityType="contact"
+                            entityId={id}
                         />
 
                         {/* Activity Sections */}
-                        <EntityReminders />
-                        <EntityMeetings />
-                        <EntityDocuments />
+                        <EntityReminders entityType="contact" entityId={id} />
+                        <EntityMeetings entityType="contact" entityId={id} />
+                        <EntityDocuments entityType="contact" entityId={id} />
                     </div>
 
                     {/* Sidebar */}

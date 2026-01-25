@@ -176,14 +176,14 @@ export default function OpportunityDetailsPage() {
 
                         {/* Notes Section */}
                         <EntityNotes
-                            notes={opportunity.description} // Opportunities use 'description' as generic notes
-                            updatedAt={opportunity.updated_at}
+                            entityType="opportunity"
+                            entityId={id}
                         />
 
                         {/* Activity Sections */}
-                        <EntityReminders />
-                        <EntityMeetings />
-                        <EntityDocuments />
+                        <EntityReminders entityType="opportunity" entityId={id} />
+                        <EntityMeetings entityType="opportunity" entityId={id} />
+                        <EntityDocuments entityType="opportunity" entityId={id} />
                     </div>
 
                     {/* Sidebar */}

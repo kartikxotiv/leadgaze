@@ -188,14 +188,14 @@ export default function AccountDetailsPage() {
 
                         {/* Notes Section */}
                         <EntityNotes
-                            notes={account.description} // Accounts use 'description' as generic notes in this schema
-                            updatedAt={account.updated_at}
+                            entityType="account"
+                            entityId={id}
                         />
 
                         {/* Activity Sections */}
-                        <EntityReminders />
-                        <EntityMeetings />
-                        <EntityDocuments />
+                        <EntityReminders entityType="account" entityId={id} />
+                        <EntityMeetings entityType="account" entityId={id} />
+                        <EntityDocuments entityType="account" entityId={id} />
                     </div>
 
                     {/* Sidebar */}
