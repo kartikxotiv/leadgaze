@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+//
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import {
