@@ -47,7 +47,7 @@ import {
     getDocumentsService,
     getMeetingsService,
     getRemindersService,
-} from '~/services/activities.service';
+} from '../../../services/activities.service';
 
 interface EntityActivityProps {
     entityType: string;

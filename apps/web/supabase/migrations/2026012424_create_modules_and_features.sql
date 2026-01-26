@@ -168,7 +168,8 @@ VALUES
   ('reports', 'Reports', 'View analytics and generate reports', 6, TRUE),
   ('settings', 'Settings', 'Manage workspace configuration and settings', 7, TRUE),
   ('team_members', 'Team Members', 'View team members', 8, TRUE),
-  ('roles', 'Roles', 'View workspace roles', 9, TRUE)
+  ('roles', 'Roles', 'View workspace roles', 9, TRUE),
+  ('audit_logs', 'Audit Logs', 'View workspace activity and audit logs', 10, TRUE)
 ON CONFLICT (module_key) DO NOTHING;
 
 /*
@@ -371,6 +372,21 @@ CROSS JOIN (
   UNION ALL SELECT 'view_audit_log', 'View Audit Log', 'View workspace audit logs', 'view', 8
 ) f
 WHERE m.module_key = 'settings'
+ON CONFLICT (module_id, feature_key) DO NOTHING;
+
+/*
+ * -------------------------------------------------------
+ * Section: Seed Default Module Features for Audit Logs
+ * -------------------------------------------------------
+ */
+
+INSERT INTO public.crm_module_features (module_id, feature_key, feature_name, description, feature_type, display_order)
+SELECT m.id, f.feature_key, f.feature_name, f.description, f.feature_type::public.crm_feature_type, f.display_order
+FROM public.crm_modules m
+CROSS JOIN (
+  SELECT 'view' as feature_key, 'View Audit Logs' as feature_name, 'View workspace activity logs' as description, 'view' as feature_type, 1 as display_order
+) f
+WHERE m.module_key = 'audit_logs'
 ON CONFLICT (module_id, feature_key) DO NOTHING;
 
 /*

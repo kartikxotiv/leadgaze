@@ -6,6 +6,7 @@ import {
   Activity,
   BarChart3,
   Briefcase,
+  History,
   Settings,
   ShieldCheck,
   User,
@@ -75,6 +76,13 @@ const TEAM_MODULES: NavItem[] = [
     Icon: ShieldCheck,
     feature: 'view',
     module: 'roles',
+  },
+  {
+    label: 'Audit Logs',
+    path: pathsConfig.app.auditLogs,
+    Icon: History,
+    feature: 'view',
+    module: 'audit_logs',
   },
 ];
 

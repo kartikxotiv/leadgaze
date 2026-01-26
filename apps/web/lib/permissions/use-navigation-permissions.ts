@@ -6,10 +6,22 @@
 
 import { useMemo } from 'react';
 
-import { BarChart3, Briefcase, ShieldCheck, User, Users } from 'lucide-react';
+import {
+  BarChart3,
+  Briefcase,
+  History,
+  ShieldCheck,
+  User,
+  Users,
+} from 'lucide-react';
 
 import pathsConfig from '~/config/paths.config';
 import { useAccessibleModules } from '~/lib/permissions';
+
+/**
+ * Permission-based Dynamic Navigation Hook
+ * Filters navigation items based on the new permission system
+ */
 
 /**
  * Permission-based Dynamic Navigation Hook
@@ -73,6 +85,13 @@ const ALL_NAV_ITEMS: NavItem[] = [
     moduleKey: 'roles',
     featureKey: 'view',
   },
+  {
+    label: 'Audit Logs',
+    path: pathsConfig.app.auditLogs,
+    Icon: History,
+    moduleKey: 'audit_logs',
+    featureKey: 'view',
+  },
 ];
 
 /**
@@ -107,7 +126,7 @@ export function usePermissionBasedNavigation() {
 
   const teamItems = useMemo(() => {
     return filteredItems.filter((item) =>
-      ['team_members', 'roles'].includes(item.moduleKey),
+      ['team_members', 'roles', 'audit_logs'].includes(item.moduleKey),
     );
   }, [filteredItems]);
 

@@ -24,7 +24,7 @@ import {
     deleteNoteService,
     getNotesService,
     Note,
-} from '~/services/activities.service';
+} from '../../../services/activities.service';
 
 interface EntityNotesProps {
     entityType: string;
