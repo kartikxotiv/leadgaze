@@ -127,20 +127,7 @@ export default function AccountDetailsPage() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        {account.status && (
-                            <Badge
-                                variant="secondary"
-                                style={{
-                                    backgroundColor: `${account.status.color}20`,
-                                    color: account.status.color,
-                                    borderColor: account.status.color,
-                                }}
-                            >
-                                {account.status.status_name}
-                            </Badge>
-                        )}
-                    </div>
+
                 </div>
             </div>
 

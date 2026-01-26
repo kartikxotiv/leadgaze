@@ -134,7 +134,7 @@ export function PersonalAccountSettingsContainer(
         </Card>
       </If>
 
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle>
             <Trans i18nKey={'account:multiFactorAuth'} />
@@ -166,7 +166,7 @@ export function PersonalAccountSettingsContainer(
             <AccountDangerZone />
           </CardContent>
         </Card>
-      </If>
+      </If> */}
     </div>
   );
 }

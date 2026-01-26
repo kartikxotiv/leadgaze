@@ -1,7 +1,11 @@
 import { enhanceRouteHandler } from '@kit/next/routes';
 
-import { getContacts } from './controller';
+import { createContact, getContacts } from './controller';
 
 export const GET = enhanceRouteHandler(getContacts, {
-  auth: false,
+  auth: true,
+});
+
+export const POST = enhanceRouteHandler(createContact, {
+  auth: true,
 });

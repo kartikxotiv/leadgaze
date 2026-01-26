@@ -2,11 +2,17 @@
 
 import { useEffect, useState } from 'react';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
+import { Checkbox } from '@kit/ui/checkbox';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@kit/ui/collapsible';
 import {
   Dialog,
   DialogContent,
@@ -26,7 +32,14 @@ import {
 } from '@kit/ui/select';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
-import { type Role, updateRoleService } from '~/services/roles.service';
+import {
+  type Role,
+  type RolePermission,
+  getModulesService,
+  getRolePermissionsService,
+  updateRolePermissionsService,
+  updateRoleService,
+} from '~/services/roles.service';
 
 interface EditRoleDialogProps {
   role: Role;
@@ -69,6 +82,30 @@ export function EditRoleDialog({
     is_active: true,
   });
 
+  const [selectedPermissions, setSelectedPermissions] = useState<
+    Record<string, boolean>
+  >({});
+  const [expandedModules, setExpandedModules] = useState<
+    Record<string, boolean>
+  >({});
+
+  // Fetch modules and features
+  const { data: modulesData, isLoading: modulesLoading } = useQuery({
+    queryKey: ['modules'],
+    queryFn: () => getModulesService(),
+    enabled: open,
+  });
+
+  // Fetch current role permissions
+  const { data: permissionsData, isLoading: permissionsLoading } = useQuery({
+    queryKey: ['rolePermissions', role.id],
+    queryFn: async () => {
+      const res = await getRolePermissionsService(role.id)
+      return res?.data;
+    },
+    enabled: open && !!role.id,
+  });
+
   useEffect(() => {
     if (open && role) {
       setFormData({
@@ -81,15 +118,41 @@ export function EditRoleDialog({
     }
   }, [open, role]);
 
+  // Pre-populate selected permissions
+  useEffect(() => {
+    if (open && permissionsData?.data) {
+      const initialPermissions: Record<string, boolean> = {};
+      permissionsData.data.forEach((perm: any) => {
+        if (perm.can_access) {
+          initialPermissions[perm.module_feature_id] = true;
+        }
+      });
+      setSelectedPermissions(initialPermissions);
+    }
+  }, [open, permissionsData]);
+
   const updateRoleMutation = useMutation({
-    mutationFn: () =>
-      updateRoleService(role.id, {
+    mutationFn: async () => {
+      // 1. Update basic role info
+      await updateRoleService(role.id, {
         role_name: formData.role_name,
         description: formData.description,
         hierarchy_level: parseInt(formData.hierarchy_level),
         color: formData.color,
         is_active: formData.is_active,
-      }),
+      });
+
+      // 2. Format and update permissions
+      const permissions: RolePermission[] = Object.entries(selectedPermissions)
+        .filter(([_, isSelected]) => isSelected)
+        .map(([featureId]) => ({
+          module_feature_id: featureId,
+          can_access: true,
+          access_level: 'all',
+        }));
+
+      await updateRolePermissionsService(role.id, permissions);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['workspaceRoles', currentWorkspace?.id],
@@ -112,9 +175,34 @@ export function EditRoleDialog({
     updateRoleMutation.mutate();
   };
 
+  const toggleModuleExpanded = (moduleId: string) => {
+    setExpandedModules((prev) => ({
+      ...prev,
+      [moduleId]: !prev[moduleId],
+    }));
+  };
+
+  const togglePermission = (featureId: string) => {
+    setSelectedPermissions((prev) => ({
+      ...prev,
+      [featureId]: !prev[featureId],
+    }));
+  };
+
+  const toggleModulePermissions = (moduleId: string, features: any[]) => {
+    const allSelected = features.every((f) => selectedPermissions[f.id]);
+    const newPermissions = { ...selectedPermissions };
+
+    features.forEach((feature) => {
+      newPermissions[feature.id] = !allSelected;
+    });
+
+    setSelectedPermissions(newPermissions);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Edit Role</DialogTitle>
           <DialogDescription>
@@ -213,6 +301,86 @@ export function EditRoleDialog({
                 <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Permissions Section */}
+          <div className="space-y-4 pt-4 border-t">
+            <h3 className="text-sm font-semibold">Permissions</h3>
+            {modulesLoading || permissionsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </div>
+            ) : modulesData?.data && modulesData?.data?.length > 0 ? (
+              <div className="max-h-60 space-y-2 overflow-y-auto rounded-lg border p-3">
+                {modulesData?.data?.map((module: any) => (
+                  <Collapsible
+                    key={module.id}
+                    open={expandedModules[module.id] || false}
+                    onOpenChange={() => toggleModuleExpanded(module.id)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <CollapsibleTrigger className="flex items-center gap-2">
+                        <ChevronDown
+                          className={`h-4 w-4 transition-transform ${expandedModules[module.id] ? '' : '-rotate-90'
+                            }`}
+                        />
+                      </CollapsibleTrigger>
+                      <Checkbox
+                        checked={
+                          module.features &&
+                          module.features.length > 0 &&
+                          module.features.every(
+                            (f: any) => selectedPermissions[f.id],
+                          )
+                        }
+                        onCheckedChange={() =>
+                          toggleModulePermissions(module.id, module.features)
+                        }
+                      />
+                      <label className="flex-1 cursor-pointer font-medium">
+                        {module.module_name}
+                      </label>
+                    </div>
+
+                    <CollapsibleContent className="space-y-3 pt-3 pl-8 pb-1">
+                      {module.features && module.features.length > 0 ? (
+                        module.features.map((feature: any) => (
+                          <div
+                            key={feature.id}
+                            className="flex items-center gap-2"
+                          >
+                            <Checkbox
+                              id={feature.id}
+                              checked={selectedPermissions[feature.id] || false}
+                              onCheckedChange={() =>
+                                togglePermission(feature.id)
+                              }
+                            />
+                            <label
+                              htmlFor={feature.id}
+                              className="flex-1 cursor-pointer text-sm"
+                            >
+                              <span className="font-medium">
+                                {feature.feature_name}
+                              </span>
+                              <span className="ml-2 text-xs text-slate-500">
+                                ({feature.feature_key})
+                              </span>
+                            </label>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-slate-500">
+                          No features available
+                        </p>
+                      )}
+                    </CollapsibleContent>
+                  </Collapsible>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">No modules available</p>
+            )}
           </div>
 
           <DialogFooter>

@@ -28,7 +28,7 @@ export function WorkspaceSwitcher() {
   useEffect(() => {
     const fetchWorkspaces = async () => {
       if (!user?.id) return;
-      
+
       setIsLoading(true);
       const supabase = getSupabaseBrowserClient();
 
@@ -78,7 +78,7 @@ export function WorkspaceSwitcher() {
 
   if (!currentWorkspace || workspaces.length === 0) {
     return (
-      <div className="px-4 py-3 flex items-center gap-2 text-slate-400">
+      <div className="px-4 py-3 flex items-center gap-2 text-muted-foreground/60">
         <Building2 className="w-4 h-4" />
         <span className="text-sm font-medium">No workspace</span>
       </div>
@@ -86,33 +86,37 @@ export function WorkspaceSwitcher() {
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-800/50 rounded-lg transition-colors">
-          <div className="flex items-center gap-2 min-w-0">
-            <Building2 className="w-4 h-4 flex-shrink-0 text-slate-400" />
-            <span className="text-sm font-medium text-slate-200 truncate">
-              {currentWorkspace.name}
-            </span>
-          </div>
-          <ChevronDown className="w-4 h-4 flex-shrink-0 text-slate-400" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-56">
-        {workspaces.map((workspace) => (
-          <DropdownMenuItem
-            key={workspace.id}
-            onClick={() => handleWorkspaceChange(workspace.id)}
-            className="cursor-pointer"
-          >
-            <Building2 className="w-4 h-4 mr-2" />
-            <span>{workspace.name}</span>
-            {workspace.id === currentWorkspace?.id && (
-              <span className="ml-auto text-xs text-blue-400">✓</span>
-            )}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="px-2 py-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="w-full px-3 py-2 flex items-center justify-between hover:bg-accent hover:text-accent-foreground rounded-md transition-colors group">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex h-6 w-6 items-center justify-center rounded bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                <Building2 className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-sm font-semibold truncate">
+                {currentWorkspace.name}
+              </span>
+            </div>
+            <ChevronDown className="w-4 h-4 flex-shrink-0 text-muted-foreground/50 group-hover:text-accent-foreground" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-56" sideOffset={8}>
+          {workspaces.map((workspace) => (
+            <DropdownMenuItem
+              key={workspace.id}
+              onClick={() => handleWorkspaceChange(workspace.id)}
+              className="cursor-pointer gap-2 py-2"
+            >
+              <Building2 className="w-4 h-4 text-muted-foreground" />
+              <span className="flex-1 truncate">{workspace.name}</span>
+              {workspace.id === currentWorkspace?.id && (
+                <span className="h-2 w-2 rounded-full bg-primary" />
+              )}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }

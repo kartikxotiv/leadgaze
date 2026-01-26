@@ -47,6 +47,13 @@ const getContactByIdService = asyncHandlerClient(async (id: string) => {
   return response.data?.data || null;
 });
 
+const createContactService = asyncHandlerClient(
+  async (payload: Partial<Record<string, any>>) => {
+    const response = await ApiClient.post('/contacts', payload);
+    return response.data?.data;
+  },
+);
+
 const updateContactService = asyncHandlerClient(
   async (id: string, payload: Partial<Record<string, any>>) => {
     const response = await ApiClient.patch(`/contacts/${id}`, payload);
@@ -54,4 +61,9 @@ const updateContactService = asyncHandlerClient(
   },
 );
 
-export { getContactsService, getContactByIdService, updateContactService };
+export {
+  getContactsService,
+  getContactByIdService,
+  createContactService,
+  updateContactService,
+};

@@ -262,34 +262,3 @@ ALTER TABLE public.crm_opportunities ENABLE ROW LEVEL SECURITY;
 CREATE POLICY crm_accounts_policy ON public.crm_accounts FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
 CREATE POLICY crm_contacts_policy ON public.crm_contacts FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
 CREATE POLICY crm_opportunities_policy ON public.crm_opportunities FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
-
-
--- 4. Seed Opportunity Statuses via Trigger (to handle new workspaces automatically)
--- Extending the existing seed_workspace_defaults function or creating a new one.
--- Here we'll create a new trigger function for opportunities module specifically, or standard inserts if we assume workspaces exist.
--- Assuming dynamic seeding for EXISTING workspaces:
-
-DO $$
-DECLARE
-  w RECORD;
-  v_ops_module_id UUID;
-BEGIN
-  -- Get opportunities module ID
-  SELECT id INTO v_ops_module_id FROM public.crm_modules WHERE module_key = 'opportunities';
-  
-  IF v_ops_module_id IS NOT NULL THEN
-    FOR w IN SELECT id FROM public.workspaces LOOP
-      INSERT INTO public.entity_statuses (
-        workspace_id, module_id, status_name, status_key, color, icon, 
-        sort_order, is_system, is_active, is_default, is_closed
-      ) VALUES
-        (w.id, v_ops_module_id, 'Qualify', 'qualify', '#9CA3AF', 'search', 0, TRUE, TRUE, TRUE, FALSE),
-        (w.id, v_ops_module_id, 'Meet & Present', 'meet_present', '#3B82F6', 'presentation', 1, TRUE, TRUE, FALSE, FALSE),
-        (w.id, v_ops_module_id, 'Propose', 'propose', '#8B5CF6', 'file-text', 2, TRUE, TRUE, FALSE, FALSE),
-        (w.id, v_ops_module_id, 'Negotiate', 'negotiate', '#F59E0B', 'users', 3, TRUE, TRUE, FALSE, FALSE),
-        (w.id, v_ops_module_id, 'Closed Won', 'closed_won', '#10B981', 'check-circle', 4, TRUE, TRUE, FALSE, TRUE),
-        (w.id, v_ops_module_id, 'Closed Lost', 'closed_lost', '#EF4444', 'x-circle', 5, TRUE, TRUE, FALSE, TRUE)
-      ON CONFLICT DO NOTHING;
-    END LOOP;
-  END IF;
-END $$;

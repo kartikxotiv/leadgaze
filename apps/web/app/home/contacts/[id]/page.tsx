@@ -106,20 +106,7 @@ export default function ContactDetailsPage() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        {contact.status && (
-                            <Badge
-                                variant="secondary"
-                                style={{
-                                    backgroundColor: `${contact.status.color}20`,
-                                    color: contact.status.color,
-                                    borderColor: contact.status.color,
-                                }}
-                            >
-                                {contact.status.status_name}
-                            </Badge>
-                        )}
-                    </div>
+
                 </div>
             </div>
 

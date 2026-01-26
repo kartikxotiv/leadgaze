@@ -88,3 +88,96 @@ export const getContacts = catchAsync(
     );
   },
 );
+
+/**
+ * POST /api/contacts
+ * Create a new contact
+ */
+export const createContact = catchAsync(
+  async ({ request }: { request: NextRequest }) => {
+    const supabase = getSupabaseServerClient();
+    const payload = await request.json();
+    const { workspaceId, first_name, ...rest } = payload;
+
+    if (!workspaceId || !first_name) {
+      return NextResponse.json(
+        { message: 'workspaceId and first_name are required' },
+        { status: 400 },
+      );
+    }
+
+    // Get current user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get default status for contacts if not provided
+    let statusId = payload.status_id;
+    if (!statusId) {
+      const { data: status } = await supabase
+        .from('entity_statuses')
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .eq('status_key', 'new') // In leads migration we seeded 'new'.
+        // For contacts, let's look for is_default = true first.
+        .eq('is_default', true)
+        .eq('is_active', true)
+        .single();
+
+      statusId = status?.id;
+
+      if (!statusId) {
+        // Fallback to any active status
+        const { data: fallbackStatus } = await supabase
+          .from('entity_statuses')
+          .select('id')
+          .eq('workspace_id', workspaceId)
+          .eq('is_active', true)
+          .limit(1)
+          .single();
+
+        statusId = fallbackStatus?.id;
+      }
+    }
+
+    if (!statusId) {
+      return NextResponse.json(
+        {
+          message:
+            'No active status found for workspace. Please configure statuses.',
+        },
+        { status: 400 },
+      );
+    }
+
+    // Clean rest payload to prevent UUID errors (convert empty strings to null)
+    const cleanedData: Record<string, any> = {};
+    Object.keys(rest).forEach((key) => {
+      cleanedData[key] = rest[key] === '' ? null : rest[key];
+    });
+
+    const { data: contact, error } = await supabase
+      .from('crm_contacts')
+      .insert({
+        workspace_id: workspaceId,
+        first_name,
+        status_id: statusId,
+        owner_id: payload.owner_id || user.id,
+        created_by: user.id,
+        ...cleanedData,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Create contact error:', error);
+      throw error;
+    }
+
+    return successDataResponse('Contact created successfully', contact);
+  },
+);

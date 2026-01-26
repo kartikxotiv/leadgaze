@@ -110,3 +110,97 @@ export const getAccounts = catchAsync(
     );
   },
 );
+
+/**
+ * POST /api/accounts
+ * Create a new account
+ */
+export const createAccount = catchAsync(
+  async ({ request }: { request: NextRequest }) => {
+    const supabase = getSupabaseServerClient();
+    const payload = await request.json();
+    const { workspaceId, account_name, ...rest } = payload;
+
+    if (!workspaceId || !account_name) {
+      return NextResponse.json(
+        { message: 'workspaceId and account_name are required' },
+        { status: 400 },
+      );
+    }
+
+    // Get current user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get default status for accounts if not provided
+    let statusId = payload.status_id;
+    if (!statusId) {
+      const { data: status } = await supabase
+        .from('entity_statuses')
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .eq('status_key', 'active') // Assuming active is default for accounts?
+        // Actually accounts migration didn't seed specific keys like leads.
+        // Let's just pick the first active one or is_default = true.
+        .eq('is_default', true)
+        .eq('is_active', true)
+        .single();
+
+      statusId = status?.id;
+
+      if (!statusId) {
+        // Fallback to any active status for this module if no default
+        const { data: fallbackStatus } = await supabase
+          .from('entity_statuses')
+          .select('id')
+          .eq('workspace_id', workspaceId)
+          .eq('is_active', true)
+          .limit(1)
+          .single();
+
+        statusId = fallbackStatus?.id;
+      }
+    }
+
+    if (!statusId) {
+      return NextResponse.json(
+        {
+          message:
+            'No active status found for workspace. Please configure statuses.',
+        },
+        { status: 400 },
+      );
+    }
+
+    // Clean rest payload to prevent UUID errors (convert empty strings to null)
+    const cleanedData: Record<string, any> = {};
+    Object.keys(rest).forEach((key) => {
+      cleanedData[key] = rest[key] === '' ? null : rest[key];
+    });
+
+    const { data: account, error } = await supabase
+      .from('crm_accounts')
+      .insert({
+        workspace_id: workspaceId,
+        account_name,
+        status_id: statusId,
+        owner_id: user.id,
+        created_by: user.id,
+        ...cleanedData,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Create account error:', error);
+      throw error;
+    }
+
+    return successDataResponse('Account created successfully', account);
+  },
+);
