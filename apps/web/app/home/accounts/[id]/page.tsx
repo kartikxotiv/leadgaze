@@ -21,6 +21,7 @@ import { EntityDocuments, EntityMeetings, EntityReminders } from '../../_compone
 import { EditAccountDialog } from '../components/edit-account-dialog';
 import { usePermissionDetail, useCanAccessData } from '~/lib/permissions/use-permissions';
 import { useUser } from '@kit/supabase/hooks/use-user';
+import { ModuleGuard } from '~/lib/rbac/module-guard';
 
 export default function AccountDetailsPage() {
     const params = useParams();
@@ -57,28 +58,32 @@ export default function AccountDetailsPage() {
 
     if (isLoading) {
         return (
-            <div className="flex h-screen items-center justify-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            </div>
+            <ModuleGuard module="accounts">
+                <div className="flex h-screen items-center justify-center">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                </div>
+            </ModuleGuard>
         );
     }
 
     if (error || !account) {
         return (
-            <div className="flex h-screen flex-col items-center justify-center gap-4">
-                <h1 className="text-2xl font-bold">Account Not Found</h1>
-                <p className="text-muted-foreground">
-                    The account you're looking for doesn't exist or you don't have permission to view it.
-                </p>
-                <Button asChild variant="outline">
-                    <Link href="/home/accounts">Back to Accounts</Link>
-                </Button>
-            </div>
+            <ModuleGuard module="accounts">
+                <div className="flex h-screen flex-col items-center justify-center gap-4">
+                    <h1 className="text-2xl font-bold">Account Not Found</h1>
+                    <p className="text-muted-foreground">
+                        The account you're looking for doesn't exist or you don't have permission to view it.
+                    </p>
+                    <Button asChild variant="outline">
+                        <Link href="/home/accounts">Back to Accounts</Link>
+                    </Button>
+                </div>
+            </ModuleGuard>
         );
     }
 
     return (
-        <>
+        <ModuleGuard module="accounts">
             <div className="border-b bg-background px-6 py-4">
                 <div className="mb-4 flex items-center justify-between">
                     <Button variant="ghost" size="sm" asChild className="-ml-2">
@@ -126,8 +131,6 @@ export default function AccountDetailsPage() {
                             </div>
                         </div>
                     </div>
-
-
                 </div>
             </div>
 
@@ -387,6 +390,6 @@ export default function AccountDetailsPage() {
                 onOpenChange={setIsEditDialogOpen}
                 account={account}
             />
-        </>
+        </ModuleGuard>
     );
 }

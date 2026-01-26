@@ -34,6 +34,7 @@ import {
 
 import { CreateRoleDialog } from './components/create-role-dialog';
 import { EditRoleDialog } from './components/edit-role-dialog';
+import { ModuleGuard } from '~/lib/rbac/module-guard';
 
 export default function RolesPage() {
   const queryClient = useQueryClient();
@@ -106,7 +107,7 @@ export default function RolesPage() {
   };
 
   return (
-    <>
+    <ModuleGuard module="roles">
       <PageHeader
         title="Roles Management"
         description="Create and manage workspace roles with custom permissions"
@@ -117,7 +118,7 @@ export default function RolesPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-slate-600">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   Total Roles
                 </CardTitle>
               </CardHeader>
@@ -128,7 +129,7 @@ export default function RolesPage() {
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-slate-600">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   System Roles
                 </CardTitle>
               </CardHeader>
@@ -141,7 +142,7 @@ export default function RolesPage() {
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-slate-600">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   Custom Roles
                 </CardTitle>
               </CardHeader>
@@ -176,22 +177,22 @@ export default function RolesPage() {
             <CardContent>
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
               ) : error ? (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+                <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
                   Failed to load roles
                 </div>
               ) : roles?.length === 0 ? (
                 <div className="py-12 text-center">
-                  <Shield className="mx-auto mb-4 h-12 w-12 text-slate-300" />
-                  <p className="text-slate-600">No roles found</p>
+                  <Shield className="mx-auto mb-4 h-12 w-12 text-muted-foreground/30" />
+                  <p className="text-muted-foreground">No roles found</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-slate-200">
+                      <TableRow>
                         <TableHead>Role Name</TableHead>
                         <TableHead>Role Key</TableHead>
                         <TableHead>Hierarchy</TableHead>
@@ -204,7 +205,6 @@ export default function RolesPage() {
                       {roles?.map((role: Role) => (
                         <TableRow
                           key={role.id}
-                          className="border-slate-200 hover:bg-slate-50"
                         >
                           <TableCell>
                             <div className="flex items-center gap-3">
@@ -218,7 +218,7 @@ export default function RolesPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <code className="rounded bg-slate-100 px-2 py-1 text-xs">
+                            <code className="rounded bg-secondary px-2 py-1 text-xs">
                               {role.role_key}
                             </code>
                           </TableCell>
@@ -229,7 +229,7 @@ export default function RolesPage() {
                           </TableCell>
                           <TableCell>
                             {role.is_system ? (
-                              <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+                              <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-500 hover:bg-blue-500/20 border-blue-500/20">
                                 System
                               </Badge>
                             ) : (
@@ -238,7 +238,7 @@ export default function RolesPage() {
                           </TableCell>
                           <TableCell>
                             {role.is_active ? (
-                              <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                              <Badge className="bg-green-500/10 text-green-600 dark:text-green-500 hover:bg-green-500/20 border-green-500/20">
                                 Active
                               </Badge>
                             ) : (
@@ -263,7 +263,7 @@ export default function RolesPage() {
                                 onClick={() =>
                                   handleDeleteRole(role.id, role.is_system)
                                 }
-                                className="gap-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                className="gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
                                 disabled={
                                   role.is_system || deleteRoleMutation.isPending
                                 }
@@ -297,6 +297,6 @@ export default function RolesPage() {
           />
         )}
       </PageBody>
-    </>
+    </ModuleGuard>
   );
 }

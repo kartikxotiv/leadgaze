@@ -95,7 +95,7 @@ export default function InviteAcceptancePage() {
       const workspace = data.data?.workspace;
       if (workspace) {
         setTimeout(() => {
-          router.push(`/workspace/${workspace.slug}`);
+          router.push(`/home`);
         }, 1500);
       }
     },

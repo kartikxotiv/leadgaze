@@ -21,7 +21,7 @@ import {
 } from '@kit/ui/select';
 import { toast } from 'sonner';
 
-import { getOpportunityByIdService } from '~/services/opportunities.service';
+import { getOpportunityByIdService, updateOpportunityService } from '~/services/opportunities.service';
 import { EntityNotes } from '../../_components/entity-notes';
 import { EntityDocuments, EntityMeetings, EntityReminders } from '../../_components/entity-activity';
 import { EditOpportunityDialog } from '../components/edit-opportunity-dialog';
@@ -30,6 +30,7 @@ import { usePermissionDetail, useCanAccessData } from '~/lib/permissions/use-per
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getOpportunityStatusesService } from '~/services/opportunities.service';
+import { ModuleGuard } from '~/lib/rbac/module-guard';
 
 export default function OpportunityDetailsPage() {
     const params = useParams();
@@ -60,28 +61,32 @@ export default function OpportunityDetailsPage() {
 
     if (isLoading) {
         return (
-            <div className="flex h-screen items-center justify-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            </div>
+            <ModuleGuard module="opportunities">
+                <div className="flex h-screen items-center justify-center">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                </div>
+            </ModuleGuard>
         );
     }
 
     if (error || !opportunity) {
         return (
-            <div className="flex h-screen flex-col items-center justify-center gap-4">
-                <h1 className="text-2xl font-bold">Opportunity Not Found</h1>
-                <p className="text-muted-foreground">
-                    The opportunity you're looking for doesn't exist or you don't have permission to view it.
-                </p>
-                <Button asChild variant="outline">
-                    <Link href="/home/opportunities">Back to Opportunities</Link>
-                </Button>
-            </div>
+            <ModuleGuard module="opportunities">
+                <div className="flex h-screen flex-col items-center justify-center gap-4">
+                    <h1 className="text-2xl font-bold">Opportunity Not Found</h1>
+                    <p className="text-muted-foreground">
+                        The opportunity you're looking for doesn't exist or you don't have permission to view it.
+                    </p>
+                    <Button asChild variant="outline">
+                        <Link href="/home/opportunities">Back to Opportunities</Link>
+                    </Button>
+                </div>
+            </ModuleGuard>
         );
     }
 
     return (
-        <>
+        <ModuleGuard module="opportunities">
             <div className="border-b bg-background px-6 py-4">
                 <div className="mb-4 flex items-center justify-between">
                     <Button variant="ghost" size="sm" asChild className="-ml-2">
@@ -309,6 +314,6 @@ export default function OpportunityDetailsPage() {
                 onOpenChange={setIsEditDialogOpen}
                 opportunity={opportunity}
             />
-        </>
+        </ModuleGuard>
     );
 }

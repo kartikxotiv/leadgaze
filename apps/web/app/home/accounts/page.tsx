@@ -21,6 +21,7 @@ import {
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService, Account } from '~/services/accounts.service';
 import { CreateAccountDialog } from './components/create-account-dialog';
+import { ModuleGuard } from '~/lib/rbac/module-guard';
 
 export default function AccountsPage() {
   const { currentWorkspace: workspace } = useRBAC();
@@ -77,7 +78,7 @@ export default function AccountsPage() {
   }
 
   return (
-    <>
+    <ModuleGuard module="accounts">
       <PageHeader title="Accounts" description="Manage your client accounts and organizations">
         <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
           <Plus className="h-4 w-4" />
@@ -104,24 +105,24 @@ export default function AccountsPage() {
           </Card>
 
           <Card>
-            <CardContent className="p-0 pt-6">
-              <div className="overflow-hidden rounded-lg border border-gray-200">
+            <CardContent className="p-0">
+              <div className="overflow-hidden rounded-lg border">
                 <Table>
-                  <TableHeader className="bg-gray-50">
-                    <TableRow className="border-b border-gray-200">
-                      <TableHead className="font-semibold text-gray-900">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>
                         Account Name
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-900">
+                      <TableHead>
                         Phone
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-900">
+                      <TableHead>
                         Owner
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-900">
+                      <TableHead>
                         Created At
                       </TableHead>
-                      <TableHead className="text-right font-semibold text-gray-900">
+                      <TableHead className="text-right">
                         Actions
                       </TableHead>
                     </TableRow>
@@ -151,22 +152,21 @@ export default function AccountsPage() {
                       filteredAccounts.map((account: Account) => (
                         <TableRow
                           key={account.id}
-                          className="border-b border-gray-200 transition-colors hover:bg-gray-50"
                         >
-                          <TableCell className="font-medium text-gray-900">
+                          <TableCell className="font-medium">
                             {account.account_name}
                           </TableCell>
-                          <TableCell className="text-gray-600">
+                          <TableCell className="text-muted-foreground">
                             {account.phone_number || '-'}
                           </TableCell>
-                          <TableCell className="text-gray-600">
+                          <TableCell className="text-muted-foreground">
                             {account.owner?.name || '-'}
                           </TableCell>
-                          <TableCell className="text-gray-600">
+                          <TableCell className="text-muted-foreground">
                             {new Date(account.created_at).toLocaleDateString()}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button variant="link" asChild className="h-auto p-0 text-blue-600 hover:text-blue-700">
+                            <Button variant="link" asChild className="h-auto p-0 text-primary hover:underline">
                               <Link href={`/home/accounts/${account.id}`}>View</Link>
                             </Button>
                           </TableCell>
@@ -186,6 +186,6 @@ export default function AccountsPage() {
           />
         </div>
       </PageBody>
-    </>
+    </ModuleGuard>
   );
 }

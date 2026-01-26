@@ -43,6 +43,7 @@ import { EntityNotes } from '../../_components/entity-notes';
 import { EntityDocuments, EntityMeetings, EntityReminders } from '../../_components/entity-activity';
 import { usePermissionDetail, useCanAccessData } from '~/lib/permissions/use-permissions';
 import { useUser } from '@kit/supabase/hooks/use-user';
+import { ModuleGuard } from '~/lib/rbac/module-guard';
 
 export default function LeadDetailsPage() {
   const router = useRouter();
@@ -142,20 +143,20 @@ export default function LeadDetailsPage() {
 
   if (isLoading) {
     return (
-      <>
+      <ModuleGuard module="leads">
         <PageHeader title="Lead Details" />
         <PageBody>
           <div className="flex h-96 items-center justify-center">
             <p className="text-gray-500">Loading lead details...</p>
           </div>
         </PageBody>
-      </>
+      </ModuleGuard>
     );
   }
 
   if (error || !lead) {
     return (
-      <>
+      <ModuleGuard module="leads">
         <PageHeader title="Lead Details" />
         <PageBody>
           <Card className="border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950">
@@ -166,7 +167,7 @@ export default function LeadDetailsPage() {
             </CardContent>
           </Card>
         </PageBody>
-      </>
+      </ModuleGuard>
     );
   }
 
@@ -205,7 +206,7 @@ export default function LeadDetailsPage() {
   );
 
   return (
-    <>
+    <ModuleGuard module="leads">
       <PageHeader title="Lead Details">
         <div className="flex gap-2">
           <Button
@@ -591,7 +592,6 @@ export default function LeadDetailsPage() {
             )}
 
             {/* Notes Section */}
-            {/* Notes Section */}
             <EntityNotes entityType="lead" entityId={leadId} />
 
             {/* Activity Section */}
@@ -798,100 +798,22 @@ export default function LeadDetailsPage() {
                   }
                 }}
                 autoFocus
-                placeholder={`Enter ${editingField.replace(/_/g, ' ')}`}
-                disabled={isSaving}
               />
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setEditingField(null)}
-                  disabled={isSaving}
-                >
+              <div className="flex justify-end gap-2 text-right">
+                <Button variant="outline" onClick={() => setEditingField(null)}>
                   Cancel
                 </Button>
                 <Button
                   onClick={() => handleInlineEdit(editingField, editValue)}
                   disabled={isSaving}
-                  className="gap-2"
                 >
-                  {isSaving ? (
-                    <>
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4" />
-                      Save
-                    </>
-                  )}
+                  {isSaving ? 'Saving...' : 'Save'}
                 </Button>
               </div>
             </CardContent>
           </Card>
         </div>
       )}
-
-      {/* Status Change Modal */}
-      {statusModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="mx-4 w-full max-w-sm">
-            <CardHeader>
-              <CardTitle>Change Lead Status</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {statusesLoading ? (
-                <div className="flex justify-center py-4">
-                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-transparent" />
-                </div>
-              ) : (
-                <div className="max-h-64 space-y-2 overflow-y-auto">
-                  {statuses.map((status: any) => (
-                    <button
-                      key={status.id}
-                      onClick={() => {
-                        setSelectedNewStatus(status.id);
-                        handleStatusChange(status.id);
-                      }}
-                      disabled={isSaving}
-                      className="w-full rounded-md border border-gray-200 px-4 py-2 text-left transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-900"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="h-3 w-3 rounded-full"
-                          style={{
-                            backgroundColor: status.status_color || '#6b7280',
-                          }}
-                        />
-                        <span className="font-medium">
-                          {status.status_name}
-                        </span>
-                        {status.is_closed && (
-                          <span className="ml-auto text-xs text-gray-500">
-                            Closed
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setStatusModalOpen(false);
-                    setSelectedNewStatus(null);
-                  }}
-                  disabled={isSaving}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </>
+    </ModuleGuard>
   );
 }

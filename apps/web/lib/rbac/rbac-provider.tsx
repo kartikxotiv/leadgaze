@@ -10,6 +10,7 @@ import { useUser } from '@kit/supabase/hooks/use-user';
 import { Tables } from '~/lib/database.types';
 
 interface Permission {
+  module: string;
   feature: string;
   access_level: 'none' | 'own' | 'team' | 'all';
   can_access: boolean;
@@ -40,10 +41,11 @@ interface RBACContextType {
   currentWorkspace: Workspace | null;
   selectWorkspace: (workspaceId: string) => void;
   hasPermission: (
+    module: string,
     feature: string,
     accessLevel?: 'own' | 'team' | 'all',
   ) => boolean;
-  canAccess: (feature: string) => boolean;
+  canAccess: (module: string, feature?: string) => boolean;
   isLoading: boolean;
   error: Error | null;
 }
@@ -104,7 +106,10 @@ export function RBACProvider({ children }: { children: ReactNode }) {
               can_view_sensitive_data,
               can_override_owner,
               crm_module_features!module_feature_id (
-                feature_key
+                feature_key,
+                crm_modules!module_id (
+                  module_key
+                )
               )
             `,
             )
@@ -114,6 +119,7 @@ export function RBACProvider({ children }: { children: ReactNode }) {
 
           const permissions: Permission[] = (permissionsData || []).map(
             (perm: any) => ({
+              module: perm.crm_module_features?.crm_modules?.module_key || '',
               feature: perm.crm_module_features?.feature_key || '',
               access_level: perm.access_level,
               can_access: perm.can_access,
@@ -125,7 +131,7 @@ export function RBACProvider({ children }: { children: ReactNode }) {
           console.log('Loaded permissions for role:', {
             roleKey: role.role_key,
             permissionCount: permissions.length,
-            features: permissions.map((p) => p.feature),
+            features: permissions.map((p) => `${p.module}.${p.feature}`),
           });
 
           return {
@@ -179,13 +185,14 @@ export function RBACProvider({ children }: { children: ReactNode }) {
   }, [currentWorkspace]);
 
   const hasPermission = (
+    module: string,
     feature: string,
     accessLevel?: 'own' | 'team' | 'all',
   ): boolean => {
     if (!currentWorkspace) return false;
 
     const permission = currentWorkspace.role.permissions.find(
-      (p) => p.feature === feature,
+      (p) => p.module === module && p.feature === feature,
     );
 
     if (!permission) return false;
@@ -198,18 +205,18 @@ export function RBACProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
-  const canAccess = (feature: string): boolean => {
+  const canAccess = (module: string, feature: string = 'view'): boolean => {
     if (!currentWorkspace) {
-      console.warn('No current workspace for feature:', feature);
+      console.warn('No current workspace for access check:', { module, feature });
       return false;
     }
 
     const permission = currentWorkspace.role.permissions.find(
-      (p) => p.feature === feature,
+      (p) => p.module === module && p.feature === feature,
     );
 
     const hasAccess = permission?.can_access ?? false;
-    console.debug('canAccess check:', { feature, permission, hasAccess });
+    console.debug('canAccess check:', { module, feature, permission, hasAccess });
     return hasAccess;
   };
 

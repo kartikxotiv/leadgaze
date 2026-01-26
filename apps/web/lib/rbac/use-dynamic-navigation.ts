@@ -100,7 +100,7 @@ export function useDynamicNavigation() {
       allowed: true, // Will be filtered by the component
     })).filter((item) => {
       // Use RBAC for now as fallback
-      return rbacCanAccess(item.feature);
+      return rbacCanAccess(item.module, item.feature);
     });
   }, [rbacCanAccess]);
 
@@ -111,7 +111,7 @@ export function useDynamicNavigation() {
       allowed: true, // Will be filtered by the component
     })).filter((item) => {
       // Use RBAC for now as fallback
-      return rbacCanAccess(item.feature);
+      return rbacCanAccess(item.module, item.feature);
     });
   }, [rbacCanAccess]);
 
@@ -119,11 +119,11 @@ export function useDynamicNavigation() {
 }
 
 // Returns navigation config with proper structure
-// This function is used server-side or in contexts where hooks aren't available
-// For client-side usage with permissions, use useDynamicNavigation() hook instead
-export function getNavigationConfig(canAccess: (feature: string) => boolean) {
+export function getNavigationConfig(
+  canAccess: (module: string, feature: string) => boolean,
+) {
   const salesItems = SALES_MODULES.filter((item) =>
-    canAccess(item.feature),
+    canAccess(item.module, item.feature),
   ).map((item) => ({
     label: item.label,
     path: item.path,
@@ -131,14 +131,14 @@ export function getNavigationConfig(canAccess: (feature: string) => boolean) {
     end: true,
   }));
 
-  const teamItems = TEAM_MODULES.filter((item) => canAccess(item.feature)).map(
-    (item) => ({
-      label: item.label,
-      path: item.path,
-      Icon: item.Icon,
-      end: true,
-    }),
-  );
+  const teamItems = TEAM_MODULES.filter((item) =>
+    canAccess(item.module, item.feature),
+  ).map((item) => ({
+    label: item.label,
+    path: item.path,
+    Icon: item.Icon,
+    end: true,
+  }));
 
   return {
     salesItems,

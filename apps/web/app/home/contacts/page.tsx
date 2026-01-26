@@ -21,6 +21,7 @@ import {
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getContactsService, Contact } from '~/services/contacts.service';
 import { CreateContactDialog } from './components/create-contact-dialog';
+import { ModuleGuard } from '~/lib/rbac/module-guard';
 
 export default function ContactsPage() {
   const { currentWorkspace: workspace } = useRBAC();
@@ -79,7 +80,7 @@ export default function ContactsPage() {
   }
 
   return (
-    <>
+    <ModuleGuard module="contacts">
       <PageHeader title="Contacts" description="Manage your contacts (People)">
         <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
           <Plus className="h-4 w-4" />
@@ -106,27 +107,27 @@ export default function ContactsPage() {
           </Card>
 
           <Card>
-            <CardContent className="p-0 pt-6">
-              <div className="overflow-hidden rounded-lg border border-gray-200">
+            <CardContent className="p-0">
+              <div className="overflow-hidden rounded-lg border">
                 <Table>
-                  <TableHeader className="bg-gray-50">
-                    <TableRow className="border-b border-gray-200">
-                      <TableHead className="font-semibold text-gray-900">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>
                         Name
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-900">
+                      <TableHead>
                         Email
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-900">
+                      <TableHead>
                         Account
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-900">
+                      <TableHead>
                         Owner
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-900">
+                      <TableHead>
                         Created At
                       </TableHead>
-                      <TableHead className="text-right font-semibold text-gray-900">
+                      <TableHead className="text-right">
                         Actions
                       </TableHead>
                     </TableRow>
@@ -156,25 +157,24 @@ export default function ContactsPage() {
                       filteredContacts.map((contact: Contact) => (
                         <TableRow
                           key={contact.id}
-                          className="border-b border-gray-200 transition-colors hover:bg-gray-50"
                         >
-                          <TableCell className="font-medium text-gray-900">
+                          <TableCell className="font-medium">
                             {contact.first_name} {contact.last_name || ''}
                           </TableCell>
-                          <TableCell className="text-gray-600">
+                          <TableCell className="text-muted-foreground">
                             {contact.email || '-'}
                           </TableCell>
-                          <TableCell className="text-gray-600">
+                          <TableCell className="text-muted-foreground">
                             {contact.account?.account_name || '-'}
                           </TableCell>
-                          <TableCell className="text-gray-600">
+                          <TableCell className="text-muted-foreground">
                             {contact.owner?.name || '-'}
                           </TableCell>
-                          <TableCell className="text-gray-600">
+                          <TableCell className="text-muted-foreground">
                             {new Date(contact.created_at).toLocaleDateString()}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button variant="link" asChild className="h-auto p-0 text-blue-600 hover:text-blue-700">
+                            <Button variant="link" asChild className="h-auto p-0 text-primary hover:underline">
                               <Link href={`/home/contacts/${contact.id}`}>View</Link>
                             </Button>
                           </TableCell>
@@ -194,6 +194,6 @@ export default function ContactsPage() {
           />
         </div>
       </PageBody>
-    </>
+    </ModuleGuard>
   );
 }

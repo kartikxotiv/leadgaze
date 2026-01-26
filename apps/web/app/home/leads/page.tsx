@@ -34,6 +34,8 @@ import { Lead } from '~/services/leads.service';
 
 import CreateLeadDialog from './components/create-lead-dialog';
 
+import { ModuleGuard } from '~/lib/rbac/module-guard';
+
 export default function LeadsPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
@@ -112,7 +114,7 @@ export default function LeadsPage() {
   }
 
   return (
-    <>
+    <ModuleGuard module="leads">
       <PageHeader title="Leads" description="Manage and track your sales leads">
         <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
           <Plus className="h-4 w-4" />
@@ -126,31 +128,31 @@ export default function LeadsPage() {
           <div className="grid grid-cols-3 gap-4">
             <Card>
               <CardContent className="pt-6">
-                <p className="text-sm text-gray-600">Total Leads</p>
-                <p className="mt-2 text-2xl font-bold text-gray-900">
+                <p className="text-sm text-muted-foreground">Total Leads</p>
+                <p className="mt-2 text-2xl font-bold">
                   {leads.length}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <p className="text-sm text-gray-600">Filtered</p>
-                <p className="mt-2 text-2xl font-bold text-gray-900">
+                <p className="text-sm text-muted-foreground">Filtered</p>
+                <p className="mt-2 text-2xl font-bold">
                   {filteredLeads.length}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <p className="text-sm text-gray-600">Average Score</p>
-                <p className="mt-2 text-2xl font-bold text-gray-900">
+                <p className="text-sm text-muted-foreground">Average Score</p>
+                <p className="mt-2 text-2xl font-bold">
                   {leads.length > 0
                     ? Math.round(
-                        leads.reduce(
-                          (sum: number, lead: Lead) => sum + lead.lead_score,
-                          0,
-                        ) / leads.length,
-                      )
+                      leads.reduce(
+                        (sum: number, lead: Lead) => sum + lead.lead_score,
+                        0,
+                      ) / leads.length,
+                    )
                     : 0}
                 </p>
               </CardContent>
@@ -193,27 +195,27 @@ export default function LeadsPage() {
 
           {/* Table */}
           <Card>
-            <CardContent className="p-0 pt-6">
-              <div className="overflow-hidden rounded-lg border border-gray-200">
+            <CardContent className="p-0">
+              <div className="overflow-hidden rounded-lg border">
                 <Table>
-                  <TableHeader className="bg-gray-50">
-                    <TableRow className="border-b border-gray-200">
-                      <TableHead className="font-semibold text-gray-900">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>
                         Name
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-900">
+                      <TableHead>
                         Email
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-900">
+                      <TableHead>
                         Company
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-900">
+                      <TableHead>
                         Status
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-900">
+                      <TableHead>
                         Score
                       </TableHead>
-                      <TableHead className="text-right font-semibold text-gray-900">
+                      <TableHead className="text-right">
                         Actions
                       </TableHead>
                     </TableRow>
@@ -243,9 +245,8 @@ export default function LeadsPage() {
                       filteredLeads.map((lead: Lead) => (
                         <TableRow
                           key={lead.id}
-                          className="border-b border-gray-200 transition-colors hover:bg-gray-50"
                         >
-                          <TableCell className="font-medium text-gray-900">
+                          <TableCell className="font-medium">
                             <Link
                               href={`/home/leads/${lead.id}`}
                               className="hover:underline"
@@ -253,10 +254,10 @@ export default function LeadsPage() {
                               {lead.first_name} {lead.last_name || ''}
                             </Link>
                           </TableCell>
-                          <TableCell className="text-gray-600">
+                          <TableCell className="text-muted-foreground">
                             {lead.email || '-'}
                           </TableCell>
-                          <TableCell className="text-gray-600">
+                          <TableCell className="text-muted-foreground">
                             {lead.company_name || '-'}
                           </TableCell>
                           <TableCell>
@@ -267,7 +268,7 @@ export default function LeadsPage() {
                                 style={{
                                   backgroundColor: `${lead.status.color}20`,
                                   color: lead.status.color,
-                                  borderColor: lead.status.color,
+                                  borderColor: `${lead.status.color}40`,
                                 }}
                               >
                                 {lead.status.status_name}
@@ -276,15 +277,15 @@ export default function LeadsPage() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
-                              <div className="h-2 w-16 overflow-hidden rounded-full bg-gray-200">
+                              <div className="h-2 w-16 overflow-hidden rounded-full bg-secondary">
                                 <div
-                                  className="h-full bg-blue-500 transition-all"
+                                  className="h-full bg-primary transition-all"
                                   style={{
                                     width: `${Math.min(lead.lead_score, 100)}%`,
                                   }}
                                 />
                               </div>
-                              <span className="w-8 text-right text-sm text-gray-600">
+                              <span className="w-8 text-right text-sm text-muted-foreground">
                                 {lead.lead_score}
                               </span>
                             </div>
@@ -292,7 +293,7 @@ export default function LeadsPage() {
                           <TableCell className="text-right">
                             <Link
                               href={`/home/leads/${lead.id}`}
-                              className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                              className="text-sm font-medium text-primary hover:underline"
                             >
                               View
                             </Link>
@@ -314,6 +315,6 @@ export default function LeadsPage() {
           onSuccess={handleCreateSuccess}
         />
       </PageBody>
-    </>
+    </ModuleGuard>
   );
 }
