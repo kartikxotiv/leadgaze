@@ -46,7 +46,7 @@ export function SignUpMethodsContainer(props: {
         />
       </If>
 
-      <If condition={props.providers.oAuth.length}>
+      {/* <If condition={props.providers.oAuth.length}>
         <Separator />
 
         <OauthProviders
@@ -57,7 +57,7 @@ export function SignUpMethodsContainer(props: {
             returnPath: props.paths.appHome,
           }}
         />
-      </If>
+      </If> */}
     </>
   );
 }

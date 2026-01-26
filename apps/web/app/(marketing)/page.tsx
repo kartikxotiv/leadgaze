@@ -23,19 +23,19 @@ function Home() {
         <Hero
           pill={
             <Pill label={'New'}>
-              <span>The leading SaaS Starter Kit for ambitious developers</span>
+              <span>The next-generation CRM for modern businesses</span>
             </Pill>
           }
           title={
             <>
-              <span>The ultimate SaaS Starter</span>
-              <span>for your next project</span>
+              <span>Enterprise-Grade CRM</span>
+              <span>with Salesforce-style Workflows</span>
             </>
           }
           subtitle={
             <span>
-              Build and Ship a SaaS faster than ever before with the next-gen
-              SaaS Starter Kit. Ship your SaaS in days, not months.
+              LeadGaze combines Salesforce's proven CRM workflows with modern SaaS power.
+              Manage leads, close deals, and scale your business with complete customizability.
             </span>
           }
           cta={<MainCallToActionButton />}
@@ -62,47 +62,47 @@ function Home() {
             heading={
               <>
                 <b className="font-semibold dark:text-white">
-                  The ultimate SaaS Starter Kit
+                  Built for Sales Excellence
                 </b>
                 .{' '}
                 <span className="text-muted-foreground font-normal">
-                  Unleash your creativity and build your SaaS faster than ever
-                  with Leadgaze.
+                  LeadGaze provides all the tools you need to manage your entire sales cycle
+                  from first contact to closed won.
                 </span>
               </>
             }
             icon={
               <FeatureShowcaseIconContainer>
                 <LayoutDashboard className="h-5" />
-                <span>All-in-one solution</span>
+                <span>Modern CRM Engine</span>
               </FeatureShowcaseIconContainer>
             }
           >
             <FeatureGrid>
               <FeatureCard
                 className={'relative col-span-2 overflow-hidden'}
-                label={'Beautiful Dashboard'}
-                description={`Leadgaze provides a beautiful dashboard to manage your SaaS business.`}
+                label={'Leads & Pipeline'}
+                description={`Visual Kanban boards and custom qualification stages to keep your sales team moving fast.`}
               />
 
               <FeatureCard
                 className={
                   'relative col-span-2 w-full overflow-hidden lg:col-span-1'
                 }
-                label={'Authentication'}
-                description={`Leadgaze provides a variety of providers to allow your users to sign in.`}
+                label={'Opportunity Tracking'}
+                description={`Interactive deal timelines and revenue forecasting powered by Salesforce-inspired logic.`}
               />
 
               <FeatureCard
                 className={'relative col-span-2 overflow-hidden lg:col-span-1'}
-                label={'Multi Tenancy'}
-                description={`Multi tenant memberships for your SaaS business.`}
+                label={'Granular RBAC'}
+                description={`Enterprise-grade permissions control access at the record level (Own, Team, or All).`}
               />
 
               <FeatureCard
                 className={'relative col-span-2 overflow-hidden'}
-                label={'Billing'}
-                description={`Leadgaze supports multiple payment gateways to charge your customers.`}
+                label={'Account Relations'}
+                description={`Manage complex organizational hierarchies and key stakeholders in one centralized view.`}
               />
             </FeatureGrid>
           </FeatureShowcase>

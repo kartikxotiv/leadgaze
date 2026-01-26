@@ -48,7 +48,7 @@ export function SignInMethodsContainer(props: {
         />
       </If>
 
-      <If condition={props.providers.oAuth.length}>
+      {/* <If condition={props.providers.oAuth.length}>
         <Separator />
 
         <OauthProviders
@@ -59,7 +59,7 @@ export function SignInMethodsContainer(props: {
             returnPath: props.paths.home,
           }}
         />
-      </If>
+      </If> */}
     </>
   );
 }
