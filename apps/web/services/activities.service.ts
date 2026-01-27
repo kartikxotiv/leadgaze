@@ -61,6 +61,13 @@ export const createNoteService = asyncHandlerClient(
   },
 );
 
+export const updateNoteService = asyncHandlerClient(
+  async (id: string, payload: { content: string }) => {
+    const response = await ApiClient.patch(`/notes/${id}`, payload);
+    return response.data?.data;
+  },
+);
+
 export const deleteNoteService = asyncHandlerClient(async (id: string) => {
   const response = await ApiClient.delete(`/notes/${id}`);
   return response.data;
@@ -86,6 +93,21 @@ export const createReminderService = asyncHandlerClient(
     assigned_to?: string;
   }) => {
     const response = await ApiClient.post('/reminders', payload);
+    return response.data?.data;
+  },
+);
+
+export const updateReminderService = asyncHandlerClient(
+  async (
+    id: string,
+    payload: {
+      title?: string;
+      due_date?: string;
+      assigned_to?: string;
+      is_completed?: boolean;
+    },
+  ) => {
+    const response = await ApiClient.patch(`/reminders/${id}`, payload);
     return response.data?.data;
   },
 );
@@ -121,6 +143,27 @@ export const createMeetingService = asyncHandlerClient(
   },
 );
 
+export const updateMeetingService = asyncHandlerClient(
+  async (
+    id: string,
+    payload: {
+      title?: string;
+      start_time?: string;
+      end_time?: string;
+      location?: string;
+      meeting_link?: string;
+    },
+  ) => {
+    const response = await ApiClient.patch(`/meetings/${id}`, payload);
+    return response.data?.data;
+  },
+);
+
+export const deleteMeetingService = asyncHandlerClient(async (id: string) => {
+  const response = await ApiClient.delete(`/meetings/${id}`);
+  return response.data;
+});
+
 // --- Documents ---
 export const getDocumentsService = asyncHandlerClient(
   async (workspaceId: string, entityType: string, entityId: string) => {
@@ -152,3 +195,15 @@ export const createDocumentService = asyncHandlerClient(
     return response.data?.data;
   },
 );
+
+export const updateDocumentService = asyncHandlerClient(
+  async (id: string, payload: { name: string }) => {
+    const response = await ApiClient.patch(`/documents/${id}`, payload);
+    return response.data?.data;
+  },
+);
+
+export const deleteDocumentService = asyncHandlerClient(async (id: string) => {
+  const response = await ApiClient.delete(`/documents/${id}`);
+  return response.data;
+});

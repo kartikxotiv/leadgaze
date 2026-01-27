@@ -106,4 +106,8 @@ const successListDataResponse = (
   return NextResponse.json(response, { status: 200 });
 };
 
-export { successDataResponse, successListDataResponse, catchAsync };
+export {
+  successDataResponse,
+  successListDataResponse,
+  catchAsync
+};
