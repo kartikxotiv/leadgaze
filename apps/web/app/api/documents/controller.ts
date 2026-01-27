@@ -208,3 +208,53 @@ export const deleteDocument = catchAsync(
     return successDataResponse('Document deleted');
   },
 );
+
+/**
+ * GET /api/documents/download/:id
+ * Download document from storage
+ */
+export const downloadDocument = catchAsync(
+  async ({
+    request,
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const documentId = params?.id;
+
+    if (!documentId) {
+      return NextResponse.json({ message: 'ID required' }, { status: 400 });
+    }
+
+    const { data: document, error: fetchError } = await supabase
+      .from('crm_documents')
+      .select('*')
+      .eq('id', documentId)
+      .eq('is_deleted', false)
+      .single();
+
+    if (fetchError || !document) {
+      return NextResponse.json({ message: 'Document not found' }, { status: 404 });
+    }
+
+    // 2. Download from storage
+    const { data, error: downloadError } = await supabase.storage
+      .from('crm_documents')
+      .download(document.file_path);
+
+    if (downloadError) {
+      console.error('Download error:', downloadError);
+      throw downloadError;
+    }
+
+    // 3. Return file with headers
+    return new NextResponse(data, {
+      headers: {
+        'Content-Type': document.file_type || 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${document.name}"`,
+      },
+    });
+  },
+);
