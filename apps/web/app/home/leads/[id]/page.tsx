@@ -5,23 +5,10 @@ import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  AlertCircle,
-  Calendar,
-  Clock,
-  Download,
-  Edit2,
-  FileText,
-  Mail,
-  MapPin,
-  MessageSquare,
-  Phone,
-  Plus,
-  Save,
-  User,
-} from 'lucide-react';
+import { Clock, Edit2, Mail, MapPin, Phone, User } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
@@ -29,6 +16,11 @@ import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Separator } from '@kit/ui/separator';
 
+import {
+  useCanAccessData,
+  usePermissionDetail,
+} from '~/lib/permissions/use-permissions';
+import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
   getLeadByIdService,
@@ -36,22 +28,22 @@ import {
   updateLeadService,
 } from '~/services/leads.service';
 
+import {
+  EntityDocuments,
+  EntityMeetings,
+  EntityReminders,
+} from '../../_components/entity-activity';
+import { EntityNotes } from '../../_components/entity-notes';
+import { ChangeStatusDialog } from '../components/change-status-dialog';
+import { ConvertLeadDialog } from '../components/convert-lead-dialog';
 import EditLeadDialog from '../components/edit-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
-import { ConvertLeadDialog } from '../components/convert-lead-dialog';
-import { EntityNotes } from '../../_components/entity-notes';
-import { EntityDocuments, EntityMeetings, EntityReminders } from '../../_components/entity-activity';
-import { usePermissionDetail, useCanAccessData } from '~/lib/permissions/use-permissions';
-import { useUser } from '@kit/supabase/hooks/use-user';
-import { ModuleGuard } from '~/lib/rbac/module-guard';
 
 export default function LeadDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const { currentWorkspace: workspace } = useRBAC();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [selectedNewStatus, setSelectedNewStatus] = useState<string | null>(
@@ -72,7 +64,7 @@ export default function LeadDetailsPage() {
       if (!leadId) throw new Error('Lead ID is required');
       return getLeadByIdService(leadId);
     },
-    enabled: !!leadId,
+    enabled: !!leadId && !!workspace,
   });
 
   const { data: user } = useUser();
@@ -88,34 +80,13 @@ export default function LeadDetailsPage() {
     enabled: !!workspace?.id,
   });
 
-  const handleInlineEdit = async (field: string, value: string) => {
-    if (value === editValue) {
-      setEditingField(null);
-      return;
-    }
-
-    if (!value.trim()) {
-      toast.error('Please enter a value');
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const payload: any = {};
-      payload[field] = value || null;
-
-      await updateLeadService(leadId, payload);
-      toast.success('Lead updated successfully');
-      setEditingField(null);
-      // Manually update the local data
-      await refetch();
-    } catch (err: any) {
-      console.error('Update error:', err);
-      toast.error(err.message || 'Failed to update lead');
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  if (!workspace) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <p className="text-gray-500">Loading workspace...</p>
+      </div>
+    );
+  }
 
   const handleStatusChange = async (newStatusId: string) => {
     setIsSaving(true);
@@ -193,15 +164,6 @@ export default function LeadDetailsPage() {
           {value || '-'}
         </p>
       </div>
-      {value && canEdit && (
-        <Edit2
-          className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          onClick={() => {
-            setEditingField(fieldName);
-            setEditValue(value || '');
-          }}
-        />
-      )}
     </div>
   );
 
@@ -215,7 +177,9 @@ export default function LeadDetailsPage() {
             onClick={() => setStatusModalOpen(true)}
             className="gap-2"
             disabled={isSaving || !canEdit}
-            title={!canEdit ? "You do not have permission to edit this lead" : ""}
+            title={
+              !canEdit ? 'You do not have permission to edit this lead' : ''
+            }
           >
             Change Status
           </Button>
@@ -225,7 +189,9 @@ export default function LeadDetailsPage() {
             onClick={handleConvertLead}
             className="gap-2"
             disabled={isSaving || !canEdit}
-            title={!canEdit ? "You do not have permission to convert this lead" : ""}
+            title={
+              !canEdit ? 'You do not have permission to convert this lead' : ''
+            }
           >
             Convert Lead
           </Button>
@@ -235,7 +201,9 @@ export default function LeadDetailsPage() {
             onClick={() => setIsEditDialogOpen(true)}
             className="gap-2"
             disabled={!canEdit}
-            title={!canEdit ? "You do not have permission to edit this lead" : ""}
+            title={
+              !canEdit ? 'You do not have permission to edit this lead' : ''
+            }
           >
             <Edit2 className="h-4 w-4" />
             Edit Full Profile
@@ -411,15 +379,6 @@ export default function LeadDetailsPage() {
                         {lead.company_website}
                       </a>
                     </div>
-                    {canEdit && (
-                      <Edit2
-                        className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                        onClick={() => {
-                          setEditingField('company_website');
-                          setEditValue(lead.company_website || '');
-                        }}
-                      />
-                    )}
                   </div>
                 )}
                 {lead.department && (
@@ -451,15 +410,6 @@ export default function LeadDetailsPage() {
                         {lead.email}
                       </a>
                     </div>
-                    {canEdit && (
-                      <Edit2
-                        className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                        onClick={() => {
-                          setEditingField('email');
-                          setEditValue(lead.email || '');
-                        }}
-                      />
-                    )}
                   </div>
                 )}
 
@@ -476,15 +426,6 @@ export default function LeadDetailsPage() {
                         {lead.alt_email}
                       </a>
                     </div>
-                    {canEdit && (
-                      <Edit2
-                        className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                        onClick={() => {
-                          setEditingField('alt_email');
-                          setEditValue(lead.alt_email || '');
-                        }}
-                      />
-                    )}
                   </div>
                 )}
 
@@ -501,15 +442,6 @@ export default function LeadDetailsPage() {
                         {lead.phone_number}
                       </a>
                     </div>
-                    {canEdit && (
-                      <Edit2
-                        className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                        onClick={() => {
-                          setEditingField('phone_number');
-                          setEditValue(lead.phone_number || '');
-                        }}
-                      />
-                    )}
                   </div>
                 )}
 
@@ -526,15 +458,6 @@ export default function LeadDetailsPage() {
                         {lead.mobile_number}
                       </a>
                     </div>
-                    {canEdit && (
-                      <Edit2
-                        className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                        onClick={() => {
-                          setEditingField('mobile_number');
-                          setEditValue(lead.mobile_number || '');
-                        }}
-                      />
-                    )}
                   </div>
                 )}
 
@@ -572,15 +495,6 @@ export default function LeadDetailsPage() {
                         View Profile
                       </a>
                     </div>
-                    {canEdit && (
-                      <Edit2
-                        className="h-4 w-4 flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                        onClick={() => {
-                          setEditingField('linkedin_url');
-                          setEditValue(lead.linkedin_url || '');
-                        }}
-                      />
-                    )}
                   </div>
                 )}
               </CardContent>
@@ -777,42 +691,16 @@ export default function LeadDetailsPage() {
         lead={lead}
       />
 
-      {/* Inline Edit Modal */}
-      {editingField && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="mx-4 w-full max-w-sm">
-            <CardHeader>
-              <CardTitle className="capitalize">
-                Edit {editingField.replace(/_/g, ' ')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Input
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleInlineEdit(editingField, editValue);
-                  } else if (e.key === 'Escape') {
-                    setEditingField(null);
-                  }
-                }}
-                autoFocus
-              />
-              <div className="flex justify-end gap-2 text-right">
-                <Button variant="outline" onClick={() => setEditingField(null)}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => handleInlineEdit(editingField, editValue)}
-                  disabled={isSaving}
-                >
-                  {isSaving ? 'Saving...' : 'Save'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {/* Change Status Dialog */}
+      {lead && (
+        <ChangeStatusDialog
+          open={statusModalOpen}
+          onOpenChange={setStatusModalOpen}
+          onSuccess={() => refetch()}
+          leadId={leadId}
+          currentStatusId={lead.status_id}
+          statuses={statuses}
+        />
       )}
     </ModuleGuard>
   );
