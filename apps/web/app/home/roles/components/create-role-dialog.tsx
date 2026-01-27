@@ -45,9 +45,9 @@ interface CreateRoleDialogProps {
 
 const HIERARCHY_LEVELS = [
   { value: '100', label: 'Admin (100)' },
-  { value: '50', label: 'Manager (50)' },
-  { value: '10', label: 'User (10)' },
-  { value: '1', label: 'Viewer (1)' },
+  // { value: '50', label: 'Manager (50)' },
+  // { value: '10', label: 'User (10)' },
+  // { value: '1', label: 'Viewer (1)' },
 ];
 
 const ROLE_COLORS = [

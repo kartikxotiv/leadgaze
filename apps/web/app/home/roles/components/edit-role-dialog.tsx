@@ -50,9 +50,9 @@ interface EditRoleDialogProps {
 
 const HIERARCHY_LEVELS = [
   { value: '100', label: 'Admin (100)' },
-  { value: '50', label: 'Manager (50)' },
-  { value: '10', label: 'User (10)' },
-  { value: '1', label: 'Viewer (1)' },
+  // { value: '50', label: 'Manager (50)' },
+  // { value: '10', label: 'User (10)' },
+  // { value: '1', label: 'Viewer (1)' },
 ];
 
 const ROLE_COLORS = [
@@ -100,7 +100,7 @@ export function EditRoleDialog({
   const { data: permissionsData, isLoading: permissionsLoading } = useQuery({
     queryKey: ['rolePermissions', role.id],
     queryFn: async () => {
-      const res = await getRolePermissionsService(role.id)
+      const res = await getRolePermissionsService(role.id);
       return res?.data;
     },
     enabled: open && !!role.id,
@@ -304,7 +304,7 @@ export function EditRoleDialog({
           </div>
 
           {/* Permissions Section */}
-          <div className="space-y-4 pt-4 border-t">
+          <div className="space-y-4 border-t pt-4">
             <h3 className="text-sm font-semibold">Permissions</h3>
             {modulesLoading || permissionsLoading ? (
               <div className="flex items-center justify-center py-8">
@@ -321,8 +321,9 @@ export function EditRoleDialog({
                     <div className="flex items-center gap-2">
                       <CollapsibleTrigger className="flex items-center gap-2">
                         <ChevronDown
-                          className={`h-4 w-4 transition-transform ${expandedModules[module.id] ? '' : '-rotate-90'
-                            }`}
+                          className={`h-4 w-4 transition-transform ${
+                            expandedModules[module.id] ? '' : '-rotate-90'
+                          }`}
                         />
                       </CollapsibleTrigger>
                       <Checkbox
@@ -342,7 +343,7 @@ export function EditRoleDialog({
                       </label>
                     </div>
 
-                    <CollapsibleContent className="space-y-3 pt-3 pl-8 pb-1">
+                    <CollapsibleContent className="space-y-3 pt-3 pb-1 pl-8">
                       {module.features && module.features.length > 0 ? (
                         module.features.map((feature: any) => (
                           <div
