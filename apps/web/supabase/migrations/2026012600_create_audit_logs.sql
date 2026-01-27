@@ -1,4 +1,3 @@
-
 -- 1. Create Audit Logs Table
 CREATE TABLE IF NOT EXISTS public.audit_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -44,70 +43,60 @@ RETURNS TRIGGER AS $$
 DECLARE
   v_workspace_id UUID;
   v_module VARCHAR(50);
-  v_entity_name VARCHAR(255);
+  v_entity_name VARCHAR(255) := NULL;
   v_action VARCHAR(50);
   v_old_data JSONB := NULL;
   v_new_data JSONB := NULL;
+  v_data JSONB; -- Pointer to focus data (NEW for Insert/Update, OLD for Delete)
 BEGIN
-  -- 1. Identify Module and Workspace
+  -- 1. Identify Module and Action
   v_module := TG_ARGV[0];
   
   IF (TG_OP = 'DELETE') THEN
     v_workspace_id := OLD.workspace_id;
     v_action := 'DELETE';
     v_old_data := to_jsonb(OLD);
-    
-    -- Try to find a name for the entity
-    CASE v_module
-      WHEN 'leads' THEN v_entity_name := OLD.first_name || ' ' || COALESCE(OLD.last_name, '');
-      WHEN 'contacts' THEN v_entity_name := OLD.first_name || ' ' || COALESCE(OLD.last_name, '');
-      WHEN 'accounts' THEN v_entity_name := OLD.account_name;
-      WHEN 'opportunities' THEN v_entity_name := OLD.opportunity_name;
-      WHEN 'team_members' THEN v_entity_name := COALESCE(OLD.email, OLD.user_id::text);
-      WHEN 'roles' THEN v_entity_name := OLD.role_name;
-      WHEN 'role_permissions' THEN v_entity_name := 'Permissions for Role ' || OLD.role_id::text;
-      ELSE v_entity_name := v_module || ' #' || OLD.id;
-    END CASE;
-    
+    v_data := v_old_data;
   ELSIF (TG_OP = 'UPDATE') THEN
     v_workspace_id := NEW.workspace_id;
     v_action := 'UPDATE';
     v_old_data := to_jsonb(OLD);
     v_new_data := to_jsonb(NEW);
-    
-    CASE v_module
-      WHEN 'leads' THEN v_entity_name := NEW.first_name || ' ' || COALESCE(NEW.last_name, '');
-      WHEN 'contacts' THEN v_entity_name := NEW.first_name || ' ' || COALESCE(NEW.last_name, '');
-      WHEN 'accounts' THEN v_entity_name := NEW.account_name;
-      WHEN 'opportunities' THEN v_entity_name := NEW.opportunity_name;
-      WHEN 'team_members' THEN v_entity_name := COALESCE(NEW.email, NEW.user_id::text);
-      WHEN 'roles' THEN v_entity_name := NEW.role_name;
-      WHEN 'role_permissions' THEN v_entity_name := 'Permissions for Role ' || NEW.role_id::text;
-      ELSE v_entity_name := v_module || ' #' || NEW.id;
-    END CASE;
-    
+    v_data := v_new_data;
   ELSIF (TG_OP = 'INSERT') THEN
     v_workspace_id := NEW.workspace_id;
     v_action := 'CREATE';
     v_new_data := to_jsonb(NEW);
-    
-    CASE v_module
-      WHEN 'leads' THEN v_entity_name := NEW.first_name || ' ' || COALESCE(NEW.last_name, '');
-      WHEN 'contacts' THEN v_entity_name := NEW.first_name || ' ' || COALESCE(NEW.last_name, '');
-      WHEN 'accounts' THEN v_entity_name := NEW.account_name;
-      WHEN 'opportunities' THEN v_entity_name := NEW.opportunity_name;
-      WHEN 'team_members' THEN v_entity_name := COALESCE(NEW.email, NEW.user_id::text);
-      WHEN 'roles' THEN v_entity_name := NEW.role_name;
-      WHEN 'role_permissions' THEN v_entity_name := 'Permissions for Role ' || NEW.role_id::text;
-      WHEN 'notes' THEN v_entity_name := 'Note on ' || NEW.entity_type || ' ' || NEW.entity_id::text;
-      WHEN 'reminders' THEN v_entity_name := NEW.title;
-      WHEN 'meetings' THEN v_entity_name := NEW.title;
-      WHEN 'documents' THEN v_entity_name := NEW.name;
-      ELSE v_entity_name := v_module || ' #' || NEW.id;
-    END CASE;
+    v_data := v_new_data;
   END IF;
 
-  -- 2. Insert Log
+  -- 2. Safely extract Entity Name via JSONB to prevent "missing field" errors
+  -- This allows the same function to support diverse table schemas
+  CASE v_module
+    WHEN 'leads', 'contacts' THEN 
+      v_entity_name := (v_data->>'first_name') || ' ' || COALESCE(v_data->>'last_name', '');
+    WHEN 'accounts' THEN 
+      v_entity_name := v_data->>'account_name';
+    WHEN 'opportunities' THEN 
+      v_entity_name := v_data->>'opportunity_name';
+    WHEN 'team_members' THEN 
+      -- Handle workspace_members (no email column)
+      v_entity_name := COALESCE(v_data->>'email', 'Internal User: ' || COALESCE(v_data->>'user_id', 'Unknown'));
+    WHEN 'roles' THEN 
+      v_entity_name := v_data->>'role_name';
+    WHEN 'role_permissions' THEN 
+      v_entity_name := 'Permissions for Role ID ' || COALESCE(v_data->>'role_id', 'Unknown');
+    WHEN 'notes' THEN 
+      v_entity_name := 'Note on ' || COALESCE(v_data->>'entity_type', 'Entity') || ' ' || COALESCE(v_data->>'entity_id', '');
+    WHEN 'reminders', 'meetings' THEN 
+      v_entity_name := v_data->>'title';
+    WHEN 'documents' THEN 
+      v_entity_name := v_data->>'name';
+    ELSE 
+      v_entity_name := v_module || ' #' || COALESCE(v_data->>'id', 'Unknown');
+  END CASE;
+
+  -- 3. Insert Log
   INSERT INTO public.audit_logs (
     workspace_id,
     actor_id,
@@ -119,7 +108,7 @@ BEGIN
     new_data
   ) VALUES (
     v_workspace_id,
-    auth.uid(), -- Tries to catch web user ID
+    auth.uid(), 
     v_module,
     v_action,
     CASE WHEN TG_OP = 'DELETE' THEN OLD.id ELSE NEW.id END,
@@ -173,10 +162,10 @@ AFTER INSERT OR UPDATE OR DELETE ON public.workspace_roles
 FOR EACH ROW EXECUTE FUNCTION public.fn_audit_log_trigger('roles');
 
 -- Role Permissions
-DROP TRIGGER IF EXISTS tr_audit_log_permissions ON public.role_permissions;
-CREATE TRIGGER tr_audit_log_permissions
-AFTER INSERT OR UPDATE OR DELETE ON public.role_permissions
-FOR EACH ROW EXECUTE FUNCTION public.fn_audit_log_trigger('role_permissions');
+-- DROP TRIGGER IF EXISTS tr_audit_log_permissions ON public.role_permissions;
+-- CREATE TRIGGER tr_audit_log_permissions
+-- AFTER INSERT OR UPDATE OR DELETE ON public.role_permissions
+-- FOR EACH ROW EXECUTE FUNCTION public.fn_audit_log_trigger('role_permissions');
 
 -- 5. Apply Triggers to Activity Tables
 

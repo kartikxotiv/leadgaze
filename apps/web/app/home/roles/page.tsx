@@ -25,6 +25,7 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
+import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
   type Role,
@@ -34,7 +35,6 @@ import {
 
 import { CreateRoleDialog } from './components/create-role-dialog';
 import { EditRoleDialog } from './components/edit-role-dialog';
-import { ModuleGuard } from '~/lib/rbac/module-guard';
 
 export default function RolesPage() {
   const queryClient = useQueryClient();
@@ -92,18 +92,13 @@ export default function RolesPage() {
     if (role.color) return role.color;
     const colorMap: Record<string, string> = {
       admin: '#ef4444',
-      manager: '#f97316',
-      user: '#3b82f6',
-      viewer: '#8b5cf6',
     };
     return colorMap[role.role_key] || '#6b7280';
   };
 
   const getHierarchyLabel = (level: number) => {
     if (level >= 100) return 'Admin';
-    if (level >= 50) return 'Manager';
-    if (level >= 10) return 'User';
-    return 'Viewer';
+    return 'Custom';
   };
 
   return (
@@ -118,7 +113,7 @@ export default function RolesPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-muted-foreground text-sm font-medium">
                   Total Roles
                 </CardTitle>
               </CardHeader>
@@ -129,7 +124,7 @@ export default function RolesPage() {
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-muted-foreground text-sm font-medium">
                   System Roles
                 </CardTitle>
               </CardHeader>
@@ -142,7 +137,7 @@ export default function RolesPage() {
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-muted-foreground text-sm font-medium">
                   Custom Roles
                 </CardTitle>
               </CardHeader>
@@ -177,15 +172,15 @@ export default function RolesPage() {
             <CardContent>
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
                 </div>
               ) : error ? (
-                <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+                <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border p-4">
                   Failed to load roles
                 </div>
               ) : roles?.length === 0 ? (
                 <div className="py-12 text-center">
-                  <Shield className="mx-auto mb-4 h-12 w-12 text-muted-foreground/30" />
+                  <Shield className="text-muted-foreground/30 mx-auto mb-4 h-12 w-12" />
                   <p className="text-muted-foreground">No roles found</p>
                 </div>
               ) : (
@@ -203,9 +198,7 @@ export default function RolesPage() {
                     </TableHeader>
                     <TableBody>
                       {roles?.map((role: Role) => (
-                        <TableRow
-                          key={role.id}
-                        >
+                        <TableRow key={role.id}>
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <div
@@ -218,7 +211,7 @@ export default function RolesPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <code className="rounded bg-secondary px-2 py-1 text-xs">
+                            <code className="bg-secondary rounded px-2 py-1 text-xs">
                               {role.role_key}
                             </code>
                           </TableCell>
@@ -229,7 +222,7 @@ export default function RolesPage() {
                           </TableCell>
                           <TableCell>
                             {role.is_system ? (
-                              <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-500 hover:bg-blue-500/20 border-blue-500/20">
+                              <Badge className="border-blue-500/20 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 dark:text-blue-500">
                                 System
                               </Badge>
                             ) : (
@@ -238,7 +231,7 @@ export default function RolesPage() {
                           </TableCell>
                           <TableCell>
                             {role.is_active ? (
-                              <Badge className="bg-green-500/10 text-green-600 dark:text-green-500 hover:bg-green-500/20 border-green-500/20">
+                              <Badge className="border-green-500/20 bg-green-500/10 text-green-600 hover:bg-green-500/20 dark:text-green-500">
                                 Active
                               </Badge>
                             ) : (
@@ -263,7 +256,7 @@ export default function RolesPage() {
                                 onClick={() =>
                                   handleDeleteRole(role.id, role.is_system)
                                 }
-                                className="gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
                                 disabled={
                                   role.is_system || deleteRoleMutation.isPending
                                 }
