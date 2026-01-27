@@ -4,7 +4,7 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import {
   catchAsync,
-  successDataResponse,
+  successDataResponse
 } from '../../../utils/response-handler';
 
 /**
@@ -107,6 +107,47 @@ export const createReminder = catchAsync(
   },
 );
 
+export const updateReminder = catchAsync(
+  async ({
+    request,
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const reminderId = params?.id;
+    const body = await request.json();
+    const { title, due_date, assigned_to, is_completed } = body;
+
+    if (!reminderId) {
+      return NextResponse.json({ message: 'ID required' }, { status: 400 });
+    }
+
+    const { data: reminder, error } = await supabase
+      .from('crm_reminders')
+      .update({
+        title,
+        due_date,
+        assigned_to: assigned_to || null,
+        is_completed,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', reminderId)
+      .select(
+        '*, assigned_to_user:accounts!crm_reminders_assigned_to_fkey(name, email)',
+      )
+      .single();
+
+    if (error) {
+      console.error('Update reminder error:', error);
+      throw error;
+    }
+
+    return successDataResponse('Reminder updated', reminder);
+  },
+);
+
 export const deleteReminder = catchAsync(
   async ({
     request,
@@ -128,6 +169,6 @@ export const deleteReminder = catchAsync(
 
     if (error) throw error;
 
-    return successResponse('Reminder deleted');
+    return successDataResponse('Reminder deleted');
   },
 );
