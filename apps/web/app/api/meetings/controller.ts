@@ -107,3 +107,72 @@ export const createMeeting = catchAsync(
     return successDataResponse('Meeting created', meeting);
   },
 );
+
+export const updateMeeting = catchAsync(
+  async ({
+    request,
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const meetingId = params?.id;
+    const body = await request.json();
+    const { title, start_time, end_time, location, meeting_link } = body;
+
+    if (!meetingId) {
+      return NextResponse.json({ message: 'ID required' }, { status: 400 });
+    }
+
+    const { data: meeting, error } = await supabase
+      .from('crm_meetings')
+      .update({
+        title,
+        start_time,
+        end_time,
+        location,
+        meeting_link,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', meetingId)
+      .select('*, created_by_user:accounts(name, email)')
+      .single();
+
+    if (error) {
+      console.error('Update meeting error:', error);
+      throw error;
+    }
+
+    return successDataResponse('Meeting updated', meeting);
+  },
+);
+
+export const deleteMeeting = catchAsync(
+  async ({
+    request,
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const meetingId = params?.id;
+
+    if (!meetingId) {
+      return NextResponse.json({ message: 'ID required' }, { status: 400 });
+    }
+
+    const { error } = await supabase
+      .from('crm_meetings')
+      .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      .eq('id', meetingId);
+
+    if (error) {
+      console.error('Delete meeting error:', error);
+      throw error;
+    }
+
+    return successResponse('Meeting deleted');
+  },
+);

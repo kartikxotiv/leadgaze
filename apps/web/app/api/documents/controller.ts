@@ -5,6 +5,7 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import {
   catchAsync,
   successDataResponse,
+  successResponse,
 } from '../../../utils/response-handler';
 
 /**
@@ -121,5 +122,90 @@ export const createDocument = catchAsync(
     }
 
     return successDataResponse('Document uploaded', document);
+  },
+);
+
+/**
+ * PATCH /api/documents/:id
+ * Update document metadata
+ */
+export const updateDocument = catchAsync(
+  async ({
+    request,
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const documentId = params?.id;
+    const body = await request.json();
+    const { name } = body;
+
+    if (!documentId) {
+      return NextResponse.json({ message: 'ID required' }, { status: 400 });
+    }
+
+    const { data: document, error } = await supabase
+      .from('crm_documents')
+      .update({
+        name,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', documentId)
+      .select('*, created_by_user:accounts(name, email)')
+      .single();
+
+    if (error) {
+      console.error('Update document error:', error);
+      throw error;
+    }
+
+    return successDataResponse('Document updated', document);
+  },
+);
+
+/**
+ * DELETE /api/documents/:id
+ * Soft delete document
+ */
+export const deleteDocument = catchAsync(
+  async ({
+    request,
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const documentId = params?.id;
+
+    if (!documentId) {
+      return NextResponse.json({ message: 'ID required' }, { status: 400 });
+    }
+
+    // 1. Get document to get file path
+    const { data: document, error: fetchError } = await supabase
+      .from('crm_documents')
+      .select('file_path')
+      .eq('id', documentId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // 2. Soft delete from DB
+    const { error: dbError } = await supabase
+      .from('crm_documents')
+      .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      .eq('id', documentId);
+
+    if (dbError) throw dbError;
+
+    // Note: We might want to delete from storage too, but soft delete is safer for now.
+    // if (document?.file_path) {
+    //   await supabase.storage.from('crm_documents').remove([document.file_path]);
+    // }
+
+    return successResponse('Document deleted');
   },
 );
