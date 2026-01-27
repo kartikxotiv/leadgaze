@@ -1,4 +1,3 @@
-
 -- 1. Create Audit Logs Table
 CREATE TABLE IF NOT EXISTS public.audit_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
