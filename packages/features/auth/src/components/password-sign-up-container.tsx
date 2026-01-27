@@ -1,6 +1,8 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import { useRouter } from 'next/navigation';
 
 import { CheckCircledIcon } from '@radix-ui/react-icons';
 
@@ -21,14 +23,17 @@ interface EmailPasswordSignUpContainerProps {
 
   onSignUp?: (userId?: string) => unknown;
   emailRedirectTo: string;
+  appHome?: string;
 }
 
 export function EmailPasswordSignUpContainer({
   defaultValues,
   onSignUp,
   emailRedirectTo,
+  appHome,
   displayTermsCheckbox,
 }: EmailPasswordSignUpContainerProps) {
+  const router = useRouter();
   const { captchaToken, resetCaptchaToken } = useCaptchaToken();
 
   const signUpMutation = useSignUpWithEmailAndPassword();
@@ -56,7 +61,9 @@ export function EmailPasswordSignUpContainer({
           onSignUp(data.user?.id);
         }
       } catch (error) {
-        console.error(error);
+        // we log the error to the console for debugging
+        // but we don't use console.error to avoid the DevOverlay
+        console.warn(error);
       } finally {
         resetCaptchaToken();
       }
@@ -70,6 +77,16 @@ export function EmailPasswordSignUpContainer({
       signUpMutation,
     ],
   );
+
+  useEffect(() => {
+    if (showVerifyEmailAlert && appHome) {
+      const timer = setTimeout(() => {
+        router.push(appHome);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [showVerifyEmailAlert, appHome, router]);
 
   return (
     <>

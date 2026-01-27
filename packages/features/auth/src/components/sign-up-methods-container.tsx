@@ -34,6 +34,7 @@ export function SignUpMethodsContainer(props: {
           emailRedirectTo={redirectUrl}
           defaultValues={defaultValues}
           displayTermsCheckbox={props.displayTermsCheckbox}
+          appHome={props.paths.appHome}
         />
       </If>
 
