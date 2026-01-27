@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-import { catchAsync, successDataResponse } from '~/utils/response-handler';
+import {
+  catchAsync,
+  successDataResponse
+} from '~/utils/response-handler';
 
 /**
  * GET /api/notes
@@ -99,8 +102,28 @@ export const updateNote = catchAsync(
     request: NextRequest;
     params?: Record<string, string>;
   }) => {
-    // Basic update logic if needed
-    return successResponse('Update not implemented yet');
+    const supabase = getSupabaseServerClient();
+    const noteId = params?.id;
+    const body = await request.json();
+    const { content } = body;
+
+    if (!noteId) {
+      return NextResponse.json({ message: 'ID required' }, { status: 400 });
+    }
+
+    const { data: note, error } = await supabase
+      .from('crm_notes')
+      .update({ content, updated_at: new Date().toISOString() })
+      .eq('id', noteId)
+      .select('*, created_by_user:accounts(name, email)')
+      .single();
+
+    if (error) {
+      console.error('Update note error:', error);
+      throw error;
+    }
+
+    return successDataResponse('Note updated', note);
   },
 );
 
@@ -126,6 +149,6 @@ export const deleteNote = catchAsync(
 
     if (error) throw error;
 
-    return successResponse('Note deleted');
+    return successDataResponse('Note deleted');
   },
 );
