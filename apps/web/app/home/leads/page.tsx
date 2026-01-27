@@ -5,7 +5,7 @@ import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { useQuery } from '@tanstack/react-query';
-import { Filter, Plus, Search } from 'lucide-react';
+import { FileUp, Filter, Plus, Search } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
@@ -28,13 +28,12 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
+import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getLeadsService } from '~/services/leads.service';
 import { Lead } from '~/services/leads.service';
 
 import CreateLeadDialog from './components/create-lead-dialog';
-
-import { ModuleGuard } from '~/lib/rbac/module-guard';
 
 export default function LeadsPage() {
   const { currentWorkspace: workspace } = useRBAC();
@@ -116,10 +115,20 @@ export default function LeadsPage() {
   return (
     <ModuleGuard module="leads">
       <PageHeader title="Leads" description="Manage and track your sales leads">
-        <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Lead
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setIsCreateDialogOpen(true)}
+            variant="outline"
+            className="gap-2"
+          >
+            <FileUp className="h-4 w-4" />
+            Import
+          </Button>
+          <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            New Lead
+          </Button>
+        </div>
       </PageHeader>
 
       <PageBody>
@@ -128,15 +137,13 @@ export default function LeadsPage() {
           <div className="grid grid-cols-3 gap-4">
             <Card>
               <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground">Total Leads</p>
-                <p className="mt-2 text-2xl font-bold">
-                  {leads.length}
-                </p>
+                <p className="text-muted-foreground text-sm">Total Leads</p>
+                <p className="mt-2 text-2xl font-bold">{leads.length}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground">Filtered</p>
+                <p className="text-muted-foreground text-sm">Filtered</p>
                 <p className="mt-2 text-2xl font-bold">
                   {filteredLeads.length}
                 </p>
@@ -144,15 +151,15 @@ export default function LeadsPage() {
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground">Average Score</p>
+                <p className="text-muted-foreground text-sm">Average Score</p>
                 <p className="mt-2 text-2xl font-bold">
                   {leads.length > 0
                     ? Math.round(
-                      leads.reduce(
-                        (sum: number, lead: Lead) => sum + lead.lead_score,
-                        0,
-                      ) / leads.length,
-                    )
+                        leads.reduce(
+                          (sum: number, lead: Lead) => sum + lead.lead_score,
+                          0,
+                        ) / leads.length,
+                      )
                     : 0}
                 </p>
               </CardContent>
@@ -200,24 +207,12 @@ export default function LeadsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>
-                        Name
-                      </TableHead>
-                      <TableHead>
-                        Email
-                      </TableHead>
-                      <TableHead>
-                        Company
-                      </TableHead>
-                      <TableHead>
-                        Status
-                      </TableHead>
-                      <TableHead>
-                        Score
-                      </TableHead>
-                      <TableHead className="text-right">
-                        Actions
-                      </TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Score</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -243,9 +238,7 @@ export default function LeadsPage() {
                       </TableRow>
                     ) : (
                       filteredLeads.map((lead: Lead) => (
-                        <TableRow
-                          key={lead.id}
-                        >
+                        <TableRow key={lead.id}>
                           <TableCell className="font-medium">
                             <Link
                               href={`/home/leads/${lead.id}`}
@@ -277,15 +270,15 @@ export default function LeadsPage() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
-                              <div className="h-2 w-16 overflow-hidden rounded-full bg-secondary">
+                              <div className="bg-secondary h-2 w-16 overflow-hidden rounded-full">
                                 <div
-                                  className="h-full bg-primary transition-all"
+                                  className="bg-primary h-full transition-all"
                                   style={{
                                     width: `${Math.min(lead.lead_score, 100)}%`,
                                   }}
                                 />
                               </div>
-                              <span className="w-8 text-right text-sm text-muted-foreground">
+                              <span className="text-muted-foreground w-8 text-right text-sm">
                                 {lead.lead_score}
                               </span>
                             </div>
@@ -293,7 +286,7 @@ export default function LeadsPage() {
                           <TableCell className="text-right">
                             <Link
                               href={`/home/leads/${lead.id}`}
-                              className="text-sm font-medium text-primary hover:underline"
+                              className="text-primary text-sm font-medium hover:underline"
                             >
                               View
                             </Link>
