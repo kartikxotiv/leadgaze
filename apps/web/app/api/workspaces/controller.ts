@@ -65,25 +65,25 @@ const createNewWorkspace = catchAsync(
         role_name: 'Admin',
         hierarchy_level: 100,
         is_system: true,
-      },
-      {
-        role_key: 'manager',
-        role_name: 'Manager',
-        hierarchy_level: 50,
-        is_system: true,
-      },
-      {
-        role_key: 'user',
-        role_name: 'User',
-        hierarchy_level: 10,
-        is_system: true,
-      },
-      {
-        role_key: 'viewer',
-        role_name: 'Viewer',
-        hierarchy_level: 1,
-        is_system: true,
-      },
+      }
+      // {
+      //   role_key: 'manager',
+      //   role_name: 'Manager',
+      //   hierarchy_level: 50,
+      //   is_system: true,
+      // },
+      // {
+      //   role_key: 'user',
+      //   role_name: 'User',
+      //   hierarchy_level: 10,
+      //   is_system: true,
+      // },
+      // {
+      //   role_key: 'viewer',
+      //   role_name: 'Viewer',
+      //   hierarchy_level: 1,
+      //   is_system: true,
+      // },
     ];
 
     const { data: rolesData, error: rolesError }: any = await supabase
@@ -140,45 +140,6 @@ const createNewWorkspace = catchAsync(
           access_level: 'all',
           can_view_sensitive_data: true,
           can_override_owner: true,
-        });
-      }
-
-      // Manager: Team access
-      for (const feature of features) {
-        permissions.push({
-          workspace_id: workspace.id,
-          role_id: rolesData[1].id, // Manager
-          module_feature_id: feature.id,
-          can_access: true,
-          access_level: 'team',
-          can_view_sensitive_data: false,
-          can_override_owner: false,
-        });
-      }
-
-      // User: Own records only
-      for (const feature of features) {
-        permissions.push({
-          workspace_id: workspace.id,
-          role_id: rolesData[2].id, // User
-          module_feature_id: feature.id,
-          can_access: true,
-          access_level: 'own',
-          can_view_sensitive_data: false,
-          can_override_owner: false,
-        });
-      }
-
-      // Viewer: Read-only, all records
-      for (const feature of features) {
-        permissions.push({
-          workspace_id: workspace.id,
-          role_id: rolesData[3].id, // Viewer
-          module_feature_id: feature.id,
-          can_access: true,
-          access_level: 'all',
-          can_view_sensitive_data: false,
-          can_override_owner: false,
         });
       }
 
