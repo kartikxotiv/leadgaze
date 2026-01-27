@@ -4,8 +4,7 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import {
   catchAsync,
-  successDataResponse,
-  successResponse,
+  successDataResponse
 } from '~/utils/response-handler';
 
 /**
@@ -150,6 +149,6 @@ export const deleteNote = catchAsync(
 
     if (error) throw error;
 
-    return successResponse('Note deleted');
+    return successDataResponse('Note deleted');
   },
 );

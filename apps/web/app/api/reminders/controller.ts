@@ -4,8 +4,7 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import {
   catchAsync,
-  successDataResponse,
-  successResponse,
+  successDataResponse
 } from '../../../utils/response-handler';
 
 /**
@@ -170,6 +169,6 @@ export const deleteReminder = catchAsync(
 
     if (error) throw error;
 
-    return successResponse('Reminder deleted');
+    return successDataResponse('Reminder deleted');
   },
 );

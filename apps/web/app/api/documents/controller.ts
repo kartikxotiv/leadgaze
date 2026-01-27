@@ -4,8 +4,7 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import {
   catchAsync,
-  successDataResponse,
-  successResponse,
+  successDataResponse
 } from '../../../utils/response-handler';
 
 /**
@@ -206,6 +205,6 @@ export const deleteDocument = catchAsync(
     //   await supabase.storage.from('crm_documents').remove([document.file_path]);
     // }
 
-    return successResponse('Document deleted');
+    return successDataResponse('Document deleted');
   },
 );

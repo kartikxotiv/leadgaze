@@ -4,8 +4,7 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import {
   catchAsync,
-  successDataResponse,
-  successResponse,
+  successDataResponse
 } from '../../../utils/response-handler';
 
 /**
@@ -173,6 +172,6 @@ export const deleteMeeting = catchAsync(
       throw error;
     }
 
-    return successResponse('Meeting deleted');
+    return successDataResponse('Meeting deleted');
   },
 );
