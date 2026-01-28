@@ -52,7 +52,7 @@ export default function RolesPage() {
     queryKey: ['workspaceRoles', currentWorkspace?.id],
     queryFn: async () => {
       const res = await getRolesService(currentWorkspace?.id || '');
-      console.log({ res });
+
       return res?.data;
     },
     enabled: !!currentWorkspace?.id,

@@ -56,16 +56,14 @@ export default function InviteAcceptancePage() {
         setLoading(false);
         return;
       }
-      console.log({ token });
 
       try {
         const response = await validateInviteTokenService(token);
-        console.log({ response });
+
         if (response.data) {
           setInvitation(response.data);
         }
       } catch (err: any) {
-        console.log({ err });
         setError(err?.message || 'Invalid or expired invitation');
       } finally {
         setLoading(false);

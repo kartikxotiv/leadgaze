@@ -17,10 +17,6 @@ export function useSignInWithOtp() {
 
     if (result.error) {
       if (shouldIgnoreError(result.error.message)) {
-        console.warn(
-          `Ignoring error during development: ${result.error.message}`,
-        );
-
         return {} as never;
       }
 
