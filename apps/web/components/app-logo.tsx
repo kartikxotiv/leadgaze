@@ -16,8 +16,8 @@ function LogoImage({
     return (
       <Image
         src={'/images/favicon/apple-touch-icon.png'}
-        height={32}
-        width={32}
+        height={24}
+        width={24}
         alt="leadgaze"
         className={cn('mx-auto rounded-md', className)}
       />
