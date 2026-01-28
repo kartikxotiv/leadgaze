@@ -63,7 +63,6 @@ export function EmailPasswordSignUpContainer({
       } catch (error) {
         // we log the error to the console for debugging
         // but we don't use console.error to avoid the DevOverlay
-        console.warn(error);
       } finally {
         resetCaptchaToken();
       }
