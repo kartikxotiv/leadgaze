@@ -93,7 +93,6 @@ export function ConvertLeadDialog({
 }: ConvertLeadDialogProps) {
   const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  console.log({ statuses });
 
   // Filter for closed/converted statuses
   const convertedStatuses = statuses ?? statuses?.filter((s) => s.is_closed);

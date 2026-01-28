@@ -28,22 +28,17 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
-import { useRBAC } from '~/lib/rbac/rbac-provider';
-import { getOpportunitiesService, Opportunity } from '~/services/opportunities.service';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
+import { useRBAC } from '~/lib/rbac/rbac-provider';
+import {
+  Opportunity,
+  getOpportunitiesService,
+} from '~/services/opportunities.service';
 
 export default function OpportunitiesPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
-
-  if (!workspace) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <p className="text-gray-500">Loading workspace...</p>
-      </div>
-    );
-  }
 
   const {
     data: opportunities = [],
@@ -51,9 +46,9 @@ export default function OpportunitiesPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['opportunities', workspace.id],
-    queryFn: () => getOpportunitiesService(workspace.id),
-    enabled: !!workspace.id,
+    queryKey: ['opportunities', workspace?.id],
+    queryFn: () => getOpportunitiesService(workspace!.id),
+    enabled: !!workspace?.id,
   });
 
   // Get unique stages for filter dropdown
@@ -71,8 +66,12 @@ export default function OpportunitiesPage() {
   const filteredOpportunities = useMemo(() => {
     return opportunities?.filter((opp: Opportunity) => {
       const matchesSearch =
-        opp.opportunity_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        opp.account?.account_name?.toLowerCase().includes(searchTerm.toLowerCase());
+        opp.opportunity_name
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        opp.account?.account_name
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase());
 
       const matchesStage =
         selectedStage === 'all' || opp.stage_id === selectedStage;
@@ -80,6 +79,14 @@ export default function OpportunitiesPage() {
       return matchesSearch && matchesStage;
     });
   }, [opportunities, searchTerm, selectedStage]);
+
+  if (!workspace) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <p className="text-gray-500">Loading workspace...</p>
+      </div>
+    );
+  }
 
   if (error) {
     return (
@@ -103,7 +110,10 @@ export default function OpportunitiesPage() {
 
   return (
     <ModuleGuard module="opportunities">
-      <PageHeader title="Opportunities" description="Manage your sales pipeline">
+      <PageHeader
+        title="Opportunities"
+        description="Manage your sales pipeline"
+      >
         {/* Future: Add Create Opportunity button */}
       </PageHeader>
 
@@ -122,10 +132,7 @@ export default function OpportunitiesPage() {
                     className="pl-10"
                   />
                 </div>
-                <Select
-                  value={selectedStage}
-                  onValueChange={setSelectedStage}
-                >
+                <Select value={selectedStage} onValueChange={setSelectedStage}>
                   <SelectTrigger className="w-48">
                     <Filter className="mr-2 h-4 w-4" />
                     <SelectValue placeholder="Filter by stage" />
@@ -150,27 +157,13 @@ export default function OpportunitiesPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>
-                        Opportunity Name
-                      </TableHead>
-                      <TableHead>
-                        Account
-                      </TableHead>
-                      <TableHead>
-                        Stage
-                      </TableHead>
-                      <TableHead className="text-right">
-                        Amount
-                      </TableHead>
-                      <TableHead>
-                        Close Date
-                      </TableHead>
-                      <TableHead>
-                        Owner
-                      </TableHead>
-                      <TableHead className="text-right">
-                        Actions
-                      </TableHead>
+                      <TableHead>Opportunity Name</TableHead>
+                      <TableHead>Account</TableHead>
+                      <TableHead>Stage</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>Close Date</TableHead>
+                      <TableHead>Owner</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -196,9 +189,7 @@ export default function OpportunitiesPage() {
                       </TableRow>
                     ) : (
                       filteredOpportunities.map((opp: Opportunity) => (
-                        <TableRow
-                          key={opp.id}
-                        >
+                        <TableRow key={opp.id}>
                           <TableCell className="font-medium">
                             {/* Link to detail page coming soon */}
                             {opp.opportunity_name}
@@ -228,14 +219,24 @@ export default function OpportunitiesPage() {
                             }).format(opp.amount || 0)}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
-                            {opp.expected_close_date ? new Date(opp.expected_close_date).toLocaleDateString() : '-'}
+                            {opp.expected_close_date
+                              ? new Date(
+                                  opp.expected_close_date,
+                                ).toLocaleDateString()
+                              : '-'}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {opp.owner?.name || '-'}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button variant="link" asChild className="h-auto p-0 text-primary hover:underline">
-                              <Link href={`/home/opportunities/${opp.id}`}>View</Link>
+                            <Button
+                              variant="link"
+                              asChild
+                              className="text-primary h-auto p-0 hover:underline"
+                            >
+                              <Link href={`/home/opportunities/${opp.id}`}>
+                                View
+                              </Link>
                             </Button>
                           </TableCell>
                         </TableRow>

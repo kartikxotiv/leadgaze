@@ -47,10 +47,6 @@ export function getI18nSettings(
   let lng = language ?? defaultLanguage;
 
   if (!languages.includes(lng)) {
-    console.warn(
-      `Language "${lng}" is not supported. Falling back to "${defaultLanguage}"`,
-    );
-
     lng = defaultLanguage;
   }
 

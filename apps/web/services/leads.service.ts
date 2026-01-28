@@ -148,7 +148,7 @@ const getLeadSourcesService = asyncHandlerClient(
     );
     // response.data = { success, statusCode, message, data: [...] }
     const sources = response.data?.data || [];
-    console.log('getLeadSourcesService returning:', sources);
+
     return sources;
   },
 );
@@ -160,7 +160,7 @@ const getLeadStatusesService = asyncHandlerClient(
     );
     // response.data = { success, statusCode, message, data: [...] }
     const statuses = response.data?.data || [];
-    console.log('getLeadStatusesService returning:', statuses);
+
     return statuses;
   },
 );

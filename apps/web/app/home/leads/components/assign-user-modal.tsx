@@ -40,15 +40,13 @@ export function AssignUserModal({
   isLoading,
 }: AssignUserModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  console.log({ workspaceId });
 
   // Get all workspace members
   const { data: members = [], isLoading: membersLoading } = useQuery({
     queryKey: ['workspace-members', workspaceId],
     queryFn: async () => {
-      console.log('Fetching workspace members for workspaceId:', workspaceId);
       const res = await getWorkspaceMembersService(workspaceId);
-      console.log({ res });
+
       return res;
     },
     enabled: !!workspaceId,
@@ -63,7 +61,6 @@ export function AssignUserModal({
   // Filter members based on search and exclude already assigned users
   const availableMembers = useMemo(() => {
     return members.filter((member) => {
-      console.log({ assignedUserIds, member });
       const isAlreadyAssigned = assignedUserIds.has(member.id);
       if (isAlreadyAssigned) return false;
 
