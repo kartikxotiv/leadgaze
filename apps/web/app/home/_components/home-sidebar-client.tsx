@@ -20,38 +20,44 @@ import { WorkspaceSwitcher } from './workspace-switcher';
 export function HomeSidebarClient(props: { user: JwtPayload }) {
   const { canAccess } = useRBAC();
 
-  // Try to use permission-based navigation first
-  let permissionNavConfig: ReturnType<
-    typeof usePermissionBasedNavigationConfig
-  > | null = null;
-  let usePermissions = true;
-
-  try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    permissionNavConfig = usePermissionBasedNavigationConfig();
-    console.log({ permissionNavConfig });
-  } catch {
-    // Permission system not available, fall back to RBAC
-    usePermissions = false;
-  }
+  // Use permission-based navigation
+  const permissionNavConfig = usePermissionBasedNavigationConfig();
 
   const navConfig = useMemo(() => {
+    // Basic routes that always exist
+    const baseRoutes = [
+      {
+        label: 'common:routes.application',
+        children: [
+          {
+            label: 'common:routes.home',
+            path: pathsConfig.app.home,
+            Icon: <Activity className="h-4 w-4" />,
+            end: true,
+          },
+        ],
+      },
+    ];
+
+    const settingsRoutes = [
+      {
+        label: 'common:routes.settings',
+        children: [
+          {
+            label: 'common:routes.profile',
+            path: pathsConfig.app.profileSettings,
+            Icon: <Settings className="h-4 w-4" />,
+          },
+        ],
+      },
+    ];
+
     // Use permission-based navigation if available
-    if (usePermissions && permissionNavConfig) {
+    if (permissionNavConfig) {
       const { salesItems, teamItems } = permissionNavConfig;
 
       return [
-        {
-          label: 'common:routes.application',
-          children: [
-            {
-              label: 'common:routes.home',
-              path: pathsConfig.app.home,
-              Icon: <Activity className="h-4 w-4" />,
-              end: true,
-            },
-          ],
-        },
+        ...baseRoutes,
         ...(salesItems.length > 0
           ? [
               {
@@ -80,16 +86,7 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
               },
             ]
           : []),
-        {
-          label: 'common:routes.settings',
-          children: [
-            {
-              label: 'common:routes.profile',
-              path: pathsConfig.app.profileSettings,
-              Icon: <Settings className="h-4 w-4" />,
-            },
-          ],
-        },
+        ...settingsRoutes,
       ];
     }
 
@@ -97,17 +94,7 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
     const { salesItems, teamItems } = getNavigationConfig(canAccess);
 
     return [
-      {
-        label: 'common:routes.application',
-        children: [
-          {
-            label: 'common:routes.home',
-            path: pathsConfig.app.home,
-            Icon: <Activity className="h-4 w-4" />,
-            end: true,
-          },
-        ],
-      },
+      ...baseRoutes,
       ...(salesItems.length > 0
         ? [
             {
@@ -136,18 +123,9 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
             },
           ]
         : []),
-      {
-        label: 'common:routes.settings',
-        children: [
-          {
-            label: 'common:routes.profile',
-            path: pathsConfig.app.profileSettings,
-            Icon: <Settings className="h-4 w-4" />,
-          },
-        ],
-      },
+      ...settingsRoutes,
     ];
-  }, [usePermissions, permissionNavConfig, canAccess]);
+  }, [permissionNavConfig, canAccess]);
 
   // Parse the dynamic config to match NavigationConfigSchema
   const parsedConfig = useMemo(() => {
