@@ -128,12 +128,6 @@ export function RBACProvider({ children }: { children: ReactNode }) {
             }),
           );
 
-          console.log('Loaded permissions for role:', {
-            roleKey: role.role_key,
-            permissionCount: permissions.length,
-            features: permissions.map((p) => `${p.module}.${p.feature}`),
-          });
-
           return {
             id: workspace.id,
             name: workspace.name,
@@ -165,7 +159,7 @@ export function RBACProvider({ children }: { children: ReactNode }) {
       const savedWorkspaceId = localStorage.getItem('currentWorkspaceId');
       const workspace =
         workspaces.find((w) => w.id === savedWorkspaceId) || workspaces[0];
-      console.log('Setting default workspace:', workspace);
+
       setCurrentWorkspaceId(workspace?.id!);
     }
   }, [workspaces, currentWorkspaceId]);
@@ -175,12 +169,6 @@ export function RBACProvider({ children }: { children: ReactNode }) {
 
   React.useEffect(() => {
     if (currentWorkspace) {
-      console.log('Current workspace loaded:', {
-        id: currentWorkspace.id,
-        name: currentWorkspace.name,
-        role: currentWorkspace.role.role_name,
-        permissions: currentWorkspace.role.permissions,
-      });
     }
   }, [currentWorkspace]);
 
@@ -207,7 +195,6 @@ export function RBACProvider({ children }: { children: ReactNode }) {
 
   const canAccess = (module: string, feature: string = 'view'): boolean => {
     if (!currentWorkspace) {
-      console.warn('No current workspace for access check:', { module, feature });
       return false;
     }
 
@@ -216,7 +203,7 @@ export function RBACProvider({ children }: { children: ReactNode }) {
     );
 
     const hasAccess = permission?.can_access ?? false;
-    console.debug('canAccess check:', { module, feature, permission, hasAccess });
+
     return hasAccess;
   };
 

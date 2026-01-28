@@ -19,7 +19,6 @@ const getWorkspaceMembersService = asyncHandlerClient(
     const response = await ApiClient.get(
       `/team-members?workspaceId=${workspaceId}`,
     );
-    console.log({ response });
 
     // Map the response to include the fields we need for assignment
     return (response.data?.data || []).map((member: any) => ({

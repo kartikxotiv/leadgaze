@@ -23,7 +23,6 @@ const ApiClient = axios.create({
 ApiClient.interceptors.request.use((request) => {
   if (typeof window !== 'undefined') {
     const accessToken = localStorage.getItem('accessToken');
-    console.log('Interceptor token:', accessToken);
 
     if (accessToken) {
       request.headers.Authorization = `Bearer ${accessToken}`;

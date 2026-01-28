@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect } from 'react';
+
 import { useRouter } from 'next/navigation';
-import { useUser } from '@kit/supabase/hooks/use-user';
+
 import { useQuery } from '@tanstack/react-query';
+
 import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
+import { useUser } from '@kit/supabase/hooks/use-user';
 
 import pathsConfig from '~/config/paths.config';
 
@@ -12,13 +15,17 @@ export function useWorkspaceCheck() {
   const { data: user, isPending } = useUser();
   const router = useRouter();
 
-  const { data: hasWorkspace, isLoading, refetch } = useQuery({
+  const {
+    data: hasWorkspace,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ['userHasWorkspace', user?.id],
     queryFn: async () => {
       if (!user?.id) return false;
 
       const supabase = getSupabaseBrowserClient();
-      
+
       const { data, error, count } = await supabase
         .from('workspace_members')
         .select('id', { count: 'exact', head: true })
@@ -29,10 +36,10 @@ export function useWorkspaceCheck() {
         console.error('Workspace check error:', error);
         throw error;
       }
-      
+
       // Use count from the response
       const hasWorkspaces = (count ?? 0) > 0;
-      console.log('Workspace check result:', { userId: user.id, hasWorkspaces, count });
+
       return hasWorkspaces;
     },
     enabled: !!user?.id,
@@ -42,7 +49,6 @@ export function useWorkspaceCheck() {
 
   useEffect(() => {
     if (!isLoading && user && hasWorkspace === false) {
-      console.log('No workspace found, redirecting to setup');
       router.push(pathsConfig.app.workspaceSetup);
     }
   }, [isLoading, user, hasWorkspace, router]);

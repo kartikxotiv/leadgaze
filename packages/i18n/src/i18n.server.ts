@@ -25,11 +25,6 @@ export async function initializeServerI18n(
 
             return callback(null, data);
           } catch (error) {
-            console.log(
-              `Error loading i18n file: locales/${language}/${namespace}.json`,
-              error,
-            );
-
             return callback(null, {});
           }
         }),
@@ -95,9 +90,6 @@ export async function initializeServerI18n(
   const success = await waitForNamespaces();
 
   if (!success) {
-    console.warn(
-      `Not all namespaces were loaded after ${maxWaitTime}ms. Initialization may be incomplete.`,
-    );
   }
 
   return i18nInstance;
