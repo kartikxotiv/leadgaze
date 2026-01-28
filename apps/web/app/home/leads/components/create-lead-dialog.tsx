@@ -102,8 +102,6 @@ export default function CreateLeadDialog({
     is_public: true,
   });
 
-  console.log({ workspace });
-
   // Fetch available sources
   const {
     data: sources = [],
@@ -112,12 +110,10 @@ export default function CreateLeadDialog({
   } = useQuery({
     queryKey: ['lead-sources', workspace?.id],
     queryFn: () => {
-      console.log({ workspace, open });
       if (!workspace?.id) {
-        console.warn('No workspace ID available for sources query');
         return Promise.resolve([]);
       }
-      console.log('🔵 Fetching sources for workspace:', workspace.id);
+
       return getLeadSourcesService(workspace.id).catch((error) => {
         console.error('❌ Error fetching sources:', error);
         toast.error('Failed to load sources');
@@ -136,10 +132,9 @@ export default function CreateLeadDialog({
     queryKey: ['lead-statuses', workspace?.id],
     queryFn: () => {
       if (!workspace?.id) {
-        console.warn('No workspace ID available for statuses query');
         return Promise.resolve([]);
       }
-      console.log('🔵 Fetching statuses for workspace:', workspace.id);
+
       return getLeadStatusesService(workspace.id).catch((error) => {
         console.error('❌ Error fetching statuses:', error);
         toast.error('Failed to load statuses');
@@ -150,23 +145,9 @@ export default function CreateLeadDialog({
   });
 
   // Debug log for sources and statuses
-  useEffect(() => {
-    console.log('✅ Sources loaded in dialog:', {
-      sources,
-      length: sources?.length,
-      sourcesLoading,
-      workspace: workspace?.id,
-    });
-  }, [sources, sourcesLoading, workspace]);
+  useEffect(() => {}, [sources, sourcesLoading, workspace]);
 
-  useEffect(() => {
-    console.log('✅ Statuses loaded in dialog:', {
-      statuses,
-      length: statuses?.length,
-      statusesLoading,
-      workspace: workspace?.id,
-    });
-  }, [statuses, statusesLoading, workspace]);
+  useEffect(() => {}, [statuses, statusesLoading, workspace]);
 
   const handleInputChange = useCallback(
     (field: keyof FormDataState, value: string) => {

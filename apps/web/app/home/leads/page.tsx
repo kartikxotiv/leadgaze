@@ -41,23 +41,15 @@ export default function LeadsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  if (!workspace) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <p className="text-gray-500">Loading workspace...</p>
-      </div>
-    );
-  }
-
   const {
     data: leads = [],
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: ['leads', workspace.id],
-    queryFn: () => getLeadsService(workspace.id),
-    enabled: !!workspace.id,
+    queryKey: ['leads', workspace?.id],
+    queryFn: () => getLeadsService(workspace!.id),
+    enabled: !!workspace?.id,
   });
 
   // Get unique statuses from leads for filter dropdown
@@ -91,6 +83,14 @@ export default function LeadsPage() {
     setIsCreateDialogOpen(false);
     refetch();
   };
+
+  if (!workspace) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <p className="text-gray-500">Loading workspace...</p>
+      </div>
+    );
+  }
 
   if (error) {
     return (

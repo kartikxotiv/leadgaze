@@ -27,13 +27,7 @@ export function createI18nSettings({
     preload: false as const,
     lowerCaseLng: true as const,
     fallbackNS: ns,
-    missingInterpolationHandler: (text, value, options) => {
-      console.debug(
-        `Missing interpolation value for key: ${text}`,
-        value,
-        options,
-      );
-    },
+    missingInterpolationHandler: (text, value, options) => {},
     ns,
     react: {
       useSuspense: true,

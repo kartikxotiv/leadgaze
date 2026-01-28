@@ -61,18 +61,12 @@ export async function initializeI18nClient(
   // to avoid infinite loops, we return the i18next instance after a certain number of iterations
   // even if the languages and namespaces are not loaded
   if (iteration >= MAX_ITERATIONS) {
-    console.debug(`Max iterations reached: ${MAX_ITERATIONS}`);
-
     return i18next;
   }
 
   // keep component from rendering if no languages or namespaces are loaded
   if (loadedLanguages.length === 0 || loadedNamespaces.length === 0) {
     iteration++;
-
-    console.debug(
-      `Keeping component from rendering if no languages or namespaces are loaded. Iteration: ${iteration}. Will stop after ${MAX_ITERATIONS} iterations.`,
-    );
 
     throw new Error('No languages or namespaces loaded');
   }

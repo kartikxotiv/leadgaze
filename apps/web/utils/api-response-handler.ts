@@ -6,7 +6,6 @@ const handleApiResponse = (res: {
   status: number | string;
   statusCode: number | string;
 }) => {
-  console.log({ res });
   if (res?.statusCode == 200 || res?.status) {
     showToast(res?.message, 'success');
   } else {
