@@ -282,513 +282,520 @@ export default function CreateLeadDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto border-gray-200 bg-white sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
-        <DialogHeader className="sticky top-0 z-10 border-b border-gray-200 bg-white pb-4 dark:border-slate-800 dark:bg-slate-950">
-          <DialogTitle className="text-2xl text-gray-900 dark:text-white">
-            Add New Lead
-          </DialogTitle>
-          <DialogDescription className="text-gray-600 dark:text-gray-400">
-            Fill in the lead information. Required fields are marked with{' '}
-            <span className="text-red-500">*</span>
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
+        <div className="flex max-h-[90vh] flex-col">
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle className="pr-12 text-2xl text-gray-900 dark:text-white">
+              Add New Lead
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-gray-400">
+              Fill in the lead information. Required fields are marked with{' '}
+              <span className="text-red-500">*</span>
+            </DialogDescription>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-8 pb-8">
-          {/* Contact Information Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Contact Information
-            </h3>
-            <Separator className="bg-gray-200 dark:bg-slate-800" />
+          <form
+            onSubmit={handleSubmit}
+            className="flex-1 space-y-8 overflow-y-auto p-6 pb-8"
+          >
+            {/* Contact Information Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Contact Information
+              </h3>
+              <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label
-                  htmlFor="first_name"
-                  className="text-gray-900 dark:text-gray-100"
-                >
-                  First Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="first_name"
-                  placeholder="John"
-                  value={formData.first_name}
-                  onChange={(e) =>
-                    handleInputChange('first_name', e.target.value)
-                  }
-                  disabled={isLoading}
-                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label
+                    htmlFor="first_name"
+                    className="text-gray-900 dark:text-gray-100"
+                  >
+                    First Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="first_name"
+                    placeholder="John"
+                    value={formData.first_name}
+                    onChange={(e) =>
+                      handleInputChange('first_name', e.target.value)
+                    }
+                    disabled={isLoading}
+                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="last_name"
+                    className="text-gray-900 dark:text-gray-100"
+                  >
+                    Last Name (Optional)
+                  </Label>
+                  <Input
+                    id="last_name"
+                    placeholder="Doe"
+                    value={formData.last_name}
+                    onChange={(e) =>
+                      handleInputChange('last_name', e.target.value)
+                    }
+                    disabled={isLoading}
+                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                  />
+                </div>
               </div>
-              <div>
-                <Label
-                  htmlFor="last_name"
-                  className="text-gray-900 dark:text-gray-100"
-                >
-                  Last Name (Optional)
-                </Label>
-                <Input
-                  id="last_name"
-                  placeholder="Doe"
-                  value={formData.last_name}
-                  onChange={(e) =>
-                    handleInputChange('last_name', e.target.value)
-                  }
-                  disabled={isLoading}
-                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label
+                    htmlFor="email"
+                    className="text-gray-900 dark:text-gray-100"
+                  >
+                    Email (Optional)
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="john@example.com"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    disabled={isLoading}
+                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                  />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="alt_email"
+                    className="text-gray-900 dark:text-gray-100"
+                  >
+                    Alternative Email (Optional)
+                  </Label>
+                  <Input
+                    id="alt_email"
+                    type="email"
+                    placeholder="john.doe@work.com"
+                    value={formData.alt_email}
+                    onChange={(e) =>
+                      handleInputChange('alt_email', e.target.value)
+                    }
+                    disabled={isLoading}
+                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label
+                    htmlFor="phone_number"
+                    className="text-gray-900 dark:text-gray-100"
+                  >
+                    Phone (Optional)
+                  </Label>
+                  <Input
+                    id="phone_number"
+                    placeholder="+1 (555) 123-4567"
+                    value={formData.phone_number}
+                    onChange={(e) =>
+                      handleInputChange('phone_number', e.target.value)
+                    }
+                    disabled={isLoading}
+                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                  />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="mobile_number"
+                    className="text-gray-900 dark:text-gray-100"
+                  >
+                    Mobile (Optional)
+                  </Label>
+                  <Input
+                    id="mobile_number"
+                    placeholder="+1 (555) 987-6543"
+                    value={formData.mobile_number}
+                    onChange={(e) =>
+                      handleInputChange('mobile_number', e.target.value)
+                    }
+                    disabled={isLoading}
+                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label
-                  htmlFor="email"
-                  className="text-gray-900 dark:text-gray-100"
-                >
-                  Email (Optional)
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="john@example.com"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  disabled={isLoading}
-                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                />
-              </div>
-              <div>
-                <Label
-                  htmlFor="alt_email"
-                  className="text-gray-900 dark:text-gray-100"
-                >
-                  Alternative Email (Optional)
-                </Label>
-                <Input
-                  id="alt_email"
-                  type="email"
-                  placeholder="john.doe@work.com"
-                  value={formData.alt_email}
-                  onChange={(e) =>
-                    handleInputChange('alt_email', e.target.value)
-                  }
-                  disabled={isLoading}
-                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                />
-              </div>
-            </div>
+            {/* Company Information Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Company Information
+              </h3>
+              <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label
-                  htmlFor="phone_number"
-                  className="text-gray-900 dark:text-gray-100"
-                >
-                  Phone (Optional)
-                </Label>
-                <Input
-                  id="phone_number"
-                  placeholder="+1 (555) 123-4567"
-                  value={formData.phone_number}
-                  onChange={(e) =>
-                    handleInputChange('phone_number', e.target.value)
-                  }
-                  disabled={isLoading}
-                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label
+                    htmlFor="company_name"
+                    className="text-gray-900 dark:text-gray-100"
+                  >
+                    Company Name (Optional)
+                  </Label>
+                  <Input
+                    id="company_name"
+                    placeholder="Acme Inc."
+                    value={formData.company_name}
+                    onChange={(e) =>
+                      handleInputChange('company_name', e.target.value)
+                    }
+                    disabled={isLoading}
+                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                  />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="industry"
+                    className="text-gray-900 dark:text-gray-100"
+                  >
+                    Industry (Optional)
+                  </Label>
+                  <Input
+                    id="industry"
+                    placeholder="Technology"
+                    value={formData.industry}
+                    onChange={(e) =>
+                      handleInputChange('industry', e.target.value)
+                    }
+                    disabled={isLoading}
+                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                  />
+                </div>
               </div>
-              <div>
-                <Label
-                  htmlFor="mobile_number"
-                  className="text-gray-900 dark:text-gray-100"
-                >
-                  Mobile (Optional)
-                </Label>
-                <Input
-                  id="mobile_number"
-                  placeholder="+1 (555) 987-6543"
-                  value={formData.mobile_number}
-                  onChange={(e) =>
-                    handleInputChange('mobile_number', e.target.value)
-                  }
-                  disabled={isLoading}
-                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                />
-              </div>
-            </div>
-          </div>
 
-          {/* Company Information Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Company Information
-            </h3>
-            <Separator className="bg-gray-200 dark:bg-slate-800" />
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label
-                  htmlFor="company_name"
-                  className="text-gray-900 dark:text-gray-100"
-                >
-                  Company Name (Optional)
-                </Label>
-                <Input
-                  id="company_name"
-                  placeholder="Acme Inc."
-                  value={formData.company_name}
-                  onChange={(e) =>
-                    handleInputChange('company_name', e.target.value)
-                  }
-                  disabled={isLoading}
-                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label
+                    htmlFor="company_website"
+                    className="text-gray-900 dark:text-gray-100"
+                  >
+                    Website (Optional)
+                  </Label>
+                  <Input
+                    id="company_website"
+                    placeholder="https://acme.com"
+                    value={formData.company_website}
+                    onChange={(e) =>
+                      handleInputChange('company_website', e.target.value)
+                    }
+                    disabled={isLoading}
+                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                  />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="company_linkedin_url"
+                    className="text-gray-900 dark:text-gray-100"
+                  >
+                    LinkedIn Company (Optional)
+                  </Label>
+                  <Input
+                    id="company_linkedin_url"
+                    placeholder="https://linkedin.com/company/acme"
+                    value={formData.company_linkedin_url}
+                    onChange={(e) =>
+                      handleInputChange('company_linkedin_url', e.target.value)
+                    }
+                    disabled={isLoading}
+                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                  />
+                </div>
               </div>
-              <div>
-                <Label
-                  htmlFor="industry"
-                  className="text-gray-900 dark:text-gray-100"
-                >
-                  Industry (Optional)
-                </Label>
-                <Input
-                  id="industry"
-                  placeholder="Technology"
-                  value={formData.industry}
-                  onChange={(e) =>
-                    handleInputChange('industry', e.target.value)
-                  }
-                  disabled={isLoading}
-                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                />
-              </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label
-                  htmlFor="company_website"
-                  className="text-gray-900 dark:text-gray-100"
-                >
-                  Website (Optional)
-                </Label>
-                <Input
-                  id="company_website"
-                  placeholder="https://acme.com"
-                  value={formData.company_website}
-                  onChange={(e) =>
-                    handleInputChange('company_website', e.target.value)
-                  }
-                  disabled={isLoading}
-                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                />
-              </div>
-              <div>
-                <Label
-                  htmlFor="company_linkedin_url"
-                  className="text-gray-900 dark:text-gray-100"
-                >
-                  LinkedIn Company (Optional)
-                </Label>
-                <Input
-                  id="company_linkedin_url"
-                  placeholder="https://linkedin.com/company/acme"
-                  value={formData.company_linkedin_url}
-                  onChange={(e) =>
-                    handleInputChange('company_linkedin_url', e.target.value)
-                  }
-                  disabled={isLoading}
-                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label
-                  htmlFor="company_size"
-                  className="text-gray-900 dark:text-gray-100"
-                >
-                  Company Size (Optional)
-                </Label>
-                <Select
-                  value={formData.company_size}
-                  onValueChange={(value) =>
-                    handleInputChange('company_size', value)
-                  }
-                  disabled={isLoading}
-                >
-                  <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                    <SelectValue placeholder="Select company size" />
-                  </SelectTrigger>
-                  <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
-                    {COMPANY_SIZES.map((size) => (
-                      <SelectItem key={size.value} value={size.value}>
-                        {size.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label
-                  htmlFor="department"
-                  className="text-gray-900 dark:text-gray-100"
-                >
-                  Department (Optional)
-                </Label>
-                <Input
-                  id="department"
-                  placeholder="Sales"
-                  value={formData.department}
-                  onChange={(e) =>
-                    handleInputChange('department', e.target.value)
-                  }
-                  disabled={isLoading}
-                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Professional Information Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Professional Information
-            </h3>
-            <Separator className="bg-gray-200 dark:bg-slate-800" />
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label
-                  htmlFor="job_title"
-                  className="text-gray-900 dark:text-gray-100"
-                >
-                  Job Title (Optional)
-                </Label>
-                <Input
-                  id="job_title"
-                  placeholder="Sales Manager"
-                  value={formData.job_title}
-                  onChange={(e) =>
-                    handleInputChange('job_title', e.target.value)
-                  }
-                  disabled={isLoading}
-                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                />
-              </div>
-              <div>
-                <Label
-                  htmlFor="location"
-                  className="text-gray-900 dark:text-gray-100"
-                >
-                  Location (Optional)
-                </Label>
-                <Input
-                  id="location"
-                  placeholder="San Francisco, CA"
-                  value={formData.location}
-                  onChange={(e) =>
-                    handleInputChange('location', e.target.value)
-                  }
-                  disabled={isLoading}
-                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label
-                htmlFor="timezone"
-                className="text-gray-900 dark:text-gray-100"
-              >
-                Timezone (Optional)
-              </Label>
-              <Input
-                id="timezone"
-                placeholder="America/Los_Angeles"
-                value={formData.timezone}
-                onChange={(e) => handleInputChange('timezone', e.target.value)}
-                disabled={isLoading}
-                className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-              />
-            </div>
-          </div>
-
-          {/* Lead Information Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Lead Information
-            </h3>
-            <Separator className="bg-gray-200 dark:bg-slate-800" />
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label
-                  htmlFor="status_id"
-                  className="text-gray-900 dark:text-gray-100"
-                >
-                  Status <span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  value={formData.status_id}
-                  onValueChange={(value) =>
-                    handleInputChange('status_id', value)
-                  }
-                  disabled={isLoading}
-                >
-                  <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                    <SelectValue placeholder="Select a status" />
-                  </SelectTrigger>
-                  <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
-                    {statuses && statuses.length > 0 ? (
-                      statuses.map((status: any) => (
-                        <SelectItem key={status.id} value={status.id}>
-                          {status.status_name}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label
+                    htmlFor="company_size"
+                    className="text-gray-900 dark:text-gray-100"
+                  >
+                    Company Size (Optional)
+                  </Label>
+                  <Select
+                    value={formData.company_size}
+                    onValueChange={(value) =>
+                      handleInputChange('company_size', value)
+                    }
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                      <SelectValue placeholder="Select company size" />
+                    </SelectTrigger>
+                    <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
+                      {COMPANY_SIZES.map((size) => (
+                        <SelectItem key={size.value} value={size.value}>
+                          {size.label}
                         </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="placeholder" disabled>
-                        No statuses available
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label
+                    htmlFor="department"
+                    className="text-gray-900 dark:text-gray-100"
+                  >
+                    Department (Optional)
+                  </Label>
+                  <Input
+                    id="department"
+                    placeholder="Sales"
+                    value={formData.department}
+                    onChange={(e) =>
+                      handleInputChange('department', e.target.value)
+                    }
+                    disabled={isLoading}
+                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                  />
+                </div>
               </div>
+            </div>
+
+            {/* Professional Information Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Professional Information
+              </h3>
+              <Separator className="bg-gray-200 dark:bg-slate-800" />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label
+                    htmlFor="job_title"
+                    className="text-gray-900 dark:text-gray-100"
+                  >
+                    Job Title (Optional)
+                  </Label>
+                  <Input
+                    id="job_title"
+                    placeholder="Sales Manager"
+                    value={formData.job_title}
+                    onChange={(e) =>
+                      handleInputChange('job_title', e.target.value)
+                    }
+                    disabled={isLoading}
+                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                  />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="location"
+                    className="text-gray-900 dark:text-gray-100"
+                  >
+                    Location (Optional)
+                  </Label>
+                  <Input
+                    id="location"
+                    placeholder="San Francisco, CA"
+                    value={formData.location}
+                    onChange={(e) =>
+                      handleInputChange('location', e.target.value)
+                    }
+                    disabled={isLoading}
+                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                  />
+                </div>
+              </div>
+
               <div>
                 <Label
-                  htmlFor="source_id"
+                  htmlFor="timezone"
                   className="text-gray-900 dark:text-gray-100"
                 >
-                  Lead Source (Optional)
+                  Timezone (Optional)
                 </Label>
-                <Select
-                  value={formData.source_id}
-                  onValueChange={(value) =>
-                    handleInputChange('source_id', value)
+                <Input
+                  id="timezone"
+                  placeholder="America/Los_Angeles"
+                  value={formData.timezone}
+                  onChange={(e) =>
+                    handleInputChange('timezone', e.target.value)
                   }
                   disabled={isLoading}
-                >
-                  <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                    <SelectValue placeholder="Select a source" />
-                  </SelectTrigger>
-                  <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
-                    {sources && sources.length > 0 ? (
-                      sources.map((source: any) => (
-                        <SelectItem key={source.id} value={source.id}>
-                          {source.source_name}
+                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                />
+              </div>
+            </div>
+
+            {/* Lead Information Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Lead Information
+              </h3>
+              <Separator className="bg-gray-200 dark:bg-slate-800" />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label
+                    htmlFor="status_id"
+                    className="text-gray-900 dark:text-gray-100"
+                  >
+                    Status <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={formData.status_id}
+                    onValueChange={(value) =>
+                      handleInputChange('status_id', value)
+                    }
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                      <SelectValue placeholder="Select a status" />
+                    </SelectTrigger>
+                    <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
+                      {statuses && statuses.length > 0 ? (
+                        statuses.map((status: any) => (
+                          <SelectItem key={status.id} value={status.id}>
+                            {status.status_name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="placeholder" disabled>
+                          No statuses available
                         </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="placeholder" disabled>
-                        No sources available
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label
+                    htmlFor="source_id"
+                    className="text-gray-900 dark:text-gray-100"
+                  >
+                    Lead Source (Optional)
+                  </Label>
+                  <Select
+                    value={formData.source_id}
+                    onValueChange={(value) =>
+                      handleInputChange('source_id', value)
+                    }
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                      <SelectValue placeholder="Select a source" />
+                    </SelectTrigger>
+                    <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
+                      {sources && sources.length > 0 ? (
+                        sources.map((source: any) => (
+                          <SelectItem key={source.id} value={source.id}>
+                            {source.source_name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="placeholder" disabled>
+                          No sources available
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <Label
-                htmlFor="trigger"
-                className="text-gray-900 dark:text-gray-100"
-              >
-                Trigger (Optional)
-              </Label>
-              <Input
-                id="trigger"
-                placeholder="e.g., Inbound inquiry, Referral"
-                value={formData.trigger}
-                onChange={(e) => handleInputChange('trigger', e.target.value)}
-                disabled={isLoading}
-                className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-              />
-            </div>
-          </div>
-
-          {/* Additional Notes Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Additional Information
-            </h3>
-            <Separator className="bg-gray-200 dark:bg-slate-800" />
-
-            <div className="flex items-start gap-3">
-              <Checkbox
-                id="is_public"
-                checked={formData.is_public}
-                onCheckedChange={(checked) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    is_public: checked as boolean,
-                  }));
-                }}
-                disabled={isLoading}
-                className="mt-1"
-              />
-              <div className="flex-1">
+              <div>
                 <Label
-                  htmlFor="is_public"
-                  className="cursor-pointer text-sm font-medium text-gray-900 dark:text-gray-100"
+                  htmlFor="trigger"
+                  className="text-gray-900 dark:text-gray-100"
                 >
-                  Make this lead public
+                  Trigger (Optional)
                 </Label>
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                  When public, this lead will be visible to all team members
-                  with "View leads" access. When private, only you and assigned
-                  team members can see it.
-                </p>
+                <Input
+                  id="trigger"
+                  placeholder="e.g., Inbound inquiry, Referral"
+                  value={formData.trigger}
+                  onChange={(e) => handleInputChange('trigger', e.target.value)}
+                  disabled={isLoading}
+                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                />
               </div>
             </div>
 
-            <div>
-              <Label
-                htmlFor="notes"
-                className="text-gray-900 dark:text-gray-100"
-              >
-                Notes (Optional)
-              </Label>
-              <Textarea
-                id="notes"
-                placeholder="Add any additional notes about this lead..."
-                value={formData.notes}
-                onChange={(e) => handleInputChange('notes', e.target.value)}
-                disabled={isLoading}
-                className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                rows={4}
-              />
-            </div>
-          </div>
+            {/* Additional Notes Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Additional Information
+              </h3>
+              <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-          {/* Form Actions */}
-          <div className="sticky bottom-0 flex justify-end gap-3 border-t border-gray-200 bg-white pt-6 dark:border-slate-800 dark:bg-slate-950">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
-              disabled={isLoading}
-              className="border-gray-300 text-gray-900 dark:border-slate-700 dark:text-white"
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading} className="gap-2">
-              {isLoading ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4" />
-                  Create Lead
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="is_public"
+                  checked={formData.is_public}
+                  onCheckedChange={(checked) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      is_public: checked as boolean,
+                    }));
+                  }}
+                  disabled={isLoading}
+                  className="mt-1"
+                />
+                <div className="flex-1">
+                  <Label
+                    htmlFor="is_public"
+                    className="cursor-pointer text-sm font-medium text-gray-900 dark:text-gray-100"
+                  >
+                    Make this lead public
+                  </Label>
+                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    When public, this lead will be visible to all team members
+                    with "View leads" access. When private, only you and
+                    assigned team members can see it.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <Label
+                  htmlFor="notes"
+                  className="text-gray-900 dark:text-gray-100"
+                >
+                  Notes (Optional)
+                </Label>
+                <Textarea
+                  id="notes"
+                  placeholder="Add any additional notes about this lead..."
+                  value={formData.notes}
+                  onChange={(e) => handleInputChange('notes', e.target.value)}
+                  disabled={isLoading}
+                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                  rows={4}
+                />
+              </div>
+            </div>
+
+            {/* Form Actions */}
+            <div className="sticky bottom-0 flex justify-end gap-3 border-t border-gray-200 bg-white pt-6 dark:border-slate-800 dark:bg-slate-950">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
+                disabled={isLoading}
+                className="border-gray-300 text-gray-900 dark:border-slate-700 dark:text-white"
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isLoading} className="gap-2">
+                {isLoading ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4" />
+                    Create Lead
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
