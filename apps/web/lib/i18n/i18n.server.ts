@@ -71,10 +71,6 @@ function getLanguageOrFallback(language: string | undefined) {
   let selectedLanguage = language;
 
   if (!languages.includes(language ?? '')) {
-    console.warn(
-      `Language "${language}" is not supported. Falling back to "${languages[0]}"`,
-    );
-
     selectedLanguage = languages[0];
   }
 

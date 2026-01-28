@@ -97,7 +97,7 @@ const validateInviteTokenService = asyncHandlerClient(async (token: string) => {
   const response = await ApiClient.get(
     `/team-members/invite/validate?token=${token}`,
   );
-  console.log({ response });
+
   return response.data;
 });
 

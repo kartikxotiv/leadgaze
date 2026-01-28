@@ -16,6 +16,11 @@ import type { PermissionCheckResult } from './types';
  */
 
 /**
+ * Custom Permission Hooks
+ * Convenient hooks for checking permissions throughout the app
+ */
+
+/**
  * Hook to check if user has permission to a feature
  * @example
  * const canCreateLead = useHasPermission('leads', 'create');
@@ -55,7 +60,7 @@ export function usePermissionDetail(
  * @example
  * const modules = useAccessibleModules();
  * modules.forEach(module => {
- *   console.log(module.module_name, module.features);
+
  * });
  */
 export function useAccessibleModules() {
