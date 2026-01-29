@@ -38,6 +38,7 @@ export interface Lead {
   created_at: string;
   updated_at: string;
   is_deleted: boolean;
+  is_converted_to_account?: boolean;
   deleted_at?: string;
   deleted_by?: string;
   // Joined relations
