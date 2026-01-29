@@ -6,27 +6,27 @@ import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
 
-import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
+import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { useUser } from '@kit/supabase/hooks/use-user';
 
 import pathsConfig from '~/config/paths.config';
 
 export function useWorkspaceCheck() {
-  const { data: user, isPending } = useUser();
+  const { data: user, isLoading: isUserLoading } = useUser();
   const router = useRouter();
+  const supabase = useSupabase();
 
   const {
     data: hasWorkspace,
-    isLoading,
+    isLoading: isWorkspaceLoading,
+    isError,
     refetch,
   } = useQuery({
     queryKey: ['userHasWorkspace', user?.id],
     queryFn: async () => {
       if (!user?.id) return false;
 
-      const supabase = getSupabaseBrowserClient();
-
-      const { data, error, count } = await supabase
+      const { error, count } = await supabase
         .from('workspace_members')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
@@ -43,15 +43,24 @@ export function useWorkspaceCheck() {
       return hasWorkspaces;
     },
     enabled: !!user?.id,
-    staleTime: 0, // Don't cache, always fresh
-    gcTime: 0, // Don't keep in garbage collection
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
+  // We consider it "loading" if we are still fetching the user OR the workspace
+  const isLoading = isUserLoading || (!!user?.id && isWorkspaceLoading);
+
   useEffect(() => {
-    if (!isLoading && user && hasWorkspace === false) {
+    // Only redirect if we are sure the user is logged in AND we have finished checking for workspaces
+    // and explicitly found that they have none.
+    if (!isLoading && !isError && user?.id && hasWorkspace === false) {
       router.push(pathsConfig.app.workspaceSetup);
     }
-  }, [isLoading, user, hasWorkspace, router]);
+  }, [isLoading, isError, user?.id, hasWorkspace, router]);
 
-  return { hasWorkspace, isLoading, refetch };
+  return {
+    hasWorkspace: user?.id ? (hasWorkspace ?? true) : true,
+    isLoading,
+    refetch,
+  };
 }
