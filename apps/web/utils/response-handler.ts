@@ -19,7 +19,7 @@ export class ApiError extends Error {
   }
 }
 
-type RouteHandler = (params: {
+export type RouteHandler = (params: {
   request: NextRequest;
   body?: unknown;
   params?: Record<string, string>;
@@ -106,8 +106,4 @@ const successListDataResponse = (
   return NextResponse.json(response, { status: 200 });
 };
 
-export {
-  successDataResponse,
-  successListDataResponse,
-  catchAsync
-};
+export { successDataResponse, successListDataResponse, catchAsync };
