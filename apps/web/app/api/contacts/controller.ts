@@ -52,10 +52,9 @@ export const getContacts = catchAsync(
       throw workspaceError;
     }
 
+    const isOwner = workspace?.owner_id === user.id;
+
     // Build the query
-    // Join with Accounts to get company name? Yes usually helpful.
-    // Join with Status.
-    // Join with Owner.
     let query = supabase
       .from('crm_contacts')
       .select(
@@ -71,6 +70,24 @@ export const getContacts = catchAsync(
 
     if (accountId) {
       query = query.eq('account_id', accountId);
+    }
+
+    // If not owner, filter for public contacts or contacts assigned to current user
+    if (!isOwner) {
+      // Get contacts assigned to the current user
+      const { data: assignedContactIds } = await (supabase
+        .from('contact_assignees' as any)
+        .select('contact_id')
+        .eq('workspace_id', workspaceId)
+        .eq('assigned_to_user_id', user.id)
+        .eq('assignment_status', 'active') as any);
+
+      const assignedIds = assignedContactIds?.map((a: any) => a.contact_id) || [];
+
+      // Filter: public contacts OR assigned contacts
+      query = query.or(
+        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'})`,
+      );
     }
 
     const { data: contacts, error } = await query.order('created_at', {
@@ -168,6 +185,7 @@ export const createContact = catchAsync(
         status_id: statusId,
         owner_id: payload.owner_id || user.id,
         created_by: user.id,
+        is_public: payload.is_public ?? true, // Default to public
         ...cleanedData,
       })
       .select()

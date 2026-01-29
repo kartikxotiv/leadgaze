@@ -52,8 +52,9 @@ export const getOpportunities = catchAsync(
       throw workspaceError;
     }
 
+    const isOwner = workspace?.owner_id === user.id;
+
     // Build the query
-    // Join with Stage (Status), Account, Owner.
     let query = supabase
       .from('crm_opportunities')
       .select(
@@ -69,6 +70,24 @@ export const getOpportunities = catchAsync(
 
     if (accountId) {
       query = query.eq('account_id', accountId);
+    }
+
+    // If not owner, filter for public opportunities or opportunities assigned to current user
+    if (!isOwner) {
+      // Get opportunities assigned to the current user
+      const { data: assignedOpportunityIds } = await (supabase
+        .from('opportunity_assignees' as any)
+        .select('opportunity_id')
+        .eq('workspace_id', workspaceId)
+        .eq('assigned_to_user_id', user.id)
+        .eq('assignment_status', 'active') as any);
+
+      const assignedIds = assignedOpportunityIds?.map((a: any) => a.opportunity_id) || [];
+
+      // Filter: public opportunities OR assigned opportunities
+      query = query.or(
+        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'})`,
+      );
     }
 
     const { data: opportunities, error } = await query.order('created_at', {
@@ -127,5 +146,76 @@ export const getOpportunityStages = catchAsync(
     }
 
     return successDataResponse('Stages retrieved successfully', stages || []);
+  },
+);
+
+/**
+ * POST /api/opportunities
+ * Create a new opportunity
+ */
+export const createOpportunity = catchAsync(
+  async ({ request }: { request: NextRequest }) => {
+    const supabase = getSupabaseServerClient();
+    const body = await request.json();
+
+    // Get current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const {
+      opportunity_name,
+      account_id,
+      stage_id,
+      workspace_id,
+      amount,
+      expected_close_date,
+      probability,
+      priority,
+      opportunity_type,
+      lead_source,
+      description,
+      competitor,
+    } = body;
+
+    if (!opportunity_name || !account_id || !stage_id || !workspace_id) {
+      return NextResponse.json(
+        { message: 'Missing required fields' },
+        { status: 400 },
+      );
+    }
+
+    const { data: opportunity, error } = await supabase
+      .from('crm_opportunities')
+      .insert({
+        workspace_id,
+        account_id,
+        stage_id,
+        opportunity_name,
+        amount: amount || 0,
+        expected_close_date: expected_close_date || null,
+        probability: probability || null,
+        priority: priority || null,
+        opportunity_type: opportunity_type || null,
+        lead_source: lead_source || null,
+        description: description || null,
+        competitor: competitor || null,
+        owner_id: user.id,
+        created_by: user.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Create opportunity error:', error);
+      throw error;
+    }
+
+    return successDataResponse('Opportunity created successfully', opportunity);
   },
 );

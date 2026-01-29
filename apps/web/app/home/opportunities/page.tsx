@@ -35,10 +35,13 @@ import {
   getOpportunitiesService,
 } from '~/services/opportunities.service';
 
+import { OpportunityDialog } from './components/opportunity-dialog';
+
 export default function OpportunitiesPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   const {
     data: opportunities = [],
@@ -114,7 +117,10 @@ export default function OpportunitiesPage() {
         title="Opportunities"
         description="Manage your sales pipeline"
       >
-        {/* Future: Add Create Opportunity button */}
+        <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Create Opportunity
+        </Button>
       </PageHeader>
 
       <PageBody>
@@ -249,6 +255,11 @@ export default function OpportunitiesPage() {
           </Card>
         </div>
       </PageBody>
+
+      <OpportunityDialog
+        isOpen={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+      />
     </ModuleGuard>
   );
 }

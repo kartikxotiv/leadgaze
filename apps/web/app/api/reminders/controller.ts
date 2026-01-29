@@ -6,10 +6,14 @@ import {
   catchAsync,
   successDataResponse
 } from '../../../utils/response-handler';
+import { getRelatedEntityIds } from '../_helpers/get-related-entities';
+import { getEntityName } from '../_helpers/get-entity-name';
 
 /**
  * GET /api/reminders
  * Fetch reminders for an entity
+ * Includes reminders from related entities (lead conversion chain)
+ * Filters by user unless workspace owner
  */
 export const getReminders = catchAsync(
   async ({
@@ -31,16 +35,105 @@ export const getReminders = catchAsync(
       );
     }
 
-    const { data: reminders, error } = await supabase
-      .from('crm_reminders')
-      .select(
-        '*, assigned_to_user:accounts!crm_reminders_assigned_to_fkey(name, email)',
-      )
-      .eq('workspace_id', workspaceId)
-      .eq('entity_type', entityType)
-      .eq('entity_id', entityId)
-      .eq('is_deleted', false)
-      .order('due_date', { ascending: true });
+    // Get current user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user is workspace owner
+    const { data: workspace } = await supabase
+      .from('workspaces')
+      .select('owner_id')
+      .eq('id', workspaceId)
+      .single();
+
+    const isWorkspaceOwner = workspace?.owner_id === user.id;
+
+    // Get all related entity IDs (includes lead conversion chain)
+    const entityIds = await getRelatedEntityIds(supabase, entityType, entityId);
+
+    // Build query - fetch reminders for all related entities
+    const reminderPromises = entityIds.map(({ entity_type, entity_id }) => {
+      let query = supabase
+        .from('crm_reminders')
+        .select(
+          '*, assigned_to_user:accounts!crm_reminders_assigned_to_fkey(name, email), created_by_user:accounts!crm_reminders_created_by_fkey(name, email)',
+        )
+        .eq('workspace_id', workspaceId)
+        .eq('entity_type', entity_type)
+        .eq('entity_id', entity_id)
+        .eq('is_deleted', false);
+
+      // Filter by user unless workspace owner
+      if (!isWorkspaceOwner) {
+        query = query.eq('created_by', user.id);
+      }
+
+      return query;
+    });
+
+    // Execute all queries and combine results
+    const results = await Promise.all(reminderPromises);
+    const allReminders = results.flatMap((result) => result.data || []);
+
+    // Filter out old reminders (more than 1 day old)
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    
+    const filteredReminders = allReminders.filter((reminder) => {
+      // Show if not completed
+      if (!reminder.is_completed) return true;
+      
+      // Show if completed within last 1 day
+      if (reminder.is_completed && reminder.completed_at) {
+        const completedDate = new Date(reminder.completed_at);
+        if (completedDate >= oneDayAgo) return true;
+      }
+      
+      // Show if due date is in the future
+      if (reminder.due_date) {
+        const dueDate = new Date(reminder.due_date);
+        if (dueDate >= now) return true;
+        // Show if due date is within last 1 day
+        if (dueDate >= oneDayAgo) return true;
+      }
+      
+      return false;
+    });
+
+    // Remove duplicates
+    const uniqueReminders = Array.from(
+      new Map(filteredReminders.map((reminder) => [reminder.id, reminder])).values(),
+    );
+
+    // Sort by due_date ascending
+    uniqueReminders.sort((a, b) => {
+      if (!a.due_date) return 1;
+      if (!b.due_date) return -1;
+      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+    });
+
+    // Add entity names to each reminder
+    const remindersWithEntityNames = await Promise.all(
+      uniqueReminders.map(async (reminder) => {
+        const entityName = await getEntityName(
+          supabase,
+          reminder.entity_type,
+          reminder.entity_id,
+        );
+        return {
+          ...reminder,
+          entity_name: entityName,
+        };
+      }),
+    );
+
+    const reminders = remindersWithEntityNames;
+    const error = results.find((r) => r.error)?.error;
 
     if (error) {
       console.error('Get reminders error:', error);

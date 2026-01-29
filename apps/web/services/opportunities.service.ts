@@ -15,6 +15,14 @@ export interface Opportunity {
   owner_id: string;
   created_at: string;
   updated_at: string;
+  priority?: 'High' | 'Medium' | 'Low';
+  opportunity_type?: 'New Business' | 'Existing Business';
+  lead_source?: string;
+  description?: string;
+  competitor?: string;
+  is_closed?: boolean;
+  is_won?: boolean;
+  close_reason?: string;
   // Relations
   stage?: {
     id: string;
@@ -55,6 +63,13 @@ const updateOpportunityService = asyncHandlerClient(
   },
 );
 
+const createOpportunityService = asyncHandlerClient(
+  async (payload: Partial<Opportunity>) => {
+    const response = await ApiClient.post('/opportunities', payload);
+    return response.data?.data;
+  },
+);
+
 const getOpportunityStatusesService = asyncHandlerClient(
   async (workspaceId: string) => {
     const response = await ApiClient.get(
@@ -68,5 +83,6 @@ export {
   getOpportunitiesService,
   getOpportunityByIdService,
   updateOpportunityService,
+  createOpportunityService,
   getOpportunityStatusesService,
 };
