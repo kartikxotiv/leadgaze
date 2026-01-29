@@ -33,7 +33,7 @@ import {
   getLeadSourcesService,
   getLeadStatusesService,
 } from '~/services/leads.service';
-import { getIndustriesService } from '~/services/industries.service';
+import { IndustrySelect } from '../../_components/industry-select';
 
 interface CreateLeadDialogProps {
   open: boolean;
@@ -145,30 +145,11 @@ export default function CreateLeadDialog({
     enabled: !!workspace,
   });
 
-  // Fetch available industries
-  const {
-    data: industries = [],
-    isLoading: industriesLoading,
-  } = useQuery({
-    queryKey: ['industries', workspace?.id],
-    queryFn: () => {
-      if (!workspace?.id) {
-        return Promise.resolve([]);
-      }
-
-      return getIndustriesService(workspace.id).catch((error) => {
-        console.error('❌ Error fetching industries:', error);
-        toast.error('Failed to load industries');
-        return [];
-      });
-    },
-    enabled: !!workspace && open,
-  });
 
   // Debug log for sources and statuses
-  useEffect(() => {}, [sources, sourcesLoading, workspace]);
+  useEffect(() => { }, [sources, sourcesLoading, workspace]);
 
-  useEffect(() => {}, [statuses, statusesLoading, workspace]);
+  useEffect(() => { }, [statuses, statusesLoading, workspace]);
 
   const handleInputChange = useCallback(
     (field: keyof FormDataState, value: string) => {
@@ -459,30 +440,16 @@ export default function CreateLeadDialog({
                   >
                     Industry (Optional)
                   </Label>
-                  <Select
-                    value={formData.industry_id}
-                    onValueChange={(value) =>
-                      handleInputChange('industry_id', value)
-                    }
-                    disabled={isLoading || industriesLoading}
-                  >
-                    <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                      <SelectValue placeholder="Select industry" />
-                    </SelectTrigger>
-                    <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
-                      {industries && industries.length > 0 ? (
-                        industries.map((industry: any) => (
-                          <SelectItem key={industry.id} value={industry.id}>
-                            {industry.industry_name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="placeholder" disabled>
-                          No industries available
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <div className="mt-2">
+                    <IndustrySelect
+                      value={formData.industry_id}
+                      onValueChange={(value) =>
+                        handleInputChange('industry_id', value)
+                      }
+                      disabled={isLoading}
+                      className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                    />
+                  </div>
                 </div>
               </div>
 

@@ -29,7 +29,7 @@ import { Checkbox } from '@kit/ui/checkbox';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { createAccountService } from '~/services/accounts.service';
-import { getIndustriesService } from '~/services/industries.service';
+import { IndustrySelect } from '../../_components/industry-select';
 
 interface CreateAccountDialogProps {
     open: boolean;
@@ -59,11 +59,6 @@ export function CreateAccountDialog({
         is_public: true,
     });
 
-    const { data: industries = [] } = useQuery({
-        queryKey: ['industries', workspace?.id],
-        queryFn: () => getIndustriesService(workspace?.id || ''),
-        enabled: !!workspace?.id && open,
-    });
 
     const mutation = useMutation({
         mutationFn: async (payload: any) => {
@@ -163,21 +158,10 @@ export function CreateAccountDialog({
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="industry_id">Industry</Label>
-                                <Select
+                                <IndustrySelect
                                     value={formData.industry_id}
                                     onValueChange={(value) => setFormData({ ...formData, industry_id: value })}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select industry" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {industries.map((industry: any) => (
-                                            <SelectItem key={industry.id} value={industry.id}>
-                                                {industry.industry_name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="company_size">Company Size</Label>

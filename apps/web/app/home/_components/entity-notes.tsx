@@ -187,10 +187,15 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
                     {note.content}
                   </p>
                   <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <span>{new Date(note.created_at).toLocaleString()}</span>
                       {note.created_by_user && (
                         <span>by {note.created_by_user.name}</span>
+                      )}
+                      {note.entity_name && note.entity_type !== entityType && (
+                        <span className="text-blue-600 dark:text-blue-400">
+                          from {note.entity_type}: {note.entity_name}
+                        </span>
                       )}
                     </div>
                   </div>

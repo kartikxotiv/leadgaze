@@ -32,7 +32,7 @@ import {
   getLeadSourcesService,
   getLeadStatusesService,
 } from '~/services/leads.service';
-import { getIndustriesService } from '~/services/industries.service';
+import { IndustrySelect } from '../../_components/industry-select';
 import ApiClient from '~/utils/axios-client';
 
 interface EditLeadDialogProps {
@@ -118,11 +118,6 @@ export default function EditLeadDialog({
     enabled: !!workspace?.id,
   });
 
-  const { data: industries = [] } = useQuery({
-    queryKey: ['industries', workspace?.id],
-    queryFn: () => getIndustriesService(workspace!.id),
-    enabled: !!workspace?.id && open,
-  });
 
   // Initialize form with lead data
   useEffect(() => {
@@ -428,30 +423,16 @@ export default function EditLeadDialog({
                   >
                     Industry (Optional)
                   </Label>
-                  <Select
-                    value={formData.industry_id}
-                    onValueChange={(value) =>
-                      handleInputChange('industry_id', value)
-                    }
-                    disabled={isLoading}
-                  >
-                    <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                      <SelectValue placeholder="Select industry" />
-                    </SelectTrigger>
-                    <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
-                      {industries && industries.length > 0 ? (
-                        industries.map((industry: any) => (
-                          <SelectItem key={industry.id} value={industry.id}>
-                            {industry.industry_name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="placeholder" disabled>
-                          No industries available
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <div className="mt-2">
+                    <IndustrySelect
+                      value={formData.industry_id}
+                      onValueChange={(value) =>
+                        handleInputChange('industry_id', value)
+                      }
+                      disabled={isLoading}
+                      className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label
