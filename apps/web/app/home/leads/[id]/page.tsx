@@ -38,6 +38,7 @@ import { ChangeStatusDialog } from '../components/change-status-dialog';
 import { ConvertLeadDialog } from '../components/convert-lead-dialog';
 import EditLeadDialog from '../components/edit-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
+import { PublicPrivateToggle } from '~/home/_components/public-private-toggle';
 
 export default function LeadDetailsPage() {
   const router = useRouter();
@@ -507,6 +508,17 @@ export default function LeadDetailsPage() {
             {/* Lead Assignees Section */}
             {workspace?.id && (
               <LeadAssignees leadId={leadId} workspaceId={workspace.id} />
+            )}
+
+            {/* Public/Private Toggle */}
+            {workspace?.id && lead && (
+              <PublicPrivateToggle
+                entityType="lead"
+                entityId={leadId}
+                isPublic={lead.is_public}
+                createdBy={lead.created_by}
+                workspaceId={workspace.id}
+              />
             )}
 
             {/* Notes Section */}

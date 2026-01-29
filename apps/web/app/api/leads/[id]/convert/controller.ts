@@ -58,7 +58,7 @@ export const convertLead = catchAsync(
     }
 
     // Use industry_id directly from lead (now it's a FK)
-    const industryId = lead.industry_id || null;
+    const industryId = (lead as any).industry_id || null;
 
     const workspaceId = lead.workspace_id;
     let accountId = account.id;
@@ -79,6 +79,7 @@ export const convertLead = catchAsync(
           owner_id: user.id, // Assign to current user or lead owner
           created_by: user.id,
           created_from_lead_id: leadId,
+          is_public: lead.is_public ?? true, // Preserve visibility from lead
         })
         .select('id')
         .single();
@@ -111,6 +112,7 @@ export const convertLead = catchAsync(
           created_from_lead_id: leadId,
           alt_email: lead.alt_email,
           mobile_number: lead.mobile_number,
+          is_public: lead.is_public ?? true, // Preserve visibility from lead
         })
         .select('id')
         .single();
@@ -137,6 +139,7 @@ export const convertLead = catchAsync(
             owner_id: user.id,
             created_by: user.id,
             created_from_lead_id: leadId,
+            is_public: lead.is_public ?? true, // Preserve visibility from lead
           })
           .select('id')
           .single();

@@ -24,8 +24,10 @@ import { toast } from 'sonner';
 import { getOpportunityByIdService, updateOpportunityService } from '~/services/opportunities.service';
 import { EntityNotes } from '../../_components/entity-notes';
 import { EntityDocuments, EntityMeetings, EntityReminders } from '../../_components/entity-activity';
+import { PublicPrivateToggle } from '../../_components/public-private-toggle';
 import { EditOpportunityDialog } from '../components/edit-opportunity-dialog';
 import { OpportunityStatusTimeline } from '../components/opportunity-status-timeline';
+import { OpportunityAssignees } from '../components/opportunity-assignees';
 import { usePermissionDetail, useCanAccessData } from '~/lib/permissions/use-permissions';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
@@ -261,6 +263,22 @@ export default function OpportunityDetailsPage() {
 
                             </CardContent>
                         </Card>
+
+                        {/* Opportunity Assignees Section */}
+                        {currentWorkspace?.id && (
+                            <OpportunityAssignees opportunityId={id} workspaceId={currentWorkspace.id} />
+                        )}
+
+                        {/* Public/Private Toggle */}
+                        {currentWorkspace?.id && opportunity && (
+                            <PublicPrivateToggle
+                                entityType="opportunity"
+                                entityId={id}
+                                isPublic={opportunity.is_public}
+                                createdBy={opportunity.created_by}
+                                workspaceId={currentWorkspace.id}
+                            />
+                        )}
 
                         {/* Notes Section */}
                         <EntityNotes

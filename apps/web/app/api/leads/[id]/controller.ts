@@ -173,7 +173,37 @@ const updateLead = catchAsync(
     if (body.owner_id !== undefined)
       updateData.owner_id = body.owner_id || null;
     if (body.notes !== undefined) updateData.notes = body.notes || null;
-    if (body.is_public !== undefined) updateData.is_public = body.is_public;
+    
+    // Check permissions for is_public updates
+    if (body.is_public !== undefined) {
+      // Get the lead to check permissions
+      const { data: existingLead } = await supabase
+        .from('crm_leads')
+        .select('workspace_id, created_by')
+        .eq('id', leadId)
+        .single();
+
+      if (existingLead) {
+        // Get workspace to check if user is owner
+        const { data: workspace } = await supabase
+          .from('workspaces')
+          .select('owner_id')
+          .eq('id', existingLead.workspace_id)
+          .single();
+
+        const isWorkspaceOwner = workspace?.owner_id === user.id;
+        const isCreator = existingLead.created_by === user.id;
+
+        if (!isWorkspaceOwner && !isCreator) {
+          return NextResponse.json(
+            { message: 'Only workspace owner or creator can change visibility' },
+            { status: 403 },
+          );
+        }
+      }
+
+      updateData.is_public = body.is_public;
+    }
 
     updateData.updated_by = user.id;
     updateData.updated_at = new Date().toISOString();

@@ -40,3 +40,8 @@ CREATE POLICY reminder_notifications_policy ON public.reminder_notifications_sen
 
 CREATE POLICY meeting_notifications_policy ON public.meeting_notifications_sent
   FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+
+grant usage on schema "public" to anon;
+grant usage on schema "public" to authenticated;
+grant usage on schema "public" to service_role;
