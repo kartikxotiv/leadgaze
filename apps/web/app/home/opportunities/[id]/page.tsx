@@ -215,8 +215,8 @@ export default function OpportunityDetailsPage() {
         </div>
       </div>
 
-      <div className="border-b bg-slate-50/50 px-6 py-6">
-        <div className="mx-auto max-w-5xl overflow-hidden rounded-xl border bg-white/50 p-4 shadow-sm backdrop-blur-sm">
+      <div className="border-b px-6 py-6">
+        <div className="bg-card mx-auto max-w-5xl overflow-hidden rounded-xl border p-4 shadow-sm backdrop-blur-sm">
           <p className="text-muted-foreground mb-4 text-center text-[10px] font-bold tracking-widest uppercase">
             Opportunity Sales Pipeline
           </p>

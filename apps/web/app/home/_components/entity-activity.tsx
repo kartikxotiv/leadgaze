@@ -295,7 +295,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
             ))}
           </div>
         ) : (
-          <div className="rounded-lg bg-gray-50/50 py-8 text-center">
+          <div className="py-8 text-center">
             <AlertCircle className="mx-auto mb-2 h-8 w-8 text-gray-300" />
             <p className="text-sm text-gray-500">No reminders</p>
           </div>
@@ -571,7 +571,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
             ))}
           </div>
         ) : (
-          <div className="rounded-lg bg-gray-50/50 py-8 text-center">
+          <div className="py-8 text-center">
             <Calendar className="mx-auto mb-2 h-8 w-8 text-gray-300" />
             <p className="text-sm text-gray-500">No meetings</p>
           </div>
@@ -795,7 +795,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
             ))}
           </div>
         ) : (
-          <div className="rounded-lg bg-gray-50/50 py-8 text-center">
+          <div className="py-8 text-center">
             <Download className="mx-auto mb-2 h-8 w-8 text-gray-300" />
             <p className="text-sm text-gray-500">No documents</p>
           </div>
