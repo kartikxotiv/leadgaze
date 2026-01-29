@@ -38,12 +38,14 @@ interface CreateContactDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: (contact: any) => void;
+  defaultAccountId?: string;
 }
 
 export function CreateContactDialog({
   open,
   onOpenChange,
   onSuccess,
+  defaultAccountId,
 }: CreateContactDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -57,10 +59,17 @@ export function CreateContactDialog({
     email: '',
     phone_number: '',
     job_title: '',
-    account_id: '',
+    account_id: defaultAccountId || '',
     notes: '',
     is_public: true,
   });
+
+  // Update account_id when dialog opens with defaultAccountId
+  React.useEffect(() => {
+    if (open && defaultAccountId) {
+      setFormData((prev) => ({ ...prev, account_id: defaultAccountId }));
+    }
+  }, [open, defaultAccountId]);
 
   const { data: accounts = [], refetch: refetchAccounts } = useQuery({
     queryKey: ['accounts', workspace?.id],
