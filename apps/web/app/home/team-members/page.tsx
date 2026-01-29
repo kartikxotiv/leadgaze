@@ -34,7 +34,9 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
+import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { getRolesService } from '~/services/roles.service';
 import {
   type WorkspaceMember,
   getMembersService,
@@ -44,7 +46,6 @@ import {
 
 import { InviteMemberDialog } from './components/invite-member-dialog';
 import { UpdateMemberDialog } from './components/update-member-dialog';
-import { ModuleGuard } from '~/lib/rbac/module-guard';
 
 export default function TeamMembersPage() {
   const queryClient = useQueryClient();
@@ -63,6 +64,16 @@ export default function TeamMembersPage() {
   } = useQuery({
     queryKey: ['workspaceMembers', currentWorkspace?.id],
     queryFn: () => getMembersService(currentWorkspace?.id || ''),
+    enabled: !!currentWorkspace?.id,
+  });
+
+  // Prefetch roles so they're available immediately when invite dialog opens
+  useQuery({
+    queryKey: ['workspaceRoles', currentWorkspace?.id],
+    queryFn: async () => {
+      const res = await getRolesService(currentWorkspace?.id || '');
+      return res?.data;
+    },
     enabled: !!currentWorkspace?.id,
   });
 
@@ -123,14 +134,14 @@ export default function TeamMembersPage() {
     switch (status) {
       case 'accepted':
         return (
-          <Badge className="gap-1 bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">
+          <Badge className="gap-1 border-green-500/20 bg-green-500/10 text-green-500 hover:bg-green-500/20">
             <Check className="h-3 w-3" />
             Active
           </Badge>
         );
       case 'pending':
         return (
-          <Badge className="gap-1 bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 hover:bg-yellow-500/20 border-yellow-500/20">
+          <Badge className="gap-1 border-yellow-500/20 bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20 dark:text-yellow-500">
             <Clock className="h-3 w-3" />
             Pending
           </Badge>
@@ -162,7 +173,7 @@ export default function TeamMembersPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-muted-foreground text-sm font-medium">
                   Total Members
                 </CardTitle>
               </CardHeader>
@@ -173,7 +184,7 @@ export default function TeamMembersPage() {
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-muted-foreground text-sm font-medium">
                   Active
                 </CardTitle>
               </CardHeader>
@@ -184,7 +195,7 @@ export default function TeamMembersPage() {
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-muted-foreground text-sm font-medium">
                   Pending Invitations
                 </CardTitle>
               </CardHeader>
@@ -219,15 +230,15 @@ export default function TeamMembersPage() {
             <CardContent>
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
                 </div>
               ) : error ? (
-                <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+                <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border p-4">
                   Failed to load team members
                 </div>
               ) : members.length === 0 ? (
                 <div className="py-12 text-center">
-                  <Users className="mx-auto mb-4 h-12 w-12 text-muted-foreground/30" />
+                  <Users className="text-muted-foreground/30 mx-auto mb-4 h-12 w-12" />
                   <p className="text-muted-foreground">No team members yet</p>
                   <Button
                     onClick={() => setInviteDialogOpen(true)}
@@ -253,12 +264,10 @@ export default function TeamMembersPage() {
                     </TableHeader>
                     <TableBody>
                       {members.map((member: WorkspaceMember) => (
-                        <TableRow
-                          key={member.id}
-                        >
+                        <TableRow key={member.id}>
                           <TableCell>
                             <div className="flex items-center gap-3">
-                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-semibold">
+                              <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
                                 {(
                                   member.user?.email?.charAt(0) || 'M'
                                 ).toUpperCase()}
@@ -269,7 +278,7 @@ export default function TeamMembersPage() {
                               </span>
                             </div>
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
+                          <TableCell className="text-muted-foreground text-sm">
                             {member.user?.email}
                           </TableCell>
                           <TableCell>
@@ -290,7 +299,9 @@ export default function TeamMembersPage() {
                             {member.is_primary_contact ? (
                               <Badge variant="secondary">Primary</Badge>
                             ) : (
-                              <span className="text-xs text-muted-foreground/50">—</span>
+                              <span className="text-muted-foreground/50 text-xs">
+                                —
+                              </span>
                             )}
                           </TableCell>
                           <TableCell className="text-right">
@@ -320,7 +331,7 @@ export default function TeamMembersPage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleRemoveMember(member.id)}
-                                className="gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
                                 disabled={removeMutation.isPending}
                               >
                                 <Trash2 className="h-4 w-4" />

@@ -74,12 +74,14 @@ interface OpportunityDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   opportunity?: any;
+  defaultAccountId?: string;
 }
 
 export function OpportunityDialog({
   isOpen,
   onOpenChange,
   opportunity,
+  defaultAccountId,
 }: OpportunityDialogProps) {
   const queryClient = useQueryClient();
   const { currentWorkspace } = useRBAC();
@@ -150,7 +152,7 @@ export function OpportunityDialog({
       } else {
         form.reset({
           opportunity_name: '',
-          account_id: '',
+          account_id: defaultAccountId || '',
           stage_id: '',
           amount: '',
           currency: 'USD',
@@ -167,7 +169,7 @@ export function OpportunityDialog({
         });
       }
     }
-  }, [opportunity, form, isOpen]);
+  }, [opportunity, form, isOpen, defaultAccountId]);
 
   const mutation = useMutation({
     mutationFn: (values: z.infer<typeof formSchema>) => {
