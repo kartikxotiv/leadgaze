@@ -183,18 +183,22 @@ export default function LeadDetailsPage() {
           >
             Change Status
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleConvertLead}
-            className="gap-2"
-            disabled={isSaving || !canEdit}
-            title={
-              !canEdit ? 'You do not have permission to convert this lead' : ''
-            }
-          >
-            Convert Lead
-          </Button>
+          {!lead.is_converted_to_account && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleConvertLead}
+              className="gap-2"
+              disabled={isSaving || !canEdit}
+              title={
+                !canEdit
+                  ? 'You do not have permission to convert this lead'
+                  : ''
+              }
+            >
+              Convert Lead
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
