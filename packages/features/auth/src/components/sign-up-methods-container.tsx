@@ -27,6 +27,10 @@ export function SignUpMethodsContainer(props: {
   const redirectUrl = getCallbackUrl(props);
   const defaultValues = getDefaultValues();
 
+  // Use 'next' parameter for redirect after signup if present, 
+  // otherwise fallback to default appHome
+  const appHome = getAppHome(props.paths.appHome);
+
   return (
     <>
       <If condition={props.providers.password}>
@@ -34,7 +38,7 @@ export function SignUpMethodsContainer(props: {
           emailRedirectTo={redirectUrl}
           defaultValues={defaultValues}
           displayTermsCheckbox={props.displayTermsCheckbox}
-          appHome={props.paths.appHome}
+          appHome={appHome}
         />
       </If>
 
@@ -108,4 +112,14 @@ function getDefaultValues() {
   return {
     email: searchParams.get('email') ?? '',
   };
+}
+function getAppHome(defaultAppHome: string) {
+  if (!isBrowser()) {
+    return defaultAppHome;
+  }
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const next = searchParams.get('next');
+
+  return next || defaultAppHome;
 }

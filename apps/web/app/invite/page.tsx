@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -41,6 +41,7 @@ export default function InviteAcceptancePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: user } = useUser();
+  const queryClient = useQueryClient();
   const token = searchParams.get('token');
 
   const [invitation, setInvitation] = useState<InvitationData | null>(null);
@@ -75,7 +76,8 @@ export default function InviteAcceptancePage() {
   // Redirect to signup if not logged in
   useEffect(() => {
     if (!user && token && !loading) {
-      router.push(`/auth/sign-up?invite=${token}`);
+      const nextPath = encodeURIComponent(`/invite?token=${token}`);
+      router.push(`/auth/sign-up?next=${nextPath}`);
     }
   }, [user, token, loading, router]);
 
@@ -87,13 +89,21 @@ export default function InviteAcceptancePage() {
       }
       return acceptInviteService(token, user.sub);
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      // Invalidate workspace-related queries to ensure UI updates automatically
+      // We await these to ensure they are processed before we navigate
+      await queryClient.invalidateQueries({ queryKey: ['userWorkspaces'] });
+      await queryClient.invalidateQueries({ queryKey: ['userHasWorkspace'] });
+
       toast.success('Invitation accepted! Redirecting to workspace...');
+
       // Redirect to workspace
       const workspace = data.data?.workspace;
       if (workspace) {
+        // Use window.location.assign for a full page refresh which ensures
+        // all client-side and server-side state is correctly updated.
         setTimeout(() => {
-          router.push(`/home`);
+          window.location.assign('/home');
         }, 1500);
       }
     },
