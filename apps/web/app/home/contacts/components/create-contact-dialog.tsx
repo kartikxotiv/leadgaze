@@ -7,6 +7,7 @@ import { Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
+import { Checkbox } from '@kit/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -37,14 +38,12 @@ interface CreateContactDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: (contact: any) => void;
-  defaultAccountId?: string;
 }
 
 export function CreateContactDialog({
   open,
   onOpenChange,
   onSuccess,
-  defaultAccountId,
 }: CreateContactDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -58,8 +57,9 @@ export function CreateContactDialog({
     email: '',
     phone_number: '',
     job_title: '',
-    account_id: defaultAccountId || '',
+    account_id: '',
     notes: '',
+    is_public: true,
   });
 
   const { data: accounts = [], refetch: refetchAccounts } = useQuery({
@@ -96,6 +96,7 @@ export function CreateContactDialog({
       job_title: '',
       account_id: '',
       notes: '',
+      is_public: true,
     });
   };
 
@@ -241,6 +242,33 @@ export function CreateContactDialog({
                 placeholder="Add some context about this contact..."
                 rows={3}
               />
+            </div>
+
+            <div className="flex items-start gap-3 pt-4">
+              <Checkbox
+                id="is_public"
+                checked={formData.is_public}
+                onCheckedChange={(checked) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    is_public: checked as boolean,
+                  }));
+                }}
+                className="mt-1"
+              />
+              <div className="flex-1">
+                <Label
+                  htmlFor="is_public"
+                  className="cursor-pointer text-sm font-medium"
+                >
+                  Make this contact public
+                </Label>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  When public, this contact will be visible to all team members
+                  with "View contacts" access. When private, only you and
+                  assigned team members can see it.
+                </p>
+              </div>
             </div>
 
             <DialogFooter>

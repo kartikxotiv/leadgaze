@@ -84,6 +84,35 @@ export const updateAccount = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
+    // Check permissions for is_public updates
+    if (body.is_public !== undefined) {
+      // Get the account to check permissions
+      const { data: existingAccount } = await supabase
+        .from('crm_accounts')
+        .select('workspace_id, created_by')
+        .eq('id', id)
+        .single();
+
+      if (existingAccount) {
+        // Get workspace to check if user is owner
+        const { data: workspace } = await supabase
+          .from('workspaces')
+          .select('owner_id')
+          .eq('id', existingAccount.workspace_id)
+          .single();
+
+        const isWorkspaceOwner = workspace?.owner_id === user.id;
+        const isCreator = existingAccount.created_by === user.id;
+
+        if (!isWorkspaceOwner && !isCreator) {
+          return NextResponse.json(
+            { message: 'Only workspace owner or creator can change visibility' },
+            { status: 403 },
+          );
+        }
+      }
+    }
+
     const { data: account, error } = await supabase
       .from('crm_accounts')
       .update({
