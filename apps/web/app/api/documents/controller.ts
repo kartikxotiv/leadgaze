@@ -6,10 +6,14 @@ import {
   catchAsync,
   successDataResponse
 } from '../../../utils/response-handler';
+import { getRelatedEntityIds } from '../_helpers/get-related-entities';
+import { getEntityName } from '../_helpers/get-entity-name';
 
 /**
  * GET /api/documents
  * Fetch documents for an entity
+ * Includes documents from related entities (lead conversion chain)
+ * Filters by user unless workspace owner
  */
 export const getDocuments = catchAsync(
   async ({
@@ -31,14 +35,77 @@ export const getDocuments = catchAsync(
       );
     }
 
-    const { data: documents, error } = await supabase
-      .from('crm_documents')
-      .select('*, created_by_user:accounts(name, email)')
-      .eq('workspace_id', workspaceId)
-      .eq('entity_type', entityType)
-      .eq('entity_id', entityId)
-      .eq('is_deleted', false)
-      .order('created_at', { ascending: false });
+    // Get current user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user is workspace owner
+    const { data: workspace } = await supabase
+      .from('workspaces')
+      .select('owner_id')
+      .eq('id', workspaceId)
+      .single();
+
+    const isWorkspaceOwner = workspace?.owner_id === user.id;
+
+    // Get all related entity IDs (includes lead conversion chain)
+    const entityIds = await getRelatedEntityIds(supabase, entityType, entityId);
+
+    // Build query - fetch documents for all related entities
+    const documentPromises = entityIds.map(({ entity_type, entity_id }) => {
+      let query = supabase
+        .from('crm_documents')
+        .select('*, created_by_user:accounts(name, email)')
+        .eq('workspace_id', workspaceId)
+        .eq('entity_type', entity_type)
+        .eq('entity_id', entity_id)
+        .eq('is_deleted', false);
+
+      // Filter by user unless workspace owner
+      if (!isWorkspaceOwner) {
+        query = query.eq('created_by', user.id);
+      }
+
+      return query;
+    });
+
+    // Execute all queries and combine results
+    const results = await Promise.all(documentPromises);
+    const allDocuments = results.flatMap((result) => result.data || []);
+
+    // Remove duplicates
+    const uniqueDocuments = Array.from(
+      new Map(allDocuments.map((doc) => [doc.id, doc])).values(),
+    );
+
+    // Sort by created_at descending
+    uniqueDocuments.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+
+    // Add entity names to each document
+    const documentsWithEntityNames = await Promise.all(
+      uniqueDocuments.map(async (document) => {
+        const entityName = await getEntityName(
+          supabase,
+          document.entity_type,
+          document.entity_id,
+        );
+        return {
+          ...document,
+          entity_name: entityName,
+        };
+      }),
+    );
+
+    const documents = documentsWithEntityNames;
+    const error = results.find((r) => r.error)?.error;
 
     if (error) {
       console.error('Get documents error:', error);

@@ -54,42 +54,36 @@ export const getAccounts = catchAsync(
     const isOwner = workspace?.owner_id === user.id;
 
     // Build the query
-    // Similar to leads, we fetch related fields.
-    // Accounts have industry (FK), status (FK), owner (FK)
-    // Note: crm_accounts has industry_id.
     let query = supabase
       .from('crm_accounts')
       .select(
         `
           *,
           status:entity_statuses(id, status_name, status_key, color, icon),
-          owner:accounts!crm_accounts_owner_id_fkey(id, email, name)
+          owner:accounts!crm_accounts_owner_id_fkey(id, email, name),
+          industry:crm_industries(id, industry_name)
         `,
       )
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
 
-    // Permissions: If not owner, what to show?
-    // Request was: "check weather the current user have access to view contacts and accounts then only give response, and owner should access all."
-    // For now, assuming "member access" allows viewing all, OR if strict permissions needed:
-    // If strict: query.eq('owner_id', user.id) OR query in assigned list?
-    // User request: "owner should access all".
-    // Implication: Non-owners might have restricted access.
-    // Existing leads logic uses `lead_assignees`. Accounts don't seem to have `account_assignees` table in my memory (checked migration, owner_id exists).
-    // Let's assume for MVP: Owners see all. Members see all (open permission for now unless instructed otherwise strictly).
-    // OR: Filter by owner_id if not workspace owner?
-    // Let's stick to: Everyone in workspace sees all accounts for now to be safe on "access to view",
-    // unless "access to view" implies RBAC check.
-    // I will add a TODO for granular permissions but currently return all for workspace members.
-    // Wait, existing leads logic restricted non-owners to assigned leads.
-    // If I follow that pattern, I should restrict accounts to owner_id = user.id?
-    // But Accounts are usually shared.
-    // "check weather the current user have access to view ... then only give response"
-    // This sounds like a Role permission check (e.g. "can_view_accounts").
-    // I'll check `role_permissions` table or `checkPermission` utility if available.
-    // I usually see `useRBAC` on frontend. Backend might need explicit check.
-    // I'll assume standard workspace member access is enough for list, but let's look for `roles` or `permissions` check.
-    // For now, I will return all accounts for the workspace to ensure list is populated, matching "professional list view" requirement which implies seeing data.
+    // If not owner, filter for public accounts or accounts assigned to current user
+    if (!isOwner) {
+      // Get accounts assigned to the current user
+      const { data: assignedAccountIds } = await (supabase
+        .from('account_assignees' as any)
+        .select('account_id')
+        .eq('workspace_id', workspaceId)
+        .eq('assigned_to_user_id', user.id)
+        .eq('assignment_status', 'active') as any);
+
+      const assignedIds = assignedAccountIds?.map((a: any) => a.account_id) || [];
+
+      // Filter: public accounts OR assigned accounts
+      query = query.or(
+        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'})`,
+      );
+    }
 
     const { data: accounts, error } = await query.order('created_at', {
       ascending: false,
@@ -191,6 +185,7 @@ export const createAccount = catchAsync(
         status_id: statusId,
         owner_id: user.id,
         created_by: user.id,
+        is_public: payload.is_public ?? true, // Default to public
         ...cleanedData,
       })
       .select()

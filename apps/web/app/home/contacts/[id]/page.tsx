@@ -16,10 +16,13 @@ import { Separator } from '@kit/ui/separator';
 import { getContactByIdService } from '~/services/contacts.service';
 import { EntityNotes } from '../../_components/entity-notes';
 import { EntityDocuments, EntityMeetings, EntityReminders } from '../../_components/entity-activity';
+import { PublicPrivateToggle } from '../../_components/public-private-toggle';
 import { EditContactDialog } from '../components/edit-contact-dialog';
+import { ContactAssignees } from '../components/contact-assignees';
 import { usePermissionDetail, useCanAccessData } from '~/lib/permissions/use-permissions';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
+import { useRBAC } from '~/lib/rbac/rbac-provider';
 
 export default function ContactDetailsPage() {
     const params = useParams();
@@ -37,6 +40,7 @@ export default function ContactDetailsPage() {
     });
 
     const { data: user } = useUser();
+    const { currentWorkspace: workspace } = useRBAC();
     const editPermission = usePermissionDetail('contacts', 'edit');
     const canEdit = useCanAccessData(editPermission, contact?.owner_id, user?.id);
 
@@ -170,6 +174,22 @@ export default function ContactDetailsPage() {
                                 </div>
                             </CardContent>
                         </Card>
+
+                        {/* Contact Assignees Section */}
+                        {workspace?.id && (
+                            <ContactAssignees contactId={id} workspaceId={workspace.id} />
+                        )}
+
+                        {/* Public/Private Toggle */}
+                        {workspace?.id && contact && (
+                            <PublicPrivateToggle
+                                entityType="contact"
+                                entityId={id}
+                                isPublic={contact.is_public ?? true}
+                                createdBy={contact.created_by}
+                                workspaceId={workspace.id}
+                            />
+                        )}
 
                         {/* Notes Section */}
                         <EntityNotes

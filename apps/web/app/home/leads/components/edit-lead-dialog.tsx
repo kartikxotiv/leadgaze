@@ -32,6 +32,7 @@ import {
   getLeadSourcesService,
   getLeadStatusesService,
 } from '~/services/leads.service';
+import { IndustrySelect } from '../../_components/industry-select';
 import ApiClient from '~/utils/axios-client';
 
 interface EditLeadDialogProps {
@@ -53,7 +54,7 @@ interface FormDataState {
   company_linkedin_url: string;
   job_title: string;
   department: string;
-  industry: string;
+  industry_id: string;
   company_size: string;
   location: string;
   timezone: string;
@@ -93,7 +94,7 @@ export default function EditLeadDialog({
     company_linkedin_url: '',
     job_title: '',
     department: '',
-    industry: '',
+    industry_id: '',
     company_size: '',
     location: '',
     timezone: '',
@@ -117,6 +118,7 @@ export default function EditLeadDialog({
     enabled: !!workspace?.id,
   });
 
+
   // Initialize form with lead data
   useEffect(() => {
     if (lead && open) {
@@ -132,7 +134,7 @@ export default function EditLeadDialog({
         company_linkedin_url: lead.company_linkedin_url || '',
         job_title: lead.job_title || '',
         department: lead.department || '',
-        industry: lead.industry || '',
+        industry_id: lead.industry_id || lead.industry?.id || '',
         company_size: lead.company_size || '',
         location: lead.location || '',
         timezone: lead.timezone || '',
@@ -204,7 +206,7 @@ export default function EditLeadDialog({
         payload.company_linkedin_url = formData.company_linkedin_url;
       if (formData.job_title) payload.job_title = formData.job_title;
       if (formData.department) payload.department = formData.department;
-      if (formData.industry) payload.industry = formData.industry;
+      if (formData.industry_id) payload.industry_id = formData.industry_id;
       if (formData.company_size) payload.company_size = formData.company_size;
       if (formData.location) payload.location = formData.location;
       if (formData.timezone) payload.timezone = formData.timezone;
@@ -416,21 +418,21 @@ export default function EditLeadDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
-                    htmlFor="industry"
+                    htmlFor="industry_id"
                     className="text-gray-900 dark:text-gray-100"
                   >
                     Industry (Optional)
                   </Label>
-                  <Input
-                    id="industry"
-                    placeholder="Technology"
-                    value={formData.industry}
-                    onChange={(e) =>
-                      handleInputChange('industry', e.target.value)
-                    }
-                    disabled={isLoading}
-                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                  />
+                  <div className="mt-2">
+                    <IndustrySelect
+                      value={formData.industry_id}
+                      onValueChange={(value) =>
+                        handleInputChange('industry_id', value)
+                      }
+                      disabled={isLoading}
+                      className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label
