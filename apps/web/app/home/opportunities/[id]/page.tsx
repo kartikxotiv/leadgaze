@@ -2,24 +2,37 @@
 
 import { useState } from 'react';
 
-import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Building2, User, Calendar, FileText, CheckCircle, Wallet, Target, Flag, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
+import { useQuery } from '@tanstack/react-query';
+import {
+    ArrowLeft,
+    Building2,
+    Calendar,
+    CheckCircle,
+    FileText,
+    Flag,
+    Tag,
+    Target,
+    User,
+    Wallet,
+} from 'lucide-react';
+import { toast } from 'sonner';
+
+import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { PageBody } from '@kit/ui/page';
-import { Separator } from '@kit/ui/separator';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
-    SelectValue
+    SelectValue,
 } from '@kit/ui/select';
-import { toast } from 'sonner';
+import { Separator } from '@kit/ui/separator';
 
 import { getOpportunityByIdService, updateOpportunityService } from '~/services/opportunities.service';
 import { EntityNotes } from '../../_components/entity-notes';
@@ -29,10 +42,10 @@ import { EditOpportunityDialog } from '../components/edit-opportunity-dialog';
 import { OpportunityStatusTimeline } from '../components/opportunity-status-timeline';
 import { OpportunityAssignees } from '../components/opportunity-assignees';
 import { usePermissionDetail, useCanAccessData } from '~/lib/permissions/use-permissions';
-import { useUser } from '@kit/supabase/hooks/use-user';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getOpportunityStatusesService } from '~/services/opportunities.service';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
+import { OpportunityDialog } from '../components/opportunity-dialog';
 
 export default function OpportunityDetailsPage() {
     const params = useParams();
@@ -43,7 +56,7 @@ export default function OpportunityDetailsPage() {
         data: opportunity,
         isLoading,
         error,
-        refetch
+        refetch,
     } = useQuery({
         queryKey: ['opportunity', id],
         queryFn: () => getOpportunityByIdService(id),
@@ -59,13 +72,17 @@ export default function OpportunityDetailsPage() {
 
     const { data: user } = useUser();
     const editPermission = usePermissionDetail('opportunities', 'edit');
-    const canEdit = useCanAccessData(editPermission, opportunity?.owner_id, user?.id);
+    const canEdit = useCanAccessData(
+        editPermission,
+        opportunity?.owner_id,
+        user?.id,
+    );
 
     if (isLoading) {
         return (
             <ModuleGuard module="opportunities">
                 <div className="flex h-screen items-center justify-center">
-                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                    <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
                 </div>
             </ModuleGuard>
         );
@@ -77,7 +94,8 @@ export default function OpportunityDetailsPage() {
                 <div className="flex h-screen flex-col items-center justify-center gap-4">
                     <h1 className="text-2xl font-bold">Opportunity Not Found</h1>
                     <p className="text-muted-foreground">
-                        The opportunity you're looking for doesn't exist or you don't have permission to view it.
+                        The opportunity you're looking for doesn't exist or you don't have
+                        permission to view it.
                     </p>
                     <Button asChild variant="outline">
                         <Link href="/home/opportunities">Back to Opportunities</Link>
@@ -89,7 +107,7 @@ export default function OpportunityDetailsPage() {
 
     return (
         <ModuleGuard module="opportunities">
-            <div className="border-b bg-background px-6 py-4">
+            <div className="bg-background border-b px-6 py-4">
                 <div className="mb-4 flex items-center justify-between">
                     <Button variant="ghost" size="sm" asChild className="-ml-2">
                         <Link href="/home/opportunities">
@@ -111,7 +129,7 @@ export default function OpportunityDetailsPage() {
                             }}
                             disabled={!canEdit}
                         >
-                            <SelectTrigger className="w-[180px] h-9">
+                            <SelectTrigger className="h-9 w-[180px]">
                                 <SelectValue placeholder="Update Stage" />
                             </SelectTrigger>
                             <SelectContent>
@@ -133,7 +151,11 @@ export default function OpportunityDetailsPage() {
                             size="sm"
                             onClick={() => setIsEditDialogOpen(true)}
                             disabled={!canEdit}
-                            title={!canEdit ? "You do not have permission to edit this opportunity" : ""}
+                            title={
+                                !canEdit
+                                    ? 'You do not have permission to edit this opportunity'
+                                    : ''
+                            }
                         >
                             Edit Opportunity
                         </Button>
@@ -142,14 +164,19 @@ export default function OpportunityDetailsPage() {
 
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-primary/10">
-                            <FileText className="h-8 w-8 text-primary" />
+                        <div className="bg-primary/10 flex h-16 w-16 items-center justify-center rounded-lg">
+                            <FileText className="text-primary h-8 w-8" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold">{opportunity.opportunity_name}</h1>
-                            <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
+                            <h1 className="text-2xl font-bold">
+                                {opportunity.opportunity_name}
+                            </h1>
+                            <div className="text-muted-foreground mt-1 flex items-center gap-3 text-sm">
                                 {opportunity.account && (
-                                    <Link href={`/home/accounts/${opportunity.account.id}`} className="flex items-center gap-1 text-primary hover:underline">
+                                    <Link
+                                        href={`/home/accounts/${opportunity.account.id}`}
+                                        className="text-primary flex items-center gap-1 hover:underline"
+                                    >
                                         <Building2 className="h-3 w-3" />
                                         {opportunity.account.account_name}
                                     </Link>
@@ -180,9 +207,11 @@ export default function OpportunityDetailsPage() {
                 </div>
             </div>
 
-            <div className="bg-slate-50/50 border-b py-6 px-6">
-                <div className="max-w-5xl mx-auto overflow-hidden rounded-xl border bg-white/50 backdrop-blur-sm shadow-sm p-4">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4 text-center">Opportunity Sales Pipeline</p>
+            <div className="border-b px-6 py-6">
+                <div className="bg-card mx-auto max-w-5xl overflow-hidden rounded-xl border p-4 shadow-sm backdrop-blur-sm">
+                    <p className="text-muted-foreground mb-4 text-center text-[10px] font-bold tracking-widest uppercase">
+                        Opportunity Sales Pipeline
+                    </p>
                     <OpportunityStatusTimeline
                         opportunityId={id}
                         currentStatusId={opportunity.stage_id}
@@ -196,16 +225,18 @@ export default function OpportunityDetailsPage() {
             <PageBody>
                 <div className="grid gap-6 lg:grid-cols-3">
                     {/* Main Content */}
-                    <div className="lg:col-span-2 space-y-6">
+                    <div className="space-y-6 lg:col-span-2">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Details</CardTitle>
                             </CardHeader>
                             <CardContent className="grid gap-6 sm:grid-cols-2">
                                 <div className="space-y-1">
-                                    <p className="text-sm font-medium text-muted-foreground">Amount</p>
+                                    <p className="text-muted-foreground text-sm font-medium">
+                                        Amount
+                                    </p>
                                     <div className="flex items-center gap-2">
-                                        <Wallet className="h-4 w-4 text-muted-foreground" />
+                                        <Wallet className="text-muted-foreground h-4 w-4" />
                                         <span className="text-lg font-semibold">
                                             {new Intl.NumberFormat('en-US', {
                                                 style: 'currency',
@@ -216,9 +247,11 @@ export default function OpportunityDetailsPage() {
                                 </div>
 
                                 <div className="space-y-1">
-                                    <p className="text-sm font-medium text-muted-foreground">Expected Revenue</p>
+                                    <p className="text-muted-foreground text-sm font-medium">
+                                        Expected Revenue
+                                    </p>
                                     <div className="flex items-center gap-2">
-                                        <Target className="h-4 w-4 text-muted-foreground" />
+                                        <Target className="text-muted-foreground h-4 w-4" />
                                         <span className="text-sm">
                                             {new Intl.NumberFormat('en-US', {
                                                 style: 'currency',
@@ -229,38 +262,51 @@ export default function OpportunityDetailsPage() {
                                 </div>
 
                                 <div className="space-y-1">
-                                    <p className="text-sm font-medium text-muted-foreground">Expected Close Date</p>
+                                    <p className="text-muted-foreground text-sm font-medium">
+                                        Expected Close Date
+                                    </p>
                                     <div className="flex items-center gap-2">
-                                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                                        <Calendar className="text-muted-foreground h-4 w-4" />
                                         <span className="text-sm">
                                             {opportunity.expected_close_date
-                                                ? new Date(opportunity.expected_close_date).toLocaleDateString()
+                                                ? new Date(
+                                                    opportunity.expected_close_date,
+                                                ).toLocaleDateString()
                                                 : '-'}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div className="space-y-1">
-                                    <p className="text-sm font-medium text-muted-foreground">Probability</p>
+                                    <p className="text-muted-foreground text-sm font-medium">
+                                        Probability
+                                    </p>
                                     <div className="flex items-center gap-2">
-                                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                                        <CheckCircle className="text-muted-foreground h-4 w-4" />
                                         <span className="text-sm">{opportunity.probability}%</span>
                                     </div>
                                 </div>
 
                                 <div className="space-y-1">
-                                    <p className="text-sm font-medium text-muted-foreground">Priority</p>
+                                    <p className="text-muted-foreground text-sm font-medium">
+                                        Priority
+                                    </p>
                                     <div className="flex items-center gap-2">
-                                        <Flag className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-sm capitalize">{opportunity.priority || '-'}</span>
+                                        <Flag className="text-muted-foreground h-4 w-4" />
+                                        <span className="text-sm capitalize">
+                                            {opportunity.priority || '-'}
+                                        </span>
                                     </div>
                                 </div>
 
                                 <div className="space-y-1">
-                                    <p className="text-sm font-medium text-muted-foreground">Lead Source</p>
-                                    <span className="text-sm capitalize">{opportunity.lead_source || '-'}</span>
+                                    <p className="text-muted-foreground text-sm font-medium">
+                                        Lead Source
+                                    </p>
+                                    <span className="text-sm capitalize">
+                                        {opportunity.lead_source || '-'}
+                                    </span>
                                 </div>
-
                             </CardContent>
                         </Card>
 
@@ -281,10 +327,7 @@ export default function OpportunityDetailsPage() {
                         )}
 
                         {/* Notes Section */}
-                        <EntityNotes
-                            entityType="opportunity"
-                            entityId={id}
-                        />
+                        <EntityNotes entityType="opportunity" entityId={id} />
 
                         {/* Activity Sections */}
                         <EntityReminders entityType="opportunity" entityId={id} />
@@ -296,29 +339,43 @@ export default function OpportunityDetailsPage() {
                     <div className="space-y-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-sm font-medium">System Info</CardTitle>
+                                <CardTitle className="text-sm font-medium">
+                                    System Info
+                                </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-1">
-                                    <p className="text-xs font-medium text-muted-foreground">Owner</p>
+                                    <p className="text-muted-foreground text-xs font-medium">
+                                        Owner
+                                    </p>
                                     <div className="flex items-center gap-2">
                                         <User className="h-3 w-3" />
-                                        <span className="text-sm">{opportunity.owner?.name || '-'}</span>
+                                        <span className="text-sm">
+                                            {opportunity.owner?.name || '-'}
+                                        </span>
                                     </div>
                                 </div>
                                 <Separator />
                                 <div className="space-y-1">
-                                    <p className="text-xs font-medium text-muted-foreground">Created At</p>
+                                    <p className="text-muted-foreground text-xs font-medium">
+                                        Created At
+                                    </p>
                                     <div className="flex items-center gap-2">
                                         <Calendar className="h-3 w-3" />
-                                        <span className="text-sm">{new Date(opportunity.created_at).toLocaleDateString()}</span>
+                                        <span className="text-sm">
+                                            {new Date(opportunity.created_at).toLocaleDateString()}
+                                        </span>
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xs font-medium text-muted-foreground">Last Updated</p>
+                                    <p className="text-muted-foreground text-xs font-medium">
+                                        Last Updated
+                                    </p>
                                     <div className="flex items-center gap-2">
                                         <Calendar className="h-3 w-3" />
-                                        <span className="text-sm">{new Date(opportunity.updated_at).toLocaleDateString()}</span>
+                                        <span className="text-sm">
+                                            {new Date(opportunity.updated_at).toLocaleDateString()}
+                                        </span>
                                     </div>
                                 </div>
                             </CardContent>
@@ -327,7 +384,7 @@ export default function OpportunityDetailsPage() {
                 </div>
             </PageBody>
 
-            <EditOpportunityDialog
+            <OpportunityDialog
                 isOpen={isEditDialogOpen}
                 onOpenChange={setIsEditDialogOpen}
                 opportunity={opportunity}
