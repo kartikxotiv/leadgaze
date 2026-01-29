@@ -352,8 +352,8 @@ export default function LeadDetailsPage() {
                 {lead.industry && (
                   <EditableField
                     label="Industry"
-                    value={lead.industry}
-                    fieldName="industry"
+                    value={lead.industry.industry_name}
+                    fieldName="industry_id"
                   />
                 )}
                 {lead.company_size && (

@@ -33,6 +33,7 @@ import {
   getLeadSourcesService,
   getLeadStatusesService,
 } from '~/services/leads.service';
+import { getIndustriesService } from '~/services/industries.service';
 
 interface CreateLeadDialogProps {
   open: boolean;
@@ -52,7 +53,7 @@ interface FormDataState {
   company_linkedin_url: string;
   job_title: string;
   department: string;
-  industry: string;
+  industry_id: string;
   company_size: string;
   location: string;
   timezone: string;
@@ -91,7 +92,7 @@ export default function CreateLeadDialog({
     company_linkedin_url: '',
     job_title: '',
     department: '',
-    industry: '',
+    industry_id: '',
     company_size: '',
     location: '',
     timezone: '',
@@ -144,6 +145,26 @@ export default function CreateLeadDialog({
     enabled: !!workspace,
   });
 
+  // Fetch available industries
+  const {
+    data: industries = [],
+    isLoading: industriesLoading,
+  } = useQuery({
+    queryKey: ['industries', workspace?.id],
+    queryFn: () => {
+      if (!workspace?.id) {
+        return Promise.resolve([]);
+      }
+
+      return getIndustriesService(workspace.id).catch((error) => {
+        console.error('❌ Error fetching industries:', error);
+        toast.error('Failed to load industries');
+        return [];
+      });
+    },
+    enabled: !!workspace && open,
+  });
+
   // Debug log for sources and statuses
   useEffect(() => {}, [sources, sourcesLoading, workspace]);
 
@@ -192,7 +213,7 @@ export default function CreateLeadDialog({
       company_linkedin_url: '',
       job_title: '',
       department: '',
-      industry: '',
+      industry_id: '',
       company_size: '',
       location: '',
       timezone: '',
@@ -239,7 +260,7 @@ export default function CreateLeadDialog({
         payload.company_linkedin_url = formData.company_linkedin_url;
       if (formData.job_title) payload.job_title = formData.job_title;
       if (formData.department) payload.department = formData.department;
-      if (formData.industry) payload.industry = formData.industry;
+      if (formData.industry_id) payload.industry_id = formData.industry_id;
       if (formData.company_size) payload.company_size = formData.company_size;
       if (formData.location) payload.location = formData.location;
       if (formData.timezone) payload.timezone = formData.timezone;
@@ -433,21 +454,35 @@ export default function CreateLeadDialog({
                 </div>
                 <div>
                   <Label
-                    htmlFor="industry"
+                    htmlFor="industry_id"
                     className="text-gray-900 dark:text-gray-100"
                   >
                     Industry (Optional)
                   </Label>
-                  <Input
-                    id="industry"
-                    placeholder="Technology"
-                    value={formData.industry}
-                    onChange={(e) =>
-                      handleInputChange('industry', e.target.value)
+                  <Select
+                    value={formData.industry_id}
+                    onValueChange={(value) =>
+                      handleInputChange('industry_id', value)
                     }
-                    disabled={isLoading}
-                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                  />
+                    disabled={isLoading || industriesLoading}
+                  >
+                    <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                      <SelectValue placeholder="Select industry" />
+                    </SelectTrigger>
+                    <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
+                      {industries && industries.length > 0 ? (
+                        industries.map((industry: any) => (
+                          <SelectItem key={industry.id} value={industry.id}>
+                            {industry.industry_name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="placeholder" disabled>
+                          No industries available
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 

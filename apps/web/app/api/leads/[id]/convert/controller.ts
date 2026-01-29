@@ -57,19 +57,8 @@ export const convertLead = catchAsync(
       return NextResponse.json({ message: 'Lead not found' }, { status: 404 });
     }
 
-    // Lookup industry_id if lead has industry
-    let industryId = null;
-    if (lead.industry) {
-      const { data: industry } = await (supabase
-        .from('crm_industries' as any)
-        .select('id')
-        .ilike('industry_name', lead.industry)
-        .maybeSingle() as any);
-
-      if (industry) {
-        industryId = industry.id;
-      }
-    }
+    // Use industry_id directly from lead (now it's a FK)
+    const industryId = lead.industry_id || null;
 
     const workspaceId = lead.workspace_id;
     let accountId = account.id;
