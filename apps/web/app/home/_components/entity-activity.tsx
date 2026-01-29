@@ -261,12 +261,22 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                     >
                       {reminder.title}
                     </p>
-                    {reminder.due_date && (
-                      <p className="flex items-center gap-1 text-xs text-gray-500">
-                        <Clock className="h-3 w-3" />
-                        {new Date(reminder.due_date).toLocaleString()}
-                      </p>
-                    )}
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                      {reminder.due_date && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {new Date(reminder.due_date).toLocaleString()}
+                        </span>
+                      )}
+                      {reminder.created_by_user && (
+                        <span>by {reminder.created_by_user.name}</span>
+                      )}
+                      {reminder.entity_name && reminder.entity_type !== entityType && (
+                        <span className="text-blue-600 dark:text-blue-400">
+                          from {reminder.entity_type}: {reminder.entity_name}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
@@ -534,9 +544,19 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {meeting.title}
                   </p>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
-                    <Calendar className="h-3 w-3" />
-                    <span>{new Date(meeting.start_time).toLocaleString()}</span>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {new Date(meeting.start_time).toLocaleString()}
+                    </span>
+                    {meeting.created_by_user && (
+                      <span>by {meeting.created_by_user.name}</span>
+                    )}
+                    {meeting.entity_name && meeting.entity_type !== entityType && (
+                      <span className="text-blue-600 dark:text-blue-400">
+                        from {meeting.entity_type}: {meeting.entity_name}
+                      </span>
+                    )}
                   </div>
                   {meeting.location && (
                     <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
@@ -750,9 +770,17 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {doc.name}
                     </p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(doc.created_at).toLocaleDateString()}
-                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                      <span>{new Date(doc.created_at).toLocaleDateString()}</span>
+                      {doc.created_by_user && (
+                        <span>by {doc.created_by_user.name}</span>
+                      )}
+                      {doc.entity_name && doc.entity_type !== entityType && (
+                        <span className="text-blue-600 dark:text-blue-400">
+                          from {doc.entity_type}: {doc.entity_name}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">

@@ -13,4 +13,14 @@ const getIndustriesService = asyncHandlerClient(async (workspaceId: string) => {
   return response.data?.data || [];
 });
 
-export { getIndustriesService };
+const createIndustryService = asyncHandlerClient(
+  async (workspaceId: string, industryName: string) => {
+    const response = await ApiClient.post('/industries', {
+      workspace_id: workspaceId,
+      industry_name: industryName,
+    });
+    return response.data?.data;
+  },
+);
+
+export { getIndustriesService, createIndustryService };

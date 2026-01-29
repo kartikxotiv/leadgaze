@@ -6,10 +6,14 @@ import {
   catchAsync,
   successDataResponse
 } from '~/utils/response-handler';
+import { getRelatedEntityIds } from '../_helpers/get-related-entities';
+import { getEntityName } from '../_helpers/get-entity-name';
 
 /**
  * GET /api/notes
  * Fetch notes for an entity
+ * Includes notes from related entities (lead conversion chain)
+ * Filters by user unless workspace owner
  */
 export const getNotes = catchAsync(
   async ({
@@ -31,14 +35,78 @@ export const getNotes = catchAsync(
       );
     }
 
-    const { data: notes, error } = await supabase
-      .from('crm_notes')
-      .select('*, created_by_user:accounts(name, email)') // Note: created_by links to accounts
-      .eq('workspace_id', workspaceId)
-      .eq('entity_type', entityType)
-      .eq('entity_id', entityId)
-      .eq('is_deleted', false)
-      .order('created_at', { ascending: false });
+    // Get current user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user is workspace owner
+    const { data: workspace } = await supabase
+      .from('workspaces')
+      .select('owner_id')
+      .eq('id', workspaceId)
+      .single();
+
+    const isWorkspaceOwner = workspace?.owner_id === user.id;
+
+    // Get all related entity IDs (includes lead conversion chain)
+    const entityIds = await getRelatedEntityIds(supabase, entityType, entityId);
+
+    // Build query - fetch notes for all related entities
+    // Use multiple queries and combine since Supabase OR doesn't support complex AND conditions
+    const notePromises = entityIds.map(({ entity_type, entity_id }) => {
+      let query = supabase
+        .from('crm_notes')
+        .select('*, created_by_user:accounts(name, email)')
+        .eq('workspace_id', workspaceId)
+        .eq('entity_type', entity_type)
+        .eq('entity_id', entity_id)
+        .eq('is_deleted', false);
+
+      // Filter by user unless workspace owner
+      if (!isWorkspaceOwner) {
+        query = query.eq('created_by', user.id);
+      }
+
+      return query;
+    });
+
+    // Execute all queries and combine results
+    const results = await Promise.all(notePromises);
+    const allNotes = results.flatMap((result) => result.data || []);
+
+    // Remove duplicates (in case same note appears multiple times)
+    const uniqueNotes = Array.from(
+      new Map(allNotes.map((note) => [note.id, note])).values(),
+    );
+
+    // Sort by created_at descending
+    uniqueNotes.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+
+    // Add entity names to each note
+    const notesWithEntityNames = await Promise.all(
+      uniqueNotes.map(async (note) => {
+        const entityName = await getEntityName(
+          supabase,
+          note.entity_type,
+          note.entity_id,
+        );
+        return {
+          ...note,
+          entity_name: entityName,
+        };
+      }),
+    );
+
+    const notes = notesWithEntityNames;
+    const error = results.find((r) => r.error)?.error;
 
     if (error) {
       console.error('Get notes error:', error);
