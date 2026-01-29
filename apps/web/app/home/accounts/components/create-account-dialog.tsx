@@ -25,10 +25,11 @@ import {
 } from '@kit/ui/select';
 import { Separator } from '@kit/ui/separator';
 import { Textarea } from '@kit/ui/textarea';
+import { Checkbox } from '@kit/ui/checkbox';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { createAccountService } from '~/services/accounts.service';
-import { getIndustriesService } from '~/services/industries.service';
+import { IndustrySelect } from '../../_components/industry-select';
 
 interface CreateAccountDialogProps {
     open: boolean;
@@ -55,13 +56,9 @@ export function CreateAccountDialog({
         billing_postal_code: '',
         billing_country: '',
         description: '',
+        is_public: true,
     });
 
-    const { data: industries = [] } = useQuery({
-        queryKey: ['industries', workspace?.id],
-        queryFn: () => getIndustriesService(workspace?.id || ''),
-        enabled: !!workspace?.id && open,
-    });
 
     const mutation = useMutation({
         mutationFn: async (payload: any) => {
@@ -95,6 +92,7 @@ export function CreateAccountDialog({
             billing_postal_code: '',
             billing_country: '',
             description: '',
+            is_public: true,
         });
     };
 
@@ -160,21 +158,10 @@ export function CreateAccountDialog({
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="industry_id">Industry</Label>
-                                <Select
+                                <IndustrySelect
                                     value={formData.industry_id}
                                     onValueChange={(value) => setFormData({ ...formData, industry_id: value })}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select industry" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {industries.map((industry: any) => (
-                                            <SelectItem key={industry.id} value={industry.id}>
-                                                {industry.industry_name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="company_size">Company Size</Label>
@@ -258,6 +245,33 @@ export function CreateAccountDialog({
                             placeholder="Add some details about the account..."
                             rows={3}
                         />
+                    </div>
+
+                    <div className="flex items-start gap-3 pt-4">
+                        <Checkbox
+                            id="is_public"
+                            checked={formData.is_public}
+                            onCheckedChange={(checked) => {
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    is_public: checked as boolean,
+                                }));
+                            }}
+                            className="mt-1"
+                        />
+                        <div className="flex-1">
+                            <Label
+                                htmlFor="is_public"
+                                className="cursor-pointer text-sm font-medium"
+                            >
+                                Make this account public
+                            </Label>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                When public, this account will be visible to all team members
+                                with "View accounts" access. When private, only you and
+                                assigned team members can see it.
+                            </p>
+                        </div>
                     </div>
 
                     <DialogFooter>

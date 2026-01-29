@@ -35,11 +35,14 @@ import { Textarea } from '@kit/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 
 import { updateAccountService } from '~/services/accounts.service';
+import { IndustrySelect } from '../../_components/industry-select';
+import { useRBAC } from '~/lib/rbac/rbac-provider';
 
 const formSchema = z.object({
     account_name: z.string().min(1, 'Account Name is required'),
     website: z.string().optional().or(z.literal('')),
     phone_number: z.string().optional().or(z.literal('')),
+    industry_id: z.string().optional().or(z.literal('')),
     company_size: z.string().optional().or(z.literal('')),
     annual_revenue: z.string().optional().or(z.literal('')),
     employee_count: z.string().optional().or(z.literal('')),
@@ -70,6 +73,7 @@ export function EditAccountDialog({
     onOpenChange,
     account,
 }: EditAccountDialogProps) {
+    const { currentWorkspace: workspace } = useRBAC();
     const queryClient = useQueryClient();
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -78,6 +82,7 @@ export function EditAccountDialog({
             account_name: '',
             website: '',
             phone_number: '',
+            industry_id: '',
             company_size: '',
             annual_revenue: '',
             employee_count: '',
@@ -104,6 +109,7 @@ export function EditAccountDialog({
                 account_name: account.account_name || '',
                 website: account.website || '',
                 phone_number: account.phone_number || '',
+                industry_id: account.industry_id || '',
                 company_size: account.company_size || '',
                 annual_revenue: account.annual_revenue ? String(account.annual_revenue) : '',
                 employee_count: account.employee_count ? String(account.employee_count) : '',
@@ -204,6 +210,23 @@ export function EditAccountDialog({
                                         )}
                                     />
                                 </div>
+                                <FormField
+                                    control={form.control}
+                                    name="industry_id"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Industry</FormLabel>
+                                            <FormControl>
+                                                <IndustrySelect
+                                                    value={field.value}
+                                                    onValueChange={field.onChange}
+                                                    disabled={updateMutation.isPending}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                                 <FormField
                                     control={form.control}
                                     name="account_type"

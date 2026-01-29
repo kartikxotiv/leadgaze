@@ -30,6 +30,10 @@ type LeadWithRelations = Lead & {
     email: string;
     name: string;
   } | null;
+  industry?: {
+    id: string;
+    industry_name: string;
+  } | null;
 };
 
 /**
@@ -87,7 +91,8 @@ const getLeads = catchAsync(
           status:entity_statuses(id, status_name, status_key, color, icon),
           source:lead_sources(id, source_name, source_key, color, icon),
           owner:accounts!crm_leads_owner_id_fkey(id, email, name),
-          created_by_account:accounts!crm_leads_created_by_fkey(id, email, name)
+          created_by_account:accounts!crm_leads_created_by_fkey(id, email, name),
+          industry:crm_industries(id, industry_name)
         `,
       )
       .eq('workspace_id', workspaceId)
@@ -155,7 +160,7 @@ const createLead = catchAsync(
       company_linkedin_url,
       job_title,
       department,
-      industry,
+      industry_id,
       company_size,
       annual_revenue,
       location,
@@ -205,7 +210,7 @@ const createLead = catchAsync(
         company_linkedin_url: company_linkedin_url || null,
         job_title: job_title || null,
         department: department || null,
-        industry: industry || null,
+        industry_id: industry_id || null,
         company_size: company_size || null,
         annual_revenue: annual_revenue || null,
         location: location || null,
@@ -227,7 +232,8 @@ const createLead = catchAsync(
         status:entity_statuses(id, status_name, status_key, color, icon),
         source:lead_sources(id, source_name, source_key, color, icon),
         owner:accounts!crm_leads_owner_id_fkey(id, email, name),
-        created_by_account:accounts!crm_leads_created_by_fkey(id, email, name)
+        created_by_account:accounts!crm_leads_created_by_fkey(id, email, name),
+        industry:crm_industries(id, industry_name)
       `,
       )
       .single();

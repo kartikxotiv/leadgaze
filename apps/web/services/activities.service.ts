@@ -6,6 +6,9 @@ export interface Note {
   id: string;
   content: string;
   created_at: string;
+  entity_type: string;
+  entity_id: string;
+  entity_name?: string | null;
   created_by_user?: { name: string; email: string };
 }
 
@@ -16,7 +19,11 @@ export interface Reminder {
   due_date?: string;
   priority: string;
   is_completed: boolean;
+  entity_type: string;
+  entity_id: string;
+  entity_name?: string | null;
   assigned_to_user?: { name: string; email: string };
+  created_by_user?: { name: string; email: string };
 }
 
 export interface Meeting {
@@ -27,6 +34,10 @@ export interface Meeting {
   meeting_link?: string;
   start_time: string;
   end_time: string;
+  entity_type: string;
+  entity_id: string;
+  entity_name?: string | null;
+  created_by_user?: { name: string; email: string };
 }
 
 export interface Document {
@@ -35,6 +46,10 @@ export interface Document {
   file_type?: string;
   size_bytes?: number;
   created_at: string;
+  entity_type: string;
+  entity_id: string;
+  entity_name?: string | null;
+  created_by_user?: { name: string; email: string };
 }
 
 // Service Functions

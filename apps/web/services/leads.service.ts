@@ -16,7 +16,7 @@ export interface Lead {
   company_linkedin_url?: string;
   job_title?: string;
   department?: string;
-  industry?: string;
+  industry_id?: string;
   company_size?: 'startup' | 'small' | 'medium' | 'large' | 'enterprise';
   annual_revenue?: number;
   location?: string;
@@ -38,6 +38,7 @@ export interface Lead {
   created_at: string;
   updated_at: string;
   is_deleted: boolean;
+  is_converted_to_account?: boolean;
   deleted_at?: string;
   deleted_by?: string;
   // Joined relations
@@ -60,6 +61,10 @@ export interface Lead {
     email: string;
     name: string;
   };
+  industry?: {
+    id: string;
+    industry_name: string;
+  };
 }
 
 export interface CreateLeadPayload {
@@ -76,7 +81,7 @@ export interface CreateLeadPayload {
   company_linkedin_url?: string;
   job_title?: string;
   department?: string;
-  industry?: string;
+  industry_id?: string;
   company_size?: 'startup' | 'small' | 'medium' | 'large' | 'enterprise';
   annual_revenue?: number;
   location?: string;
@@ -105,7 +110,7 @@ export interface UpdateLeadPayload {
   company_linkedin_url?: string;
   job_title?: string;
   department?: string;
-  industry?: string;
+  industry_id?: string;
   company_size?: 'startup' | 'small' | 'medium' | 'large' | 'enterprise';
   annual_revenue?: number;
   location?: string;
