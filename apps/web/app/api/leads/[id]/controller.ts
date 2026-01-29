@@ -67,10 +67,20 @@ const getLeadById = catchAsync(
       throw error;
     }
 
+    const { data: account } = await supabase
+      .from('crm_accounts')
+      .select()
+      .eq('converted_from_lead_id', leadId);
+
     if (!lead) {
       return NextResponse.json({ message: 'Lead not found' }, { status: 404 });
     }
 
+    if (account?.length) {
+      lead.is_converted_to_account = true;
+    } else {
+      lead.is_converted_to_account = false;
+    }
     return successDataResponse(
       'Lead retrieved successfully',
       lead as LeadWithRelations,
