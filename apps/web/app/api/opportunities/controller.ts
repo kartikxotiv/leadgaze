@@ -52,8 +52,9 @@ export const getOpportunities = catchAsync(
       throw workspaceError;
     }
 
+    const isOwner = workspace?.owner_id === user.id;
+
     // Build the query
-    // Join with Stage (Status), Account, Owner.
     let query = supabase
       .from('crm_opportunities')
       .select(
@@ -69,6 +70,24 @@ export const getOpportunities = catchAsync(
 
     if (accountId) {
       query = query.eq('account_id', accountId);
+    }
+
+    // If not owner, filter for public opportunities or opportunities assigned to current user
+    if (!isOwner) {
+      // Get opportunities assigned to the current user
+      const { data: assignedOpportunityIds } = await (supabase
+        .from('opportunity_assignees' as any)
+        .select('opportunity_id')
+        .eq('workspace_id', workspaceId)
+        .eq('assigned_to_user_id', user.id)
+        .eq('assignment_status', 'active') as any);
+
+      const assignedIds = assignedOpportunityIds?.map((a: any) => a.opportunity_id) || [];
+
+      // Filter: public opportunities OR assigned opportunities
+      query = query.or(
+        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'})`,
+      );
     }
 
     const { data: opportunities, error } = await query.order('created_at', {

@@ -27,6 +27,10 @@ type LeadWithRelations = Lead & {
     email: string;
     name: string;
   } | null;
+  industry?: {
+    id: string;
+    industry_name: string;
+  } | null;
 };
 
 const getLeadById = catchAsync(
@@ -54,7 +58,8 @@ const getLeadById = catchAsync(
           status:entity_statuses(id, status_name, status_key, color, icon),
           source:lead_sources(id, source_name, source_key, color, icon),
           owner:accounts!crm_leads_owner_id_fkey(id, email, name),
-          created_by_account:accounts!crm_leads_created_by_fkey(id, email, name)
+          created_by_account:accounts!crm_leads_created_by_fkey(id, email, name),
+          industry:crm_industries(id, industry_name)
         `,
       ) as any
     )
@@ -70,7 +75,7 @@ const getLeadById = catchAsync(
     const { data: account } = await supabase
       .from('crm_accounts')
       .select()
-      .eq('converted_from_lead_id', leadId);
+      .eq('created_from_lead_id', leadId);
 
     if (!lead) {
       return NextResponse.json({ message: 'Lead not found' }, { status: 404 });
@@ -78,8 +83,10 @@ const getLeadById = catchAsync(
 
     if (account?.length) {
       lead.is_converted_to_account = true;
+      lead.converted_account_id = account[0]?.id || null;
     } else {
       lead.is_converted_to_account = false;
+      lead.converted_account_id = null;
     }
     return successDataResponse(
       'Lead retrieved successfully',
@@ -148,8 +155,8 @@ const updateLead = catchAsync(
       updateData.job_title = body.job_title || null;
     if (body.department !== undefined)
       updateData.department = body.department || null;
-    if (body.industry !== undefined)
-      updateData.industry = body.industry || null;
+    if (body.industry_id !== undefined)
+      updateData.industry_id = body.industry_id || null;
     if (body.company_size !== undefined)
       updateData.company_size = body.company_size || null;
     if (body.annual_revenue !== undefined)
@@ -166,7 +173,37 @@ const updateLead = catchAsync(
     if (body.owner_id !== undefined)
       updateData.owner_id = body.owner_id || null;
     if (body.notes !== undefined) updateData.notes = body.notes || null;
-    if (body.is_public !== undefined) updateData.is_public = body.is_public;
+    
+    // Check permissions for is_public updates
+    if (body.is_public !== undefined) {
+      // Get the lead to check permissions
+      const { data: existingLead } = await supabase
+        .from('crm_leads')
+        .select('workspace_id, created_by')
+        .eq('id', leadId)
+        .single();
+
+      if (existingLead) {
+        // Get workspace to check if user is owner
+        const { data: workspace } = await supabase
+          .from('workspaces')
+          .select('owner_id')
+          .eq('id', existingLead.workspace_id)
+          .single();
+
+        const isWorkspaceOwner = workspace?.owner_id === user.id;
+        const isCreator = existingLead.created_by === user.id;
+
+        if (!isWorkspaceOwner && !isCreator) {
+          return NextResponse.json(
+            { message: 'Only workspace owner or creator can change visibility' },
+            { status: 403 },
+          );
+        }
+      }
+
+      updateData.is_public = body.is_public;
+    }
 
     updateData.updated_by = user.id;
     updateData.updated_at = new Date().toISOString();
@@ -182,7 +219,8 @@ const updateLead = catchAsync(
         status:entity_statuses(id, status_name, status_key, color, icon),
         source:lead_sources(id, source_name, source_key, color, icon),
         owner:accounts!crm_leads_owner_id_fkey(id, email, name),
-        created_by_account:accounts!crm_leads_created_by_fkey(id, email, name)
+        created_by_account:accounts!crm_leads_created_by_fkey(id, email, name),
+        industry:crm_industries(id, industry_name)
       `,
       )
       .single();

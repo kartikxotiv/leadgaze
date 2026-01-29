@@ -18,10 +18,13 @@ import { getContactsService } from '~/services/contacts.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
 import { EntityNotes } from '../../_components/entity-notes';
 import { EntityDocuments, EntityMeetings, EntityReminders } from '../../_components/entity-activity';
+import { PublicPrivateToggle } from '../../_components/public-private-toggle';
 import { EditAccountDialog } from '../components/edit-account-dialog';
+import { AccountAssignees } from '../components/account-assignees';
 import { usePermissionDetail, useCanAccessData } from '~/lib/permissions/use-permissions';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
+import { useRBAC } from '~/lib/rbac/rbac-provider';
 
 export default function AccountDetailsPage() {
     const params = useParams();
@@ -47,6 +50,7 @@ export default function AccountDetailsPage() {
     });
 
     const { data: user } = useUser();
+    const { currentWorkspace: workspace } = useRBAC();
     const editPermission = usePermissionDetail('accounts', 'edit');
     const canEdit = useCanAccessData(editPermission, account?.owner_id, user?.id);
 
@@ -214,6 +218,22 @@ export default function AccountDetailsPage() {
                                 </div>
                             </CardContent>
                         </Card>
+
+                        {/* Account Assignees Section */}
+                        {workspace?.id && (
+                            <AccountAssignees accountId={id} workspaceId={workspace.id} />
+                        )}
+
+                        {/* Public/Private Toggle */}
+                        {workspace?.id && account && (
+                            <PublicPrivateToggle
+                                entityType="account"
+                                entityId={id}
+                                isPublic={account.is_public ?? true}
+                                createdBy={account.created_by}
+                                workspaceId={workspace.id}
+                            />
+                        )}
 
                         {/* Contacts Section */}
                         <Card>
