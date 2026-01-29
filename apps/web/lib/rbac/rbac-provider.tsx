@@ -5,6 +5,7 @@ import React, { ReactNode, createContext, useContext } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
+import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { useUser } from '@kit/supabase/hooks/use-user';
 
 import { Tables } from '~/lib/database.types';
@@ -53,7 +54,8 @@ interface RBACContextType {
 const RBACContext = createContext<RBACContextType | undefined>(undefined);
 
 export function RBACProvider({ children }: { children: ReactNode }) {
-  const { data: user, isPending } = useUser();
+  const { data: user, isLoading: isUserLoading } = useUser();
+  const supabase = useSupabase();
   const [currentWorkspaceId, setCurrentWorkspaceId] = React.useState<
     string | null
   >(null);
@@ -61,15 +63,13 @@ export function RBACProvider({ children }: { children: ReactNode }) {
   // Fetch user's workspaces and permissions
   const {
     data: workspaces = [],
-    isLoading,
+    isLoading: isWorkspacesLoading,
     error,
     refetch,
   } = useQuery({
     queryKey: ['userWorkspaces', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-
-      const supabase = getSupabaseBrowserClient();
 
       // Get workspace memberships
       const { data: members, error: membersError } = await supabase
@@ -149,23 +149,29 @@ export function RBACProvider({ children }: { children: ReactNode }) {
       return workspacesData;
     },
     enabled: !!user?.id,
-    staleTime: 0, // Always consider data stale, refetch on invalidation
-    gcTime: 0, // Don't cache data in garbage collection
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
-  // Set default workspace (first one or from localStorage)
-  React.useEffect(() => {
-    if (workspaces.length > 0 && !currentWorkspaceId) {
-      const savedWorkspaceId = localStorage.getItem('currentWorkspaceId');
-      const workspace =
-        workspaces.find((w) => w.id === savedWorkspaceId) || workspaces[0];
+  const isLoading = isUserLoading || isWorkspacesLoading;
 
-      setCurrentWorkspaceId(workspace?.id!);
-    }
-  }, [workspaces, currentWorkspaceId]);
+  const currentWorkspaceIdFinal =
+    currentWorkspaceId ||
+    (typeof window !== 'undefined'
+      ? localStorage.getItem('currentWorkspaceId')
+      : null);
 
   const currentWorkspace =
-    workspaces.find((w) => w.id === currentWorkspaceId) || null;
+    workspaces.find((w) => w.id === currentWorkspaceIdFinal) ||
+    workspaces[0] ||
+    null;
+
+  // Sync back to state if we picked a default
+  React.useEffect(() => {
+    if (currentWorkspace && currentWorkspace.id !== currentWorkspaceId) {
+      setCurrentWorkspaceId(currentWorkspace.id);
+    }
+  }, [currentWorkspace, currentWorkspaceId]);
 
   React.useEffect(() => {
     if (currentWorkspace) {
