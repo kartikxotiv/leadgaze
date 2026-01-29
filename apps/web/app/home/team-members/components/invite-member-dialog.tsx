@@ -47,13 +47,14 @@ export function InviteMemberDialog({
   });
 
   // Fetch roles for selection
-  const { data: rolesData, isLoading: rolesLoading } = useQuery({
+  const { data: roles = [], isLoading: rolesLoading } = useQuery({
     queryKey: ['workspaceRoles', currentWorkspace?.id],
-    queryFn: () => getRolesService(currentWorkspace?.id || ''),
+    queryFn: async () => {
+      const res = await getRolesService(currentWorkspace?.id || '');
+      return res?.data;
+    },
     enabled: open && !!currentWorkspace?.id,
   });
-
-  const roles = rolesData?.data || [];
 
   const inviteMutation = useMutation({
     mutationFn: () =>
