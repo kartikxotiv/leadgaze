@@ -98,7 +98,7 @@ const getLeads = catchAsync(
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
 
-    // If not owner, filter for public leads or leads assigned to current user
+    // If not owner, filter for public leads, leads assigned to current user, or leads created by current user
     if (!isOwner) {
       // Get leads assigned to the current user
       const { data: assignedLeadIds } = await supabase
@@ -110,9 +110,9 @@ const getLeads = catchAsync(
 
       const assignedIds = assignedLeadIds?.map((a) => a.lead_id) || [];
 
-      // Filter: public leads OR assigned leads
+      // Filter: public leads OR assigned leads OR created by current user
       query = query.or(
-        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'})`,
+        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
       );
     }
 
