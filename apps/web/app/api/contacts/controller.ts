@@ -72,7 +72,7 @@ export const getContacts = catchAsync(
       query = query.eq('account_id', accountId);
     }
 
-    // If not owner, filter for public contacts or contacts assigned to current user
+    // If not owner, filter for public contacts, contacts assigned to current user, or contacts created by current user
     if (!isOwner) {
       // Get contacts assigned to the current user
       const { data: assignedContactIds } = await (supabase
@@ -84,9 +84,9 @@ export const getContacts = catchAsync(
 
       const assignedIds = assignedContactIds?.map((a: any) => a.contact_id) || [];
 
-      // Filter: public contacts OR assigned contacts
+      // Filter: public contacts OR assigned contacts OR created by current user
       query = query.or(
-        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'})`,
+        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
       );
     }
 

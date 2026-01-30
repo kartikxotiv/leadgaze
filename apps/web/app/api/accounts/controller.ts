@@ -67,7 +67,7 @@ export const getAccounts = catchAsync(
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
 
-    // If not owner, filter for public accounts or accounts assigned to current user
+    // If not owner, filter for public accounts, accounts assigned to current user, or accounts created by current user
     if (!isOwner) {
       // Get accounts assigned to the current user
       const { data: assignedAccountIds } = await (supabase
@@ -79,9 +79,9 @@ export const getAccounts = catchAsync(
 
       const assignedIds = assignedAccountIds?.map((a: any) => a.account_id) || [];
 
-      // Filter: public accounts OR assigned accounts
+      // Filter: public accounts OR assigned accounts OR created by current user
       query = query.or(
-        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'})`,
+        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
       );
     }
 
