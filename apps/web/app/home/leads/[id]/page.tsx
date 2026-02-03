@@ -5,13 +5,19 @@ import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import { Clock, Edit2, Mail, MapPin, Phone, User } from 'lucide-react';
+import { ChevronDown, Clock, Edit2, Mail, MapPin, Phone, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@kit/ui/dropdown-menu';
 import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Separator } from '@kit/ui/separator';
@@ -33,11 +39,13 @@ import {
   EntityMeetings,
   EntityReminders,
 } from '../../_components/entity-activity';
+import { EntityCalls } from '../../_components/entity-calls';
 import { EntityNotes } from '../../_components/entity-notes';
 import { ChangeStatusDialog } from '../components/change-status-dialog';
 import { ConvertLeadDialog } from '../components/convert-lead-dialog';
 import EditLeadDialog from '../components/edit-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
+import { LogCallDialog } from '../components/log-call-dialog';
 import { PublicPrivateToggle } from '~/home/_components/public-private-toggle';
 
 export default function LeadDetailsPage() {
@@ -51,6 +59,7 @@ export default function LeadDetailsPage() {
     null,
   );
   const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
+  const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
 
   const leadId = params?.id as string;
 
@@ -184,6 +193,27 @@ export default function LeadDetailsPage() {
           >
             Change Status
           </Button>
+
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsLogCallDialogOpen(true)}
+            className="p-3 "
+            disabled={!canEdit}
+            title={
+              !canEdit ? 'You do not have permission to log calls' : 'Log a call'
+            }
+          >
+
+            {/* Phone icon */}
+            {/* Log Call */}
+            <div className="flex items-center justify-center bg-[#44bbb3] p-2 rounded-full">
+              <Phone className="h-3 w-3 text-white" />
+            </div>
+          </Button>
+
+
           {!lead.is_converted_to_account && (
             <Button
               variant="outline"
@@ -524,6 +554,9 @@ export default function LeadDetailsPage() {
             {/* Notes Section */}
             <EntityNotes entityType="lead" entityId={leadId} />
 
+            {/* Call Logs Section */}
+            <EntityCalls entityType="lead" entityId={leadId} />
+
             {/* Activity Section */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -716,6 +749,22 @@ export default function LeadDetailsPage() {
           leadId={leadId}
           currentStatusId={lead.status_id}
           statuses={statuses}
+        />
+      )}
+
+      {/* Log Call Dialog */}
+      {lead && workspace?.id && (
+        <LogCallDialog
+          open={isLogCallDialogOpen}
+          onOpenChange={setIsLogCallDialogOpen}
+          onSuccess={() => {
+            setIsLogCallDialogOpen(false);
+          }}
+          entityType="lead"
+          entityId={leadId}
+          workspaceId={workspace.id}
+          defaultContactName={`${lead.first_name}${lead.last_name ? ` ${lead.last_name}` : ''}`.trim()}
+          defaultPhoneNumber={lead.phone_number || lead.mobile_number}
         />
       )}
     </ModuleGuard>
