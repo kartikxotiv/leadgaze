@@ -30,10 +30,10 @@ import { Textarea } from '@kit/ui/textarea';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
   createLeadService,
-  getLeadSourcesService,
   getLeadStatusesService,
 } from '~/services/leads.service';
 import { IndustrySelect } from '../../_components/industry-select';
+import { LeadSourceSelect } from '../../_components/lead-source-select';
 
 interface CreateLeadDialogProps {
   open: boolean;
@@ -103,32 +103,10 @@ export default function CreateLeadDialog({
     is_public: true,
   });
 
-  // Fetch available sources
-  const {
-    data: sources = [],
-    isLoading: sourcesLoading,
-    error: sourcesError,
-  } = useQuery({
-    queryKey: ['lead-sources', workspace?.id],
-    queryFn: () => {
-      if (!workspace?.id) {
-        return Promise.resolve([]);
-      }
-
-      return getLeadSourcesService(workspace.id).catch((error) => {
-        console.error('❌ Error fetching sources:', error);
-        toast.error('Failed to load sources');
-        return [];
-      });
-    },
-    enabled: !!workspace,
-  });
-
   // Fetch available statuses
   const {
     data: statuses = [],
     isLoading: statusesLoading,
-    error: statusesError,
   } = useQuery({
     queryKey: ['lead-statuses', workspace?.id],
     queryFn: () => {
@@ -144,10 +122,6 @@ export default function CreateLeadDialog({
     },
     enabled: !!workspace,
   });
-
-
-  // Debug log for sources and statuses
-  useEffect(() => { }, [sources, sourcesLoading, workspace]);
 
   useEffect(() => { }, [statuses, statusesLoading, workspace]);
 
@@ -653,30 +627,17 @@ export default function CreateLeadDialog({
                   >
                     Lead Source (Optional)
                   </Label>
-                  <Select
-                    value={formData.source_id}
-                    onValueChange={(value) =>
-                      handleInputChange('source_id', value)
-                    }
-                    disabled={isLoading}
-                  >
-                    <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                      <SelectValue placeholder="Select a source" />
-                    </SelectTrigger>
-                    <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
-                      {sources && sources.length > 0 ? (
-                        sources.map((source: any) => (
-                          <SelectItem key={source.id} value={source.id}>
-                            {source.source_name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="placeholder" disabled>
-                          No sources available
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <div className="mt-2">
+                    <LeadSourceSelect
+                      value={formData.source_id}
+                      onValueChange={(value) =>
+                        handleInputChange('source_id', value)
+                      }
+                      disabled={isLoading}
+                      placeholder="Select a source"
+                      className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -727,7 +688,7 @@ export default function CreateLeadDialog({
                   </Label>
                   <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                     When public, this lead will be visible to all team members
-                    with "View leads" access. When private, only you and
+                    with &quot;View leads&quot; access. When private, only you and
                     assigned team members can see it.
                   </p>
                 </div>
