@@ -131,6 +131,7 @@ export default function LeadsPage() {
   return (
     <ModuleGuard module="leads">
       <PageHeader
+        className="-mx-4 mb-4 px-4 lg:-mx-0 lg:px-4"
         title={`Leads (${leads.length})`}
         description="Manage and track your sales leads"
       >
