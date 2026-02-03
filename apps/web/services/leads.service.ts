@@ -192,6 +192,21 @@ const convertLeadService = asyncHandlerClient(
   },
 );
 
+const sendLeadEmailService = asyncHandlerClient(
+  async (
+    leadId: string,
+    payload: {
+      subject: string;
+      body: string;
+      cc?: string | string[];
+      bcc?: string | string[];
+    },
+  ) => {
+    const response = await ApiClient.post(`/leads/${leadId}/email`, payload);
+    return response.data?.data || null;
+  },
+);
+
 export {
   getLeadsService,
   getLeadByIdService,
@@ -201,4 +216,5 @@ export {
   getLeadStatusesService,
   updateLeadService,
   deleteLeadService,
+  sendLeadEmailService,
 };
