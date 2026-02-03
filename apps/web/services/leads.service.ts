@@ -158,6 +158,16 @@ const getLeadSourcesService = asyncHandlerClient(
   },
 );
 
+const createLeadSourceService = asyncHandlerClient(
+  async (workspaceId: string, sourceName: string) => {
+    const response = await ApiClient.post('/leads/sources', {
+      workspace_id: workspaceId,
+      source_name: sourceName,
+    });
+    return response.data?.data;
+  },
+);
+
 const getLeadStatusesService = asyncHandlerClient(
   async (workspaceId: string) => {
     const response = await ApiClient.get(
@@ -198,6 +208,7 @@ export {
   createLeadService,
   convertLeadService,
   getLeadSourcesService,
+  createLeadSourceService,
   getLeadStatusesService,
   updateLeadService,
   deleteLeadService,
