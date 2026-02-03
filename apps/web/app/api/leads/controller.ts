@@ -98,7 +98,7 @@ const getLeads = catchAsync(
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
 
-    // If not owner, filter for public leads or leads assigned to current user
+    // If not owner, filter for public leads, leads assigned to current user, or leads created by current user
     if (!isOwner) {
       // Get leads assigned to the current user
       const { data: assignedLeadIds } = await supabase
@@ -110,9 +110,9 @@ const getLeads = catchAsync(
 
       const assignedIds = assignedLeadIds?.map((a) => a.lead_id) || [];
 
-      // Filter: public leads OR assigned leads
+      // Filter: public leads OR assigned leads OR created by current user
       query = query.or(
-        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'})`,
+        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
       );
     }
 
@@ -345,4 +345,91 @@ const getLeadStatuses = catchAsync(
   },
 );
 
-export { getLeads, createLead, getLeadSources, getLeadStatuses };
+/**
+ * POST /api/leads/sources
+ * Create a new lead source
+ */
+const createLeadSource = catchAsync(
+  async ({
+    request,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const body = await request.json();
+    const { workspace_id, source_name } = body;
+
+    if (!workspace_id || !source_name) {
+      return NextResponse.json(
+        { message: 'workspace_id and source_name are required' },
+        { status: 400 },
+      );
+    }
+
+    // Get current user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Generate source_key from source_name (lowercase, replace spaces with underscores)
+    const source_key = source_name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+
+    // Check if source already exists
+    const { data: existing } = await supabase
+      .from('lead_sources')
+      .select('id')
+      .eq('workspace_id', workspace_id)
+      .eq('source_key', source_key)
+      .single();
+
+    if (existing) {
+      return NextResponse.json(
+        { message: 'Lead source already exists' },
+        { status: 409 },
+      );
+    }
+
+    // Get the highest sort_order for this workspace
+    const { data: maxSort } = await supabase
+      .from('lead_sources')
+      .select('sort_order')
+      .eq('workspace_id', workspace_id)
+      .order('sort_order', { ascending: false })
+      .limit(1)
+      .single();
+
+    const sort_order = (maxSort?.sort_order ?? -1) + 1;
+
+    const { data: source, error } = await supabase
+      .from('lead_sources')
+      .insert({
+        workspace_id,
+        source_name: source_name.trim(),
+        source_key,
+        is_active: true,
+        is_system: false,
+        sort_order,
+        created_by: user.id,
+      })
+      .select('id, source_name, source_key, color, icon')
+      .single();
+
+    if (error) {
+      console.error('Create lead source error:', error);
+      throw error;
+    }
+
+    return successDataResponse('Lead source created successfully', source);
+  },
+);
+
+export { getLeads, createLead, getLeadSources, getLeadStatuses, createLeadSource };

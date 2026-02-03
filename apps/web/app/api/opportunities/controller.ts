@@ -72,7 +72,7 @@ export const getOpportunities = catchAsync(
       query = query.eq('account_id', accountId);
     }
 
-    // If not owner, filter for public opportunities or opportunities assigned to current user
+    // If not owner, filter for public opportunities, opportunities assigned to current user, or opportunities created by current user
     if (!isOwner) {
       // Get opportunities assigned to the current user
       const { data: assignedOpportunityIds } = await (supabase
@@ -84,9 +84,9 @@ export const getOpportunities = catchAsync(
 
       const assignedIds = assignedOpportunityIds?.map((a: any) => a.opportunity_id) || [];
 
-      // Filter: public opportunities OR assigned opportunities
+      // Filter: public opportunities OR assigned opportunities OR created by current user
       query = query.or(
-        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'})`,
+        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
       );
     }
 
