@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 
 import type { JwtPayload } from '@supabase/supabase-js';
 
-import { Activity, Settings } from 'lucide-react';
+import { Activity, Settings, Calendar, Bell, FileText } from 'lucide-react';
 import { z } from 'zod';
 
 import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
@@ -27,10 +27,10 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
     // Basic routes that always exist
     const baseRoutes = [
       {
-        label: 'common:routes.application',
+        label: 'common:routes.dashboard',
         children: [
           {
-            label: 'common:routes.home',
+            label: 'common:routes.dashboard',
             path: pathsConfig.app.home,
             Icon: <Activity className="h-4 w-4" />,
             end: true,
@@ -52,6 +52,8 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
       },
     ];
 
+
+
     // Use permission-based navigation if available
     if (permissionNavConfig) {
       const { salesItems, teamItems } = permissionNavConfig;
@@ -60,43 +62,6 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
         ...baseRoutes,
         ...(salesItems.length > 0
           ? [
-              {
-                label: 'Sales',
-                children: salesItems.map((item) => {
-                  const IconComponent = item.Icon;
-                  return {
-                    ...item,
-                    Icon: <IconComponent className="h-4 w-4" />,
-                  };
-                }),
-              },
-            ]
-          : []),
-        ...(teamItems.length > 0
-          ? [
-              {
-                label: 'Team',
-                children: teamItems.map((item) => {
-                  const IconComponent = item.Icon;
-                  return {
-                    ...item,
-                    Icon: <IconComponent className="h-4 w-4" />,
-                  };
-                }),
-              },
-            ]
-          : []),
-        ...settingsRoutes,
-      ];
-    }
-
-    // Fall back to RBAC-based navigation
-    const { salesItems, teamItems } = getNavigationConfig(canAccess);
-
-    return [
-      ...baseRoutes,
-      ...(salesItems.length > 0
-        ? [
             {
               label: 'Sales',
               children: salesItems.map((item) => {
@@ -108,9 +73,9 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
               }),
             },
           ]
-        : []),
-      ...(teamItems.length > 0
-        ? [
+          : []),
+        ...(teamItems.length > 0
+          ? [
             {
               label: 'Team',
               children: teamItems.map((item) => {
@@ -122,7 +87,94 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
               }),
             },
           ]
+          : []),
+        {
+          label: 'Communication',
+          children: [
+            {
+              label: 'Meetings',
+              path: '/home/meetings',
+              Icon: <Calendar className="h-4 w-4" />,
+            },
+            {
+              label: 'Reminders',
+              path: '/home/reminders',
+              Icon: <Bell className="h-4 w-4" />,
+            },
+            {
+              label: 'Notes',
+              path: '/home/notes',
+              Icon: <FileText className="h-4 w-4" />,
+            },
+            {
+              label: 'Document',
+              path: '/home/document',
+              Icon: <FileText className="h-4 w-4" />,
+            },
+          ],
+        },
+        ...settingsRoutes,
+      ];
+    }
+
+    // Fall back to RBAC-based navigation
+    const { salesItems, teamItems } = getNavigationConfig(canAccess);
+
+    return [
+      ...baseRoutes,
+      ...(salesItems.length > 0
+        ? [
+          {
+            label: 'Sales',
+            children: salesItems.map((item) => {
+              const IconComponent = item.Icon;
+              return {
+                ...item,
+                Icon: <IconComponent className="h-4 w-4" />,
+              };
+            }),
+          },
+        ]
         : []),
+      ...(teamItems.length > 0
+        ? [
+          {
+            label: 'Team',
+            children: teamItems.map((item) => {
+              const IconComponent = item.Icon;
+              return {
+                ...item,
+                Icon: <IconComponent className="h-4 w-4" />,
+              };
+            }),
+          },
+        ]
+        : []),
+      {
+        label: 'Communication',
+        children: [
+          {
+            label: 'Meetings',
+            path: '/home/meetings',
+            Icon: <Calendar className="h-4 w-4" />,
+          },
+          {
+            label: 'Reminders',
+            path: '/home/reminders',
+            Icon: <Bell className="h-4 w-4" />,
+          },
+          {
+            label: 'Notes',
+            path: '/home/notes',
+            Icon: <FileText className="h-4 w-4" />,
+          },
+          {
+            label: 'Document',
+            path: '/home/document',
+            Icon: <FileText className="h-4 w-4" />,
+          },
+        ],
+      },
       ...settingsRoutes,
     ];
   }, [permissionNavConfig, canAccess]);
