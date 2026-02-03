@@ -65,13 +65,29 @@ export default function LeadsPage() {
 
   // Filter and search leads
   const filteredLeads = useMemo(() => {
-    return leads?.filter((lead: Lead) => {
-      const matchesSearch =
-        lead.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.company_name?.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!leads) return [];
 
+    return leads.filter((lead: Lead) => {
+      // 1. Search Logic: Mega-String Approach
+      // This concats all searchable text into one string to ensure no misses.
+      const search = (searchTerm || '').toLowerCase();
+
+      const combinedText = [
+        lead.first_name,
+        lead.last_name,
+        lead.email,
+        lead.company_name,
+        lead.phone_number,
+        lead.status?.status_name,
+      ]
+        .filter(Boolean) // Remove nulls/undefined
+        .join(' ')
+        .toLowerCase();
+
+      // Simple includes check
+      const matchesSearch = !search || combinedText.includes(search);
+
+      // 2. Status Logic
       const matchesStatus =
         selectedStatus === 'all' || lead.status_id === selectedStatus;
 
@@ -114,17 +130,49 @@ export default function LeadsPage() {
 
   return (
     <ModuleGuard module="leads">
-      <PageHeader title="Leads" description="Manage and track your sales leads">
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title={`Leads (${leads.length})`}
+        description="Manage and track your sales leads"
+      >
+        <div className="flex items-center gap-3">
+          <div className="relative w-64 lg:w-72">
+            <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search leads..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-9 pl-10"
+            />
+          </div>
+          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+            <SelectTrigger className="h-9 w-40">
+              <Filter className="mr-2 h-4 w-4 text-gray-400" />
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              {availableStatuses.map((status: any) => (
+                <SelectItem key={status.id} value={status.id}>
+                  {status.status_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+
           <Button
             onClick={() => setIsCreateDialogOpen(true)}
             variant="outline"
-            className="gap-2"
+            className="h-9 gap-2"
           >
-            <FileUp className="h-4 w-4" />
+            <FileUp className="h-4 w-4 text-gray-500" />
             Import
           </Button>
-          <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
+          <Button
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="h-9 gap-2 bg-blue-600 text-white hover:bg-blue-700"
+          >
             <Plus className="h-4 w-4" />
             New Lead
           </Button>
@@ -133,73 +181,6 @@ export default function LeadsPage() {
 
       <PageBody>
         <div className="space-y-6">
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-muted-foreground text-sm">Total Leads</p>
-                <p className="mt-2 text-2xl font-bold">{leads.length}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-muted-foreground text-sm">Filtered</p>
-                <p className="mt-2 text-2xl font-bold">
-                  {filteredLeads.length}
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-muted-foreground text-sm">Average Score</p>
-                <p className="mt-2 text-2xl font-bold">
-                  {leads.length > 0
-                    ? Math.round(
-                        leads.reduce(
-                          (sum: number, lead: Lead) => sum + lead.lead_score,
-                          0,
-                        ) / leads.length,
-                      )
-                    : 0}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Search and Filter Bar */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search by name, email, or company..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select
-                  value={selectedStatus}
-                  onValueChange={setSelectedStatus}
-                >
-                  <SelectTrigger className="w-48">
-                    <Filter className="mr-2 h-4 w-4" />
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    {availableStatuses.map((status: any) => (
-                      <SelectItem key={status.id} value={status.id}>
-                        {status.status_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Table */}
           <Card>
             <CardContent className="p-0">
@@ -207,6 +188,9 @@ export default function LeadsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12 whitespace-nowrap">
+                        S. No.
+                      </TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Company</TableHead>
@@ -218,7 +202,7 @@ export default function LeadsPage() {
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
+                        <TableCell colSpan={7} className="h-24 text-center">
                           <div className="flex items-center justify-center">
                             <div className="text-gray-500">
                               Loading leads...
@@ -228,7 +212,7 @@ export default function LeadsPage() {
                       </TableRow>
                     ) : filteredLeads.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
+                        <TableCell colSpan={7} className="h-24 text-center">
                           <div className="text-gray-500">
                             {searchTerm || selectedStatus !== 'all'
                               ? 'No leads match your filters'
@@ -237,8 +221,11 @@ export default function LeadsPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredLeads.map((lead: Lead) => (
+                      filteredLeads.map((lead: Lead, index: number) => (
                         <TableRow key={lead.id}>
+                          <TableCell className="text-muted-foreground w-12">
+                            {index + 1}
+                          </TableCell>
                           <TableCell className="font-medium">
                             <Link
                               href={`/home/leads/${lead.id}`}
