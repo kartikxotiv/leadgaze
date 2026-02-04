@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+
 import Link from 'next/link';
+
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Search } from 'lucide-react';
 
@@ -9,6 +11,14 @@ import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
 import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@kit/ui/pagination';
 import {
   Table,
   TableBody,
@@ -18,38 +28,50 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
-import { useRBAC } from '~/lib/rbac/rbac-provider';
-import { getContactsService, Contact } from '~/services/contacts.service';
-import { CreateContactDialog } from './components/create-contact-dialog';
+import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
+import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { Contact, getContactsService } from '~/services/contacts.service';
+
+import { CreateContactDialog } from './components/create-contact-dialog';
 
 export default function ContactsPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const {
-    data: contacts = [],
+    data: contactsData = { data: [], count: 0 },
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: ['contacts', workspace?.id],
-    queryFn: () => getContactsService(workspace?.id || ''),
+    queryKey: ['contacts', workspace?.id, currentPage, debouncedSearchTerm],
+    queryFn: () =>
+      getContactsService({
+        workspaceId: workspace?.id || '',
+        page: currentPage,
+        limit: itemsPerPage,
+        searchTerm: debouncedSearchTerm,
+      }),
     enabled: !!workspace?.id,
   });
 
-  const filteredContacts = useMemo(() => {
-    return contacts?.filter((contact: Contact) => {
-      const matchesSearch =
-        contact.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.account?.account_name?.toLowerCase().includes(searchTerm.toLowerCase());
+  const contacts = contactsData.data;
+  const totalCount = contactsData.count;
 
-      return matchesSearch;
-    });
-  }, [contacts, searchTerm]);
+  // Reset to first page when search changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm]);
+
+  // Pagination Logic
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  const paginatedContacts = contacts; // Data is already paginated from server
 
   if (!workspace) {
     return (
@@ -81,61 +103,53 @@ export default function ContactsPage() {
 
   return (
     <ModuleGuard module="contacts">
-      <PageHeader title="Contacts" description="Manage your contacts (People)">
-        <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Contact
-        </Button>
+      <PageHeader
+        title={`Contacts (${totalCount})`}
+        description="Manage your contacts (People)"
+      >
+        <div className="flex items-center gap-3">
+          <div className="relative w-64 lg:w-72">
+            <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search by name, email, or account..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-9 pl-10"
+            />
+          </div>
+          <Button
+            onClick={() => setCreateDialogOpen(true)}
+            className="h-9 gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            New Contact
+          </Button>
+        </div>
       </PageHeader>
 
       <PageBody>
         <div className="space-y-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search by name, email, or account..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           <Card>
             <CardContent className="p-0">
               <div className="overflow-hidden rounded-lg border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>
-                        Name
+                      <TableHead className="w-12 whitespace-nowrap">
+                        S. No.
                       </TableHead>
-                      <TableHead>
-                        Email
-                      </TableHead>
-                      <TableHead>
-                        Account
-                      </TableHead>
-                      <TableHead>
-                        Owner
-                      </TableHead>
-                      <TableHead>
-                        Created At
-                      </TableHead>
-                      <TableHead className="text-right">
-                        Actions
-                      </TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Account</TableHead>
+                      <TableHead>Owner</TableHead>
+                      <TableHead>Created At</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
+                        <TableCell colSpan={7} className="h-24 text-center">
                           <div className="flex items-center justify-center">
                             <div className="text-gray-500">
                               Loading contacts...
@@ -143,9 +157,9 @@ export default function ContactsPage() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ) : filteredContacts.length === 0 ? (
+                    ) : paginatedContacts.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
+                        <TableCell colSpan={7} className="h-24 text-center">
                           <div className="text-gray-500">
                             {searchTerm
                               ? 'No contacts match your search'
@@ -154,38 +168,108 @@ export default function ContactsPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredContacts.map((contact: Contact) => (
-                        <TableRow
-                          key={contact.id}
-                        >
-                          <TableCell className="font-medium">
-                            {contact.first_name} {contact.last_name || ''}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {contact.email || '-'}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {contact.account?.account_name || '-'}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {contact.owner?.name || '-'}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {new Date(contact.created_at).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="link" asChild className="h-auto p-0 text-primary hover:underline">
-                              <Link href={`/home/contacts/${contact.id}`}>View</Link>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                      paginatedContacts.map(
+                        (contact: Contact, index: number) => (
+                          <TableRow key={contact.id}>
+                            <TableCell className="text-muted-foreground w-12">
+                              {(currentPage - 1) * itemsPerPage + index + 1}
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {contact.first_name} {contact.last_name || ''}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {contact.email || '-'}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {contact.account?.account_name || '-'}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {contact.owner?.name || '-'}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {new Date(
+                                contact.created_at,
+                              ).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="link"
+                                asChild
+                                className="text-primary h-auto p-0 hover:underline"
+                              >
+                                <Link href={`/home/contacts/${contact.id}`}>
+                                  View
+                                </Link>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ),
+                      )
                     )}
                   </TableBody>
                 </Table>
               </div>
             </CardContent>
           </Card>
+
+          {totalCount > 0 && (
+            <div className="text-muted-foreground flex items-center justify-between px-2 text-sm">
+              <div>
+                Showing{' '}
+                <span className="text-foreground font-medium">
+                  {(currentPage - 1) * itemsPerPage + 1}
+                </span>{' '}
+                to{' '}
+                <span className="text-foreground font-medium">
+                  {Math.min(currentPage * itemsPerPage, totalCount)}
+                </span>{' '}
+                of{' '}
+                <span className="text-foreground font-medium">
+                  {totalCount}
+                </span>{' '}
+                contacts
+              </div>
+              <Pagination className="w-auto">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      className={
+                        currentPage === 1
+                          ? 'pointer-events-none opacity-50'
+                          : 'cursor-pointer'
+                      }
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <PaginationItem key={i}>
+                      <PaginationLink
+                        isActive={currentPage === i + 1}
+                        onClick={() => setCurrentPage(i + 1)}
+                        className="cursor-pointer"
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext
+                      className={
+                        currentPage === totalPages
+                          ? 'pointer-events-none opacity-50'
+                          : 'cursor-pointer'
+                      }
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
 
           <CreateContactDialog
             open={createDialogOpen}

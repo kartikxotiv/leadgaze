@@ -17,6 +17,7 @@ import {
 import { Input } from '@kit/ui/input';
 import { ScrollArea } from '@kit/ui/scroll-area';
 
+import { useDebounce } from '~/lib/hooks/use-debounce';
 import type { LeadAssigneeWithDetails } from '~/services/lead-assignees.service';
 import { getWorkspaceMembersService } from '~/services/workspace-members.service';
 
@@ -40,6 +41,7 @@ export function AssignUserModal({
   isLoading,
 }: AssignUserModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Get all workspace members
   const { data: members = [], isLoading: membersLoading } = useQuery({
@@ -60,17 +62,17 @@ export function AssignUserModal({
 
   // Filter members based on search and exclude already assigned users
   const availableMembers = useMemo(() => {
-    return members.filter((member) => {
+    return members.filter((member: any) => {
       const isAlreadyAssigned = assignedUserIds.has(member.id);
       if (isAlreadyAssigned) return false;
 
-      const searchLower = searchQuery.toLowerCase();
+      const searchLower = debouncedSearchQuery.toLowerCase();
       return (
         (member.full_name?.toLowerCase().includes(searchLower) ?? false) ||
         (member.email?.toLowerCase().includes(searchLower) ?? false)
       );
     });
-  }, [members, searchQuery, assignedUserIds]);
+  }, [members, debouncedSearchQuery, assignedUserIds]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -116,7 +118,7 @@ export function AssignUserModal({
               </div>
             ) : (
               <div className="space-y-2">
-                {availableMembers.map((member) => (
+                {availableMembers.map((member: any) => (
                   <button
                     key={member.id}
                     onClick={() => onAssign(member.id)}

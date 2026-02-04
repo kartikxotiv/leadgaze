@@ -91,6 +91,9 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       queryClient.invalidateQueries({
         queryKey: ['reminders', entityType, entityId],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['reminders', workspace?.id],
+      });
     },
     onError: () => toast.error('Failed to set reminder'),
   });
@@ -106,6 +109,9 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       queryClient.invalidateQueries({
         queryKey: ['reminders', entityType, entityId],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['reminders', workspace?.id],
+      });
     },
     onError: () => toast.error('Failed to update reminder'),
   });
@@ -116,6 +122,9 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       toast.success('Reminder deleted');
       queryClient.invalidateQueries({
         queryKey: ['reminders', entityType, entityId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['reminders', workspace?.id],
       });
     },
     onError: () => toast.error('Failed to delete reminder'),
@@ -154,6 +163,9 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
     }).then(() => {
       queryClient.invalidateQueries({
         queryKey: ['reminders', entityType, entityId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['reminders', workspace?.id],
       });
       toast.success(
         reminder.is_completed
@@ -364,6 +376,9 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
       queryClient.invalidateQueries({
         queryKey: ['meetings', entityType, entityId],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['meetings', workspace?.id],
+      });
     },
     onError: () => toast.error('Failed to schedule meeting'),
   });
@@ -385,6 +400,9 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
       queryClient.invalidateQueries({
         queryKey: ['meetings', entityType, entityId],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['meetings', workspace?.id],
+      });
     },
     onError: () => toast.error('Failed to update meeting'),
   });
@@ -395,6 +413,9 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
       toast.success('Meeting deleted');
       queryClient.invalidateQueries({
         queryKey: ['meetings', entityType, entityId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['meetings', workspace?.id],
       });
     },
     onError: () => toast.error('Failed to delete meeting'),
@@ -635,6 +656,9 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
       queryClient.invalidateQueries({
         queryKey: ['documents', entityType, entityId],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['documents', workspace?.id],
+      });
     },
     onError: () => toast.error('Failed to upload document'),
   });
@@ -650,6 +674,9 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
       queryClient.invalidateQueries({
         queryKey: ['documents', entityType, entityId],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['documents', workspace?.id],
+      });
     },
     onError: () => toast.error('Failed to rename document'),
   });
@@ -660,6 +687,9 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
       toast.success('Document deleted');
       queryClient.invalidateQueries({
         queryKey: ['documents', entityType, entityId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['documents', workspace?.id],
       });
     },
     onError: () => toast.error('Failed to delete document'),

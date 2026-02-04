@@ -28,9 +28,9 @@ export const getDocuments = catchAsync(
     const entityId = url.searchParams.get('entityId');
     const workspaceId = url.searchParams.get('workspaceId');
 
-    if (!entityType || !entityId || !workspaceId) {
+    if (!workspaceId) {
       return NextResponse.json(
-        { message: 'entityType, entityId, and workspaceId are required' },
+        { message: 'workspaceId is required' },
         { status: 400 },
       );
     }
@@ -53,35 +53,50 @@ export const getDocuments = catchAsync(
 
     const isWorkspaceOwner = workspace?.owner_id === user.id;
 
-    // Get all related entity IDs (includes lead conversion chain)
-    const entityIds = await getRelatedEntityIds(supabase, entityType, entityId);
+    let uniqueDocuments: any[] = [];
 
-    // Build query - fetch documents for all related entities
-    const documentPromises = entityIds.map(({ entity_type, entity_id }) => {
+    if (entityType && entityId) {
+      // Get all related entity IDs (includes lead conversion chain)
+      const entityIds = await getRelatedEntityIds(supabase, entityType, entityId);
+
+      // Build query - fetch documents for all related entities
+      const documentPromises = entityIds.map(({ entity_type, entity_id }) => {
+        let query = supabase
+          .from('crm_documents')
+          .select('*, created_by_user:accounts(name, email)')
+          .eq('workspace_id', workspaceId)
+          .eq('entity_type', entity_type)
+          .eq('entity_id', entity_id)
+          .eq('is_deleted', false);
+
+        if (!isWorkspaceOwner) {
+          query = query.eq('created_by', user.id);
+        }
+
+        return query;
+      });
+
+      const results = await Promise.all(documentPromises);
+      const allDocuments = results.flatMap((result) => result.data || []);
+      uniqueDocuments = Array.from(
+        new Map(allDocuments.map((doc) => [doc.id, doc])).values(),
+      );
+    } else {
+      // Fetch all documents for the workspace
       let query = supabase
         .from('crm_documents')
         .select('*, created_by_user:accounts(name, email)')
         .eq('workspace_id', workspaceId)
-        .eq('entity_type', entity_type)
-        .eq('entity_id', entity_id)
         .eq('is_deleted', false);
 
-      // Filter by user unless workspace owner
       if (!isWorkspaceOwner) {
         query = query.eq('created_by', user.id);
       }
 
-      return query;
-    });
-
-    // Execute all queries and combine results
-    const results = await Promise.all(documentPromises);
-    const allDocuments = results.flatMap((result) => result.data || []);
-
-    // Remove duplicates
-    const uniqueDocuments = Array.from(
-      new Map(allDocuments.map((doc) => [doc.id, doc])).values(),
-    );
+      const { data, error } = await query;
+      if (error) throw error;
+      uniqueDocuments = data || [];
+    }
 
     // Sort by created_at descending
     uniqueDocuments.sort(
@@ -104,15 +119,7 @@ export const getDocuments = catchAsync(
       }),
     );
 
-    const documents = documentsWithEntityNames;
-    const error = results.find((r) => r.error)?.error;
-
-    if (error) {
-      console.error('Get documents error:', error);
-      throw error;
-    }
-
-    return successDataResponse('Documents retrieved', documents || []);
+    return successDataResponse('Documents retrieved', documentsWithEntityNames || []);
   },
 );
 
