@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 
 export async function sendSMTP({
-    smtp,
+    account,
     from,
     to,
     subject,
@@ -10,13 +10,13 @@ export async function sendSMTP({
     headers
 }: any) {
     const transporter = nodemailer.createTransport({
-        host: smtp.host,
-        port: smtp.port,
-        secure: smtp.secure,
-        auth: smtp.username
+        host: account.host,
+        port: account.port,
+        secure: account.secure,
+        auth: account.username
             ? {
-                user: smtp.username,
-                pass: smtp.password
+                user: account.username,
+                pass: account.password
             }
             : undefined
     });

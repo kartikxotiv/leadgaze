@@ -10,9 +10,8 @@ export const sendEmail = catchAsync(async ({ request }: { request: NextRequest }
         const supabase = getSupabaseServerClient();
 
         const {
-            provider,               // "smtp" | "gmail_oauth"
-            smtp_account_id,        // required if smtp
-            oauth_account_id,       // required if gmail_oauth
+            workspace_id,           // required
+            account_id,             // unified account id
             template_slug,
             to,
             from,
@@ -20,10 +19,15 @@ export const sendEmail = catchAsync(async ({ request }: { request: NextRequest }
             reply_to_message_id
         } = payload;
 
+        if (!workspace_id) {
+            return NextResponse.json({ error: "Missing workspace_id" }, { status: 400 });
+        }
+
         /* ---------------- TEMPLATE ---------------- */
         const { data: template } = await supabase
-            .from("email_templates")
+            .from("workspace_email_templates")
             .select("*")
+            .eq("workspace_id", workspace_id)
             .eq("slug", template_slug)
             .single();
 
@@ -31,43 +35,30 @@ export const sendEmail = catchAsync(async ({ request }: { request: NextRequest }
             return NextResponse.json({ error: "Template not found" }, { status: 404 });
         }
 
-        validateTemplateVars(template.variables || [], dynamic_data);
+        const vars = (dynamic_data || {}) as Record<string, any>;
+        validateTemplateVars(vars, (template.variables as unknown as string[]) || []);
 
-        const html = renderTemplate(template.html_body, dynamic_data);
+        const html = renderTemplate(template.html_body, vars);
         const text = template.text_body
-            ? renderTemplate(template.text_body, dynamic_data)
+            ? renderTemplate(template.text_body, vars)
             : "";
 
-        /* ---------------- PROVIDER CONFIG ---------------- */
-        let providerConfig: any = {};
+        /* ---------------- ACCOUNT ---------------- */
+        const { data: account } = await supabase
+            .from("email_accounts")
+            .select("*")
+            .eq("workspace_id", workspace_id)
+            .eq("id", account_id)
+            .single();
 
-        if (provider === "smtp") {
-            const { data: smtp } = await supabase
-                .from("email_smtp_accounts")
-                .select("*")
-                .eq("id", smtp_account_id)
-                .single();
-
-            if (!smtp) {
-                return NextResponse.json({ error: "SMTP account not found" }, { status: 404 });
-            }
-
-            providerConfig.smtp = smtp;
-        }
-
-        if (provider === "gmail_oauth") {
-            const { data: oauth } = await supabase
-                .from("email_oauth_accounts")
-                .select("*")
-                .eq("id", oauth_account_id)
-                .single();
-
-            providerConfig.oauth = oauth;
+        if (!account) {
+            return NextResponse.json({ error: "Email account not found" }, { status: 404 });
         }
 
         /* ---------------- SEND ---------------- */
+        /* ---------------- SEND ---------------- */
         const info = await sendMail({
-            provider,
+            account,
             from,
             to,
             subject: template.subject,
@@ -78,12 +69,13 @@ export const sendEmail = catchAsync(async ({ request }: { request: NextRequest }
                     "In-Reply-To": reply_to_message_id,
                     "References": reply_to_message_id
                 }
-                : undefined,
-            ...providerConfig
+                : undefined
         });
 
         /* ---------------- LOG ---------------- */
+        /* ---------------- LOG ---------------- */
         await supabase.from("email_sends").insert({
+            workspace_id,
             template_id: template.id,
             to_email: to,
             from_email: from,

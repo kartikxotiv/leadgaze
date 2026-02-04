@@ -6,6 +6,7 @@ export async function POST(req: Request) {
     const supabase = getSupabaseServerClient();
 
     const {
+        workspace_id,
         email,
         host,
         port,
@@ -15,14 +16,16 @@ export async function POST(req: Request) {
         from_name
     } = body;
 
-    const { data, error } = await supabase.from("email_smtp_accounts").insert({
+    const { data, error } = await supabase.from("email_accounts").insert({
+        workspace_id,
         email,
         host,
         port,
         secure,
         username,
         password,
-        from_name
+        from_name,
+        provider: 'smtp'
     });
 
     if (error) {

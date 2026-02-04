@@ -8,7 +8,6 @@ export async function POST(req: Request) {
     // Example parsed message
     const {
         gmail_message_id,
-        thread_id,
         from,
         to,
         subject,
@@ -18,17 +17,34 @@ export async function POST(req: Request) {
         received_at
     } = payload;
 
-    // Upsert thread
-    await supabase.from("email_threads").upsert({
-        id: thread_id,
-        subject,
-        last_message_at: received_at
-    });
+    // 1. Resolve Workspace ID
+    // We assume 'to' contains our user's email. We extract it to find the workspace.
+    // 'to' can be "Name <email@com>", so we might need parsing.
+    // For simplicity, we search validation against email_accounts.
+
+    // Simplistic extraction (improve if needed with a library)
+    const toEmail = Array.isArray(to) ? to[0] : to;
+    // In reality 'to' might be a comma separated string or array depending on upstream parser.
+    // Assuming simple string or finding first match.
+
+    // We try to find an account that matches one of the recipients
+    const { data: account } = await supabase
+        .from("email_accounts")
+        .select("workspace_id")
+        .ilike("email", `%${toEmail}%`) // Very loose matching, ideal would be exact
+        .maybeSingle();
+
+    if (!account) {
+        return NextResponse.json({ error: "No matching workspace found for recipient" }, { status: 404 });
+    }
+
+    const workspace_id = account.workspace_id;
 
     // Save email
     await supabase.from("emails").insert({
+        workspace_id,
         gmail_message_id,
-        thread_id,
+        // thread_id, // Removed in new schema
         direction: "inbound",
         from_email: from,
         to_emails: to,

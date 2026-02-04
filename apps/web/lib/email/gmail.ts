@@ -8,14 +8,21 @@ export async function sendGmailOAuth({
     html,
     text,
     headers,
-    oauth
+    account
 }: any) {
+    if (!account.access_token || !account.refresh_token) {
+        throw new Error("Missing OAuth tokens");
+    }
+
     const client = new google.auth.OAuth2(
-        oauth.clientId,
-        oauth.clientSecret
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET
     );
 
-    client.setCredentials({ refresh_token: oauth.refreshToken });
+    client.setCredentials({
+        refresh_token: account.refresh_token,
+        access_token: account.access_token
+    });
 
     const { token } = await client.getAccessToken();
 
@@ -24,9 +31,9 @@ export async function sendGmailOAuth({
         auth: {
             type: "OAuth2",
             user: from,
-            clientId: oauth.clientId,
-            clientSecret: oauth.clientSecret,
-            refreshToken: oauth.refreshToken,
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            refreshToken: account.refresh_token,
             accessToken: token!
         }
     });

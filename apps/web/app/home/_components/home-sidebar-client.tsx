@@ -48,6 +48,11 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
             path: pathsConfig.app.profileSettings,
             Icon: <Settings className="h-4 w-4" />,
           },
+          {
+            label: 'common:routes.workspace-settings',
+            path: pathsConfig.app.workspaceSettings,
+            Icon: <Settings className="h-4 w-4" />,
+          },
         ],
       },
     ];
@@ -60,31 +65,31 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
         ...baseRoutes,
         ...(salesItems.length > 0
           ? [
-              {
-                label: 'Sales',
-                children: salesItems.map((item) => {
-                  const IconComponent = item.Icon;
-                  return {
-                    ...item,
-                    Icon: <IconComponent className="h-4 w-4" />,
-                  };
-                }),
-              },
-            ]
+            {
+              label: 'Sales',
+              children: salesItems.map((item) => {
+                const IconComponent = item.Icon;
+                return {
+                  ...item,
+                  Icon: <IconComponent className="h-4 w-4" />,
+                };
+              }),
+            },
+          ]
           : []),
         ...(teamItems.length > 0
           ? [
-              {
-                label: 'Team',
-                children: teamItems.map((item) => {
-                  const IconComponent = item.Icon;
-                  return {
-                    ...item,
-                    Icon: <IconComponent className="h-4 w-4" />,
-                  };
-                }),
-              },
-            ]
+            {
+              label: 'Team',
+              children: teamItems.map((item) => {
+                const IconComponent = item.Icon;
+                return {
+                  ...item,
+                  Icon: <IconComponent className="h-4 w-4" />,
+                };
+              }),
+            },
+          ]
           : []),
         ...settingsRoutes,
       ];
@@ -97,31 +102,31 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
       ...baseRoutes,
       ...(salesItems.length > 0
         ? [
-            {
-              label: 'Sales',
-              children: salesItems.map((item) => {
-                const IconComponent = item.Icon;
-                return {
-                  ...item,
-                  Icon: <IconComponent className="h-4 w-4" />,
-                };
-              }),
-            },
-          ]
+          {
+            label: 'Sales',
+            children: salesItems.map((item) => {
+              const IconComponent = item.Icon;
+              return {
+                ...item,
+                Icon: <IconComponent className="h-4 w-4" />,
+              };
+            }),
+          },
+        ]
         : []),
       ...(teamItems.length > 0
         ? [
-            {
-              label: 'Team',
-              children: teamItems.map((item) => {
-                const IconComponent = item.Icon;
-                return {
-                  ...item,
-                  Icon: <IconComponent className="h-4 w-4" />,
-                };
-              }),
-            },
-          ]
+          {
+            label: 'Team',
+            children: teamItems.map((item) => {
+              const IconComponent = item.Icon;
+              return {
+                ...item,
+                Icon: <IconComponent className="h-4 w-4" />,
+              };
+            }),
+          },
+        ]
         : []),
       ...settingsRoutes,
     ];
