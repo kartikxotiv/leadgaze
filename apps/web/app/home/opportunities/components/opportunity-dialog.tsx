@@ -44,6 +44,7 @@ import {
 import { Textarea } from '@kit/ui/textarea';
 import { cn } from '@kit/ui/utils';
 
+import { useDebounce } from '~/lib/hooks/use-debounce';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
 import {
@@ -87,6 +88,8 @@ export function OpportunityDialog({
   const { currentWorkspace } = useRBAC();
   const isEditMode = !!opportunity;
   const [openAccountCombobox, setOpenAccountCombobox] = useState(false);
+  const [accountSearchQuery, setAccountSearchQuery] = useState('');
+  const debouncedAccountSearchQuery = useDebounce(accountSearchQuery, 300);
 
   // Fetch Stages
   const { data: stages = [] } = useQuery({
@@ -96,11 +99,20 @@ export function OpportunityDialog({
   });
 
   // Fetch Accounts (for selection)
-  const { data: accounts = [] } = useQuery({
-    queryKey: ['accounts', currentWorkspace?.id],
-    queryFn: () => getAccountsService(currentWorkspace!.id),
+  const {
+    data: accountsData = { data: [], count: 0 },
+    isLoading: isAccountsLoading,
+  } = useQuery({
+    queryKey: ['accounts', currentWorkspace?.id, debouncedAccountSearchQuery],
+    queryFn: () =>
+      getAccountsService({
+        workspaceId: currentWorkspace!.id,
+        searchTerm: debouncedAccountSearchQuery,
+      }),
     enabled: !!currentWorkspace?.id && isOpen,
   });
+
+  const accounts = accountsData.data;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -265,8 +277,12 @@ export function OpportunityDialog({
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-[300px] p-0">
-                        <Command>
-                          <CommandInput placeholder="Search account..." />
+                        <Command shouldFilter={false}>
+                          <CommandInput
+                            placeholder="Search account..."
+                            value={accountSearchQuery}
+                            onValueChange={setAccountSearchQuery}
+                          />
                           <CommandList>
                             <CommandEmpty>No account found.</CommandEmpty>
                             <CommandGroup>

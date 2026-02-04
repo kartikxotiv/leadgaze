@@ -13,6 +13,14 @@ import { Card, CardContent } from '@kit/ui/card';
 import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@kit/ui/pagination';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -28,9 +36,13 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
+import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
-import { getLeadsService } from '~/services/leads.service';
+import {
+  getLeadStatusesService,
+  getLeadsService,
+} from '~/services/leads.service';
 import { Lead } from '~/services/leads.service';
 
 import CreateLeadDialog from './components/create-lead-dialog';
@@ -40,60 +52,54 @@ export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const {
-    data: leads = [],
+    data: leadsData = { data: [], count: 0 },
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: ['leads', workspace?.id],
-    queryFn: () => getLeadsService(workspace!.id),
+    queryKey: [
+      'leads',
+      workspace?.id,
+      currentPage,
+      debouncedSearchTerm,
+      selectedStatus,
+    ],
+    queryFn: () =>
+      getLeadsService({
+        workspaceId: workspace?.id || '',
+        page: currentPage,
+        limit: itemsPerPage,
+        searchTerm: debouncedSearchTerm,
+        statusId: selectedStatus,
+      }),
     enabled: !!workspace?.id,
   });
 
-  // Get unique statuses from leads for filter dropdown
-  const availableStatuses = useMemo(() => {
-    const statuses = new Map();
-    leads?.forEach((lead: Lead) => {
-      if (lead.status && !statuses.has(lead.status.id)) {
-        statuses.set(lead.status.id, lead.status);
-      }
-    });
-    return Array.from(statuses.values());
-  }, [leads]);
+  const { data: statuses = [] } = useQuery({
+    queryKey: ['lead-statuses', workspace?.id],
+    queryFn: () => getLeadStatusesService(workspace?.id || ''),
+    enabled: !!workspace?.id,
+  });
 
-  // Filter and search leads
-  const filteredLeads = useMemo(() => {
-    if (!leads) return [];
+  const leads = leadsData.data;
+  const totalCount = leadsData.count;
 
-    return leads.filter((lead: Lead) => {
-      // 1. Search Logic: Mega-String Approach
-      // This concats all searchable text into one string to ensure no misses.
-      const search = (searchTerm || '').toLowerCase();
+  // Reset to first page when search or status changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm, selectedStatus]);
 
-      const combinedText = [
-        lead.first_name,
-        lead.last_name,
-        lead.email,
-        lead.company_name,
-        lead.phone_number,
-        lead.status?.status_name,
-      ]
-        .filter(Boolean) // Remove nulls/undefined
-        .join(' ')
-        .toLowerCase();
+  const leadsWithStatus = leads;
 
-      // Simple includes check
-      const matchesSearch = !search || combinedText.includes(search);
-
-      // 2. Status Logic
-      const matchesStatus =
-        selectedStatus === 'all' || lead.status_id === selectedStatus;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [leads, searchTerm, selectedStatus]);
+  // Filter and search leads - we used to do this client-side, now we just use the data from server
+  const paginatedLeads = leads;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   const handleCreateSuccess = () => {
     setIsCreateDialogOpen(false);
@@ -132,7 +138,7 @@ export default function LeadsPage() {
     <ModuleGuard module="leads">
       <PageHeader
         className="-mx-4 mb-4 px-4 lg:-mx-0 lg:px-4"
-        title={`Leads (${leads.length})`}
+        title={`Leads (${totalCount})`}
         description="Manage and track your sales leads"
       >
         <div className="flex items-center gap-3">
@@ -152,7 +158,7 @@ export default function LeadsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
-              {availableStatuses.map((status: any) => (
+              {statuses.map((status: any) => (
                 <SelectItem key={status.id} value={status.id}>
                   {status.status_name}
                 </SelectItem>
@@ -211,7 +217,7 @@ export default function LeadsPage() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ) : filteredLeads.length === 0 ? (
+                    ) : paginatedLeads.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="h-24 text-center">
                           <div className="text-gray-500">
@@ -222,10 +228,10 @@ export default function LeadsPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredLeads.map((lead: Lead, index: number) => (
+                      paginatedLeads.map((lead: Lead, index: number) => (
                         <TableRow key={lead.id}>
                           <TableCell className="text-muted-foreground w-12">
-                            {index + 1}
+                            {(currentPage - 1) * itemsPerPage + index + 1}
                           </TableCell>
                           <TableCell className="font-medium">
                             <Link
@@ -287,6 +293,65 @@ export default function LeadsPage() {
               </div>
             </CardContent>
           </Card>
+
+          {totalCount > 0 && (
+            <div className="text-muted-foreground flex items-center justify-between px-2 text-sm">
+              <div>
+                Showing{' '}
+                <span className="text-foreground font-medium">
+                  {(currentPage - 1) * itemsPerPage + 1}
+                </span>{' '}
+                to{' '}
+                <span className="text-foreground font-medium">
+                  {Math.min(currentPage * itemsPerPage, totalCount)}
+                </span>{' '}
+                of{' '}
+                <span className="text-foreground font-medium">
+                  {totalCount}
+                </span>{' '}
+                leads
+              </div>
+              <Pagination className="w-auto">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      className={
+                        currentPage === 1
+                          ? 'pointer-events-none opacity-50'
+                          : 'cursor-pointer'
+                      }
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <PaginationItem key={i}>
+                      <PaginationLink
+                        isActive={currentPage === i + 1}
+                        onClick={() => setCurrentPage(i + 1)}
+                        className="cursor-pointer"
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext
+                      className={
+                        currentPage === totalPages
+                          ? 'pointer-events-none opacity-50'
+                          : 'cursor-pointer'
+                      }
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </div>
 
         {/* Create Lead Dialog */}

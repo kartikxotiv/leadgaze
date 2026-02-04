@@ -29,10 +29,23 @@ export interface Account {
   };
 }
 
-const getAccountsService = asyncHandlerClient(async (workspaceId: string) => {
-  const response = await ApiClient.get(`/accounts?workspaceId=${workspaceId}`);
-  return response.data?.data || [];
-});
+const getAccountsService = asyncHandlerClient(
+  async (params: {
+    workspaceId: string;
+    page?: number;
+    limit?: number;
+    searchTerm?: string;
+  }) => {
+    const { workspaceId, page = 1, limit = 20, searchTerm = '' } = params;
+    const response = await ApiClient.get(
+      `/accounts?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}`,
+    );
+    return {
+      data: (response.data?.data || []) as Account[],
+      count: (response.data?.count || 0) as number,
+    };
+  },
+);
 
 const getAccountByIdService = asyncHandlerClient(async (id: string) => {
   const response = await ApiClient.get(`/accounts/${id}`);
