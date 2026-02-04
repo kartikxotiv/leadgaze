@@ -26,6 +26,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@kit/ui/badge';
 // import { useToast } from '@kit/ui/sonner';
 import { Alert, AlertDescription, AlertTitle } from '@kit/ui/alert';
+import { Switch } from '@kit/ui/switch';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@kit/ui/alert-dialog';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 
@@ -87,7 +99,7 @@ export default function WorkspaceSettingsPage() {
             if (!workspace?.id) return;
             setIsSubmitting(true);
             try {
-                const response = await fetch('/api/email/smtp/controller', { // Assuming this is the path based on file location
+                const response = await fetch('/api/email/smtp', { // Assuming this is the path based on file location
                     method: 'POST',
                     body: JSON.stringify({
                         ...data,
@@ -166,8 +178,54 @@ export default function WorkspaceSettingsPage() {
 
     const handleGoogleConnect = () => {
         if (!workspace?.id) return;
-        window.location.href = `/api/email/google/auth?workspace_id=${workspace.id}`;
+        window.location.href = `/api/email/google/auth?workspace_id=${workspace.id}&from_name=${'Programea'}`;
     };
+
+    const handleDelete = async (id: string) => {
+        if (!workspace?.id) return;
+
+        try {
+            const response = await fetch(`/api/email?id=${id}&workspace_id=${workspace.id}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Failed to delete account');
+            }
+
+            refetch();
+        } catch (e: any) {
+            console.error(e);
+            // toast.error(e.message);
+        }
+    };
+
+    // const handleStatusChange = async (id: string, isActive: boolean) => {
+    //     if (!workspace?.id) return;
+
+    //     try {
+    //         // Optimistic update could be done here, but refetch is safer for "only one active" logic
+    //         const response = await fetch('/api/email', {
+    //             method: 'PATCH',
+    //             body: JSON.stringify({
+    //                 id,
+    //                 workspace_id: workspace.id,
+    //                 is_active: isActive
+    //             })
+    //         });
+
+    //         if (!response.ok) {
+    //             const err = await response.json();
+    //             throw new Error(err.error || 'Failed to update status');
+    //         }
+
+    //         refetch();
+    //     } catch (e: any) {
+    //         console.error(e);
+    //         // toast.error(e.message);
+    //     }
+    // };
 
     return (
         <>
@@ -271,10 +329,30 @@ export default function WorkspaceSettingsPage() {
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-right">
-                                                    {/* Add delete/edit actions later */}
-                                                    <Button variant="ghost" size="icon" disabled>
-                                                        <Trash2 className="h-4 w-4 text-muted-foreground" />
-                                                    </Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="ghost" size="icon">
+                                                                <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Delete Email Account</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    Are you sure you want to delete <strong>{account.email}</strong>? This action cannot be undone.
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction
+                                                                    onClick={() => handleDelete(account.id)}
+                                                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                                >
+                                                                    Delete
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
                                                 </TableCell>
                                             </TableRow>
                                         ))

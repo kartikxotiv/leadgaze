@@ -7,6 +7,7 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const workspaceId = searchParams.get('workspace_id');
     const returnUrl = searchParams.get('return_url');
+    const fromName = searchParams.get('from_name');
 
     if (!workspaceId) {
         return NextResponse.json(
@@ -23,6 +24,7 @@ export async function GET(req: NextRequest) {
 
     const state = JSON.stringify({
         workspaceId,
+        fromName,
         returnUrl: returnUrl || '/home/workspace-settings',
     });
 

@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
 
     let workspaceId: string;
     let returnUrl: string;
+    let fromName: string;
 
     try {
         const decodedState = JSON.parse(
@@ -35,6 +36,7 @@ export async function GET(req: NextRequest) {
         );
         workspaceId = decodedState.workspaceId;
         returnUrl = decodedState.returnUrl;
+        fromName = decodedState.fromName;
     } catch (e) {
         // logger.error({ e }, 'Failed to parse state');
         return NextResponse.redirect(
@@ -71,7 +73,7 @@ export async function GET(req: NextRequest) {
             {
                 workspace_id: workspaceId,
                 email: userInfo.email,
-                from_name: userInfo.name || userInfo.email,
+                from_name: fromName,
                 provider: 'google',
                 access_token: tokens.access_token,
                 refresh_token: tokens.refresh_token, // This might be undefined if not first time/prompt not forced
