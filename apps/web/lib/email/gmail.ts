@@ -4,6 +4,8 @@ import { google } from "googleapis";
 export async function sendGmailOAuth({
     from,
     to,
+    cc,
+    bcc,
     subject,
     html,
     text,
@@ -41,6 +43,8 @@ export async function sendGmailOAuth({
     return transporter.sendMail({
         from,
         to,
+        cc,
+        bcc,
         subject,
         html,
         text,

@@ -4,6 +4,8 @@ export async function sendSMTP({
     account,
     from,
     to,
+    cc,
+    bcc,
     subject,
     html,
     text,
@@ -24,6 +26,8 @@ export async function sendSMTP({
     return transporter.sendMail({
         from,
         to,
+        cc,
+        bcc,
         subject,
         html,
         text,
