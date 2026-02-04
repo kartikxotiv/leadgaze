@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
                 is_active: true,
             },
             {
-                onConflict: 'workspace_id, email',
+                onConflict: 'workspace_id',
             }
         );
 

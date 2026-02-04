@@ -30,7 +30,7 @@ export const submitSMTPDetails = catchAsync(
             provider: 'smtp'
         },
             {
-                onConflict: 'workspace_id, email'
+                onConflict: 'workspace_id'
             }).select().single();
 
         if (error) {
