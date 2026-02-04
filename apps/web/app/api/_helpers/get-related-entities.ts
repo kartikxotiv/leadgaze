@@ -16,9 +16,15 @@ export async function getRelatedEntityIds(
 
   // If viewing account/contact/opportunity, also get the lead it was created from
   if (['account', 'contact', 'opportunity'].includes(entityType)) {
-    const tableName = `crm_${entityType}s` as any;
+    const tableMap: Record<string, string> = {
+      account: 'crm_accounts',
+      contact: 'crm_contacts',
+      opportunity: 'crm_opportunities',
+    };
+    const tableName = tableMap[entityType];
+
     const { data: entity } = await supabase
-      .from(tableName)
+      .from(tableName as any)
       .select('created_from_lead_id')
       .eq('id', entityId)
       .single();
