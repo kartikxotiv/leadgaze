@@ -22,6 +22,9 @@ export const getContacts = catchAsync(
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
     const accountId = url.searchParams.get('accountId');
+    const page = parseInt(url.searchParams.get('page') || '1', 10);
+    const limit = parseInt(url.searchParams.get('limit') || '20', 10);
+    const searchTerm = url.searchParams.get('searchTerm') || '';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -64,12 +67,20 @@ export const getContacts = catchAsync(
           account:crm_accounts(id, account_name),
           owner:accounts!crm_contacts_owner_id_fkey(id, email, name)
         `,
+        { count: 'exact' },
       )
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
 
     if (accountId) {
       query = query.eq('account_id', accountId);
+    }
+
+    // Search term
+    if (searchTerm) {
+      query = query.or(
+        `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`,
+      );
     }
 
     // If not owner, filter for public contacts, contacts assigned to current user, or contacts created by current user
@@ -82,7 +93,8 @@ export const getContacts = catchAsync(
         .eq('assigned_to_user_id', user.id)
         .eq('assignment_status', 'active') as any);
 
-      const assignedIds = assignedContactIds?.map((a: any) => a.contact_id) || [];
+      const assignedIds =
+        assignedContactIds?.map((a: any) => a.contact_id) || [];
 
       // Filter: public contacts OR assigned contacts OR created by current user
       query = query.or(
@@ -90,19 +102,30 @@ export const getContacts = catchAsync(
       );
     }
 
-    const { data: contacts, error } = await query.order('created_at', {
-      ascending: false,
-    });
+    // Pagination
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const {
+      data: contacts,
+      error,
+      count,
+    } = await query
+      .order('created_at', {
+        ascending: false,
+      })
+      .range(from, to);
 
     if (error) {
       console.error('Get contacts error:', error);
       throw error;
     }
 
-    return successDataResponse(
-      'Contacts retrieved successfully',
-      contacts || [],
-    );
+    return NextResponse.json({
+      message: 'Contacts retrieved successfully',
+      data: contacts || [],
+      count: count || 0,
+    });
   },
 );
 
