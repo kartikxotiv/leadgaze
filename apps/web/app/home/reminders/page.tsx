@@ -15,6 +15,10 @@ import {
     Search,
     Trash2,
     Pencil,
+    User,
+    Building2,
+    Users,
+    Briefcase,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -36,6 +40,10 @@ import {
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import { PageBody, PageHeader } from '@kit/ui/page';
+import {
+    RadioGroup,
+    RadioGroupItem,
+} from '@kit/ui/radio-group';
 import {
     Select,
     SelectContent,
@@ -61,6 +69,9 @@ import {
     updateReminderService,
 } from '~/services/activities.service';
 import { getLeadsService } from '~/services/leads.service';
+import { getContactsService } from '~/services/contacts.service';
+import { getAccountsService } from '~/services/accounts.service';
+import { getOpportunitiesService } from '~/services/opportunities.service';
 
 export default function RemindersPage() {
     const { currentWorkspace: workspace } = useRBAC();
@@ -77,7 +88,8 @@ export default function RemindersPage() {
         description: '',
         due_date: '',
         priority: 'medium',
-        leadId: '',
+        entity_type: 'lead',
+        entityId: '',
     });
 
     const { data: reminders = [], isLoading } = useQuery({
@@ -98,12 +110,39 @@ export default function RemindersPage() {
         enabled: !!workspace?.id,
     });
 
+    const { data: contacts = [] } = useQuery({
+        queryKey: ['contacts', workspace?.id],
+        queryFn: () => {
+            if (!workspace?.id) return [];
+            return getContactsService(workspace.id);
+        },
+        enabled: !!workspace?.id,
+    });
+
+    const { data: accounts = [] } = useQuery({
+        queryKey: ['accounts', workspace?.id],
+        queryFn: () => {
+            if (!workspace?.id) return [];
+            return getAccountsService(workspace.id);
+        },
+        enabled: !!workspace?.id,
+    });
+
+    const { data: opportunities = [] } = useQuery({
+        queryKey: ['opportunities', workspace?.id],
+        queryFn: () => {
+            if (!workspace?.id) return [];
+            return getOpportunitiesService(workspace.id);
+        },
+        enabled: !!workspace?.id,
+    });
+
     const createMutation = useMutation({
         mutationFn: (payload: any) =>
             createReminderService({
                 workspace_id: workspace!.id,
-                entity_type: 'lead',
-                entity_id: payload.leadId,
+                entity_type: payload.entity_type,
+                entity_id: payload.entityId,
                 title: payload.title,
                 description: payload.description,
                 priority: payload.priority,
@@ -112,7 +151,7 @@ export default function RemindersPage() {
         onSuccess: () => {
             toast.success('Reminder added');
             setIsCreateDialogOpen(false);
-            setFormData({ title: '', description: '', due_date: '', priority: 'medium', leadId: '' });
+            setFormData({ title: '', description: '', due_date: '', priority: 'medium', entity_type: 'lead', entityId: '' });
             queryClient.invalidateQueries({ queryKey: ['reminders', workspace?.id] });
         },
         onError: () => toast.error('Failed to add reminder'),
@@ -156,7 +195,7 @@ export default function RemindersPage() {
     }, [reminders, searchTerm, priorityFilter, statusFilter]);
 
     const handleCreate = () => {
-        if (!formData.title.trim() || !formData.leadId) return;
+        if (!formData.title.trim() || !formData.entityId) return;
         createMutation.mutate(formData);
     };
 
@@ -169,7 +208,8 @@ export default function RemindersPage() {
                 ? new Date(reminder.due_date).toISOString().slice(0, 16)
                 : '',
             priority: reminder.priority || 'medium',
-            leadId: reminder.entity_id,
+            entity_type: reminder.entity_type || 'lead',
+            entityId: reminder.entity_id,
         });
         setIsEditDialogOpen(true);
     };
@@ -266,6 +306,13 @@ export default function RemindersPage() {
                 title="Reminders"
                 description="Keep track of your important tasks and reminders"
             >
+                <Button className="gap-2" onClick={() => {
+                    setFormData({ title: '', description: '', due_date: '', priority: 'medium', entity_type: 'lead', entityId: '' });
+                    setIsCreateDialogOpen(true);
+                }}>
+                    <Plus className="h-4 w-4" />
+                    New Reminder
+                </Button>
 
             </PageHeader>
 
@@ -408,6 +455,138 @@ export default function RemindersPage() {
                     </Card>
                 </div>
             </PageBody>
+
+            {/* Create Dialog */}
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Add New Reminder</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                        <div className="space-y-4">
+                            <Label>Associate with</Label>
+                            <RadioGroup
+                                value={formData.entity_type}
+                                onValueChange={(val) => setFormData({ ...formData, entity_type: val, entityId: '' })}
+                                className="flex flex-wrap gap-4"
+                            >
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="lead" id="lead" />
+                                    <Label htmlFor="lead" className="flex items-center gap-1 cursor-pointer">
+                                        <User className="h-3 w-3" /> Lead
+                                    </Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="contact" id="contact" />
+                                    <Label htmlFor="contact" className="flex items-center gap-1 cursor-pointer">
+                                        <Users className="h-3 w-3" /> Contact
+                                    </Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="account" id="account" />
+                                    <Label htmlFor="account" className="flex items-center gap-1 cursor-pointer">
+                                        <Building2 className="h-3 w-3" /> Account
+                                    </Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="opportunity" id="opportunity" />
+                                    <Label htmlFor="opportunity" className="flex items-center gap-1 cursor-pointer">
+                                        <Briefcase className="h-3 w-3" /> Opportunity
+                                    </Label>
+                                </div>
+                            </RadioGroup>
+
+                            <Select
+                                value={formData.entityId}
+                                onValueChange={(val) => setFormData({ ...formData, entityId: val })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder={`Select ${formData.entity_type}...`} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {formData.entity_type === 'lead' && leads.map((lead: any) => (
+                                        <SelectItem key={lead.id} value={lead.id}>
+                                            {lead.first_name} {lead.last_name || ''}
+                                        </SelectItem>
+                                    ))}
+                                    {formData.entity_type === 'contact' && contacts.map((contact: any) => (
+                                        <SelectItem key={contact.id} value={contact.id}>
+                                            {contact.first_name} {contact.last_name || ''}
+                                        </SelectItem>
+                                    ))}
+                                    {formData.entity_type === 'account' && accounts.map((account: any) => (
+                                        <SelectItem key={account.id} value={account.id}>
+                                            {account.account_name}
+                                        </SelectItem>
+                                    ))}
+                                    {formData.entity_type === 'opportunity' && opportunities.map((opportunity: any) => (
+                                        <SelectItem key={opportunity.id} value={opportunity.id}>
+                                            {opportunity.opportunity_name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Title</Label>
+                            <Input
+                                value={formData.title}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, title: e.target.value })
+                                }
+                                placeholder="Call client..."
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Description</Label>
+                            <Input
+                                value={formData.description}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, description: e.target.value })
+                                }
+                                placeholder="Add more details..."
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Priority</Label>
+                            <Select
+                                value={formData.priority}
+                                onValueChange={(val) => setFormData({ ...formData, priority: val })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select priority" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="low">Low</SelectItem>
+                                    <SelectItem value="medium">Medium</SelectItem>
+                                    <SelectItem value="high">High</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Due Date</Label>
+                            <Input
+                                type="datetime-local"
+                                value={formData.due_date}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, due_date: e.target.value })
+                                }
+                            />
+                        </div>
+                        <Button
+                            onClick={handleCreate}
+                            disabled={!formData.title.trim() || !formData.entityId || createMutation.isPending}
+                            className="w-full"
+                        >
+                            {createMutation.isPending ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                'Save Reminder'
+                            )}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
 
 

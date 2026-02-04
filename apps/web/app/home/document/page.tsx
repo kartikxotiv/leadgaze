@@ -17,6 +17,10 @@ import {
     Plus,
     Search,
     Trash2,
+    User,
+    Building2,
+    Users,
+    Briefcase,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -37,6 +41,10 @@ import {
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import { PageBody, PageHeader } from '@kit/ui/page';
+import {
+    RadioGroup,
+    RadioGroupItem,
+} from '@kit/ui/radio-group';
 import {
     Select,
     SelectContent,
@@ -62,6 +70,9 @@ import {
     updateDocumentService,
 } from '~/services/activities.service';
 import { getLeadsService } from '~/services/leads.service';
+import { getContactsService } from '~/services/contacts.service';
+import { getAccountsService } from '~/services/accounts.service';
+import { getOpportunitiesService } from '~/services/opportunities.service';
 
 export default function DocumentPage() {
     const { currentWorkspace: workspace } = useRBAC();
@@ -74,7 +85,8 @@ export default function DocumentPage() {
     const [editingDoc, setEditingDoc] = useState<Document | null>(null);
     const [newName, setNewName] = useState('');
     const [file, setFile] = useState<File | null>(null);
-    const [targetLeadId, setTargetLeadId] = useState('');
+    const [entityType, setEntityType] = useState('lead');
+    const [entityId, setEntityId] = useState('');
 
     const { data: documents = [], isLoading } = useQuery({
         queryKey: ['documents', workspace?.id],
@@ -94,19 +106,47 @@ export default function DocumentPage() {
         enabled: !!workspace?.id,
     });
 
+    const { data: contacts = [] } = useQuery({
+        queryKey: ['contacts', workspace?.id],
+        queryFn: () => {
+            if (!workspace?.id) return [];
+            return getContactsService(workspace.id);
+        },
+        enabled: !!workspace?.id,
+    });
+
+    const { data: accounts = [] } = useQuery({
+        queryKey: ['accounts', workspace?.id],
+        queryFn: () => {
+            if (!workspace?.id) return [];
+            return getAccountsService(workspace.id);
+        },
+        enabled: !!workspace?.id,
+    });
+
+    const { data: opportunities = [] } = useQuery({
+        queryKey: ['opportunities', workspace?.id],
+        queryFn: () => {
+            if (!workspace?.id) return [];
+            return getOpportunitiesService(workspace.id);
+        },
+        enabled: !!workspace?.id,
+    });
+
     const createMutation = useMutation({
-        mutationFn: (payload: { file: File; leadId: string }) =>
+        mutationFn: (payload: { file: File; entity_type: string; entity_id: string }) =>
             createDocumentService({
                 workspace_id: workspace!.id,
-                entity_type: 'lead',
-                entity_id: payload.leadId,
+                entity_type: payload.entity_type,
+                entity_id: payload.entity_id,
                 file: payload.file,
             }),
         onSuccess: () => {
             toast.success('Document uploaded');
             setIsUploadDialogOpen(false);
             setFile(null);
-            setTargetLeadId('');
+            setEntityType('lead');
+            setEntityId('');
             queryClient.invalidateQueries({ queryKey: ['documents', workspace?.id] });
         },
         onError: () => toast.error('Failed to upload document'),
@@ -146,8 +186,8 @@ export default function DocumentPage() {
     }, [documents, searchTerm, typeFilter]);
 
     const handleUpload = () => {
-        if (!file || !targetLeadId) return;
-        createMutation.mutate({ file, leadId: targetLeadId });
+        if (!file || !entityId) return;
+        createMutation.mutate({ file, entity_type: entityType, entity_id: entityId });
     };
 
     const handleEdit = (doc: Document) => {
@@ -201,6 +241,15 @@ export default function DocumentPage() {
                 title="Documents"
                 description="Manage and organize your files and documents"
             >
+                <Button className="gap-2" onClick={() => {
+                    setFile(null);
+                    setEntityType('lead');
+                    setEntityId('');
+                    setIsUploadDialogOpen(true);
+                }}>
+                    <Plus className="h-4 w-4" />
+                    Upload Document
+                </Button>
 
             </PageHeader>
             <PageBody>
@@ -324,6 +373,99 @@ export default function DocumentPage() {
                     </Card>
                 </div>
             </PageBody>
+
+            {/* Upload Dialog */}
+            <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Upload Document</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                        <div className="space-y-4">
+                            <Label>Associate with</Label>
+                            <RadioGroup
+                                value={entityType}
+                                onValueChange={(val) => {
+                                    setEntityType(val);
+                                    setEntityId('');
+                                }}
+                                className="flex flex-wrap gap-4"
+                            >
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="lead" id="lead" />
+                                    <Label htmlFor="lead" className="flex items-center gap-1 cursor-pointer">
+                                        <User className="h-3 w-3" /> Lead
+                                    </Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="contact" id="contact" />
+                                    <Label htmlFor="contact" className="flex items-center gap-1 cursor-pointer">
+                                        <Users className="h-3 w-3" /> Contact
+                                    </Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="account" id="account" />
+                                    <Label htmlFor="account" className="flex items-center gap-1 cursor-pointer">
+                                        <Building2 className="h-3 w-3" /> Account
+                                    </Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="opportunity" id="opportunity" />
+                                    <Label htmlFor="opportunity" className="flex items-center gap-1 cursor-pointer">
+                                        <Briefcase className="h-3 w-3" /> Opportunity
+                                    </Label>
+                                </div>
+                            </RadioGroup>
+
+                            <Select value={entityId} onValueChange={setEntityId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={`Select ${entityType}...`} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {entityType === 'lead' && leads.map((lead: any) => (
+                                        <SelectItem key={lead.id} value={lead.id}>
+                                            {lead.first_name} {lead.last_name || ''}
+                                        </SelectItem>
+                                    ))}
+                                    {entityType === 'contact' && contacts.map((contact: any) => (
+                                        <SelectItem key={contact.id} value={contact.id}>
+                                            {contact.first_name} {contact.last_name || ''}
+                                        </SelectItem>
+                                    ))}
+                                    {entityType === 'account' && accounts.map((account: any) => (
+                                        <SelectItem key={account.id} value={account.id}>
+                                            {account.account_name}
+                                        </SelectItem>
+                                    ))}
+                                    {entityType === 'opportunity' && opportunities.map((opportunity: any) => (
+                                        <SelectItem key={opportunity.id} value={opportunity.id}>
+                                            {opportunity.opportunity_name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Select File</Label>
+                            <Input
+                                type="file"
+                                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                            />
+                        </div>
+                        <Button
+                            onClick={handleUpload}
+                            disabled={!file || !entityId || createMutation.isPending}
+                            className="w-full"
+                        >
+                            {createMutation.isPending ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                'Upload'
+                            )}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
 
 

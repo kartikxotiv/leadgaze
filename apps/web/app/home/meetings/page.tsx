@@ -14,6 +14,10 @@ import {
     Trash2,
     Pencil,
     MapPin,
+    User,
+    Building2,
+    Users,
+    Briefcase,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -35,6 +39,10 @@ import {
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import { PageBody, PageHeader } from '@kit/ui/page';
+import {
+    RadioGroup,
+    RadioGroupItem,
+} from '@kit/ui/radio-group';
 import {
     Select,
     SelectContent,
@@ -60,6 +68,9 @@ import {
     updateMeetingService,
 } from '~/services/activities.service';
 import { getLeadsService } from '~/services/leads.service';
+import { getContactsService } from '~/services/contacts.service';
+import { getAccountsService } from '~/services/accounts.service';
+import { getOpportunitiesService } from '~/services/opportunities.service';
 
 export default function MeetingsPage() {
     const { currentWorkspace: workspace } = useRBAC();
@@ -77,7 +88,8 @@ export default function MeetingsPage() {
         end_time: '',
         location: '',
         meeting_link: '',
-        leadId: '',
+        entity_type: 'lead',
+        entityId: '',
     });
 
     const { data: meetings = [], isLoading } = useQuery({
@@ -98,12 +110,39 @@ export default function MeetingsPage() {
         enabled: !!workspace?.id,
     });
 
+    const { data: contacts = [] } = useQuery({
+        queryKey: ['contacts', workspace?.id],
+        queryFn: () => {
+            if (!workspace?.id) return [];
+            return getContactsService(workspace.id);
+        },
+        enabled: !!workspace?.id,
+    });
+
+    const { data: accounts = [] } = useQuery({
+        queryKey: ['accounts', workspace?.id],
+        queryFn: () => {
+            if (!workspace?.id) return [];
+            return getAccountsService(workspace.id);
+        },
+        enabled: !!workspace?.id,
+    });
+
+    const { data: opportunities = [] } = useQuery({
+        queryKey: ['opportunities', workspace?.id],
+        queryFn: () => {
+            if (!workspace?.id) return [];
+            return getOpportunitiesService(workspace.id);
+        },
+        enabled: !!workspace?.id,
+    });
+
     const createMutation = useMutation({
         mutationFn: (payload: any) =>
             createMeetingService({
                 workspace_id: workspace!.id,
-                entity_type: 'lead',
-                entity_id: payload.leadId,
+                entity_type: payload.entity_type,
+                entity_id: payload.entityId,
                 title: payload.title,
                 description: payload.description,
                 start_time: new Date(payload.start_time).toISOString(),
@@ -121,7 +160,8 @@ export default function MeetingsPage() {
                 end_time: '',
                 location: '',
                 meeting_link: '',
-                leadId: '',
+                entity_type: 'lead',
+                entityId: '',
             });
             queryClient.invalidateQueries({ queryKey: ['meetings', workspace?.id] });
         },
@@ -171,7 +211,7 @@ export default function MeetingsPage() {
     }, [meetings, searchTerm, statusFilter]);
 
     const handleCreate = () => {
-        if (!formData.title.trim() || !formData.leadId || !formData.start_time || !formData.end_time) return;
+        if (!formData.title.trim() || !formData.entityId || !formData.start_time || !formData.end_time) return;
         createMutation.mutate(formData);
     };
 
@@ -184,7 +224,8 @@ export default function MeetingsPage() {
             end_time: new Date(meeting.end_time).toISOString().slice(0, 16),
             location: meeting.location || '',
             meeting_link: meeting.meeting_link || '',
-            leadId: meeting.entity_id,
+            entity_type: meeting.entity_type || 'lead',
+            entityId: meeting.entity_id,
         });
         setIsEditDialogOpen(true);
     };
@@ -247,6 +288,13 @@ export default function MeetingsPage() {
                 title="Meetings"
                 description="Manage and schedule your meetings with leads and clients"
             >
+                <Button className="gap-2" onClick={() => {
+                    setFormData({ title: '', description: '', start_time: '', end_time: '', location: '', meeting_link: '', entity_type: 'lead', entityId: '' });
+                    setIsCreateDialogOpen(true);
+                }}>
+                    <Plus className="h-4 w-4" />
+                    New Meeting
+                </Button>
 
             </PageHeader>
 
@@ -402,7 +450,149 @@ export default function MeetingsPage() {
                 </div>
             </PageBody>
 
+            {/* Create Dialog */}
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Schedule New Meeting</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="space-y-4">
+                            <Label>Associate with</Label>
+                            <RadioGroup
+                                value={formData.entity_type}
+                                onValueChange={(val) => setFormData({ ...formData, entity_type: val, entityId: '' })}
+                                className="flex flex-wrap gap-4"
+                            >
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="lead" id="lead" />
+                                    <Label htmlFor="lead" className="flex items-center gap-1 cursor-pointer">
+                                        <User className="h-3 w-3" /> Lead
+                                    </Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="contact" id="contact" />
+                                    <Label htmlFor="contact" className="flex items-center gap-1 cursor-pointer">
+                                        <Users className="h-3 w-3" /> Contact
+                                    </Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="account" id="account" />
+                                    <Label htmlFor="account" className="flex items-center gap-1 cursor-pointer">
+                                        <Building2 className="h-3 w-3" /> Account
+                                    </Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="opportunity" id="opportunity" />
+                                    <Label htmlFor="opportunity" className="flex items-center gap-1 cursor-pointer">
+                                        <Briefcase className="h-3 w-3" /> Opportunity
+                                    </Label>
+                                </div>
+                            </RadioGroup>
 
+                            <Select
+                                value={formData.entityId}
+                                onValueChange={(val) => setFormData({ ...formData, entityId: val })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder={`Select ${formData.entity_type}...`} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {formData.entity_type === 'lead' && leads.map((lead: any) => (
+                                        <SelectItem key={lead.id} value={lead.id}>
+                                            {lead.first_name} {lead.last_name || ''}
+                                        </SelectItem>
+                                    ))}
+                                    {formData.entity_type === 'contact' && contacts.map((contact: any) => (
+                                        <SelectItem key={contact.id} value={contact.id}>
+                                            {contact.first_name} {contact.last_name || ''}
+                                        </SelectItem>
+                                    ))}
+                                    {formData.entity_type === 'account' && accounts.map((account: any) => (
+                                        <SelectItem key={account.id} value={account.id}>
+                                            {account.account_name}
+                                        </SelectItem>
+                                    ))}
+                                    {formData.entity_type === 'opportunity' && opportunities.map((opportunity: any) => (
+                                        <SelectItem key={opportunity.id} value={opportunity.id}>
+                                            {opportunity.opportunity_name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Title</Label>
+                            <Input
+                                value={formData.title}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, title: e.target.value })
+                                }
+                                placeholder="Demo meeting..."
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Description</Label>
+                            <Input
+                                value={formData.description}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, description: e.target.value })
+                                }
+                                placeholder="Meeting agenda..."
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 ">
+                            <div className="space-y-2">
+                                <Label>Start</Label>
+                                <Input
+                                    type="datetime-local"
+                                    value={formData.start_time}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, start_time: e.target.value })
+                                    }
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>End</Label>
+                                <Input
+                                    type="datetime-local"
+                                    value={formData.end_time}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, end_time: e.target.value })
+                                    }
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Location / Link</Label>
+                            <Input
+                                value={formData.location}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, location: e.target.value })
+                                }
+                                placeholder="Zoom, Google Meet, or Office..."
+                            />
+                        </div>
+                        <Button
+                            onClick={handleCreate}
+                            disabled={
+                                !formData.title.trim() ||
+                                !formData.entityId ||
+                                !formData.start_time ||
+                                !formData.end_time ||
+                                createMutation.isPending
+                            }
+                            className="w-full"
+                        >
+                            {createMutation.isPending ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                'Schedule Meeting'
+                            )}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {/* Edit Dialog */}
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
