@@ -2,23 +2,31 @@
 
 import React, { useMemo, useState } from 'react';
 
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    FileText,
+    Calendar,
+    Edit,
     Filter,
+    Loader2,
+    MoreHorizontal,
     Plus,
     Search,
-    StickyNote,
-    MoreHorizontal,
-    Edit,
     Trash2,
-    Pin,
-    Calendar,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@kit/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@kit/ui/dropdown-menu';
 import { Input } from '@kit/ui/input';
+import { Label } from '@kit/ui/label';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import {
     Select,
@@ -27,98 +35,196 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@kit/ui/select';
+import { Textarea } from '@kit/ui/textarea';
+
+import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@kit/ui/dropdown-menu';
-
-// Mock Data for Notes
-const notes = [
-    {
-        id: '1',
-        title: 'Ideas for Q2',
-        content: 'Look into AI-driven lead scoring and automated follow-ups. Research competitors in the same niche.',
-        category: 'Ideas',
-        date: '2024-02-02',
-        pinned: false,
-    },
-    {
-        id: '2',
-        title: 'Meeting Minutes - Team Sync',
-        content: 'Discussed the roadmap for the next sprint. Assigned tasks for the new dashboard components.',
-        category: 'Meeting',
-        date: '2024-02-01',
-        pinned: false,
-    },
-
-];
+    Note,
+    createNoteService,
+    deleteNoteService,
+    getNotesService,
+    updateNoteService,
+} from '~/services/activities.service';
+import { getLeadsService } from '~/services/leads.service';
 
 export default function NotesPage() {
+    const { currentWorkspace: workspace } = useRBAC();
+    const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('all');
 
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [newNoteContent, setNewNoteContent] = useState('');
+    const [targetLeadId, setTargetLeadId] = useState('');
+
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [editingNote, setEditingNote] = useState<Note | null>(null);
+    const [editContent, setEditContent] = useState('');
+
+    const {
+        data: notes = [],
+        isLoading,
+    } = useQuery({
+        queryKey: ['notes', workspace?.id],
+        queryFn: () => {
+            if (!workspace?.id) return [];
+            return getNotesService(workspace.id);
+        },
+        enabled: !!workspace?.id,
+    });
+
+    const { data: leads = [] } = useQuery({
+        queryKey: ['leads', workspace?.id],
+        queryFn: () => {
+            if (!workspace?.id) return [];
+            return getLeadsService(workspace.id);
+        },
+        enabled: !!workspace?.id,
+    });
+
+    const createMutation = useMutation({
+        mutationFn: (payload: { content: string; leadId: string }) =>
+            createNoteService({
+                workspace_id: workspace!.id,
+                entity_type: 'lead',
+                entity_id: payload.leadId,
+                content: payload.content,
+            }),
+        onSuccess: () => {
+            toast.success('Note added');
+            setIsCreateDialogOpen(false);
+            setNewNoteContent('');
+            setTargetLeadId('');
+            queryClient.invalidateQueries({ queryKey: ['notes', workspace?.id] });
+        },
+        onError: () => toast.error('Failed to add note'),
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: ({ id, content }: { id: string; content: string }) =>
+            updateNoteService(id, { content }),
+        onSuccess: () => {
+            toast.success('Note updated');
+            setIsEditDialogOpen(false);
+            setEditingNote(null);
+            queryClient.invalidateQueries({ queryKey: ['notes', workspace?.id] });
+        },
+        onError: () => toast.error('Failed to update note'),
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: deleteNoteService,
+        onSuccess: () => {
+            toast.success('Note deleted');
+            queryClient.invalidateQueries({ queryKey: ['notes', workspace?.id] });
+        },
+        onError: () => toast.error('Failed to delete note'),
+    });
+
     const filteredNotes = useMemo(() => {
-        return notes.filter((note) => {
-            const matchesSearch =
-                note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                note.content.toLowerCase().includes(searchTerm.toLowerCase());
+        return notes.filter((note: Note) => {
+            const matchesSearch = note.content
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase());
+
             const matchesCategory =
-                categoryFilter === 'all' || note.category.toLowerCase() === categoryFilter.toLowerCase();
+                categoryFilter === 'all' ||
+                note.entity_type?.toLowerCase() === categoryFilter.toLowerCase();
+
             return matchesSearch && matchesCategory;
         });
-    }, [searchTerm, categoryFilter]);
+    }, [notes, searchTerm, categoryFilter]);
 
-    const getCategoryBadge = (category: string) => {
-        switch (category) {
-            case 'Work':
-                return (
-                    <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">
-                        Work
-                    </Badge>
-                );
-            case 'Ideas':
-                return (
-                    <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">
-                        Ideas
-                    </Badge>
-                );
-            case 'Meeting':
-                return (
-                    <Badge variant="outline" className="text-purple-600 border-purple-200 bg-purple-50">
-                        Meeting
-                    </Badge>
-                );
-            case 'Personal':
-                return (
-                    <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50">
-                        Personal
-                    </Badge>
-                );
-            default:
-                return <Badge variant="secondary">{category}</Badge>;
+    const handleEdit = (note: Note) => {
+        setEditingNote(note);
+        setEditContent(note.content);
+        setIsEditDialogOpen(true);
+    };
+
+    const handleCreate = () => {
+        if (!newNoteContent.trim() || !targetLeadId) return;
+        createMutation.mutate({ content: newNoteContent, leadId: targetLeadId });
+    };
+
+    const handleUpdate = () => {
+        if (!editingNote || !editContent.trim()) return;
+        updateMutation.mutate({ id: editingNote.id, content: editContent });
+    };
+
+    const handleDelete = (id: string) => {
+        if (confirm('Are you sure you want to delete this note?')) {
+            deleteMutation.mutate(id);
         }
     };
 
+    const getCategoryBadge = (type: string) => {
+        switch (type?.toLowerCase()) {
+            case 'lead':
+                return (
+                    <Badge
+                        variant="outline"
+                        className="border-blue-200 bg-blue-50 text-blue-600"
+                    >
+                        Lead
+                    </Badge>
+                );
+            case 'contact':
+                return (
+                    <Badge
+                        variant="outline"
+                        className="border-emerald-200 bg-emerald-50 text-emerald-600"
+                    >
+                        Contact
+                    </Badge>
+                );
+            case 'opportunity':
+                return (
+                    <Badge
+                        variant="outline"
+                        className="border-purple-200 bg-purple-50 text-purple-600"
+                    >
+                        Opportunity
+                    </Badge>
+                );
+            case 'account':
+                return (
+                    <Badge
+                        variant="outline"
+                        className="border-amber-200 bg-amber-50 text-amber-600"
+                    >
+                        Account
+                    </Badge>
+                );
+            default:
+                return <Badge variant="secondary">{type || 'General'}</Badge>;
+        }
+    };
+
+    if (!workspace) {
+        return (
+            <div className="flex h-96 items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+        );
+    }
+
     return (
         <>
-            <PageHeader title="Notes" description="Capture and organize your important thoughts and information">
-                <Button className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    New Note
-                </Button>
-            </PageHeader>
 
+            <PageHeader
+                title="Notes"
+                description="Capture and organize your important thoughts and information"
+            >
+
+            </PageHeader>
             <PageBody>
                 <div className="space-y-6">
-
                     {/* Search and Filters */}
                     <Card>
                         <CardContent className="pt-6">
-                            <div className="flex flex-col md:flex-row items-center gap-4">
-                                <div className="relative flex-1 w-full">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <div className="flex flex-col items-center gap-4 md:flex-row">
+                                <div className="relative w-full flex-1">
+                                    <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                                     <Input
                                         placeholder="Search notes..."
                                         value={searchTerm}
@@ -126,18 +232,21 @@ export default function NotesPage() {
                                         className="pl-10"
                                     />
                                 </div>
-                                <div className="flex items-center gap-2 w-full md:w-auto">
-                                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                                <div className="flex w-full items-center gap-2 md:w-auto">
+                                    <Select
+                                        value={categoryFilter}
+                                        onValueChange={setCategoryFilter}
+                                    >
                                         <SelectTrigger className="w-full md:w-[180px]">
                                             <Filter className="mr-2 h-4 w-4" />
-                                            <SelectValue placeholder="Category" />
+                                            <SelectValue placeholder="Entity Type" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">All Categories</SelectItem>
-                                            <SelectItem value="work">Work</SelectItem>
-                                            <SelectItem value="ideas">Ideas</SelectItem>
-                                            <SelectItem value="meeting">Meeting</SelectItem>
-                                            <SelectItem value="personal">Personal</SelectItem>
+                                            <SelectItem value="all">All Entities</SelectItem>
+                                            <SelectItem value="lead">Leads</SelectItem>
+                                            <SelectItem value="contact">Contacts</SelectItem>
+                                            <SelectItem value="account">Accounts</SelectItem>
+                                            <SelectItem value="opportunity">Opportunities</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -146,56 +255,116 @@ export default function NotesPage() {
                     </Card>
 
                     {/* Notes Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {filteredNotes.length > 0 ? (
-                            filteredNotes.map((note) => (
-                                <Card key={note.id} className="group hover:shadow-md transition-all duration-200">
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+                        {isLoading ? (
+                            <div className="col-span-full flex h-32 items-center justify-center">
+                                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                            </div>
+                        ) : filteredNotes.length > 0 ? (
+                            filteredNotes.map((note: Note) => (
+                                <Card
+                                    key={note.id}
+                                    className="group transition-all duration-200 hover:shadow-md"
+                                >
                                     <CardContent className="pt-6">
-                                        <div className="flex justify-between items-start mb-4">
+                                        <div className="mb-4 flex items-start justify-between">
                                             <div className="flex items-center gap-2">
-                                                {note.pinned && <Pin className="h-4 w-4 text-amber-500 fill-amber-500" />}
-                                                {getCategoryBadge(note.category)}
+                                                {getCategoryBadge(note.entity_type)}
+                                                {note.entity_name && (
+                                                    <span className="text-muted-foreground text-xs truncate max-w-[120px]" title={note.entity_name}>
+                                                        {note.entity_name}
+                                                    </span>
+                                                )}
                                             </div>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="transition-opacity group-hover:opacity-100 md:opacity-0"
+                                                    >
                                                         <MoreHorizontal className="h-4 w-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem className="gap-2">
+                                                    <DropdownMenuItem
+                                                        className="gap-2"
+                                                        onClick={() => handleEdit(note)}
+                                                    >
                                                         <Edit className="h-4 w-4" /> Edit Note
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem className="gap-2">
-                                                        <Pin className="h-4 w-4" /> {note.pinned ? 'Unpin' : 'Pin to Top'}
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem className="gap-2 text-red-500">
+                                                    <DropdownMenuItem
+                                                        className="gap-2 text-red-500"
+                                                        onClick={() => handleDelete(note.id)}
+                                                    >
                                                         <Trash2 className="h-4 w-4" /> Delete Note
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
-                                        <h4 className="text-lg font-bold mb-2 group-hover:text-primary transition-colors">
-                                            {note.title}
-                                        </h4>
-                                        <p className="text-sm text-muted-foreground line-clamp-3 mb-6 min-h-[4.5rem]">
+                                        <p className="text-muted-foreground mb-6 line-clamp-4 min-h-[5rem] whitespace-pre-wrap text-sm">
                                             {note.content}
                                         </p>
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground pt-4 border-t border-secondary">
+                                        <div className="border-secondary text-muted-foreground flex items-center gap-2 border-t pt-4 text-xs">
                                             <Calendar className="h-3 w-3" />
-                                            <span>Updated {note.date}</span>
+                                            <span>
+                                                Updated {new Date(note.created_at).toLocaleDateString()}
+                                            </span>
+                                            {note.created_by_user && (
+                                                <span className="ml-auto">
+                                                    by {note.created_by_user.name}
+                                                </span>
+                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>
                             ))
                         ) : (
-                            <div className="col-span-full h-32 flex items-center justify-center text-muted-foreground border-2 border-dashed rounded-lg">
-                                No notes found matching your search.
+                            <div className="border-dashed flex h-32 items-center justify-center rounded-lg border-2 text-muted-foreground col-span-full">
+                                {searchTerm || categoryFilter !== 'all'
+                                    ? 'No notes found matching your filters.'
+                                    : 'No notes found for this workspace.'}
                             </div>
                         )}
                     </div>
                 </div>
             </PageBody>
+
+
+            {/* Edit Dialog */}
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Edit Note</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                        <Textarea
+                            placeholder="Enter note content..."
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            rows={6}
+                        />
+                        <div className="flex justify-end gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsEditDialogOpen(false)}
+                                disabled={updateMutation.isPending}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleUpdate}
+                                disabled={updateMutation.isPending || !editContent.trim()}
+                            >
+                                {updateMutation.isPending && (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                )}
+                                Update Note
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }

@@ -28,9 +28,9 @@ export const getNotes = catchAsync(
     const entityId = url.searchParams.get('entityId');
     const workspaceId = url.searchParams.get('workspaceId');
 
-    if (!entityType || !entityId || !workspaceId) {
+    if (!workspaceId) {
       return NextResponse.json(
-        { message: 'entityType, entityId, and workspaceId are required' },
+        { message: 'workspaceId is required' },
         { status: 400 },
       );
     }
@@ -53,36 +53,50 @@ export const getNotes = catchAsync(
 
     const isWorkspaceOwner = workspace?.owner_id === user.id;
 
-    // Get all related entity IDs (includes lead conversion chain)
-    const entityIds = await getRelatedEntityIds(supabase, entityType, entityId);
+    let uniqueNotes: any[] = [];
 
-    // Build query - fetch notes for all related entities
-    // Use multiple queries and combine since Supabase OR doesn't support complex AND conditions
-    const notePromises = entityIds.map(({ entity_type, entity_id }) => {
+    if (entityType && entityId) {
+      // Get all related entity IDs (includes lead conversion chain)
+      const entityIds = await getRelatedEntityIds(supabase, entityType, entityId);
+
+      // Build query - fetch notes for all related entities
+      const notePromises = entityIds.map(({ entity_type, entity_id }) => {
+        let query = supabase
+          .from('crm_notes')
+          .select('*, created_by_user:accounts(name, email)')
+          .eq('workspace_id', workspaceId)
+          .eq('entity_type', entity_type)
+          .eq('entity_id', entity_id)
+          .eq('is_deleted', false);
+
+        if (!isWorkspaceOwner) {
+          query = query.eq('created_by', user.id);
+        }
+
+        return query;
+      });
+
+      const results = await Promise.all(notePromises);
+      const allNotes = results.flatMap((result) => result.data || []);
+      uniqueNotes = Array.from(
+        new Map(allNotes.map((note) => [note.id, note])).values(),
+      );
+    } else {
+      // Fetch all notes for the workspace
       let query = supabase
         .from('crm_notes')
         .select('*, created_by_user:accounts(name, email)')
         .eq('workspace_id', workspaceId)
-        .eq('entity_type', entity_type)
-        .eq('entity_id', entity_id)
         .eq('is_deleted', false);
 
-      // Filter by user unless workspace owner
       if (!isWorkspaceOwner) {
         query = query.eq('created_by', user.id);
       }
 
-      return query;
-    });
-
-    // Execute all queries and combine results
-    const results = await Promise.all(notePromises);
-    const allNotes = results.flatMap((result) => result.data || []);
-
-    // Remove duplicates (in case same note appears multiple times)
-    const uniqueNotes = Array.from(
-      new Map(allNotes.map((note) => [note.id, note])).values(),
-    );
+      const { data, error } = await query;
+      if (error) throw error;
+      uniqueNotes = data || [];
+    }
 
     // Sort by created_at descending
     uniqueNotes.sort(
@@ -105,15 +119,7 @@ export const getNotes = catchAsync(
       }),
     );
 
-    const notes = notesWithEntityNames;
-    const error = results.find((r) => r.error)?.error;
-
-    if (error) {
-      console.error('Get notes error:', error);
-      throw error;
-    }
-
-    return successDataResponse('Notes retrieved', notes || []);
+    return successDataResponse('Notes retrieved', notesWithEntityNames || []);
   },
 );
 

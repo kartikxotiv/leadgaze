@@ -2,22 +2,38 @@
 
 import React, { useMemo, useState } from 'react';
 
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     Calendar as CalendarIcon,
+    Clock,
     Filter,
+    Loader2,
+    MoreHorizontal,
     Plus,
     Search,
-    Clock,
-    User,
-    MoreHorizontal,
-    CheckCircle2,
-    XCircle,
+    Trash2,
+    Pencil,
+    MapPin,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@kit/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@kit/ui/dropdown-menu';
 import { Input } from '@kit/ui/input';
+import { Label } from '@kit/ui/label';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import {
     Select,
@@ -34,104 +50,214 @@ import {
     TableHeader,
     TableRow,
 } from '@kit/ui/table';
+
+import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@kit/ui/dropdown-menu';
-
-// Mock Data for Meetings
-const meetings = [
-    {
-        id: '1',
-        title: 'Leadgaze',
-        host: 'John Doe',
-        date: '2024-02-15',
-        time: '10:00 AM',
-        duration: '45 min',
-        status: 'Scheduled',
-    },
-    {
-        id: '2',
-        title: 'Leadgaze',
-        host: 'John Doe',
-        date: '2024-02-15',
-        time: '10:00 AM',
-        duration: '35 min',
-        status: 'Completed',
-    },
-    {
-        id: '3',
-        title: 'Leadgaze',
-        host: 'John Doe',
-        date: '2024-02-15',
-        time: '10:00 AM',
-        duration: '25 min',
-        status: 'Cancelled',
-    },
-
-];
+    Meeting,
+    createMeetingService,
+    deleteMeetingService,
+    getMeetingsService,
+    updateMeetingService,
+} from '~/services/activities.service';
+import { getLeadsService } from '~/services/leads.service';
 
 export default function MeetingsPage() {
+    const { currentWorkspace: workspace } = useRBAC();
+    const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
 
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
+    const [formData, setFormData] = useState({
+        title: '',
+        description: '',
+        start_time: '',
+        end_time: '',
+        location: '',
+        meeting_link: '',
+        leadId: '',
+    });
+
+    const { data: meetings = [], isLoading } = useQuery({
+        queryKey: ['meetings', workspace?.id],
+        queryFn: () => {
+            if (!workspace?.id) return [];
+            return getMeetingsService(workspace.id);
+        },
+        enabled: !!workspace?.id,
+    });
+
+    const { data: leads = [] } = useQuery({
+        queryKey: ['leads', workspace?.id],
+        queryFn: () => {
+            if (!workspace?.id) return [];
+            return getLeadsService(workspace.id);
+        },
+        enabled: !!workspace?.id,
+    });
+
+    const createMutation = useMutation({
+        mutationFn: (payload: any) =>
+            createMeetingService({
+                workspace_id: workspace!.id,
+                entity_type: 'lead',
+                entity_id: payload.leadId,
+                title: payload.title,
+                description: payload.description,
+                start_time: new Date(payload.start_time).toISOString(),
+                end_time: new Date(payload.end_time).toISOString(),
+                location: payload.location,
+                meeting_link: payload.meeting_link,
+            }),
+        onSuccess: () => {
+            toast.success('Meeting scheduled');
+            setIsCreateDialogOpen(false);
+            setFormData({
+                title: '',
+                description: '',
+                start_time: '',
+                end_time: '',
+                location: '',
+                meeting_link: '',
+                leadId: '',
+            });
+            queryClient.invalidateQueries({ queryKey: ['meetings', workspace?.id] });
+        },
+        onError: () => toast.error('Failed to schedule meeting'),
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: (payload: any) =>
+            updateMeetingService(editingMeeting!.id, payload),
+        onSuccess: () => {
+            toast.success('Meeting updated');
+            setIsEditDialogOpen(false);
+            setEditingMeeting(null);
+            queryClient.invalidateQueries({ queryKey: ['meetings', workspace?.id] });
+        },
+        onError: () => toast.error('Failed to update meeting'),
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: deleteMeetingService,
+        onSuccess: () => {
+            toast.success('Meeting deleted');
+            queryClient.invalidateQueries({ queryKey: ['meetings', workspace?.id] });
+        },
+        onError: () => toast.error('Failed to delete meeting'),
+    });
+
     const filteredMeetings = useMemo(() => {
-        return meetings.filter((meeting) => {
+        return meetings.filter((meeting: Meeting) => {
             const matchesSearch =
                 meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                meeting.host.toLowerCase().includes(searchTerm.toLowerCase());
+                (meeting.created_by_user?.name || '')
+                    .toLowerCase()
+                    .includes(searchTerm.toLowerCase());
+
+            const now = new Date();
+            const endTime = new Date(meeting.end_time);
+            const isCompleted = endTime < now;
+
             const matchesStatus =
-                statusFilter === 'all' || meeting.status.toLowerCase() === statusFilter.toLowerCase();
+                statusFilter === 'all' ||
+                (statusFilter === 'completed' && isCompleted) ||
+                (statusFilter === 'scheduled' && !isCompleted);
+
             return matchesSearch && matchesStatus;
         });
-    }, [searchTerm, statusFilter]);
+    }, [meetings, searchTerm, statusFilter]);
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'Scheduled':
-                return (
-                    <Badge variant="outline" className="text-blue-500 border-blue-200 bg-blue-50">
-                        <Clock className="mr-1 h-3 w-3" /> Scheduled
-                    </Badge>
-                );
-            case 'Completed':
-                return (
-                    <Badge variant="outline" className="text-green-500 border-green-200 bg-green-50">
-                        <CheckCircle2 className="mr-1 h-3 w-3" /> Completed
-                    </Badge>
-                );
-            case 'Cancelled':
-                return (
-                    <Badge variant="outline" className="text-red-500 border-red-200 bg-red-50">
-                        <XCircle className="mr-1 h-3 w-3" /> Cancelled
-                    </Badge>
-                );
-            default:
-                return <Badge variant="secondary">{status}</Badge>;
+    const handleCreate = () => {
+        if (!formData.title.trim() || !formData.leadId || !formData.start_time || !formData.end_time) return;
+        createMutation.mutate(formData);
+    };
+
+    const handleEdit = (meeting: Meeting) => {
+        setEditingMeeting(meeting);
+        setFormData({
+            title: meeting.title,
+            description: meeting.description || '',
+            start_time: new Date(meeting.start_time).toISOString().slice(0, 16),
+            end_time: new Date(meeting.end_time).toISOString().slice(0, 16),
+            location: meeting.location || '',
+            meeting_link: meeting.meeting_link || '',
+            leadId: meeting.entity_id,
+        });
+        setIsEditDialogOpen(true);
+    };
+
+    const handleSave = () => {
+        if (!editingMeeting || !formData.title.trim()) return;
+        updateMutation.mutate({
+            title: formData.title,
+            description: formData.description,
+            start_time: new Date(formData.start_time).toISOString(),
+            end_time: new Date(formData.end_time).toISOString(),
+            location: formData.location,
+            meeting_link: formData.meeting_link,
+        });
+    };
+
+    const handleDelete = (id: string) => {
+        if (confirm('Are you sure you want to delete this meeting?')) {
+            deleteMutation.mutate(id);
         }
     };
 
+    const getStatusBadge = (startTime: string, endTime: string) => {
+        const now = new Date();
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+
+        if (end < now) {
+            return (
+                <Badge variant="outline" className="border-green-200 bg-green-50 text-green-500">
+                    Completed
+                </Badge>
+            );
+        }
+        if (start <= now && end >= now) {
+            return (
+                <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-500">
+                    In Progress
+                </Badge>
+            );
+        }
+        return (
+            <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-500">
+                Scheduled
+            </Badge>
+        );
+    };
+
+    if (!workspace) {
+        return (
+            <div className="flex h-96 items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+        );
+    }
+
     return (
         <>
-            <PageHeader title="Meetings" description="Manage and schedule your meetings with leads and clients">
-                <Button className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    New Meeting
-                </Button>
+            <PageHeader
+                title="Meetings"
+                description="Manage and schedule your meetings with leads and clients"
+            >
+
             </PageHeader>
 
             <PageBody>
                 <div className="space-y-6">
-                    {/* Stats Section */}
-
                     {/* Search and Filters */}
                     <Card>
                         <CardContent className="pt-6">
-                            <div className="flex flex-col md:flex-row items-center gap-4">
-                                <div className="relative flex-1 w-full">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <div className="flex flex-col items-center gap-4 md:flex-row">
+                                <div className="relative w-full flex-1">
+                                    <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                                     <Input
                                         placeholder="Search by title or host..."
                                         value={searchTerm}
@@ -139,7 +265,7 @@ export default function MeetingsPage() {
                                         className="pl-10"
                                     />
                                 </div>
-                                <div className="flex items-center gap-2 w-full md:w-auto">
+                                <div className="flex w-full items-center gap-2 md:w-auto">
                                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                                         <SelectTrigger className="w-full md:w-[180px]">
                                             <Filter className="mr-2 h-4 w-4" />
@@ -149,7 +275,6 @@ export default function MeetingsPage() {
                                             <SelectItem value="all">All Statuses</SelectItem>
                                             <SelectItem value="scheduled">Scheduled</SelectItem>
                                             <SelectItem value="completed">Completed</SelectItem>
-                                            <SelectItem value="cancelled">Cancelled</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -166,33 +291,76 @@ export default function MeetingsPage() {
                                         <TableHead className="pl-6">Meeting Title</TableHead>
                                         <TableHead>Host</TableHead>
                                         <TableHead>Date & Time</TableHead>
-                                        <TableHead>Duration</TableHead>
                                         <TableHead>Status</TableHead>
-                                        <TableHead className="text-right pr-6">Actions</TableHead>
+                                        <TableHead>Entity</TableHead>
+                                        <TableHead className="pr-6 text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredMeetings.length > 0 ? (
-                                        filteredMeetings.map((meeting) => (
+                                    {isLoading ? (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="h-24 text-center">
+                                                <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : filteredMeetings.length > 0 ? (
+                                        filteredMeetings.map((meeting: Meeting) => (
                                             <TableRow key={meeting.id}>
-                                                <TableCell className="font-medium pl-6">{meeting.title}</TableCell>
+                                                <TableCell className="pl-6 font-medium">
+                                                    <div>
+                                                        <p>{meeting.title}</p>
+                                                        {meeting.description && (
+                                                            <p className="text-muted-foreground text-xs font-normal">{meeting.description}</p>
+                                                        )}
+                                                        {meeting.location && (
+                                                            <p className="text-muted-foreground flex items-center gap-1 text-[10px] items-center font-normal">
+                                                                <MapPin className="h-3 w-3" /> {meeting.location}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-2">
-                                                        <div className="h-7 w-7 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold">
-                                                            {meeting.host.split(' ').map(n => n[0]).join('')}
+                                                        <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold">
+                                                            {(meeting.created_by_user?.name || 'U')
+                                                                .split(' ')
+                                                                .map((n) => n[0])
+                                                                .join('')}
                                                         </div>
-                                                        {meeting.host}
+                                                        <span className="text-sm">
+                                                            {meeting.created_by_user?.name || 'System'}
+                                                        </span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex flex-col">
-                                                        <span className="text-sm font-medium">{meeting.date}</span>
-                                                        <span className="text-xs text-muted-foreground">{meeting.time}</span>
+                                                        <span className="text-sm font-medium">
+                                                            {new Date(meeting.start_time).toLocaleDateString()}
+                                                        </span>
+                                                        <span className="text-muted-foreground text-xs">
+                                                            {new Date(meeting.start_time).toLocaleTimeString([], {
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                            })}{' '}
+                                                            -{' '}
+                                                            {new Date(meeting.end_time).toLocaleTimeString([], {
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                            })}
+                                                        </span>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="text-muted-foreground">{meeting.duration}</TableCell>
-                                                <TableCell>{getStatusBadge(meeting.status)}</TableCell>
-                                                <TableCell className="text-right pr-6">
+                                                <TableCell>
+                                                    {getStatusBadge(meeting.start_time, meeting.end_time)}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {meeting.entity_name && (
+                                                        <span className="text-muted-foreground text-xs" title={`${meeting.entity_type}: ${meeting.entity_name}`}>
+                                                            {meeting.entity_name}
+                                                        </span>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="pr-6 text-right">
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
                                                             <Button variant="ghost" size="icon">
@@ -200,9 +368,18 @@ export default function MeetingsPage() {
                                                             </Button>
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                                                            <DropdownMenuItem>Reschedule</DropdownMenuItem>
-                                                            <DropdownMenuItem className="text-red-500">Cancel Meeting</DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                className="gap-2"
+                                                                onClick={() => handleEdit(meeting)}
+                                                            >
+                                                                <Pencil className="h-4 w-4" /> Edit Meeting
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                className="gap-2 text-red-500"
+                                                                onClick={() => handleDelete(meeting.id)}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" /> Cancel/Delete
+                                                            </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 </TableCell>
@@ -210,7 +387,10 @@ export default function MeetingsPage() {
                                         ))
                                     ) : (
                                         <TableRow>
-                                            <TableCell className="h-24 text-center text-muted-foreground">
+                                            <TableCell
+                                                colSpan={6}
+                                                className="h-24 text-center text-muted-foreground"
+                                            >
                                                 No meetings found matching your filters.
                                             </TableCell>
                                         </TableRow>
@@ -221,6 +401,87 @@ export default function MeetingsPage() {
                     </Card>
                 </div>
             </PageBody>
+
+
+
+            {/* Edit Dialog */}
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Edit Meeting</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
+                            <Label>Title</Label>
+                            <Input
+                                value={formData.title}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, title: e.target.value })
+                                }
+                                placeholder="Demo meeting..."
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Description</Label>
+                            <Input
+                                value={formData.description}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, description: e.target.value })
+                                }
+                                placeholder="Meeting agenda..."
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Start</Label>
+                                <Input
+                                    type="datetime-local"
+                                    value={formData.start_time}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, start_time: e.target.value })
+                                    }
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>End</Label>
+                                <Input
+                                    type="datetime-local"
+                                    value={formData.end_time}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, end_time: e.target.value })
+                                    }
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Location / Link</Label>
+                            <Input
+                                value={formData.location}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, location: e.target.value })
+                                }
+                                placeholder="Zoom, Google Meet, or Office..."
+                            />
+                        </div>
+                        <Button
+                            onClick={handleSave}
+                            disabled={
+                                !formData.title.trim() ||
+                                !formData.start_time ||
+                                !formData.end_time ||
+                                updateMutation.isPending
+                            }
+                            className="w-full"
+                        >
+                            {updateMutation.isPending ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                'Update Meeting'
+                            )}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }

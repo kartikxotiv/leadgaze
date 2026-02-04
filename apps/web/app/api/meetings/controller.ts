@@ -28,9 +28,9 @@ export const getMeetings = catchAsync(
     const entityId = url.searchParams.get('entityId');
     const workspaceId = url.searchParams.get('workspaceId');
 
-    if (!entityType || !entityId || !workspaceId) {
+    if (!workspaceId) {
       return NextResponse.json(
-        { message: 'entityType, entityId, and workspaceId are required' },
+        { message: 'workspaceId is required' },
         { status: 400 },
       );
     }
@@ -53,35 +53,52 @@ export const getMeetings = catchAsync(
 
     const isWorkspaceOwner = workspace?.owner_id === user.id;
 
-    // Get all related entity IDs (includes lead conversion chain)
-    const entityIds = await getRelatedEntityIds(supabase, entityType, entityId);
+    let allMeetings: any[] = [];
 
-    // Build query - fetch meetings for all related entities
-    const meetingPromises = entityIds.map(({ entity_type, entity_id }) => {
+    if (entityType && entityId) {
+      // Get all related entity IDs (includes lead conversion chain)
+      const entityIds = await getRelatedEntityIds(supabase, entityType, entityId);
+
+      // Build query - fetch meetings for all related entities
+      const meetingPromises = entityIds.map(({ entity_type, entity_id }) => {
+        let query = supabase
+          .from('crm_meetings')
+          .select('*, created_by_user:accounts(name, email)')
+          .eq('workspace_id', workspaceId)
+          .eq('entity_type', entity_type)
+          .eq('entity_id', entity_id)
+          .eq('is_deleted', false);
+
+        if (!isWorkspaceOwner) {
+          query = query.eq('created_by', user.id);
+        }
+
+        return query;
+      });
+
+      const results = await Promise.all(meetingPromises);
+      allMeetings = results.flatMap((result) => result.data || []);
+    } else {
+      // Fetch all meetings for the workspace
       let query = supabase
         .from('crm_meetings')
         .select('*, created_by_user:accounts(name, email)')
         .eq('workspace_id', workspaceId)
-        .eq('entity_type', entity_type)
-        .eq('entity_id', entity_id)
         .eq('is_deleted', false);
 
-      // Filter by user unless workspace owner
       if (!isWorkspaceOwner) {
         query = query.eq('created_by', user.id);
       }
 
-      return query;
-    });
-
-    // Execute all queries and combine results
-    const results = await Promise.all(meetingPromises);
-    const allMeetings = results.flatMap((result) => result.data || []);
+      const { data, error } = await query;
+      if (error) throw error;
+      allMeetings = data || [];
+    }
 
     // Filter out old meetings (more than 1 day past end time)
     const now = new Date();
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    
+
     const filteredMeetings = allMeetings.filter((meeting) => {
       const endTime = new Date(meeting.end_time);
       // Show if end time is in the future OR within last 1 day
@@ -114,15 +131,7 @@ export const getMeetings = catchAsync(
       }),
     );
 
-    const meetings = meetingsWithEntityNames;
-    const error = results.find((r) => r.error)?.error;
-
-    if (error) {
-      console.error('Get meetings error:', error);
-      throw error;
-    }
-
-    return successDataResponse('Meetings retrieved', meetings || []);
+    return successDataResponse('Meetings retrieved', meetingsWithEntityNames || []);
   },
 );
 

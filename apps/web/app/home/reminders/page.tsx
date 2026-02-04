@@ -2,22 +2,39 @@
 
 import React, { useMemo, useState } from 'react';
 
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    Bell,
+    AlertCircle,
+    Calendar as CalendarIcon,
+    CheckCircle2,
+    Clock,
     Filter,
+    Loader2,
+    MoreHorizontal,
     Plus,
     Search,
-    Clock,
-    AlertCircle,
-    CheckCircle2,
-    MoreHorizontal,
-    Calendar as CalendarIcon,
+    Trash2,
+    Pencil,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@kit/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@kit/ui/dropdown-menu';
 import { Input } from '@kit/ui/input';
+import { Label } from '@kit/ui/label';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import {
     Select,
@@ -34,122 +51,232 @@ import {
     TableHeader,
     TableRow,
 } from '@kit/ui/table';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@kit/ui/dropdown-menu';
 
-// Mock Data for Reminders
-const reminders = [
-    {
-        id: '1',
-        task: 'Follow up with Leadgaze team',
-        priority: 'High',
-        dueDate: '2024-02-05',
-        status: 'Pending',
-    },
-    {
-        id: '2',
-        task: 'Send proposal to Michael',
-        priority: 'Medium',
-        dueDate: '2024-02-03', // Today
-        status: 'Pending',
-    },
-    {
-        id: '3',
-        task: 'Update CRM records',
-        priority: 'Low',
-        dueDate: '2024-02-01',
-        status: 'Completed',
-    },
-    {
-        id: '4',
-        task: 'Prepare monthly sales report',
-        priority: 'High',
-        dueDate: '2024-02-10',
-        status: 'Pending',
-    },
-];
+import { useRBAC } from '~/lib/rbac/rbac-provider';
+import {
+    Reminder,
+    createReminderService,
+    deleteReminderService,
+    getRemindersService,
+    updateReminderService,
+} from '~/services/activities.service';
+import { getLeadsService } from '~/services/leads.service';
 
 export default function RemindersPage() {
+    const { currentWorkspace: workspace } = useRBAC();
+    const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [priorityFilter, setPriorityFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
 
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
+    const [formData, setFormData] = useState({
+        title: '',
+        description: '',
+        due_date: '',
+        priority: 'medium',
+        leadId: '',
+    });
+
+    const { data: reminders = [], isLoading } = useQuery({
+        queryKey: ['reminders', workspace?.id],
+        queryFn: () => {
+            if (!workspace?.id) return [];
+            return getRemindersService(workspace.id);
+        },
+        enabled: !!workspace?.id,
+    });
+
+    const { data: leads = [] } = useQuery({
+        queryKey: ['leads', workspace?.id],
+        queryFn: () => {
+            if (!workspace?.id) return [];
+            return getLeadsService(workspace.id);
+        },
+        enabled: !!workspace?.id,
+    });
+
+    const createMutation = useMutation({
+        mutationFn: (payload: any) =>
+            createReminderService({
+                workspace_id: workspace!.id,
+                entity_type: 'lead',
+                entity_id: payload.leadId,
+                title: payload.title,
+                description: payload.description,
+                priority: payload.priority,
+                due_date: payload.due_date ? new Date(payload.due_date).toISOString() : undefined,
+            }),
+        onSuccess: () => {
+            toast.success('Reminder added');
+            setIsCreateDialogOpen(false);
+            setFormData({ title: '', description: '', due_date: '', priority: 'medium', leadId: '' });
+            queryClient.invalidateQueries({ queryKey: ['reminders', workspace?.id] });
+        },
+        onError: () => toast.error('Failed to add reminder'),
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: (payload: any) =>
+            updateReminderService(editingReminder!.id, payload),
+        onSuccess: () => {
+            toast.success('Reminder updated');
+            setIsEditDialogOpen(false);
+            setEditingReminder(null);
+            queryClient.invalidateQueries({ queryKey: ['reminders', workspace?.id] });
+        },
+        onError: () => toast.error('Failed to update reminder'),
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: deleteReminderService,
+        onSuccess: () => {
+            toast.success('Reminder deleted');
+            queryClient.invalidateQueries({ queryKey: ['reminders', workspace?.id] });
+        },
+        onError: () => toast.error('Failed to delete reminder'),
+    });
+
     const filteredReminders = useMemo(() => {
-        return reminders.filter((reminder) => {
-            const matchesSearch = reminder.task.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesPriority = priorityFilter === 'all' || reminder.priority.toLowerCase() === priorityFilter.toLowerCase();
-            const matchesStatus = statusFilter === 'all' || reminder.status.toLowerCase() === statusFilter.toLowerCase();
+        return reminders.filter((reminder: Reminder) => {
+            const matchesSearch = reminder.title
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase());
+            const matchesPriority =
+                priorityFilter === 'all' ||
+                reminder.priority.toLowerCase() === priorityFilter.toLowerCase();
+            const matchesStatus =
+                statusFilter === 'all' ||
+                (statusFilter === 'completed' && reminder.is_completed) ||
+                (statusFilter === 'pending' && !reminder.is_completed);
             return matchesSearch && matchesPriority && matchesStatus;
         });
-    }, [searchTerm, priorityFilter, statusFilter]);
+    }, [reminders, searchTerm, priorityFilter, statusFilter]);
+
+    const handleCreate = () => {
+        if (!formData.title.trim() || !formData.leadId) return;
+        createMutation.mutate(formData);
+    };
+
+    const handleEdit = (reminder: Reminder) => {
+        setEditingReminder(reminder);
+        setFormData({
+            title: reminder.title,
+            description: reminder.description || '',
+            due_date: reminder.due_date
+                ? new Date(reminder.due_date).toISOString().slice(0, 16)
+                : '',
+            priority: reminder.priority || 'medium',
+            leadId: reminder.entity_id,
+        });
+        setIsEditDialogOpen(true);
+    };
+
+    const handleSave = () => {
+        if (!editingReminder || !formData.title.trim()) return;
+        updateMutation.mutate({
+            title: formData.title,
+            description: formData.description,
+            priority: formData.priority,
+            due_date: formData.due_date
+                ? new Date(formData.due_date).toISOString()
+                : null,
+        });
+    };
+
+    const handleDelete = (id: string) => {
+        if (confirm('Are you sure you want to delete this reminder?')) {
+            deleteMutation.mutate(id);
+        }
+    };
+
+    const toggleCompletion = (reminder: Reminder) => {
+        updateReminderService(reminder.id, {
+            is_completed: !reminder.is_completed,
+        }).then(() => {
+            queryClient.invalidateQueries({ queryKey: ['reminders', workspace?.id] });
+            toast.success(
+                reminder.is_completed
+                    ? 'Reminder marked as active'
+                    : 'Reminder marked as completed',
+            );
+        });
+    };
 
     const getPriorityBadge = (priority: string) => {
-        switch (priority) {
-            case 'High':
+        switch (priority?.toLowerCase()) {
+            case 'high':
                 return (
-                    <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50">
+                    <Badge variant="outline" className="border-red-200 bg-red-50 text-red-600">
                         High
                     </Badge>
                 );
-            case 'Medium':
+            case 'medium':
                 return (
-                    <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">
+                    <Badge
+                        variant="outline"
+                        className="border-amber-200 bg-amber-50 text-amber-600"
+                    >
                         Medium
                     </Badge>
                 );
-            case 'Low':
+            case 'low':
                 return (
-                    <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50">
+                    <Badge
+                        variant="outline"
+                        className="border-emerald-200 bg-emerald-50 text-emerald-600"
+                    >
                         Low
                     </Badge>
                 );
             default:
-                return <Badge variant="secondary">{priority}</Badge>;
+                return <Badge variant="secondary">{priority || 'Medium'}</Badge>;
         }
     };
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'Pending':
-                return (
-                    <Badge variant="outline" className="text-blue-500 border-blue-200 bg-blue-50">
-                        <Clock className="mr-1 h-3 w-3" /> Pending
-                    </Badge>
-                );
-            case 'Completed':
-                return (
-                    <Badge variant="outline" className="text-green-500 border-green-200 bg-green-50">
-                        <CheckCircle2 className="mr-1 h-3 w-3" /> Completed
-                    </Badge>
-                );
-            default:
-                return <Badge variant="secondary">{status}</Badge>;
+    const getStatusBadge = (completed: boolean) => {
+        if (completed) {
+            return (
+                <Badge variant="outline" className="border-green-200 bg-green-50 text-green-500">
+                    <CheckCircle2 className="mr-1 h-3 w-3" /> Completed
+                </Badge>
+            );
         }
+        return (
+            <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-500">
+                <Clock className="mr-1 h-3 w-3" /> Pending
+            </Badge>
+        );
     };
+
+    if (!workspace) {
+        return (
+            <div className="flex h-96 items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+        );
+    }
 
     return (
         <>
-            <PageHeader title="Reminders" description="Keep track of your important tasks and reminders">
-                <Button className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    New Reminder
-                </Button>
+
+            <PageHeader
+                title="Reminders"
+                description="Keep track of your important tasks and reminders"
+            >
+
             </PageHeader>
 
             <PageBody>
                 <div className="space-y-6">
-                    {/* Stats Overview */}
-
                     {/* Search and Filters */}
                     <Card>
                         <CardContent className="pt-6">
-                            <div className="flex flex-col md:flex-row items-center gap-4">
-                                <div className="relative flex-1 w-full">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <div className="flex flex-col items-center gap-4 md:flex-row">
+                                <div className="relative w-full flex-1">
+                                    <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                                     <Input
                                         placeholder="Search tasks..."
                                         value={searchTerm}
@@ -157,7 +284,7 @@ export default function RemindersPage() {
                                         className="pl-10"
                                     />
                                 </div>
-                                <div className="flex items-center gap-2 w-full md:w-auto">
+                                <div className="flex w-full items-center gap-2 md:w-auto">
                                     <Select value={priorityFilter} onValueChange={setPriorityFilter}>
                                         <SelectTrigger className="w-full md:w-[150px]">
                                             <Filter className="mr-2 h-4 w-4" />
@@ -195,18 +322,43 @@ export default function RemindersPage() {
                                         <TableHead>Priority</TableHead>
                                         <TableHead>Due Date</TableHead>
                                         <TableHead>Status</TableHead>
-                                        <TableHead className="text-right pr-6">Actions</TableHead>
+                                        <TableHead>Entity</TableHead>
+                                        <TableHead className="pr-6 text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredReminders.length > 0 ? (
-                                        filteredReminders.map((reminder) => (
+                                    {isLoading ? (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="h-24 text-center">
+                                                <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : filteredReminders.length > 0 ? (
+                                        filteredReminders.map((reminder: Reminder) => (
                                             <TableRow key={reminder.id}>
-                                                <TableCell className="font-medium pl-6">{reminder.task}</TableCell>
+                                                <TableCell className="pl-6 font-medium">
+                                                    <div>
+                                                        <p>{reminder.title}</p>
+                                                        {reminder.description && (
+                                                            <p className="text-muted-foreground text-xs font-normal">{reminder.description}</p>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
                                                 <TableCell>{getPriorityBadge(reminder.priority)}</TableCell>
-                                                <TableCell className="text-muted-foreground">{reminder.dueDate}</TableCell>
-                                                <TableCell>{getStatusBadge(reminder.status)}</TableCell>
-                                                <TableCell className="text-right pr-6">
+                                                <TableCell className="text-muted-foreground">
+                                                    {reminder.due_date
+                                                        ? new Date(reminder.due_date).toLocaleString()
+                                                        : '-'}
+                                                </TableCell>
+                                                <TableCell>{getStatusBadge(reminder.is_completed)}</TableCell>
+                                                <TableCell>
+                                                    {reminder.entity_name && (
+                                                        <span className="text-muted-foreground text-xs" title={`${reminder.entity_type}: ${reminder.entity_name}`}>
+                                                            {reminder.entity_name}
+                                                        </span>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="pr-6 text-right">
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
                                                             <Button variant="ghost" size="icon">
@@ -214,10 +366,27 @@ export default function RemindersPage() {
                                                             </Button>
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                                                            <DropdownMenuItem>Edit Task</DropdownMenuItem>
-                                                            <DropdownMenuItem className="text-green-600">Mark as Completed</DropdownMenuItem>
-                                                            <DropdownMenuItem className="text-red-500">Delete Reminder</DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                className="gap-2"
+                                                                onClick={() => handleEdit(reminder)}
+                                                            >
+                                                                <Pencil className="h-4 w-4" /> Edit Task
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                className="gap-2 text-green-600"
+                                                                onClick={() => toggleCompletion(reminder)}
+                                                            >
+                                                                <CheckCircle2 className="h-4 w-4" />{' '}
+                                                                {reminder.is_completed
+                                                                    ? 'Mark as Pending'
+                                                                    : 'Mark as Completed'}
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                className="gap-2 text-red-500"
+                                                                onClick={() => handleDelete(reminder.id)}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" /> Delete Reminder
+                                                            </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 </TableCell>
@@ -225,7 +394,10 @@ export default function RemindersPage() {
                                         ))
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                                            <TableCell
+                                                colSpan={6}
+                                                className="h-24 text-center text-muted-foreground"
+                                            >
                                                 No reminders found matching your filters.
                                             </TableCell>
                                         </TableRow>
@@ -236,6 +408,76 @@ export default function RemindersPage() {
                     </Card>
                 </div>
             </PageBody>
+
+
+
+            {/* Edit Dialog */}
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Edit Reminder</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                            <Label>Title</Label>
+                            <Input
+                                value={formData.title}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, title: e.target.value })
+                                }
+                                placeholder="Call client..."
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Description</Label>
+                            <Input
+                                value={formData.description}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, description: e.target.value })
+                                }
+                                placeholder="Add more details..."
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Priority</Label>
+                            <Select
+                                value={formData.priority}
+                                onValueChange={(val) => setFormData({ ...formData, priority: val })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select priority" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="low">Low</SelectItem>
+                                    <SelectItem value="medium">Medium</SelectItem>
+                                    <SelectItem value="high">High</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Due Date</Label>
+                            <Input
+                                type="datetime-local"
+                                value={formData.due_date}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, due_date: e.target.value })
+                                }
+                            />
+                        </div>
+                        <Button
+                            onClick={handleSave}
+                            disabled={!formData.title.trim() || updateMutation.isPending}
+                            className="w-full"
+                        >
+                            {updateMutation.isPending ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                'Update Reminder'
+                            )}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
