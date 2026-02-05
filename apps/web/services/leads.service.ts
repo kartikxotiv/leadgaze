@@ -224,15 +224,17 @@ const convertLeadService = asyncHandlerClient(
 
 const sendLeadEmailService = asyncHandlerClient(
   async (
-    leadId: string,
     payload: {
+      leadId: string;
       subject: string;
       body: string;
       cc?: string | string[];
       bcc?: string | string[];
     },
   ) => {
-    const response = await ApiClient.post(`/leads/${leadId}/email`, payload);
+    console.log({ payload });
+
+    const response = await ApiClient.post(`/email/send`, payload);
     return response.data?.data || null;
   },
 );
