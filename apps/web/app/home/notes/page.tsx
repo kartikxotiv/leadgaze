@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useMemo, useState } from 'react';
@@ -78,45 +79,50 @@ export default function NotesPage() {
         isLoading,
     } = useQuery({
         queryKey: ['notes', workspace?.id],
-        queryFn: () => {
+        queryFn: async () => {
             if (!workspace?.id) return [];
-            return getNotesService(workspace.id);
+            const res = await getNotesService(workspace.id);
+            return res;
         },
         enabled: !!workspace?.id,
     });
 
     const { data: leads = [] } = useQuery({
         queryKey: ['leads', workspace?.id],
-        queryFn: () => {
+        queryFn: async () => {
             if (!workspace?.id) return [];
-            return getLeadsService(workspace.id);
+            const res = await getLeadsService({ workspaceId: workspace?.id });
+            return res?.data ?? []
         },
         enabled: !!workspace?.id,
     });
 
     const { data: contacts = [] } = useQuery({
         queryKey: ['contacts', workspace?.id],
-        queryFn: () => {
+        queryFn: async () => {
             if (!workspace?.id) return [];
-            return getContactsService(workspace.id);
+            const res = await getContactsService({ workspaceId: workspace?.id });
+            return res?.data ?? []
         },
         enabled: !!workspace?.id,
     });
 
     const { data: accounts = [] } = useQuery({
         queryKey: ['accounts', workspace?.id],
-        queryFn: () => {
+        queryFn: async () => {
             if (!workspace?.id) return [];
-            return getAccountsService(workspace.id);
+            const res = await getAccountsService({ workspaceId: workspace?.id });
+            return res?.data ?? [];
         },
         enabled: !!workspace?.id,
     });
 
     const { data: opportunities = [] } = useQuery({
         queryKey: ['opportunities', workspace?.id],
-        queryFn: () => {
+        queryFn: async () => {
             if (!workspace?.id) return [];
-            return getOpportunitiesService(workspace.id);
+            const res = await getOpportunitiesService({ workspaceId: workspace?.id });
+            return res?.data ?? [];
         },
         enabled: !!workspace?.id,
     });
@@ -427,7 +433,7 @@ export default function NotesPage() {
                                     <SelectValue placeholder={`Select ${entityType}...`} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {entityType === 'lead' && leads.map((lead: any) => (
+                                    {entityType === 'lead' && leads?.map((lead: any) => (
                                         <SelectItem key={lead.id} value={lead.id}>
                                             {lead.first_name} {lead.last_name || ''} ({lead.company_name || 'No Company'})
                                         </SelectItem>
