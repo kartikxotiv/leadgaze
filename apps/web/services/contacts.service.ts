@@ -32,13 +32,29 @@ export interface Contact {
 }
 
 const getContactsService = asyncHandlerClient(
-  async (workspaceId: string, accountId?: string) => {
-    let url = `/contacts?workspaceId=${workspaceId}`;
+  async (params: {
+    workspaceId: string;
+    accountId?: string;
+    page?: number;
+    limit?: number;
+    searchTerm?: string;
+  }) => {
+    const {
+      workspaceId,
+      accountId,
+      page = 1,
+      limit = 20,
+      searchTerm = '',
+    } = params;
+    let url = `/contacts?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}`;
     if (accountId) {
       url += `&accountId=${accountId}`;
     }
     const response = await ApiClient.get(url);
-    return response.data?.data || [];
+    return {
+      data: (response.data?.data || []) as Contact[],
+      count: (response.data?.count || 0) as number,
+    };
   },
 );
 

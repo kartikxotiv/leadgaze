@@ -63,6 +63,9 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
       queryClient.invalidateQueries({
         queryKey: ['notes', entityType, entityId],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['notes', workspace?.id],
+      });
     },
     onError: () => toast.error('Failed to add note'),
   });
@@ -78,6 +81,9 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
       queryClient.invalidateQueries({
         queryKey: ['notes', entityType, entityId],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['notes', workspace?.id],
+      });
     },
     onError: () => toast.error('Failed to update note'),
   });
@@ -88,6 +94,9 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
       toast.success('Note deleted');
       queryClient.invalidateQueries({
         queryKey: ['notes', entityType, entityId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['notes', workspace?.id],
       });
     },
     onError: () => toast.error('Failed to delete note'),

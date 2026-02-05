@@ -63,6 +63,7 @@
     "dashboard": "Dashboard",
     "settings": "Settings",
     "profile": "Profile",
+    "workspace-settings": "Workspace Settings",
     "application": "Application"
   },
   "roles": {

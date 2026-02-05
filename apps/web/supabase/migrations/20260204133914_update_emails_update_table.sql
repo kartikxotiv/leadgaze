@@ -1,0 +1,3 @@
+ALTER TABLE email_accounts DROP CONSTRAINT email_accounts_workspace_id_email_key;
+ALTER TABLE email_accounts
+ADD CONSTRAINT email_accounts_workspace_id_unique UNIQUE (workspace_id);

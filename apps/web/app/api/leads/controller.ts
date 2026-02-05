@@ -50,6 +50,10 @@ const getLeads = catchAsync(
     const supabase = getSupabaseServerClient();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
+    const page = parseInt(url.searchParams.get('page') || '1', 10);
+    const limit = parseInt(url.searchParams.get('limit') || '20', 10);
+    const searchTerm = url.searchParams.get('searchTerm') || '';
+    const statusId = url.searchParams.get('statusId') || '';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -94,9 +98,22 @@ const getLeads = catchAsync(
           created_by_account:accounts!crm_leads_created_by_fkey(id, email, name),
           industry:crm_industries(id, industry_name)
         `,
+        { count: 'exact' },
       )
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
+
+    // Filter by status if provided
+    if (statusId && statusId !== 'all') {
+      query = query.eq('status_id', statusId);
+    }
+
+    // Search term
+    if (searchTerm) {
+      query = query.or(
+        `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%`,
+      );
+    }
 
     // If not owner, filter for public leads, leads assigned to current user, or leads created by current user
     if (!isOwner) {
@@ -116,19 +133,30 @@ const getLeads = catchAsync(
       );
     }
 
-    const { data: leads, error } = await query.order('created_at', {
-      ascending: false,
-    });
+    // Pagination
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const {
+      data: leads,
+      error,
+      count,
+    } = await query
+      .order('created_at', {
+        ascending: false,
+      })
+      .range(from, to);
 
     if (error) {
       console.error('Get leads error:', error);
       throw error;
     }
 
-    return successDataResponse(
-      'Leads retrieved successfully',
-      (leads || []) as LeadWithRelations[],
-    );
+    return NextResponse.json({
+      message: 'Leads retrieved successfully',
+      data: leads || [],
+      count: count || 0,
+    });
   },
 );
 
@@ -345,4 +373,97 @@ const getLeadStatuses = catchAsync(
   },
 );
 
-export { getLeads, createLead, getLeadSources, getLeadStatuses };
+/**
+ * POST /api/leads/sources
+ * Create a new lead source
+ */
+const createLeadSource = catchAsync(
+  async ({
+    request,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const body = await request.json();
+    const { workspace_id, source_name } = body;
+
+    if (!workspace_id || !source_name) {
+      return NextResponse.json(
+        { message: 'workspace_id and source_name are required' },
+        { status: 400 },
+      );
+    }
+
+    // Get current user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Generate source_key from source_name (lowercase, replace spaces with underscores)
+    const source_key = source_name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+
+    // Check if source already exists
+    const { data: existing } = await supabase
+      .from('lead_sources')
+      .select('id')
+      .eq('workspace_id', workspace_id)
+      .eq('source_key', source_key)
+      .single();
+
+    if (existing) {
+      return NextResponse.json(
+        { message: 'Lead source already exists' },
+        { status: 409 },
+      );
+    }
+
+    // Get the highest sort_order for this workspace
+    const { data: maxSort } = await supabase
+      .from('lead_sources')
+      .select('sort_order')
+      .eq('workspace_id', workspace_id)
+      .order('sort_order', { ascending: false })
+      .limit(1)
+      .single();
+
+    const sort_order = (maxSort?.sort_order ?? -1) + 1;
+
+    const { data: source, error } = await supabase
+      .from('lead_sources')
+      .insert({
+        workspace_id,
+        source_name: source_name.trim(),
+        source_key,
+        is_active: true,
+        is_system: false,
+        sort_order,
+        created_by: user.id,
+      })
+      .select('id, source_name, source_key, color, icon')
+      .single();
+
+    if (error) {
+      console.error('Create lead source error:', error);
+      throw error;
+    }
+
+    return successDataResponse('Lead source created successfully', source);
+  },
+);
+
+export {
+  getLeads,
+  createLead,
+  getLeadSources,
+  getLeadStatuses,
+  createLeadSource,
+};

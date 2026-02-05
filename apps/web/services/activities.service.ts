@@ -56,10 +56,11 @@ export interface Document {
 
 // --- Notes ---
 export const getNotesService = asyncHandlerClient(
-  async (workspaceId: string, entityType: string, entityId: string) => {
-    const response = await ApiClient.get(
-      `/notes?workspaceId=${workspaceId}&entityType=${entityType}&entityId=${entityId}`,
-    );
+  async (workspaceId: string, entityType?: string, entityId?: string) => {
+    let url = `/notes?workspaceId=${workspaceId}`;
+    if (entityType) url += `&entityType=${entityType}`;
+    if (entityId) url += `&entityId=${entityId}`;
+    const response = await ApiClient.get(url);
     return response.data?.data || [];
   },
 );
@@ -90,10 +91,11 @@ export const deleteNoteService = asyncHandlerClient(async (id: string) => {
 
 // --- Reminders ---
 export const getRemindersService = asyncHandlerClient(
-  async (workspaceId: string, entityType: string, entityId: string) => {
-    const response = await ApiClient.get(
-      `/reminders?workspaceId=${workspaceId}&entityType=${entityType}&entityId=${entityId}`,
-    );
+  async (workspaceId: string, entityType?: string, entityId?: string) => {
+    let url = `/reminders?workspaceId=${workspaceId}`;
+    if (entityType) url += `&entityType=${entityType}`;
+    if (entityId) url += `&entityId=${entityId}`;
+    const response = await ApiClient.get(url);
     return response.data?.data || [];
   },
 );
@@ -104,6 +106,8 @@ export const createReminderService = asyncHandlerClient(
     entity_type: string;
     entity_id: string;
     title: string;
+    description?: string;
+    priority?: string;
     due_date?: string;
     assigned_to?: string;
   }) => {
@@ -117,6 +121,8 @@ export const updateReminderService = asyncHandlerClient(
     id: string,
     payload: {
       title?: string;
+      description?: string;
+      priority?: string;
       due_date?: string;
       assigned_to?: string;
       is_completed?: boolean;
@@ -134,10 +140,11 @@ export const deleteReminderService = asyncHandlerClient(async (id: string) => {
 
 // --- Meetings ---
 export const getMeetingsService = asyncHandlerClient(
-  async (workspaceId: string, entityType: string, entityId: string) => {
-    const response = await ApiClient.get(
-      `/meetings?workspaceId=${workspaceId}&entityType=${entityType}&entityId=${entityId}`,
-    );
+  async (workspaceId: string, entityType?: string, entityId?: string) => {
+    let url = `/meetings?workspaceId=${workspaceId}`;
+    if (entityType) url += `&entityType=${entityType}`;
+    if (entityId) url += `&entityId=${entityId}`;
+    const response = await ApiClient.get(url);
     return response.data?.data || [];
   },
 );
@@ -148,6 +155,7 @@ export const createMeetingService = asyncHandlerClient(
     entity_type: string;
     entity_id: string;
     title: string;
+    description?: string;
     start_time: string;
     end_time: string;
     location?: string;
@@ -163,6 +171,7 @@ export const updateMeetingService = asyncHandlerClient(
     id: string,
     payload: {
       title?: string;
+      description?: string;
       start_time?: string;
       end_time?: string;
       location?: string;
@@ -181,10 +190,11 @@ export const deleteMeetingService = asyncHandlerClient(async (id: string) => {
 
 // --- Documents ---
 export const getDocumentsService = asyncHandlerClient(
-  async (workspaceId: string, entityType: string, entityId: string) => {
-    const response = await ApiClient.get(
-      `/documents?workspaceId=${workspaceId}&entityType=${entityType}&entityId=${entityId}`,
-    );
+  async (workspaceId: string, entityType?: string, entityId?: string) => {
+    let url = `/documents?workspaceId=${workspaceId}`;
+    if (entityType) url += `&entityType=${entityType}`;
+    if (entityId) url += `&entityId=${entityId}`;
+    const response = await ApiClient.get(url);
     return response.data?.data || [];
   },
 );

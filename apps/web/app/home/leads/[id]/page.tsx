@@ -5,7 +5,15 @@ import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Clock, Edit2, Mail, MapPin, Phone, User } from 'lucide-react';
+import {
+  ChevronDown,
+  Clock,
+  Edit2,
+  Mail,
+  MapPin,
+  Phone,
+  User,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useUser } from '@kit/supabase/hooks/use-user';
@@ -40,10 +48,12 @@ import {
   EntityReminders,
 } from '../../_components/entity-activity';
 import { EntityCalls } from '../../_components/entity-calls';
+import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
 import { ChangeStatusDialog } from '../components/change-status-dialog';
 import { ConvertLeadDialog } from '../components/convert-lead-dialog';
 import EditLeadDialog from '../components/edit-lead-dialog';
+import { EmailLeadDialog } from '../components/email-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
 import { LogCallDialog } from '../components/log-call-dialog';
 import { PublicPrivateToggle } from '~/home/_components/public-private-toggle';
@@ -60,6 +70,8 @@ export default function LeadDetailsPage() {
   );
   const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [selectedDraft, setSelectedDraft] = useState<any>(null);
 
   const leadId = params?.id as string;
 
@@ -185,7 +197,7 @@ export default function LeadDetailsPage() {
             variant="outline"
             size="sm"
             onClick={() => setStatusModalOpen(true)}
-            className="gap-2"
+            className="flex h-8 items-center justify-center px-4"
             disabled={isSaving || !canEdit}
             title={
               !canEdit ? 'You do not have permission to edit this lead' : ''
@@ -214,12 +226,26 @@ export default function LeadDetailsPage() {
           </Button>
 
 
+          <Button
+            variant="outline"
+            size="sm"
+            className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${!lead.email ? 'opacity-50' : ''}`}
+            disabled={!lead.email}
+            onClick={() => lead.email && setIsEmailDialogOpen(true)}
+            title={
+              !lead.email ? 'Lead has no email address' : 'Send email to lead'
+            }
+          >
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
+              <Mail className="h-3.5 w-3.5 text-white" />
+            </div>
+          </Button>
           {!lead.is_converted_to_account && (
             <Button
               variant="outline"
               size="sm"
               onClick={handleConvertLead}
-              className="gap-2"
+              className="flex h-8 items-center justify-center px-4"
               disabled={isSaving || !canEdit}
               title={
                 !canEdit
@@ -234,7 +260,7 @@ export default function LeadDetailsPage() {
             variant="outline"
             size="sm"
             onClick={() => setIsEditDialogOpen(true)}
-            className="gap-2"
+            className="flex h-8 items-center justify-center gap-2 px-4"
             disabled={!canEdit}
             title={
               !canEdit ? 'You do not have permission to edit this lead' : ''
@@ -556,6 +582,14 @@ export default function LeadDetailsPage() {
 
             {/* Call Logs Section */}
             <EntityCalls entityType="lead" entityId={leadId} />
+            {/* Email Activity (Drafts, Scheduled, Sent) */}
+            <EntityEmails
+              leadId={leadId}
+              onOpenDraft={(draft) => {
+                setSelectedDraft(draft);
+                setIsEmailDialogOpen(true);
+              }}
+            />
 
             {/* Activity Section */}
             <Card>
@@ -765,6 +799,20 @@ export default function LeadDetailsPage() {
           workspaceId={workspace.id}
           defaultContactName={`${lead.first_name}${lead.last_name ? ` ${lead.last_name}` : ''}`.trim()}
           defaultPhoneNumber={lead.phone_number || lead.mobile_number}
+        />
+      )}
+      {/* Email Lead Dialog */}
+      {lead && (
+        <EmailLeadDialog
+          open={isEmailDialogOpen}
+          onOpenChange={(open) => {
+            setIsEmailDialogOpen(open);
+            if (!open) setSelectedDraft(null);
+          }}
+          leadId={leadId}
+          leadEmail={lead.email || ''}
+          leadName={fullName}
+          initialDraft={selectedDraft}
         />
       )}
     </ModuleGuard>

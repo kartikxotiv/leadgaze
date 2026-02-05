@@ -29,10 +29,10 @@ import { Textarea } from '@kit/ui/textarea';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { Lead } from '~/services/leads.service';
 import {
-  getLeadSourcesService,
   getLeadStatusesService,
 } from '~/services/leads.service';
 import { IndustrySelect } from '../../_components/industry-select';
+import { LeadSourceSelect } from '../../_components/lead-source-select';
 import ApiClient from '~/utils/axios-client';
 
 interface EditLeadDialogProps {
@@ -109,12 +109,6 @@ export default function EditLeadDialog({
   const { data: statuses = [] } = useQuery({
     queryKey: ['lead-statuses', workspace?.id],
     queryFn: () => getLeadStatusesService(workspace!.id),
-    enabled: !!workspace?.id,
-  });
-
-  const { data: sources = [] } = useQuery({
-    queryKey: ['lead-sources', workspace?.id],
-    queryFn: () => getLeadSourcesService(workspace!.id),
     enabled: !!workspace?.id,
   });
 
@@ -543,24 +537,17 @@ export default function EditLeadDialog({
                   >
                     Lead Source (Optional)
                   </Label>
-                  <Select
-                    value={formData.source_id}
-                    onValueChange={(value) =>
-                      handleInputChange('source_id', value)
-                    }
-                    disabled={isLoading}
-                  >
-                    <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                      <SelectValue placeholder="Select source" />
-                    </SelectTrigger>
-                    <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
-                      {sources.map((source: any) => (
-                        <SelectItem key={source.id} value={source.id}>
-                          {source.source_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="mt-2">
+                    <LeadSourceSelect
+                      value={formData.source_id}
+                      onValueChange={(value) =>
+                        handleInputChange('source_id', value)
+                      }
+                      disabled={isLoading}
+                      placeholder="Select source"
+                      className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                    />
+                  </div>
                 </div>
               </div>
 
