@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Clock, Loader2, Phone, PhoneIncoming, PhoneOutgoing, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -9,6 +10,7 @@ import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { getCallsService, deleteCallService } from '~/services/calls.service';
 import { LogCallDialog } from '../leads/components/log-call-dialog';
 
 interface EntityCallsProps {
@@ -16,37 +18,48 @@ interface EntityCallsProps {
     entityId: string;
 }
 
-const MOCK_CALLS = [
-    {
-        id: '1',
-        subject: 'Introductory Call',
-        call_type: 'outbound',
-        call_status: 'completed',
-        call_datetime: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-        duration_minutes: 15,
-        notes: 'Discussed initial requirements and potential timeline.',
-        contact_name: 'John Doe',
-    }
-];
-
 export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
     const { currentWorkspace: workspace } = useRBAC();
     const [isOpen, setIsOpen] = useState(false);
-    const [calls, setCalls] = useState<any[]>(MOCK_CALLS);
-    const isLoading = false;
+    const queryClient = useQueryClient();
+
+    const { data: calls = [], isLoading, refetch, isRefetching } = useQuery({
+        queryKey: ['calls', workspace?.id, entityType, entityId],
+        queryFn: () => {
+            if (!workspace?.id) return Promise.resolve([]);
+            return getCallsService({
+                workspaceId: workspace.id,
+                entityType,
+                entityId,
+            });
+        },
+        enabled: !!workspace?.id,
+    });
+
+    const { mutate: deleteCall } = useMutation({
+        mutationFn: deleteCallService,
+        onSuccess: () => {
+            toast.success('Call deleted');
+            queryClient.invalidateQueries({
+                queryKey: ['calls', workspace?.id, entityType, entityId],
+            });
+        },
+        onError: (error: any) => {
+            toast.error(error.message || 'Failed to delete call');
+        }
+    });
 
     const handleDelete = (id: string) => {
         if (confirm('Are you sure you want to delete this call log?')) {
-            setCalls(prev => prev.filter(c => c.id !== id));
-            toast.success('Call deleted');
+            deleteCall(id);
         }
     };
 
-    const handleSuccess = (newCall: any) => {
-        if (newCall) {
-            setCalls(prev => [newCall, ...prev]);
-        }
+    const handleSuccess = async () => {
         setIsOpen(false);
+        await queryClient.invalidateQueries({
+            queryKey: ['calls', workspace?.id, entityType, entityId],
+        });
     };
 
     const getCallTypeIcon = (callType: string) => {
@@ -79,6 +92,21 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
                 className: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
                 label: 'Left Voicemail',
             },
+            missed: {
+                variant: 'destructive' as const,
+                className: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+                label: 'Missed',
+            },
+            failed: {
+                variant: 'destructive' as const,
+                className: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+                label: 'Failed',
+            },
+            voicemail: {
+                variant: 'secondary' as const,
+                className: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+                label: 'Voicemail',
+            }
         };
 
         const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.completed;
@@ -97,10 +125,10 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
                 <div className="flex items-center gap-2">
                     <Phone className="h-5 w-5 text-gray-400" />
                     <div>
-                        <CardTitle className="text-base">Call Logs</CardTitle>
-                        <p className="text-xs text-gray-400">
-                            {entityType}: {entityId}
-                        </p>
+                        <CardTitle className="text-base flex items-center gap-2">
+                            Call Logs
+                            {isRefetching && <Loader2 className="h-3 w-3 animate-spin text-gray-400" />}
+                        </CardTitle>
                     </div>
                 </div>
                 <Button
@@ -122,68 +150,72 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
                     </div>
                 ) : calls.length > 0 ? (
                     <div className="space-y-3">
-                        {calls.map((call) => (
+                        {calls.map((call: any) => (
                             <div
                                 key={call.id}
                                 className="group relative rounded-lg border border-transparent bg-gray-50 p-3 transition-colors hover:border-gray-200 dark:bg-slate-900"
                             >
-                                <div className="space-y-2">
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <div className="flex items-center gap-1">
-                                                {getCallTypeIcon(call.call_type)}
-                                                <span className="text-[10px] font-semibold uppercase text-gray-400">
-                                                    {call.call_type}
-                                                </span>
+                                <div className="">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-1">
+                                                    {getCallTypeIcon(call.call_type)}
+                                                    <span className="text-[10px] font-semibold uppercase text-gray-400">
+                                                        {call.call_type}
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 ">
+                                                    {call.subject}
+                                                </p>
                                             </div>
-                                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                {call.subject}
-                                            </p>
-                                        </div>
-                                        {getCallStatusBadge(call.call_status)}
-                                    </div>
+                                            <div className="flex mr-5 items-center">
 
-                                    {/* Name & Duration */}
-                                    <div className="flex items-center justify-between text-xs">
-                                        <div className="text-gray-500">
-                                            {call.contact_name ? (
-                                                <p>Name: <span className="font-medium text-gray-700 dark:text-gray-300">{call.contact_name}</span></p>
-                                            ) : (
-                                                <p className="italic">No Contact Name</p>
-                                            )}
-                                        </div>
-                                        {call.duration_minutes ? (
-                                            <div className="flex items-center gap-1 font-medium text-blue-600">
-                                                <Clock className="h-3 w-3" />
-                                                <span>{call.duration_minutes} min</span>
+                                                {getCallStatusBadge(call.status)}
                                             </div>
-                                        ) : null}
-                                    </div>
 
-                                    {/* Date & Time */}
-                                    <div className="text-xs text-gray-500">
-                                        <p>Date & Time: {new Date(call.call_datetime).toLocaleString()}</p>
-                                    </div>
-
-                                    {/* Notes/Comments */}
-                                    {call.notes && (
-                                        <div className="mt-1 rounded border border-gray-100 bg-white p-2 dark:border-gray-800 dark:bg-gray-800/50">
-                                            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Comments:</p>
-                                            <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                                                {call.notes}
-                                            </p>
                                         </div>
-                                    )}
+
+                                        {/* Name & Duration - Removed duration as it's not in schema currently */}
+                                        <div className="flex items-center justify-between text-xs">
+                                            <div className="text-gray-500">
+                                                {call.contact_name ? (
+                                                    <p>Contact: <span className="font-medium text-gray-700 dark:text-gray-300">{call.contact_name}</span></p>
+                                                ) : (
+                                                    <p className="italic">No Contact Name</p>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-1 font-medium text-gray-400">
+                                                <span className="text-[10px]">{call.created_by_user?.name}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Date & Time */}
+                                        <div className="text-xs text-gray-500">
+                                            <p>Date & Time: {new Date(call.date_time).toLocaleString()}</p>
+                                        </div>
+
+                                        {/* Notes/Comments */}
+                                        {call.comments && (
+                                            <div className="mt-1 rounded border border-gray-100 bg-white p-2 dark:border-gray-800 dark:bg-gray-800/50">
+                                                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Comments:</p>
+                                                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                                                    {call.comments}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                                        <button
+                                            onClick={() => handleDelete(call.id)}
+                                            className="p-1 text-gray-400 hover:text-red-500"
+                                        >
+                                            <Trash2 className=" h-4 w-4" />
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <div className="absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                                    <button
-                                        onClick={() => handleDelete(call.id)}
-                                        className="p-1 text-gray-400 hover:text-red-500"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
-                                </div>
                             </div>
                         ))}
                     </div>
@@ -199,8 +231,8 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
                 <LogCallDialog
                     open={isOpen}
                     onOpenChange={setIsOpen}
-                    onSuccess={(newCall) => {
-                        handleSuccess(newCall);
+                    onSuccess={() => {
+                        handleSuccess();
                     }}
                     entityType={entityType}
                     entityId={entityId}

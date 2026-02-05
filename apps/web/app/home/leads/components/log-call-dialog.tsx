@@ -8,7 +8,7 @@ import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@kit/ui/select';
 import { Textarea } from '@kit/ui/textarea';
-
+import { createCallService } from '~/services/calls.service';
 
 
 interface LogCallDialogProps {
@@ -36,24 +36,24 @@ export function LogCallDialog({
     // Form state
     const [subject, setSubject] = useState('');
     const [callType, setCallType] = useState<'inbound' | 'outbound'>('outbound');
-    const [callStatus, setCallStatus] = useState<
-        'completed' | 'no_answer' | 'busy' | 'left_voicemail'
+    const [status, setStatus] = useState<
+        'completed' | 'no_answer' | 'busy' | 'left_voicemail' | 'missed' | 'failed' | 'voicemail'
     >('completed');
     const [contactName, setContactName] = useState(defaultContactName);
     const [callDatetime, setCallDatetime] = useState(
         new Date().toISOString().slice(0, 16),
     );
-    const [durationMinutes, setDurationMinutes] = useState<string>('');
-    const [notes, setNotes] = useState('');
+    // const [durationMinutes, setDurationMinutes] = useState<string>(''); // Removed as per schema
+    const [comments, setComments] = useState('');
 
     const resetForm = () => {
         setSubject('');
         setCallType('outbound');
-        setCallStatus('completed');
+        setStatus('completed');
         setContactName(defaultContactName);
         setCallDatetime(new Date().toISOString().slice(0, 16));
-        setDurationMinutes('');
-        setNotes('');
+        // setDurationMinutes('');
+        setComments('');
     };
 
     const handleSave = async () => {
@@ -62,24 +62,30 @@ export function LogCallDialog({
             return;
         }
 
-        // No API delay
+        setIsSaving(true);
+        try {
+            const newCall = await createCallService({
+                workspace_id: workspaceId,
+                entity_type: entityType,
+                entity_id: entityId,
+                subject,
+                call_type: callType,
+                status,
+                contact_name: contactName,
+                date_time: new Date(callDatetime).toISOString(),
+                comments,
+            });
 
-        const newCall = {
-            id: Math.random().toString(36).substr(2, 9),
-            subject,
-            call_type: callType,
-            call_status: callStatus,
-            call_datetime: callDatetime,
-            duration_minutes: durationMinutes ? parseInt(durationMinutes) : 0,
-            notes,
-            contact_name: contactName,
-        };
-
-        toast.success('Call logged successfully');
-        resetForm();
-        onSuccess(newCall);
-        onOpenChange(false);
-        setIsSaving(false);
+            toast.success('Call logged successfully');
+            resetForm();
+            onSuccess(newCall);
+            onOpenChange(false);
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.message || 'Failed to log call');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleOpenChange = (open: boolean) => {
@@ -107,9 +113,6 @@ export function LogCallDialog({
                             value={subject}
                             onChange={(e) => setSubject(e.target.value)}
                         />
-
-
-
                     </div>
 
                     {/* Call Type and Status */}
@@ -135,71 +138,57 @@ export function LogCallDialog({
                         <div className="grid gap-2">
                             <Label htmlFor="callStatus">Status</Label>
                             <Select
-                                value={callStatus}
+                                value={status}
                                 onValueChange={(
-                                    value: 'completed' | 'no_answer' | 'busy' | 'left_voicemail',
-                                ) => setCallStatus(value)}
+                                    value: 'completed' | 'no_answer' | 'busy' | 'left_voicemail' | 'missed' | 'failed' | 'voicemail',
+                                ) => setStatus(value)}
                             >
                                 <SelectTrigger id="callStatus">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="completed">Completed</SelectItem>
+                                    <SelectItem value="missed">Missed</SelectItem>
                                     <SelectItem value="no_answer">No Answer</SelectItem>
                                     <SelectItem value="busy">Busy</SelectItem>
                                     <SelectItem value="left_voicemail">Left Voicemail</SelectItem>
+                                    <SelectItem value="voicemail">Voicemail</SelectItem>
+                                    <SelectItem value="failed">Failed</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
 
-                    {/* Contact Name and Phone */}
-                    <div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="contactName">Name</Label>
-                            <Input
-                                id="contactName"
-                                placeholder="Person contacted"
-                                value={contactName}
-                                onChange={(e) => setContactName(e.target.value)}
-                            />
-                        </div>
-
-                    </div>
-
-                    {/* Call Date/Time and Duration */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="callDatetime">Date & Time</Label>
-                            <Input
-                                id="callDatetime"
-                                type="datetime-local"
-                                value={callDatetime}
-                                onChange={(e) => setCallDatetime(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="duration">Duration (min)</Label>
-                            <Input
-                                id="duration"
-                                type="number"
-                                min="0"
-                                placeholder="15"
-                                value={durationMinutes}
-                                onChange={(e) => setDurationMinutes(e.target.value)}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Notes */}
+                    {/* Contact Name */}
                     <div className="grid gap-2">
-                        <Label htmlFor="notes">Comments</Label>
+                        <Label htmlFor="contactName">Name</Label>
+                        <Input
+                            id="contactName"
+                            placeholder="Person contacted"
+                            value={contactName}
+                            onChange={(e) => setContactName(e.target.value)}
+                        />
+                    </div>
+
+                    {/* Call Date/Time */}
+                    <div className="grid gap-2">
+                        <Label htmlFor="callDatetime">Date & Time</Label>
+                        <Input
+                            id="callDatetime"
+                            type="datetime-local"
+                            value={callDatetime}
+                            onChange={(e) => setCallDatetime(e.target.value)}
+                        />
+                    </div>
+
+                    {/* Comments */}
+                    <div className="grid gap-2">
+                        <Label htmlFor="comments">Comments</Label>
                         <Textarea
-                            id="notes"
+                            id="comments"
                             placeholder="Additional details about the call..."
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
+                            value={comments}
+                            onChange={(e) => setComments(e.target.value)}
                             rows={4}
                         />
                     </div>

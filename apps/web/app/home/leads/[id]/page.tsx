@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 
 import { useParams, useRouter } from 'next/navigation';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ChevronDown,
   Clock,
@@ -72,6 +72,8 @@ export default function LeadDetailsPage() {
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [selectedDraft, setSelectedDraft] = useState<any>(null);
+
+  const queryClient = useQueryClient();
 
   const leadId = params?.id as string;
 
@@ -791,8 +793,11 @@ export default function LeadDetailsPage() {
         <LogCallDialog
           open={isLogCallDialogOpen}
           onOpenChange={setIsLogCallDialogOpen}
-          onSuccess={() => {
+          onSuccess={async () => {
             setIsLogCallDialogOpen(false);
+            await queryClient.invalidateQueries({
+              queryKey: ['calls', workspace?.id, 'lead', leadId],
+            });
           }}
           entityType="lead"
           entityId={leadId}
