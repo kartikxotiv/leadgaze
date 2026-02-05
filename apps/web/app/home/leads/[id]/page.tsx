@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 
 import { useParams, useRouter } from 'next/navigation';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ChevronDown,
   Clock,
@@ -20,11 +20,16 @@ import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@kit/ui/dropdown-menu';
 import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Separator } from '@kit/ui/separator';
 
-import { PublicPrivateToggle } from '~/home/_components/public-private-toggle';
 import {
   useCanAccessData,
   usePermissionDetail,
@@ -42,6 +47,7 @@ import {
   EntityMeetings,
   EntityReminders,
 } from '../../_components/entity-activity';
+import { EntityCalls } from '../../_components/entity-calls';
 import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
 import { ChangeStatusDialog } from '../components/change-status-dialog';
@@ -49,6 +55,8 @@ import { ConvertLeadDialog } from '../components/convert-lead-dialog';
 import EditLeadDialog from '../components/edit-lead-dialog';
 import { EmailLeadDialog } from '../components/email-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
+import { LogCallDialog } from '../components/log-call-dialog';
+import { PublicPrivateToggle } from '~/home/_components/public-private-toggle';
 
 export default function LeadDetailsPage() {
   const router = useRouter();
@@ -61,8 +69,11 @@ export default function LeadDetailsPage() {
     null,
   );
   const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
+  const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [selectedDraft, setSelectedDraft] = useState<any>(null);
+
+  const queryClient = useQueryClient();
 
   const leadId = params?.id as string;
 
@@ -196,6 +207,27 @@ export default function LeadDetailsPage() {
           >
             Change Status
           </Button>
+
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsLogCallDialogOpen(true)}
+            className="p-3 "
+            disabled={!canEdit}
+            title={
+              !canEdit ? 'You do not have permission to log calls' : 'Log a call'
+            }
+          >
+
+            {/* Phone icon */}
+            {/* Log Call */}
+            <div className="flex items-center justify-center bg-[#44bbb3] p-2 rounded-full">
+              <Phone className="h-3 w-3 text-white" />
+            </div>
+          </Button>
+
+
           <Button
             variant="outline"
             size="sm"
@@ -550,6 +582,8 @@ export default function LeadDetailsPage() {
             {/* Notes Section */}
             <EntityNotes entityType="lead" entityId={leadId} />
 
+            {/* Call Logs Section */}
+            <EntityCalls entityType="lead" entityId={leadId} />
             {/* Email Activity (Drafts, Scheduled, Sent) */}
             <EntityEmails
               leadId={leadId}
@@ -754,6 +788,24 @@ export default function LeadDetailsPage() {
         />
       )}
 
+      {/* Log Call Dialog */}
+      {lead && workspace?.id && (
+        <LogCallDialog
+          open={isLogCallDialogOpen}
+          onOpenChange={setIsLogCallDialogOpen}
+          onSuccess={async () => {
+            setIsLogCallDialogOpen(false);
+            await queryClient.invalidateQueries({
+              queryKey: ['calls', workspace?.id, 'lead', leadId],
+            });
+          }}
+          entityType="lead"
+          entityId={leadId}
+          workspaceId={workspace.id}
+          defaultContactName={`${lead.first_name}${lead.last_name ? ` ${lead.last_name}` : ''}`.trim()}
+          defaultPhoneNumber={lead.phone_number || lead.mobile_number}
+        />
+      )}
       {/* Email Lead Dialog */}
       {lead && (
         <EmailLeadDialog
