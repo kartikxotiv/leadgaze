@@ -27,11 +27,13 @@ import {
 import { Separator } from '@kit/ui/separator';
 import { Textarea } from '@kit/ui/textarea';
 
+import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
   createLeadService,
   getLeadStatusesService,
 } from '~/services/leads.service';
+
 import { IndustrySelect } from '../../_components/industry-select';
 import { LeadSourceSelect } from '../../_components/lead-source-select';
 
@@ -40,6 +42,14 @@ interface CreateLeadDialogProps {
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
 }
+
+const COMPANY_SIZES = [
+  { value: 'startup', label: 'Startup (1-10)' },
+  { value: 'small', label: 'Small (11-50)' },
+  { value: 'medium', label: 'Medium (51-500)' },
+  { value: 'large', label: 'Large (501-5000)' },
+  { value: 'enterprise', label: 'Enterprise (5000+)' },
+];
 
 interface FormDataState {
   first_name: string;
@@ -62,15 +72,8 @@ interface FormDataState {
   trigger: string;
   notes: string;
   is_public: boolean;
+  lead_score: number;
 }
-
-const COMPANY_SIZES = [
-  { value: 'startup', label: 'Startup (1-10)' },
-  { value: 'small', label: 'Small (11-50)' },
-  { value: 'medium', label: 'Medium (51-500)' },
-  { value: 'large', label: 'Large (501-5000)' },
-  { value: 'enterprise', label: 'Enterprise (5000+)' },
-];
 
 export default function CreateLeadDialog({
   open,
@@ -101,13 +104,11 @@ export default function CreateLeadDialog({
     trigger: '',
     notes: '',
     is_public: true,
+    lead_score: 0,
   });
 
   // Fetch available statuses
-  const {
-    data: statuses = [],
-    isLoading: statusesLoading,
-  } = useQuery({
+  const { data: statuses = [], isLoading: statusesLoading } = useQuery({
     queryKey: ['lead-statuses', workspace?.id],
     queryFn: () => {
       if (!workspace?.id) {
@@ -123,7 +124,7 @@ export default function CreateLeadDialog({
     enabled: !!workspace,
   });
 
-  useEffect(() => { }, [statuses, statusesLoading, workspace]);
+  useEffect(() => {}, [statuses, statusesLoading, workspace]);
 
   const handleInputChange = useCallback(
     (field: keyof FormDataState, value: string) => {
@@ -131,6 +132,44 @@ export default function CreateLeadDialog({
     },
     [],
   );
+
+  // Reactive lead scoring
+  useEffect(() => {
+    // Find selected status to get its key
+    const selectedStatus = statuses.find(
+      (s: any) => s.id === formData.status_id,
+    );
+
+    // Calculate lead score
+    const { totalScore } = calculateLeadScore({
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      company_name: formData.company_name,
+      industry_id: formData.industry_id,
+      company_size: formData.company_size,
+      location: formData.location,
+      timezone: formData.timezone,
+      job_title: formData.job_title,
+      status_key: selectedStatus?.status_key,
+      contacted_count: 0,
+      custom_fields: {},
+    });
+
+    if (formData.lead_score !== totalScore) {
+      setFormData((prev) => ({ ...prev, lead_score: totalScore }));
+    }
+  }, [
+    formData.first_name,
+    formData.last_name,
+    formData.company_name,
+    formData.industry_id,
+    formData.company_size,
+    formData.location,
+    formData.timezone,
+    formData.job_title,
+    formData.status_id,
+    statuses,
+  ]);
 
   const mutation = useMutation({
     mutationFn: async (payload: any) => {
@@ -177,6 +216,7 @@ export default function CreateLeadDialog({
       trigger: '',
       notes: '',
       is_public: true,
+      lead_score: 0,
     });
   };
 
@@ -195,10 +235,32 @@ export default function CreateLeadDialog({
 
     setIsLoading(true);
     try {
+      // Find selected status to get its key
+      const selectedStatus = statuses.find(
+        (s: any) => s.id === formData.status_id,
+      );
+
+      // Calculate lead score
+      const { totalScore } = calculateLeadScore({
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        company_name: formData.company_name,
+        industry_id: formData.industry_id,
+        company_size: formData.company_size,
+        location: formData.location,
+        timezone: formData.timezone,
+        job_title: formData.job_title,
+        status_key: selectedStatus?.status_key,
+        // Engagement metrics (initial creation usually has 0)
+        contacted_count: 0,
+        custom_fields: {},
+      });
+
       // Build payload with only non-empty fields
       const payload: any = {
         first_name: formData.first_name,
         status_id: formData.status_id,
+        lead_score: totalScore,
       };
 
       // Add optional fields only if they have values
@@ -688,8 +750,8 @@ export default function CreateLeadDialog({
                   </Label>
                   <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                     When public, this lead will be visible to all team members
-                    with &quot;View leads&quot; access. When private, only you and
-                    assigned team members can see it.
+                    with &quot;View leads&quot; access. When private, only you
+                    and assigned team members can see it.
                   </p>
                 </div>
               </div>
