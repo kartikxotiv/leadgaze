@@ -285,7 +285,7 @@ export function EmailLeadDialog({
   const handleSend = async () => {
     const message = editorRef.current?.innerHTML || '';
 
-    console.log('Sending email:', { leadId, subject, hasMessage: !!message });
+    // console.log('Sending email:', { leadId, subject, hasMessage: !!message });
 
     if (!subject || !message || message === '<br>' || message === '') {
       toast.error('Please fill in all fields');
@@ -304,7 +304,8 @@ export function EmailLeadDialog({
           .map((e) => e.trim())
           .filter((e) => e.length > 0);
 
-        const result = await sendLeadEmailService(leadId, {
+        const result = await sendLeadEmailService({
+          leadId,
           subject,
           body: message,
           cc: cc.length > 0 ? cc : undefined,
@@ -363,7 +364,7 @@ export function EmailLeadDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl overflow-hidden border-none bg-white p-0 shadow-2xl dark:bg-slate-950">
+      <DialogContent className="max-w-2xl overflow-hidden border-none bg-white p-0 shadow-2xl dark:bg-slate-950 h-[90vh] overflow-y-auto">
         <DialogHeader className="sr-only">
           <DialogTitle>Email Lead</DialogTitle>
         </DialogHeader>
@@ -657,7 +658,7 @@ export function EmailLeadDialog({
               ref={editorRef}
               contentEditable
               className="min-h-[250px] overflow-y-auto bg-white p-4 text-sm text-slate-800 outline-none dark:bg-slate-950 dark:text-slate-200 [&_ol]:list-decimal [&_ol]:pl-8 [&_ul]:list-disc [&_ul]:pl-8"
-              onInput={() => {}}
+              onInput={() => { }}
             />
           </div>
         </div>
@@ -688,7 +689,7 @@ export function EmailLeadDialog({
                 className={cn(
                   'flex items-center gap-2 rounded-full border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900',
                   scheduledAt &&
-                    'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20',
+                  'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20',
                 )}
                 disabled={isSending}
               >

@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 
 import type { JwtPayload } from '@supabase/supabase-js';
 
-import { Activity, Settings } from 'lucide-react';
+import { Activity, Bell, Calendar, FileText, Settings } from 'lucide-react';
 import { z } from 'zod';
 
 import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
@@ -25,19 +25,7 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
 
   const navConfig = useMemo(() => {
     // Basic routes that always exist
-    const baseRoutes = [
-      {
-        label: 'common:routes.application',
-        children: [
-          {
-            label: 'common:routes.home',
-            path: pathsConfig.app.home,
-            Icon: <Activity className="h-4 w-4" />,
-            end: true,
-          },
-        ],
-      },
-    ];
+    const baseRoutes: any[] = [];
 
     const settingsRoutes = [
       {
@@ -46,6 +34,11 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
           {
             label: 'common:routes.profile',
             path: pathsConfig.app.profileSettings,
+            Icon: <Settings className="h-4 w-4" />,
+          },
+          {
+            label: 'common:routes.workspace-settings',
+            path: pathsConfig.app.workspaceSettings,
             Icon: <Settings className="h-4 w-4" />,
           },
         ],
@@ -60,33 +53,75 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
         ...baseRoutes,
         ...(salesItems.length > 0
           ? [
-              {
-                label: 'Sales',
-                children: salesItems.map((item) => {
+            {
+              label: 'Sales',
+              children: [
+                {
+                  label: 'common:routes.dashboard',
+                  path: pathsConfig.app.home,
+                  Icon: <Activity className="h-4 w-4" />,
+                  end: true,
+                },
+                ...salesItems.map((item) => {
                   const IconComponent = item.Icon;
                   return {
                     ...item,
                     Icon: <IconComponent className="h-4 w-4" />,
                   };
                 }),
-              },
-            ]
+              ],
+            },
+          ]
           : []),
-        ...(teamItems.length > 0
-          ? [
-              {
-                label: 'Team',
-                children: teamItems.map((item) => {
-                  const IconComponent = item.Icon;
-                  return {
-                    ...item,
-                    Icon: <IconComponent className="h-4 w-4" />,
-                  };
-                }),
-              },
-            ]
-          : []),
-        ...settingsRoutes,
+        {
+          label: 'Communication',
+          children: [
+            {
+              label: 'Meetings',
+              path: '/home/meetings',
+              Icon: <Calendar className="h-4 w-4" />,
+            },
+            {
+              label: 'Reminders',
+              path: '/home/reminders',
+              Icon: <Bell className="h-4 w-4" />,
+            },
+            {
+              label: 'Notes',
+              path: '/home/notes',
+              Icon: <FileText className="h-4 w-4" />,
+            },
+            {
+              label: 'Document',
+              path: '/home/document',
+              Icon: <FileText className="h-4 w-4" />,
+            },
+          ],
+        },
+        {
+          label: 'common:routes.settings',
+          children: [
+            {
+              label: 'common:routes.profile',
+              path: pathsConfig.app.profileSettings,
+              Icon: <Settings className="h-4 w-4" />,
+            },
+            {
+              label: 'common:routes.workspace-settings',
+              path: pathsConfig.app.workspaceSettings,
+              Icon: <Settings className="h-4 w-4" />,
+            },
+            ...(teamItems.length > 0
+              ? teamItems.map((item) => {
+                const IconComponent = item.Icon;
+                return {
+                  ...item,
+                  Icon: <IconComponent className="h-4 w-4" />,
+                };
+              })
+              : []),
+          ],
+        },
       ];
     }
 
@@ -97,33 +132,72 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
       ...baseRoutes,
       ...(salesItems.length > 0
         ? [
-            {
-              label: 'Sales',
-              children: salesItems.map((item) => {
+          {
+            label: 'Sales',
+            children: [
+              {
+                label: 'common:routes.dashboard',
+                path: pathsConfig.app.home,
+                Icon: <Activity className="h-4 w-4" />,
+                end: true,
+              },
+              ...salesItems.map((item) => {
                 const IconComponent = item.Icon;
                 return {
                   ...item,
                   Icon: <IconComponent className="h-4 w-4" />,
                 };
               }),
-            },
-          ]
+            ],
+          },
+        ]
         : []),
-      ...(teamItems.length > 0
-        ? [
-            {
-              label: 'Team',
-              children: teamItems.map((item) => {
-                const IconComponent = item.Icon;
-                return {
-                  ...item,
-                  Icon: <IconComponent className="h-4 w-4" />,
-                };
-              }),
-            },
-          ]
-        : []),
-      ...settingsRoutes,
+
+      {
+        label: 'Communication',
+        children: [
+          {
+            label: 'Meetings',
+            path: '/home/meetings',
+            Icon: <Calendar className="h-4 w-4" />,
+          },
+          {
+            label: 'Reminders',
+            path: '/home/reminders',
+            Icon: <Bell className="h-4 w-4" />,
+          },
+          {
+            label: 'Notes',
+            path: '/home/notes',
+            Icon: <FileText className="h-4 w-4" />,
+          },
+          {
+            label: 'Document',
+            path: '/home/document',
+            Icon: <FileText className="h-4 w-4" />,
+          },
+        ],
+      },
+
+      {
+        label: 'common:routes.settings',
+        children: [
+          {
+            label: 'common:routes.profile',
+            path: pathsConfig.app.profileSettings,
+            Icon: <Settings className="h-4 w-4" />,
+          },
+          ...(teamItems.length > 0
+            ? teamItems.map((item) => {
+              const IconComponent = item.Icon;
+              return {
+                ...item,
+                Icon: <IconComponent className="h-4 w-4" />,
+              };
+            })
+            : []),
+        ],
+      },
     ];
   }, [permissionNavConfig, canAccess]);
 
