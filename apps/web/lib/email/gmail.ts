@@ -22,17 +22,6 @@ export async function sendGmailOAuth({
         process.env.GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET
     );
-    console.log({
-        from,
-        to,
-        cc,
-        bcc,
-        subject,
-        html,
-        text,
-        headers,
-        account
-    });
 
     client.setCredentials({
         refresh_token: account.refresh_token,
