@@ -75,9 +75,11 @@ export const sendEmail = catchAsync(async ({ request }: { request: NextRequest }
 
         return NextResponse.json({
             success: true,
-            messageId: info.messageId
+            messageId: info?.messageId
         });
     } catch (err: any) {
+        console.log(err);
+
         return NextResponse.json(
             { error: err.message },
             { status: 500 }

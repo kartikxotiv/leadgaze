@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { catchAsync } from "~/utils/response-handler";
+import { encrypt } from "~/utils/crypto";
 
 export const submitSMTPDetails = catchAsync(
     async ({ request }: { request: NextRequest }) => {
         const body = await request.json();
         const supabase = getSupabaseServerClient();
-
         const {
             workspace_id,
             email,
@@ -25,7 +25,7 @@ export const submitSMTPDetails = catchAsync(
             port,
             secure,
             username,
-            password,
+            password: encrypt(password),
             from_name,
             provider: 'smtp'
         },
