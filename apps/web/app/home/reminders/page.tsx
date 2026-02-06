@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useMemo, useState } from 'react';
@@ -103,39 +104,44 @@ export default function RemindersPage() {
 
     const { data: leads = [] } = useQuery({
         queryKey: ['leads', workspace?.id],
-        queryFn: () => {
+        queryFn: async () => {
             if (!workspace?.id) return [];
-            return getLeadsService(workspace.id);
+            const res = await getLeadsService({ workspaceId: workspace?.id });
+            return res?.data ?? []
         },
         enabled: !!workspace?.id,
     });
 
     const { data: contacts = [] } = useQuery({
         queryKey: ['contacts', workspace?.id],
-        queryFn: () => {
+        queryFn: async () => {
             if (!workspace?.id) return [];
-            return getContactsService(workspace.id);
+            const res = await getContactsService({ workspaceId: workspace?.id });
+            return res?.data ?? []
         },
         enabled: !!workspace?.id,
     });
 
     const { data: accounts = [] } = useQuery({
         queryKey: ['accounts', workspace?.id],
-        queryFn: () => {
+        queryFn: async () => {
             if (!workspace?.id) return [];
-            return getAccountsService(workspace.id);
+            const res = await getAccountsService({ workspaceId: workspace?.id });
+            return res?.data ?? [];
         },
         enabled: !!workspace?.id,
     });
 
     const { data: opportunities = [] } = useQuery({
         queryKey: ['opportunities', workspace?.id],
-        queryFn: () => {
+        queryFn: async () => {
             if (!workspace?.id) return [];
-            return getOpportunitiesService(workspace.id);
+            const res = await getOpportunitiesService({ workspaceId: workspace?.id });
+            return res?.data ?? [];
         },
         enabled: !!workspace?.id,
     });
+
 
     const createMutation = useMutation({
         mutationFn: (payload: any) =>
@@ -504,22 +510,22 @@ export default function RemindersPage() {
                                     <SelectValue placeholder={`Select ${formData.entity_type}...`} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {formData.entity_type === 'lead' && leads.map((lead: any) => (
+                                    {formData.entity_type === 'lead' && leads?.map((lead: any) => (
                                         <SelectItem key={lead.id} value={lead.id}>
                                             {lead.first_name} {lead.last_name || ''}
                                         </SelectItem>
                                     ))}
-                                    {formData.entity_type === 'contact' && contacts.map((contact: any) => (
+                                    {formData.entity_type === 'contact' && contacts?.map((contact: any) => (
                                         <SelectItem key={contact.id} value={contact.id}>
                                             {contact.first_name} {contact.last_name || ''}
                                         </SelectItem>
                                     ))}
-                                    {formData.entity_type === 'account' && accounts.map((account: any) => (
+                                    {formData.entity_type === 'account' && accounts?.map((account: any) => (
                                         <SelectItem key={account.id} value={account.id}>
                                             {account.account_name}
                                         </SelectItem>
                                     ))}
-                                    {formData.entity_type === 'opportunity' && opportunities.map((opportunity: any) => (
+                                    {formData.entity_type === 'opportunity' && opportunities?.map((opportunity: any) => (
                                         <SelectItem key={opportunity.id} value={opportunity.id}>
                                             {opportunity.opportunity_name}
                                         </SelectItem>

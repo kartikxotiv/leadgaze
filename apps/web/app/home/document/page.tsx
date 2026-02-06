@@ -99,39 +99,44 @@ export default function DocumentPage() {
 
     const { data: leads = [] } = useQuery({
         queryKey: ['leads', workspace?.id],
-        queryFn: () => {
+        queryFn: async () => {
             if (!workspace?.id) return [];
-            return getLeadsService(workspace.id);
+            const res = await getLeadsService({ workspaceId: workspace?.id });
+            return res?.data ?? []
         },
         enabled: !!workspace?.id,
     });
 
     const { data: contacts = [] } = useQuery({
         queryKey: ['contacts', workspace?.id],
-        queryFn: () => {
+        queryFn: async () => {
             if (!workspace?.id) return [];
-            return getContactsService(workspace.id);
+            const res = await getContactsService({ workspaceId: workspace?.id });
+            return res?.data ?? []
         },
         enabled: !!workspace?.id,
     });
 
     const { data: accounts = [] } = useQuery({
         queryKey: ['accounts', workspace?.id],
-        queryFn: () => {
+        queryFn: async () => {
             if (!workspace?.id) return [];
-            return getAccountsService(workspace.id);
+            const res = await getAccountsService({ workspaceId: workspace?.id });
+            return res?.data ?? [];
         },
         enabled: !!workspace?.id,
     });
 
     const { data: opportunities = [] } = useQuery({
         queryKey: ['opportunities', workspace?.id],
-        queryFn: () => {
+        queryFn: async () => {
             if (!workspace?.id) return [];
-            return getOpportunitiesService(workspace.id);
+            const res = await getOpportunitiesService({ workspaceId: workspace?.id });
+            return res?.data ?? [];
         },
         enabled: !!workspace?.id,
     });
+
 
     const createMutation = useMutation({
         mutationFn: (payload: { file: File; entity_type: string; entity_id: string }) =>
