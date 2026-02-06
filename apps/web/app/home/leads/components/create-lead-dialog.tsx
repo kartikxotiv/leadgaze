@@ -775,8 +775,12 @@ export default function CreateLeadDialog({
               </div>
             </div>
 
-            {/* Form Actions */}
-            <div className="sticky bottom-0 flex justify-end gap-3 border-t border-gray-200 bg-white pt-6 dark:border-slate-800 dark:bg-slate-950">
+            {/* Form Actions (Hidden here, moved outside) */}
+          </form>
+
+          {/* Form Actions - Pinned to bottom */}
+          <div className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+            <div className="flex justify-end gap-3">
               <Button
                 type="button"
                 variant="outline"
@@ -786,7 +790,12 @@ export default function CreateLeadDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading} className="gap-2">
+              <Button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isLoading}
+                className="gap-2"
+              >
                 {isLoading ? (
                   <>
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -800,7 +809,7 @@ export default function CreateLeadDialog({
                 )}
               </Button>
             </div>
-          </form>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
