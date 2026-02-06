@@ -4,7 +4,15 @@ import { useMemo } from 'react';
 
 import type { JwtPayload } from '@supabase/supabase-js';
 
-import { Activity, Bell, Calendar, FileText, Settings } from 'lucide-react';
+import {
+  Activity,
+  Bell,
+  Calendar,
+  FileText,
+  NotebookPen,
+  Settings,
+  UserPen,
+} from 'lucide-react';
 import { z } from 'zod';
 
 import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
@@ -34,7 +42,7 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
           {
             label: 'common:routes.profile',
             path: pathsConfig.app.profileSettings,
-            Icon: <Settings className="h-4 w-4" />,
+            Icon: <UserPen className="h-4 w-4" />,
           },
           {
             label: 'common:routes.workspace-settings',
@@ -53,6 +61,85 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
         ...baseRoutes,
         ...(salesItems.length > 0
           ? [
+              {
+                label: 'Sales',
+                children: [
+                  {
+                    label: 'common:routes.dashboard',
+                    path: pathsConfig.app.home,
+                    Icon: <Activity className="h-4 w-4" />,
+                    end: true,
+                  },
+                  ...salesItems.map((item) => {
+                    const IconComponent = item.Icon;
+                    return {
+                      ...item,
+                      Icon: <IconComponent className="h-4 w-4" />,
+                    };
+                  }),
+                ],
+              },
+            ]
+          : []),
+        {
+          label: 'Communication',
+          children: [
+            {
+              label: 'Meetings',
+              path: '/home/meetings',
+              Icon: <Calendar className="h-4 w-4" />,
+            },
+            {
+              label: 'Reminders',
+              path: '/home/reminders',
+              Icon: <Bell className="h-4 w-4" />,
+            },
+            {
+              label: 'Notes',
+              path: '/home/notes',
+              Icon: <NotebookPen className="h-4 w-4" />,
+            },
+            {
+              label: 'Document',
+              path: '/home/document',
+              Icon: <FileText className="h-4 w-4" />,
+            },
+          ],
+        },
+        {
+          label: 'common:routes.settings',
+          children: [
+            {
+              label: 'common:routes.profile',
+              path: pathsConfig.app.profileSettings,
+              Icon: <UserPen className="h-4 w-4" />,
+            },
+            {
+              label: 'common:routes.workspace-settings',
+              path: pathsConfig.app.workspaceSettings,
+              Icon: <Settings className="h-4 w-4" />,
+            },
+            ...(teamItems.length > 0
+              ? teamItems.map((item) => {
+                  const IconComponent = item.Icon;
+                  return {
+                    ...item,
+                    Icon: <IconComponent className="h-4 w-4" />,
+                  };
+                })
+              : []),
+          ],
+        },
+      ];
+    }
+
+    // Fall back to RBAC-based navigation
+    const { salesItems, teamItems } = getNavigationConfig(canAccess);
+
+    return [
+      ...baseRoutes,
+      ...(salesItems.length > 0
+        ? [
             {
               label: 'Sales',
               children: [
@@ -72,85 +159,6 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
               ],
             },
           ]
-          : []),
-        {
-          label: 'Communication',
-          children: [
-            {
-              label: 'Meetings',
-              path: '/home/meetings',
-              Icon: <Calendar className="h-4 w-4" />,
-            },
-            {
-              label: 'Reminders',
-              path: '/home/reminders',
-              Icon: <Bell className="h-4 w-4" />,
-            },
-            {
-              label: 'Notes',
-              path: '/home/notes',
-              Icon: <FileText className="h-4 w-4" />,
-            },
-            {
-              label: 'Document',
-              path: '/home/document',
-              Icon: <FileText className="h-4 w-4" />,
-            },
-          ],
-        },
-        {
-          label: 'common:routes.settings',
-          children: [
-            {
-              label: 'common:routes.profile',
-              path: pathsConfig.app.profileSettings,
-              Icon: <Settings className="h-4 w-4" />,
-            },
-            {
-              label: 'common:routes.workspace-settings',
-              path: pathsConfig.app.workspaceSettings,
-              Icon: <Settings className="h-4 w-4" />,
-            },
-            ...(teamItems.length > 0
-              ? teamItems.map((item) => {
-                const IconComponent = item.Icon;
-                return {
-                  ...item,
-                  Icon: <IconComponent className="h-4 w-4" />,
-                };
-              })
-              : []),
-          ],
-        },
-      ];
-    }
-
-    // Fall back to RBAC-based navigation
-    const { salesItems, teamItems } = getNavigationConfig(canAccess);
-
-    return [
-      ...baseRoutes,
-      ...(salesItems.length > 0
-        ? [
-          {
-            label: 'Sales',
-            children: [
-              {
-                label: 'common:routes.dashboard',
-                path: pathsConfig.app.home,
-                Icon: <Activity className="h-4 w-4" />,
-                end: true,
-              },
-              ...salesItems.map((item) => {
-                const IconComponent = item.Icon;
-                return {
-                  ...item,
-                  Icon: <IconComponent className="h-4 w-4" />,
-                };
-              }),
-            ],
-          },
-        ]
         : []),
 
       {
@@ -169,7 +177,7 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
           {
             label: 'Notes',
             path: '/home/notes',
-            Icon: <FileText className="h-4 w-4" />,
+            Icon: <NotebookPen className="h-4 w-4" />,
           },
           {
             label: 'Document',
@@ -185,16 +193,16 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
           {
             label: 'common:routes.profile',
             path: pathsConfig.app.profileSettings,
-            Icon: <Settings className="h-4 w-4" />,
+            Icon: <UserPen className="h-4 w-4" />,
           },
           ...(teamItems.length > 0
             ? teamItems.map((item) => {
-              const IconComponent = item.Icon;
-              return {
-                ...item,
-                Icon: <IconComponent className="h-4 w-4" />,
-              };
-            })
+                const IconComponent = item.Icon;
+                return {
+                  ...item,
+                  Icon: <IconComponent className="h-4 w-4" />,
+                };
+              })
             : []),
         ],
       },

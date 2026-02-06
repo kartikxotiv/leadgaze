@@ -26,14 +26,14 @@ import {
 import { Separator } from '@kit/ui/separator';
 import { Textarea } from '@kit/ui/textarea';
 
+import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { Lead } from '~/services/leads.service';
-import {
-  getLeadStatusesService,
-} from '~/services/leads.service';
+import { getLeadStatusesService } from '~/services/leads.service';
+import ApiClient from '~/utils/axios-client';
+
 import { IndustrySelect } from '../../_components/industry-select';
 import { LeadSourceSelect } from '../../_components/lead-source-select';
-import ApiClient from '~/utils/axios-client';
 
 interface EditLeadDialogProps {
   open: boolean;
@@ -112,7 +112,6 @@ export default function EditLeadDialog({
     enabled: !!workspace?.id,
   });
 
-
   // Initialize form with lead data
   useEffect(() => {
     if (lead && open) {
@@ -141,6 +140,46 @@ export default function EditLeadDialog({
       });
     }
   }, [lead, open]);
+
+  // Reactive lead scoring
+  useEffect(() => {
+    if (!open) return;
+
+    const selectedStatus = statuses.find(
+      (s: any) => s.id === formData.status_id,
+    );
+    const { totalScore } = calculateLeadScore({
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      company_name: formData.company_name,
+      industry_id: formData.industry_id,
+      company_size: formData.company_size,
+      location: formData.location,
+      timezone: formData.timezone,
+      job_title: formData.job_title,
+      status_key: selectedStatus?.status_key,
+      contacted_count: lead.contacted_count || 0,
+      custom_fields: lead.custom_fields || {},
+    });
+
+    if (formData.lead_score !== totalScore) {
+      setFormData((prev) => ({ ...prev, lead_score: totalScore }));
+    }
+  }, [
+    formData.first_name,
+    formData.last_name,
+    formData.company_name,
+    formData.industry_id,
+    formData.company_size,
+    formData.location,
+    formData.timezone,
+    formData.job_title,
+    formData.status_id,
+    statuses,
+    open,
+    lead.contacted_count,
+    lead.custom_fields,
+  ]);
 
   const handleInputChange = useCallback(
     (field: keyof FormDataState, value: string | number | boolean) => {
@@ -182,9 +221,30 @@ export default function EditLeadDialog({
 
     setIsLoading(true);
     try {
+      // Find selected status to get its key
+      const selectedStatus = statuses.find(
+        (s: any) => s.id === formData.status_id,
+      );
+
+      // Calculate lead score
+      const { totalScore } = calculateLeadScore({
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        company_name: formData.company_name,
+        industry_id: formData.industry_id,
+        company_size: formData.company_size,
+        location: formData.location,
+        timezone: formData.timezone,
+        job_title: formData.job_title,
+        status_key: selectedStatus?.status_key,
+        contacted_count: lead.contacted_count || 0,
+        custom_fields: lead.custom_fields || {},
+      });
+
       const payload: any = {
         first_name: formData.first_name,
         status_id: formData.status_id,
+        lead_score: totalScore,
       };
 
       if (formData.last_name) payload.last_name = formData.last_name;
@@ -207,7 +267,6 @@ export default function EditLeadDialog({
       if (formData.source_id) payload.source_id = formData.source_id;
       if (formData.trigger) payload.trigger = formData.trigger;
       if (formData.notes) payload.notes = formData.notes;
-      if (formData.lead_score) payload.lead_score = formData.lead_score;
       payload.is_public = formData.is_public;
 
       await mutation.mutateAsync(payload);
