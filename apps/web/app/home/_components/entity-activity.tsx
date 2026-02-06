@@ -92,7 +92,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
         queryKey: ['reminders', entityType, entityId],
       });
       queryClient.invalidateQueries({
-        queryKey: ['reminders', workspace?.id],
+        queryKey: ['reminders'],
       });
     },
     onError: () => toast.error('Failed to set reminder'),
@@ -110,7 +110,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
         queryKey: ['reminders', entityType, entityId],
       });
       queryClient.invalidateQueries({
-        queryKey: ['reminders', workspace?.id],
+        queryKey: ['reminders'],
       });
     },
     onError: () => toast.error('Failed to update reminder'),
@@ -124,7 +124,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
         queryKey: ['reminders', entityType, entityId],
       });
       queryClient.invalidateQueries({
-        queryKey: ['reminders', workspace?.id],
+        queryKey: ['reminders'],
       });
     },
     onError: () => toast.error('Failed to delete reminder'),
@@ -165,7 +165,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
         queryKey: ['reminders', entityType, entityId],
       });
       queryClient.invalidateQueries({
-        queryKey: ['reminders', workspace?.id],
+        queryKey: ['reminders'],
       });
       toast.success(
         reminder.is_completed
@@ -283,11 +283,12 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                       {reminder.created_by_user && (
                         <span>by {reminder.created_by_user.name}</span>
                       )}
-                      {reminder.entity_name && reminder.entity_type !== entityType && (
-                        <span className="text-blue-600 dark:text-blue-400">
-                          from {reminder.entity_type}: {reminder.entity_name}
-                        </span>
-                      )}
+                      {reminder.entity_name &&
+                        reminder.entity_type !== entityType && (
+                          <span className="text-blue-600 dark:text-blue-400">
+                            from {reminder.entity_type}: {reminder.entity_name}
+                          </span>
+                        )}
                     </div>
                   </div>
                 </div>
@@ -377,7 +378,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
         queryKey: ['meetings', entityType, entityId],
       });
       queryClient.invalidateQueries({
-        queryKey: ['meetings', workspace?.id],
+        queryKey: ['meetings'],
       });
     },
     onError: () => toast.error('Failed to schedule meeting'),
@@ -401,7 +402,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
         queryKey: ['meetings', entityType, entityId],
       });
       queryClient.invalidateQueries({
-        queryKey: ['meetings', workspace?.id],
+        queryKey: ['meetings'],
       });
     },
     onError: () => toast.error('Failed to update meeting'),
@@ -415,7 +416,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
         queryKey: ['meetings', entityType, entityId],
       });
       queryClient.invalidateQueries({
-        queryKey: ['meetings', workspace?.id],
+        queryKey: ['meetings'],
       });
     },
     onError: () => toast.error('Failed to delete meeting'),
@@ -573,11 +574,12 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
                     {meeting.created_by_user && (
                       <span>by {meeting.created_by_user.name}</span>
                     )}
-                    {meeting.entity_name && meeting.entity_type !== entityType && (
-                      <span className="text-blue-600 dark:text-blue-400">
-                        from {meeting.entity_type}: {meeting.entity_name}
-                      </span>
-                    )}
+                    {meeting.entity_name &&
+                      meeting.entity_type !== entityType && (
+                        <span className="text-blue-600 dark:text-blue-400">
+                          from {meeting.entity_type}: {meeting.entity_name}
+                        </span>
+                      )}
                   </div>
                   {meeting.location && (
                     <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
@@ -657,7 +659,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
         queryKey: ['documents', entityType, entityId],
       });
       queryClient.invalidateQueries({
-        queryKey: ['documents', workspace?.id],
+        queryKey: ['documents'],
       });
     },
     onError: () => toast.error('Failed to upload document'),
@@ -675,7 +677,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
         queryKey: ['documents', entityType, entityId],
       });
       queryClient.invalidateQueries({
-        queryKey: ['documents', workspace?.id],
+        queryKey: ['documents'],
       });
     },
     onError: () => toast.error('Failed to rename document'),
@@ -689,7 +691,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
         queryKey: ['documents', entityType, entityId],
       });
       queryClient.invalidateQueries({
-        queryKey: ['documents', workspace?.id],
+        queryKey: ['documents'],
       });
     },
     onError: () => toast.error('Failed to delete document'),
@@ -801,7 +803,9 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                       {doc.name}
                     </p>
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                      <span>{new Date(doc.created_at).toLocaleDateString()}</span>
+                      <span>
+                        {new Date(doc.created_at).toLocaleDateString()}
+                      </span>
                       {doc.created_by_user && (
                         <span>by {doc.created_by_user.name}</span>
                       )}

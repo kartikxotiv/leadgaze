@@ -14,7 +14,10 @@ export async function getRelatedEntityIds(
     { entity_type: entityType, entity_id: entityId },
   ];
 
-  // If viewing account/contact/opportunity, also get the lead it was created from
+  let leadId = entityType === 'lead' ? entityId : null;
+  let accountId = entityType === 'account' ? entityId : null;
+
+  // 1. Resolve Lead ID and Account ID from the current entity
   if (['account', 'contact', 'opportunity'].includes(entityType)) {
     const tableMap: Record<string, string> = {
       account: 'crm_accounts',
@@ -25,58 +28,102 @@ export async function getRelatedEntityIds(
 
     const { data: entity } = await supabase
       .from(tableName as any)
-      .select('created_from_lead_id')
+      .select('created_from_lead_id, account_id') // Try to get account_id too
       .eq('id', entityId)
-      .single();
+      .single() as any;
 
-    if (entity?.created_from_lead_id) {
-      entityIds.push({
-        entity_type: 'lead',
-        entity_id: entity.created_from_lead_id,
-      });
+    if (entity) {
+      if (entity.created_from_lead_id) {
+        leadId = entity.created_from_lead_id;
+        // Add lead to list if not already there
+        if (!entityIds.find(e => e.entity_type === 'lead' && e.entity_id === leadId)) {
+             entityIds.push({
+                entity_type: 'lead',
+                entity_id: leadId!,
+              });
+        }
+      }
+      if (entity.account_id && !accountId) {
+        accountId = entity.account_id;
+         if (!entityIds.find(e => e.entity_type === 'account' && e.entity_id === accountId)) {
+             entityIds.push({
+                entity_type: 'account',
+                entity_id: accountId!,
+              });
+        }
+      }
     }
   }
 
-  // If viewing lead, also get accounts/contacts/opportunities created from this lead
-  if (entityType === 'lead') {
-    // Get accounts created from this lead
+  // 2. If we have a Lead ID, fetch all siblings (Accounts, Contacts, Opportunities created from this lead)
+  if (leadId) {
+    // Get accounts
     const { data: accounts } = await supabase
       .from('crm_accounts' as any)
       .select('id')
-      .eq('created_from_lead_id', entityId)
+      .eq('created_from_lead_id', leadId)
       .eq('is_deleted', false);
+    
+    accounts?.forEach((acc) => {
+        if (!entityIds.find(e => e.entity_type === 'account' && e.entity_id === acc.id)) {
+            entityIds.push({ entity_type: 'account', entity_id: acc.id });
+        }
+    });
 
-    if (accounts) {
-      accounts.forEach((acc) => {
-        entityIds.push({ entity_type: 'account', entity_id: acc.id });
-      });
-    }
-
-    // Get contacts created from this lead
+    // Get contacts
     const { data: contacts } = await supabase
       .from('crm_contacts' as any)
       .select('id')
-      .eq('created_from_lead_id', entityId)
+      .eq('created_from_lead_id', leadId)
       .eq('is_deleted', false);
+      
+    contacts?.forEach((cont) => {
+       if (!entityIds.find(e => e.entity_type === 'contact' && e.entity_id === cont.id)) {
+            entityIds.push({ entity_type: 'contact', entity_id: cont.id });
+        }
+    });
 
-    if (contacts) {
-      contacts.forEach((contact) => {
-        entityIds.push({ entity_type: 'contact', entity_id: contact.id });
-      });
-    }
-
-    // Get opportunities created from this lead
+    // Get opportunities
     const { data: opportunities } = await supabase
       .from('crm_opportunities' as any)
       .select('id')
-      .eq('created_from_lead_id', entityId)
+      .eq('created_from_lead_id', leadId)
       .eq('is_deleted', false);
 
-    if (opportunities) {
-      opportunities.forEach((opp) => {
-        entityIds.push({ entity_type: 'opportunity', entity_id: opp.id });
+    opportunities?.forEach((opp) => {
+        if (!entityIds.find(e => e.entity_type === 'opportunity' && e.entity_id === opp.id)) {
+            entityIds.push({ entity_type: 'opportunity', entity_id: opp.id });
+        }
+    });
+  }
+
+  // 3. If we have an Account ID (either input or found via relation), fetch its child Contacts and Opportunities
+  if (accountId) {
+      // Get contacts for this account
+      const { data: contacts } = await supabase
+      .from('crm_contacts' as any)
+      .select('id')
+      .eq('account_id', accountId)
+      .eq('is_deleted', false);
+
+      contacts?.forEach((cont) => {
+        if (!entityIds.find(e => e.entity_type === 'contact' && e.entity_id === cont.id)) {
+            entityIds.push({ entity_type: 'contact', entity_id: cont.id });
+        }
       });
-    }
+
+      // Get opportunities for this account
+      const { data: opportunities } = await supabase
+      .from('crm_opportunities' as any)
+      .select('id')
+      .eq('account_id', accountId)
+      .eq('is_deleted', false);
+
+       opportunities?.forEach((opp) => {
+        if (!entityIds.find(e => e.entity_type === 'opportunity' && e.entity_id === opp.id)) {
+            entityIds.push({ entity_type: 'opportunity', entity_id: opp.id });
+        }
+    });
   }
 
   return entityIds;
