@@ -67,21 +67,25 @@ export default function AccountDetailsPage() {
 
   const workspaceId = account?.workspace_id;
 
-  const { data: contacts } = useQuery({
+  const { data: contactsData } = useQuery({
     queryKey: ['contacts', 'account', id],
-    queryFn: () => getContactsService(workspaceId, id),
+    queryFn: () => getContactsService({ workspaceId, accountId: id }),
     enabled: !!workspaceId && !!id,
   });
+
+  const contacts = contactsData?.data || [];
 
   const { data: user } = useUser();
   const editPermission = usePermissionDetail('accounts', 'edit');
   const canEdit = useCanAccessData(editPermission, account?.owner_id, user?.id);
 
-  const { data: opportunities } = useQuery({
+  const { data: opportunitiesData } = useQuery({
     queryKey: ['opportunities', 'account', id],
-    queryFn: () => getOpportunitiesService(workspaceId, id),
+    queryFn: () => getOpportunitiesService({ workspaceId, accountId: id }),
     enabled: !!workspaceId && !!id,
   });
+
+  const opportunities = opportunitiesData?.data || [];
 
   if (isLoading) {
     return (

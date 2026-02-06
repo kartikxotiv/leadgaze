@@ -782,8 +782,7 @@ export default function LeadDetailsPage() {
           open={statusModalOpen}
           onOpenChange={setStatusModalOpen}
           onSuccess={() => refetch()}
-          leadId={leadId}
-          currentStatusId={lead.status_id}
+          lead={lead}
           statuses={statuses}
         />
       )}

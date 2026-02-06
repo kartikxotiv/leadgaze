@@ -22,18 +22,19 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 
+import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
 import { updateLeadService } from '~/services/leads.service';
 
 interface ChangeStatusDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
-  leadId: string;
-  currentStatusId: string;
+  lead: any;
   statuses: Array<{
     id: string;
     status_name: string;
     color: string;
+    status_key: string;
   }>;
 }
 
@@ -41,22 +42,55 @@ export function ChangeStatusDialog({
   open,
   onOpenChange,
   onSuccess,
-  leadId,
-  currentStatusId,
+  lead,
   statuses,
 }: ChangeStatusDialogProps) {
-  const [selectedStatusId, setSelectedStatusId] = useState(currentStatusId);
+  const [selectedStatusId, setSelectedStatusId] = useState(
+    lead?.status_id || '',
+  );
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
-    if (selectedStatusId === currentStatusId) {
+    if (selectedStatusId === lead?.status_id) {
       onOpenChange(false);
       return;
     }
 
     setIsSaving(true);
     try {
-      await updateLeadService(leadId, { status_id: selectedStatusId });
+      // Find selected status to get its key
+      const selectedStatus = statuses.find((s) => s.id === selectedStatusId);
+
+      // Calculate new lead score
+      const { totalScore } = calculateLeadScore({
+        first_name: lead.first_name,
+        last_name: lead.last_name,
+        company_name: lead.company_name,
+        industry_id: lead.industry_id,
+        company_size: lead.company_size,
+        location: lead.location,
+        timezone: lead.timezone,
+        job_title: lead.job_title,
+        status_key: selectedStatus?.status_key,
+        status_name: selectedStatus?.status_name,
+        contacted_count: lead.contacted_count || 0,
+        custom_fields: lead.custom_fields || {},
+      });
+
+      console.log('Lead Scoring Debug:', {
+        status_key: selectedStatus?.status_key,
+        status_name: selectedStatus?.status_name,
+        totalScore,
+      });
+
+      toast.info(
+        `Recalculated Score: ${totalScore} for ${selectedStatus?.status_name}`,
+      );
+
+      await updateLeadService(lead.id, {
+        status_id: selectedStatusId,
+        lead_score: totalScore,
+      });
       toast.success('Status updated successfully');
       onSuccess();
       onOpenChange(false);
