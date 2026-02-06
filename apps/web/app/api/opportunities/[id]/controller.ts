@@ -109,7 +109,9 @@ export const updateOpportunity = catchAsync(
 
         if (!isWorkspaceOwner && !isCreator) {
           return NextResponse.json(
-            { message: 'Only workspace owner or creator can change visibility' },
+            {
+              message: 'Only workspace owner or creator can change visibility',
+            },
             { status: 403 },
           );
         }
