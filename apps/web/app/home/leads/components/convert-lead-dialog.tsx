@@ -146,7 +146,7 @@ export function ConvertLeadDialog({
   const contactsList = contactsData.data;
 
   // Filter for closed/converted statuses
-  const convertedStatuses = statuses ?? statuses?.filter((s) => s.is_closed);
+  const convertedStatuses = statuses?.filter((s) => s.is_closed) ?? [];
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
