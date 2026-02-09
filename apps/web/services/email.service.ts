@@ -5,10 +5,25 @@ const getWorkspaceEmailAccountService = asyncHandlerClient(async (workspaceId: s
   const response = await ApiClient.get(
     `/email?workspace_id=${workspaceId}`,
   );
-  console.log(response.data, 'hello');
   return response.data || [];
 });
 
+const deleteEmailAccountService = asyncHandlerClient(async (id: string, workspaceId: string) => {
+  const response = await ApiClient.delete(
+    `/email?id=${id}&workspace_id=${workspaceId}`,
+  );
+  return response.data;
+});
+
+const submitEmailAccountService = asyncHandlerClient(async (workspaceId: string, payload: any) => {
+  const response = await ApiClient.post(
+    `/email/smtp?workspace_id=${workspaceId}`,
+    payload
+  );
+  return response.data;
+});
 export {
   getWorkspaceEmailAccountService,
+  deleteEmailAccountService,
+  submitEmailAccountService
 };
