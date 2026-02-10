@@ -30,6 +30,7 @@ import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Separator } from '@kit/ui/separator';
 
+import { PublicPrivateToggle } from '~/home/_components/public-private-toggle';
 import {
   useCanAccessData,
   usePermissionDetail,
@@ -56,7 +57,6 @@ import EditLeadDialog from '../components/edit-lead-dialog';
 import { EmailLeadDialog } from '../components/email-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
 import { LogCallDialog } from '../components/log-call-dialog';
-import { PublicPrivateToggle } from '~/home/_components/public-private-toggle';
 
 export default function LeadDetailsPage() {
   const router = useRouter();
@@ -94,6 +94,13 @@ export default function LeadDetailsPage() {
   const { data: user } = useUser();
   const editPermission = usePermissionDetail('leads', 'edit');
   const canEdit = useCanAccessData(editPermission, lead?.owner_id, user?.id);
+
+  const convertPermission = usePermissionDetail('leads', 'convert');
+  const canConvert = useCanAccessData(
+    convertPermission,
+    lead?.owner_id,
+    user?.id,
+  );
 
   const { data: statuses = [], isLoading: statusesLoading } = useQuery({
     queryKey: ['lead-statuses', workspace?.id],
@@ -208,25 +215,24 @@ export default function LeadDetailsPage() {
             Change Status
           </Button>
 
-
           <Button
             variant="outline"
             size="sm"
             onClick={() => setIsLogCallDialogOpen(true)}
-            className="p-3 "
+            className="p-3"
             disabled={!canEdit}
             title={
-              !canEdit ? 'You do not have permission to log calls' : 'Log a call'
+              !canEdit
+                ? 'You do not have permission to log calls'
+                : 'Log a call'
             }
           >
-
             {/* Phone icon */}
             {/* Log Call */}
-            <div className="flex items-center justify-center bg-[#44bbb3] p-2 rounded-full">
+            <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
               <Phone className="h-3 w-3 text-white" />
             </div>
           </Button>
-
 
           <Button
             variant="outline"
@@ -248,9 +254,9 @@ export default function LeadDetailsPage() {
               size="sm"
               onClick={handleConvertLead}
               className="flex h-8 items-center justify-center px-4"
-              disabled={isSaving || !canEdit}
+              disabled={isSaving || !canConvert}
               title={
-                !canEdit
+                !canConvert
                   ? 'You do not have permission to convert this lead'
                   : ''
               }
