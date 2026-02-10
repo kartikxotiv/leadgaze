@@ -37,6 +37,7 @@ import {
 } from '@kit/ui/table';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
+import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
@@ -268,12 +269,45 @@ export default function LeadsPage() {
                                 <div
                                   className="bg-primary h-full transition-all"
                                   style={{
-                                    width: `${Math.min(lead.lead_score, 100)}%`,
+                                    width: `${Math.min(
+                                      calculateLeadScore({
+                                        first_name: lead.first_name,
+                                        last_name: lead.last_name,
+                                        company_name: lead.company_name,
+                                        industry_id:
+                                          lead.industry_id || lead.industry?.id,
+                                        company_size: lead.company_size,
+                                        location: lead.location,
+                                        timezone: lead.timezone,
+                                        job_title: lead.job_title,
+                                        contacted_count: lead.contacted_count,
+                                        status_key: lead.status?.status_key,
+                                        custom_fields: lead.custom_fields || {},
+                                        source_id: lead.source_id,
+                                      }).totalScore,
+                                      100,
+                                    )}%`,
                                   }}
                                 />
                               </div>
                               <span className="text-muted-foreground w-8 text-right text-sm">
-                                {lead.lead_score}
+                                {
+                                  calculateLeadScore({
+                                    first_name: lead.first_name,
+                                    last_name: lead.last_name,
+                                    company_name: lead.company_name,
+                                    industry_id:
+                                      lead.industry_id || lead.industry?.id,
+                                    company_size: lead.company_size,
+                                    location: lead.location,
+                                    timezone: lead.timezone,
+                                    job_title: lead.job_title,
+                                    contacted_count: lead.contacted_count,
+                                    status_key: lead.status?.status_key,
+                                    custom_fields: lead.custom_fields || {},
+                                    source_id: lead.source_id,
+                                  }).totalScore
+                                }
                               </span>
                             </div>
                           </TableCell>

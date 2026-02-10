@@ -61,6 +61,7 @@ interface FormDataState {
   company_name: string;
   company_website: string;
   company_linkedin_url: string;
+  linkedin_url: string;
   job_title: string;
   department: string;
   industry_id: string;
@@ -93,6 +94,7 @@ export default function CreateLeadDialog({
     company_name: '',
     company_website: '',
     company_linkedin_url: '',
+    linkedin_url: '',
     job_title: '',
     department: '',
     industry_id: '',
@@ -205,6 +207,7 @@ export default function CreateLeadDialog({
       company_name: '',
       company_website: '',
       company_linkedin_url: '',
+      linkedin_url: '',
       job_title: '',
       department: '',
       industry_id: '',
@@ -256,35 +259,31 @@ export default function CreateLeadDialog({
         custom_fields: {},
       });
 
-      // Build payload with only non-empty fields
+      // Build payload with all fields
       const payload: any = {
         first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        alt_email: formData.alt_email,
+        phone_number: formData.phone_number,
+        mobile_number: formData.mobile_number,
+        company_name: formData.company_name,
+        company_website: formData.company_website,
+        company_linkedin_url: formData.company_linkedin_url,
+        linkedin_url: formData.linkedin_url,
+        job_title: formData.job_title,
+        department: formData.department,
+        industry_id: formData.industry_id || null,
+        company_size: formData.company_size || null,
+        location: formData.location,
+        timezone: formData.timezone,
         status_id: formData.status_id,
+        source_id: formData.source_id || null,
+        trigger: formData.trigger,
+        notes: formData.notes,
+        is_public: formData.is_public,
         lead_score: totalScore,
       };
-
-      // Add optional fields only if they have values
-      if (formData.last_name) payload.last_name = formData.last_name;
-      if (formData.email) payload.email = formData.email;
-      if (formData.alt_email) payload.alt_email = formData.alt_email;
-      if (formData.phone_number) payload.phone_number = formData.phone_number;
-      if (formData.mobile_number)
-        payload.mobile_number = formData.mobile_number;
-      if (formData.company_name) payload.company_name = formData.company_name;
-      if (formData.company_website)
-        payload.company_website = formData.company_website;
-      if (formData.company_linkedin_url)
-        payload.company_linkedin_url = formData.company_linkedin_url;
-      if (formData.job_title) payload.job_title = formData.job_title;
-      if (formData.department) payload.department = formData.department;
-      if (formData.industry_id) payload.industry_id = formData.industry_id;
-      if (formData.company_size) payload.company_size = formData.company_size;
-      if (formData.location) payload.location = formData.location;
-      if (formData.timezone) payload.timezone = formData.timezone;
-      if (formData.source_id) payload.source_id = formData.source_id;
-      if (formData.trigger) payload.trigger = formData.trigger;
-      if (formData.notes) payload.notes = formData.notes;
-      payload.is_public = formData.is_public;
 
       await mutation.mutateAsync(payload);
     } finally {
@@ -568,6 +567,27 @@ export default function CreateLeadDialog({
                     value={formData.department}
                     onChange={(e) =>
                       handleInputChange('department', e.target.value)
+                    }
+                    disabled={isLoading}
+                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label
+                    htmlFor="linkedin_url"
+                    className="text-gray-900 dark:text-gray-100"
+                  >
+                    Personal LinkedIn (Optional)
+                  </Label>
+                  <Input
+                    id="linkedin_url"
+                    placeholder="https://linkedin.com/in/..."
+                    value={formData.linkedin_url}
+                    onChange={(e) =>
+                      handleInputChange('linkedin_url', e.target.value)
                     }
                     disabled={isLoading}
                     className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"

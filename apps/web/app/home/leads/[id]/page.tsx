@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import { useParams, useRouter } from 'next/navigation';
 
@@ -29,8 +29,10 @@ import {
 import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Separator } from '@kit/ui/separator';
+import { cn } from '@kit/ui/utils';
 
 import { PublicPrivateToggle } from '~/home/_components/public-private-toggle';
+import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
 import {
   useCanAccessData,
   usePermissionDetail,
@@ -110,6 +112,24 @@ export default function LeadDetailsPage() {
     },
     enabled: !!workspace?.id,
   });
+
+  const scoringResult = useMemo(() => {
+    if (!lead) return null;
+    return calculateLeadScore({
+      first_name: lead.first_name,
+      last_name: lead.last_name,
+      company_name: lead.company_name,
+      industry_id: lead.industry_id || lead.industry?.id,
+      company_size: lead.company_size,
+      location: lead.location,
+      timezone: lead.timezone,
+      job_title: lead.job_title,
+      status_key: lead.status?.status_key,
+      contacted_count: lead.contacted_count,
+      custom_fields: lead.custom_fields || {},
+      source_id: lead.source_id,
+    });
+  }, [lead]);
 
   if (!workspace) {
     return (
@@ -433,7 +453,7 @@ export default function LeadDetailsPage() {
                     </div>
                   </div>
                 )}
-                {lead.company_website && (
+                {lead.company_website ? (
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
@@ -449,13 +469,40 @@ export default function LeadDetailsPage() {
                       </a>
                     </div>
                   </div>
-                )}
+                ) : null}
+                {lead.company_linkedin_url ? (
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
+                        Company LinkedIn
+                      </p>
+                      <a
+                        href={lead.company_linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                      >
+                        {lead.company_linkedin_url}
+                      </a>
+                    </div>
+                  </div>
+                ) : null}
                 {lead.department && (
                   <EditableField
                     label="Department"
                     value={lead.department}
                     fieldName="department"
                   />
+                )}
+                {lead.notes && (
+                  <div>
+                    <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
+                      Notes
+                    </p>
+                    <p className="mt-1 text-sm whitespace-pre-wrap text-gray-900 dark:text-white">
+                      {lead.notes}
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -559,9 +606,9 @@ export default function LeadDetailsPage() {
                         href={lead.linkedin_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-1 block text-sm text-blue-600 hover:underline dark:text-blue-400"
+                        className="mt-1 block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
                       >
-                        View Profile
+                        {lead.linkedin_url}
                       </a>
                     </div>
                   </div>
@@ -669,16 +716,121 @@ export default function LeadDetailsPage() {
                           fill="none"
                           stroke={statusColor}
                           strokeWidth="2"
-                          strokeDasharray={`${(lead.lead_score / 100) * 283} 283`}
+                          strokeDasharray={`${((scoringResult?.totalScore ?? lead.lead_score) / 100) * 283} 283`}
                           strokeLinecap="round"
                         />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
                         <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {lead.lead_score}
+                          {scoringResult?.totalScore ?? lead.lead_score}
                         </span>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="mt-4 space-y-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Total Score
+                      </span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {scoringResult?.totalScore ?? lead.lead_score} / 100
+                      </span>
+                    </div>
+
+                    {scoringResult && (
+                      <div className="space-y-3 border-t pt-4">
+                        <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
+                          Breakdown
+                        </p>
+
+                        {/* Fit Score Breakdown */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs font-semibold text-gray-400">
+                            <span>Fit Coverage</span>
+                            <span>{scoringResult.fitScore} / 60</span>
+                          </div>
+                          {Object.entries(scoringResult.breakdown.fit).map(
+                            ([label, score]) => (
+                              <div
+                                key={label}
+                                className="flex justify-between text-xs"
+                              >
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  {label}
+                                </span>
+                                <span className="font-medium text-green-600">
+                                  +{score}
+                                </span>
+                              </div>
+                            ),
+                          )}
+                        </div>
+
+                        {/* Engagement Score Breakdown */}
+                        {Object.keys(scoringResult.breakdown.engagement)
+                          .length > 0 && (
+                          <div className="space-y-1 pt-2">
+                            <p className="text-xs font-semibold text-gray-400">
+                              Engagement
+                            </p>
+                            {Object.entries(
+                              scoringResult.breakdown.engagement,
+                            ).map(([label, score]) => (
+                              <div
+                                key={label}
+                                className="flex justify-between text-xs"
+                              >
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  {label}
+                                </span>
+                                <span className="font-medium text-blue-600">
+                                  +{score}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Adjustments (Status) */}
+                        {Object.keys(scoringResult.breakdown.adjustments)
+                          .length > 0 && (
+                          <div className="space-y-1 pt-2">
+                            <p className="text-xs font-semibold text-gray-400">
+                              Status Adjustments
+                            </p>
+                            {Object.entries(
+                              scoringResult.breakdown.adjustments,
+                            ).map(([label, score]) => (
+                              <div
+                                key={label}
+                                className="flex justify-between text-xs"
+                              >
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  {label}
+                                </span>
+                                <span
+                                  className={cn(
+                                    'font-medium',
+                                    score > 0
+                                      ? 'text-green-600'
+                                      : score === -100
+                                        ? 'text-red-600'
+                                        : 'text-amber-600',
+                                  )}
+                                >
+                                  {score > 0
+                                    ? `+${score}`
+                                    : score === -100
+                                      ? 'Reset'
+                                      : score}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -745,7 +897,7 @@ export default function LeadDetailsPage() {
                       Lead Score
                     </p>
                     <p className="text-sm text-gray-700 dark:text-gray-300">
-                      {lead.lead_score}/100
+                      {scoringResult?.totalScore ?? lead.lead_score}/100
                     </p>
                   </div>
                 )}
