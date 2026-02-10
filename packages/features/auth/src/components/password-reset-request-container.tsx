@@ -58,9 +58,15 @@ export function PasswordResetRequestContainer(params: {
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(({ email }) => {
-              const siteUrl =
-                process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-              const redirectTo = new URL(params.redirectPath, siteUrl).href;
+              console.log('params.redirectPath', params.redirectPath);
+              console.log('window.location.origin', window.location.origin);
+              const redirectTo = new URL(
+                params.redirectPath,
+                window.location.origin,
+              ).href;
+              // const siteUrl =
+              //   process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+              // const redirectTo = new URL(params.redirectPath, siteUrl).href;
 
               return resetPasswordMutation
                 .mutateAsync({
