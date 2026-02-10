@@ -99,9 +99,8 @@ BEGIN
       (p_workspace_id, v_leads_module_id, 'New', 'new', '#3B82F6', 'star', 0, TRUE, TRUE, TRUE, FALSE),
       (p_workspace_id, v_leads_module_id, 'Contacted', 'contacted', '#60A5FA', 'message-circle', 1, TRUE, TRUE, FALSE, FALSE),
       (p_workspace_id, v_leads_module_id, 'Nurturing', 'nurturing', '#F59E0B', 'heart', 2, TRUE, TRUE, FALSE, FALSE),
-      (p_workspace_id, v_leads_module_id, 'Qualified', 'qualified', '#10B981', 'check-circle', 3, TRUE, TRUE, FALSE, TRUE),
-      (p_workspace_id, v_leads_module_id, 'Converted', 'converted', '#10B981', 'refresh-cw', 4, TRUE, TRUE, FALSE, TRUE),
-      (p_workspace_id, v_leads_module_id, 'Unqualified', 'unqualified', '#EF4444', 'x-circle', 5, TRUE, TRUE, FALSE, TRUE)
+      (p_workspace_id, v_leads_module_id, 'Qualified', 'qualified', '#10B981', 'check-circle', 3, TRUE, TRUE, FALSE, FALSE),
+      (p_workspace_id, v_leads_module_id, 'Unqualified', 'unqualified', '#EF4444', 'x-circle', 4, TRUE, TRUE, FALSE, TRUE)
     ON CONFLICT (workspace_id, module_id, status_key) DO NOTHING;
 
     INSERT INTO public.lead_sources (
