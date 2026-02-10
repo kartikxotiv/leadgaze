@@ -1,4 +1,4 @@
-import { enhanceRouteHandler } from '~/utils/enhance-route-handler';
+import { enhanceRouteHandler } from '@kit/next/routes';
 
 import { getInvitationsByEmail } from './controller';
 
