@@ -21,6 +21,9 @@ export const getAccounts = catchAsync(
     const supabase = getSupabaseServerClient();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
+    const page = parseInt(url.searchParams.get('page') || '1', 10);
+    const limit = parseInt(url.searchParams.get('limit') || '20', 10);
+    const searchTerm = url.searchParams.get('searchTerm') || '';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -63,9 +66,17 @@ export const getAccounts = catchAsync(
           owner:accounts!crm_accounts_owner_id_fkey(id, email, name),
           industry:crm_industries(id, industry_name)
         `,
+        { count: 'exact' },
       )
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
+
+    // Search term
+    if (searchTerm) {
+      query = query.or(
+        `account_name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%`,
+      );
+    }
 
     // If not owner, filter for public accounts, accounts assigned to current user, or accounts created by current user
     if (!isOwner) {
@@ -77,7 +88,8 @@ export const getAccounts = catchAsync(
         .eq('assigned_to_user_id', user.id)
         .eq('assignment_status', 'active') as any);
 
-      const assignedIds = assignedAccountIds?.map((a: any) => a.account_id) || [];
+      const assignedIds =
+        assignedAccountIds?.map((a: any) => a.account_id) || [];
 
       // Filter: public accounts OR assigned accounts OR created by current user
       query = query.or(
@@ -85,23 +97,30 @@ export const getAccounts = catchAsync(
       );
     }
 
-    const { data: accounts, error } = await query.order('created_at', {
-      ascending: false,
-    });
+    // Pagination
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const {
+      data: accounts,
+      error,
+      count,
+    } = await query
+      .order('created_at', {
+        ascending: false,
+      })
+      .range(from, to);
 
     if (error) {
       console.error('Get accounts error:', error);
       throw error;
     }
 
-    // Manually populate industry name if needed since it's a separate table now and might not be fully joined in type-safe way easily without proper setup,
-    // actually I can join it: `industry:crm_industries(id, industry_name)`
-    // Let's try adding that to select.
-
-    return successDataResponse(
-      'Accounts retrieved successfully',
-      accounts || [],
-    );
+    return NextResponse.json({
+      message: 'Accounts retrieved successfully',
+      data: accounts || [],
+      count: count || 0,
+    });
   },
 );
 

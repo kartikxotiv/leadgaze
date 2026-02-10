@@ -1,6 +1,8 @@
 import { useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
+import { Check, ChevronsUpDown } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -19,6 +21,14 @@ import {
 import { Button } from '@kit/ui/button';
 import { Checkbox } from '@kit/ui/checkbox';
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@kit/ui/command';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -35,6 +45,7 @@ import {
   FormMessage,
 } from '@kit/ui/form';
 import { Input } from '@kit/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@kit/ui/radio-group';
 import {
   Select,
@@ -44,7 +55,12 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import { Separator } from '@kit/ui/separator';
+import { cn } from '@kit/ui/utils';
 
+import { useDebounce } from '~/lib/hooks/use-debounce';
+import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { getAccountsService } from '~/services/accounts.service';
+import { getContactsService } from '~/services/contacts.service';
 import { convertLeadService } from '~/services/leads.service';
 
 interface ConvertLeadDialogProps {
@@ -92,10 +108,45 @@ export function ConvertLeadDialog({
   onSuccess,
 }: ConvertLeadDialogProps) {
   const { t } = useTranslation();
+  const { currentWorkspace } = useRBAC();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filter for closed/converted statuses
-  const convertedStatuses = statuses ?? statuses?.filter((s) => s.is_closed);
+  // Search states
+  const [accountSearch, setAccountSearch] = useState('');
+  const debouncedAccountSearch = useDebounce(accountSearch, 300);
+  const [contactSearch, setContactSearch] = useState('');
+  const debouncedContactSearch = useDebounce(contactSearch, 300);
+
+  const [openAccountPopover, setOpenAccountPopover] = useState(false);
+  const [openContactPopover, setOpenContactPopover] = useState(false);
+
+  // Fetch Existing Accounts
+  const { data: accountsData = { data: [] } } = useQuery({
+    queryKey: ['accounts', currentWorkspace?.id, debouncedAccountSearch],
+    queryFn: () =>
+      getAccountsService({
+        workspaceId: currentWorkspace!.id,
+        searchTerm: debouncedAccountSearch,
+      }),
+    enabled: !!currentWorkspace?.id && open,
+  });
+
+  // Fetch Existing Contacts
+  const { data: contactsData = { data: [] } } = useQuery({
+    queryKey: ['contacts', currentWorkspace?.id, debouncedAccountSearch],
+    queryFn: () =>
+      getContactsService({
+        workspaceId: currentWorkspace!.id,
+        searchTerm: debouncedContactSearch,
+      }),
+    enabled: !!currentWorkspace?.id && open,
+  });
+
+  const accounts = accountsData.data;
+  const contactsList = contactsData.data;
+
+  // Show all statuses in the converted status dropdown
+  const convertedStatuses = statuses || [];
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -245,9 +296,77 @@ export function ConvertLeadDialog({
                     </div>
                     {field.value === 'existing' && (
                       <div className="w-full pl-6">
-                        <div className="rounded bg-yellow-50 p-2 text-sm text-yellow-600">
-                          Search existing accounts (Coming Soon)
-                        </div>
+                        <FormField
+                          control={form.control}
+                          name="existingAccountId"
+                          render={({ field: accField }) => (
+                            <Popover
+                              open={openAccountPopover}
+                              onOpenChange={setOpenAccountPopover}
+                            >
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className={cn(
+                                    'w-full justify-between font-normal',
+                                    !accField.value && 'text-muted-foreground',
+                                  )}
+                                >
+                                  {accField.value
+                                    ? accounts.find(
+                                        (a: any) => a.id === accField.value,
+                                      )?.account_name || 'Select account'
+                                    : 'Select existing account...'}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[400px] p-0">
+                                <Command shouldFilter={false}>
+                                  <CommandInput
+                                    placeholder="Search accounts..."
+                                    value={accountSearch}
+                                    onValueChange={setAccountSearch}
+                                  />
+                                  <CommandList>
+                                    <CommandEmpty>
+                                      No accounts found.
+                                    </CommandEmpty>
+                                    <CommandGroup>
+                                      {accounts.map((acc: any) => (
+                                        <CommandItem
+                                          key={acc.id}
+                                          value={acc.id}
+                                          onSelect={() => {
+                                            form.setValue(
+                                              'existingAccountId',
+                                              acc.id,
+                                            );
+                                            form.setValue(
+                                              'accountName',
+                                              acc.account_name,
+                                            );
+                                            setOpenAccountPopover(false);
+                                          }}
+                                        >
+                                          <Check
+                                            className={cn(
+                                              'mr-2 h-4 w-4',
+                                              accField.value === acc.id
+                                                ? 'opacity-100'
+                                                : 'opacity-0',
+                                            )}
+                                          />
+                                          {acc.account_name}
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                        />
                       </div>
                     )}
                   </RadioGroup>
@@ -315,6 +434,87 @@ export function ConvertLeadDialog({
                         Choose Existing Contact
                       </FormLabel>
                     </div>
+                    {field.value === 'existing' && (
+                      <div className="w-full pl-6">
+                        <FormField
+                          control={form.control}
+                          name="existingContactId"
+                          render={({ field: contField }) => (
+                            <Popover
+                              open={openContactPopover}
+                              onOpenChange={setOpenContactPopover}
+                            >
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className={cn(
+                                    'w-full justify-between font-normal',
+                                    !contField.value && 'text-muted-foreground',
+                                  )}
+                                >
+                                  {contField.value
+                                    ? contactsList.find(
+                                        (c: any) => c.id === contField.value,
+                                      )
+                                      ? `${contactsList.find((c: any) => c.id === contField.value).first_name} ${contactsList.find((c: any) => c.id === contField.value).last_name || ''}`
+                                      : 'Select contact'
+                                    : 'Select existing contact...'}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[400px] p-0">
+                                <Command shouldFilter={false}>
+                                  <CommandInput
+                                    placeholder="Search contacts..."
+                                    value={contactSearch}
+                                    onValueChange={setContactSearch}
+                                  />
+                                  <CommandList>
+                                    <CommandEmpty>
+                                      No contacts found.
+                                    </CommandEmpty>
+                                    <CommandGroup>
+                                      {contactsList.map((cont: any) => (
+                                        <CommandItem
+                                          key={cont.id}
+                                          value={cont.id}
+                                          onSelect={() => {
+                                            form.setValue(
+                                              'existingContactId',
+                                              cont.id,
+                                            );
+                                            form.setValue(
+                                              'contactFirstName',
+                                              cont.first_name,
+                                            );
+                                            form.setValue(
+                                              'contactLastName',
+                                              cont.last_name || '',
+                                            );
+                                            setOpenContactPopover(false);
+                                          }}
+                                        >
+                                          <Check
+                                            className={cn(
+                                              'mr-2 h-4 w-4',
+                                              contField.value === cont.id
+                                                ? 'opacity-100'
+                                                : 'opacity-0',
+                                            )}
+                                          />
+                                          {cont.first_name} {cont.last_name}
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                        />
+                      </div>
+                    )}
                   </RadioGroup>
                 )}
               />

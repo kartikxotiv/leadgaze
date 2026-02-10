@@ -1,21 +1,38 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import { useParams, useRouter } from 'next/navigation';
 
-import { useQuery } from '@tanstack/react-query';
-import { Clock, Edit2, Mail, MapPin, Phone, User } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  ChevronDown,
+  Clock,
+  Edit2,
+  Mail,
+  MapPin,
+  Phone,
+  User,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@kit/ui/dropdown-menu';
 import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Separator } from '@kit/ui/separator';
+import { cn } from '@kit/ui/utils';
 
+import { PublicPrivateToggle } from '~/home/_components/public-private-toggle';
+import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
 import {
   useCanAccessData,
   usePermissionDetail,
@@ -33,12 +50,15 @@ import {
   EntityMeetings,
   EntityReminders,
 } from '../../_components/entity-activity';
+import { EntityCalls } from '../../_components/entity-calls';
+import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
 import { ChangeStatusDialog } from '../components/change-status-dialog';
 import { ConvertLeadDialog } from '../components/convert-lead-dialog';
 import EditLeadDialog from '../components/edit-lead-dialog';
+import { EmailLeadDialog } from '../components/email-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
-import { PublicPrivateToggle } from '~/home/_components/public-private-toggle';
+import { LogCallDialog } from '../components/log-call-dialog';
 
 export default function LeadDetailsPage() {
   const router = useRouter();
@@ -51,6 +71,11 @@ export default function LeadDetailsPage() {
     null,
   );
   const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
+  const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [selectedDraft, setSelectedDraft] = useState<any>(null);
+
+  const queryClient = useQueryClient();
 
   const leadId = params?.id as string;
 
@@ -80,6 +105,24 @@ export default function LeadDetailsPage() {
     },
     enabled: !!workspace?.id,
   });
+
+  const scoringResult = useMemo(() => {
+    if (!lead) return null;
+    return calculateLeadScore({
+      first_name: lead.first_name,
+      last_name: lead.last_name,
+      company_name: lead.company_name,
+      industry_id: lead.industry_id || lead.industry?.id,
+      company_size: lead.company_size,
+      location: lead.location,
+      timezone: lead.timezone,
+      job_title: lead.job_title,
+      status_key: lead.status?.status_key,
+      contacted_count: lead.contacted_count,
+      custom_fields: lead.custom_fields || {},
+      source_id: lead.source_id,
+    });
+  }, [lead]);
 
   if (!workspace) {
     return (
@@ -176,7 +219,7 @@ export default function LeadDetailsPage() {
             variant="outline"
             size="sm"
             onClick={() => setStatusModalOpen(true)}
-            className="gap-2"
+            className="flex h-8 items-center justify-center px-4"
             disabled={isSaving || !canEdit}
             title={
               !canEdit ? 'You do not have permission to edit this lead' : ''
@@ -184,12 +227,46 @@ export default function LeadDetailsPage() {
           >
             Change Status
           </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsLogCallDialogOpen(true)}
+            className="p-3"
+            disabled={!canEdit}
+            title={
+              !canEdit
+                ? 'You do not have permission to log calls'
+                : 'Log a call'
+            }
+          >
+            {/* Phone icon */}
+            {/* Log Call */}
+            <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
+              <Phone className="h-3 w-3 text-white" />
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${!lead.email ? 'opacity-50' : ''}`}
+            disabled={!lead.email}
+            onClick={() => lead.email && setIsEmailDialogOpen(true)}
+            title={
+              !lead.email ? 'Lead has no email address' : 'Send email to lead'
+            }
+          >
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
+              <Mail className="h-3.5 w-3.5 text-white" />
+            </div>
+          </Button>
           {!lead.is_converted_to_account && (
             <Button
               variant="outline"
               size="sm"
               onClick={handleConvertLead}
-              className="gap-2"
+              className="flex h-8 items-center justify-center px-4"
               disabled={isSaving || !canEdit}
               title={
                 !canEdit
@@ -204,7 +281,7 @@ export default function LeadDetailsPage() {
             variant="outline"
             size="sm"
             onClick={() => setIsEditDialogOpen(true)}
-            className="gap-2"
+            className="flex h-8 items-center justify-center gap-2 px-4"
             disabled={!canEdit}
             title={
               !canEdit ? 'You do not have permission to edit this lead' : ''
@@ -369,7 +446,7 @@ export default function LeadDetailsPage() {
                     </div>
                   </div>
                 )}
-                {lead.company_website && (
+                {lead.company_website ? (
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
@@ -385,13 +462,40 @@ export default function LeadDetailsPage() {
                       </a>
                     </div>
                   </div>
-                )}
+                ) : null}
+                {lead.company_linkedin_url ? (
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
+                        Company LinkedIn
+                      </p>
+                      <a
+                        href={lead.company_linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                      >
+                        {lead.company_linkedin_url}
+                      </a>
+                    </div>
+                  </div>
+                ) : null}
                 {lead.department && (
                   <EditableField
                     label="Department"
                     value={lead.department}
                     fieldName="department"
                   />
+                )}
+                {lead.notes && (
+                  <div>
+                    <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
+                      Notes
+                    </p>
+                    <p className="mt-1 text-sm whitespace-pre-wrap text-gray-900 dark:text-white">
+                      {lead.notes}
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -495,9 +599,9 @@ export default function LeadDetailsPage() {
                         href={lead.linkedin_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-1 block text-sm text-blue-600 hover:underline dark:text-blue-400"
+                        className="mt-1 block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
                       >
-                        View Profile
+                        {lead.linkedin_url}
                       </a>
                     </div>
                   </div>
@@ -523,6 +627,17 @@ export default function LeadDetailsPage() {
 
             {/* Notes Section */}
             <EntityNotes entityType="lead" entityId={leadId} />
+
+            {/* Call Logs Section */}
+            <EntityCalls entityType="lead" entityId={leadId} />
+            {/* Email Activity (Drafts, Scheduled, Sent) */}
+            <EntityEmails
+              leadId={leadId}
+              onOpenDraft={(draft) => {
+                setSelectedDraft(draft);
+                setIsEmailDialogOpen(true);
+              }}
+            />
 
             {/* Activity Section */}
             <Card>
@@ -594,16 +709,121 @@ export default function LeadDetailsPage() {
                           fill="none"
                           stroke={statusColor}
                           strokeWidth="2"
-                          strokeDasharray={`${(lead.lead_score / 100) * 283} 283`}
+                          strokeDasharray={`${((scoringResult?.totalScore ?? lead.lead_score) / 100) * 283} 283`}
                           strokeLinecap="round"
                         />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
                         <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {lead.lead_score}
+                          {scoringResult?.totalScore ?? lead.lead_score}
                         </span>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="mt-4 space-y-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Total Score
+                      </span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {scoringResult?.totalScore ?? lead.lead_score} / 100
+                      </span>
+                    </div>
+
+                    {scoringResult && (
+                      <div className="space-y-3 border-t pt-4">
+                        <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
+                          Breakdown
+                        </p>
+
+                        {/* Fit Score Breakdown */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs font-semibold text-gray-400">
+                            <span>Fit Coverage</span>
+                            <span>{scoringResult.fitScore} / 60</span>
+                          </div>
+                          {Object.entries(scoringResult.breakdown.fit).map(
+                            ([label, score]) => (
+                              <div
+                                key={label}
+                                className="flex justify-between text-xs"
+                              >
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  {label}
+                                </span>
+                                <span className="font-medium text-green-600">
+                                  +{score}
+                                </span>
+                              </div>
+                            ),
+                          )}
+                        </div>
+
+                        {/* Engagement Score Breakdown */}
+                        {Object.keys(scoringResult.breakdown.engagement)
+                          .length > 0 && (
+                          <div className="space-y-1 pt-2">
+                            <p className="text-xs font-semibold text-gray-400">
+                              Engagement
+                            </p>
+                            {Object.entries(
+                              scoringResult.breakdown.engagement,
+                            ).map(([label, score]) => (
+                              <div
+                                key={label}
+                                className="flex justify-between text-xs"
+                              >
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  {label}
+                                </span>
+                                <span className="font-medium text-blue-600">
+                                  +{score}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Adjustments (Status) */}
+                        {Object.keys(scoringResult.breakdown.adjustments)
+                          .length > 0 && (
+                          <div className="space-y-1 pt-2">
+                            <p className="text-xs font-semibold text-gray-400">
+                              Status Adjustments
+                            </p>
+                            {Object.entries(
+                              scoringResult.breakdown.adjustments,
+                            ).map(([label, score]) => (
+                              <div
+                                key={label}
+                                className="flex justify-between text-xs"
+                              >
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  {label}
+                                </span>
+                                <span
+                                  className={cn(
+                                    'font-medium',
+                                    score > 0
+                                      ? 'text-green-600'
+                                      : score === -100
+                                        ? 'text-red-600'
+                                        : 'text-amber-600',
+                                  )}
+                                >
+                                  {score > 0
+                                    ? `+${score}`
+                                    : score === -100
+                                      ? 'Reset'
+                                      : score}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -670,7 +890,7 @@ export default function LeadDetailsPage() {
                       Lead Score
                     </p>
                     <p className="text-sm text-gray-700 dark:text-gray-300">
-                      {lead.lead_score}/100
+                      {scoringResult?.totalScore ?? lead.lead_score}/100
                     </p>
                   </div>
                 )}
@@ -713,9 +933,41 @@ export default function LeadDetailsPage() {
           open={statusModalOpen}
           onOpenChange={setStatusModalOpen}
           onSuccess={() => refetch()}
-          leadId={leadId}
-          currentStatusId={lead.status_id}
+          lead={lead}
           statuses={statuses}
+        />
+      )}
+
+      {/* Log Call Dialog */}
+      {lead && workspace?.id && (
+        <LogCallDialog
+          open={isLogCallDialogOpen}
+          onOpenChange={setIsLogCallDialogOpen}
+          onSuccess={async () => {
+            setIsLogCallDialogOpen(false);
+            await queryClient.invalidateQueries({
+              queryKey: ['calls', workspace?.id, 'lead', leadId],
+            });
+          }}
+          entityType="lead"
+          entityId={leadId}
+          workspaceId={workspace.id}
+          defaultContactName={`${lead.first_name}${lead.last_name ? ` ${lead.last_name}` : ''}`.trim()}
+          defaultPhoneNumber={lead.phone_number || lead.mobile_number}
+        />
+      )}
+      {/* Email Lead Dialog */}
+      {lead && (
+        <EmailLeadDialog
+          open={isEmailDialogOpen}
+          onOpenChange={(open) => {
+            setIsEmailDialogOpen(open);
+            if (!open) setSelectedDraft(null);
+          }}
+          leadId={leadId}
+          leadEmail={lead.email || ''}
+          leadName={fullName}
+          initialDraft={selectedDraft}
         />
       )}
     </ModuleGuard>

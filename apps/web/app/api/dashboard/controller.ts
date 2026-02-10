@@ -21,45 +21,137 @@ export const getDashboardMetrics = catchAsync(
       );
     }
 
+    // Get current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user is workspace owner
+    const { data: workspace, error: workspaceError } = await supabase
+      .from('workspaces')
+      .select('owner_id')
+      .eq('id', workspaceId)
+      .single();
+
+    if (workspaceError) {
+      console.error('Workspace fetch error:', workspaceError);
+      throw workspaceError;
+    }
+
+    const isOwner = workspace?.owner_id === user.id;
+
     // Current date and 30 days ago for trends
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const thirtyDaysAgoStr = thirtyDaysAgo.toISOString();
 
     // 1. Get Leads metrics
-    const { count: leadsTotal } = await supabase
+    let leadsQuery = supabase
       .from('crm_leads')
       .select('*', { count: 'exact', head: true })
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
 
-    const { count: leadsNew } = await supabase
+    let newLeadsQuery = supabase
       .from('crm_leads')
       .select('*', { count: 'exact', head: true })
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false)
       .gte('created_at', thirtyDaysAgoStr);
 
+    if (!isOwner) {
+      const { data: assignedLeadIds } = await supabase
+        .from('lead_assignees')
+        .select('lead_id')
+        .eq('workspace_id', workspaceId)
+        .eq('assigned_to_user_id', user.id)
+        .eq('assignment_status', 'active');
+
+      const assignedIds = assignedLeadIds?.map((a) => a.lead_id) || [];
+      const filterStr = `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`;
+      leadsQuery = leadsQuery.or(filterStr);
+      newLeadsQuery = newLeadsQuery.or(filterStr);
+    }
+
+    const { count: leadsTotal } = await leadsQuery;
+    const { count: leadsNew } = await newLeadsQuery;
+
     // 2. Get Contacts metrics
-    const { count: contactsTotal } = await supabase
+    let contactsQuery = supabase
       .from('crm_contacts')
       .select('*', { count: 'exact', head: true })
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
 
+    if (!isOwner) {
+      const { data: assignedContactIds } = await (supabase
+        .from('contact_assignees' as any)
+        .select('contact_id')
+        .eq('workspace_id', workspaceId)
+        .eq('assigned_to_user_id', user.id)
+        .eq('assignment_status', 'active') as any);
+
+      const assignedIds =
+        assignedContactIds?.map((a: any) => a.contact_id) || [];
+      contactsQuery = contactsQuery.or(
+        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
+      );
+    }
+
+    const { count: contactsTotal } = await contactsQuery;
+
     // 3. Get Accounts metrics
-    const { count: accountsTotal } = await supabase
+    let accountsQuery = supabase
       .from('crm_accounts')
       .select('*', { count: 'exact', head: true })
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
 
+    if (!isOwner) {
+      const { data: assignedAccountIds } = await (supabase
+        .from('account_assignees' as any)
+        .select('account_id')
+        .eq('workspace_id', workspaceId)
+        .eq('assigned_to_user_id', user.id)
+        .eq('assignment_status', 'active') as any);
+
+      const assignedIds =
+        assignedAccountIds?.map((a: any) => a.account_id) || [];
+      accountsQuery = accountsQuery.or(
+        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
+      );
+    }
+
+    const { count: accountsTotal } = await accountsQuery;
+
     // 4. Get Opportunities metrics
-    const { data: opportunitiesData } = await supabase
+    let opportunitiesQuery = supabase
       .from('crm_opportunities')
       .select('amount')
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
+
+    if (!isOwner) {
+      const { data: assignedOpportunityIds } = await (supabase
+        .from('opportunity_assignees' as any)
+        .select('opportunity_id')
+        .eq('workspace_id', workspaceId)
+        .eq('assigned_to_user_id', user.id)
+        .eq('assignment_status', 'active') as any);
+
+      const assignedIds =
+        assignedOpportunityIds?.map((a: any) => a.opportunity_id) || [];
+      opportunitiesQuery = opportunitiesQuery.or(
+        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
+      );
+    }
+
+    const { data: opportunitiesData } = await opportunitiesQuery;
 
     const totalOpportunityAmount = (opportunitiesData || []).reduce(
       (sum, opp) => sum + (Number(opp.amount) || 0),

@@ -50,6 +50,10 @@ const getLeads = catchAsync(
     const supabase = getSupabaseServerClient();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
+    const page = parseInt(url.searchParams.get('page') || '1', 10);
+    const limit = parseInt(url.searchParams.get('limit') || '20', 10);
+    const searchTerm = url.searchParams.get('searchTerm') || '';
+    const statusId = url.searchParams.get('statusId') || '';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -94,9 +98,22 @@ const getLeads = catchAsync(
           created_by_account:accounts!crm_leads_created_by_fkey(id, email, name),
           industry:crm_industries(id, industry_name)
         `,
+        { count: 'exact' },
       )
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
+
+    // Filter by status if provided
+    if (statusId && statusId !== 'all') {
+      query = query.eq('status_id', statusId);
+    }
+
+    // Search term
+    if (searchTerm) {
+      query = query.or(
+        `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%`,
+      );
+    }
 
     // If not owner, filter for public leads, leads assigned to current user, or leads created by current user
     if (!isOwner) {
@@ -116,19 +133,30 @@ const getLeads = catchAsync(
       );
     }
 
-    const { data: leads, error } = await query.order('created_at', {
-      ascending: false,
-    });
+    // Pagination
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const {
+      data: leads,
+      error,
+      count,
+    } = await query
+      .order('created_at', {
+        ascending: false,
+      })
+      .range(from, to);
 
     if (error) {
       console.error('Get leads error:', error);
       throw error;
     }
 
-    return successDataResponse(
-      'Leads retrieved successfully',
-      (leads || []) as LeadWithRelations[],
-    );
+    return NextResponse.json({
+      message: 'Leads retrieved successfully',
+      data: leads || [],
+      count: count || 0,
+    });
   },
 );
 
@@ -229,6 +257,8 @@ const createLead = catchAsync(
       .select(
         `
         *,
+        company_website,
+        company_linkedin_url,
         status:entity_statuses(id, status_name, status_key, color, icon),
         source:lead_sources(id, source_name, source_key, color, icon),
         owner:accounts!crm_leads_owner_id_fkey(id, email, name),
@@ -328,7 +358,7 @@ const getLeadStatuses = catchAsync(
 
     const { data: statuses, error } = await supabase
       .from('entity_statuses')
-      .select('id, status_name, status_key, color, icon')
+      .select('id, status_name, status_key, color, icon, is_closed')
       .eq('workspace_id', workspaceId)
       .eq('module_id', module?.id)
       .order('status_name', { ascending: true });
@@ -432,4 +462,10 @@ const createLeadSource = catchAsync(
   },
 );
 
-export { getLeads, createLead, getLeadSources, getLeadStatuses, createLeadSource };
+export {
+  getLeads,
+  createLead,
+  getLeadSources,
+  getLeadStatuses,
+  createLeadSource,
+};

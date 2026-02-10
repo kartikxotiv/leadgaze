@@ -55,6 +55,8 @@ const getLeadById = catchAsync(
       supabase.from('crm_leads').select(
         `
           *,
+          company_website,
+          company_linkedin_url,
           status:entity_statuses(id, status_name, status_key, color, icon),
           source:lead_sources(id, source_name, source_key, color, icon),
           owner:accounts!crm_leads_owner_id_fkey(id, email, name),
@@ -216,6 +218,8 @@ const updateLead = catchAsync(
       .select(
         `
         *,
+        company_website,
+        company_linkedin_url,
         status:entity_statuses(id, status_name, status_key, color, icon),
         source:lead_sources(id, source_name, source_key, color, icon),
         owner:accounts!crm_leads_owner_id_fkey(id, email, name),

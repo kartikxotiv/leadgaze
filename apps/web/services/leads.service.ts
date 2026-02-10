@@ -126,11 +126,31 @@ export interface UpdateLeadPayload {
   is_public?: boolean;
 }
 
-const getLeadsService = asyncHandlerClient(async (workspaceId: string) => {
-  const response = await ApiClient.get(`/leads?workspaceId=${workspaceId}`);
-  // response.data = { success, statusCode, message, data: [...] }
-  return response.data?.data || [];
-});
+const getLeadsService = asyncHandlerClient(
+  async (params: {
+    workspaceId: string;
+    page?: number;
+    limit?: number;
+    searchTerm?: string;
+    statusId?: string;
+  }) => {
+    const {
+      workspaceId,
+      page = 1,
+      limit = 20,
+      searchTerm = '',
+      statusId = '',
+    } = params;
+    const response = await ApiClient.get(
+      `/leads?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&statusId=${statusId}`,
+    );
+    // response.data = { message, data: [...], count }
+    return {
+      data: (response.data?.data || []) as Lead[],
+      count: (response.data?.count || 0) as number,
+    };
+  },
+);
 
 const getLeadByIdService = asyncHandlerClient(async (leadId: string) => {
   const response = await ApiClient.get(`/leads/${leadId}`);
@@ -202,6 +222,23 @@ const convertLeadService = asyncHandlerClient(
   },
 );
 
+const sendLeadEmailService = asyncHandlerClient(
+  async (
+    payload: {
+      leadId: string;
+      subject: string;
+      body: string;
+      cc?: string | string[];
+      bcc?: string | string[];
+    },
+  ) => {
+    console.log({ payload });
+
+    const response = await ApiClient.post(`/email/send`, payload);
+    return response.data?.data || null;
+  },
+);
+
 export {
   getLeadsService,
   getLeadByIdService,
@@ -212,4 +249,5 @@ export {
   getLeadStatusesService,
   updateLeadService,
   deleteLeadService,
+  sendLeadEmailService,
 };
