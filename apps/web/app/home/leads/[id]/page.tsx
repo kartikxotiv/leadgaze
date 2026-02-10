@@ -30,6 +30,7 @@ import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Separator } from '@kit/ui/separator';
 
+import { PublicPrivateToggle } from '~/home/_components/public-private-toggle';
 import {
   useCanAccessData,
   usePermissionDetail,
@@ -56,7 +57,6 @@ import EditLeadDialog from '../components/edit-lead-dialog';
 import { EmailLeadDialog } from '../components/email-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
 import { LogCallDialog } from '../components/log-call-dialog';
-import { PublicPrivateToggle } from '~/home/_components/public-private-toggle';
 
 export default function LeadDetailsPage() {
   const router = useRouter();
@@ -208,25 +208,24 @@ export default function LeadDetailsPage() {
             Change Status
           </Button>
 
-
           <Button
             variant="outline"
             size="sm"
             onClick={() => setIsLogCallDialogOpen(true)}
-            className="p-3 "
+            className="p-3"
             disabled={!canEdit}
             title={
-              !canEdit ? 'You do not have permission to log calls' : 'Log a call'
+              !canEdit
+                ? 'You do not have permission to log calls'
+                : 'Log a call'
             }
           >
-
             {/* Phone icon */}
             {/* Log Call */}
-            <div className="flex items-center justify-center bg-[#44bbb3] p-2 rounded-full">
+            <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
               <Phone className="h-3 w-3 text-white" />
             </div>
           </Button>
-
 
           <Button
             variant="outline"
@@ -427,7 +426,7 @@ export default function LeadDetailsPage() {
                     </div>
                   </div>
                 )}
-                {lead.company_website && (
+                {lead.company_website ? (
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
@@ -443,13 +442,40 @@ export default function LeadDetailsPage() {
                       </a>
                     </div>
                   </div>
-                )}
+                ) : null}
+                {lead.company_linkedin_url ? (
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
+                        Company LinkedIn
+                      </p>
+                      <a
+                        href={lead.company_linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                      >
+                        {lead.company_linkedin_url}
+                      </a>
+                    </div>
+                  </div>
+                ) : null}
                 {lead.department && (
                   <EditableField
                     label="Department"
                     value={lead.department}
                     fieldName="department"
                   />
+                )}
+                {lead.notes && (
+                  <div>
+                    <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
+                      Notes
+                    </p>
+                    <p className="mt-1 text-sm whitespace-pre-wrap text-gray-900 dark:text-white">
+                      {lead.notes}
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -553,9 +579,9 @@ export default function LeadDetailsPage() {
                         href={lead.linkedin_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-1 block text-sm text-blue-600 hover:underline dark:text-blue-400"
+                        className="mt-1 block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
                       >
-                        View Profile
+                        {lead.linkedin_url}
                       </a>
                     </div>
                   </div>
