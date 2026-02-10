@@ -98,6 +98,7 @@
     "./breadcrumb": "./src/shadcn/breadcrumb.tsx",
     "./chart": "./src/shadcn/chart.tsx",
     "./skeleton": "./src/shadcn/skeleton.tsx",
+    "./pagination": "./src/shadcn/pagination.tsx",
     "./shadcn-sidebar": "./src/shadcn/sidebar.tsx",
     "./collapsible": "./src/shadcn/collapsible.tsx",
     "./utils": "./src/lib/utils/index.ts",

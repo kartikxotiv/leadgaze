@@ -41,13 +41,31 @@ export interface Opportunity {
 }
 
 const getOpportunitiesService = asyncHandlerClient(
-  async (workspaceId: string, accountId?: string) => {
-    let url = `/opportunities?workspaceId=${workspaceId}`;
+  async (params: {
+    workspaceId: string;
+    accountId?: string;
+    page?: number;
+    limit?: number;
+    searchTerm?: string;
+    stageId?: string;
+  }) => {
+    const {
+      workspaceId,
+      accountId,
+      page = 1,
+      limit = 20,
+      searchTerm = '',
+      stageId = '',
+    } = params;
+    let url = `/opportunities?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&stageId=${stageId}`;
     if (accountId) {
       url += `&accountId=${accountId}`;
     }
     const response = await ApiClient.get(url);
-    return response.data?.data || [];
+    return {
+      data: (response.data?.data || []) as Opportunity[],
+      count: (response.data?.count || 0) as number,
+    };
   },
 );
 

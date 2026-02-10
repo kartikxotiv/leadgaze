@@ -20,6 +20,7 @@ const PathsSchema = z.object({
     teamMembers: z.string().min(1),
     roles: z.string().min(1),
     auditLogs: z.string().min(1),
+    workspaceSettings: z.string().min(1),
   }),
 });
 
@@ -43,6 +44,7 @@ const pathsConfig = PathsSchema.parse({
     teamMembers: '/home/team-members',
     roles: '/home/roles',
     auditLogs: '/home/audit-logs',
+    workspaceSettings: '/home/workspace-settings',
   },
 } satisfies z.infer<typeof PathsSchema>);
 

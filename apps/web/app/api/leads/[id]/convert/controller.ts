@@ -48,7 +48,7 @@ export const convertLead = catchAsync(
     // 2. Get Lead to verify existence and get workspace_id
     const { data: lead, error: leadError } = await supabase
       .from('crm_leads')
-      .select('*')
+      .select('*, source:lead_sources(source_name)')
       .eq('id', leadId)
       .eq('is_deleted', false)
       .single();
@@ -75,6 +75,10 @@ export const convertLead = catchAsync(
           phone_number: lead.phone_number,
           website: lead.company_website,
           industry_id: industryId,
+          company_size: lead.company_size,
+          annual_revenue: lead.annual_revenue,
+          linkedin_url: lead.company_linkedin_url,
+          description: lead.notes,
           status_id: account.status_id, // Default status needed or passed from FE
           owner_id: user.id, // Assign to current user or lead owner
           created_by: user.id,
@@ -112,6 +116,10 @@ export const convertLead = catchAsync(
           created_from_lead_id: leadId,
           alt_email: lead.alt_email,
           mobile_number: lead.mobile_number,
+          linkedin_url: lead.linkedin_url,
+          department: lead.department,
+          location: lead.location,
+          timezone: lead.timezone,
           is_public: lead.is_public ?? true, // Preserve visibility from lead
         })
         .select('id')
@@ -140,6 +148,7 @@ export const convertLead = catchAsync(
             created_by: user.id,
             created_from_lead_id: leadId,
             is_public: lead.is_public ?? true, // Preserve visibility from lead
+            lead_source: (lead as any).source?.source_name || null,
           })
           .select('id')
           .single();

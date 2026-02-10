@@ -23,7 +23,10 @@ export function useUser(initialData?: JwtPayload | null) {
     }
 
     if (response.data?.claims) {
-      return response.data.claims;
+      return {
+        ...response.data.claims,
+        id: response.data.claims.sub,
+      };
     }
 
     return Promise.reject(new Error('Unexpected result format'));
@@ -34,7 +37,8 @@ export function useUser(initialData?: JwtPayload | null) {
     queryKey,
     initialData,
     refetchInterval: false,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 }

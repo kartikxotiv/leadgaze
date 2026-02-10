@@ -22,6 +22,10 @@ export const getOpportunities = catchAsync(
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
     const accountId = url.searchParams.get('accountId');
+    const page = parseInt(url.searchParams.get('page') || '1', 10);
+    const limit = parseInt(url.searchParams.get('limit') || '20', 10);
+    const searchTerm = url.searchParams.get('searchTerm') || '';
+    const stageId = url.searchParams.get('stageId') || '';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -64,6 +68,7 @@ export const getOpportunities = catchAsync(
           account:crm_accounts(id, account_name),
           owner:accounts!crm_opportunities_owner_id_fkey(id, email, name)
         `,
+        { count: 'exact' },
       )
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
@@ -72,7 +77,19 @@ export const getOpportunities = catchAsync(
       query = query.eq('account_id', accountId);
     }
 
-    // If not owner, filter for public opportunities or opportunities assigned to current user
+    // Filter by stage if provided
+    if (stageId && stageId !== 'all') {
+      query = query.eq('stage_id', stageId);
+    }
+
+    // Search term
+    if (searchTerm) {
+      query = query.or(
+        `opportunity_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`,
+      );
+    }
+
+    // If not owner, filter for public opportunities, opportunities assigned to current user, or opportunities created by current user
     if (!isOwner) {
       // Get opportunities assigned to the current user
       const { data: assignedOpportunityIds } = await (supabase
@@ -82,27 +99,39 @@ export const getOpportunities = catchAsync(
         .eq('assigned_to_user_id', user.id)
         .eq('assignment_status', 'active') as any);
 
-      const assignedIds = assignedOpportunityIds?.map((a: any) => a.opportunity_id) || [];
+      const assignedIds =
+        assignedOpportunityIds?.map((a: any) => a.opportunity_id) || [];
 
-      // Filter: public opportunities OR assigned opportunities
+      // Filter: public opportunities OR assigned opportunities OR created by current user
       query = query.or(
-        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'})`,
+        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
       );
     }
 
-    const { data: opportunities, error } = await query.order('created_at', {
-      ascending: false,
-    });
+    // Pagination
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const {
+      data: opportunities,
+      error,
+      count,
+    } = await query
+      .order('created_at', {
+        ascending: false,
+      })
+      .range(from, to);
 
     if (error) {
       console.error('Get opportunities error:', error);
       throw error;
     }
 
-    return successDataResponse(
-      'Opportunities retrieved successfully',
-      opportunities || [],
-    );
+    return NextResponse.json({
+      message: 'Opportunities retrieved successfully',
+      data: opportunities || [],
+      count: count || 0,
+    });
   },
 );
 
@@ -123,20 +152,21 @@ export const getOpportunityStages = catchAsync(
       );
     }
 
+    const { data: moduleData } = await supabase
+      .from('crm_modules')
+      .select('id')
+      .eq('module_key', 'opportunities')
+      .single();
+
+    if (!moduleData?.id) {
+      return successDataResponse('Stages retrieved successfully', []);
+    }
+
     const { data: stages, error } = await supabase
       .from('entity_statuses')
       .select('*')
       .eq('workspace_id', workspaceId)
-      .eq(
-        'module_id',
-        (
-          await supabase
-            .from('crm_modules')
-            .select('id')
-            .eq('module_key', 'opportunities')
-            .single()
-        ).data?.id,
-      )
+      .eq('module_id', moduleData.id)
       .eq('is_active', true)
       .order('sort_order', { ascending: true });
 

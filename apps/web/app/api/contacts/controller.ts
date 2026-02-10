@@ -22,6 +22,9 @@ export const getContacts = catchAsync(
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
     const accountId = url.searchParams.get('accountId');
+    const page = parseInt(url.searchParams.get('page') || '1', 10);
+    const limit = parseInt(url.searchParams.get('limit') || '20', 10);
+    const searchTerm = url.searchParams.get('searchTerm') || '';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -64,6 +67,7 @@ export const getContacts = catchAsync(
           account:crm_accounts(id, account_name),
           owner:accounts!crm_contacts_owner_id_fkey(id, email, name)
         `,
+        { count: 'exact' },
       )
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
@@ -72,7 +76,14 @@ export const getContacts = catchAsync(
       query = query.eq('account_id', accountId);
     }
 
-    // If not owner, filter for public contacts or contacts assigned to current user
+    // Search term
+    if (searchTerm) {
+      query = query.or(
+        `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`,
+      );
+    }
+
+    // If not owner, filter for public contacts, contacts assigned to current user, or contacts created by current user
     if (!isOwner) {
       // Get contacts assigned to the current user
       const { data: assignedContactIds } = await (supabase
@@ -82,27 +93,39 @@ export const getContacts = catchAsync(
         .eq('assigned_to_user_id', user.id)
         .eq('assignment_status', 'active') as any);
 
-      const assignedIds = assignedContactIds?.map((a: any) => a.contact_id) || [];
+      const assignedIds =
+        assignedContactIds?.map((a: any) => a.contact_id) || [];
 
-      // Filter: public contacts OR assigned contacts
+      // Filter: public contacts OR assigned contacts OR created by current user
       query = query.or(
-        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'})`,
+        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
       );
     }
 
-    const { data: contacts, error } = await query.order('created_at', {
-      ascending: false,
-    });
+    // Pagination
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const {
+      data: contacts,
+      error,
+      count,
+    } = await query
+      .order('created_at', {
+        ascending: false,
+      })
+      .range(from, to);
 
     if (error) {
       console.error('Get contacts error:', error);
       throw error;
     }
 
-    return successDataResponse(
-      'Contacts retrieved successfully',
-      contacts || [],
-    );
+    return NextResponse.json({
+      message: 'Contacts retrieved successfully',
+      data: contacts || [],
+      count: count || 0,
+    });
   },
 );
 
