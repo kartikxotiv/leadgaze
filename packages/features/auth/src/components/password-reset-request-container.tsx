@@ -58,8 +58,6 @@ export function PasswordResetRequestContainer(params: {
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(({ email }) => {
-              console.log('params.redirectPath', params.redirectPath);
-              console.log('window.location.origin', window.location.origin);
               const redirectTo = new URL(
                 params.redirectPath,
                 window.location.origin,
