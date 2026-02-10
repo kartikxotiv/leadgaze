@@ -257,6 +257,8 @@ const createLead = catchAsync(
       .select(
         `
         *,
+        company_website,
+        company_linkedin_url,
         status:entity_statuses(id, status_name, status_key, color, icon),
         source:lead_sources(id, source_name, source_key, color, icon),
         owner:accounts!crm_leads_owner_id_fkey(id, email, name),
@@ -356,7 +358,7 @@ const getLeadStatuses = catchAsync(
 
     const { data: statuses, error } = await supabase
       .from('entity_statuses')
-      .select('id, status_name, status_key, color, icon')
+      .select('id, status_name, status_key, color, icon, is_closed')
       .eq('workspace_id', workspaceId)
       .eq('module_id', module?.id)
       .order('status_name', { ascending: true });

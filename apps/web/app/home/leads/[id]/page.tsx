@@ -446,7 +446,7 @@ export default function LeadDetailsPage() {
                     </div>
                   </div>
                 )}
-                {lead.company_website && (
+                {lead.company_website ? (
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
@@ -462,13 +462,40 @@ export default function LeadDetailsPage() {
                       </a>
                     </div>
                   </div>
-                )}
+                ) : null}
+                {lead.company_linkedin_url ? (
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
+                        Company LinkedIn
+                      </p>
+                      <a
+                        href={lead.company_linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                      >
+                        {lead.company_linkedin_url}
+                      </a>
+                    </div>
+                  </div>
+                ) : null}
                 {lead.department && (
                   <EditableField
                     label="Department"
                     value={lead.department}
                     fieldName="department"
                   />
+                )}
+                {lead.notes && (
+                  <div>
+                    <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
+                      Notes
+                    </p>
+                    <p className="mt-1 text-sm whitespace-pre-wrap text-gray-900 dark:text-white">
+                      {lead.notes}
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -572,9 +599,9 @@ export default function LeadDetailsPage() {
                         href={lead.linkedin_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-1 block text-sm text-blue-600 hover:underline dark:text-blue-400"
+                        className="mt-1 block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
                       >
-                        View Profile
+                        {lead.linkedin_url}
                       </a>
                     </div>
                   </div>
