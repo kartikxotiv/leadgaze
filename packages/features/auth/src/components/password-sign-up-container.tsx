@@ -39,6 +39,7 @@ export function EmailPasswordSignUpContainer({
   const signUpMutation = useSignUpWithEmailAndPassword();
   const redirecting = useRef(false);
   const [showVerifyEmailAlert, setShowVerifyEmailAlert] = useState(false);
+  const [signupEmail, setSignupEmail] = useState<string | null>(null);
 
   const loading = signUpMutation.isPending || redirecting.current;
 
@@ -55,6 +56,7 @@ export function EmailPasswordSignUpContainer({
           captchaToken,
         });
 
+        setSignupEmail(credentials.email);
         setShowVerifyEmailAlert(true);
 
         if (onSignUp) {
@@ -78,14 +80,38 @@ export function EmailPasswordSignUpContainer({
   );
 
   useEffect(() => {
-    if (showVerifyEmailAlert && appHome) {
-      const timer = setTimeout(() => {
+    if (showVerifyEmailAlert && appHome && signupEmail) {
+      const checkInvitationsAndRedirect = async () => {
+        try {
+          // Check for pending workspace invitations
+          const response = await fetch(
+            `/api/team-members/invite/by-email?email=${encodeURIComponent(signupEmail)}`,
+          );
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.data?.token) {
+              // Found a pending invitation, redirect to invite page
+              router.push(`/invite?token=${result.data.token}`);
+              return;
+            }
+          }
+        } catch (error) {
+          // If check fails, proceed with normal redirect
+          console.error('Error checking invitations:', error);
+        }
+
+        // No invitation found or error occurred, proceed with normal redirect
         router.push(appHome);
+      };
+
+      const timer = setTimeout(() => {
+        checkInvitationsAndRedirect();
       }, 3000);
 
       return () => clearTimeout(timer);
     }
-  }, [showVerifyEmailAlert, appHome, router]);
+  }, [showVerifyEmailAlert, appHome, router, signupEmail]);
 
   return (
     <>

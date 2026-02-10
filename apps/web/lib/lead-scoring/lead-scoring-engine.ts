@@ -15,6 +15,7 @@ export interface LeadScoringData {
   timezone?: string;
   job_title?: string;
   contacted_count?: number;
+  source_id?: string;
   status_key?: string;
   status_name?: string;
   custom_fields?: Record<string, any>;
@@ -44,45 +45,66 @@ export const calculateLeadScore = (data: LeadScoringData): ScoringResult => {
 
   // A. Company / Lead Profile (Max 35)
 
-  // Company Type: Business (not individual) +10
-  if (data.company_name?.trim()) {
-    const score = 10;
-    fitScore += score;
-    breakdown.fit['Company Type'] = score;
-  }
-
-  // Industry Match: Target industry +10
-  // Note: In a real app, this would check against a list of target IDs or names
-  if (data.industry_id) {
-    const score = 10;
-    fitScore += score;
-    breakdown.fit['Industry Match'] = score;
+  // Industry Match: Target industry (Tech, Healthcare, Retail, SaaS, etc.) +10
+  const targetIndustries = [
+    'tech',
+    'healthcare',
+    'retail',
+    'saas',
+    'software',
+    'technology',
+  ];
+  // Note: Check against industry name if possible, or industry_id
+  if (data.industry_id || data.custom_fields?.industry_name) {
+    const industryName = (
+      data.custom_fields?.industry_name || ''
+    ).toLowerCase();
+    if (
+      targetIndustries.some((ti) => industryName.includes(ti)) ||
+      data.industry_id
+    ) {
+      const score = 10;
+      fitScore += score;
+      breakdown.fit['Industry Match'] = score;
+    }
   }
 
   // Company Size: 11–50 / 51–200 / 200+ employees (+5 / +8 / +10)
   if (data.company_size) {
     let score = 0;
-    if (data.company_size === 'small') score = 5;
-    else if (data.company_size === 'medium') score = 8;
-    else if (['large', 'enterprise'].includes(data.company_size)) score = 10;
+    const size = data.company_size.toLowerCase();
+    if (size === 'small' || size.includes('11-50')) score = 5;
+    else if (size === 'medium' || size.includes('51-200')) score = 8;
+    else if (['large', 'enterprise'].includes(size) || size.includes('200+'))
+      score = 10;
 
-    fitScore += score;
-    breakdown.fit['Company Size'] = score;
+    if (score > 0) {
+      fitScore += score;
+      breakdown.fit['Company Size'] = score;
+    }
   }
 
   // Geography: Target market (US, UAE, Europe) +5
   const targetMarkets = [
     'us',
+    'usa',
     'uae',
     'europe',
     'united states',
-    'dubai',
-    'london',
-    'uk',
+    'united arab emirates',
   ];
-  const location = data.location?.toLowerCase() || '';
-  const timezone = data.timezone?.toLowerCase() || '';
-  if (targetMarkets.some((m) => location.includes(m) || timezone.includes(m))) {
+  const location = (data.location?.toLowerCase() || '').trim();
+  const timezone = (data.timezone?.toLowerCase() || '').trim();
+
+  const hasGeographyMatch = targetMarkets.some((m) => {
+    if (m.length <= 3) {
+      const regex = new RegExp(`\\b${m}\\b`, 'i');
+      return regex.test(location) || regex.test(timezone);
+    }
+    return location.includes(m) || timezone.includes(m);
+  });
+
+  if (hasGeographyMatch) {
     const score = 5;
     fitScore += score;
     breakdown.fit['Geography'] = score;
@@ -93,14 +115,22 @@ export const calculateLeadScore = (data: LeadScoringData): ScoringResult => {
     'founder',
     'ceo',
     'cto',
-    'v p',
+    'cfo',
+    'coo',
+    'v-p',
     'vp',
     'vice president',
-    'director',
-    'owner',
+    'c-level',
   ];
   const jobTitle = data.job_title?.toLowerCase() || '';
-  if (decisionMakerTitles.some((t) => jobTitle.includes(t))) {
+  if (
+    decisionMakerTitles.some((t) => {
+      if (t === 'vp') {
+        return /\bvp\b/i.test(jobTitle);
+      }
+      return jobTitle.includes(t);
+    })
+  ) {
     const score = 5;
     fitScore += score;
     breakdown.fit['Decision Maker'] = score;
@@ -148,11 +178,21 @@ export const calculateLeadScore = (data: LeadScoringData): ScoringResult => {
 
   // A. Interaction Level (Max 25)
 
-  // Lead Contacted (Call/Email/LinkedIn) +5
+  // Lead Contacted (Lead Source Selected) +5
+  // The user's manual refers to this as "Lead Contacted", but in the UI it's the "Lead Source" field.
+  // We award 5 points if ANY lead source is selected.
+  if (data.source_id) {
+    const score = 5;
+    engagementScore += score;
+    breakdown.engagement['Lead Source Selected'] = score;
+  }
+
+  // Also keep the original contacted_count check if they want to track actual activity too,
+  // but based on the request "if any lead source is selected give 5 points", we prioritize that.
   if ((data.contacted_count || 0) > 0) {
     const score = 5;
     engagementScore += score;
-    breakdown.engagement['Lead Contacted'] = score;
+    breakdown.engagement['Interaction (Calls/Emails)'] = score;
   }
 
   // Replied to message +10

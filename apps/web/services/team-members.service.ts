@@ -101,6 +101,14 @@ const validateInviteTokenService = asyncHandlerClient(async (token: string) => {
   return response.data;
 });
 
+const getInvitationsByEmailService = asyncHandlerClient(async (email: string) => {
+  const response = await ApiClient.get(
+    `/team-members/invite/by-email?email=${encodeURIComponent(email)}`,
+  );
+
+  return response.data;
+});
+
 export {
   getMembersService,
   getMemberByIdService,
@@ -110,6 +118,7 @@ export {
   resendInvitationService,
   acceptInviteService,
   validateInviteTokenService,
+  getInvitationsByEmailService,
   type WorkspaceMember,
   type InviteMemberPayload,
   type UpdateMemberPayload,

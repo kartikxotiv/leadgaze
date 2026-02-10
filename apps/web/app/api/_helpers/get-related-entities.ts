@@ -26,9 +26,14 @@ export async function getRelatedEntityIds(
     };
     const tableName = tableMap[entityType];
 
+    // Only select account_id for contacts and opportunities
+    const selectQuery = ['contact', 'opportunity'].includes(entityType)
+      ? 'created_from_lead_id, account_id'
+      : 'created_from_lead_id';
+
     const { data: entity } = await supabase
       .from(tableName as any)
-      .select('created_from_lead_id, account_id') // Try to get account_id too
+      .select(selectQuery)
       .eq('id', entityId)
       .single() as any;
 
