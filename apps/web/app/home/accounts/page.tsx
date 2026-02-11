@@ -107,6 +107,7 @@ export default function AccountsPage() {
   return (
     <ModuleGuard module="accounts">
       <PageHeader
+        className="sticky top-0 z-10 -mx-4 border-b bg-[#F2F2F2] p-4 lg:-mx-8 lg:px-8"
         title={`Accounts (${totalCount})`}
         description="Manage your client accounts and organizations"
       >
@@ -130,11 +131,11 @@ export default function AccountsPage() {
         </div>
       </PageHeader>
 
-      <PageBody>
-        <div className="space-y-6">
-          <Card>
-            <CardContent className="p-0">
-              <div className="overflow-hidden rounded-lg border">
+      <PageBody className="flex flex-1 flex-col bg-[#F2F2F2]">
+        <div className="flex flex-1 flex-col space-y-6">
+          <Card className="flex flex-1 flex-col border-none shadow-none">
+            <CardContent className="flex flex-1 flex-col p-2">
+              <div className="flex-1 overflow-y-auto rounded-lg">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -150,7 +151,7 @@ export default function AccountsPage() {
                   </TableHeader>
                   <TableBody>
                     {isLoading ? (
-                      <TableRow>
+                      <TableRow className="m-5">
                         <TableCell colSpan={6} className="h-24 text-center">
                           <div className="flex items-center justify-center">
                             <div className="text-gray-500">
@@ -176,7 +177,7 @@ export default function AccountsPage() {
                             <TableCell className="text-muted-foreground w-12">
                               {(currentPage - 1) * itemsPerPage + index + 1}
                             </TableCell>
-                            <TableCell className="font-medium">
+                            <TableCell className="p-3 font-medium">
                               {account.account_name}
                             </TableCell>
                             <TableCell className="text-muted-foreground">
@@ -212,7 +213,7 @@ export default function AccountsPage() {
           </Card>
 
           {totalCount > 0 && (
-            <div className="text-muted-foreground flex items-center justify-between px-2 text-sm">
+            <div className="text-muted-foreground sticky bottom-0 z-10 -mx-4 -mb-4 flex items-center justify-between border-t bg-[#F2F2F2] p-4 lg:-mx-8 lg:-mb-8">
               <div>
                 Showing{' '}
                 <span className="text-foreground font-medium">

@@ -133,6 +133,7 @@ export default function OpportunitiesPage() {
   return (
     <ModuleGuard module="opportunities">
       <PageHeader
+        className="sticky top-0 z-10 -mx-4 border-b bg-[#F2F2F2] p-4 lg:-mx-8 lg:px-8"
         title={`Opportunities (${totalCount})`}
         description="Manage your sales pipeline"
       >
@@ -170,16 +171,16 @@ export default function OpportunitiesPage() {
         </div>
       </PageHeader>
 
-      <PageBody>
-        <div className="space-y-6">
+      <PageBody className="flex flex-1 flex-col bg-[#F2F2F2]">
+        <div className="flex flex-1 flex-col space-y-6">
           {/* Table */}
-          <Card>
-            <CardContent className="p-0">
-              <div className="overflow-hidden rounded-lg border">
+          <Card className="flex flex-1 flex-col border-none shadow-none">
+            <CardContent className="flex flex-1 flex-col p-2">
+              <div className="flex-1 overflow-y-auto rounded-lg">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12 whitespace-nowrap">
+                      <TableHead className="m-1 w-12 whitespace-nowrap">
                         S. No.
                       </TableHead>
                       <TableHead>Opportunity Name</TableHead>
@@ -188,6 +189,7 @@ export default function OpportunitiesPage() {
                       <TableHead className="text-right">Amount</TableHead>
                       <TableHead>Close Date</TableHead>
                       <TableHead>Owner</TableHead>
+                      <TableHead>Created At</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -219,7 +221,7 @@ export default function OpportunitiesPage() {
                             <TableCell className="text-muted-foreground w-12">
                               {(currentPage - 1) * itemsPerPage + index + 1}
                             </TableCell>
-                            <TableCell className="font-medium">
+                            <TableCell className="p-3 font-medium">
                               {/* Link to detail page coming soon */}
                               {opp.opportunity_name}
                             </TableCell>
@@ -257,6 +259,9 @@ export default function OpportunitiesPage() {
                             <TableCell className="text-muted-foreground">
                               {opp.owner?.name || '-'}
                             </TableCell>
+                            <TableCell className="text-muted-foreground whitespace-nowrap">
+                              {new Date(opp.created_at).toLocaleDateString()}
+                            </TableCell>
                             <TableCell className="text-right">
                               <Button
                                 variant="link"
@@ -279,7 +284,7 @@ export default function OpportunitiesPage() {
           </Card>
 
           {totalCount > 0 && (
-            <div className="text-muted-foreground flex items-center justify-between px-2 text-sm">
+            <div className="text-muted-foreground sticky bottom-0 z-10 -mx-4 -mb-4 flex items-center justify-between border-t bg-[#F2F2F2] p-4 lg:-mx-8 lg:-mb-8">
               <div>
                 Showing{' '}
                 <span className="text-foreground font-medium">
