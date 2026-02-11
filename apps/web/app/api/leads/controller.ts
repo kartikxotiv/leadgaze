@@ -147,15 +147,57 @@ const getLeads = catchAsync(
       })
       .range(from, to);
 
-    if (error) {
-      console.error('Get leads error:', error);
-      throw error;
+    // For status breakdown, we need a query grouped by status_id
+    // We ignore the selected statusId filter here to show the whole distribution
+    let breakdownQuery = supabase
+      .from('crm_leads')
+      .select('status_id')
+      .eq('workspace_id', workspaceId)
+      .eq('is_deleted', false);
+
+    if (searchTerm) {
+      breakdownQuery = breakdownQuery.or(
+        `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%`,
+      );
     }
+
+    if (!isOwner) {
+      // Re-use logic for non-owners
+      const { data: assignedLeadIds } = await supabase
+        .from('lead_assignees')
+        .select('lead_id')
+        .eq('workspace_id', workspaceId)
+        .eq('assigned_to_user_id', user.id)
+        .eq('assignment_status', 'active');
+
+      const assignedIds = assignedLeadIds?.map((a) => a.lead_id) || [];
+
+      breakdownQuery = breakdownQuery.or(
+        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
+      );
+    }
+
+    const { data: breakdownData, error: breakdownError } = await breakdownQuery;
+
+    if (breakdownError) {
+      console.error('Get status breakdown error:', breakdownError);
+      throw breakdownError;
+    }
+
+    const statusBreakdownMap: Record<string, { count: number }> = {};
+    (breakdownData || []).forEach((lead) => {
+      const statusId = lead.status_id;
+      if (!statusBreakdownMap[statusId]) {
+        statusBreakdownMap[statusId] = { count: 0 };
+      }
+      statusBreakdownMap[statusId].count += 1;
+    });
 
     return NextResponse.json({
       message: 'Leads retrieved successfully',
       data: leads || [],
       count: count || 0,
+      statusBreakdown: statusBreakdownMap,
     });
   },
 );
