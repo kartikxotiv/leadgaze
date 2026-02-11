@@ -56,7 +56,7 @@ export default function LeadsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 15;
 
   const columns = useMemo(
     () => [
@@ -197,9 +197,9 @@ export default function LeadsPage() {
 
   return (
     <ModuleGuard module="leads">
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
         <PageHeader
-          className="-mx-4 mb-4 px-4 lg:-mx-0 lg:px-4"
+          className="-mx-4 px-4 lg:-mx-0 lg:px-4"
           title={`Leads (${totalCount})`}
           description="Manage and track your sales leads"
         >
@@ -308,7 +308,7 @@ export default function LeadsPage() {
           </div>
         </div>
       </div>
-      <PageBody>
+      <PageBody className="mt-6">
         <div className="space-y-6">
           {/* Table */}
           <Card>

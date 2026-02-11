@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -42,6 +42,14 @@ import {
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import { PageBody, PageHeader } from '@kit/ui/page';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@kit/ui/pagination';
 import { RadioGroup, RadioGroupItem } from '@kit/ui/radio-group';
 import {
   Select,
@@ -78,6 +86,8 @@ export default function DocumentPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -204,6 +214,10 @@ export default function DocumentPage() {
     onError: () => toast.error('Failed to delete document'),
   });
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, typeFilter]);
+
   const filteredDocuments = useMemo(() => {
     return documents.filter((doc: Document) => {
       const matchesSearch = doc.name
@@ -215,6 +229,14 @@ export default function DocumentPage() {
       return matchesSearch && matchesType;
     });
   }, [documents, searchTerm, typeFilter]);
+
+  const paginatedDocs = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredDocuments.slice(start, start + itemsPerPage);
+  }, [filteredDocuments, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredDocuments.length / itemsPerPage);
+  const totalCount = filteredDocuments.length;
 
   const handleUpload = () => {
     if (!file || !entityId) return;
@@ -459,6 +481,68 @@ export default function DocumentPage() {
                   )}
                 </TableBody>
               </Table>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between border-t px-6 py-4">
+                  <div className="text-muted-foreground text-sm">
+                    Showing{' '}
+                    <span className="text-foreground font-medium">
+                      {(currentPage - 1) * itemsPerPage + 1}
+                    </span>{' '}
+                    to{' '}
+                    <span className="text-foreground font-medium">
+                      {Math.min(currentPage * itemsPerPage, totalCount)}
+                    </span>{' '}
+                    of{' '}
+                    <span className="text-foreground font-medium">
+                      {totalCount}
+                    </span>{' '}
+                    documents
+                  </div>
+                  <Pagination className="w-auto">
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          className={
+                            currentPage === 1
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
+                          }
+                          onClick={() =>
+                            setCurrentPage((prev) => Math.max(prev - 1, 1))
+                          }
+                        />
+                      </PaginationItem>
+                      {Array.from({ length: totalPages }).map((_, i) => (
+                        <PaginationItem key={i}>
+                          <PaginationLink
+                            isActive={currentPage === i + 1}
+                            onClick={() => setCurrentPage(i + 1)}
+                            className="cursor-pointer"
+                          >
+                            {i + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          className={
+                            currentPage === totalPages
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
+                          }
+                          onClick={() =>
+                            setCurrentPage((prev) =>
+                              Math.min(prev + 1, totalPages),
+                            )
+                          }
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

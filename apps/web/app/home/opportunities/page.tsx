@@ -55,7 +55,7 @@ export default function OpportunitiesPage() {
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 15;
 
   const columns = useMemo(
     () => [

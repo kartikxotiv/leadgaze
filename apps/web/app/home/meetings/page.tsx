@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -40,6 +40,14 @@ import {
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import { PageBody, PageHeader } from '@kit/ui/page';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@kit/ui/pagination';
 import { RadioGroup, RadioGroupItem } from '@kit/ui/radio-group';
 import {
   Select,
@@ -76,6 +84,8 @@ export default function MeetingsPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -222,6 +232,10 @@ export default function MeetingsPage() {
     onError: () => toast.error('Failed to delete meeting'),
   });
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
   const filteredMeetings = useMemo(() => {
     return meetings.filter((meeting: Meeting) => {
       const matchesSearch =
@@ -242,6 +256,14 @@ export default function MeetingsPage() {
       return matchesSearch && matchesStatus;
     });
   }, [meetings, searchTerm, statusFilter]);
+
+  const paginatedMeetings = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredMeetings.slice(start, start + itemsPerPage);
+  }, [filteredMeetings, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredMeetings.length / itemsPerPage);
+  const totalCount = filteredMeetings.length;
 
   const handleCreate = () => {
     if (
@@ -434,12 +456,12 @@ export default function MeetingsPage() {
                         <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
                       </TableCell>
                     </TableRow>
-                  ) : filteredMeetings.length > 0 ? (
-                    filteredMeetings.map((meeting: Meeting, index: number) => (
+                  ) : paginatedMeetings.length > 0 ? (
+                    paginatedMeetings.map((meeting: Meeting, index: number) => (
                       <TableRow key={meeting.id}>
                         {isVisible('sno') && (
                           <TableCell className="text-muted-foreground pl-6">
-                            {index + 1}
+                            {(currentPage - 1) * itemsPerPage + index + 1}
                           </TableCell>
                         )}
                         {isVisible('title') && (
@@ -615,6 +637,68 @@ export default function MeetingsPage() {
                   )}
                 </TableBody>
               </Table>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between border-t px-6 py-4">
+                  <div className="text-muted-foreground text-sm">
+                    Showing{' '}
+                    <span className="text-foreground font-medium">
+                      {(currentPage - 1) * itemsPerPage + 1}
+                    </span>{' '}
+                    to{' '}
+                    <span className="text-foreground font-medium">
+                      {Math.min(currentPage * itemsPerPage, totalCount)}
+                    </span>{' '}
+                    of{' '}
+                    <span className="text-foreground font-medium">
+                      {totalCount}
+                    </span>{' '}
+                    meetings
+                  </div>
+                  <Pagination className="w-auto">
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          className={
+                            currentPage === 1
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
+                          }
+                          onClick={() =>
+                            setCurrentPage((prev) => Math.max(prev - 1, 1))
+                          }
+                        />
+                      </PaginationItem>
+                      {Array.from({ length: totalPages }).map((_, i) => (
+                        <PaginationItem key={i}>
+                          <PaginationLink
+                            isActive={currentPage === i + 1}
+                            onClick={() => setCurrentPage(i + 1)}
+                            className="cursor-pointer"
+                          >
+                            {i + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          className={
+                            currentPage === totalPages
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
+                          }
+                          onClick={() =>
+                            setCurrentPage((prev) =>
+                              Math.min(prev + 1, totalPages),
+                            )
+                          }
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

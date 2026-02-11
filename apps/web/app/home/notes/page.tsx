@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -39,6 +39,14 @@ import {
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import { PageBody, PageHeader } from '@kit/ui/page';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@kit/ui/pagination';
 import { RadioGroup, RadioGroupItem } from '@kit/ui/radio-group';
 import {
   Select,
@@ -87,11 +95,19 @@ import { getOpportunitiesService } from '~/services/opportunities.service';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export default function NotesPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newNoteContent, setNewNoteContent] = useState('');
@@ -218,6 +234,10 @@ export default function NotesPage() {
     onError: () => toast.error('Failed to delete note'),
   });
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, categoryFilter]);
+
   const filteredNotes = useMemo(() => {
     return notes.filter((note: Note) => {
       const matchesSearch = note.content
@@ -231,6 +251,14 @@ export default function NotesPage() {
       return matchesSearch && matchesCategory;
     });
   }, [notes, searchTerm, categoryFilter]);
+
+  const paginatedNotes = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredNotes.slice(start, start + itemsPerPage);
+  }, [filteredNotes, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredNotes.length / itemsPerPage);
+  const totalCount = filteredNotes.length;
 
   const handleEdit = (note: Note) => {
     setEditingNote(note);
@@ -404,12 +432,12 @@ export default function NotesPage() {
                         <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
                       </TableCell>
                     </TableRow>
-                  ) : filteredNotes.length > 0 ? (
-                    filteredNotes.map((note: Note, index: number) => (
+                  ) : paginatedNotes.length > 0 ? (
+                    paginatedNotes.map((note: Note, index: number) => (
                       <TableRow key={note.id}>
                         {isVisible('sno') && (
                           <TableCell className="text-muted-foreground pl-6">
-                            {index + 1}
+                            {(currentPage - 1) * itemsPerPage + index + 1}
                           </TableCell>
                         )}
                         {isVisible('category') && (
@@ -497,6 +525,68 @@ export default function NotesPage() {
                   )}
                 </TableBody>
               </Table>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between border-t px-6 py-4">
+                  <div className="text-muted-foreground text-sm">
+                    Showing{' '}
+                    <span className="text-foreground font-medium">
+                      {(currentPage - 1) * itemsPerPage + 1}
+                    </span>{' '}
+                    to{' '}
+                    <span className="text-foreground font-medium">
+                      {Math.min(currentPage * itemsPerPage, totalCount)}
+                    </span>{' '}
+                    of{' '}
+                    <span className="text-foreground font-medium">
+                      {totalCount}
+                    </span>{' '}
+                    notes
+                  </div>
+                  <Pagination className="w-auto">
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          className={
+                            currentPage === 1
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
+                          }
+                          onClick={() =>
+                            setCurrentPage((prev) => Math.max(prev - 1, 1))
+                          }
+                        />
+                      </PaginationItem>
+                      {Array.from({ length: totalPages }).map((_, i) => (
+                        <PaginationItem key={i}>
+                          <PaginationLink
+                            isActive={currentPage === i + 1}
+                            onClick={() => setCurrentPage(i + 1)}
+                            className="cursor-pointer"
+                          >
+                            {i + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          className={
+                            currentPage === totalPages
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
+                          }
+                          onClick={() =>
+                            setCurrentPage((prev) =>
+                              Math.min(prev + 1, totalPages),
+                            )
+                          }
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
