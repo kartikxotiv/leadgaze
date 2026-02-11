@@ -59,7 +59,7 @@ import EditLeadDialog from '../components/edit-lead-dialog';
 import { EmailLeadDialog } from '../components/email-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
 import { LogCallDialog } from '../components/log-call-dialog';
-import { PublicPrivateToggle } from '~/home/_components/public-private-toggle';
+
 import { getWorkspaceEmailAccountService } from '~/services/email.service';
 
 export default function LeadDetailsPage() {
