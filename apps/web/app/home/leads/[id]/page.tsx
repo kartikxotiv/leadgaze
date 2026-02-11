@@ -97,6 +97,13 @@ export default function LeadDetailsPage() {
   const editPermission = usePermissionDetail('leads', 'edit');
   const canEdit = useCanAccessData(editPermission, lead?.owner_id, user?.id);
 
+  const convertPermission = usePermissionDetail('leads', 'convert');
+  const canConvert = useCanAccessData(
+    convertPermission,
+    lead?.owner_id,
+    user?.id,
+  );
+
   const { data: statuses = [], isLoading: statusesLoading } = useQuery({
     queryKey: ['lead-statuses', workspace?.id],
     queryFn: () => {
@@ -267,9 +274,9 @@ export default function LeadDetailsPage() {
               size="sm"
               onClick={handleConvertLead}
               className="flex h-8 items-center justify-center px-4"
-              disabled={isSaving || !canEdit}
+              disabled={isSaving || !canConvert}
               title={
-                !canEdit
+                !canConvert
                   ? 'You do not have permission to convert this lead'
                   : ''
               }
