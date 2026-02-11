@@ -419,7 +419,7 @@ export default function LeadDetailsPage() {
               <CardHeader>
                 <CardTitle className="text-lg">About</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {lead.company_name && (
                   <EditableField
                     label="Company"
@@ -495,7 +495,7 @@ export default function LeadDetailsPage() {
                   />
                 )}
                 {lead.notes && (
-                  <div>
+                  <div className="md:col-span-2">
                     <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
                       Notes
                     </p>
@@ -512,7 +512,7 @@ export default function LeadDetailsPage() {
               <CardHeader>
                 <CardTitle className="text-lg">Contact Information</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {lead.email && (
                   <div className="flex items-start justify-between">
                     <div>

@@ -324,6 +324,26 @@ export default function OpportunityDetailsPage() {
                     {opportunity.lead_source || '-'}
                   </span>
                 </div>
+
+                {opportunity.description && (
+                  <div className="col-span-2 space-y-1">
+                    <p className="text-muted-foreground text-sm font-medium">
+                      Description
+                    </p>
+                    <p className="text-sm whitespace-pre-wrap">
+                      {opportunity.description}
+                    </p>
+                  </div>
+                )}
+
+                {opportunity.competitor && (
+                  <div className="col-span-2 space-y-1">
+                    <p className="text-muted-foreground text-sm font-medium">
+                      Competitor
+                    </p>
+                    <span className="text-sm">{opportunity.competitor}</span>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
