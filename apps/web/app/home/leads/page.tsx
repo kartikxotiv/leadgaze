@@ -59,7 +59,7 @@ export default function LeadsPage() {
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const {
-    data: leadsData = { data: [], count: 0 },
+    data: leadsData = { data: [], count: 0, statusBreakdown: {} },
     isLoading,
     error,
     refetch,
@@ -117,7 +117,7 @@ export default function LeadsPage() {
 
   if (error) {
     return (
-      <>
+      <ModuleGuard module="leads">
         <PageHeader title="Leads" description="Manage your sales leads" />
         <PageBody>
           <Card>
@@ -131,62 +131,114 @@ export default function LeadsPage() {
             </CardContent>
           </Card>
         </PageBody>
-      </>
+      </ModuleGuard>
     );
   }
 
   return (
     <ModuleGuard module="leads">
-      <PageHeader
-        className="-mx-4 mb-4 px-4 lg:-mx-0 lg:px-4"
-        title={`Leads (${totalCount})`}
-        description="Manage and track your sales leads"
-      >
-        <div className="flex items-center gap-3">
-          <div className="relative w-64 lg:w-72">
-            <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search leads..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-9 pl-10"
-            />
+      <div className="flex flex-col gap-6">
+        <PageHeader
+          className="-mx-4 mb-4 px-4 lg:-mx-0 lg:px-4"
+          title={`Leads (${totalCount})`}
+          description="Manage and track your sales leads"
+        >
+          <div className="flex items-center gap-3">
+            <div className="relative w-64 lg:w-72">
+              <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search leads..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-9 pl-10"
+              />
+            </div>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="h-9 w-40">
+                <Filter className="mr-2 h-4 w-4 text-gray-400" />
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                {statuses.map((status: any) => (
+                  <SelectItem key={status.id} value={status.id}>
+                    {status.status_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+
+            <Button
+              onClick={() => setIsCreateDialogOpen(true)}
+              variant="outline"
+              className="h-9 gap-2"
+            >
+              <FileUp className="h-4 w-4 text-gray-500" />
+              Import
+            </Button>
+            <Button
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="h-9 gap-2 bg-blue-600 text-white hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4" />
+              New Lead
+            </Button>
           </div>
-          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="h-9 w-40">
-              <Filter className="mr-2 h-4 w-4 text-gray-400" />
-              <SelectValue placeholder="All Statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              {statuses.map((status: any) => (
-                <SelectItem key={status.id} value={status.id}>
-                  {status.status_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        </PageHeader>
 
-          <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+        {/* Status Distribution Cards */}
+        <div className="px-6">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <Card
+              className={`hover:border-primary/50 cursor-pointer transition-all ${selectedStatus === 'all' ? 'border-primary ring-primary ring-1' : ''}`}
+              onClick={() => setSelectedStatus('all')}
+            >
+              <CardContent className="p-3">
+                <div className="flex flex-col gap-1">
+                  <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
+                    All Leads ({totalCount})
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-lg font-bold">{totalCount}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Button
-            onClick={() => setIsCreateDialogOpen(true)}
-            variant="outline"
-            className="h-9 gap-2"
-          >
-            <FileUp className="h-4 w-4 text-gray-500" />
-            Import
-          </Button>
-          <Button
-            onClick={() => setIsCreateDialogOpen(true)}
-            className="h-9 gap-2 bg-blue-600 text-white hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4" />
-            New Lead
-          </Button>
+            {statuses.map((status: any) => {
+              const stats = leadsData.statusBreakdown[status.id] || {
+                count: 0,
+              };
+              return (
+                <Card
+                  key={status.id}
+                  className={`hover:border-primary/50 cursor-pointer transition-all ${selectedStatus === status.id ? 'border-primary ring-primary ring-1' : ''}`}
+                  onClick={() => setSelectedStatus(status.id)}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="h-2 w-2 rounded-full"
+                          style={{ backgroundColor: status.color }}
+                        />
+                        <span className="text-muted-foreground truncate text-[10px] font-medium tracking-wider uppercase">
+                          {status.status_name} ({stats.count})
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-lg font-bold">{stats.count}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
-      </PageHeader>
-
+      </div>
       <PageBody>
         <div className="space-y-6">
           {/* Table */}

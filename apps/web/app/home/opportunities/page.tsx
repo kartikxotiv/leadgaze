@@ -58,7 +58,12 @@ export default function OpportunitiesPage() {
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const {
-    data: opportunitiesData = { data: [], count: 0 },
+    data: opportunitiesData = {
+      data: [],
+      count: 0,
+      totalAmount: 0,
+      stageBreakdown: {},
+    },
     isLoading,
     error,
     refetch,
@@ -132,43 +137,109 @@ export default function OpportunitiesPage() {
 
   return (
     <ModuleGuard module="opportunities">
-      <PageHeader
-        title={`Opportunities (${totalCount})`}
-        description="Manage your sales pipeline"
-      >
-        <div className="flex items-center gap-3">
-          <div className="relative w-64 lg:w-72">
-            <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search by name or account..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-9 pl-10"
-            />
+      <div className="flex flex-col gap-6">
+        <PageHeader
+          title={`Opportunities (${totalCount})`}
+          description="Manage your sales pipeline"
+        >
+          <div className="flex items-center gap-3">
+            <div className="relative w-64 lg:w-72">
+              <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search by name or account..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-9 pl-10"
+              />
+            </div>
+            <Select value={selectedStage} onValueChange={setSelectedStage}>
+              <SelectTrigger className="h-9 w-48">
+                <Filter className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Filter by stage" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Stages</SelectItem>
+                {stages.map((stage: any) => (
+                  <SelectItem key={stage.id} value={stage.id}>
+                    {stage.status_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="h-9 gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Create Opportunity
+            </Button>
           </div>
-          <Select value={selectedStage} onValueChange={setSelectedStage}>
-            <SelectTrigger className="h-9 w-48">
-              <Filter className="mr-2 h-4 w-4" />
-              <SelectValue placeholder="Filter by stage" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Stages</SelectItem>
-              {stages.map((stage: any) => (
-                <SelectItem key={stage.id} value={stage.id}>
-                  {stage.status_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            onClick={() => setIsCreateDialogOpen(true)}
-            className="h-9 gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Create Opportunity
-          </Button>
+        </PageHeader>
+
+        {/* Pipeline Summary Cards */}
+        <div className="px-6">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+            <Card
+              className={`hover:border-primary/50 cursor-pointer transition-all ${selectedStage === 'all' ? 'border-primary ring-primary ring-1' : ''}`}
+              onClick={() => setSelectedStage('all')}
+            >
+              <CardContent className="p-3">
+                <div className="flex flex-col gap-1">
+                  <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
+                    All Opportunities ({totalCount})
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-lg font-bold">
+                      {new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'USD',
+                        maximumFractionDigits: 0,
+                      }).format(opportunitiesData.totalAmount || 0)}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {stages.map((stage: any) => {
+              const stats = opportunitiesData.stageBreakdown[stage.id] || {
+                total_amount: 0,
+                count: 0,
+              };
+              return (
+                <Card
+                  key={stage.id}
+                  className={`hover:border-primary/50 cursor-pointer transition-all ${selectedStage === stage.id ? 'border-primary ring-primary ring-1' : ''}`}
+                  onClick={() => setSelectedStage(stage.id)}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="h-2 w-2 rounded-full"
+                          style={{ backgroundColor: stage.color }}
+                        />
+                        <span className="text-muted-foreground truncate text-[10px] font-medium tracking-wider uppercase">
+                          {stage.status_name} ({stats.count})
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-lg font-bold">
+                          {new Intl.NumberFormat('en-US', {
+                            style: 'currency',
+                            currency: 'USD',
+                            maximumFractionDigits: 0,
+                          }).format(stats.total_amount)}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
-      </PageHeader>
+      </div>
 
       <PageBody>
         <div className="space-y-6">

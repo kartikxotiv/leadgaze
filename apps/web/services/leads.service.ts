@@ -148,6 +148,10 @@ const getLeadsService = asyncHandlerClient(
     return {
       data: (response.data?.data || []) as Lead[],
       count: (response.data?.count || 0) as number,
+      statusBreakdown: (response.data?.statusBreakdown || {}) as Record<
+        string,
+        { count: number }
+      >,
     };
   },
 );
@@ -223,15 +227,13 @@ const convertLeadService = asyncHandlerClient(
 );
 
 const sendLeadEmailService = asyncHandlerClient(
-  async (
-    payload: {
-      leadId: string;
-      subject: string;
-      body: string;
-      cc?: string | string[];
-      bcc?: string | string[];
-    },
-  ) => {
+  async (payload: {
+    leadId: string;
+    subject: string;
+    body: string;
+    cc?: string | string[];
+    bcc?: string | string[];
+  }) => {
     console.log({ payload });
 
     const response = await ApiClient.post(`/email/send`, payload);
