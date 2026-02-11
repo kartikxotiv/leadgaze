@@ -10,6 +10,7 @@ import { FileUp, Filter, Plus, Search } from 'lucide-react';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import {
@@ -35,6 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
@@ -55,6 +57,64 @@ export default function LeadsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
+
+  const columns = useMemo(
+    () => [
+      { id: 'sno', label: 'S. No.' },
+      { id: 'name', label: 'Name' },
+      { id: 'first_name', label: 'First Name' },
+      { id: 'last_name', label: 'Last Name' },
+      { id: 'job_title', label: 'Job Title' },
+      { id: 'email', label: 'Email' },
+      { id: 'alt_email', label: 'Alt Email' },
+      { id: 'phone', label: 'Phone' },
+      { id: 'mobile', label: 'Mobile' },
+      { id: 'company', label: 'Company' },
+      { id: 'company_website', label: 'Company Website' },
+      { id: 'company_linkedin', label: 'Company LinkedIn' },
+      { id: 'linkedin', label: 'LinkedIn' },
+      { id: 'department', label: 'Department' },
+      { id: 'industry', label: 'Industry' },
+      { id: 'company_size', label: 'Company Size' },
+      { id: 'location', label: 'Location' },
+      { id: 'timezone', label: 'Timezone' },
+      { id: 'status', label: 'Status' },
+      { id: 'source', label: 'Source' },
+      { id: 'trigger', label: 'Trigger' },
+      { id: 'notes', label: 'Notes' },
+      { id: 'is_public', label: 'Public' },
+      { id: 'score', label: 'Score' },
+    ],
+    [],
+  );
+
+  const { visibility, toggleVisibility, isVisible, reset } =
+    useColumnVisibility('leads', {
+      sno: true,
+      name: true,
+      first_name: false,
+      last_name: false,
+      job_title: false,
+      email: true,
+      alt_email: false,
+      phone: false,
+      mobile: false,
+      company: true,
+      company_website: false,
+      company_linkedin: false,
+      linkedin: false,
+      department: false,
+      industry: false,
+      company_size: false,
+      location: false,
+      timezone: false,
+      status: true,
+      source: false,
+      trigger: false,
+      notes: false,
+      is_public: false,
+      score: true,
+    });
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -185,6 +245,15 @@ export default function LeadsPage() {
               <Plus className="h-4 w-4" />
               New Lead
             </Button>
+
+            <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+
+            <ColumnVisibilitySelector
+              columns={columns}
+              visibility={visibility}
+              onToggle={toggleVisibility}
+              onReset={reset}
+            />
           </div>
         </PageHeader>
 
@@ -248,21 +317,66 @@ export default function LeadsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12 whitespace-nowrap">
-                        S. No.
-                      </TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Company</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Score</TableHead>
+                      {isVisible('sno') && (
+                        <TableHead className="w-12 whitespace-nowrap">
+                          S. No.
+                        </TableHead>
+                      )}
+                      {isVisible('name') && <TableHead>Name</TableHead>}
+                      {isVisible('first_name') && (
+                        <TableHead>First Name</TableHead>
+                      )}
+                      {isVisible('last_name') && (
+                        <TableHead>Last Name</TableHead>
+                      )}
+                      {isVisible('job_title') && (
+                        <TableHead>Job Title</TableHead>
+                      )}
+                      {isVisible('email') && <TableHead>Email</TableHead>}
+                      {isVisible('alt_email') && (
+                        <TableHead>Alt Email</TableHead>
+                      )}
+                      {isVisible('phone') && <TableHead>Phone</TableHead>}
+                      {isVisible('mobile') && <TableHead>Mobile</TableHead>}
+                      {isVisible('company') && <TableHead>Company</TableHead>}
+                      {isVisible('company_website') && (
+                        <TableHead>Company Website</TableHead>
+                      )}
+                      {isVisible('company_linkedin') && (
+                        <TableHead>Company LinkedIn</TableHead>
+                      )}
+                      {isVisible('linkedin') && <TableHead>LinkedIn</TableHead>}
+                      {isVisible('department') && (
+                        <TableHead>Department</TableHead>
+                      )}
+                      {isVisible('industry') && <TableHead>Industry</TableHead>}
+                      {isVisible('company_size') && (
+                        <TableHead>Company Size</TableHead>
+                      )}
+                      {isVisible('location') && <TableHead>Location</TableHead>}
+                      {isVisible('timezone') && <TableHead>Timezone</TableHead>}
+                      {isVisible('status') && <TableHead>Status</TableHead>}
+                      {isVisible('source') && <TableHead>Source</TableHead>}
+                      {isVisible('trigger') && <TableHead>Trigger</TableHead>}
+                      {isVisible('notes') && <TableHead>Notes</TableHead>}
+                      {isVisible('is_public') && <TableHead>Public</TableHead>}
+                      {isVisible('score') && <TableHead>Score</TableHead>}
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
+                        <TableCell
+                          colSpan={
+                            visibility
+                              ? Object.values(visibility).filter(
+                                  (v) => v !== false,
+                                ).length + 1
+                              : 7
+                          }
+                          className="h-24 text-center"
+                        >
                           <div className="flex items-center justify-center">
                             <div className="text-gray-500">
                               Loading leads...
@@ -272,7 +386,16 @@ export default function LeadsPage() {
                       </TableRow>
                     ) : paginatedLeads.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
+                        <TableCell
+                          colSpan={
+                            visibility
+                              ? Object.values(visibility).filter(
+                                  (v) => v !== false,
+                                ).length + 1
+                              : 7
+                          }
+                          className="h-24 text-center"
+                        >
                           <div className="text-gray-500">
                             {searchTerm || selectedStatus !== 'all'
                               ? 'No leads match your filters'
@@ -283,86 +406,204 @@ export default function LeadsPage() {
                     ) : (
                       paginatedLeads.map((lead: Lead, index: number) => (
                         <TableRow key={lead.id}>
-                          <TableCell className="text-muted-foreground w-12">
-                            {(currentPage - 1) * itemsPerPage + index + 1}
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            <Link
-                              href={`/home/leads/${lead.id}`}
-                              className="hover:underline"
-                            >
-                              {lead.first_name} {lead.last_name || ''}
-                            </Link>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {lead.email || '-'}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {lead.company_name || '-'}
-                          </TableCell>
-                          <TableCell>
-                            {lead.status && (
-                              <Badge
-                                variant="secondary"
-                                className="gap-1"
-                                style={{
-                                  backgroundColor: `${lead.status.color}20`,
-                                  color: lead.status.color,
-                                  borderColor: `${lead.status.color}40`,
-                                }}
+                          {isVisible('sno') && (
+                            <TableCell className="text-muted-foreground w-12">
+                              {(currentPage - 1) * itemsPerPage + index + 1}
+                            </TableCell>
+                          )}
+                          {isVisible('name') && (
+                            <TableCell className="font-medium">
+                              <Link
+                                href={`/home/leads/${lead.id}`}
+                                className="hover:underline"
                               >
-                                {lead.status.status_name}
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <div className="bg-secondary h-2 w-16 overflow-hidden rounded-full">
-                                <div
-                                  className="bg-primary h-full transition-all"
+                                {lead.first_name} {lead.last_name || ''}
+                              </Link>
+                            </TableCell>
+                          )}
+                          {isVisible('first_name') && (
+                            <TableCell className="text-muted-foreground">
+                              {lead.first_name || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('last_name') && (
+                            <TableCell className="text-muted-foreground">
+                              {lead.last_name || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('job_title') && (
+                            <TableCell className="text-muted-foreground">
+                              {lead.job_title || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('email') && (
+                            <TableCell className="text-muted-foreground">
+                              {lead.email || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('alt_email') && (
+                            <TableCell className="text-muted-foreground">
+                              {lead.alt_email || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('phone') && (
+                            <TableCell className="text-muted-foreground">
+                              {lead.phone_number || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('mobile') && (
+                            <TableCell className="text-muted-foreground">
+                              {lead.mobile_number || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('company') && (
+                            <TableCell className="text-muted-foreground">
+                              {lead.company_name || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('company_website') && (
+                            <TableCell className="text-muted-foreground">
+                              {lead.company_website || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('company_linkedin') && (
+                            <TableCell className="text-muted-foreground max-w-[150px] truncate">
+                              {lead.company_linkedin_url || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('linkedin') && (
+                            <TableCell className="text-muted-foreground max-w-[150px] truncate">
+                              {lead.linkedin_url || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('department') && (
+                            <TableCell className="text-muted-foreground">
+                              {lead.department || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('industry') && (
+                            <TableCell className="text-muted-foreground">
+                              {lead.industry?.industry_name || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('company_size') && (
+                            <TableCell className="text-muted-foreground">
+                              {lead.company_size || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('location') && (
+                            <TableCell className="text-muted-foreground">
+                              {lead.location || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('timezone') && (
+                            <TableCell className="text-muted-foreground">
+                              {lead.timezone || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('status') && (
+                            <TableCell>
+                              {lead.status && (
+                                <Badge
+                                  variant="secondary"
+                                  className="gap-1"
                                   style={{
-                                    width: `${Math.min(
-                                      calculateLeadScore({
-                                        first_name: lead.first_name,
-                                        last_name: lead.last_name,
-                                        company_name: lead.company_name,
-                                        industry_id:
-                                          lead.industry_id || lead.industry?.id,
-                                        company_size: lead.company_size,
-                                        location: lead.location,
-                                        timezone: lead.timezone,
-                                        job_title: lead.job_title,
-                                        contacted_count: lead.contacted_count,
-                                        status_key: lead.status?.status_key,
-                                        custom_fields: lead.custom_fields || {},
-                                        source_id: lead.source_id,
-                                      }).totalScore,
-                                      100,
-                                    )}%`,
+                                    backgroundColor: `${lead.status.color}20`,
+                                    color: lead.status.color,
+                                    borderColor: `${lead.status.color}40`,
                                   }}
-                                />
+                                >
+                                  {lead.status.status_name}
+                                </Badge>
+                              )}
+                            </TableCell>
+                          )}
+                          {isVisible('source') && (
+                            <TableCell className="text-muted-foreground">
+                              {lead.source?.source_name || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('trigger') && (
+                            <TableCell className="text-muted-foreground">
+                              {lead.trigger || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('notes') && (
+                            <TableCell className="text-muted-foreground max-w-[200px] truncate">
+                              {lead.notes || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('is_public') && (
+                            <TableCell className="text-muted-foreground text-center">
+                              {lead.is_public ? (
+                                <Badge
+                                  variant="outline"
+                                  className="border-green-200 bg-green-50 text-green-600"
+                                >
+                                  Public
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className="border-amber-200 bg-amber-50 text-amber-600"
+                                >
+                                  Private
+                                </Badge>
+                              )}
+                            </TableCell>
+                          )}
+                          {isVisible('score') && (
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <div className="bg-secondary h-2 w-16 overflow-hidden rounded-full">
+                                  <div
+                                    className="bg-primary h-full transition-all"
+                                    style={{
+                                      width: `${Math.min(
+                                        calculateLeadScore({
+                                          first_name: lead.first_name,
+                                          last_name: lead.last_name,
+                                          company_name: lead.company_name,
+                                          industry_id:
+                                            lead.industry_id ||
+                                            lead.industry?.id,
+                                          company_size: lead.company_size,
+                                          location: lead.location,
+                                          timezone: lead.timezone,
+                                          job_title: lead.job_title,
+                                          contacted_count: lead.contacted_count,
+                                          status_key: lead.status?.status_key,
+                                          custom_fields:
+                                            lead.custom_fields || {},
+                                          source_id: lead.source_id,
+                                        }).totalScore,
+                                        100,
+                                      )}%`,
+                                    }}
+                                  />
+                                </div>
+                                <span className="text-muted-foreground w-8 text-right text-sm">
+                                  {
+                                    calculateLeadScore({
+                                      first_name: lead.first_name,
+                                      last_name: lead.last_name,
+                                      company_name: lead.company_name,
+                                      industry_id:
+                                        lead.industry_id || lead.industry?.id,
+                                      company_size: lead.company_size,
+                                      location: lead.location,
+                                      timezone: lead.timezone,
+                                      job_title: lead.job_title,
+                                      contacted_count: lead.contacted_count,
+                                      status_key: lead.status?.status_key,
+                                      custom_fields: lead.custom_fields || {},
+                                      source_id: lead.source_id,
+                                    }).totalScore
+                                  }
+                                </span>
                               </div>
-                              <span className="text-muted-foreground w-8 text-right text-sm">
-                                {
-                                  calculateLeadScore({
-                                    first_name: lead.first_name,
-                                    last_name: lead.last_name,
-                                    company_name: lead.company_name,
-                                    industry_id:
-                                      lead.industry_id || lead.industry?.id,
-                                    company_size: lead.company_size,
-                                    location: lead.location,
-                                    timezone: lead.timezone,
-                                    job_title: lead.job_title,
-                                    contacted_count: lead.contacted_count,
-                                    status_key: lead.status?.status_key,
-                                    custom_fields: lead.custom_fields || {},
-                                    source_id: lead.source_id,
-                                  }).totalScore
-                                }
-                              </span>
-                            </div>
-                          </TableCell>
+                            </TableCell>
+                          )}
                           <TableCell className="text-right">
                             <Link
                               href={`/home/leads/${lead.id}`}

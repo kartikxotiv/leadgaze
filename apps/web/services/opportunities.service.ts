@@ -23,6 +23,7 @@ export interface Opportunity {
   is_closed?: boolean;
   is_won?: boolean;
   close_reason?: string;
+  is_public?: boolean;
   // Relations
   stage?: {
     id: string;

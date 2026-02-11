@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import {
   Dialog,
   DialogContent,
@@ -55,6 +56,7 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
@@ -88,6 +90,36 @@ export default function MeetingsPage() {
     entity_type: 'lead',
     entityId: '',
   });
+
+  const meetingColumns = useMemo(
+    () => [
+      { id: 'sno', label: 'S. No.' },
+      { id: 'title', label: 'Meeting Title' },
+      { id: 'description', label: 'Description' },
+      { id: 'location', label: 'Location' },
+      { id: 'meeting_link', label: 'Meeting Link' },
+      { id: 'host', label: 'Host' },
+      { id: 'date_time', label: 'Date & Time' },
+      { id: 'status', label: 'Status' },
+      { id: 'is_public', label: 'Public' },
+      { id: 'entity', label: 'Entity' },
+    ],
+    [],
+  );
+
+  const { visibility, toggleVisibility, isVisible, reset } =
+    useColumnVisibility('meetings', {
+      sno: true,
+      title: true,
+      description: false,
+      location: true,
+      meeting_link: false,
+      host: true,
+      date_time: true,
+      status: true,
+      is_public: false,
+      entity: true,
+    });
 
   const { data: meetings = [], isLoading } = useQuery({
     queryKey: ['meetings', workspace?.id],
@@ -301,34 +333,32 @@ export default function MeetingsPage() {
   return (
     <>
       <PageHeader
-        title="Meetings"
+        title={`Meetings (${meetings.length})`}
         description="Manage and schedule your meetings with leads and clients"
       >
-        <div className="flex flex-col items-center gap-4 md:flex-row">
-          <div className="relative w-full min-w-[200px] flex-1 md:w-64">
-            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+        <div className="flex items-center gap-3">
+          <div className="relative w-64 lg:w-72">
+            <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Search by title or host..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="h-9 pl-10"
             />
           </div>
-          <div className="flex w-full items-center gap-2 md:w-auto">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-[150px]">
-                <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="scheduled">Scheduled</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-9 w-40">
+              <Filter className="mr-2 h-4 w-4 text-gray-400" />
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="scheduled">Scheduled</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
           <Button
-            className="gap-2"
+            className="h-9 gap-2"
             onClick={() => {
               setFormData({
                 title: '',
@@ -346,6 +376,15 @@ export default function MeetingsPage() {
             <Plus className="h-4 w-4" />
             New Meeting
           </Button>
+
+          <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+
+          <ColumnVisibilitySelector
+            columns={meetingColumns}
+            visibility={visibility}
+            onToggle={toggleVisibility}
+            onReset={reset}
+          />
         </div>
       </PageHeader>
 
@@ -357,92 +396,182 @@ export default function MeetingsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="pl-6">Meeting Title</TableHead>
-                    <TableHead>Host</TableHead>
-                    <TableHead>Date & Time</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Entity</TableHead>
+                    {isVisible('sno') && (
+                      <TableHead className="w-[80px] pl-6">S. No.</TableHead>
+                    )}
+                    {isVisible('title') && <TableHead>Meeting Title</TableHead>}
+                    {isVisible('description') && (
+                      <TableHead>Description</TableHead>
+                    )}
+                    {isVisible('location') && <TableHead>Location</TableHead>}
+                    {isVisible('meeting_link') && (
+                      <TableHead>Meeting Link</TableHead>
+                    )}
+                    {isVisible('host') && <TableHead>Host</TableHead>}
+
+                    {isVisible('date_time') && (
+                      <TableHead>Date & Time</TableHead>
+                    )}
+                    {isVisible('status') && <TableHead>Status</TableHead>}
+                    {isVisible('is_public') && <TableHead>Public</TableHead>}
+                    {isVisible('entity') && <TableHead>Entity</TableHead>}
                     <TableHead className="pr-6 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
+                      <TableCell
+                        colSpan={
+                          visibility
+                            ? Object.values(visibility).filter(
+                                (v) => v !== false,
+                              ).length + 1
+                            : 6
+                        }
+                        className="h-24 text-center"
+                      >
                         <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
                       </TableCell>
                     </TableRow>
                   ) : filteredMeetings.length > 0 ? (
-                    filteredMeetings.map((meeting: Meeting) => (
+                    filteredMeetings.map((meeting: Meeting, index: number) => (
                       <TableRow key={meeting.id}>
-                        <TableCell className="pl-6 font-medium">
-                          <div>
-                            <p>{meeting.title}</p>
-                            {meeting.description && (
-                              <p className="text-muted-foreground text-xs font-normal">
+                        {isVisible('sno') && (
+                          <TableCell className="text-muted-foreground pl-6">
+                            {index + 1}
+                          </TableCell>
+                        )}
+                        {isVisible('title') && (
+                          <TableCell className="font-medium">
+                            <div className={isVisible('sno') ? '' : 'pl-6'}>
+                              <p>{meeting.title}</p>
+                            </div>
+                          </TableCell>
+                        )}
+                        {isVisible('description') && (
+                          <TableCell className="text-muted-foreground">
+                            {meeting.description ? (
+                              <p
+                                className="max-w-[200px] truncate"
+                                title={meeting.description}
+                              >
                                 {meeting.description}
                               </p>
+                            ) : (
+                              '-'
                             )}
-                            {meeting.location && (
-                              <p className="text-muted-foreground flex items-center gap-1 text-[10px] font-normal">
+                          </TableCell>
+                        )}
+                        {isVisible('location') && (
+                          <TableCell className="text-muted-foreground">
+                            {meeting.location ? (
+                              <p className="flex items-center gap-1">
                                 <MapPin className="h-3 w-3" />{' '}
                                 {meeting.location}
                               </p>
+                            ) : (
+                              '-'
                             )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold">
-                              {(meeting.created_by_user?.name || 'U')
-                                .split(' ')
-                                .map((n) => n[0])
-                                .join('')}
+                          </TableCell>
+                        )}
+                        {isVisible('meeting_link') && (
+                          <TableCell className="text-muted-foreground">
+                            {meeting.meeting_link ? (
+                              <a
+                                href={meeting.meeting_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
+                                Link
+                              </a>
+                            ) : (
+                              '-'
+                            )}
+                          </TableCell>
+                        )}
+                        {isVisible('host') && (
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold">
+                                {(meeting.created_by_user?.name || 'U')
+                                  .split(' ')
+                                  .map((n) => n[0])
+                                  .join('')}
+                              </div>
+                              <span className="text-sm">
+                                {meeting.created_by_user?.name || 'System'}
+                              </span>
                             </div>
-                            <span className="text-sm">
-                              {meeting.created_by_user?.name || 'System'}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium">
-                              {new Date(
-                                meeting.start_time,
-                              ).toLocaleDateString()}
-                            </span>
-                            <span className="text-muted-foreground text-xs">
-                              {new Date(meeting.start_time).toLocaleTimeString(
-                                [],
-                                {
+                          </TableCell>
+                        )}
+                        {isVisible('date_time') && (
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium">
+                                {new Date(
+                                  meeting.start_time,
+                                ).toLocaleDateString()}
+                              </span>
+                              <span className="text-muted-foreground text-xs">
+                                {new Date(
+                                  meeting.start_time,
+                                ).toLocaleTimeString([], {
                                   hour: '2-digit',
                                   minute: '2-digit',
-                                },
-                              )}{' '}
-                              -{' '}
-                              {new Date(meeting.end_time).toLocaleTimeString(
-                                [],
-                                {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                },
-                              )}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(meeting.start_time, meeting.end_time)}
-                        </TableCell>
-                        <TableCell>
-                          {meeting.entity_name && (
-                            <span
-                              className="text-muted-foreground text-xs"
-                              title={`${meeting.entity_type}: ${meeting.entity_name}`}
-                            >
-                              {meeting.entity_name}
-                            </span>
-                          )}
-                        </TableCell>
+                                })}{' '}
+                                -{' '}
+                                {new Date(meeting.end_time).toLocaleTimeString(
+                                  [],
+                                  {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  },
+                                )}
+                              </span>
+                            </div>
+                          </TableCell>
+                        )}
+                        {isVisible('status') && (
+                          <TableCell>
+                            {getStatusBadge(
+                              meeting.start_time,
+                              meeting.end_time,
+                            )}
+                          </TableCell>
+                        )}
+                        {isVisible('is_public') && (
+                          <TableCell className="text-muted-foreground text-center">
+                            {meeting.is_public ? (
+                              <Badge
+                                variant="outline"
+                                className="border-green-200 bg-green-50 text-green-600"
+                              >
+                                Public
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant="outline"
+                                className="border-amber-200 bg-amber-50 text-amber-600"
+                              >
+                                Private
+                              </Badge>
+                            )}
+                          </TableCell>
+                        )}
+                        {isVisible('entity') && (
+                          <TableCell>
+                            {meeting.entity_name && (
+                              <span
+                                className="text-muted-foreground text-xs"
+                                title={`${meeting.entity_type}: ${meeting.entity_name}`}
+                              >
+                                {meeting.entity_name}
+                              </span>
+                            )}
+                          </TableCell>
+                        )}
                         <TableCell className="pr-6 text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -471,7 +600,13 @@ export default function MeetingsPage() {
                   ) : (
                     <TableRow>
                       <TableCell
-                        colSpan={6}
+                        colSpan={
+                          visibility
+                            ? Object.values(visibility).filter(
+                                (v) => v !== false,
+                              ).length + 1
+                            : 6
+                        }
                         className="text-muted-foreground h-24 text-center"
                       >
                         No meetings found matching your filters.

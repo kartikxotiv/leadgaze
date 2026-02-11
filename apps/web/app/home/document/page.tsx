@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import {
   Dialog,
   DialogContent,
@@ -57,6 +58,7 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
@@ -84,6 +86,30 @@ export default function DocumentPage() {
   const [file, setFile] = useState<File | null>(null);
   const [entityType, setEntityType] = useState('lead');
   const [entityId, setEntityId] = useState('');
+
+  const documentColumns = useMemo(
+    () => [
+      { id: 'sno', label: 'S. No.' },
+      { id: 'name', label: 'Name' },
+      { id: 'type', label: 'Type' },
+      { id: 'size', label: 'Size' },
+      { id: 'uploader', label: 'Uploaded By' },
+      { id: 'entity', label: 'Entity' },
+      { id: 'last_modified', label: 'Last Modified' },
+    ],
+    [],
+  );
+
+  const { visibility, toggleVisibility, isVisible, reset } =
+    useColumnVisibility('documents', {
+      sno: true,
+      name: true,
+      type: true,
+      size: true,
+      uploader: true,
+      entity: true,
+      last_modified: true,
+    });
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ['documents', workspace?.id],
@@ -246,36 +272,34 @@ export default function DocumentPage() {
   return (
     <>
       <PageHeader
-        title="Documents"
+        title={`Documents (${documents.length})`}
         description="Manage and organize your files and documents"
       >
-        <div className="flex flex-col items-center gap-4 md:flex-row">
-          <div className="relative w-full min-w-[200px] flex-1 md:w-64">
-            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+        <div className="flex items-center gap-3">
+          <div className="relative w-64 lg:w-72">
+            <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Search documents..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="h-9 pl-10"
             />
           </div>
-          <div className="flex w-full items-center gap-2 md:w-auto">
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-full md:w-[150px]">
-                <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="File Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="pdf">PDF</SelectItem>
-                <SelectItem value="image">Image</SelectItem>
-                <SelectItem value="sheet">Spreadsheet</SelectItem>
-                <SelectItem value="document">Document</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="h-9 w-40">
+              <Filter className="mr-2 h-4 w-4 text-gray-400" />
+              <SelectValue placeholder="File Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="pdf">PDF</SelectItem>
+              <SelectItem value="image">Image</SelectItem>
+              <SelectItem value="sheet">Spreadsheet</SelectItem>
+              <SelectItem value="document">Document</SelectItem>
+            </SelectContent>
+          </Select>
           <Button
-            className="gap-2"
+            className="h-9 gap-2"
             onClick={() => {
               setFile(null);
               setEntityType('lead');
@@ -286,6 +310,15 @@ export default function DocumentPage() {
             <Plus className="h-4 w-4" />
             Upload Document
           </Button>
+
+          <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+
+          <ColumnVisibilitySelector
+            columns={documentColumns}
+            visibility={visibility}
+            onToggle={toggleVisibility}
+            onReset={reset}
+          />
         </div>
       </PageHeader>
       <PageBody>
@@ -296,54 +329,93 @@ export default function DocumentPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="pl-6">Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Size</TableHead>
-                    <TableHead>Entity</TableHead>
-                    <TableHead>Last Modified</TableHead>
+                    {isVisible('sno') && (
+                      <TableHead className="w-[80px] pl-6">S. No.</TableHead>
+                    )}
+                    {isVisible('name') && <TableHead>Name</TableHead>}
+                    {isVisible('type') && <TableHead>Type</TableHead>}
+                    {isVisible('size') && <TableHead>Size</TableHead>}
+                    {isVisible('uploader') && (
+                      <TableHead>Uploaded By</TableHead>
+                    )}
+                    {isVisible('entity') && <TableHead>Entity</TableHead>}
+                    {isVisible('last_modified') && (
+                      <TableHead>Last Modified</TableHead>
+                    )}
                     <TableHead className="pr-6 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
+                      <TableCell
+                        colSpan={
+                          visibility
+                            ? Object.values(visibility).filter(
+                                (v) => v !== false,
+                              ).length + 1
+                            : 6
+                        }
+                        className="h-24 text-center"
+                      >
                         <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
                       </TableCell>
                     </TableRow>
                   ) : filteredDocuments.length > 0 ? (
-                    filteredDocuments.map((doc: Document) => (
+                    filteredDocuments.map((doc: Document, index: number) => (
                       <TableRow key={doc.id}>
-                        <TableCell className="pl-6 font-medium">
-                          <div className="flex items-center gap-3">
-                            {getFileIcon(doc.file_type || '')}
-                            <span
-                              className="max-w-[200px] truncate"
-                              title={doc.name}
+                        {isVisible('sno') && (
+                          <TableCell className="text-muted-foreground pl-6">
+                            {index + 1}
+                          </TableCell>
+                        )}
+                        {isVisible('name') && (
+                          <TableCell className="pl-6 font-medium">
+                            <div
+                              className={`flex items-center gap-3 ${isVisible('sno') ? '' : 'pl-6'}`}
                             >
-                              {doc.name}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {doc.file_type || 'Unknown'}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatSize(doc.size_bytes)}
-                        </TableCell>
-                        <TableCell>
-                          {doc.entity_name && (
-                            <span
-                              className="text-muted-foreground text-xs"
-                              title={`${doc.entity_type}: ${doc.entity_name}`}
-                            >
-                              {doc.entity_name}
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {new Date(doc.created_at).toLocaleDateString()}
-                        </TableCell>
+                              {getFileIcon(doc.file_type || '')}
+                              <span
+                                className="max-w-[200px] truncate"
+                                title={doc.name}
+                              >
+                                {doc.name}
+                              </span>
+                            </div>
+                          </TableCell>
+                        )}
+                        {isVisible('type') && (
+                          <TableCell className="text-muted-foreground">
+                            {doc.file_type || 'Unknown'}
+                          </TableCell>
+                        )}
+                        {isVisible('size') && (
+                          <TableCell className="text-muted-foreground">
+                            {formatSize(doc.size_bytes)}
+                          </TableCell>
+                        )}
+                        {isVisible('uploader') && (
+                          <TableCell className="text-muted-foreground">
+                            {doc.created_by_user?.name || '-'}
+                          </TableCell>
+                        )}
+                        {isVisible('entity') && (
+                          <TableCell>
+                            {doc.entity_name && (
+                              <span
+                                className="text-muted-foreground text-xs"
+                                title={`${doc.entity_type}: ${doc.entity_name}`}
+                              >
+                                {doc.entity_name}
+                              </span>
+                            )}
+                          </TableCell>
+                        )}
+                        {isVisible('last_modified') && (
+                          <TableCell className="text-muted-foreground">
+                            {new Date(doc.created_at).toLocaleDateString()}
+                          </TableCell>
+                        )}
                         <TableCell className="pr-6 text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -372,7 +444,13 @@ export default function DocumentPage() {
                   ) : (
                     <TableRow>
                       <TableCell
-                        colSpan={6}
+                        colSpan={
+                          visibility
+                            ? Object.values(visibility).filter(
+                                (v) => v !== false,
+                              ).length + 1
+                            : 6
+                        }
                         className="text-muted-foreground h-24 text-center"
                       >
                         No documents found matching your filters.

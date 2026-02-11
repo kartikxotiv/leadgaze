@@ -10,6 +10,7 @@ import { Filter, Plus, Search } from 'lucide-react';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import {
@@ -35,6 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
@@ -54,6 +56,50 @@ export default function OpportunitiesPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
+
+  const columns = useMemo(
+    () => [
+      { id: 'sno', label: 'S. No.' },
+      { id: 'name', label: 'Name' },
+      { id: 'account', label: 'Account' },
+      { id: 'stage', label: 'Stage' },
+      { id: 'amount', label: 'Amount' },
+      { id: 'currency', label: 'Currency' },
+      { id: 'probability', label: 'Probability' },
+      { id: 'close_date', label: 'Close Date' },
+      { id: 'priority', label: 'Priority' },
+      { id: 'type', label: 'Type' },
+      { id: 'source', label: 'Source' },
+      { id: 'competitor', label: 'Competitor' },
+      { id: 'is_closed', label: 'Closed' },
+      { id: 'is_won', label: 'Won' },
+      { id: 'close_reason', label: 'Close Reason' },
+      { id: 'is_public', label: 'Public' },
+      { id: 'owner', label: 'Owner' },
+    ],
+    [],
+  );
+
+  const { visibility, toggleVisibility, isVisible, reset } =
+    useColumnVisibility('opportunities', {
+      sno: true,
+      name: true,
+      account: true,
+      stage: true,
+      amount: true,
+      currency: false,
+      probability: false,
+      close_date: true,
+      priority: false,
+      type: false,
+      source: false,
+      competitor: false,
+      is_closed: false,
+      is_won: false,
+      close_reason: false,
+      is_public: false,
+      owner: true,
+    });
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -173,6 +219,15 @@ export default function OpportunitiesPage() {
               <Plus className="h-4 w-4" />
               Create Opportunity
             </Button>
+
+            <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+
+            <ColumnVisibilitySelector
+              columns={columns}
+              visibility={visibility}
+              onToggle={toggleVisibility}
+              onReset={reset}
+            />
           </div>
         </PageHeader>
 
@@ -250,22 +305,55 @@ export default function OpportunitiesPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12 whitespace-nowrap">
-                        S. No.
-                      </TableHead>
-                      <TableHead>Opportunity Name</TableHead>
-                      <TableHead>Account</TableHead>
-                      <TableHead>Stage</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead>Close Date</TableHead>
-                      <TableHead>Owner</TableHead>
+                      {isVisible('sno') && (
+                        <TableHead className="w-12 whitespace-nowrap">
+                          S. No.
+                        </TableHead>
+                      )}
+                      {isVisible('name') && (
+                        <TableHead>Opportunity Name</TableHead>
+                      )}
+                      {isVisible('account') && <TableHead>Account</TableHead>}
+                      {isVisible('stage') && <TableHead>Stage</TableHead>}
+                      {isVisible('amount') && (
+                        <TableHead className="text-right">Amount</TableHead>
+                      )}
+                      {isVisible('currency') && <TableHead>Currency</TableHead>}
+                      {isVisible('probability') && (
+                        <TableHead>Probability</TableHead>
+                      )}
+                      {isVisible('close_date') && (
+                        <TableHead>Close Date</TableHead>
+                      )}
+                      {isVisible('priority') && <TableHead>Priority</TableHead>}
+                      {isVisible('type') && <TableHead>Type</TableHead>}
+                      {isVisible('source') && <TableHead>Source</TableHead>}
+                      {isVisible('competitor') && (
+                        <TableHead>Competitor</TableHead>
+                      )}
+                      {isVisible('is_closed') && <TableHead>Closed</TableHead>}
+                      {isVisible('is_won') && <TableHead>Won</TableHead>}
+                      {isVisible('close_reason') && (
+                        <TableHead>Close Reason</TableHead>
+                      )}
+                      {isVisible('is_public') && <TableHead>Public</TableHead>}
+                      {isVisible('owner') && <TableHead>Owner</TableHead>}
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="h-24 text-center">
+                        <TableCell
+                          colSpan={
+                            visibility
+                              ? Object.values(visibility).filter(
+                                  (v) => v !== false,
+                                ).length + 1
+                              : 8
+                          }
+                          className="h-24 text-center"
+                        >
                           <div className="flex items-center justify-center">
                             <div className="text-gray-500">
                               Loading opportunities...
@@ -275,7 +363,16 @@ export default function OpportunitiesPage() {
                       </TableRow>
                     ) : paginatedOpportunities.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="h-24 text-center">
+                        <TableCell
+                          colSpan={
+                            visibility
+                              ? Object.values(visibility).filter(
+                                  (v) => v !== false,
+                                ).length + 1
+                              : 8
+                          }
+                          className="h-24 text-center"
+                        >
                           <div className="text-gray-500">
                             {searchTerm || selectedStage !== 'all'
                               ? 'No opportunities match your filters'
@@ -287,47 +384,163 @@ export default function OpportunitiesPage() {
                       paginatedOpportunities.map(
                         (opp: Opportunity, index: number) => (
                           <TableRow key={opp.id}>
-                            <TableCell className="text-muted-foreground w-12">
-                              {(currentPage - 1) * itemsPerPage + index + 1}
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              {/* Link to detail page coming soon */}
-                              {opp.opportunity_name}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {opp.account?.account_name || '-'}
-                            </TableCell>
-                            <TableCell>
-                              {opp.stage && (
-                                <Badge
-                                  variant="secondary"
-                                  className="gap-1"
-                                  style={{
-                                    backgroundColor: `${opp.stage.color}20`,
-                                    color: opp.stage.color,
-                                    borderColor: `${opp.stage.color}40`,
-                                  }}
+                            {isVisible('sno') && (
+                              <TableCell className="text-muted-foreground w-12">
+                                {(currentPage - 1) * itemsPerPage + index + 1}
+                              </TableCell>
+                            )}
+                            {isVisible('name') && (
+                              <TableCell className="font-medium">
+                                <Link
+                                  href={`/home/opportunities/${opp.id}`}
+                                  className="hover:underline"
                                 >
-                                  {opp.stage.status_name}
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right font-medium">
-                              {new Intl.NumberFormat('en-US', {
-                                style: 'currency',
-                                currency: opp.currency || 'USD',
-                              }).format(opp.amount || 0)}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {opp.expected_close_date
-                                ? new Date(
-                                    opp.expected_close_date,
-                                  ).toLocaleDateString()
-                                : '-'}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {opp.owner?.name || '-'}
-                            </TableCell>
+                                  {opp.opportunity_name}
+                                </Link>
+                              </TableCell>
+                            )}
+                            {isVisible('account') && (
+                              <TableCell className="text-muted-foreground">
+                                {opp.account?.account_name || '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('stage') && (
+                              <TableCell>
+                                {opp.stage && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="gap-1"
+                                    style={{
+                                      backgroundColor: `${opp.stage.color}20`,
+                                      color: opp.stage.color,
+                                      borderColor: `${opp.stage.color}40`,
+                                    }}
+                                  >
+                                    {opp.stage.status_name}
+                                  </Badge>
+                                )}
+                              </TableCell>
+                            )}
+                            {isVisible('amount') && (
+                              <TableCell className="text-right font-medium">
+                                {new Intl.NumberFormat('en-US', {
+                                  style: 'currency',
+                                  currency: opp.currency || 'USD',
+                                }).format(opp.amount || 0)}
+                              </TableCell>
+                            )}
+                            {isVisible('currency') && (
+                              <TableCell className="text-muted-foreground">
+                                {opp.currency || '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('probability') && (
+                              <TableCell className="text-muted-foreground">
+                                {opp.probability ? `${opp.probability}%` : '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('close_date') && (
+                              <TableCell className="text-muted-foreground">
+                                {opp.expected_close_date
+                                  ? new Date(
+                                      opp.expected_close_date,
+                                    ).toLocaleDateString()
+                                  : '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('priority') && (
+                              <TableCell className="text-muted-foreground">
+                                {opp.priority ? (
+                                  <Badge variant="outline">
+                                    {opp.priority}
+                                  </Badge>
+                                ) : (
+                                  '-'
+                                )}
+                              </TableCell>
+                            )}
+                            {isVisible('type') && (
+                              <TableCell className="text-muted-foreground">
+                                {opp.opportunity_type || '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('source') && (
+                              <TableCell className="text-muted-foreground">
+                                {opp.lead_source || '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('competitor') && (
+                              <TableCell className="text-muted-foreground">
+                                {opp.competitor || '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('is_closed') && (
+                              <TableCell className="text-center">
+                                {opp.is_closed ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-green-200 bg-green-50 text-green-600"
+                                  >
+                                    Yes
+                                  </Badge>
+                                ) : (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-amber-200 bg-amber-50 text-amber-600"
+                                  >
+                                    No
+                                  </Badge>
+                                )}
+                              </TableCell>
+                            )}
+                            {isVisible('is_won') && (
+                              <TableCell className="text-center">
+                                {opp.is_won ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-green-200 bg-green-50 text-green-600"
+                                  >
+                                    Yes
+                                  </Badge>
+                                ) : (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-amber-200 bg-amber-50 text-amber-600"
+                                  >
+                                    No
+                                  </Badge>
+                                )}
+                              </TableCell>
+                            )}
+                            {isVisible('close_reason') && (
+                              <TableCell className="text-muted-foreground max-w-[150px] truncate">
+                                {opp.close_reason || '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('is_public') && (
+                              <TableCell className="text-muted-foreground text-center">
+                                {opp.is_public ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-green-200 bg-green-50 text-green-600"
+                                  >
+                                    Public
+                                  </Badge>
+                                ) : (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-amber-200 bg-amber-50 text-amber-600"
+                                  >
+                                    Private
+                                  </Badge>
+                                )}
+                              </TableCell>
+                            )}
+                            {isVisible('owner') && (
+                              <TableCell className="text-muted-foreground">
+                                {opp.owner?.name || '-'}
+                              </TableCell>
+                            )}
                             <TableCell className="text-right">
                               <Button
                                 variant="link"

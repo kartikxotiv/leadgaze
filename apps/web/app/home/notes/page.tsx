@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import {
   Dialog,
   DialogContent,
@@ -55,6 +56,7 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { Textarea } from '@kit/ui/textarea';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
@@ -68,6 +70,16 @@ import {
 import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -89,6 +101,28 @@ export default function NotesPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [editContent, setEditContent] = useState('');
+
+  const noteColumns = useMemo(
+    () => [
+      { id: 'sno', label: 'S. No.' },
+      { id: 'category', label: 'Category' },
+      { id: 'associate', label: 'Associate With' },
+      { id: 'content', label: 'Note Content' },
+      { id: 'author', label: 'Author' },
+      { id: 'updated_at', label: 'Updated At' },
+    ],
+    [],
+  );
+
+  const { visibility, toggleVisibility, isVisible, reset } =
+    useColumnVisibility('notes', {
+      sno: true,
+      category: true,
+      associate: true,
+      content: true,
+      author: true,
+      updated_at: true,
+    });
 
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ['notes', workspace?.id],
@@ -278,36 +312,34 @@ export default function NotesPage() {
   return (
     <>
       <PageHeader
-        title="Notes"
+        title={`Notes (${notes.length})`}
         description="Capture and organize your important thoughts and information"
       >
-        <div className="flex flex-col items-center gap-4 md:flex-row">
-          <div className="relative w-full min-w-[200px] flex-1 md:w-64">
-            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+        <div className="flex items-center gap-3">
+          <div className="relative w-64 lg:w-72">
+            <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Search notes..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="h-9 pl-10"
             />
           </div>
-          <div className="flex w-full items-center gap-2 md:w-auto">
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full md:w-[150px]">
-                <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Entity Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Entities</SelectItem>
-                <SelectItem value="lead">Leads</SelectItem>
-                <SelectItem value="contact">Contacts</SelectItem>
-                <SelectItem value="account">Accounts</SelectItem>
-                <SelectItem value="opportunity">Opportunities</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="h-9 w-40">
+              <Filter className="mr-2 h-4 w-4 text-gray-400" />
+              <SelectValue placeholder="Entity Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Entities</SelectItem>
+              <SelectItem value="lead">Leads</SelectItem>
+              <SelectItem value="contact">Contacts</SelectItem>
+              <SelectItem value="account">Accounts</SelectItem>
+              <SelectItem value="opportunity">Opportunities</SelectItem>
+            </SelectContent>
+          </Select>
           <Button
-            className="gap-2"
+            className="h-9 gap-2"
             onClick={() => {
               setNewNoteContent('');
               setEntityType('lead');
@@ -318,6 +350,15 @@ export default function NotesPage() {
             <Plus className="h-4 w-4" />
             New Note
           </Button>
+
+          <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+
+          <ColumnVisibilitySelector
+            columns={noteColumns}
+            visibility={visibility}
+            onToggle={toggleVisibility}
+            onReset={reset}
+          />
         </div>
       </PageHeader>
       <PageBody>
@@ -328,57 +369,85 @@ export default function NotesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[80px] pl-6">S. No.</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Associate With</TableHead>
-                    <TableHead className="min-w-[300px]">
-                      Note Content
-                    </TableHead>
-                    <TableHead>Updated At</TableHead>
+                    {isVisible('sno') && (
+                      <TableHead className="w-[80px] pl-6">S. No.</TableHead>
+                    )}
+                    {isVisible('category') && <TableHead>Category</TableHead>}
+                    {isVisible('associate') && (
+                      <TableHead>Associate With</TableHead>
+                    )}
+                    {isVisible('content') && (
+                      <TableHead className="min-w-[300px]">
+                        Note Content
+                      </TableHead>
+                    )}
+                    {isVisible('author') && <TableHead>Author</TableHead>}
+                    {isVisible('updated_at') && (
+                      <TableHead>Updated At</TableHead>
+                    )}
                     <TableHead className="pr-6 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
+                      <TableCell
+                        colSpan={
+                          visibility
+                            ? Object.values(visibility).filter(
+                                (v) => v !== false,
+                              ).length + 1
+                            : 6
+                        }
+                        className="h-24 text-center"
+                      >
                         <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
                       </TableCell>
                     </TableRow>
                   ) : filteredNotes.length > 0 ? (
                     filteredNotes.map((note: Note, index: number) => (
                       <TableRow key={note.id}>
-                        <TableCell className="text-muted-foreground pl-6">
-                          {index + 1}
-                        </TableCell>
-                        <TableCell>
-                          {getCategoryBadge(note.entity_type)}
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className="inline-block max-w-[150px] truncate text-sm font-medium"
-                            title={note.entity_name || 'General'}
-                          >
-                            {note.entity_name || '-'}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <p className="line-clamp-2 max-w-[400px] text-sm whitespace-pre-wrap">
-                            {note.content}
-                          </p>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          <div className="flex flex-col">
-                            <span>
-                              {new Date(note.created_at).toLocaleDateString()}
+                        {isVisible('sno') && (
+                          <TableCell className="text-muted-foreground pl-6">
+                            {index + 1}
+                          </TableCell>
+                        )}
+                        {isVisible('category') && (
+                          <TableCell>
+                            {getCategoryBadge(note.entity_type)}
+                          </TableCell>
+                        )}
+                        {isVisible('associate') && (
+                          <TableCell>
+                            <span
+                              className="inline-block max-w-[150px] truncate text-sm font-medium"
+                              title={note.entity_name || 'General'}
+                            >
+                              {note.entity_name || '-'}
                             </span>
-                            {note.created_by_user && (
-                              <span className="text-[10px]">
-                                by {note.created_by_user.name}
+                          </TableCell>
+                        )}
+                        {isVisible('content') && (
+                          <TableCell>
+                            <p className="line-clamp-2 max-w-[400px] text-sm whitespace-pre-wrap">
+                              {note.content}
+                            </p>
+                          </TableCell>
+                        )}
+                        {isVisible('author') && (
+                          <TableCell className="text-muted-foreground text-sm">
+                            {note.created_by_user?.name || '-'}
+                          </TableCell>
+                        )}
+                        {isVisible('updated_at') && (
+                          <TableCell className="text-muted-foreground text-sm">
+                            <div className="flex flex-col">
+                              <span>
+                                {new Date(note.created_at).toLocaleDateString()}
                               </span>
-                            )}
-                          </div>
-                        </TableCell>
+                            </div>
+                          </TableCell>
+                        )}
                         <TableCell className="pr-6 text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -411,7 +480,13 @@ export default function NotesPage() {
                   ) : (
                     <TableRow>
                       <TableCell
-                        colSpan={6}
+                        colSpan={
+                          visibility
+                            ? Object.values(visibility).filter(
+                                (v) => v !== false,
+                              ).length + 1
+                            : 6
+                        }
                         className="text-muted-foreground h-24 text-center"
                       >
                         {searchTerm || categoryFilter !== 'all'
