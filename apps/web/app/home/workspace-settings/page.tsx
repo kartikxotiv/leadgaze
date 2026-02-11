@@ -40,6 +40,8 @@ import {
 } from '@kit/ui/alert-dialog';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { deleteEmailAccountService, getWorkspaceEmailAccountService, submitEmailAccountService } from '~/services/email.service';
+import { toast } from 'sonner';
 
 const smtpSchema = z.object({
     email: z.string().email(),
@@ -56,31 +58,20 @@ type SmtpFormValues = z.infer<typeof smtpSchema>;
 export default function WorkspaceSettingsPage() {
     const { currentWorkspace: workspace } = useRBAC();
     const searchParams = useSearchParams();
-    const router = useRouter();
-    const [activeTab, setActiveTab] = useState('accounts');
     const [isConnectDialogOpen, setIsConnectDialogOpen] = useState(false);
-    // const { toast } = useToast();
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const error = searchParams.get('error');
 
-    // Fetch Email Accounts
-    const { data: accounts, isLoading, refetch } = useQuery({
-        queryKey: ['email_accounts', workspace?.id],
-        queryFn: async () => {
-            if (!workspace?.id) return [];
-
-            const params = new URLSearchParams({
-                workspace_id: workspace.id
-            });
-
-            const response = await fetch(`/api/email?${params.toString()}`);
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to fetch email accounts');
-            }
-
-            return response.json();
+    const {
+        data: workspaceEmailAccount,
+        isLoading: workspaceEmailAccountLoading,
+        refetch: workspaceEmailAccountRefetch,
+    } = useQuery({
+        queryKey: ['workspace_id', workspace?.id],
+        queryFn: () => {
+            if (!workspace?.id) throw new Error('Workspace ID is required');
+            return getWorkspaceEmailAccountService(workspace.id);
         },
         enabled: !!workspace?.id,
     });
@@ -99,24 +90,13 @@ export default function WorkspaceSettingsPage() {
             if (!workspace?.id) return;
             setIsSubmitting(true);
             try {
-                const response = await fetch('/api/email/smtp', { // Assuming this is the path based on file location
-                    method: 'POST',
-                    body: JSON.stringify({
-                        ...data,
-                        workspace_id: workspace.id
-                    })
-                });
-
-                if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.error || 'Failed to add SMTP account');
-                }
-
-                // toast.success('SMTP account added successfully');
+                await submitEmailAccountService(workspace?.id || '', data)
+                toast.success('Email account added successfully');
                 setIsConnectDialogOpen(false);
-                refetch();
-            } catch (e: any) {
-                // toast.error(e.message);
+                workspaceEmailAccountRefetch();
+            } catch (err: any) {
+                console.error('Failed to add account:', err);
+                toast.error(err.message || 'Failed to add account');
             } finally {
                 setIsSubmitting(false);
             }
@@ -178,54 +158,22 @@ export default function WorkspaceSettingsPage() {
 
     const handleGoogleConnect = () => {
         if (!workspace?.id) return;
-        window.location.href = `/api/email/google/auth?workspace_id=${workspace.id}&from_name=${'Programea'}`;
+        globalThis.location.href = `/api/email/google/auth?workspace_id=${workspace.id}&from_name=${'Programea'}`;
     };
 
     const handleDelete = async (id: string) => {
-        if (!workspace?.id) return;
-
+        setIsDeleting(true);
         try {
-            const response = await fetch(`/api/email?id=${id}&workspace_id=${workspace.id}`, {
-                method: 'DELETE',
-            });
-
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error || 'Failed to delete account');
-            }
-
-            refetch();
-        } catch (e: any) {
-            console.error(e);
-            // toast.error(e.message);
+            await deleteEmailAccountService(id, workspace?.id || '');
+            toast.success('Email account deleted successfully');
+            await workspaceEmailAccountRefetch();
+        } catch (err: any) {
+            console.error('Failed to delete account:', err);
+            toast.error(err.message || 'Failed to delete account');
+        } finally {
+            setIsDeleting(false);
         }
     };
-
-    // const handleStatusChange = async (id: string, isActive: boolean) => {
-    //     if (!workspace?.id) return;
-
-    //     try {
-    //         // Optimistic update could be done here, but refetch is safer for "only one active" logic
-    //         const response = await fetch('/api/email', {
-    //             method: 'PATCH',
-    //             body: JSON.stringify({
-    //                 id,
-    //                 workspace_id: workspace.id,
-    //                 is_active: isActive
-    //             })
-    //         });
-
-    //         if (!response.ok) {
-    //             const err = await response.json();
-    //             throw new Error(err.error || 'Failed to update status');
-    //         }
-
-    //         refetch();
-    //     } catch (e: any) {
-    //         console.error(e);
-    //         // toast.error(e.message);
-    //     }
-    // };
 
     return (
         <>
@@ -259,7 +207,7 @@ export default function WorkspaceSettingsPage() {
                             </div>
                             <Dialog open={isConnectDialogOpen} onOpenChange={setIsConnectDialogOpen}>
                                 <DialogTrigger asChild>
-                                    <Button>
+                                    <Button disabled={!workspace}>
                                         <Plus className="mr-2 h-4 w-4" />
                                         Connect Account
                                     </Button>
@@ -301,20 +249,20 @@ export default function WorkspaceSettingsPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {isLoading ? (
+                                    {workspaceEmailAccountLoading ? (
                                         <TableRow>
                                             <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                                                 Loading accounts...
                                             </TableCell>
                                         </TableRow>
-                                    ) : accounts?.length === 0 ? (
+                                    ) : workspaceEmailAccount?.length === 0 ? (
                                         <TableRow>
                                             <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                                                 No email accounts connected yet.
                                             </TableCell>
                                         </TableRow>
                                     ) : (
-                                        accounts?.map((account: { id: string, provider: string, email: string, from_name: string, is_active: boolean }) => (
+                                        workspaceEmailAccount?.map((account: { id: string, provider: string, email: string, from_name: string, is_active: boolean }) => (
                                             <TableRow key={account.id}>
                                                 <TableCell>
                                                     <Badge variant={account.provider === 'google' ? 'secondary' : 'outline'}>
@@ -331,7 +279,7 @@ export default function WorkspaceSettingsPage() {
                                                 <TableCell className="text-right">
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild>
-                                                            <Button variant="ghost" size="icon">
+                                                            <Button variant="ghost" size="icon" disabled={isDeleting}>
                                                                 <Trash2 className="h-4 w-4 text-muted-foreground" />
                                                             </Button>
                                                         </AlertDialogTrigger>

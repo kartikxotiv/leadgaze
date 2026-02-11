@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { decrypt } from "~/utils/crypto";
 
 export async function sendSMTP({
     account,
@@ -18,7 +19,7 @@ export async function sendSMTP({
         auth: account.username
             ? {
                 user: account.username,
-                pass: account.password
+                pass: decrypt(account.password)
             }
             : undefined
     });

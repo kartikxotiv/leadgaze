@@ -15,7 +15,9 @@ export async function sendGmailOAuth({
     if (!account.access_token || !account.refresh_token) {
         throw new Error("Missing OAuth tokens");
     }
-
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+        throw new Error("Missing Google OAuth env vars");
+    }
     const client = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET
@@ -23,31 +25,35 @@ export async function sendGmailOAuth({
 
     client.setCredentials({
         refresh_token: account.refresh_token,
-        access_token: account.access_token
     });
 
-    const { token } = await client.getAccessToken();
+    try {
+        const { token } = await client.getAccessToken();
 
-    const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-            type: "OAuth2",
-            user: from,
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            refreshToken: account.refresh_token,
-            accessToken: token!
-        }
-    });
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+                type: "OAuth2",
+                user: from,
+                clientId: process.env.GOOGLE_CLIENT_ID,
+                clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+                refreshToken: account.refresh_token,
+                accessToken: token!
+            }
+        });
 
-    return transporter.sendMail({
-        from,
-        to,
-        cc,
-        bcc,
-        subject,
-        html,
-        text,
-        headers
-    });
+        return transporter.sendMail({
+            from,
+            to,
+            cc,
+            bcc,
+            subject,
+            html,
+            text,
+            headers
+        });
+
+    } catch (error) {
+        console.log(error);
+    }
 }

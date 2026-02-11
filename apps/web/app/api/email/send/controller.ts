@@ -7,7 +7,6 @@ export const sendEmail = catchAsync(async ({ request }: { request: NextRequest }
     try {
         const payload = await request.json();
         const supabase = getSupabaseServerClient();
-        console.log({ payload });
 
         const {
             leadId,
@@ -23,7 +22,9 @@ export const sendEmail = catchAsync(async ({ request }: { request: NextRequest }
             return NextResponse.json({ error: "Missing lead_id" }, { status: 400 });
         }
 
-        const { data: lead, error } = await (
+
+        // FETCH LEAD
+        const { data: lead, error: leadError } = await (
             supabase.from('crm_leads').select() as any
         )
             .eq('id', leadId)
@@ -34,8 +35,11 @@ export const sendEmail = catchAsync(async ({ request }: { request: NextRequest }
             return NextResponse.json({ error: "Lead not found" }, { status: 404 });
         }
 
-        if (error) {
-            return NextResponse.json({ error: "Lead error" }, { status: 500 });
+        if (leadError) {
+            return NextResponse.json(
+                { error: leadError.message },
+                { status: 500 }
+            );
         }
 
         if (!lead.email) {
@@ -48,15 +52,16 @@ export const sendEmail = catchAsync(async ({ request }: { request: NextRequest }
             .eq("workspace_id", lead.workspace_id)
             .single();
 
-        if (!account) {
-            return NextResponse.json({ error: "Email account not found" }, { status: 404 });
-        }
-
         if (accountError) {
             return NextResponse.json({ error: "Email account error" }, { status: 500 });
         }
 
-        /* ---------------- SEND ---------------- */
+        if (!account) {
+            return NextResponse.json({ error: "Email account not found" }, { status: 404 });
+        }
+
+
+        /* ---------------- SEND EMAIL ---------------- */
         const info = await sendMail({
             account,
             from: account?.email,
@@ -75,9 +80,11 @@ export const sendEmail = catchAsync(async ({ request }: { request: NextRequest }
 
         return NextResponse.json({
             success: true,
-            messageId: info.messageId
+            messageId: info?.messageId
         });
     } catch (err: any) {
+        console.log(err);
+
         return NextResponse.json(
             { error: err.message },
             { status: 500 }

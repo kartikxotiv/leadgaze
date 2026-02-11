@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { catchAsync } from "~/utils/response-handler";
+import { encrypt } from "~/utils/crypto";
 
 export const submitSMTPDetails = catchAsync(
-    async ({ request }: { request: NextRequest }) => {
+    async ({ request }: { request: NextRequest, params?: Record<string, string>; }) => {
         const body = await request.json();
+        const searchParams = request.nextUrl.searchParams;
+        const workspaceId = searchParams.get('workspace_id');
+        if (!workspaceId) {
+            return NextResponse.json({ error: "Missing workspace_id" }, { status: 400 });
+        }
         const supabase = getSupabaseServerClient();
-
         const {
-            workspace_id,
             email,
             host,
             port,
@@ -19,13 +23,13 @@ export const submitSMTPDetails = catchAsync(
         } = body;
 
         const { data, error } = await supabase.from("email_accounts").upsert({
-            workspace_id,
+            workspace_id: workspaceId,
             email,
             host,
             port,
             secure,
             username,
-            password,
+            password: encrypt(password),
             from_name,
             provider: 'smtp'
         },

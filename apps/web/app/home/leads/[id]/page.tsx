@@ -59,6 +59,8 @@ import EditLeadDialog from '../components/edit-lead-dialog';
 import { EmailLeadDialog } from '../components/email-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
 import { LogCallDialog } from '../components/log-call-dialog';
+import { PublicPrivateToggle } from '~/home/_components/public-private-toggle';
+import { getWorkspaceEmailAccountService } from '~/services/email.service';
 
 export default function LeadDetailsPage() {
   const router = useRouter();
@@ -91,6 +93,19 @@ export default function LeadDetailsPage() {
       return getLeadByIdService(leadId);
     },
     enabled: !!leadId && !!workspace,
+  });
+  const {
+    data: workspaceEmailAccount,
+    isLoading: workspaceEmailAccountLoading,
+    error: workspaceEmailAccountError,
+    refetch: workspaceEmailAccountRefetch,
+  } = useQuery({
+    queryKey: ['workspace_id', workspace?.id],
+    queryFn: () => {
+      if (!workspace?.id) throw new Error('Workspace ID is required');
+      return getWorkspaceEmailAccountService(workspace.id);
+    },
+    enabled: !!workspace?.id,
   });
 
   const { data: user } = useUser();
@@ -975,6 +990,7 @@ export default function LeadDetailsPage() {
           leadEmail={lead.email || ''}
           leadName={fullName}
           initialDraft={selectedDraft}
+          workspaceEmailAccount={workspaceEmailAccount?.[0]}
         />
       )}
     </ModuleGuard>
