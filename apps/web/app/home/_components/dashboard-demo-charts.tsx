@@ -80,7 +80,7 @@ export default function DashboardDemo() {
           'grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
         }
       >
-        <Card>
+        <Card className="h-32">
           <CardHeader>
             <CardTitle className={'flex items-center gap-2.5'}>
               <FileText className="text-muted-foreground h-4 w-4" />
@@ -104,7 +104,7 @@ export default function DashboardDemo() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="h-32">
           <CardHeader>
             <CardTitle className={'flex items-center gap-2.5'}>
               <Users className="text-muted-foreground h-4 w-4" />
@@ -123,7 +123,7 @@ export default function DashboardDemo() {
           <CardContent>{/* <Chart data={contactsTrend[0]} /> */}</CardContent>
         </Card>
 
-        <Card>
+        <Card className="h-32">
           <CardHeader>
             <CardTitle className={'flex items-center gap-2.5'}>
               <Building2 className="text-muted-foreground h-4 w-4" />
@@ -142,7 +142,7 @@ export default function DashboardDemo() {
           <CardContent>{/* <Chart data={accountsTrend[0]} /> */}</CardContent>
         </Card>
 
-        <Card>
+        <Card className="h-32">
           <CardHeader>
             <CardTitle className={'flex items-center gap-2.5'}>
               <Target className="text-muted-foreground h-4 w-4" />

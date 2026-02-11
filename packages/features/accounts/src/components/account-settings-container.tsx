@@ -44,43 +44,45 @@ export function PersonalAccountSettingsContainer(
   }
 
   return (
-    <div className={'flex w-full flex-col space-y-4 pb-32'}>
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <Trans i18nKey={'account:accountImage'} />
-          </CardTitle>
+    <div className={'flex w-full flex-col space-y-8 pb-32'}>
+      <div className={'grid grid-cols-1 gap-10 md:grid-cols-2'}>
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <Trans i18nKey={'account:accountImage'} />
+            </CardTitle>
 
-          <CardDescription>
-            <Trans i18nKey={'account:accountImageDescription'} />
-          </CardDescription>
-        </CardHeader>
+            <CardDescription>
+              <Trans i18nKey={'account:accountImageDescription'} />
+            </CardDescription>
+          </CardHeader>
 
-        <CardContent>
-          <UpdateAccountImageContainer
-            user={{
-              pictureUrl: user.data.picture_url,
-              id: user.data.id,
-            }}
-          />
-        </CardContent>
-      </Card>
+          <CardContent>
+            <UpdateAccountImageContainer
+              user={{
+                pictureUrl: user.data.picture_url,
+                id: user.data.id,
+              }}
+            />
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <Trans i18nKey={'account:name'} />
-          </CardTitle>
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <Trans i18nKey={'account:name'} />
+            </CardTitle>
 
-          <CardDescription>
-            <Trans i18nKey={'account:nameDescription'} />
-          </CardDescription>
-        </CardHeader>
+            <CardDescription>
+              <Trans i18nKey={'account:nameDescription'} />
+            </CardDescription>
+          </CardHeader>
 
-        <CardContent>
-          <UpdateAccountDetailsFormContainer user={user.data} />
-        </CardContent>
-      </Card>
+          <CardContent>
+            <UpdateAccountDetailsFormContainer user={user.data} />
+          </CardContent>
+        </Card>
+      </div>
 
       <If condition={supportsLanguageSelection}>
         <Card>
@@ -100,39 +102,43 @@ export function PersonalAccountSettingsContainer(
         </Card>
       </If>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <Trans i18nKey={'account:updateEmailCardTitle'} />
-          </CardTitle>
-
-          <CardDescription>
-            <Trans i18nKey={'account:updateEmailCardDescription'} />
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <UpdateEmailFormContainer callbackPath={props.paths.callback} />
-        </CardContent>
-      </Card>
-
-      <If condition={props.features.enablePasswordUpdate}>
+      <div className={'grid grid-cols-1 gap-10 md:grid-cols-2'}>
         <Card>
           <CardHeader>
             <CardTitle>
-              <Trans i18nKey={'account:updatePasswordCardTitle'} />
+              <Trans i18nKey={'account:updateEmailCardTitle'} />
             </CardTitle>
 
             <CardDescription>
-              <Trans i18nKey={'account:updatePasswordCardDescription'} />
+              <Trans i18nKey={'account:updateEmailCardDescription'} />
             </CardDescription>
           </CardHeader>
 
           <CardContent>
-            <UpdatePasswordFormContainer callbackPath={props.paths.callback} />
+            <UpdateEmailFormContainer callbackPath={props.paths.callback} />
           </CardContent>
         </Card>
-      </If>
+
+        <If condition={props.features.enablePasswordUpdate}>
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <Trans i18nKey={'account:updatePasswordCardTitle'} />
+              </CardTitle>
+
+              <CardDescription>
+                <Trans i18nKey={'account:updatePasswordCardDescription'} />
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent>
+              <UpdatePasswordFormContainer
+                callbackPath={props.paths.callback}
+              />
+            </CardContent>
+          </Card>
+        </If>
+      </div>
 
       {/* <Card>
         <CardHeader>
