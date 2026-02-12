@@ -51,7 +51,7 @@ import { Lead } from '~/services/leads.service';
 import CreateLeadDialog from './components/create-lead-dialog';
 
 export default function LeadsPage() {
-  const { currentWorkspace: workspace } = useRBAC();
+  const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -230,14 +230,16 @@ export default function LeadsPage() {
 
             <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
 
-            <Button
-              onClick={() => setIsCreateDialogOpen(true)}
-              variant="outline"
-              className="h-9 gap-2"
-            >
-              <FileUp className="h-4 w-4 text-gray-500" />
-              Import
-            </Button>
+            {canAccess('leads', 'import') && (
+              <Button
+                onClick={() => setIsCreateDialogOpen(true)}
+                variant="outline"
+                className="h-9 gap-2"
+              >
+                <FileUp className="h-4 w-4 text-gray-500" />
+                Import
+              </Button>
+            )}
             <Button
               onClick={() => setIsCreateDialogOpen(true)}
               className="h-9 gap-2 bg-blue-600 text-white hover:bg-blue-700"

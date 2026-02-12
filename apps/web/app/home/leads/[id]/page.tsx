@@ -222,37 +222,33 @@ export default function LeadDetailsPage() {
     <ModuleGuard module="leads">
       <PageHeader title="Lead Details">
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setStatusModalOpen(true)}
-            className="flex h-8 items-center justify-center px-4"
-            disabled={isSaving || !canEdit}
-            title={
-              !canEdit ? 'You do not have permission to edit this lead' : ''
-            }
-          >
-            Change Status
-          </Button>
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setStatusModalOpen(true)}
+              className="flex h-8 items-center justify-center px-4"
+              disabled={isSaving}
+            >
+              Change Status
+            </Button>
+          )}
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsLogCallDialogOpen(true)}
-            className="p-3"
-            disabled={!canEdit}
-            title={
-              !canEdit
-                ? 'You do not have permission to log calls'
-                : 'Log a call'
-            }
-          >
-            {/* Phone icon */}
-            {/* Log Call */}
-            <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
-              <Phone className="h-3 w-3 text-white" />
-            </div>
-          </Button>
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsLogCallDialogOpen(true)}
+              className="p-3"
+              title="Log a call"
+            >
+              {/* Phone icon */}
+              {/* Log Call */}
+              <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
+                <Phone className="h-3 w-3 text-white" />
+              </div>
+            </Button>
+          )}
 
           <Button
             variant="outline"
@@ -268,35 +264,28 @@ export default function LeadDetailsPage() {
               <Mail className="h-3.5 w-3.5 text-white" />
             </div>
           </Button>
-          {!lead.is_converted_to_account && (
+          {!lead.is_converted_to_account && canConvert && (
             <Button
               variant="outline"
               size="sm"
               onClick={handleConvertLead}
               className="flex h-8 items-center justify-center px-4"
-              disabled={isSaving || !canConvert}
-              title={
-                !canConvert
-                  ? 'You do not have permission to convert this lead'
-                  : ''
-              }
+              disabled={isSaving}
             >
               Convert Lead
             </Button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditDialogOpen(true)}
-            className="flex h-8 items-center justify-center gap-2 px-4"
-            disabled={!canEdit}
-            title={
-              !canEdit ? 'You do not have permission to edit this lead' : ''
-            }
-          >
-            <Edit2 className="h-4 w-4" />
-            Edit Full Profile
-          </Button>
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditDialogOpen(true)}
+              className="flex h-8 items-center justify-center gap-2 px-4"
+            >
+              <Edit2 className="h-4 w-4" />
+              Edit Full Profile
+            </Button>
+          )}
         </div>
       </PageHeader>
 
