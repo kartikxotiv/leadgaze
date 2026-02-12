@@ -183,8 +183,9 @@ export default function OpportunitiesPage() {
 
   return (
     <ModuleGuard module="opportunities">
-      <div className="flex flex-col gap-6">
+      <div className="bg-sidebar flex flex-col gap-6">
         <PageHeader
+          className="bg-sidebar sticky top-0 z-10 border-b px-6 py-4"
           title={`Opportunities (${totalCount})`}
           description="Manage your sales pipeline"
         >
@@ -232,10 +233,10 @@ export default function OpportunitiesPage() {
         </PageHeader>
 
         {/* Pipeline Summary Cards */}
-        <div className="px-6">
+        <div className="bg-sidebar sticky top-0 px-6 pb-7">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
             <Card
-              className={`hover:border-primary/50 cursor-pointer transition-all ${selectedStage === 'all' ? 'border-primary ring-primary ring-1' : ''}`}
+              className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStage === 'all' ? 'border-primary ring-primary ring-1' : ''}`}
               onClick={() => setSelectedStage('all')}
             >
               <CardContent className="p-3">
@@ -264,7 +265,7 @@ export default function OpportunitiesPage() {
               return (
                 <Card
                   key={stage.id}
-                  className={`hover:border-primary/50 cursor-pointer transition-all ${selectedStage === stage.id ? 'border-primary ring-primary ring-1' : ''}`}
+                  className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStage === stage.id ? 'border-primary ring-primary ring-1' : ''}`}
                   onClick={() => setSelectedStage(stage.id)}
                 >
                   <CardContent className="p-3">
@@ -296,17 +297,17 @@ export default function OpportunitiesPage() {
         </div>
       </div>
 
-      <PageBody>
-        <div className="space-y-6">
+      <PageBody className="bg-sidebar flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col space-y-6">
           {/* Table */}
-          <Card>
-            <CardContent className="p-0">
-              <div className="overflow-hidden rounded-lg border">
+          <Card className="flex flex-1 flex-col border-none shadow-none">
+            <CardContent className="flex flex-1 flex-col p-2">
+              <div className="flex-1 overflow-auto rounded-lg">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       {isVisible('sno') && (
-                        <TableHead className="w-12 whitespace-nowrap">
+                        <TableHead className="w-12 p-4 whitespace-nowrap">
                           S. No.
                         </TableHead>
                       )}
@@ -563,7 +564,7 @@ export default function OpportunitiesPage() {
           </Card>
 
           {totalCount > 0 && (
-            <div className="text-muted-foreground flex items-center justify-between px-2 text-sm">
+            <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 -mb-4 flex items-center justify-between border-t p-4 lg:-mx-8 lg:-mb-8">
               <div>
                 Showing{' '}
                 <span className="text-foreground font-medium">

@@ -197,9 +197,9 @@ export default function LeadsPage() {
 
   return (
     <ModuleGuard module="leads">
-      <div className="flex flex-col gap-2">
+      <div className="bg-sidebar flex flex-col gap-2">
         <PageHeader
-          className="-mx-4 px-4 lg:-mx-0 lg:px-4"
+          className="bg-sidebar px-6 py-4"
           title={`Leads (${totalCount})`}
           description="Manage and track your sales leads"
         >
@@ -258,10 +258,10 @@ export default function LeadsPage() {
         </PageHeader>
 
         {/* Status Distribution Cards */}
-        <div className="px-6">
+        <div className="bg-sidebar sticky top-0 px-6 pb-7">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             <Card
-              className={`hover:border-primary/50 cursor-pointer transition-all ${selectedStatus === 'all' ? 'border-primary ring-primary ring-1' : ''}`}
+              className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStatus === 'all' ? 'border-primary ring-primary ring-1' : ''}`}
               onClick={() => setSelectedStatus('all')}
             >
               <CardContent className="p-3">
@@ -283,7 +283,7 @@ export default function LeadsPage() {
               return (
                 <Card
                   key={status.id}
-                  className={`hover:border-primary/50 cursor-pointer transition-all ${selectedStatus === status.id ? 'border-primary ring-primary ring-1' : ''}`}
+                  className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStatus === status.id ? 'border-primary ring-primary ring-1' : ''}`}
                   onClick={() => setSelectedStatus(status.id)}
                 >
                   <CardContent className="p-3">
@@ -308,17 +308,17 @@ export default function LeadsPage() {
           </div>
         </div>
       </div>
-      <PageBody className="mt-6">
-        <div className="space-y-6">
+      <PageBody className="bg-sidebar flex flex-1 flex-col pt-6">
+        <div className="flex flex-1 flex-col space-y-6">
           {/* Table */}
-          <Card>
-            <CardContent className="p-0">
-              <div className="overflow-hidden rounded-lg border">
+          <Card className="flex flex-1 flex-col border-none shadow-none">
+            <CardContent className="flex flex-1 flex-col p-2">
+              <div className="flex-1 overflow-auto rounded-lg">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       {isVisible('sno') && (
-                        <TableHead className="w-12 whitespace-nowrap">
+                        <TableHead className="w-12 p-4 whitespace-nowrap">
                           S. No.
                         </TableHead>
                       )}
@@ -622,7 +622,7 @@ export default function LeadsPage() {
           </Card>
 
           {totalCount > 0 && (
-            <div className="text-muted-foreground flex items-center justify-between px-2 text-sm">
+            <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 -mb-4 flex items-center justify-between border-t p-4 lg:-mx-8 lg:-mb-8">
               <div>
                 Showing{' '}
                 <span className="text-foreground font-medium">

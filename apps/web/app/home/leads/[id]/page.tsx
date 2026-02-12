@@ -321,11 +321,28 @@ export default function LeadDetailsPage() {
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                       {fullName}
                     </h1>
-                    {lead.job_title && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {lead.job_title}
-                      </p>
-                    )}
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                      {lead.job_title && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {lead.job_title}
+                        </p>
+                      )}
+                      <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          Created on{' '}
+                          {new Date(lead.created_at).toLocaleDateString(
+                            undefined,
+                            {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            },
+                          )}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardHeader>
