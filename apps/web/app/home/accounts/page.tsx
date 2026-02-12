@@ -150,7 +150,7 @@ export default function AccountsPage() {
   return (
     <ModuleGuard module="accounts">
       <PageHeader
-        className="bg-sidebar sticky top-0 z-10 -mx-4 border-b p-4 lg:-mx-8 lg:px-8"
+        className="bg-sidebar sticky top-0 px-6 pb-7"
         title={`Accounts (${totalCount})`}
         description="Manage your client accounts and organizations"
       >
@@ -401,7 +401,7 @@ export default function AccountsPage() {
           </Card>
 
           {totalCount > 0 && (
-            <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 -mb-4 flex items-center justify-between border-t p-4 lg:-mx-8 lg:-mb-8">
+            <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mb-4 flex items-center justify-between border-t p-4 px-6 lg:-mb-8">
               <div>
                 Showing{' '}
                 <span className="text-foreground font-medium">

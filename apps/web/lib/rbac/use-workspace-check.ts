@@ -59,7 +59,7 @@ export function useWorkspaceCheck() {
   }, [isLoading, isError, user?.id, hasWorkspace, router]);
 
   return {
-    hasWorkspace: user?.id ? (hasWorkspace ?? true) : true,
+    hasWorkspace: user?.id ? (hasWorkspace ?? null) : null,
     isLoading,
     refetch,
   };
