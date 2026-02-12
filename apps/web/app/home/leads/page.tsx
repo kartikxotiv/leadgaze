@@ -622,7 +622,7 @@ export default function LeadsPage() {
           </Card>
 
           {totalCount > 0 && (
-            <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 -mb-4 flex items-center justify-between border-t p-4 lg:-mx-8 lg:-mb-8">
+            <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mb-4 flex items-center justify-between border-t p-4 px-6 lg:-mb-8">
               <div>
                 Showing{' '}
                 <span className="text-foreground font-medium">

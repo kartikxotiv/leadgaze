@@ -141,7 +141,7 @@ export default function ContactsPage() {
   return (
     <ModuleGuard module="contacts">
       <PageHeader
-        className="bg-sidebar sticky top-0 z-10 -mx-4 border-b p-4 lg:-mx-8 lg:px-8"
+        className="bg-sidebar sticky top-0 px-6 pb-7"
         title={`Contacts (${totalCount})`}
         description="Manage your contacts (People)"
       >
@@ -355,7 +355,7 @@ export default function ContactsPage() {
           </Card>
 
           {totalCount > 0 && (
-            <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 -mb-4 flex items-center justify-between border-t p-4 lg:-mx-8 lg:-mb-8">
+            <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mb-4 flex items-center justify-between border-t p-4 px-6 lg:-mb-8">
               <div>
                 Showing{' '}
                 <span className="text-foreground font-medium">

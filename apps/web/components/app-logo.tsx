@@ -1,5 +1,11 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
 import Image from 'next/image';
 import Link from 'next/link';
+
+import { useTheme } from 'next-themes';
 
 import { cn } from '@kit/ui/utils';
 
@@ -12,6 +18,13 @@ function LogoImage({
   width?: number;
   collapsed?: boolean;
 }) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   if (collapsed) {
     return (
       <Image
@@ -24,9 +37,12 @@ function LogoImage({
     );
   }
 
+  const isDark = mounted && resolvedTheme === 'dark';
+  const logoSrc = isDark ? '/images/leadgaze-dark.png' : '/images/leadgaze.png';
+
   return (
     <Image
-      src={'/images/leadgaze.png'}
+      src={logoSrc}
       height={150}
       width={200}
       alt="leadgaze"
