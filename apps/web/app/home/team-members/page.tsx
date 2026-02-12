@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -24,6 +24,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@kit/ui/card';
+import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import {
   Table,
@@ -33,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
@@ -55,6 +57,26 @@ export default function TeamMembersPage() {
     null,
   );
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
+
+  const columns = useMemo(
+    () => [
+      { id: 'member', label: 'Member' },
+      { id: 'email', label: 'Email' },
+      { id: 'role', label: 'Role' },
+      { id: 'status', label: 'Status' },
+      { id: 'primary_contact', label: 'Primary Contact' },
+    ],
+    [],
+  );
+
+  const { visibility, toggleVisibility, isVisible, reset } =
+    useColumnVisibility('team-members', {
+      member: true,
+      email: true,
+      role: true,
+      status: true,
+      primary_contact: true,
+    });
 
   // Fetch members
   const {
@@ -164,9 +186,29 @@ export default function TeamMembersPage() {
   return (
     <ModuleGuard module="team_members">
       <PageHeader
-        title="Team Members"
+        title={`Team Members (${members.length})`}
         description="Manage your workspace team members and permissions"
-      />
+      >
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={() => setInviteDialogOpen(true)}
+            size="sm"
+            className="h-9 gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Invite Member
+          </Button>
+
+          <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+
+          <ColumnVisibilitySelector
+            columns={columns}
+            visibility={visibility}
+            onToggle={toggleVisibility}
+            onReset={reset}
+          />
+        </div>
+      </PageHeader>
       <PageBody>
         <div className="space-y-6">
           {/* Summary Cards */}
@@ -210,21 +252,11 @@ export default function TeamMembersPage() {
           {/* Team Members Table */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Workspace Members</CardTitle>
-                  <CardDescription>
-                    Manage team members and their roles
-                  </CardDescription>
-                </div>
-                <Button
-                  onClick={() => setInviteDialogOpen(true)}
-                  size="sm"
-                  className="gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Invite Member
-                </Button>
+              <div>
+                <CardTitle>Workspace Members</CardTitle>
+                <CardDescription>
+                  Manage team members and their roles
+                </CardDescription>
               </div>
             </CardHeader>
             <CardContent>
@@ -254,56 +286,70 @@ export default function TeamMembersPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Member</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Primary Contact</TableHead>
+                        {isVisible('member') && <TableHead>Member</TableHead>}
+                        {isVisible('email') && <TableHead>Email</TableHead>}
+                        {isVisible('role') && <TableHead>Role</TableHead>}
+                        {isVisible('status') && <TableHead>Status</TableHead>}
+                        {isVisible('primary_contact') && (
+                          <TableHead>Primary Contact</TableHead>
+                        )}
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {members.map((member: WorkspaceMember) => (
                         <TableRow key={member.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
-                                {(
-                                  member.user?.email?.charAt(0) || 'M'
-                                ).toUpperCase()}
+                          {isVisible('member') && (
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
+                                  {(
+                                    member.user?.email?.charAt(0) || 'M'
+                                  ).toUpperCase()}
+                                </div>
+                                <span className="font-medium">
+                                  {member.user?.user_metadata?.full_name ||
+                                    'Team Member'}
+                                </span>
                               </div>
-                              <span className="font-medium">
-                                {member.user?.user_metadata?.full_name ||
-                                  'Team Member'}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-sm">
-                            {member.user?.email}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="h-3 w-3 rounded-full"
-                                style={{
-                                  backgroundColor: getRoleColor(member.role),
-                                }}
-                              />
-                              <span className="font-medium">
-                                {member.role?.role_name}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>{getStatusBadge(member.status)}</TableCell>
-                          <TableCell>
-                            {member.is_primary_contact ? (
-                              <Badge variant="secondary">Primary</Badge>
-                            ) : (
-                              <span className="text-muted-foreground/50 text-xs">
-                                —
-                              </span>
-                            )}
-                          </TableCell>
+                            </TableCell>
+                          )}
+                          {isVisible('email') && (
+                            <TableCell className="text-muted-foreground text-sm">
+                              {member.user?.email}
+                            </TableCell>
+                          )}
+                          {isVisible('role') && (
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="h-3 w-3 rounded-full"
+                                  style={{
+                                    backgroundColor: getRoleColor(member.role),
+                                  }}
+                                />
+                                <span className="font-medium">
+                                  {member.role?.role_name}
+                                </span>
+                              </div>
+                            </TableCell>
+                          )}
+                          {isVisible('status') && (
+                            <TableCell>
+                              {getStatusBadge(member.status)}
+                            </TableCell>
+                          )}
+                          {isVisible('primary_contact') && (
+                            <TableCell>
+                              {member.is_primary_contact ? (
+                                <Badge variant="secondary">Primary</Badge>
+                              ) : (
+                                <span className="text-muted-foreground/50 text-xs">
+                                  —
+                                </span>
+                              )}
+                            </TableCell>
+                          )}
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
                               {member.status === 'pending' && (

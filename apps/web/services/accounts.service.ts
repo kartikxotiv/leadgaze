@@ -8,6 +8,14 @@ export interface Account {
   website?: string;
   phone_number?: string;
   industry_id?: string;
+  company_size?: string;
+  billing_street?: string;
+  billing_city?: string;
+  billing_state?: string;
+  billing_postal_code?: string;
+  billing_country?: string;
+  description?: string;
+  is_public?: boolean;
   status_id: string;
   owner_id?: string;
   created_at: string;

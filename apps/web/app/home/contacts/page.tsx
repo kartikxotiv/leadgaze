@@ -7,8 +7,10 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Search } from 'lucide-react';
 
+import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import {
@@ -27,6 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
@@ -40,7 +43,41 @@ export default function ContactsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 15;
+
+  const columns = useMemo(
+    () => [
+      { id: 'sno', label: 'S. No.' },
+      { id: 'name', label: 'Name' },
+      { id: 'first_name', label: 'First Name' },
+      { id: 'last_name', label: 'Last Name' },
+      { id: 'job_title', label: 'Job Title' },
+      { id: 'email', label: 'Email' },
+      { id: 'phone', label: 'Phone' },
+      { id: 'account', label: 'Account' },
+      { id: 'notes', label: 'Notes' },
+      { id: 'is_public', label: 'Public' },
+      { id: 'owner', label: 'Owner' },
+      { id: 'created_at', label: 'Created At' },
+    ],
+    [],
+  );
+
+  const { visibility, toggleVisibility, isVisible, reset } =
+    useColumnVisibility('contacts', {
+      sno: true,
+      name: true,
+      first_name: false,
+      last_name: false,
+      job_title: false,
+      email: true,
+      phone: true,
+      account: true,
+      notes: false,
+      is_public: false,
+      owner: true,
+      created_at: true,
+    });
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -125,6 +162,15 @@ export default function ContactsPage() {
             <Plus className="h-4 w-4" />
             New Contact
           </Button>
+
+          <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+
+          <ColumnVisibilitySelector
+            columns={columns}
+            visibility={visibility}
+            onToggle={toggleVisibility}
+            onReset={reset}
+          />
         </div>
       </PageHeader>
 
@@ -136,21 +182,46 @@ export default function ContactsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12 whitespace-nowrap">
-                        S. No.
-                      </TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Account</TableHead>
-                      <TableHead>Owner</TableHead>
-                      <TableHead>Created At</TableHead>
+                      {isVisible('sno') && (
+                        <TableHead className="w-12 whitespace-nowrap">
+                          S. No.
+                        </TableHead>
+                      )}
+                      {isVisible('name') && <TableHead>Name</TableHead>}
+                      {isVisible('first_name') && (
+                        <TableHead>First Name</TableHead>
+                      )}
+                      {isVisible('last_name') && (
+                        <TableHead>Last Name</TableHead>
+                      )}
+                      {isVisible('job_title') && (
+                        <TableHead>Job Title</TableHead>
+                      )}
+                      {isVisible('email') && <TableHead>Email</TableHead>}
+                      {isVisible('phone') && <TableHead>Phone</TableHead>}
+                      {isVisible('account') && <TableHead>Account</TableHead>}
+                      {isVisible('notes') && <TableHead>Notes</TableHead>}
+                      {isVisible('is_public') && <TableHead>Public</TableHead>}
+                      {isVisible('owner') && <TableHead>Owner</TableHead>}
+                      {isVisible('created_at') && (
+                        <TableHead>Created At</TableHead>
+                      )}
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
+                        <TableCell
+                          colSpan={
+                            visibility
+                              ? Object.values(visibility).filter(
+                                  (v) => v !== false,
+                                ).length + 1
+                              : 7
+                          }
+                          className="h-24 text-center"
+                        >
                           <div className="flex items-center justify-center">
                             <div className="text-gray-500">
                               Loading contacts...
@@ -160,7 +231,16 @@ export default function ContactsPage() {
                       </TableRow>
                     ) : paginatedContacts.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
+                        <TableCell
+                          colSpan={
+                            visibility
+                              ? Object.values(visibility).filter(
+                                  (v) => v !== false,
+                                ).length + 1
+                              : 7
+                          }
+                          className="h-24 text-center"
+                        >
                           <div className="text-gray-500">
                             {searchTerm
                               ? 'No contacts match your search'
@@ -172,26 +252,87 @@ export default function ContactsPage() {
                       paginatedContacts.map(
                         (contact: Contact, index: number) => (
                           <TableRow key={contact.id}>
-                            <TableCell className="text-muted-foreground w-12">
-                              {(currentPage - 1) * itemsPerPage + index + 1}
-                            </TableCell>
-                            <TableCell className="p-3 font-medium">
-                              {contact.first_name} {contact.last_name || ''}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {contact.email || '-'}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {contact.account?.account_name || '-'}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {contact.owner?.name || '-'}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {new Date(
-                                contact.created_at,
-                              ).toLocaleDateString()}
-                            </TableCell>
+                            {isVisible('sno') && (
+                              <TableCell className="text-muted-foreground w-12">
+                                {(currentPage - 1) * itemsPerPage + index + 1}
+                              </TableCell>
+                            )}
+                            {isVisible('name') && (
+                              <TableCell className="font-medium">
+                                <Link
+                                  href={`/home/contacts/${contact.id}`}
+                                  className="hover:underline"
+                                >
+                                  {contact.first_name} {contact.last_name || ''}
+                                </Link>
+                              </TableCell>
+                            )}
+                            {isVisible('first_name') && (
+                              <TableCell className="text-muted-foreground">
+                                {contact.first_name || '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('last_name') && (
+                              <TableCell className="text-muted-foreground">
+                                {contact.last_name || '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('job_title') && (
+                              <TableCell className="text-muted-foreground">
+                                {contact.job_title || '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('email') && (
+                              <TableCell className="text-muted-foreground">
+                                {contact.email || '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('phone') && (
+                              <TableCell className="text-muted-foreground">
+                                {contact.phone_number || '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('account') && (
+                              <TableCell className="text-muted-foreground">
+                                {contact.account?.account_name || '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('notes') && (
+                              <TableCell className="text-muted-foreground max-w-[200px] truncate">
+                                {contact.notes || '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('is_public') && (
+                              <TableCell className="text-muted-foreground text-center">
+                                {contact.is_public ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-green-200 bg-green-50 text-green-600"
+                                  >
+                                    Public
+                                  </Badge>
+                                ) : (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-amber-200 bg-amber-50 text-amber-600"
+                                  >
+                                    Private
+                                  </Badge>
+                                )}
+                              </TableCell>
+                            )}
+                            {isVisible('owner') && (
+                              <TableCell className="text-muted-foreground">
+                                {contact.owner?.name || '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('created_at') && (
+                              <TableCell className="text-muted-foreground">
+                                {new Date(
+                                  contact.created_at,
+                                ).toLocaleDateString()}
+                              </TableCell>
+                            )}
                             <TableCell className="text-right">
                               <Button
                                 variant="link"
