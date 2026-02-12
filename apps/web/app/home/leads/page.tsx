@@ -240,13 +240,15 @@ export default function LeadsPage() {
                 Import
               </Button>
             )}
-            <Button
-              onClick={() => setIsCreateDialogOpen(true)}
-              className="h-9 gap-2 bg-blue-600 text-white hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4" />
-              New Lead
-            </Button>
+            {canAccess('leads', 'create') && (
+              <Button
+                onClick={() => setIsCreateDialogOpen(true)}
+                className="h-9 gap-2 bg-blue-600 text-white hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4" />
+                New Lead
+              </Button>
+            )}
 
             <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
 
