@@ -150,7 +150,7 @@ export default function AccountsPage() {
   return (
     <ModuleGuard module="accounts">
       <PageHeader
-        className="sticky top-0 z-10 -mx-4 border-b bg-[#F2F2F2] p-4 lg:-mx-8 lg:px-8"
+        className="bg-sidebar sticky top-0 z-10 -mx-4 border-b p-4 lg:-mx-8 lg:px-8"
         title={`Accounts (${totalCount})`}
         description="Manage your client accounts and organizations"
       >
@@ -183,7 +183,7 @@ export default function AccountsPage() {
         </div>
       </PageHeader>
 
-      <PageBody className="flex flex-1 flex-col bg-[#F2F2F2]">
+      <PageBody className="bg-sidebar flex flex-1 flex-col">
         <div className="flex flex-1 flex-col space-y-6">
           <Card className="flex flex-1 flex-col border-none shadow-none">
             <CardContent className="flex flex-1 flex-col p-2">
@@ -269,7 +269,7 @@ export default function AccountsPage() {
                         (account: Account, index: number) => (
                           <TableRow key={account.id}>
                             {isVisible('sno') && (
-                              <TableCell className="text-muted-foreground w-12">
+                              <TableCell className="text-muted-foreground w-12 p-4">
                                 {(currentPage - 1) * itemsPerPage + index + 1}
                               </TableCell>
                             )}
@@ -401,7 +401,7 @@ export default function AccountsPage() {
           </Card>
 
           {totalCount > 0 && (
-            <div className="text-muted-foreground sticky bottom-0 z-10 -mx-4 -mb-4 flex items-center justify-between border-t bg-[#F2F2F2] p-4 lg:-mx-8 lg:-mb-8">
+            <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 -mb-4 flex items-center justify-between border-t p-4 lg:-mx-8 lg:-mb-8">
               <div>
                 Showing{' '}
                 <span className="text-foreground font-medium">

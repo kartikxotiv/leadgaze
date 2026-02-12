@@ -141,7 +141,7 @@ export default function ContactsPage() {
   return (
     <ModuleGuard module="contacts">
       <PageHeader
-        className="sticky top-0 z-10 -mx-4 border-b bg-[#F2F2F2] p-4 lg:-mx-8 lg:px-8"
+        className="bg-sidebar sticky top-0 z-10 -mx-4 border-b p-4 lg:-mx-8 lg:px-8"
         title={`Contacts (${totalCount})`}
         description="Manage your contacts (People)"
       >
@@ -174,7 +174,7 @@ export default function ContactsPage() {
         </div>
       </PageHeader>
 
-      <PageBody className="flex flex-1 flex-col bg-[#F2F2F2]">
+      <PageBody className="bg-sidebar flex flex-1 flex-col">
         <div className="flex flex-1 flex-col space-y-6">
           <Card className="flex flex-1 flex-col border-none shadow-none">
             <CardContent className="flex flex-1 flex-col p-2">
@@ -253,7 +253,7 @@ export default function ContactsPage() {
                         (contact: Contact, index: number) => (
                           <TableRow key={contact.id}>
                             {isVisible('sno') && (
-                              <TableCell className="text-muted-foreground w-12">
+                              <TableCell className="text-muted-foreground w-12 p-4">
                                 {(currentPage - 1) * itemsPerPage + index + 1}
                               </TableCell>
                             )}
@@ -355,7 +355,7 @@ export default function ContactsPage() {
           </Card>
 
           {totalCount > 0 && (
-            <div className="text-muted-foreground sticky bottom-0 z-10 -mx-4 -mb-4 flex items-center justify-between border-t bg-[#F2F2F2] p-4 lg:-mx-8 lg:-mb-8">
+            <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 -mb-4 flex items-center justify-between border-t p-4 lg:-mx-8 lg:-mb-8">
               <div>
                 Showing{' '}
                 <span className="text-foreground font-medium">
