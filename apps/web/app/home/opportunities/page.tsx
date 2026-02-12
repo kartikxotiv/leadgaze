@@ -50,7 +50,7 @@ import {
 import { OpportunityDialog } from './components/opportunity-dialog';
 
 export default function OpportunitiesPage() {
-  const { currentWorkspace: workspace } = useRBAC();
+  const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -213,13 +213,15 @@ export default function OpportunitiesPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button
-              onClick={() => setIsCreateDialogOpen(true)}
-              className="h-9 gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Create Opportunity
-            </Button>
+            {canAccess('opportunities', 'create') && (
+              <Button
+                onClick={() => setIsCreateDialogOpen(true)}
+                className="h-9 gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Create Opportunity
+              </Button>
+            )}
 
             <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
 
@@ -548,9 +550,11 @@ export default function OpportunitiesPage() {
                                 asChild
                                 className="text-primary h-auto p-0 hover:underline"
                               >
-                                <Link href={`/home/opportunities/${opp.id}`}>
-                                  View
-                                </Link>
+                                {canAccess('opportunities', 'view') && (
+                                  <Link href={`/home/opportunities/${opp.id}`}>
+                                    View
+                                  </Link>
+                                )}
                               </Button>
                             </TableCell>
                           </TableRow>

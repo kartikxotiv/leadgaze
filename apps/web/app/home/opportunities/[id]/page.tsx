@@ -80,7 +80,7 @@ export default function OpportunityDetailsPage() {
     }
   }, [opportunity]);
 
-  const { currentWorkspace } = useRBAC();
+  const { currentWorkspace, canAccess: rbacCanAccess } = useRBAC();
   const { data: stages = [] } = useQuery({
     queryKey: ['opportunity-stages', currentWorkspace?.id],
     queryFn: () => getOpportunityStatusesService(currentWorkspace!.id),
@@ -133,36 +133,94 @@ export default function OpportunityDetailsPage() {
             </Link>
           </Button>
           <div className="flex gap-2">
-            <Select
-              value={opportunity.stage_id}
-              onValueChange={async (value) => {
-                try {
-                  await updateOpportunityService(id, { stage_id: value });
-                  toast.success('Opportunity stage updated');
-                  refetch();
-                } catch (error) {
-                  toast.error('Failed to update stage');
-                }
-              }}
-              disabled={!canEdit}
-            >
-              <SelectTrigger className="h-9 w-[180px]">
-                <SelectValue placeholder="Update Stage" />
-              </SelectTrigger>
-              <SelectContent>
-                {stages.map((stage: any) => (
-                  <SelectItem key={stage.id} value={stage.id}>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="h-2 w-2 rounded-full"
-                        style={{ backgroundColor: stage.color }}
-                      />
-                      {stage.status_name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {rbacCanAccess('opportunities', 'change_stage') && (
+              <Select
+                value={opportunity.stage_id}
+                onValueChange={async (value) => {
+                  try {
+                    await updateOpportunityService(id, { stage_id: value });
+                    toast.success('Opportunity stage updated');
+                    refetch();
+                  } catch (error) {
+                    toast.error('Failed to update stage');
+                  }
+                }}
+                disabled={!canEdit}
+              >
+                <SelectTrigger className="h-9 w-[180px]">
+                  <SelectValue placeholder="Update Stage" />
+                </SelectTrigger>
+                <SelectContent>
+                  {stages.map((stage: any) => (
+                    <SelectItem key={stage.id} value={stage.id}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="h-2 w-2 rounded-full"
+                          style={{ backgroundColor: stage.color }}
+                        />
+                        {stage.status_name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {rbacCanAccess('opportunities', 'close_won') && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-green-600 text-green-600 hover:bg-green-50"
+                onClick={async () => {
+                  const wonStage = stages.find(
+                    (s: any) =>
+                      s.status_name.toLowerCase().includes('won') || s.is_won,
+                  );
+                  if (wonStage) {
+                    try {
+                      await updateOpportunityService(id, {
+                        stage_id: wonStage.id,
+                        is_closed: true,
+                        is_won: true,
+                      });
+                      toast.success('Opportunity marked as Won');
+                      refetch();
+                    } catch (error) {
+                      toast.error('Failed to update status');
+                    }
+                  }
+                }}
+              >
+                Close as Won
+              </Button>
+            )}
+            {rbacCanAccess('opportunities', 'close_lost') && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-red-600 text-red-600 hover:bg-red-50"
+                onClick={async () => {
+                  const lostStage = stages.find(
+                    (s: any) =>
+                      s.status_name.toLowerCase().includes('lost') || s.is_lost,
+                  );
+                  if (lostStage) {
+                    try {
+                      await updateOpportunityService(id, {
+                        stage_id: lostStage.id,
+                        is_closed: true,
+                        is_won: false,
+                      });
+                      toast.success('Opportunity marked as Lost');
+                      refetch();
+                    } catch (error) {
+                      toast.error('Failed to update status');
+                    }
+                  }
+                }}
+              >
+                Close as Lost
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"

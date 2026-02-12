@@ -39,7 +39,7 @@ import { Account, getAccountsService } from '~/services/accounts.service';
 import { CreateAccountDialog } from './components/create-account-dialog';
 
 export default function AccountsPage() {
-  const { currentWorkspace: workspace } = useRBAC();
+  const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -164,13 +164,15 @@ export default function AccountsPage() {
               className="h-9 pl-10"
             />
           </div>
-          <Button
-            onClick={() => setCreateDialogOpen(true)}
-            className="h-9 gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            New Account
-          </Button>
+          {canAccess('accounts', 'create') && (
+            <Button
+              onClick={() => setCreateDialogOpen(true)}
+              className="h-9 gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              New Account
+            </Button>
+          )}
 
           <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
 
@@ -385,9 +387,11 @@ export default function AccountsPage() {
                                 asChild
                                 className="text-primary h-auto p-0 hover:underline"
                               >
-                                <Link href={`/home/accounts/${account.id}`}>
-                                  View
-                                </Link>
+                                {canAccess('accounts', 'view') && (
+                                  <Link href={`/home/accounts/${account.id}`}>
+                                    View
+                                  </Link>
+                                )}
                               </Button>
                             </TableCell>
                           </TableRow>

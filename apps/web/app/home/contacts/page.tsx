@@ -39,7 +39,7 @@ import { Contact, getContactsService } from '~/services/contacts.service';
 import { CreateContactDialog } from './components/create-contact-dialog';
 
 export default function ContactsPage() {
-  const { currentWorkspace: workspace } = useRBAC();
+  const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -155,13 +155,15 @@ export default function ContactsPage() {
               className="h-9 pl-10"
             />
           </div>
-          <Button
-            onClick={() => setCreateDialogOpen(true)}
-            className="h-9 gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            New Contact
-          </Button>
+          {canAccess('contacts', 'create') && (
+            <Button
+              onClick={() => setCreateDialogOpen(true)}
+              className="h-9 gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              New Contact
+            </Button>
+          )}
 
           <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
 
@@ -339,9 +341,11 @@ export default function ContactsPage() {
                                 asChild
                                 className="text-primary h-auto p-0 hover:underline"
                               >
-                                <Link href={`/home/contacts/${contact.id}`}>
-                                  View
-                                </Link>
+                                {canAccess('contacts', 'view') && (
+                                  <Link href={`/home/contacts/${contact.id}`}>
+                                    View
+                                  </Link>
+                                )}
                               </Button>
                             </TableCell>
                           </TableRow>

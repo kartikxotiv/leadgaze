@@ -78,6 +78,7 @@ export default function AccountDetailsPage() {
   const { data: user } = useUser();
   const editPermission = usePermissionDetail('accounts', 'edit');
   const canEdit = useCanAccessData(editPermission, account?.owner_id, user?.id);
+  const { canAccess: rbacCanAccess } = useRBAC();
 
   const { data: opportunitiesData } = useQuery({
     queryKey: ['opportunities', 'account', id],
@@ -285,56 +286,64 @@ export default function AccountDetailsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg font-bold">Contacts</CardTitle>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setIsContactDialogOpen(true)}
-                >
-                  Add Contact
-                </Button>
+                {rbacCanAccess('accounts', 'add_contact') && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsContactDialogOpen(true)}
+                  >
+                    Add Contact
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
-                {contacts && contacts.length > 0 ? (
-                  <div className="divide-y">
-                    {contacts.map((contact: any) => (
-                      <div
-                        key={contact.id}
-                        className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold">
-                            {contact.first_name[0]}
-                            {contact.last_name?.[0]}
+                {rbacCanAccess('accounts', 'view_contacts') ? (
+                  contacts && contacts.length > 0 ? (
+                    <div className="divide-y">
+                      {contacts.map((contact: any) => (
+                        <div
+                          key={contact.id}
+                          className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold">
+                              {contact.first_name[0]}
+                              {contact.last_name?.[0]}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">
+                                {contact.first_name} {contact.last_name}
+                              </p>
+                              <p className="text-muted-foreground text-xs">
+                                {contact.job_title}{' '}
+                                {contact.department
+                                  ? `(${contact.department})`
+                                  : ''}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium">
-                              {contact.first_name} {contact.last_name}
-                            </p>
-                            <p className="text-muted-foreground text-xs">
-                              {contact.job_title}{' '}
-                              {contact.department
-                                ? `(${contact.department})`
-                                : ''}
-                            </p>
+                          <div className="flex items-center gap-4">
+                            <div className="text-muted-foreground hidden text-right text-xs sm:block">
+                              <p>{contact.email}</p>
+                              <p>{contact.phone_number}</p>
+                            </div>
+                            <Button size="sm" variant="ghost" asChild>
+                              <Link href={`/home/contacts/${contact.id}`}>
+                                View
+                              </Link>
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-muted-foreground hidden text-right text-xs sm:block">
-                            <p>{contact.email}</p>
-                            <p>{contact.phone_number}</p>
-                          </div>
-                          <Button size="sm" variant="ghost" asChild>
-                            <Link href={`/home/contacts/${contact.id}`}>
-                              View
-                            </Link>
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-muted-foreground py-6 text-center text-sm">
+                      No contacts associated with this account.
+                    </div>
+                  )
                 ) : (
                   <div className="text-muted-foreground py-6 text-center text-sm">
-                    No contacts associated with this account.
+                    You do not have permission to view contacts.
                   </div>
                 )}
               </CardContent>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, MessageSquare, Pencil, Plus, Trash2 } from 'lucide-react';
@@ -17,6 +17,7 @@ import {
 } from '@kit/ui/dialog';
 import { Textarea } from '@kit/ui/textarea';
 
+import { useHasPermission } from '~/lib/permissions/use-permissions';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 
 import {
@@ -34,6 +35,18 @@ interface EntityNotesProps {
 
 export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
   const { currentWorkspace: workspace } = useRBAC();
+
+  const moduleKey = useMemo(() => {
+    const mapping: Record<string, string> = {
+      lead: 'leads',
+      contact: 'contacts',
+      account: 'accounts',
+      opportunity: 'opportunities',
+    };
+    return mapping[entityType] || entityType;
+  }, [entityType]);
+
+  const canAddNote = useHasPermission(moduleKey, 'add_note');
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [newNoteContent, setNewNoteContent] = useState('');
@@ -124,60 +137,62 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
           <MessageSquare className="h-5 w-5 text-gray-400" />
           <CardTitle className="text-lg">Notes</CardTitle>
         </div>
-        <Dialog
-          open={isOpen}
-          onOpenChange={(open) => {
-            setIsOpen(open);
-            if (!open) {
-              setEditingNote(null);
-              setNewNoteContent('');
-            }
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button size="sm" variant="ghost" className="gap-1 text-xs">
-              <Plus className="h-3 w-3" />
-              Add
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editingNote ? 'Edit Note' : 'Add Note'}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-4">
-              <Textarea
-                placeholder="Enter note content..."
-                value={newNoteContent}
-                onChange={(e) => setNewNoteContent(e.target.value)}
-                rows={4}
-              />
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsOpen(false)}
-                  disabled={
-                    createMutation.isPending || updateMutation.isPending
-                  }
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={
-                    createMutation.isPending || updateMutation.isPending
-                  }
-                >
-                  {(createMutation.isPending || updateMutation.isPending) && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  {editingNote ? 'Update Note' : 'Save Note'}
-                </Button>
+        {canAddNote && (
+          <Dialog
+            open={isOpen}
+            onOpenChange={(open) => {
+              setIsOpen(open);
+              if (!open) {
+                setEditingNote(null);
+                setNewNoteContent('');
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button size="sm" variant="ghost" className="gap-1 text-xs">
+                <Plus className="h-3 w-3" />
+                Add
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {editingNote ? 'Edit Note' : 'Add Note'}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <Textarea
+                  placeholder="Enter note content..."
+                  value={newNoteContent}
+                  onChange={(e) => setNewNoteContent(e.target.value)}
+                  rows={4}
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsOpen(false)}
+                    disabled={
+                      createMutation.isPending || updateMutation.isPending
+                    }
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    disabled={
+                      createMutation.isPending || updateMutation.isPending
+                    }
+                  >
+                    {(createMutation.isPending || updateMutation.isPending) && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {editingNote ? 'Update Note' : 'Save Note'}
+                  </Button>
+                </div>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
       </CardHeader>
       <CardContent>
         {isLoading ? (
