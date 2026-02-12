@@ -37,6 +37,7 @@ export interface Meeting {
   entity_type: string;
   entity_id: string;
   entity_name?: string | null;
+  is_public?: boolean;
   created_by_user?: { name: string; email: string };
 }
 

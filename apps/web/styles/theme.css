@@ -114,3 +114,11 @@
     }
   }
 }
+
+.bg-sidebar {
+  background-color: var(--sidebar-background);
+}
+
+.dark .bg-sidebar {
+  background-color: var(--sidebar-background);
+}

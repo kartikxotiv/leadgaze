@@ -122,15 +122,72 @@ export const getOpportunities = catchAsync(
       })
       .range(from, to);
 
-    if (error) {
-      console.error('Get opportunities error:', error);
-      throw error;
+    // For stage breakdown, we need a query grouped by stage_id
+    // We ignore the selected stageId filter here to show the whole pipeline
+    let breakdownQuery = supabase
+      .from('crm_opportunities')
+      .select('stage_id, amount')
+      .eq('workspace_id', workspaceId)
+      .eq('is_deleted', false);
+
+    if (accountId) {
+      breakdownQuery = breakdownQuery.eq('account_id', accountId);
     }
+
+    if (searchTerm) {
+      breakdownQuery = breakdownQuery.or(
+        `opportunity_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`,
+      );
+    }
+
+    if (!isOwner) {
+      // Re-use logic for non-owners
+      const { data: assignedOpportunityIds } = await (supabase
+        .from('opportunity_assignees' as any)
+        .select('opportunity_id')
+        .eq('workspace_id', workspaceId)
+        .eq('assigned_to_user_id', user.id)
+        .eq('assignment_status', 'active') as any);
+
+      const assignedIds =
+        assignedOpportunityIds?.map((a: any) => a.opportunity_id) || [];
+
+      breakdownQuery = breakdownQuery.or(
+        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
+      );
+    }
+
+    const { data: breakdownData, error: breakdownError } = await breakdownQuery;
+
+    if (breakdownError) {
+      console.error('Get stage breakdown error:', breakdownError);
+      throw breakdownError;
+    }
+
+    const stageBreakdownMap: Record<
+      string,
+      { total_amount: number; count: number }
+    > = {};
+    (breakdownData || []).forEach((opp) => {
+      const stageId = opp.stage_id;
+      if (!stageBreakdownMap[stageId]) {
+        stageBreakdownMap[stageId] = { total_amount: 0, count: 0 };
+      }
+      stageBreakdownMap[stageId].total_amount += opp.amount || 0;
+      stageBreakdownMap[stageId].count += 1;
+    });
+
+    const totalAmount = Object.values(stageBreakdownMap).reduce(
+      (sum, s) => sum + s.total_amount,
+      0,
+    );
 
     return NextResponse.json({
       message: 'Opportunities retrieved successfully',
       data: opportunities || [],
       count: count || 0,
+      totalAmount,
+      stageBreakdown: stageBreakdownMap,
     });
   },
 );

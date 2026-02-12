@@ -495,7 +495,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
                   placeholder="Demo meeting..."
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-1">
                 <div className="space-y-2">
                   <Label>Start</Label>
                   <Input
