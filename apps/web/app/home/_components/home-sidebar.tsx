@@ -25,7 +25,7 @@ export function HomeSidebar(props: {
   const isCollapsed = state === 'collapsed';
 
   return (
-    <Sidebar collapsible={'icon'}>
+    <Sidebar collapsible={'icon'} className={'border-r-[2px] border-gray-200'}>
       <SidebarHeader className={'h-16 justify-center'}>
         <div
           className={cn('flex items-center space-x-2', {

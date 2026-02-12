@@ -10,6 +10,8 @@ export interface Contact {
   phone_number?: string;
   job_title?: string;
   account_id?: string;
+  notes?: string;
+  is_public?: boolean;
   status_id: string;
   owner_id?: string;
   created_at: string;

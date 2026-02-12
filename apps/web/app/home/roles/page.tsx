@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Edit2, Loader2, Plus, Shield, Trash2 } from 'lucide-react';
@@ -15,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@kit/ui/card';
+import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import {
   Table,
@@ -24,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
@@ -42,6 +44,26 @@ export default function RolesPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  const columns = useMemo(
+    () => [
+      { id: 'role_name', label: 'Role Name' },
+      { id: 'role_key', label: 'Role Key' },
+      { id: 'hierarchy', label: 'Hierarchy' },
+      { id: 'type', label: 'Type' },
+      { id: 'status', label: 'Status' },
+    ],
+    [],
+  );
+
+  const { visibility, toggleVisibility, isVisible, reset } =
+    useColumnVisibility('roles', {
+      role_name: true,
+      role_key: true,
+      hierarchy: true,
+      type: true,
+      status: true,
+    });
 
   // Fetch roles
   const {
@@ -104,9 +126,29 @@ export default function RolesPage() {
   return (
     <ModuleGuard module="roles">
       <PageHeader
-        title="Roles Management"
+        title={`Roles Management (${roles?.length || 0})`}
         description="Create and manage workspace roles with custom permissions"
-      />
+      >
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={() => setCreateDialogOpen(true)}
+            size="sm"
+            className="h-9 gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Create Role
+          </Button>
+
+          <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+
+          <ColumnVisibilitySelector
+            columns={columns}
+            visibility={visibility}
+            onToggle={toggleVisibility}
+            onReset={reset}
+          />
+        </div>
+      </PageHeader>
       <PageBody>
         <div className="space-y-6">
           {/* Summary Cards */}
@@ -152,21 +194,11 @@ export default function RolesPage() {
           {/* Roles Table */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Workspace Roles</CardTitle>
-                  <CardDescription>
-                    Manage roles and their permissions
-                  </CardDescription>
-                </div>
-                <Button
-                  onClick={() => setCreateDialogOpen(true)}
-                  size="sm"
-                  className="gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Create Role
-                </Button>
+              <div>
+                <CardTitle>Workspace Roles</CardTitle>
+                <CardDescription>
+                  Manage roles and their permissions
+                </CardDescription>
               </div>
             </CardHeader>
             <CardContent>
@@ -188,56 +220,74 @@ export default function RolesPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Role Name</TableHead>
-                        <TableHead>Role Key</TableHead>
-                        <TableHead>Hierarchy</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Status</TableHead>
+                        {isVisible('role_name') && (
+                          <TableHead>Role Name</TableHead>
+                        )}
+                        {isVisible('role_key') && (
+                          <TableHead>Role Key</TableHead>
+                        )}
+                        {isVisible('hierarchy') && (
+                          <TableHead>Hierarchy</TableHead>
+                        )}
+                        {isVisible('type') && <TableHead>Type</TableHead>}
+                        {isVisible('status') && <TableHead>Status</TableHead>}
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {roles?.map((role: Role) => (
                         <TableRow key={role.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <div
-                                className="h-3 w-3 rounded-full"
-                                style={{ backgroundColor: getRoleColor(role) }}
-                              />
-                              <span className="font-medium">
-                                {role.role_name}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <code className="bg-secondary rounded px-2 py-1 text-xs">
-                              {role.role_key}
-                            </code>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {getHierarchyLabel(role.hierarchy_level)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {role.is_system ? (
-                              <Badge className="border-blue-500/20 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 dark:text-blue-500">
-                                System
+                          {isVisible('role_name') && (
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className="h-3 w-3 rounded-full"
+                                  style={{
+                                    backgroundColor: getRoleColor(role),
+                                  }}
+                                />
+                                <span className="font-medium">
+                                  {role.role_name}
+                                </span>
+                              </div>
+                            </TableCell>
+                          )}
+                          {isVisible('role_key') && (
+                            <TableCell>
+                              <code className="bg-secondary rounded px-2 py-1 text-xs">
+                                {role.role_key}
+                              </code>
+                            </TableCell>
+                          )}
+                          {isVisible('hierarchy') && (
+                            <TableCell>
+                              <Badge variant="outline">
+                                {getHierarchyLabel(role.hierarchy_level)}
                               </Badge>
-                            ) : (
-                              <Badge variant="secondary">Custom</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {role.is_active ? (
-                              <Badge className="border-green-500/20 bg-green-500/10 text-green-600 hover:bg-green-500/20 dark:text-green-500">
-                                Active
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary">Inactive</Badge>
-                            )}
-                          </TableCell>
+                            </TableCell>
+                          )}
+                          {isVisible('type') && (
+                            <TableCell>
+                              {role.is_system ? (
+                                <Badge className="border-blue-500/20 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 dark:text-blue-500">
+                                  System
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary">Custom</Badge>
+                              )}
+                            </TableCell>
+                          )}
+                          {isVisible('status') && (
+                            <TableCell>
+                              {role.is_active ? (
+                                <Badge className="border-green-500/20 bg-green-500/10 text-green-600 hover:bg-green-500/20 dark:text-green-500">
+                                  Active
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary">Inactive</Badge>
+                              )}
+                            </TableCell>
+                          )}
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
                               {!role.is_system && (

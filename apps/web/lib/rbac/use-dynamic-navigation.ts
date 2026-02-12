@@ -57,6 +57,9 @@ const SALES_MODULES: NavItem[] = [
     feature: 'view',
     module: 'opportunities',
   },
+  
+
+  
 ];
 
 // Team Module Features

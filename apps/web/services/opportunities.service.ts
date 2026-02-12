@@ -23,6 +23,7 @@ export interface Opportunity {
   is_closed?: boolean;
   is_won?: boolean;
   close_reason?: string;
+  is_public?: boolean;
   // Relations
   stage?: {
     id: string;
@@ -65,6 +66,11 @@ const getOpportunitiesService = asyncHandlerClient(
     return {
       data: (response.data?.data || []) as Opportunity[],
       count: (response.data?.count || 0) as number,
+      totalAmount: (response.data?.totalAmount || 0) as number,
+      stageBreakdown: (response.data?.stageBreakdown || {}) as Record<
+        string,
+        { total_amount: number; count: number }
+      >,
     };
   },
 );
