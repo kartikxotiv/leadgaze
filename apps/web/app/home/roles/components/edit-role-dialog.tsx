@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useUser } from '@kit/supabase/hooks/use-user';
 import { Button } from '@kit/ui/button';
 import { Checkbox } from '@kit/ui/checkbox';
 import {
@@ -72,6 +73,7 @@ export function EditRoleDialog({
   onSuccess,
 }: EditRoleDialogProps) {
   const { currentWorkspace } = useRBAC();
+  const { data: user } = useUser();
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
@@ -157,6 +159,14 @@ export function EditRoleDialog({
       queryClient.invalidateQueries({
         queryKey: ['workspaceRoles', currentWorkspace?.id],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['rolePermissions', role.id],
+      });
+      if (user?.id) {
+        queryClient.invalidateQueries({
+          queryKey: ['userWorkspaces', user.id],
+        });
+      }
       toast.success('Role updated successfully');
       onOpenChange(false);
       onSuccess?.();
@@ -170,6 +180,10 @@ export function EditRoleDialog({
     e.preventDefault();
     if (!formData.role_name) {
       toast.error('Role name is required');
+      return;
+    }
+    if (permissionsLoading || modulesLoading) {
+      toast.error('Please wait for permissions to load');
       return;
     }
     updateRoleMutation.mutate();
@@ -395,12 +409,16 @@ export function EditRoleDialog({
             </Button>
             <Button
               type="submit"
-              disabled={updateRoleMutation.isPending}
+              disabled={
+                updateRoleMutation.isPending ||
+                permissionsLoading ||
+                modulesLoading
+              }
               className="gap-2"
             >
-              {updateRoleMutation.isPending && (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              )}
+              {(updateRoleMutation.isPending ||
+                permissionsLoading ||
+                modulesLoading) && <Loader2 className="h-4 w-4 animate-spin" />}
               Save Changes
             </Button>
           </DialogFooter>

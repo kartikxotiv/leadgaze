@@ -49,6 +49,40 @@ import {
 
 import { OpportunityDialog } from './components/opportunity-dialog';
 
+function PriorityBadge({ priority }: { priority: string | null }) {
+  switch (priority?.toLowerCase()) {
+    case 'high':
+      return (
+        <Badge
+          variant="outline"
+          className="border-red-200 bg-red-50 text-red-600"
+        >
+          High
+        </Badge>
+      );
+    case 'medium':
+      return (
+        <Badge
+          variant="outline"
+          className="border-amber-200 bg-amber-50 text-amber-600"
+        >
+          Medium
+        </Badge>
+      );
+    case 'low':
+      return (
+        <Badge
+          variant="outline"
+          className="border-emerald-200 bg-emerald-50 text-emerald-600"
+        >
+          Low
+        </Badge>
+      );
+    default:
+      return <Badge variant="secondary">{priority || '-'}</Badge>;
+  }
+}
+
 export default function OpportunitiesPage() {
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
@@ -76,6 +110,8 @@ export default function OpportunitiesPage() {
       { id: 'close_reason', label: 'Close Reason' },
       { id: 'is_public', label: 'Public' },
       { id: 'owner', label: 'Owner' },
+      { id: 'created_at', label: 'Created On' },
+      { id: 'updated_at', label: 'Last Updated On' },
     ],
     [],
   );
@@ -99,6 +135,8 @@ export default function OpportunitiesPage() {
       close_reason: false,
       is_public: false,
       owner: true,
+      created_at: false,
+      updated_at: false,
     });
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -183,455 +221,452 @@ export default function OpportunitiesPage() {
 
   return (
     <ModuleGuard module="opportunities">
-      <div className="bg-sidebar flex flex-col gap-6">
-        <PageHeader
-          className="bg-sidebar sticky top-0 z-10 border-b px-6 py-4"
-          title={`Opportunities (${totalCount})`}
-          description="Manage your sales pipeline"
-        >
-          <div className="flex items-center gap-3">
-            <div className="relative w-64 lg:w-72">
-              <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search by name or account..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-9 pl-10"
+      <div className="flex h-[100dvh] flex-col">
+        <div className="bg-sidebar flex shrink-0 flex-col gap-2">
+          <PageHeader
+            className="bg-sidebar px-6 py-4"
+            title={`Opportunities (${totalCount})`}
+            description="Manage your sales pipeline"
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative w-64 lg:w-72">
+                <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search by name or account..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-9 pl-10"
+                />
+              </div>
+              <Select value={selectedStage} onValueChange={setSelectedStage}>
+                <SelectTrigger className="h-9 w-48">
+                  <Filter className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Filter by stage" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Stages</SelectItem>
+                  {stages.map((stage: any) => (
+                    <SelectItem key={stage.id} value={stage.id}>
+                      {stage.status_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {canAccess('opportunities', 'create') && (
+                <Button
+                  onClick={() => setIsCreateDialogOpen(true)}
+                  className="h-9 gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Create Opportunity
+                </Button>
+              )}
+
+              <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+
+              <ColumnVisibilitySelector
+                columns={columns}
+                visibility={visibility}
+                onToggle={toggleVisibility}
+                onReset={reset}
               />
             </div>
-            <Select value={selectedStage} onValueChange={setSelectedStage}>
-              <SelectTrigger className="h-9 w-48">
-                <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Filter by stage" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Stages</SelectItem>
-                {stages.map((stage: any) => (
-                  <SelectItem key={stage.id} value={stage.id}>
-                    {stage.status_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {canAccess('opportunities', 'create') && (
-              <Button
-                onClick={() => setIsCreateDialogOpen(true)}
-                className="h-9 gap-2"
+          </PageHeader>
+
+          {/* Pipeline Summary Cards */}
+          <div className="bg-sidebar px-6 pb-7">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+              <Card
+                className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStage === 'all' ? 'border-primary ring-primary ring-1' : ''}`}
+                onClick={() => setSelectedStage('all')}
               >
-                <Plus className="h-4 w-4" />
-                Create Opportunity
-              </Button>
-            )}
-
-            <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
-
-            <ColumnVisibilitySelector
-              columns={columns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
-            />
-          </div>
-        </PageHeader>
-
-        {/* Pipeline Summary Cards */}
-        <div className="bg-sidebar sticky top-0 px-6 pb-7">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
-            <Card
-              className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStage === 'all' ? 'border-primary ring-primary ring-1' : ''}`}
-              onClick={() => setSelectedStage('all')}
-            >
-              <CardContent className="p-3">
-                <div className="flex flex-col gap-1">
-                  <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
-                    All Opportunities ({totalCount})
-                  </span>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-lg font-bold">
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: 'USD',
-                        maximumFractionDigits: 0,
-                      }).format(opportunitiesData.totalAmount || 0)}
+                <CardContent className="p-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
+                      All Opportunities ({totalCount})
                     </span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-lg font-bold">
+                        {new Intl.NumberFormat('en-US', {
+                          style: 'currency',
+                          currency: 'USD',
+                          maximumFractionDigits: 0,
+                        }).format(opportunitiesData.totalAmount || 0)}
+                      </span>
+                    </div>
                   </div>
+                </CardContent>
+              </Card>
+
+              {stages.map((stage: any) => {
+                const stats = opportunitiesData.stageBreakdown[stage.id] || {
+                  total_amount: 0,
+                  count: 0,
+                };
+                return (
+                  <Card
+                    key={stage.id}
+                    className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStage === stage.id ? 'border-primary ring-primary ring-1' : ''}`}
+                    onClick={() => setSelectedStage(stage.id)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: stage.color }}
+                          />
+                          <span className="text-muted-foreground truncate text-[10px] font-medium tracking-wider uppercase">
+                            {stage.status_name} ({stats.count})
+                          </span>
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-lg font-bold">
+                            {new Intl.NumberFormat('en-US', {
+                              style: 'currency',
+                              currency: 'USD',
+                              maximumFractionDigits: 0,
+                            }).format(stats.total_amount)}
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <PageBody className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden pt-6">
+          <div className="flex min-h-0 flex-1 flex-col space-y-6">
+            <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
+              <CardContent className="flex min-h-0 flex-1 flex-col p-2">
+                <div className="flex-1 overflow-auto rounded-lg">
+                  <table className="w-full caption-bottom text-sm">
+                    <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                      <TableRow>
+                        {isVisible('sno') && (
+                          <TableHead className="w-12 whitespace-nowrap">
+                            S. No.
+                          </TableHead>
+                        )}
+                        {isVisible('name') && <TableHead>Name</TableHead>}
+                        {isVisible('account') && <TableHead>Account</TableHead>}
+                        {isVisible('stage') && <TableHead>Stage</TableHead>}
+                        {isVisible('amount') && <TableHead>Amount</TableHead>}
+                        {isVisible('currency') && (
+                          <TableHead>Currency</TableHead>
+                        )}
+                        {isVisible('probability') && (
+                          <TableHead>Probability</TableHead>
+                        )}
+                        {isVisible('close_date') && (
+                          <TableHead>Close Date</TableHead>
+                        )}
+                        {isVisible('priority') && (
+                          <TableHead>Priority</TableHead>
+                        )}
+                        {isVisible('type') && <TableHead>Type</TableHead>}
+                        {isVisible('source') && <TableHead>Source</TableHead>}
+                        {isVisible('competitor') && (
+                          <TableHead>Competitor</TableHead>
+                        )}
+                        {isVisible('is_closed') && (
+                          <TableHead>Closed</TableHead>
+                        )}
+                        {isVisible('is_won') && <TableHead>Won</TableHead>}
+                        {isVisible('close_reason') && (
+                          <TableHead>Close Reason</TableHead>
+                        )}
+                        {isVisible('is_public') && (
+                          <TableHead>Public</TableHead>
+                        )}
+                        {isVisible('owner') && <TableHead>Owner</TableHead>}
+                        {isVisible('created_at') && (
+                          <TableHead>Created On</TableHead>
+                        )}
+                        {isVisible('updated_at') && (
+                          <TableHead>Last Updated On</TableHead>
+                        )}
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={
+                              visibility
+                                ? Object.values(visibility).filter(
+                                    (v) => v !== false,
+                                  ).length + 1
+                                : 7
+                            }
+                            className="h-24 text-center"
+                          >
+                            <div className="flex items-center justify-center">
+                              <div className="text-gray-500">
+                                Loading opportunities...
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : paginatedOpportunities.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={
+                              visibility
+                                ? Object.values(visibility).filter(
+                                    (v) => v !== false,
+                                  ).length + 1
+                                : 7
+                            }
+                            className="h-24 text-center"
+                          >
+                            <div className="text-gray-500">
+                              {searchTerm
+                                ? 'No opportunities match your search'
+                                : 'No opportunities yet.'}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedOpportunities.map(
+                          (opportunity: Opportunity, index: number) => (
+                            <TableRow key={opportunity.id}>
+                              {isVisible('sno') && (
+                                <TableCell className="text-muted-foreground w-12 p-4">
+                                  {(currentPage - 1) * itemsPerPage + index + 1}
+                                </TableCell>
+                              )}
+                              {isVisible('name') && (
+                                <TableCell className="font-medium">
+                                  <Link
+                                    href={`/home/opportunities/${opportunity.id}`}
+                                    className="hover:underline"
+                                  >
+                                    {opportunity.title}
+                                  </Link>
+                                </TableCell>
+                              )}
+                              {isVisible('account') && (
+                                <TableCell className="text-muted-foreground">
+                                  {opportunity.account?.account_name || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('stage') && (
+                                <TableCell>
+                                  <Badge
+                                    variant="outline"
+                                    style={{
+                                      borderColor: opportunity.stage?.color,
+                                      color: opportunity.stage?.color,
+                                      backgroundColor: `${opportunity.stage?.color}15`,
+                                    }}
+                                  >
+                                    {opportunity.stage?.status_name}
+                                  </Badge>
+                                </TableCell>
+                              )}
+                              {isVisible('amount') && (
+                                <TableCell className="text-muted-foreground">
+                                  {new Intl.NumberFormat('en-US', {
+                                    style: 'currency',
+                                    currency: opportunity.currency || 'USD',
+                                    maximumFractionDigits: 0,
+                                  }).format(opportunity.amount || 0)}
+                                </TableCell>
+                              )}
+                              {isVisible('currency') && (
+                                <TableCell className="text-muted-foreground">
+                                  {opportunity.currency || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('probability') && (
+                                <TableCell className="text-muted-foreground">
+                                  {opportunity.probability
+                                    ? `${opportunity.probability}%`
+                                    : '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('close_date') && (
+                                <TableCell className="text-muted-foreground">
+                                  {opportunity.close_date
+                                    ? new Date(
+                                        opportunity.close_date,
+                                      ).toLocaleDateString()
+                                    : '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('priority') && (
+                                <TableCell className="text-muted-foreground">
+                                  <PriorityBadge
+                                    priority={opportunity.priority}
+                                  />
+                                </TableCell>
+                              )}
+                              {isVisible('type') && (
+                                <TableCell className="text-muted-foreground capitalize">
+                                  {opportunity.type?.replace('_', ' ') || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('source') && (
+                                <TableCell className="text-muted-foreground capitalize">
+                                  {opportunity.source?.replace('_', ' ') || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('competitor') && (
+                                <TableCell className="text-muted-foreground">
+                                  {opportunity.competitor || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('is_closed') && (
+                                <TableCell className="text-muted-foreground text-center">
+                                  {opportunity.is_closed ? 'Yes' : 'No'}
+                                </TableCell>
+                              )}
+                              {isVisible('is_won') && (
+                                <TableCell className="text-muted-foreground text-center">
+                                  {opportunity.is_won ? 'Yes' : 'No'}
+                                </TableCell>
+                              )}
+                              {isVisible('close_reason') && (
+                                <TableCell className="text-muted-foreground max-w-[200px] truncate">
+                                  {opportunity.close_reason || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('is_public') && (
+                                <TableCell className="text-muted-foreground text-center">
+                                  {opportunity.is_public ? (
+                                    <Badge
+                                      variant="outline"
+                                      className="border-green-200 bg-green-50 text-green-600"
+                                    >
+                                      Public
+                                    </Badge>
+                                  ) : (
+                                    <Badge
+                                      variant="outline"
+                                      className="border-amber-200 bg-amber-50 text-amber-600"
+                                    >
+                                      Private
+                                    </Badge>
+                                  )}
+                                </TableCell>
+                              )}
+                              {isVisible('owner') && (
+                                <TableCell className="text-muted-foreground">
+                                  {opportunity.owner?.name || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('created_at') && (
+                                <TableCell className="text-muted-foreground">
+                                  {new Date(
+                                    opportunity.created_at,
+                                  ).toLocaleDateString()}
+                                </TableCell>
+                              )}
+                              {isVisible('updated_at') && (
+                                <TableCell className="text-muted-foreground">
+                                  {new Date(
+                                    opportunity.updated_at,
+                                  ).toLocaleDateString()}
+                                </TableCell>
+                              )}
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="link"
+                                  asChild
+                                  className="text-primary h-auto p-0 hover:underline"
+                                >
+                                  {canAccess('opportunities', 'view') && (
+                                    <Link
+                                      href={`/home/opportunities/${opportunity.id}`}
+                                    >
+                                      View
+                                    </Link>
+                                  )}
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ),
+                        )
+                      )}
+                    </TableBody>
+                  </table>
                 </div>
               </CardContent>
             </Card>
 
-            {stages.map((stage: any) => {
-              const stats = opportunitiesData.stageBreakdown[stage.id] || {
-                total_amount: 0,
-                count: 0,
-              };
-              return (
-                <Card
-                  key={stage.id}
-                  className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStage === stage.id ? 'border-primary ring-primary ring-1' : ''}`}
-                  onClick={() => setSelectedStage(stage.id)}
-                >
-                  <CardContent className="p-3">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="h-2 w-2 rounded-full"
-                          style={{ backgroundColor: stage.color }}
-                        />
-                        <span className="text-muted-foreground truncate text-[10px] font-medium tracking-wider uppercase">
-                          {stage.status_name} ({stats.count})
-                        </span>
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-lg font-bold">
-                          {new Intl.NumberFormat('en-US', {
-                            style: 'currency',
-                            currency: 'USD',
-                            maximumFractionDigits: 0,
-                          }).format(stats.total_amount)}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      <PageBody className="bg-sidebar flex flex-1 flex-col">
-        <div className="flex flex-1 flex-col space-y-6">
-          {/* Table */}
-          <Card className="flex flex-1 flex-col border-none shadow-none">
-            <CardContent className="flex flex-1 flex-col p-2">
-              <div className="flex-1 overflow-auto rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {isVisible('sno') && (
-                        <TableHead className="w-12 p-4 whitespace-nowrap">
-                          S. No.
-                        </TableHead>
-                      )}
-                      {isVisible('name') && (
-                        <TableHead>Opportunity Name</TableHead>
-                      )}
-                      {isVisible('account') && <TableHead>Account</TableHead>}
-                      {isVisible('stage') && <TableHead>Stage</TableHead>}
-                      {isVisible('amount') && (
-                        <TableHead className="text-right">Amount</TableHead>
-                      )}
-                      {isVisible('currency') && <TableHead>Currency</TableHead>}
-                      {isVisible('probability') && (
-                        <TableHead>Probability</TableHead>
-                      )}
-                      {isVisible('close_date') && (
-                        <TableHead>Close Date</TableHead>
-                      )}
-                      {isVisible('priority') && <TableHead>Priority</TableHead>}
-                      {isVisible('type') && <TableHead>Type</TableHead>}
-                      {isVisible('source') && <TableHead>Source</TableHead>}
-                      {isVisible('competitor') && (
-                        <TableHead>Competitor</TableHead>
-                      )}
-                      {isVisible('is_closed') && <TableHead>Closed</TableHead>}
-                      {isVisible('is_won') && <TableHead>Won</TableHead>}
-                      {isVisible('close_reason') && (
-                        <TableHead>Close Reason</TableHead>
-                      )}
-                      {isVisible('is_public') && <TableHead>Public</TableHead>}
-                      {isVisible('owner') && <TableHead>Owner</TableHead>}
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={
-                            visibility
-                              ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
-                              : 8
-                          }
-                          className="h-24 text-center"
-                        >
-                          <div className="flex items-center justify-center">
-                            <div className="text-gray-500">
-                              Loading opportunities...
-                            </div>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ) : paginatedOpportunities.length === 0 ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={
-                            visibility
-                              ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
-                              : 8
-                          }
-                          className="h-24 text-center"
-                        >
-                          <div className="text-gray-500">
-                            {searchTerm || selectedStage !== 'all'
-                              ? 'No opportunities match your filters'
-                              : 'No opportunities yet.'}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      paginatedOpportunities.map(
-                        (opp: Opportunity, index: number) => (
-                          <TableRow key={opp.id}>
-                            {isVisible('sno') && (
-                              <TableCell className="text-muted-foreground w-12">
-                                {(currentPage - 1) * itemsPerPage + index + 1}
-                              </TableCell>
-                            )}
-                            {isVisible('name') && (
-                              <TableCell className="font-medium">
-                                <Link
-                                  href={`/home/opportunities/${opp.id}`}
-                                  className="hover:underline"
-                                >
-                                  {opp.opportunity_name}
-                                </Link>
-                              </TableCell>
-                            )}
-                            {isVisible('account') && (
-                              <TableCell className="text-muted-foreground">
-                                {opp.account?.account_name || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('stage') && (
-                              <TableCell>
-                                {opp.stage && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="gap-1"
-                                    style={{
-                                      backgroundColor: `${opp.stage.color}20`,
-                                      color: opp.stage.color,
-                                      borderColor: `${opp.stage.color}40`,
-                                    }}
-                                  >
-                                    {opp.stage.status_name}
-                                  </Badge>
-                                )}
-                              </TableCell>
-                            )}
-                            {isVisible('amount') && (
-                              <TableCell className="text-right font-medium">
-                                {new Intl.NumberFormat('en-US', {
-                                  style: 'currency',
-                                  currency: opp.currency || 'USD',
-                                }).format(opp.amount || 0)}
-                              </TableCell>
-                            )}
-                            {isVisible('currency') && (
-                              <TableCell className="text-muted-foreground">
-                                {opp.currency || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('probability') && (
-                              <TableCell className="text-muted-foreground">
-                                {opp.probability ? `${opp.probability}%` : '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('close_date') && (
-                              <TableCell className="text-muted-foreground">
-                                {opp.expected_close_date
-                                  ? new Date(
-                                      opp.expected_close_date,
-                                    ).toLocaleDateString()
-                                  : '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('priority') && (
-                              <TableCell className="text-muted-foreground">
-                                {opp.priority ? (
-                                  <Badge variant="outline">
-                                    {opp.priority}
-                                  </Badge>
-                                ) : (
-                                  '-'
-                                )}
-                              </TableCell>
-                            )}
-                            {isVisible('type') && (
-                              <TableCell className="text-muted-foreground">
-                                {opp.opportunity_type || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('source') && (
-                              <TableCell className="text-muted-foreground">
-                                {opp.lead_source || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('competitor') && (
-                              <TableCell className="text-muted-foreground">
-                                {opp.competitor || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('is_closed') && (
-                              <TableCell className="text-center">
-                                {opp.is_closed ? (
-                                  <Badge
-                                    variant="outline"
-                                    className="border-green-200 bg-green-50 text-green-600"
-                                  >
-                                    Yes
-                                  </Badge>
-                                ) : (
-                                  <Badge
-                                    variant="outline"
-                                    className="border-amber-200 bg-amber-50 text-amber-600"
-                                  >
-                                    No
-                                  </Badge>
-                                )}
-                              </TableCell>
-                            )}
-                            {isVisible('is_won') && (
-                              <TableCell className="text-center">
-                                {opp.is_won ? (
-                                  <Badge
-                                    variant="outline"
-                                    className="border-green-200 bg-green-50 text-green-600"
-                                  >
-                                    Yes
-                                  </Badge>
-                                ) : (
-                                  <Badge
-                                    variant="outline"
-                                    className="border-amber-200 bg-amber-50 text-amber-600"
-                                  >
-                                    No
-                                  </Badge>
-                                )}
-                              </TableCell>
-                            )}
-                            {isVisible('close_reason') && (
-                              <TableCell className="text-muted-foreground max-w-[150px] truncate">
-                                {opp.close_reason || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('is_public') && (
-                              <TableCell className="text-muted-foreground text-center">
-                                {opp.is_public ? (
-                                  <Badge
-                                    variant="outline"
-                                    className="border-green-200 bg-green-50 text-green-600"
-                                  >
-                                    Public
-                                  </Badge>
-                                ) : (
-                                  <Badge
-                                    variant="outline"
-                                    className="border-amber-200 bg-amber-50 text-amber-600"
-                                  >
-                                    Private
-                                  </Badge>
-                                )}
-                              </TableCell>
-                            )}
-                            {isVisible('owner') && (
-                              <TableCell className="text-muted-foreground">
-                                {opp.owner?.name || '-'}
-                              </TableCell>
-                            )}
-                            <TableCell className="text-right">
-                              <Button
-                                variant="link"
-                                asChild
-                                className="text-primary h-auto p-0 hover:underline"
-                              >
-                                {canAccess('opportunities', 'view') && (
-                                  <Link href={`/home/opportunities/${opp.id}`}>
-                                    View
-                                  </Link>
-                                )}
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ),
-                      )
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-
-          {totalCount > 0 && (
-            <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mb-4 flex items-center justify-between border-t p-4 px-6 lg:-mb-8">
-              <div>
-                Showing{' '}
-                <span className="text-foreground font-medium">
-                  {(currentPage - 1) * itemsPerPage + 1}
-                </span>{' '}
-                to{' '}
-                <span className="text-foreground font-medium">
-                  {Math.min(currentPage * itemsPerPage, totalCount)}
-                </span>{' '}
-                of{' '}
-                <span className="text-foreground font-medium">
-                  {totalCount}
-                </span>{' '}
-                opportunities
-              </div>
-              <Pagination className="w-auto">
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      className={
-                        currentPage === 1
-                          ? 'pointer-events-none opacity-50'
-                          : 'cursor-pointer'
-                      }
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.max(prev - 1, 1))
-                      }
-                    />
-                  </PaginationItem>
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <PaginationItem key={i}>
-                      <PaginationLink
-                        isActive={currentPage === i + 1}
-                        onClick={() => setCurrentPage(i + 1)}
-                        className="cursor-pointer"
-                      >
-                        {i + 1}
-                      </PaginationLink>
+            {totalCount > 0 && (
+              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mb-4 flex items-center justify-between border-t p-4 px-6 lg:-mb-8">
+                <div>
+                  Showing{' '}
+                  <span className="text-foreground font-medium">
+                    {(currentPage - 1) * itemsPerPage + 1}
+                  </span>{' '}
+                  to{' '}
+                  <span className="text-foreground font-medium">
+                    {Math.min(currentPage * itemsPerPage, totalCount)}
+                  </span>{' '}
+                  of{' '}
+                  <span className="text-foreground font-medium">
+                    {totalCount}
+                  </span>{' '}
+                  opportunities
+                </div>
+                <Pagination className="w-auto">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        className={
+                          currentPage === 1
+                            ? 'pointer-events-none opacity-50'
+                            : 'cursor-pointer'
+                        }
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.max(prev - 1, 1))
+                        }
+                      />
                     </PaginationItem>
-                  ))}
-                  <PaginationItem>
-                    <PaginationNext
-                      className={
-                        currentPage === totalPages
-                          ? 'pointer-events-none opacity-50'
-                          : 'cursor-pointer'
-                      }
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                      }
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          )}
-        </div>
-      </PageBody>
+                    {Array.from({ length: totalPages }).map((_, i) => (
+                      <PaginationItem key={i}>
+                        <PaginationLink
+                          isActive={currentPage === i + 1}
+                          onClick={() => setCurrentPage(i + 1)}
+                          className="cursor-pointer"
+                        >
+                          {i + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        className={
+                          currentPage === totalPages
+                            ? 'pointer-events-none opacity-50'
+                            : 'cursor-pointer'
+                        }
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(prev + 1, totalPages),
+                          )
+                        }
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
 
-      <OpportunityDialog
-        isOpen={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-      />
+            <OpportunityDialog
+              isOpen={isCreateDialogOpen}
+              onOpenChange={setIsCreateDialogOpen}
+            />
+          </div>
+        </PageBody>
+      </div>
     </ModuleGuard>
   );
 }

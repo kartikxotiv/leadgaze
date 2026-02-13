@@ -86,7 +86,7 @@ export function CreateContactDialog({
     },
     onSuccess: (data) => {
       toast.success('Contact created successfully');
-      queryClient.invalidateQueries({ queryKey: ['contacts', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
       resetForm();
       onOpenChange(false);
       if (onSuccess) onSuccess(data);
