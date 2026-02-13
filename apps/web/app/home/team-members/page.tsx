@@ -51,7 +51,7 @@ import { UpdateMemberDialog } from './components/update-member-dialog';
 
 export default function TeamMembersPage() {
   const queryClient = useQueryClient();
-  const { currentWorkspace } = useRBAC();
+  const { currentWorkspace, canAccess } = useRBAC();
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [updatingMember, setUpdatingMember] = useState<WorkspaceMember | null>(
     null,
@@ -190,14 +190,16 @@ export default function TeamMembersPage() {
         description="Manage your workspace team members and permissions"
       >
         <div className="flex items-center gap-3">
-          <Button
-            onClick={() => setInviteDialogOpen(true)}
-            size="sm"
-            className="h-9 gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Invite Member
-          </Button>
+          {canAccess('team_members', 'create') && (
+            <Button
+              onClick={() => setInviteDialogOpen(true)}
+              size="sm"
+              className="h-9 gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Invite Member
+            </Button>
+          )}
 
           <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
 
@@ -365,23 +367,27 @@ export default function TeamMembersPage() {
                                   <RotateCcw className="h-4 w-4" />
                                 </Button>
                               )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditMember(member)}
-                                className="gap-2"
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveMember(member.id)}
-                                className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
-                                disabled={removeMutation.isPending}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {canAccess('team_members', 'edit') && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditMember(member)}
+                                  className="gap-2"
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {canAccess('team_members', 'delete') && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveMember(member.id)}
+                                  className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
+                                  disabled={removeMutation.isPending}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>

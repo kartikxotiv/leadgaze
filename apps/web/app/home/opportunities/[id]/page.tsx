@@ -96,6 +96,33 @@ export default function OpportunityDetailsPage() {
     user?.id,
   );
 
+  const changeStagePermission = usePermissionDetail(
+    'opportunities',
+    'change_stage',
+  );
+  const canChangeStage = useCanAccessData(
+    changeStagePermission,
+    opportunity?.owner_id,
+    user?.id,
+  );
+
+  const closeWonPermission = usePermissionDetail('opportunities', 'close_won');
+  const canCloseWon = useCanAccessData(
+    closeWonPermission,
+    opportunity?.owner_id,
+    user?.id,
+  );
+
+  const closeLostPermission = usePermissionDetail(
+    'opportunities',
+    'close_lost',
+  );
+  const canCloseLost = useCanAccessData(
+    closeLostPermission,
+    opportunity?.owner_id,
+    user?.id,
+  );
+
   if (isLoading) {
     return (
       <ModuleGuard module="opportunities">
@@ -146,23 +173,36 @@ export default function OpportunityDetailsPage() {
                     toast.error('Failed to update stage');
                   }
                 }}
-                disabled={!canEdit}
+                disabled={!canChangeStage}
               >
                 <SelectTrigger className="h-9 w-[180px]">
                   <SelectValue placeholder="Update Stage" />
                 </SelectTrigger>
                 <SelectContent>
-                  {stages.map((stage: any) => (
-                    <SelectItem key={stage.id} value={stage.id}>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="h-2 w-2 rounded-full"
-                          style={{ backgroundColor: stage.color }}
-                        />
-                        {stage.status_name}
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {stages
+                    .filter((stage: any) => {
+                      const isWon =
+                        stage.status_name.toLowerCase().includes('won') ||
+                        stage.is_won;
+                      const isLost =
+                        stage.status_name.toLowerCase().includes('lost') ||
+                        stage.is_lost;
+
+                      if (isWon && !canCloseWon) return false;
+                      if (isLost && !canCloseLost) return false;
+                      return true;
+                    })
+                    .map((stage: any) => (
+                      <SelectItem key={stage.id} value={stage.id}>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: stage.color }}
+                          />
+                          {stage.status_name}
+                        </div>
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             )}
@@ -171,6 +211,7 @@ export default function OpportunityDetailsPage() {
                 variant="outline"
                 size="sm"
                 className="border-green-600 text-green-600 hover:bg-green-50"
+                disabled={!canCloseWon}
                 onClick={async () => {
                   const wonStage = stages.find(
                     (s: any) =>
@@ -199,6 +240,7 @@ export default function OpportunityDetailsPage() {
                 variant="outline"
                 size="sm"
                 className="border-red-600 text-red-600 hover:bg-red-50"
+                disabled={!canCloseLost}
                 onClick={async () => {
                   const lostStage = stages.find(
                     (s: any) =>
@@ -222,19 +264,15 @@ export default function OpportunityDetailsPage() {
                 Close as Lost
               </Button>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditDialogOpen(true)}
-              disabled={!canEdit}
-              title={
-                !canEdit
-                  ? 'You do not have permission to edit this opportunity'
-                  : ''
-              }
-            >
-              Edit Opportunity
-            </Button>
+            {canEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditDialogOpen(true)}
+              >
+                Edit Opportunity
+              </Button>
+            )}
           </div>
         </div>
 

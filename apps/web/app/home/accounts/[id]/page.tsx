@@ -127,17 +127,15 @@ export default function AccountDetailsPage() {
               Back
             </Link>
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditDialogOpen(true)}
-            disabled={!canEdit}
-            title={
-              !canEdit ? 'You do not have permission to edit this account' : ''
-            }
-          >
-            Edit Account
-          </Button>
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditDialogOpen(true)}
+            >
+              Edit Account
+            </Button>
+          )}
         </div>
 
         <div className="flex items-start justify-between">
@@ -527,24 +525,7 @@ export default function AccountDetailsPage() {
                     </span>
                   </div>
                 </div>
-                {account.linkedin_url && (
-                  <>
-                    <Separator />
-                    <div className="space-y-1">
-                      <p className="text-muted-foreground text-xs font-medium">
-                        LinkedIn
-                      </p>
-                      <a
-                        href={account.linkedin_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm break-all text-blue-600 hover:underline"
-                      >
-                        {account.linkedin_url}
-                      </a>
-                    </div>
-                  </>
-                )}
+
                 {account.twitter_handle && (
                   <>
                     <Separator />
