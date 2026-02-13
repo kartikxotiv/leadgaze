@@ -49,7 +49,7 @@ import {
 
 import { OpportunityDialog } from './components/opportunity-dialog';
 
-function PriorityBadge({ priority }: { priority: string | null }) {
+function PriorityBadge({ priority }: { priority: string | null | undefined }) {
   switch (priority?.toLowerCase()) {
     case 'high':
       return (
@@ -258,7 +258,7 @@ export default function OpportunitiesPage() {
                   className="h-9 gap-2"
                 >
                   <Plus className="h-4 w-4" />
-                  Create Opportunity
+                  New Opportunity
                 </Button>
               )}
 
@@ -446,7 +446,7 @@ export default function OpportunitiesPage() {
                                     href={`/home/opportunities/${opportunity.id}`}
                                     className="hover:underline"
                                   >
-                                    {opportunity.title}
+                                    {opportunity.opportunity_name}
                                   </Link>
                                 </TableCell>
                               )}
@@ -492,9 +492,9 @@ export default function OpportunitiesPage() {
                               )}
                               {isVisible('close_date') && (
                                 <TableCell className="text-muted-foreground">
-                                  {opportunity.close_date
+                                  {opportunity.expected_close_date
                                     ? new Date(
-                                        opportunity.close_date,
+                                        opportunity.expected_close_date,
                                       ).toLocaleDateString()
                                     : '-'}
                                 </TableCell>
@@ -508,12 +508,16 @@ export default function OpportunitiesPage() {
                               )}
                               {isVisible('type') && (
                                 <TableCell className="text-muted-foreground capitalize">
-                                  {opportunity.type?.replace('_', ' ') || '-'}
+                                  {opportunity.opportunity_type?.replace(
+                                    '_',
+                                    ' ',
+                                  ) || '-'}
                                 </TableCell>
                               )}
                               {isVisible('source') && (
                                 <TableCell className="text-muted-foreground capitalize">
-                                  {opportunity.source?.replace('_', ' ') || '-'}
+                                  {opportunity.lead_source?.replace('_', ' ') ||
+                                    '-'}
                                 </TableCell>
                               )}
                               {isVisible('competitor') && (
@@ -575,19 +579,19 @@ export default function OpportunitiesPage() {
                                 </TableCell>
                               )}
                               <TableCell className="text-right">
-                                <Button
-                                  variant="link"
-                                  asChild
-                                  className="text-primary h-auto p-0 hover:underline"
-                                >
-                                  {canAccess('opportunities', 'view') && (
+                                {canAccess('opportunities', 'view') && (
+                                  <Button
+                                    variant="link"
+                                    asChild
+                                    className="text-primary h-auto p-0 hover:underline"
+                                  >
                                     <Link
                                       href={`/home/opportunities/${opportunity.id}`}
                                     >
                                       View
                                     </Link>
-                                  )}
-                                </Button>
+                                  </Button>
+                                )}
                               </TableCell>
                             </TableRow>
                           ),
