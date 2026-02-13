@@ -363,11 +363,13 @@ export default function AccountDetailsPage() {
                               <p>{contact.email}</p>
                               <p>{contact.phone_number}</p>
                             </div>
-                            <Button size="sm" variant="ghost" asChild>
-                              <Link href={`/home/contacts/${contact.id}`}>
-                                View
-                              </Link>
-                            </Button>
+                            {rbacCanAccess('contacts', 'view') && (
+                              <Button size="sm" variant="ghost" asChild>
+                                <Link href={`/home/contacts/${contact.id}`}>
+                                  View
+                                </Link>
+                              </Button>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -400,58 +402,66 @@ export default function AccountDetailsPage() {
                 </Button>
               </CardHeader>
               <CardContent>
-                {opportunities && opportunities.length > 0 ? (
-                  <div className="divide-y">
-                    {opportunities.map((opp: any) => (
-                      <div
-                        key={opp.id}
-                        className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
-                      >
-                        <div>
-                          <p className="text-sm font-medium">
-                            {opp.opportunity_name}
-                          </p>
-                          <div className="mt-1 flex items-center gap-2">
-                            {opp.stage && (
-                              <Badge
-                                variant="outline"
-                                className="h-4 text-[10px]"
-                              >
-                                {opp.stage.status_name}
-                              </Badge>
-                            )}
-                            <span className="text-muted-foreground text-xs">
-                              {new Intl.NumberFormat('en-US', {
-                                style: 'currency',
-                                currency: opp.currency || 'USD',
-                              }).format(opp.amount)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-muted-foreground hidden text-right text-xs sm:block">
-                            <p>
-                              Expected Close:{' '}
-                              {opp.expected_close_date
-                                ? new Date(
-                                    opp.expected_close_date,
-                                  ).toLocaleDateString()
-                                : '-'}
+                {rbacCanAccess('accounts', 'view_opportunities') ? (
+                  opportunities && opportunities.length > 0 ? (
+                    <div className="divide-y">
+                      {opportunities.map((opp: any) => (
+                        <div
+                          key={opp.id}
+                          className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                        >
+                          <div>
+                            <p className="text-sm font-medium">
+                              {opp.opportunity_name}
                             </p>
-                            <p>Probability: {opp.probability}%</p>
+                            <div className="mt-1 flex items-center gap-2">
+                              {opp.stage && (
+                                <Badge
+                                  variant="outline"
+                                  className="h-4 text-[10px]"
+                                >
+                                  {opp.stage.status_name}
+                                </Badge>
+                              )}
+                              <span className="text-muted-foreground text-xs">
+                                {new Intl.NumberFormat('en-US', {
+                                  style: 'currency',
+                                  currency: opp.currency || 'USD',
+                                }).format(opp.amount)}
+                              </span>
+                            </div>
                           </div>
-                          <Button size="sm" variant="ghost" asChild>
-                            <Link href={`/home/opportunities/${opp.id}`}>
-                              View
-                            </Link>
-                          </Button>
+                          <div className="flex items-center gap-4">
+                            <div className="text-muted-foreground hidden text-right text-xs sm:block">
+                              <p>
+                                Expected Close:{' '}
+                                {opp.expected_close_date
+                                  ? new Date(
+                                      opp.expected_close_date,
+                                    ).toLocaleDateString()
+                                  : '-'}
+                              </p>
+                              <p>Probability: {opp.probability}%</p>
+                            </div>
+                            {rbacCanAccess('opportunities', 'view') && (
+                              <Button size="sm" variant="ghost" asChild>
+                                <Link href={`/home/opportunities/${opp.id}`}>
+                                  View
+                                </Link>
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-muted-foreground py-6 text-center text-sm">
+                      No opportunities associated with this account.
+                    </div>
+                  )
                 ) : (
                   <div className="text-muted-foreground py-6 text-center text-sm">
-                    No opportunities associated with this account.
+                    You do not have permission to view opportunities.
                   </div>
                 )}
               </CardContent>
