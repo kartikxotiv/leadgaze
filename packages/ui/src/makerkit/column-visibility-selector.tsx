@@ -63,6 +63,7 @@ export function ColumnVisibilitySelector({
           <DropdownMenuCheckboxItem
             key={column.id}
             checked={visibility[column.id] !== false}
+            onSelect={(e) => e.preventDefault()}
             onCheckedChange={() => onToggle(column.id)}
           >
             <div className="flex w-full items-center justify-between gap-2">
