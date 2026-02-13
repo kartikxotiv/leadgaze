@@ -220,7 +220,7 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
 
   return (
     <div className="flex h-full flex-col">
-      <WorkspaceSwitcher />
+      {/* <WorkspaceSwitcher /> */}
       <div className="flex-1 overflow-y-auto">
         <SidebarNavigation config={parsedConfig} />
       </div>
