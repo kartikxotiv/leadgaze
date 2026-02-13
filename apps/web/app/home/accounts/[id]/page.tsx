@@ -10,8 +10,10 @@ import {
   ArrowLeft,
   Building2,
   Calendar,
+  Clock,
   DollarSign,
   Globe,
+  Linkedin,
   Mail,
   MapPin,
   Phone,
@@ -163,6 +165,21 @@ export default function AccountDetailsPage() {
                     {account.website.replace(/^https?:\/\//, '')}
                   </a>
                 )}
+                <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <Clock className="h-3 w-3" />
+                  <span>
+                    Created on{' '}
+                    {new Date(account.created_at).toLocaleDateString(
+                      undefined,
+                      {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      },
+                    )}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -229,6 +246,27 @@ export default function AccountDetailsPage() {
                   <span className="text-sm capitalize">
                     {account.account_type || '-'}
                   </span>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-sm font-medium">
+                    LinkedIn
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Linkedin className="text-muted-foreground h-4 w-4" />
+                    {account.linkedin_url ? (
+                      <a
+                        href={account.linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm break-all hover:underline"
+                      >
+                        {account.linkedin_url}
+                      </a>
+                    ) : (
+                      <span className="text-sm">-</span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-1 sm:col-span-2">

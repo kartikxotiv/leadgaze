@@ -360,10 +360,10 @@ export function CreateRoleDialog({
             </Button>
             <Button
               type="submit"
-              disabled={createRoleMutation.isPending}
+              disabled={createRoleMutation.isPending || modulesLoading}
               className="gap-2"
             >
-              {createRoleMutation.isPending && (
+              {(createRoleMutation.isPending || modulesLoading) && (
                 <Loader2 className="h-4 w-4 animate-spin" />
               )}
               Create Role

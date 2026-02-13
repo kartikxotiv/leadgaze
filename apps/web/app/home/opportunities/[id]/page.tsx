@@ -11,6 +11,7 @@ import {
   Building2,
   Calendar,
   CheckCircle,
+  Clock,
   FileText,
   Flag,
   Tag,
@@ -261,6 +262,21 @@ export default function OpportunityDetailsPage() {
                     • {opportunity.type}
                   </span>
                 )}
+                <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <Clock className="h-3 w-3" />
+                  <span>
+                    Created on{' '}
+                    {new Date(opportunity.created_at).toLocaleDateString(
+                      undefined,
+                      {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      },
+                    )}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
