@@ -398,7 +398,7 @@ export default function AccountDetailsPage() {
                   variant="outline"
                   onClick={() => setIsOpportunityDialogOpen(true)}
                 >
-                  Add Opportunity
+                  New Opportunity
                 </Button>
               </CardHeader>
               <CardContent>

@@ -167,7 +167,7 @@ export function CreateRoleDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[700px]">
         <DialogHeader>
-          <DialogTitle>Create New Role</DialogTitle>
+          <DialogTitle>New Role</DialogTitle>
           <DialogDescription>
             Create a new role and assign permissions to it
           </DialogDescription>
@@ -366,7 +366,7 @@ export function CreateRoleDialog({
               {(createRoleMutation.isPending || modulesLoading) && (
                 <Loader2 className="h-4 w-4 animate-spin" />
               )}
-              Create Role
+              New Role
             </Button>
           </DialogFooter>
         </form>

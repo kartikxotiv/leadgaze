@@ -136,7 +136,7 @@ export default function RolesPage() {
             className="h-9 gap-2"
           >
             <Plus className="h-4 w-4" />
-            Create Role
+            New Role
           </Button>
 
           <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
