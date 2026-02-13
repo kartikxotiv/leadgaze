@@ -102,17 +102,15 @@ export default function ContactDetailsPage() {
               Back
             </Link>
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditDialogOpen(true)}
-            disabled={!canEdit}
-            title={
-              !canEdit ? 'You do not have permission to edit this contact' : ''
-            }
-          >
-            Edit Contact
-          </Button>
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditDialogOpen(true)}
+            >
+              Edit Contact
+            </Button>
+          )}
         </div>
 
         <div className="flex items-start justify-between">
@@ -360,34 +358,21 @@ export default function ContactDetailsPage() {
                     </span>
                   </div>
                 </div>
-                {(contact.linkedin_url || contact.twitter_handle) && (
+                {contact.twitter_handle && (
                   <>
                     <Separator />
                     <div className="space-y-2">
                       <p className="text-muted-foreground text-xs font-medium">
                         Social
                       </p>
-                      {contact.linkedin_url && (
-                        <a
-                          href={contact.linkedin_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block text-sm text-blue-600 hover:underline"
-                        >
-                          LinkedIn Profile: @
-                          {contact.linkedin_url.replace('@', '')}
-                        </a>
-                      )}
-                      {contact.twitter_handle && (
-                        <a
-                          href={`https://twitter.com/${contact.twitter_handle.replace('@', '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block text-sm text-blue-600 hover:underline"
-                        >
-                          Twitter: @{contact.twitter_handle.replace('@', '')}
-                        </a>
-                      )}
+                      <a
+                        href={`https://twitter.com/${contact.twitter_handle.replace('@', '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-sm text-blue-600 hover:underline"
+                      >
+                        Twitter: @{contact.twitter_handle.replace('@', '')}
+                      </a>
                     </div>
                   </>
                 )}
