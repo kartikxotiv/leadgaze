@@ -269,14 +269,27 @@ export default function MeetingsPage() {
   const totalPages = Math.ceil(filteredMeetings.length / itemsPerPage);
   const totalCount = filteredMeetings.length;
 
+  const safeShowPicker = (
+    e: React.MouseEvent<HTMLInputElement> | React.FocusEvent<HTMLInputElement>,
+  ) => {
+    try {
+      if ('showPicker' in e.currentTarget) {
+        (e.currentTarget as any).showPicker();
+      }
+    } catch (error) {
+      console.warn('showPicker not supported or failed:', error);
+    }
+  };
+
   const handleCreate = () => {
     if (
       !formData.title.trim() ||
       !formData.entityId ||
       !formData.start_time ||
       !formData.end_time
-    )
+    ) {
       return;
+    }
     createMutation.mutate(formData);
   };
 
@@ -847,6 +860,7 @@ export default function MeetingsPage() {
                 <Label>Start</Label>
                 <Input
                   type="datetime-local"
+                  onClick={(e) => e.currentTarget.showPicker()}
                   value={formData.start_time}
                   onChange={(e) =>
                     setFormData({ ...formData, start_time: e.target.value })
@@ -857,6 +871,7 @@ export default function MeetingsPage() {
                 <Label>End</Label>
                 <Input
                   type="datetime-local"
+                  onClick={(e) => e.currentTarget.showPicker()}
                   value={formData.end_time}
                   onChange={(e) =>
                     setFormData({ ...formData, end_time: e.target.value })
@@ -927,6 +942,7 @@ export default function MeetingsPage() {
                 <Label>Start</Label>
                 <Input
                   type="datetime-local"
+                  onClick={(e) => e.currentTarget.showPicker()}
                   value={formData.start_time}
                   onChange={(e) =>
                     setFormData({ ...formData, start_time: e.target.value })
@@ -937,6 +953,7 @@ export default function MeetingsPage() {
                 <Label>End</Label>
                 <Input
                   type="datetime-local"
+                  onClick={(e) => e.currentTarget.showPicker()}
                   value={formData.end_time}
                   onChange={(e) =>
                     setFormData({ ...formData, end_time: e.target.value })
