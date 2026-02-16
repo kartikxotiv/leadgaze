@@ -193,8 +193,8 @@ export default function ContactsPage() {
           </div>
         </PageHeader>
 
-        <PageBody className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden pt-6">
-          <div className="flex min-h-0 flex-1 flex-col space-y-6">
+        <PageBody className="bg-sidebar -mt-6 flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-0">
+          <div className="flex min-h-0 flex-1 flex-col">
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
               <CardContent className="flex min-h-0 flex-1 flex-col p-2">
                 <div className="flex-1 overflow-auto rounded-lg">

@@ -284,18 +284,18 @@ export default function LeadsPage() {
 
           {/* Status Distribution Cards */}
           <div className="bg-sidebar px-6 pb-7">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <div className="-mt-1 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               <Card
                 className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStatus === 'all' ? 'border-primary ring-primary ring-1' : ''}`}
                 onClick={() => setSelectedStatus('all')}
               >
                 <CardContent className="p-3">
                   <div className="flex flex-col gap-1">
-                    <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
+                    <span className="text-muted-foreground text-[12px] font-medium tracking-wider uppercase">
                       All Leads ({totalCount})
                     </span>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-lg font-bold">{totalCount}</span>
+                      {/* <span className="text-lg font-bold">{totalCount}</span> */}
                     </div>
                   </div>
                 </CardContent>
@@ -311,20 +311,20 @@ export default function LeadsPage() {
                     className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStatus === status.id ? 'border-primary ring-primary ring-1' : ''}`}
                     onClick={() => setSelectedStatus(status.id)}
                   >
-                    <CardContent className="p-3">
+                    <CardContent className="h-8 p-3">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
                           <div
                             className="h-2 w-2 rounded-full"
                             style={{ backgroundColor: status.color }}
                           />
-                          <span className="text-muted-foreground truncate text-[10px] font-medium tracking-wider uppercase">
+                          <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
                             {status.status_name} ({stats.count})
                           </span>
                         </div>
                         <div className="flex items-baseline gap-2">
                           <span className="text-lg font-bold">
-                            {stats.count}
+                            {/* {stats.count} */}
                           </span>
                         </div>
                       </div>
@@ -335,7 +335,7 @@ export default function LeadsPage() {
             </div>
           </div>
         </div>
-        <PageBody className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden pt-6">
+        <PageBody className="bg-sidebar sticky -mt-6 flex min-h-0 flex-1 flex-col overflow-hidden pt-6">
           <div className="flex min-h-0 flex-1 flex-col space-y-6">
             {/* Table */}
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
@@ -345,7 +345,7 @@ export default function LeadsPage() {
                     <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                       <TableRow>
                         {isVisible('sno') && (
-                          <TableHead className="w-12 p-4 whitespace-nowrap">
+                          <TableHead className="w-12 p-3 whitespace-nowrap">
                             S. No.
                           </TableHead>
                         )}
