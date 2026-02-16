@@ -13,6 +13,8 @@ export interface Opportunity {
   account_id: string;
   primary_contact_id?: string;
   owner_id: string;
+  created_by?: string;
+  updated_by?: string;
   created_at: string;
   updated_at: string;
   priority?: 'High' | 'Medium' | 'Low';

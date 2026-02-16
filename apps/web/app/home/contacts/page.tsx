@@ -58,8 +58,9 @@ export default function ContactsPage() {
       { id: 'notes', label: 'Notes' },
       { id: 'is_public', label: 'Public' },
       { id: 'owner', label: 'Owner' },
+      { id: 'created_by', label: 'Created By' },
       { id: 'created_at', label: 'Created On' },
-      { id: 'updated_at', label: 'Last Updated On' },
+      { id: 'updated_by', label: 'Last Updated By' },
     ],
     [],
   );
@@ -77,8 +78,9 @@ export default function ContactsPage() {
       notes: false,
       is_public: false,
       owner: true,
+      created_by: false,
       created_at: false,
-      updated_at: false,
+      updated_by: false,
     });
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -182,7 +184,7 @@ export default function ContactsPage() {
         <PageBody className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden pt-6">
           <div className="flex min-h-0 flex-1 flex-col space-y-6">
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
-              <CardContent className="flex min-h-0 flex-1 flex-col p-2">
+              <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                 <div className="flex-1 overflow-auto rounded-lg">
                   <table className="w-full caption-bottom text-sm">
                     <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
@@ -210,11 +212,14 @@ export default function ContactsPage() {
                           <TableHead>Public</TableHead>
                         )}
                         {isVisible('owner') && <TableHead>Owner</TableHead>}
+                        {isVisible('created_by') && (
+                          <TableHead>Created By</TableHead>
+                        )}
                         {isVisible('created_at') && (
                           <TableHead>Created On</TableHead>
                         )}
-                        {isVisible('updated_at') && (
-                          <TableHead>Last Updated On</TableHead>
+                        {isVisible('updated_by') && (
+                          <TableHead>Last Updated By</TableHead>
                         )}
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -263,7 +268,7 @@ export default function ContactsPage() {
                           (contact: Contact, index: number) => (
                             <TableRow key={contact.id}>
                               {isVisible('sno') && (
-                                <TableCell className="text-muted-foreground w-12 p-4">
+                                <TableCell className="text-muted-foreground w-12">
                                   {(currentPage - 1) * itemsPerPage + index + 1}
                                 </TableCell>
                               )}
@@ -337,18 +342,23 @@ export default function ContactsPage() {
                                   {contact.owner?.name || '-'}
                                 </TableCell>
                               )}
-                              {isVisible('created_at') && (
+                              {isVisible('created_by') && (
                                 <TableCell className="text-muted-foreground">
-                                  {new Date(
-                                    contact.created_at,
-                                  ).toLocaleDateString()}
+                                  {contact.created_by || '-'}
                                 </TableCell>
                               )}
-                              {isVisible('updated_at') && (
+                              {isVisible('created_at') && (
                                 <TableCell className="text-muted-foreground">
-                                  {new Date(
-                                    contact.updated_at,
-                                  ).toLocaleDateString()}
+                                  {contact.created_at
+                                    ? new Date(
+                                        contact.created_at,
+                                      ).toLocaleDateString()
+                                    : '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('updated_by') && (
+                                <TableCell className="text-muted-foreground">
+                                  {contact.updated_by || '-'}
                                 </TableCell>
                               )}
                               <TableCell className="text-right">

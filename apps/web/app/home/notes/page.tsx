@@ -101,6 +101,8 @@ import { getOpportunitiesService } from '~/services/opportunities.service';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export default function NotesPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -126,6 +128,9 @@ export default function NotesPage() {
       { id: 'content', label: 'Note Content' },
       { id: 'author', label: 'Author' },
       { id: 'updated_at', label: 'Updated At' },
+      { id: 'created_by', label: 'Created By' },
+      { id: 'created_at', label: 'Created On' },
+      { id: 'updated_by', label: 'Last Updated By' },
     ],
     [],
   );
@@ -137,7 +142,10 @@ export default function NotesPage() {
       associate: true,
       content: true,
       author: true,
-      updated_at: true,
+      updated_at: false,
+      created_by: false,
+      created_at: false,
+      updated_by: false,
     });
 
   const { data: notes = [], isLoading } = useQuery({
@@ -398,7 +406,9 @@ export default function NotesPage() {
                 <TableHeader>
                   <TableRow>
                     {isVisible('sno') && (
-                      <TableHead className="w-[80px] pl-6">S. No.</TableHead>
+                      <TableHead className="w-12 whitespace-nowrap">
+                        S. No.
+                      </TableHead>
                     )}
                     {isVisible('category') && <TableHead>Category</TableHead>}
                     {isVisible('associate') && (
@@ -413,7 +423,16 @@ export default function NotesPage() {
                     {isVisible('updated_at') && (
                       <TableHead>Updated At</TableHead>
                     )}
-                    <TableHead className="pr-6 text-right">Actions</TableHead>
+                    {isVisible('created_by') && (
+                      <TableHead>Created By</TableHead>
+                    )}
+                    {isVisible('created_at') && (
+                      <TableHead>Created On</TableHead>
+                    )}
+                    {isVisible('updated_by') && (
+                      <TableHead>Last Updated By</TableHead>
+                    )}
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -436,7 +455,7 @@ export default function NotesPage() {
                     paginatedNotes.map((note: Note, index: number) => (
                       <TableRow key={note.id}>
                         {isVisible('sno') && (
-                          <TableCell className="text-muted-foreground pl-6">
+                          <TableCell className="text-muted-foreground w-12">
                             {(currentPage - 1) * itemsPerPage + index + 1}
                           </TableCell>
                         )}
@@ -469,14 +488,27 @@ export default function NotesPage() {
                         )}
                         {isVisible('updated_at') && (
                           <TableCell className="text-muted-foreground text-sm">
-                            <div className="flex flex-col">
-                              <span>
-                                {new Date(note.created_at).toLocaleDateString()}
-                              </span>
-                            </div>
+                            {new Date(
+                              note.updated_at || note.created_at,
+                            ).toLocaleDateString()}
                           </TableCell>
                         )}
-                        <TableCell className="pr-6 text-right">
+                        {isVisible('created_by') && (
+                          <TableCell className="text-muted-foreground text-sm">
+                            {note.created_by_user?.name || '-'}
+                          </TableCell>
+                        )}
+                        {isVisible('created_at') && (
+                          <TableCell className="text-muted-foreground text-sm">
+                            {new Date(note.created_at).toLocaleDateString()}
+                          </TableCell>
+                        )}
+                        {isVisible('updated_by') && (
+                          <TableCell className="text-muted-foreground text-sm">
+                            {note.updated_by || '-'}
+                          </TableCell>
+                        )}
+                        <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
