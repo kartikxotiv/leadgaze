@@ -59,17 +59,20 @@ export function ColumnVisibilitySelector({
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {columns.map((column) => (
-          <DropdownMenuCheckboxItem
-            key={column.id}
-            checked={visibility[column.id] !== false}
-            onCheckedChange={() => onToggle(column.id)}
-          >
-            <div className="flex w-full items-center justify-between gap-2">
-              <span>{column.label}</span>
-            </div>
-          </DropdownMenuCheckboxItem>
-        ))}
+        <div className="max-h-[300px] overflow-y-auto">
+          {columns.map((column) => (
+            <DropdownMenuCheckboxItem
+              key={column.id}
+              checked={visibility[column.id] !== false}
+              onSelect={(e) => e.preventDefault()}
+              onCheckedChange={() => onToggle(column.id)}
+            >
+              <div className="flex w-full items-center justify-between gap-2">
+                <span>{column.label}</span>
+              </div>
+            </DropdownMenuCheckboxItem>
+          ))}
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

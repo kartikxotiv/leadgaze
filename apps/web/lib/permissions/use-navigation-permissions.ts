@@ -33,6 +33,11 @@ import { useAccessibleModules } from '~/lib/permissions';
  * Filters navigation items based on the new permission system
  */
 
+/**
+ * Permission-based Dynamic Navigation Hook
+ * Filters navigation items based on the new permission system
+ */
+
 interface NavItem {
   label: string;
   path: string;
@@ -104,15 +109,20 @@ export function usePermissionBasedNavigation() {
   const accessibleModules = useAccessibleModules();
 
   const filteredItems = useMemo(() => {
-    // Build a set of accessible module keys for quick lookup
-    const accessibleModuleKeys = new Set(
-      accessibleModules.map((m) => m.module_key),
-    );
-
     // Filter navigation items to only those the user has access to
-    return ALL_NAV_ITEMS.filter((item) =>
-      accessibleModuleKeys.has(item.moduleKey),
-    );
+    return ALL_NAV_ITEMS.filter((item) => {
+      // Find the accessible module
+      const module = accessibleModules.find(
+        (m) => m.module_key === item.moduleKey,
+      );
+      if (!module) return false;
+
+      // Check if the specific feature is accessible
+      const feature = module.features.find(
+        (f) => f.feature_key === item.featureKey,
+      );
+      return feature?.canAccess ?? false;
+    });
   }, [accessibleModules]);
 
   // Separate into sales and team items

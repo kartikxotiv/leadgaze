@@ -226,7 +226,7 @@ export function OpportunityDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>
-            {isEditMode ? 'Edit Opportunity' : 'Create Opportunity'}
+            {isEditMode ? 'Edit Opportunity' : 'New Opportunity'}
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>

@@ -40,7 +40,7 @@ import { EditRoleDialog } from './components/edit-role-dialog';
 
 export default function RolesPage() {
   const queryClient = useQueryClient();
-  const { currentWorkspace } = useRBAC();
+  const { currentWorkspace, canAccess } = useRBAC();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -130,14 +130,16 @@ export default function RolesPage() {
         description="Create and manage workspace roles with custom permissions"
       >
         <div className="flex items-center gap-3">
-          <Button
-            onClick={() => setCreateDialogOpen(true)}
-            size="sm"
-            className="h-9 gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Create Role
-          </Button>
+          {canAccess('roles', 'create') && (
+            <Button
+              onClick={() => setCreateDialogOpen(true)}
+              size="sm"
+              className="h-9 gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              New Role
+            </Button>
+          )}
 
           <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
 
@@ -290,29 +292,33 @@ export default function RolesPage() {
                           )}
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
-                              {!role.is_system && (
+                              {!role.is_system &&
+                                canAccess('roles', 'edit') && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditRole(role)}
+                                    className="gap-2"
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              {canAccess('roles', 'delete') && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => handleEditRole(role)}
-                                  className="gap-2"
+                                  onClick={() =>
+                                    handleDeleteRole(role.id, role.is_system)
+                                  }
+                                  className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
+                                  disabled={
+                                    role.is_system ||
+                                    deleteRoleMutation.isPending
+                                  }
                                 >
-                                  <Edit2 className="h-4 w-4" />
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  handleDeleteRole(role.id, role.is_system)
-                                }
-                                className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
-                                disabled={
-                                  role.is_system || deleteRoleMutation.isPending
-                                }
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>

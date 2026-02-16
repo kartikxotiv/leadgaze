@@ -39,7 +39,7 @@ import { Account, getAccountsService } from '~/services/accounts.service';
 import { CreateAccountDialog } from './components/create-account-dialog';
 
 export default function AccountsPage() {
-  const { currentWorkspace: workspace } = useRBAC();
+  const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,7 +61,8 @@ export default function AccountsPage() {
       { id: 'description', label: 'Description' },
       { id: 'is_public', label: 'Public' },
       { id: 'owner', label: 'Owner' },
-      { id: 'created_at', label: 'Created At' },
+      { id: 'created_at', label: 'Created On' },
+      { id: 'updated_at', label: 'Last Updated On' },
     ],
     [],
   );
@@ -82,7 +83,8 @@ export default function AccountsPage() {
       description: false,
       is_public: false,
       owner: true,
-      created_at: true,
+      created_at: false,
+      updated_at: false,
     });
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -149,323 +151,351 @@ export default function AccountsPage() {
 
   return (
     <ModuleGuard module="accounts">
-      <PageHeader
-        className="bg-sidebar sticky top-0 px-6 pb-7"
-        title={`Accounts (${totalCount})`}
-        description="Manage your client accounts and organizations"
-      >
-        <div className="flex items-center gap-3">
-          <div className="relative w-64 lg:w-72">
-            <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search by account name..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-9 pl-10"
+      <div className="flex h-[100dvh] flex-col">
+        <PageHeader
+          className="bg-sidebar shrink-0 px-6 py-4"
+          title={`Accounts (${totalCount})`}
+          description="Manage your client accounts and organizations"
+        >
+          <div className="flex items-center gap-3">
+            <div className="relative w-64 lg:w-72">
+              <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search by account name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-9 pl-10"
+              />
+            </div>
+            {canAccess('accounts', 'create') && (
+              <Button
+                onClick={() => setCreateDialogOpen(true)}
+                className="h-9 gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                New Account
+              </Button>
+            )}
+
+            <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+
+            <ColumnVisibilitySelector
+              columns={columns}
+              visibility={visibility}
+              onToggle={toggleVisibility}
+              onReset={reset}
             />
           </div>
-          <Button
-            onClick={() => setCreateDialogOpen(true)}
-            className="h-9 gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            New Account
-          </Button>
+        </PageHeader>
 
-          <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
-
-          <ColumnVisibilitySelector
-            columns={columns}
-            visibility={visibility}
-            onToggle={toggleVisibility}
-            onReset={reset}
-          />
-        </div>
-      </PageHeader>
-
-      <PageBody className="bg-sidebar flex flex-1 flex-col">
-        <div className="flex flex-1 flex-col space-y-6">
-          <Card className="flex flex-1 flex-col border-none shadow-none">
-            <CardContent className="flex flex-1 flex-col p-2">
-              <div className="flex-1 overflow-y-auto rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {isVisible('sno') && (
-                        <TableHead className="w-12 whitespace-nowrap">
-                          S. No.
-                        </TableHead>
-                      )}
-                      {isVisible('name') && <TableHead>Account Name</TableHead>}
-                      {isVisible('website') && <TableHead>Website</TableHead>}
-                      {isVisible('industry') && <TableHead>Industry</TableHead>}
-                      {isVisible('phone') && <TableHead>Phone</TableHead>}
-                      {isVisible('company_size') && <TableHead>Size</TableHead>}
-                      {isVisible('billing_street') && (
-                        <TableHead>Street</TableHead>
-                      )}
-                      {isVisible('billing_city') && <TableHead>City</TableHead>}
-                      {isVisible('billing_state') && (
-                        <TableHead>State</TableHead>
-                      )}
-                      {isVisible('billing_postal_code') && (
-                        <TableHead>Postal Code</TableHead>
-                      )}
-                      {isVisible('billing_country') && (
-                        <TableHead>Country</TableHead>
-                      )}
-                      {isVisible('description') && (
-                        <TableHead>Description</TableHead>
-                      )}
-                      {isVisible('is_public') && <TableHead>Public</TableHead>}
-                      {isVisible('owner') && <TableHead>Owner</TableHead>}
-                      {isVisible('created_at') && (
-                        <TableHead>Created At</TableHead>
-                      )}
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      <TableRow className="m-5">
-                        <TableCell
-                          colSpan={
-                            visibility
-                              ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
-                              : 6
-                          }
-                          className="h-24 text-center"
-                        >
-                          <div className="flex items-center justify-center">
-                            <div className="text-gray-500">
-                              Loading accounts...
-                            </div>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ) : paginatedAccounts.length === 0 ? (
+        <PageBody className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden pt-6">
+          <div className="flex min-h-0 flex-1 flex-col space-y-6">
+            <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
+              <CardContent className="flex min-h-0 flex-1 flex-col p-2">
+                <div className="flex-1 overflow-auto rounded-lg">
+                  <table className="w-full caption-bottom text-sm">
+                    <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                       <TableRow>
-                        <TableCell
-                          colSpan={
-                            visibility
-                              ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
-                              : 6
-                          }
-                          className="h-24 text-center"
-                        >
-                          <div className="text-gray-500">
-                            {searchTerm
-                              ? 'No accounts match your search'
-                              : 'No accounts yet.'}
-                          </div>
-                        </TableCell>
+                        {isVisible('sno') && (
+                          <TableHead className="w-12 whitespace-nowrap">
+                            S. No.
+                          </TableHead>
+                        )}
+                        {isVisible('name') && (
+                          <TableHead>Account Name</TableHead>
+                        )}
+                        {isVisible('website') && <TableHead>Website</TableHead>}
+                        {isVisible('industry') && (
+                          <TableHead>Industry</TableHead>
+                        )}
+                        {isVisible('phone') && <TableHead>Phone</TableHead>}
+                        {isVisible('company_size') && (
+                          <TableHead>Size</TableHead>
+                        )}
+                        {isVisible('billing_street') && (
+                          <TableHead>Street</TableHead>
+                        )}
+                        {isVisible('billing_city') && (
+                          <TableHead>City</TableHead>
+                        )}
+                        {isVisible('billing_state') && (
+                          <TableHead>State</TableHead>
+                        )}
+                        {isVisible('billing_postal_code') && (
+                          <TableHead>Postal Code</TableHead>
+                        )}
+                        {isVisible('billing_country') && (
+                          <TableHead>Country</TableHead>
+                        )}
+                        {isVisible('description') && (
+                          <TableHead>Description</TableHead>
+                        )}
+                        {isVisible('is_public') && (
+                          <TableHead>Public</TableHead>
+                        )}
+                        {isVisible('owner') && <TableHead>Owner</TableHead>}
+                        {isVisible('created_at') && (
+                          <TableHead>Created On</TableHead>
+                        )}
+                        {isVisible('updated_at') && (
+                          <TableHead>Last Updated On</TableHead>
+                        )}
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ) : (
-                      paginatedAccounts.map(
-                        (account: Account, index: number) => (
-                          <TableRow key={account.id}>
-                            {isVisible('sno') && (
-                              <TableCell className="text-muted-foreground w-12 p-4">
-                                {(currentPage - 1) * itemsPerPage + index + 1}
-                              </TableCell>
-                            )}
-                            {isVisible('name') && (
-                              <TableCell className="font-medium">
-                                <Link
-                                  href={`/home/accounts/${account.id}`}
-                                  className="hover:underline"
-                                >
-                                  {account.account_name}
-                                </Link>
-                              </TableCell>
-                            )}
-                            {isVisible('website') && (
-                              <TableCell className="text-muted-foreground">
-                                {account.website ? (
-                                  <a
-                                    href={
-                                      account.website.startsWith('http')
-                                        ? account.website
-                                        : `https://${account.website}`
-                                    }
-                                    target="_blank"
-                                    rel="noreferrer"
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading ? (
+                        <TableRow className="m-5">
+                          <TableCell
+                            colSpan={
+                              visibility
+                                ? Object.values(visibility).filter(
+                                    (v) => v !== false,
+                                  ).length + 1
+                                : 6
+                            }
+                            className="h-24 text-center"
+                          >
+                            <div className="flex items-center justify-center">
+                              <div className="text-gray-500">
+                                Loading accounts...
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : paginatedAccounts.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={
+                              visibility
+                                ? Object.values(visibility).filter(
+                                    (v) => v !== false,
+                                  ).length + 1
+                                : 6
+                            }
+                            className="h-24 text-center"
+                          >
+                            <div className="text-gray-500">
+                              {searchTerm
+                                ? 'No accounts match your search'
+                                : 'No accounts yet.'}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedAccounts.map(
+                          (account: Account, index: number) => (
+                            <TableRow key={account.id}>
+                              {isVisible('sno') && (
+                                <TableCell className="text-muted-foreground w-12 p-4">
+                                  {(currentPage - 1) * itemsPerPage + index + 1}
+                                </TableCell>
+                              )}
+                              {isVisible('name') && (
+                                <TableCell className="font-medium">
+                                  <Link
+                                    href={`/home/accounts/${account.id}`}
                                     className="hover:underline"
                                   >
-                                    {account.website}
-                                  </a>
-                                ) : (
-                                  '-'
-                                )}
+                                    {account.account_name}
+                                  </Link>
+                                </TableCell>
+                              )}
+                              {isVisible('website') && (
+                                <TableCell className="text-muted-foreground">
+                                  {account.website ? (
+                                    <a
+                                      href={
+                                        account.website.startsWith('http')
+                                          ? account.website
+                                          : `https://${account.website}`
+                                      }
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="hover:underline"
+                                    >
+                                      {account.website}
+                                    </a>
+                                  ) : (
+                                    '-'
+                                  )}
+                                </TableCell>
+                              )}
+                              {isVisible('industry') && (
+                                <TableCell className="text-muted-foreground">
+                                  {account.industry?.industry_name || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('phone') && (
+                                <TableCell className="text-muted-foreground">
+                                  {account.phone_number || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('company_size') && (
+                                <TableCell className="text-muted-foreground">
+                                  {account.company_size || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('billing_street') && (
+                                <TableCell className="text-muted-foreground">
+                                  {account.billing_street || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('billing_city') && (
+                                <TableCell className="text-muted-foreground">
+                                  {account.billing_city || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('billing_state') && (
+                                <TableCell className="text-muted-foreground">
+                                  {account.billing_state || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('billing_postal_code') && (
+                                <TableCell className="text-muted-foreground">
+                                  {account.billing_postal_code || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('billing_country') && (
+                                <TableCell className="text-muted-foreground">
+                                  {account.billing_country || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('description') && (
+                                <TableCell className="text-muted-foreground max-w-[200px] truncate">
+                                  {account.description || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('is_public') && (
+                                <TableCell className="text-muted-foreground text-center">
+                                  {account.is_public ? (
+                                    <Badge
+                                      variant="outline"
+                                      className="border-green-200 bg-green-50 text-green-600"
+                                    >
+                                      Public
+                                    </Badge>
+                                  ) : (
+                                    <Badge
+                                      variant="outline"
+                                      className="border-amber-200 bg-amber-50 text-amber-600"
+                                    >
+                                      Private
+                                    </Badge>
+                                  )}
+                                </TableCell>
+                              )}
+                              {isVisible('owner') && (
+                                <TableCell className="text-muted-foreground">
+                                  {account.owner?.name || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('created_at') && (
+                                <TableCell className="text-muted-foreground">
+                                  {new Date(
+                                    account.created_at,
+                                  ).toLocaleDateString()}
+                                </TableCell>
+                              )}
+                              {isVisible('updated_at') && (
+                                <TableCell className="text-muted-foreground">
+                                  {new Date(
+                                    account.updated_at,
+                                  ).toLocaleDateString()}
+                                </TableCell>
+                              )}
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="link"
+                                  asChild
+                                  className="text-primary h-auto p-0 hover:underline"
+                                >
+                                  {canAccess('accounts', 'view') && (
+                                    <Link href={`/home/accounts/${account.id}`}>
+                                      View
+                                    </Link>
+                                  )}
+                                </Button>
                               </TableCell>
-                            )}
-                            {isVisible('industry') && (
-                              <TableCell className="text-muted-foreground">
-                                {account.industry?.industry_name || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('phone') && (
-                              <TableCell className="text-muted-foreground">
-                                {account.phone_number || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('company_size') && (
-                              <TableCell className="text-muted-foreground">
-                                {account.company_size || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('billing_street') && (
-                              <TableCell className="text-muted-foreground">
-                                {account.billing_street || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('billing_city') && (
-                              <TableCell className="text-muted-foreground">
-                                {account.billing_city || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('billing_state') && (
-                              <TableCell className="text-muted-foreground">
-                                {account.billing_state || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('billing_postal_code') && (
-                              <TableCell className="text-muted-foreground">
-                                {account.billing_postal_code || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('billing_country') && (
-                              <TableCell className="text-muted-foreground">
-                                {account.billing_country || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('description') && (
-                              <TableCell className="text-muted-foreground max-w-[200px] truncate">
-                                {account.description || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('is_public') && (
-                              <TableCell className="text-muted-foreground text-center">
-                                {account.is_public ? (
-                                  <Badge
-                                    variant="outline"
-                                    className="border-green-200 bg-green-50 text-green-600"
-                                  >
-                                    Public
-                                  </Badge>
-                                ) : (
-                                  <Badge
-                                    variant="outline"
-                                    className="border-amber-200 bg-amber-50 text-amber-600"
-                                  >
-                                    Private
-                                  </Badge>
-                                )}
-                              </TableCell>
-                            )}
-                            {isVisible('owner') && (
-                              <TableCell className="text-muted-foreground">
-                                {account.owner?.name || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('created_at') && (
-                              <TableCell className="text-muted-foreground">
-                                {new Date(
-                                  account.created_at,
-                                ).toLocaleDateString()}
-                              </TableCell>
-                            )}
-                            <TableCell className="text-right">
-                              <Button
-                                variant="link"
-                                asChild
-                                className="text-primary h-auto p-0 hover:underline"
-                              >
-                                <Link href={`/home/accounts/${account.id}`}>
-                                  View
-                                </Link>
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ),
-                      )
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+                            </TableRow>
+                          ),
+                        )
+                      )}
+                    </TableBody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
 
-          {totalCount > 0 && (
-            <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mb-4 flex items-center justify-between border-t p-4 px-6 lg:-mb-8">
-              <div>
-                Showing{' '}
-                <span className="text-foreground font-medium">
-                  {(currentPage - 1) * itemsPerPage + 1}
-                </span>{' '}
-                to{' '}
-                <span className="text-foreground font-medium">
-                  {Math.min(currentPage * itemsPerPage, totalCount)}
-                </span>{' '}
-                of{' '}
-                <span className="text-foreground font-medium">
-                  {totalCount}
-                </span>{' '}
-                accounts
-              </div>
-              <Pagination className="w-auto">
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      className={
-                        currentPage === 1
-                          ? 'pointer-events-none opacity-50'
-                          : 'cursor-pointer'
-                      }
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.max(prev - 1, 1))
-                      }
-                    />
-                  </PaginationItem>
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <PaginationItem key={i}>
-                      <PaginationLink
-                        isActive={currentPage === i + 1}
-                        onClick={() => setCurrentPage(i + 1)}
-                        className="cursor-pointer"
-                      >
-                        {i + 1}
-                      </PaginationLink>
+            {totalCount > 0 && (
+              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mb-4 flex items-center justify-between border-t p-4 px-6 lg:-mb-8">
+                <div>
+                  Showing{' '}
+                  <span className="text-foreground font-medium">
+                    {(currentPage - 1) * itemsPerPage + 1}
+                  </span>{' '}
+                  to{' '}
+                  <span className="text-foreground font-medium">
+                    {Math.min(currentPage * itemsPerPage, totalCount)}
+                  </span>{' '}
+                  of{' '}
+                  <span className="text-foreground font-medium">
+                    {totalCount}
+                  </span>{' '}
+                  accounts
+                </div>
+                <Pagination className="w-auto">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        className={
+                          currentPage === 1
+                            ? 'pointer-events-none opacity-50'
+                            : 'cursor-pointer'
+                        }
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.max(prev - 1, 1))
+                        }
+                      />
                     </PaginationItem>
-                  ))}
-                  <PaginationItem>
-                    <PaginationNext
-                      className={
-                        currentPage === totalPages
-                          ? 'pointer-events-none opacity-50'
-                          : 'cursor-pointer'
-                      }
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                      }
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          )}
+                    {Array.from({ length: totalPages }).map((_, i) => (
+                      <PaginationItem key={i}>
+                        <PaginationLink
+                          isActive={currentPage === i + 1}
+                          onClick={() => setCurrentPage(i + 1)}
+                          className="cursor-pointer"
+                        >
+                          {i + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        className={
+                          currentPage === totalPages
+                            ? 'pointer-events-none opacity-50'
+                            : 'cursor-pointer'
+                        }
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(prev + 1, totalPages),
+                          )
+                        }
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
 
-          <CreateAccountDialog
-            open={createDialogOpen}
-            onOpenChange={setCreateDialogOpen}
-            onSuccess={() => refetch()}
-          />
-        </div>
-      </PageBody>
+            <CreateAccountDialog
+              open={createDialogOpen}
+              onOpenChange={setCreateDialogOpen}
+              onSuccess={() => refetch()}
+            />
+          </div>
+        </PageBody>
+      </div>
     </ModuleGuard>
   );
 }
