@@ -107,6 +107,10 @@ import { getOpportunitiesService } from '~/services/opportunities.service';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export default function RemindersPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -284,6 +288,18 @@ export default function RemindersPage() {
 
   const totalPages = Math.ceil(filteredReminders.length / itemsPerPage);
   const totalCount = filteredReminders.length;
+
+  const safeShowPicker = (
+    e: React.MouseEvent<HTMLInputElement> | React.FocusEvent<HTMLInputElement>,
+  ) => {
+    try {
+      if ('showPicker' in e.currentTarget) {
+        (e.currentTarget as any).showPicker();
+      }
+    } catch (error) {
+      console.warn('showPicker not supported or failed:', error);
+    }
+  };
 
   const handleCreate = () => {
     if (!formData.title.trim() || !formData.entityId) return;
@@ -846,6 +862,7 @@ export default function RemindersPage() {
               <Label>Due Date</Label>
               <Input
                 type="datetime-local"
+                onClick={(e) => e.currentTarget.showPicker()}
                 value={formData.due_date}
                 onChange={(e) =>
                   setFormData({ ...formData, due_date: e.target.value })
@@ -920,6 +937,7 @@ export default function RemindersPage() {
               <Label>Due Date</Label>
               <Input
                 type="datetime-local"
+                onClick={(e) => e.currentTarget.showPicker()}
                 value={formData.due_date}
                 onChange={(e) =>
                   setFormData({ ...formData, due_date: e.target.value })
