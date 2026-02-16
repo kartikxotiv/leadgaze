@@ -3,10 +3,12 @@
 import React, { useMemo, useState } from 'react';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Trash2 } from 'lucide-react';
 
+import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
@@ -29,6 +31,12 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
@@ -36,14 +44,20 @@ import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { Account, getAccountsService } from '~/services/accounts.service';
 
+import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
+import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { CreateAccountDialog } from './components/create-account-dialog';
 
 export default function AccountsPage() {
+  const router = useRouter();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
+  const { data: user } = useUser();
 
   const columns = useMemo(
     () => [
@@ -285,7 +299,13 @@ export default function AccountsPage() {
                       ) : (
                         paginatedAccounts.map(
                           (account: Account, index: number) => (
-                            <TableRow key={account.id}>
+                            <TableRow
+                              key={account.id}
+                              className="hover:bg-muted/50 cursor-pointer"
+                              onClick={() =>
+                                router.push(`/home/accounts/${account.id}`)
+                              }
+                            >
                               {isVisible('sno') && (
                                 <TableCell className="text-muted-foreground w-12 p-4">
                                   {(currentPage - 1) * itemsPerPage + index + 1}
@@ -293,12 +313,7 @@ export default function AccountsPage() {
                               )}
                               {isVisible('name') && (
                                 <TableCell className="font-medium">
-                                  <Link
-                                    href={`/home/accounts/${account.id}`}
-                                    className="hover:underline"
-                                  >
-                                    {account.account_name}
-                                  </Link>
+                                  <span>{account.account_name}</span>
                                 </TableCell>
                               )}
                               {isVisible('website') && (
@@ -405,17 +420,17 @@ export default function AccountsPage() {
                                 </TableCell>
                               )}
                               <TableCell className="text-right">
-                                <Button
-                                  variant="link"
-                                  asChild
-                                  className="text-primary h-auto p-0 hover:underline"
-                                >
-                                  {canAccess('accounts', 'view') && (
-                                    <Link href={`/home/accounts/${account.id}`}>
-                                      View
-                                    </Link>
-                                  )}
-                                </Button>
+                                <div className="flex items-center justify-end gap-2">
+                                  <EntityActionsDropdown
+                                    id={account.id}
+                                    viewPath={`/home/accounts/${account.id}`}
+                                    canDelete={canAccess('accounts', 'delete')}
+                                    onDelete={() => {
+                                      setAccountToDelete(account);
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                  />
+                                </div>
                               </TableCell>
                             </TableRow>
                           ),
@@ -492,6 +507,18 @@ export default function AccountsPage() {
               open={createDialogOpen}
               onOpenChange={setCreateDialogOpen}
               onSuccess={() => refetch()}
+            />
+
+            <DeleteEntityDialog
+              isOpen={deleteDialogOpen}
+              onOpenChange={setDeleteDialogOpen}
+              entityId={accountToDelete?.id || ''}
+              entityType="account"
+              entityName={accountToDelete?.account_name || ''}
+              onSuccess={() => {
+                setAccountToDelete(null);
+                refetch();
+              }}
             />
           </div>
         </PageBody>

@@ -3,10 +3,12 @@
 import React, { useMemo, useState } from 'react';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import { FileUp, Filter, Plus, Search } from 'lucide-react';
+import { FileUp, Filter, Plus, Search, Trash2 } from 'lucide-react';
 
+import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
@@ -36,6 +38,12 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
@@ -48,15 +56,21 @@ import {
 } from '~/services/leads.service';
 import { Lead } from '~/services/leads.service';
 
+import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
+import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import CreateLeadDialog from './components/create-lead-dialog';
 
 export default function LeadsPage() {
+  const router = useRouter();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
+  const { data: user } = useUser();
 
   const columns = useMemo(
     () => [
@@ -437,7 +451,13 @@ export default function LeadsPage() {
                         </TableRow>
                       ) : (
                         paginatedLeads.map((lead: Lead, index: number) => (
-                          <TableRow key={lead.id}>
+                          <TableRow
+                            key={lead.id}
+                            className="hover:bg-muted/50 cursor-pointer"
+                            onClick={() =>
+                              router.push(`/home/leads/${lead.id}`)
+                            }
+                          >
                             {isVisible('sno') && (
                               <TableCell className="text-muted-foreground w-12">
                                 {(currentPage - 1) * itemsPerPage + index + 1}
@@ -445,12 +465,9 @@ export default function LeadsPage() {
                             )}
                             {isVisible('name') && (
                               <TableCell className="font-medium">
-                                <Link
-                                  href={`/home/leads/${lead.id}`}
-                                  className="hover:underline"
-                                >
+                                <span>
                                   {lead.first_name} {lead.last_name || ''}
-                                </Link>
+                                </span>
                               </TableCell>
                             )}
                             {isVisible('first_name') && (
@@ -658,12 +675,17 @@ export default function LeadsPage() {
                             )}
 
                             <TableCell className="text-right">
-                              <Link
-                                href={`/home/leads/${lead.id}`}
-                                className="text-primary text-sm font-medium hover:underline"
-                              >
-                                View
-                              </Link>
+                              <div className="flex items-center justify-end gap-2">
+                                <EntityActionsDropdown
+                                  id={lead.id}
+                                  viewPath={`/home/leads/${lead.id}`}
+                                  canDelete={canAccess('leads', 'delete')}
+                                  onDelete={() => {
+                                    setLeadToDelete(lead);
+                                    setDeleteDialogOpen(true);
+                                  }}
+                                />
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))
@@ -741,6 +763,18 @@ export default function LeadsPage() {
             open={isCreateDialogOpen}
             onOpenChange={setIsCreateDialogOpen}
             onSuccess={handleCreateSuccess}
+          />
+
+          <DeleteEntityDialog
+            isOpen={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            entityId={leadToDelete?.id || ''}
+            entityType="lead"
+            entityName={`${leadToDelete?.first_name} ${leadToDelete?.last_name || ''}`}
+            onSuccess={() => {
+              setLeadToDelete(null);
+              refetch();
+            }}
           />
         </PageBody>
       </div>
