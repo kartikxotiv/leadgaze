@@ -101,6 +101,12 @@ import { getOpportunitiesService } from '~/services/opportunities.service';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export default function RemindersPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -131,6 +137,9 @@ export default function RemindersPage() {
       { id: 'priority', label: 'Priority' },
       { id: 'status', label: 'Status' },
       { id: 'entity', label: 'Entity' },
+      { id: 'created_by', label: 'Created By' },
+      { id: 'created_at', label: 'Created On' },
+      { id: 'updated_by', label: 'Last Updated By' },
     ],
     [],
   );
@@ -144,6 +153,9 @@ export default function RemindersPage() {
       priority: true,
       status: true,
       entity: true,
+      created_by: false,
+      created_at: false,
+      updated_by: false,
     });
 
   const { data: reminders = [], isLoading } = useQuery({
@@ -463,7 +475,9 @@ export default function RemindersPage() {
                 <TableHeader>
                   <TableRow>
                     {isVisible('sno') && (
-                      <TableHead className="w-[80px] pl-6">S. No.</TableHead>
+                      <TableHead className="w-12 whitespace-nowrap">
+                        S. No.
+                      </TableHead>
                     )}
                     {isVisible('title') && <TableHead>Task Title</TableHead>}
                     {isVisible('description') && (
@@ -473,7 +487,16 @@ export default function RemindersPage() {
                     {isVisible('due_date') && <TableHead>Due Date</TableHead>}
                     {isVisible('status') && <TableHead>Status</TableHead>}
                     {isVisible('entity') && <TableHead>Entity</TableHead>}
-                    <TableHead className="pr-6 text-right">Actions</TableHead>
+                    {isVisible('created_by') && (
+                      <TableHead>Created By</TableHead>
+                    )}
+                    {isVisible('created_at') && (
+                      <TableHead>Created On</TableHead>
+                    )}
+                    {isVisible('updated_by') && (
+                      <TableHead>Last Updated By</TableHead>
+                    )}
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -497,15 +520,13 @@ export default function RemindersPage() {
                       (reminder: Reminder, index: number) => (
                         <TableRow key={reminder.id}>
                           {isVisible('sno') && (
-                            <TableCell className="text-muted-foreground pl-6">
+                            <TableCell className="text-muted-foreground w-12">
                               {(currentPage - 1) * itemsPerPage + index + 1}
                             </TableCell>
                           )}
                           {isVisible('title') && (
                             <TableCell className="font-medium">
-                              <div className={isVisible('sno') ? '' : 'pl-6'}>
-                                {reminder.title}
-                              </div>
+                              <div className="">{reminder.title}</div>
                             </TableCell>
                           )}
                           {isVisible('description') && (
@@ -551,7 +572,26 @@ export default function RemindersPage() {
                               )}
                             </TableCell>
                           )}
-                          <TableCell className="pr-6 text-right">
+                          {isVisible('created_by') && (
+                            <TableCell className="text-muted-foreground">
+                              {reminder.created_by_user?.name || '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('created_at') && (
+                            <TableCell className="text-muted-foreground">
+                              {reminder.created_at
+                                ? new Date(
+                                    reminder.created_at,
+                                  ).toLocaleDateString()
+                                : '-'}
+                            </TableCell>
+                          )}
+                          {isVisible('updated_by') && (
+                            <TableCell className="text-muted-foreground">
+                              {reminder.updated_by || '-'}
+                            </TableCell>
+                          )}
+                          <TableCell className="text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon">

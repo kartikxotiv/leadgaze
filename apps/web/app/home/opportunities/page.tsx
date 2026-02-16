@@ -125,8 +125,9 @@ export default function OpportunitiesPage() {
       { id: 'close_reason', label: 'Close Reason' },
       { id: 'is_public', label: 'Public' },
       { id: 'owner', label: 'Owner' },
+      { id: 'created_by', label: 'Created By' },
       { id: 'created_at', label: 'Created On' },
-      { id: 'updated_at', label: 'Last Updated On' },
+      { id: 'updated_by', label: 'Last Updated By' },
     ],
     [],
   );
@@ -150,8 +151,9 @@ export default function OpportunitiesPage() {
       close_reason: false,
       is_public: false,
       owner: true,
+      created_by: false,
       created_at: false,
-      updated_at: false,
+      updated_by: false,
     });
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -318,6 +320,11 @@ export default function OpportunitiesPage() {
                   total_amount: 0,
                   count: 0,
                 };
+                const isSelected =
+                  selectedStage === 'all' || selectedStage === stage.id;
+                const displayCount = isSelected ? stats.count : 0;
+                const displayAmount = isSelected ? stats.total_amount : 0;
+
                 return (
                   <Card
                     key={stage.id}
@@ -332,7 +339,7 @@ export default function OpportunitiesPage() {
                             style={{ backgroundColor: stage.color }}
                           />
                           <span className="text-muted-foreground truncate text-[10px] font-medium tracking-wider uppercase">
-                            {stage.status_name} ({stats.count})
+                            {stage.status_name} ({displayCount})
                           </span>
                         </div>
                         <div className="flex items-baseline gap-2">
@@ -341,7 +348,7 @@ export default function OpportunitiesPage() {
                               style: 'currency',
                               currency: 'USD',
                               maximumFractionDigits: 0,
-                            }).format(stats.total_amount)}
+                            }).format(displayAmount)}
                           </span>
                         </div>
                       </div>
@@ -356,7 +363,7 @@ export default function OpportunitiesPage() {
         <PageBody className="bg-sidebar -mt-6 flex min-h-0 flex-1 flex-col overflow-hidden pt-6">
           <div className="flex min-h-0 flex-1 flex-col space-y-6">
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
-              <CardContent className="flex min-h-0 flex-1 flex-col p-2">
+              <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                 <div className="flex-1 overflow-auto rounded-lg">
                   <table className="w-full caption-bottom text-sm">
                     <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
@@ -398,11 +405,14 @@ export default function OpportunitiesPage() {
                           <TableHead>Public</TableHead>
                         )}
                         {isVisible('owner') && <TableHead>Owner</TableHead>}
+                        {isVisible('created_by') && (
+                          <TableHead>Created By</TableHead>
+                        )}
                         {isVisible('created_at') && (
                           <TableHead>Created On</TableHead>
                         )}
-                        {isVisible('updated_at') && (
-                          <TableHead>Last Updated On</TableHead>
+                        {isVisible('updated_by') && (
+                          <TableHead>Last Updated By</TableHead>
                         )}
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -459,7 +469,7 @@ export default function OpportunitiesPage() {
                               }
                             >
                               {isVisible('sno') && (
-                                <TableCell className="text-muted-foreground w-12 p-4">
+                                <TableCell className="text-muted-foreground w-12">
                                   {(currentPage - 1) * itemsPerPage + index + 1}
                                 </TableCell>
                               )}
@@ -582,18 +592,23 @@ export default function OpportunitiesPage() {
                                   {opportunity.owner?.name || '-'}
                                 </TableCell>
                               )}
-                              {isVisible('created_at') && (
+                              {isVisible('created_by') && (
                                 <TableCell className="text-muted-foreground">
-                                  {new Date(
-                                    opportunity.created_at,
-                                  ).toLocaleDateString()}
+                                  {opportunity.created_by || '-'}
                                 </TableCell>
                               )}
-                              {isVisible('updated_at') && (
+                              {isVisible('created_at') && (
                                 <TableCell className="text-muted-foreground">
-                                  {new Date(
-                                    opportunity.updated_at,
-                                  ).toLocaleDateString()}
+                                  {opportunity.created_at
+                                    ? new Date(
+                                        opportunity.created_at,
+                                      ).toLocaleDateString()
+                                    : '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('updated_by') && (
+                                <TableCell className="text-muted-foreground">
+                                  {opportunity.updated_by || '-'}
                                 </TableCell>
                               )}
                               <TableCell className="text-right">

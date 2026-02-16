@@ -305,6 +305,10 @@ export default function LeadsPage() {
                 const stats = leadsData.statusBreakdown[status.id] || {
                   count: 0,
                 };
+                const isSelected =
+                  selectedStatus === 'all' || selectedStatus === status.id;
+                const displayCount = isSelected ? stats.count : 0;
+
                 return (
                   <Card
                     key={status.id}
@@ -339,13 +343,13 @@ export default function LeadsPage() {
           <div className="flex min-h-0 flex-1 flex-col space-y-6">
             {/* Table */}
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
-              <CardContent className="flex min-h-0 flex-1 flex-col p-2">
+              <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                 <div className="flex-1 overflow-auto rounded-lg">
                   <table className="w-full caption-bottom text-sm">
                     <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                       <TableRow>
                         {isVisible('sno') && (
-                          <TableHead className="w-12 p-3 whitespace-nowrap">
+                          <TableHead className="w-12 whitespace-nowrap">
                             S. No.
                           </TableHead>
                         )}
