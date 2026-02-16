@@ -8,13 +8,13 @@ import {
   Building2,
   Download,
   Edit,
-  File,
   FileCode,
   FileImage,
   FileText,
   FileType,
   Filter,
   Loader2,
+  File as LucideFile,
   MoreHorizontal,
   Plus,
   Search,
@@ -106,6 +106,9 @@ export default function DocumentPage() {
       { id: 'uploader', label: 'Uploaded By' },
       { id: 'entity', label: 'Entity' },
       { id: 'last_modified', label: 'Last Modified' },
+      { id: 'created_by', label: 'Created By' },
+      { id: 'created_at', label: 'Created On' },
+      { id: 'updated_by', label: 'Last Updated By' },
     ],
     [],
   );
@@ -118,7 +121,10 @@ export default function DocumentPage() {
       size: true,
       uploader: true,
       entity: true,
-      last_modified: true,
+      last_modified: false,
+      created_by: false,
+      created_at: false,
+      updated_by: false,
     });
 
   const { data: documents = [], isLoading } = useQuery({
@@ -273,7 +279,7 @@ export default function DocumentPage() {
       return <FileType className="h-4 w-4 text-green-500" />;
     if (t.includes('markdown') || t.includes('md'))
       return <FileCode className="h-4 w-4 text-purple-500" />;
-    return <File className="h-4 w-4 text-gray-500" />;
+    return <LucideFile className="h-4 w-4 text-gray-500" />;
   };
 
   const formatSize = (bytes?: number) => {
@@ -352,7 +358,9 @@ export default function DocumentPage() {
                 <TableHeader>
                   <TableRow>
                     {isVisible('sno') && (
-                      <TableHead className="w-[80px] pl-6">S. No.</TableHead>
+                      <TableHead className="w-12 whitespace-nowrap">
+                        S. No.
+                      </TableHead>
                     )}
                     {isVisible('name') && <TableHead>Name</TableHead>}
                     {isVisible('type') && <TableHead>Type</TableHead>}
@@ -362,9 +370,18 @@ export default function DocumentPage() {
                     )}
                     {isVisible('entity') && <TableHead>Entity</TableHead>}
                     {isVisible('last_modified') && (
-                      <TableHead>Last Modified</TableHead>
+                      <TableHead>Last Modified At</TableHead>
                     )}
-                    <TableHead className="pr-6 text-right">Actions</TableHead>
+                    {isVisible('created_by') && (
+                      <TableHead>Created By</TableHead>
+                    )}
+                    {isVisible('created_at') && (
+                      <TableHead>Created On</TableHead>
+                    )}
+                    {isVisible('updated_by') && (
+                      <TableHead>Last Updated By</TableHead>
+                    )}
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -383,19 +400,17 @@ export default function DocumentPage() {
                         <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
                       </TableCell>
                     </TableRow>
-                  ) : filteredDocuments.length > 0 ? (
-                    filteredDocuments.map((doc: Document, index: number) => (
+                  ) : paginatedDocs.length > 0 ? (
+                    paginatedDocs.map((doc: Document, index: number) => (
                       <TableRow key={doc.id}>
                         {isVisible('sno') && (
-                          <TableCell className="text-muted-foreground pl-6">
-                            {index + 1}
+                          <TableCell className="text-muted-foreground w-12">
+                            {(currentPage - 1) * itemsPerPage + index + 1}
                           </TableCell>
                         )}
                         {isVisible('name') && (
-                          <TableCell className="pl-6 font-medium">
-                            <div
-                              className={`flex items-center gap-3 ${isVisible('sno') ? '' : 'pl-6'}`}
-                            >
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-3">
                               {getFileIcon(doc.file_type || '')}
                               <span
                                 className="max-w-[200px] truncate"
@@ -435,10 +450,27 @@ export default function DocumentPage() {
                         )}
                         {isVisible('last_modified') && (
                           <TableCell className="text-muted-foreground">
+                            {new Date(
+                              doc.updated_at || doc.created_at,
+                            ).toLocaleDateString()}
+                          </TableCell>
+                        )}
+                        {isVisible('created_by') && (
+                          <TableCell className="text-muted-foreground">
+                            {doc.created_by_user?.name || '-'}
+                          </TableCell>
+                        )}
+                        {isVisible('created_at') && (
+                          <TableCell className="text-muted-foreground">
                             {new Date(doc.created_at).toLocaleDateString()}
                           </TableCell>
                         )}
-                        <TableCell className="pr-6 text-right">
+                        {isVisible('updated_by') && (
+                          <TableCell className="text-muted-foreground">
+                            {doc.updated_by || '-'}
+                          </TableCell>
+                        )}
+                        <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon">

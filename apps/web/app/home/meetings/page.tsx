@@ -109,6 +109,8 @@ export default function MeetingsPage() {
       { id: 'location', label: 'Location' },
       { id: 'meeting_link', label: 'Meeting Link' },
       { id: 'host', label: 'Host' },
+      { id: 'created_at', label: 'Created On' },
+      { id: 'updated_by', label: 'Last Updated By' },
       { id: 'date_time', label: 'Date & Time' },
       { id: 'status', label: 'Status' },
       { id: 'is_public', label: 'Public' },
@@ -125,6 +127,8 @@ export default function MeetingsPage() {
       location: true,
       meeting_link: false,
       host: true,
+      created_at: false,
+      updated_by: false,
       date_time: true,
       status: true,
       is_public: false,
@@ -419,7 +423,9 @@ export default function MeetingsPage() {
                 <TableHeader>
                   <TableRow>
                     {isVisible('sno') && (
-                      <TableHead className="w-[80px] pl-6">S. No.</TableHead>
+                      <TableHead className="w-12 whitespace-nowrap">
+                        S. No.
+                      </TableHead>
                     )}
                     {isVisible('title') && <TableHead>Meeting Title</TableHead>}
                     {isVisible('description') && (
@@ -430,14 +436,19 @@ export default function MeetingsPage() {
                       <TableHead>Meeting Link</TableHead>
                     )}
                     {isVisible('host') && <TableHead>Host</TableHead>}
-
+                    {isVisible('created_at') && (
+                      <TableHead>Created On</TableHead>
+                    )}
+                    {isVisible('updated_by') && (
+                      <TableHead>Last Updated By</TableHead>
+                    )}
                     {isVisible('date_time') && (
                       <TableHead>Date & Time</TableHead>
                     )}
                     {isVisible('status') && <TableHead>Status</TableHead>}
                     {isVisible('is_public') && <TableHead>Public</TableHead>}
                     {isVisible('entity') && <TableHead>Entity</TableHead>}
-                    <TableHead className="pr-6 text-right">Actions</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -460,13 +471,13 @@ export default function MeetingsPage() {
                     paginatedMeetings.map((meeting: Meeting, index: number) => (
                       <TableRow key={meeting.id}>
                         {isVisible('sno') && (
-                          <TableCell className="text-muted-foreground pl-6">
+                          <TableCell className="text-muted-foreground w-12">
                             {(currentPage - 1) * itemsPerPage + index + 1}
                           </TableCell>
                         )}
                         {isVisible('title') && (
                           <TableCell className="font-medium">
-                            <div className={isVisible('sno') ? '' : 'pl-6'}>
+                            <div className="">
                               <p>{meeting.title}</p>
                             </div>
                           </TableCell>
@@ -526,6 +537,20 @@ export default function MeetingsPage() {
                                 {meeting.created_by_user?.name || 'System'}
                               </span>
                             </div>
+                          </TableCell>
+                        )}
+                        {isVisible('created_at') && (
+                          <TableCell className="text-muted-foreground">
+                            {meeting.created_at
+                              ? new Date(
+                                  meeting.created_at,
+                                ).toLocaleDateString()
+                              : '-'}
+                          </TableCell>
+                        )}
+                        {isVisible('updated_by') && (
+                          <TableCell className="text-muted-foreground">
+                            {meeting.updated_by || '-'}
                           </TableCell>
                         )}
                         {isVisible('date_time') && (
@@ -594,7 +619,7 @@ export default function MeetingsPage() {
                             )}
                           </TableCell>
                         )}
-                        <TableCell className="pr-6 text-right">
+                        <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon">
