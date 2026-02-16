@@ -81,9 +81,16 @@ const updateContactService = asyncHandlerClient(
   },
 );
 
+const deleteContactService = asyncHandlerClient(async (id: string) => {
+  const response = await ApiClient.delete(`/contacts/${id}`);
+  return response.data?.data;
+});
+
 export {
   getContactsService,
   getContactByIdService,
   createContactService,
+
   updateContactService,
+  deleteContactService,
 };

@@ -3,10 +3,12 @@
 import React, { useMemo, useState } from 'react';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import { Filter, Plus, Search } from 'lucide-react';
+import { Filter, Plus, Search, Trash2 } from 'lucide-react';
 
+import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
@@ -36,6 +38,12 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
@@ -47,6 +55,8 @@ import {
   getOpportunityStatusesService,
 } from '~/services/opportunities.service';
 
+import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
+import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { OpportunityDialog } from './components/opportunity-dialog';
 
 function PriorityBadge({ priority }: { priority: string | null | undefined }) {
@@ -84,12 +94,17 @@ function PriorityBadge({ priority }: { priority: string | null | undefined }) {
 }
 
 export default function OpportunitiesPage() {
+  const router = useRouter();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [opportunityToDelete, setOpportunityToDelete] =
+    useState<Opportunity | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
+  const { data: user } = useUser();
 
   const columns = useMemo(
     () => [
@@ -444,7 +459,15 @@ export default function OpportunitiesPage() {
                       ) : (
                         paginatedOpportunities.map(
                           (opportunity: Opportunity, index: number) => (
-                            <TableRow key={opportunity.id}>
+                            <TableRow
+                              key={opportunity.id}
+                              className="hover:bg-muted/50 cursor-pointer"
+                              onClick={() =>
+                                router.push(
+                                  `/home/opportunities/${opportunity.id}`,
+                                )
+                              }
+                            >
                               {isVisible('sno') && (
                                 <TableCell className="text-muted-foreground w-12">
                                   {(currentPage - 1) * itemsPerPage + index + 1}
@@ -452,12 +475,7 @@ export default function OpportunitiesPage() {
                               )}
                               {isVisible('name') && (
                                 <TableCell className="font-medium">
-                                  <Link
-                                    href={`/home/opportunities/${opportunity.id}`}
-                                    className="hover:underline"
-                                  >
-                                    {opportunity.opportunity_name}
-                                  </Link>
+                                  <span>{opportunity.opportunity_name}</span>
                                 </TableCell>
                               )}
                               {isVisible('account') && (
@@ -594,19 +612,20 @@ export default function OpportunitiesPage() {
                                 </TableCell>
                               )}
                               <TableCell className="text-right">
-                                {canAccess('opportunities', 'view') && (
-                                  <Button
-                                    variant="link"
-                                    asChild
-                                    className="text-primary h-auto p-0 hover:underline"
-                                  >
-                                    <Link
-                                      href={`/home/opportunities/${opportunity.id}`}
-                                    >
-                                      View
-                                    </Link>
-                                  </Button>
-                                )}
+                                <div className="flex items-center justify-end gap-2">
+                                  <EntityActionsDropdown
+                                    id={opportunity.id}
+                                    viewPath={`/home/opportunities/${opportunity.id}`}
+                                    canDelete={canAccess(
+                                      'opportunities',
+                                      'delete',
+                                    )}
+                                    onDelete={() => {
+                                      setOpportunityToDelete(opportunity);
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                  />
+                                </div>
                               </TableCell>
                             </TableRow>
                           ),
@@ -682,6 +701,18 @@ export default function OpportunitiesPage() {
             <OpportunityDialog
               isOpen={isCreateDialogOpen}
               onOpenChange={setIsCreateDialogOpen}
+            />
+
+            <DeleteEntityDialog
+              isOpen={deleteDialogOpen}
+              onOpenChange={setDeleteDialogOpen}
+              entityId={opportunityToDelete?.id || ''}
+              entityType="opportunity"
+              entityName={opportunityToDelete?.opportunity_name || ''}
+              onSuccess={() => {
+                setOpportunityToDelete(null);
+                refetch();
+              }}
             />
           </div>
         </PageBody>

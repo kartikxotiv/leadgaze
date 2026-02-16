@@ -3,10 +3,12 @@
 import React, { useMemo, useState } from 'react';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Trash2 } from 'lucide-react';
 
+import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
@@ -29,6 +31,12 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
@@ -36,14 +44,20 @@ import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { Contact, getContactsService } from '~/services/contacts.service';
 
+import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
+import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { CreateContactDialog } from './components/create-contact-dialog';
 
 export default function ContactsPage() {
+  const router = useRouter();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
+  const { data: user } = useUser();
 
   const columns = useMemo(
     () => [
@@ -266,7 +280,13 @@ export default function ContactsPage() {
                       ) : (
                         paginatedContacts.map(
                           (contact: Contact, index: number) => (
-                            <TableRow key={contact.id}>
+                            <TableRow
+                              key={contact.id}
+                              className="hover:bg-muted/50 cursor-pointer"
+                              onClick={() =>
+                                router.push(`/home/contacts/${contact.id}`)
+                              }
+                            >
                               {isVisible('sno') && (
                                 <TableCell className="text-muted-foreground w-12">
                                   {(currentPage - 1) * itemsPerPage + index + 1}
@@ -274,13 +294,10 @@ export default function ContactsPage() {
                               )}
                               {isVisible('name') && (
                                 <TableCell className="font-medium">
-                                  <Link
-                                    href={`/home/contacts/${contact.id}`}
-                                    className="hover:underline"
-                                  >
+                                  <span>
                                     {contact.first_name}{' '}
                                     {contact.last_name || ''}
-                                  </Link>
+                                  </span>
                                 </TableCell>
                               )}
                               {isVisible('first_name') && (
@@ -362,17 +379,17 @@ export default function ContactsPage() {
                                 </TableCell>
                               )}
                               <TableCell className="text-right">
-                                <Button
-                                  variant="link"
-                                  asChild
-                                  className="text-primary h-auto p-0 hover:underline"
-                                >
-                                  {canAccess('contacts', 'view') && (
-                                    <Link href={`/home/contacts/${contact.id}`}>
-                                      View
-                                    </Link>
-                                  )}
-                                </Button>
+                                <div className="flex items-center justify-end gap-2">
+                                  <EntityActionsDropdown
+                                    id={contact.id}
+                                    viewPath={`/home/contacts/${contact.id}`}
+                                    canDelete={canAccess('contacts', 'delete')}
+                                    onDelete={() => {
+                                      setContactToDelete(contact);
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                  />
+                                </div>
                               </TableCell>
                             </TableRow>
                           ),
@@ -449,6 +466,18 @@ export default function ContactsPage() {
               open={createDialogOpen}
               onOpenChange={setCreateDialogOpen}
               onSuccess={() => refetch()}
+            />
+
+            <DeleteEntityDialog
+              isOpen={deleteDialogOpen}
+              onOpenChange={setDeleteDialogOpen}
+              entityId={contactToDelete?.id || ''}
+              entityType="contact"
+              entityName={`${contactToDelete?.first_name} ${contactToDelete?.last_name || ''}`}
+              onSuccess={() => {
+                setContactToDelete(null);
+                refetch();
+              }}
             />
           </div>
         </PageBody>

@@ -105,10 +105,16 @@ const getOpportunityStatusesService = asyncHandlerClient(
   },
 );
 
+const deleteOpportunityService = asyncHandlerClient(async (id: string) => {
+  const response = await ApiClient.delete(`/opportunities/${id}`);
+  return response.data?.data;
+});
+
 export {
   getOpportunitiesService,
   getOpportunityByIdService,
   updateOpportunityService,
   createOpportunityService,
   getOpportunityStatusesService,
+  deleteOpportunityService,
 };

@@ -276,6 +276,70 @@ const deleteLead = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
+    // Check permissions
+    // Get the lead to check permissions
+    const { data: existingLead } = await supabase
+      .from('crm_leads')
+      .select('workspace_id, owner_id, created_by')
+      .eq('id', leadId)
+      .single();
+
+    if (!existingLead) {
+      return NextResponse.json({ message: 'Lead not found' }, { status: 404 });
+    }
+
+    // Get workspace to check if user is owner
+    const { data: workspace } = await supabase
+      .from('workspaces')
+      .select('owner_id')
+      .eq('id', existingLead.workspace_id)
+      .single();
+
+    const isWorkspaceOwner = workspace?.owner_id === user.id;
+    const isOwner = existingLead.owner_id === user.id;
+    let hasPermission = isWorkspaceOwner || isOwner;
+
+    // If not owner, check RBAC permissions
+    if (!hasPermission) {
+      const { data: member } = await supabase
+        .from('workspace_members')
+        .select('role_id')
+        .eq('user_id', user.id)
+        .eq('workspace_id', existingLead.workspace_id)
+        .single();
+
+      if (member?.role_id) {
+        const { data: permission } = await supabase
+          .from('role_permissions')
+          .select(
+            `
+            can_access,
+            crm_module_features!inner (
+              feature_key,
+              crm_modules!inner (
+                module_key
+              )
+            )
+          `,
+          )
+          .eq('role_id', member.role_id)
+          .eq('crm_module_features.feature_key', 'delete')
+          .eq('crm_module_features.crm_modules.module_key', 'leads')
+          .single();
+
+        if (permission?.can_access) {
+          hasPermission = true;
+        }
+      }
+    }
+
+    if (!hasPermission) {
+      return NextResponse.json(
+        { message: 'You do not have permission to delete this lead' },
+        { status: 403 },
+      );
+    }
+
     // Soft delete lead
     const { data: lead, error } = await supabase
       .from('crm_leads')
