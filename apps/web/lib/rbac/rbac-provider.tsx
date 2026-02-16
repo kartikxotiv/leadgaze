@@ -30,6 +30,7 @@ interface WorkspaceRole {
 
 interface Workspace {
   id: string;
+  owner_id: string;
   name: string;
   slug: string;
   member_id: string;
@@ -130,6 +131,7 @@ export function RBACProvider({ children }: { children: ReactNode }) {
 
           return {
             id: workspace.id,
+            owner_id: workspace.owner_id,
             name: workspace.name,
             slug: workspace.slug,
             member_id: member.id,

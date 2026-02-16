@@ -74,9 +74,15 @@ const updateAccountService = asyncHandlerClient(
   },
 );
 
+const deleteAccountService = asyncHandlerClient(async (id: string) => {
+  const response = await ApiClient.delete(`/accounts/${id}`);
+  return response.data?.data;
+});
+
 export {
   getAccountsService,
   getAccountByIdService,
   createAccountService,
   updateAccountService,
+  deleteAccountService,
 };
