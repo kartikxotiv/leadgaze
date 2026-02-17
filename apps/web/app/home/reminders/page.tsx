@@ -111,6 +111,12 @@ import { getOpportunitiesService } from '~/services/opportunities.service';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export default function RemindersPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -302,7 +308,8 @@ export default function RemindersPage() {
   };
 
   const handleCreate = () => {
-    if (!formData.title.trim() || !formData.entityId) return;
+    if (!formData.title.trim() || !formData.entityId || !formData.due_date)
+      return;
     createMutation.mutate(formData);
   };
 
@@ -322,7 +329,8 @@ export default function RemindersPage() {
   };
 
   const handleSave = () => {
-    if (!editingReminder || !formData.title.trim()) return;
+    if (!editingReminder || !formData.title.trim() || !formData.due_date)
+      return;
     updateMutation.mutate({
       title: formData.title,
       description: formData.description,
@@ -860,20 +868,25 @@ export default function RemindersPage() {
             </div>
             <div className="space-y-2">
               <Label>Due Date</Label>
-              <Input
-                type="datetime-local"
-                onClick={(e) => e.currentTarget.showPicker()}
-                value={formData.due_date}
-                onChange={(e) =>
-                  setFormData({ ...formData, due_date: e.target.value })
-                }
-              />
+              <div className="relative">
+                <CalendarIcon className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                <Input
+                  type="datetime-local"
+                  onClick={(e) => e.currentTarget.showPicker()}
+                  value={formData.due_date}
+                  onChange={(e) =>
+                    setFormData({ ...formData, due_date: e.target.value })
+                  }
+                  className="pl-10"
+                />
+              </div>
             </div>
             <Button
               onClick={handleCreate}
               disabled={
                 !formData.title.trim() ||
                 !formData.entityId ||
+                !formData.due_date ||
                 createMutation.isPending
               }
               className="w-full"
@@ -935,18 +948,26 @@ export default function RemindersPage() {
             </div>
             <div className="space-y-2">
               <Label>Due Date</Label>
-              <Input
-                type="datetime-local"
-                onClick={(e) => e.currentTarget.showPicker()}
-                value={formData.due_date}
-                onChange={(e) =>
-                  setFormData({ ...formData, due_date: e.target.value })
-                }
-              />
+              <div className="relative">
+                <CalendarIcon className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                <Input
+                  type="datetime-local"
+                  onClick={(e) => e.currentTarget.showPicker()}
+                  value={formData.due_date}
+                  onChange={(e) =>
+                    setFormData({ ...formData, due_date: e.target.value })
+                  }
+                  className="pl-10"
+                />
+              </div>
             </div>
             <Button
               onClick={handleSave}
-              disabled={!formData.title.trim() || updateMutation.isPending}
+              disabled={
+                !formData.title.trim() ||
+                !formData.due_date ||
+                updateMutation.isPending
+              }
               className="w-full"
             >
               {updateMutation.isPending ? (
