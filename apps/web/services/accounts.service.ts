@@ -37,6 +37,11 @@ export interface Account {
     id: string;
     industry_name: string;
   };
+  created_by_account?: {
+    id: string;
+    email: string;
+    name: string;
+  };
 }
 
 const getAccountsService = asyncHandlerClient(

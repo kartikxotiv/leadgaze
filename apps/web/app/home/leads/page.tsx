@@ -660,7 +660,9 @@ export default function LeadsPage() {
                             )}
                             {isVisible('created_by') && (
                               <TableCell className="text-muted-foreground">
-                                {lead.created_by || '-'}
+                                {lead.created_by_account?.name ||
+                                  lead.created_by ||
+                                  '-'}
                               </TableCell>
                             )}
                             {isVisible('created_at') && (
@@ -674,7 +676,9 @@ export default function LeadsPage() {
                             )}
                             {isVisible('updated_by') && (
                               <TableCell className="text-muted-foreground">
-                                {lead.updated_by || '-'}
+                                {lead.updated_by_account?.name ||
+                                  lead.updated_by ||
+                                  '-'}
                               </TableCell>
                             )}
 

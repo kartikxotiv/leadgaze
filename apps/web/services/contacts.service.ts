@@ -33,6 +33,11 @@ export interface Contact {
     name: string;
     email: string;
   };
+  created_by_account?: {
+    id: string;
+    email: string;
+    name: string;
+  };
 }
 
 const getContactsService = asyncHandlerClient(

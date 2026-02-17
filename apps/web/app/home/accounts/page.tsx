@@ -412,7 +412,9 @@ export default function AccountsPage() {
                               )}
                               {isVisible('created_by') && (
                                 <TableCell className="text-muted-foreground">
-                                  {account.created_by || '-'}
+                                  {account.created_by_account?.name ||
+                                    account.created_by ||
+                                    '-'}
                                 </TableCell>
                               )}
                               {isVisible('created_at') && (
