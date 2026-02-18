@@ -360,8 +360,8 @@ export default function OpportunitiesPage() {
           </div>
         </div>
 
-        <PageBody className="bg-sidebar -mt-6 flex min-h-0 flex-1 flex-col overflow-hidden pt-6">
-          <div className="flex min-h-0 flex-1 flex-col space-y-6">
+        <PageBody className="bg-sidebar sticky flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
+          <div className="flex min-h-0 flex-1 flex-col">
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
               <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                 <div className="flex-1 overflow-auto rounded-lg">
@@ -640,7 +640,7 @@ export default function OpportunitiesPage() {
             </Card>
 
             {totalCount > 0 && (
-              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mb-4 flex items-center justify-between border-t p-4 px-6 lg:-mb-8">
+              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 flex items-center justify-between border-t p-4 px-6">
                 <div>
                   Showing{' '}
                   <span className="text-foreground font-medium">

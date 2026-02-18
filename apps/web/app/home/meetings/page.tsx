@@ -870,28 +870,36 @@ export default function MeetingsPage() {
                 placeholder="Meeting agenda..."
               />
             </div>
-            <div className="grid grid-cols-2">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Start</Label>
-                <Input
-                  type="datetime-local"
-                  onClick={(e) => e.currentTarget.showPicker()}
-                  value={formData.start_time}
-                  onChange={(e) =>
-                    setFormData({ ...formData, start_time: e.target.value })
-                  }
-                />
+                <div className="relative">
+                  <CalendarIcon className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="datetime-local"
+                    onClick={(e) => e.currentTarget.showPicker()}
+                    value={formData.start_time}
+                    onChange={(e) =>
+                      setFormData({ ...formData, start_time: e.target.value })
+                    }
+                    className="pl-10"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>End</Label>
-                <Input
-                  type="datetime-local"
-                  onClick={(e) => e.currentTarget.showPicker()}
-                  value={formData.end_time}
-                  onChange={(e) =>
-                    setFormData({ ...formData, end_time: e.target.value })
-                  }
-                />
+                <div className="relative">
+                  <CalendarIcon className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="datetime-local"
+                    onClick={(e) => e.currentTarget.showPicker()}
+                    value={formData.end_time}
+                    onChange={(e) =>
+                      setFormData({ ...formData, end_time: e.target.value })
+                    }
+                    className="pl-10"
+                  />
+                </div>
               </div>
             </div>
             <div className="space-y-2">
@@ -952,28 +960,36 @@ export default function MeetingsPage() {
                 placeholder="Meeting agenda..."
               />
             </div>
-            <div className="grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Start</Label>
-                <Input
-                  type="datetime-local"
-                  onClick={(e) => e.currentTarget.showPicker()}
-                  value={formData.start_time}
-                  onChange={(e) =>
-                    setFormData({ ...formData, start_time: e.target.value })
-                  }
-                />
+                <div className="relative">
+                  <CalendarIcon className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="datetime-local"
+                    onClick={(e) => e.currentTarget.showPicker()}
+                    value={formData.start_time}
+                    onChange={(e) =>
+                      setFormData({ ...formData, start_time: e.target.value })
+                    }
+                    className="pl-10"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>End</Label>
-                <Input
-                  type="datetime-local"
-                  onClick={(e) => e.currentTarget.showPicker()}
-                  value={formData.end_time}
-                  onChange={(e) =>
-                    setFormData({ ...formData, end_time: e.target.value })
-                  }
-                />
+                <div className="relative">
+                  <CalendarIcon className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="datetime-local"
+                    onClick={(e) => e.currentTarget.showPicker()}
+                    value={formData.end_time}
+                    onChange={(e) =>
+                      setFormData({ ...formData, end_time: e.target.value })
+                    }
+                    className="pl-10"
+                  />
+                </div>
               </div>
             </div>
             <div className="space-y-2">

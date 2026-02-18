@@ -406,7 +406,7 @@ export default function ContactsPage() {
             </Card>
 
             {totalCount > 0 && (
-              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mb-4 flex items-center justify-between border-t p-4 px-6 lg:-mb-8">
+              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 flex items-center justify-between border-t p-4 px-6">
                 <div>
                   Showing{' '}
                   <span className="text-foreground font-medium">
