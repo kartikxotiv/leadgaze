@@ -27,9 +27,9 @@ export interface Account {
   linkedin_url?: string;
   twitter_handle?: string;
   status_id: string;
-  owner_id?: string;
+  owner_id?: string | null;
   created_by?: string;
-  updated_by?: string;
+  created_from_lead_id?: string | null;
   created_at: string;
   updated_at: string;
   // Relations

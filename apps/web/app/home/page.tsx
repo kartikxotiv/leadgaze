@@ -8,7 +8,7 @@ import { WorkspaceCheckWrapper } from '~/home/_components/workspace-check-wrappe
 export default function HomePage() {
   return (
     <WorkspaceCheckWrapper>
-      <div className="flex h-[100dvh] flex-col overflow-hidden">
+      <div className="flex h-[100dvh] flex-col">
         <PageHeader title="Dashboard" description={'Your SaaS at a glance'} />
         <PageBody className="flex-1 overflow-hidden">
           <DashboardDemo />

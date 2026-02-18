@@ -22,12 +22,11 @@ export interface Contact {
   linkedin_url?: string;
   twitter_handle?: string;
   account_id?: string;
-  notes?: string;
   is_public?: boolean;
   status_id: string;
   owner_id?: string;
   created_by?: string;
-  updated_by?: string;
+  notes?: string | null;
   created_at: string;
   updated_at: string;
   // Relations
