@@ -179,7 +179,7 @@ export default function DashboardDemo() {
             </CardDescription>
           </CardHeader>
 
-          <CardContent className="min-h-0 flex-1 overflow-auto p-0">
+          <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
             <RecentContactsTable workspaceId={workspaceId!} />
           </CardContent>
         </Card>
@@ -279,59 +279,61 @@ function RecentContactsTable({ workspaceId }: { workspaceId: string }) {
   }
 
   return (
-    <table className="w-full caption-bottom text-sm">
-      <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
-        <TableRow className="bg-card">
-          <TableHead>Contact</TableHead>
-          <TableHead>Company</TableHead>
-          <TableHead className="hidden md:table-cell">Job Title</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {contacts.map((contact: any) => (
-          <TableRow key={contact.id}>
-            <TableCell className={'flex flex-col'}>
-              <span className="font-medium">
-                {contact.first_name} {contact.last_name}
-              </span>
-              <span
-                className={'text-muted-foreground hidden text-xs sm:inline'}
-              >
-                {contact.email}
-              </span>
-            </TableCell>
-            <TableCell>{contact.account?.account_name || '-'}</TableCell>
-            <TableCell className="text-muted-foreground hidden text-sm md:table-cell">
-              {contact.job_title || '-'}
-            </TableCell>
-            <TableCell>
-              {contact.status ? (
-                <Badge
-                  variant="outline"
-                  style={{
-                    color: contact.status.color,
-                    borderColor: contact.status.color + '40',
-                    backgroundColor: contact.status.color + '10',
-                  }}
-                  className="h-5 text-[10px]"
-                >
-                  {contact.status.status_name}
-                </Badge>
-              ) : (
-                '-'
-              )}
-            </TableCell>
-            <TableCell className="text-right">
-              <Button variant="ghost" size="sm" asChild>
-                <Link href={`/home/contacts/${contact.id}`}>View</Link>
-              </Button>
-            </TableCell>
+    <div className="flex-1 overflow-auto [&>div]:overflow-visible">
+      <Table className="w-full caption-bottom text-sm">
+        <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+          <TableRow className="bg-card">
+            <TableHead>Contact</TableHead>
+            <TableHead>Company</TableHead>
+            <TableHead className="hidden md:table-cell">Job Title</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </table>
+        </TableHeader>
+        <TableBody>
+          {contacts.map((contact: any) => (
+            <TableRow key={contact.id}>
+              <TableCell className={'flex flex-col'}>
+                <span className="font-medium">
+                  {contact.first_name} {contact.last_name}
+                </span>
+                <span
+                  className={'text-muted-foreground hidden text-xs sm:inline'}
+                >
+                  {contact.email}
+                </span>
+              </TableCell>
+              <TableCell>{contact.account?.account_name || '-'}</TableCell>
+              <TableCell className="text-muted-foreground hidden text-sm md:table-cell">
+                {contact.job_title || '-'}
+              </TableCell>
+              <TableCell>
+                {contact.status ? (
+                  <Badge
+                    variant="outline"
+                    style={{
+                      color: contact.status.color,
+                      borderColor: contact.status.color + '40',
+                      backgroundColor: contact.status.color + '10',
+                    }}
+                    className="h-5 text-[10px]"
+                  >
+                    {contact.status.status_name}
+                  </Badge>
+                ) : (
+                  '-'
+                )}
+              </TableCell>
+              <TableCell className="text-right">
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href={`/home/contacts/${contact.id}`}>View</Link>
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 

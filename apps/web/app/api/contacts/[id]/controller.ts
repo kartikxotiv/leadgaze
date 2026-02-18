@@ -85,32 +85,81 @@ export const updateContact = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check permissions for is_public updates
-    if (body.is_public !== undefined) {
-      // Get the contact to check permissions
-      const { data: existingContact } = await supabase
-        .from('crm_contacts')
-        .select('workspace_id, created_by')
-        .eq('id', id)
+    // Get the contact to check permissions
+    const { data: existingContact } = await supabase
+      .from('crm_contacts')
+      .select('workspace_id, owner_id, created_by, is_public')
+      .eq('id', id)
+      .single();
+
+    if (!existingContact) {
+      return NextResponse.json({ message: 'Contact not found' }, { status: 404 });
+    }
+
+    // Get workspace to check if user is owner
+    const { data: workspace } = await supabase
+      .from('workspaces')
+      .select('owner_id')
+      .eq('id', existingContact.workspace_id)
+      .single();
+
+    const isWorkspaceOwner = workspace?.owner_id === user.id;
+    const isOwner = existingContact.owner_id === user.id;
+    const isCreator = existingContact.created_by === user.id;
+
+    // Check general edit permission
+    let hasEditPermission = isWorkspaceOwner || isOwner || isCreator;
+
+    if (!hasEditPermission) {
+      const { data: member } = await supabase
+        .from('workspace_members')
+        .select('role_id')
+        .eq('user_id', user.id)
+        .eq('workspace_id', existingContact.workspace_id)
         .single();
 
-      if (existingContact) {
-        // Get workspace to check if user is owner
-        const { data: workspace } = await supabase
-          .from('workspaces')
-          .select('owner_id')
-          .eq('id', existingContact.workspace_id)
+      if (member?.role_id) {
+        const { data: permission } = await supabase
+          .from('role_permissions')
+          .select(
+            `
+            can_access,
+            crm_module_features!inner (
+              feature_key,
+              crm_modules!inner (
+                module_key
+              )
+            )
+          `,
+          )
+          .eq('role_id', member.role_id)
+          .eq('crm_module_features.feature_key', 'edit')
+          .eq('crm_module_features.crm_modules.module_key', 'contacts')
           .single();
 
-        const isWorkspaceOwner = workspace?.owner_id === user.id;
-        const isCreator = existingContact.created_by === user.id;
-
-        if (!isWorkspaceOwner && !isCreator) {
-          return NextResponse.json(
-            { message: 'Only workspace owner or creator can change visibility' },
-            { status: 403 },
-          );
+        if (permission?.can_access) {
+          hasEditPermission = true;
         }
+      }
+    }
+
+    if (!hasEditPermission) {
+      return NextResponse.json(
+        { message: 'You do not have permission to edit this contact' },
+        { status: 403 },
+      );
+    }
+
+    // Check permissions for is_public updates - Only if value is CHANGING
+    if (
+      body.is_public !== undefined &&
+      body.is_public !== existingContact.is_public
+    ) {
+      if (!isWorkspaceOwner && !isCreator) {
+        return NextResponse.json(
+          { message: 'Only workspace owner or creator can change visibility' },
+          { status: 403 },
+        );
       }
     }
 

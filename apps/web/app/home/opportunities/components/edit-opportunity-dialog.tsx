@@ -8,368 +8,448 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { useUser } from '@kit/supabase/hooks/use-user';
 import { Button } from '@kit/ui/button';
+import { Checkbox } from '@kit/ui/checkbox';
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
 } from '@kit/ui/dialog';
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@kit/ui/form';
 import { Input } from '@kit/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@kit/ui/select';
 import { Textarea } from '@kit/ui/textarea';
-import { Checkbox } from '@kit/ui/checkbox';
 
-import { updateOpportunityService } from '~/services/opportunities.service';
+import { useRBAC } from '~/lib/rbac/rbac-provider';
+import {
+  Opportunity,
+  updateOpportunityService,
+} from '~/services/opportunities.service';
 
 const formSchema = z.object({
-    opportunity_name: z.string().min(1, 'Opportunity Name is required'),
-    amount: z.string().optional().or(z.literal('')),
-    currency: z.string().optional().or(z.literal('')),
-    probability: z.string().optional().or(z.literal('')),
-    expected_close_date: z.string().optional().or(z.literal('')),
-    priority: z.string().optional(),
-    opportunity_type: z.string().optional(),
-    lead_source: z.string().optional(),
-    description: z.string().optional().or(z.literal('')),
-    competitor: z.string().optional().or(z.literal('')),
-    is_closed: z.boolean().optional(),
-    is_won: z.boolean().optional(),
-    close_reason: z.string().optional().or(z.literal('')),
+  opportunity_name: z.string().min(1, 'Opportunity Name is required'),
+  amount: z.string().optional().or(z.literal('')),
+  currency: z.string().optional().or(z.literal('')),
+  probability: z.string().optional().or(z.literal('')),
+  expected_close_date: z.string().optional().or(z.literal('')),
+  priority: z.string().optional(),
+  opportunity_type: z.string().optional(),
+  lead_source: z.string().optional(),
+  description: z.string().optional().or(z.literal('')),
+  competitor: z.string().optional().or(z.literal('')),
+  is_closed: z.boolean().optional(),
+  is_won: z.boolean().optional(),
+  close_reason: z.string().optional().or(z.literal('')),
+  is_public: z.boolean().optional(),
 });
 
 interface EditOpportunityDialogProps {
-    isOpen: boolean;
-    onOpenChange: (open: boolean) => void;
-    opportunity: any;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  opportunity: Opportunity;
 }
 
 export function EditOpportunityDialog({
-    isOpen,
-    onOpenChange,
-    opportunity,
+  isOpen,
+  onOpenChange,
+  opportunity,
 }: EditOpportunityDialogProps) {
-    const queryClient = useQueryClient();
+  const { currentWorkspace: workspace } = useRBAC();
+  const { data: user } = useUser();
+  const queryClient = useQueryClient();
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            opportunity_name: '',
-            amount: '',
-            currency: 'USD',
-            probability: '',
-            expected_close_date: '',
-            priority: '',
-            opportunity_type: '',
-            lead_source: '',
-            description: '',
-            competitor: '',
-            is_closed: false,
-            is_won: false,
-            close_reason: '',
-        },
-    });
+  const isWorkspaceOwner = workspace?.owner_id === user?.id;
+  const isCreator = opportunity.created_by === user?.id;
+  const canChangeVisibility = isWorkspaceOwner || isCreator;
 
-    useEffect(() => {
-        if (isOpen && opportunity) {
-            form.reset({
-                opportunity_name: opportunity.opportunity_name || '',
-                amount: opportunity.amount ? String(opportunity.amount) : '',
-                currency: opportunity.currency || 'USD',
-                probability: opportunity.probability ? String(opportunity.probability) : '',
-                expected_close_date: opportunity.expected_close_date ? new Date(opportunity.expected_close_date).toISOString().split('T')[0] : '',
-                priority: opportunity.priority || undefined,
-                opportunity_type: opportunity.opportunity_type || undefined,
-                lead_source: opportunity.lead_source || undefined,
-                description: opportunity.description || '',
-                competitor: opportunity.competitor || '',
-                is_closed: opportunity.is_closed || false,
-                is_won: opportunity.is_won || false,
-                close_reason: opportunity.close_reason || '',
-            });
-        }
-    }, [opportunity, form, isOpen]);
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      opportunity_name: '',
+      amount: '',
+      currency: 'USD',
+      probability: '',
+      expected_close_date: '',
+      priority: '',
+      opportunity_type: '',
+      lead_source: '',
+      description: '',
+      competitor: '',
+      is_closed: false,
+      is_won: false,
+      close_reason: '',
+      is_public: false,
+    },
+  });
 
-    const updateMutation = useMutation({
-        mutationFn: (values: z.infer<typeof formSchema>) => {
-            const payload = {
-                ...values,
-                amount: values.amount ? parseFloat(values.amount) : null,
-                probability: values.probability ? parseInt(values.probability) : null,
-                expected_close_date: values.expected_close_date || null,
-            };
-            return updateOpportunityService(opportunity.id, payload);
-        },
-        onSuccess: () => {
-            toast.success('Opportunity updated successfully');
-            queryClient.invalidateQueries({ queryKey: ['opportunity', opportunity.id] });
-            onOpenChange(false);
-        },
-        onError: () => toast.error('Failed to update opportunity'),
-    });
-
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        updateMutation.mutate(values);
+  useEffect(() => {
+    if (isOpen && opportunity) {
+      form.reset({
+        opportunity_name: opportunity.opportunity_name || '',
+        amount: opportunity.amount ? String(opportunity.amount) : '',
+        currency: opportunity.currency || 'USD',
+        probability: opportunity.probability
+          ? String(opportunity.probability)
+          : '',
+        expected_close_date: opportunity.expected_close_date
+          ? new Date(opportunity.expected_close_date)
+              .toISOString()
+              .split('T')[0]
+          : '',
+        priority: opportunity.priority || undefined,
+        opportunity_type: opportunity.opportunity_type || undefined,
+        lead_source: opportunity.lead_source || undefined,
+        description: opportunity.description || '',
+        competitor: opportunity.competitor || '',
+        is_closed: opportunity.is_closed || false,
+        is_won: opportunity.is_won || false,
+        close_reason: opportunity.close_reason || '',
+        is_public: opportunity.is_public || false,
+      });
     }
+  }, [opportunity, form, isOpen]);
 
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>Edit Opportunity</DialogTitle>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="opportunity_name"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Opportunity Name</FormLabel>
-                                    <FormControl>
-                                        <Input {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
+  const updateMutation = useMutation({
+    mutationFn: (values: z.infer<typeof formSchema>) => {
+      const payload: any = {
+        ...values,
+        amount: values.amount ? parseFloat(values.amount) : null,
+        probability: values.probability ? parseInt(values.probability) : null,
+        expected_close_date: values.expected_close_date || null,
+      };
+
+      // Only include is_public if it has changed
+      if (values.is_public === opportunity.is_public) {
+        delete payload.is_public;
+      }
+
+      return updateOpportunityService(opportunity.id, payload);
+    },
+    onSuccess: () => {
+      toast.success('Opportunity updated successfully');
+      queryClient.invalidateQueries({
+        queryKey: ['opportunity', opportunity.id],
+      });
+      onOpenChange(false);
+    },
+    onError: () => toast.error('Failed to update opportunity'),
+  });
+
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    updateMutation.mutate(values);
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>Edit Opportunity</DialogTitle>
+          <DialogDescription>
+            Update the information for this opportunity.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="opportunity_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Opportunity Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Amount</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.01" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="currency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Currency</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="USD" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="probability"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Probability (%)</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" min="0" max="100" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="expected_close_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Expected Close Date</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="date" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="opportunity_type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Type</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="New Business">
+                          New Business
+                        </SelectItem>
+                        <SelectItem value="Existing Business">
+                          Existing Business
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Priority</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="High">High</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="Low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="lead_source"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Lead Source</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="competitor"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Competitor</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="space-y-3 border-t pt-4">
+              <h4 className="text-sm font-medium">Outcome</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="is_closed"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-y-0 space-x-3">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
                         />
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="amount"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Amount</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} type="number" step="0.01" />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="currency"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Currency</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} placeholder="USD" />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="probability"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Probability (%)</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} type="number" min="0" max="100" />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="expected_close_date"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Expected Close Date</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} type="date" />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="opportunity_type"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Type</FormLabel>
-                                        <Select
-                                            onValueChange={field.onChange}
-                                            defaultValue={field.value}
-                                            value={field.value}
-                                        >
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select type" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="New Business">New Business</SelectItem>
-                                                <SelectItem value="Existing Business">Existing Business</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="priority"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Priority</FormLabel>
-                                        <Select
-                                            onValueChange={field.onChange}
-                                            defaultValue={field.value}
-                                            value={field.value}
-                                        >
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select priority" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="High">High</SelectItem>
-                                                <SelectItem value="Medium">Medium</SelectItem>
-                                                <SelectItem value="Low">Low</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-
-                        <FormField
-                            control={form.control}
-                            name="lead_source"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Lead Source</FormLabel>
-                                    <FormControl>
-                                        <Input {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
+                      </FormControl>
+                      <FormLabel>Is Closed</FormLabel>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="is_won"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-y-0 space-x-3">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
                         />
+                      </FormControl>
+                      <FormLabel>Is Won</FormLabel>
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-                        <FormField
-                            control={form.control}
-                            name="description"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Description</FormLabel>
-                                    <FormControl>
-                                        <Textarea {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
+              {form.watch('is_closed') && (
+                <FormField
+                  control={form.control}
+                  name="close_reason"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Close Reason</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder="Why was this won or lost?"
                         />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
-                        <FormField
-                            control={form.control}
-                            name="competitor"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Competitor</FormLabel>
-                                    <FormControl>
-                                        <Input {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
+              <div className="space-y-4 border-t pt-4">
+                <h4 className="text-sm font-medium">Visibility Settings</h4>
+                <FormField
+                  control={form.control}
+                  name="is_public"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-y-0 space-x-3 p-1">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={!canChangeVisibility}
                         />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel
+                          className={
+                            !canChangeVisibility
+                              ? 'cursor-not-allowed opacity-70'
+                              : 'cursor-pointer'
+                          }
+                        >
+                          Make this opportunity public
+                        </FormLabel>
+                        <p className="text-muted-foreground text-xs">
+                          When public, this opportunity will be visible to all
+                          team members.
+                        </p>
+                        {!canChangeVisibility && (
+                          <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                            Only workspace owner or creator can change
+                            visibility
+                          </p>
+                        )}
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
 
-                        <div className="space-y-3 border-t pt-4">
-                            <h4 className="text-sm font-medium">Outcome</h4>
-                            <div className="grid grid-cols-2 gap-4">
-                                <FormField
-                                    control={form.control}
-                                    name="is_closed"
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                                            <FormControl>
-                                                <Checkbox
-                                                    checked={field.value}
-                                                    onCheckedChange={field.onChange}
-                                                />
-                                            </FormControl>
-                                            <FormLabel>Is Closed</FormLabel>
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="is_won"
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                                            <FormControl>
-                                                <Checkbox
-                                                    checked={field.value}
-                                                    onCheckedChange={field.onChange}
-                                                />
-                                            </FormControl>
-                                            <FormLabel>Is Won</FormLabel>
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-
-                            {form.watch('is_closed') && (
-                                <FormField
-                                    control={form.control}
-                                    name="close_reason"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Close Reason</FormLabel>
-                                            <FormControl>
-                                                <Textarea {...field} placeholder="Why was this won or lost?" />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            )}
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-4">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => onOpenChange(false)}
-                                disabled={updateMutation.isPending}
-                            >
-                                Cancel
-                            </Button>
-                            <Button type="submit" disabled={updateMutation.isPending}>
-                                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
-                            </Button>
-                        </div>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    );
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={updateMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
 }

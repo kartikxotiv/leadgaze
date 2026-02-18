@@ -84,32 +84,81 @@ export const updateAccount = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check permissions for is_public updates
-    if (body.is_public !== undefined) {
-      // Get the account to check permissions
-      const { data: existingAccount } = await supabase
-        .from('crm_accounts')
-        .select('workspace_id, created_by')
-        .eq('id', id)
+    // Get the account to check permissions
+    const { data: existingAccount } = await supabase
+      .from('crm_accounts')
+      .select('workspace_id, owner_id, created_by, is_public')
+      .eq('id', id)
+      .single();
+
+    if (!existingAccount) {
+      return NextResponse.json({ message: 'Account not found' }, { status: 404 });
+    }
+
+    // Get workspace to check if user is owner
+    const { data: workspace } = await supabase
+      .from('workspaces')
+      .select('owner_id')
+      .eq('id', existingAccount.workspace_id)
+      .single();
+
+    const isWorkspaceOwner = workspace?.owner_id === user.id;
+    const isOwner = existingAccount.owner_id === user.id;
+    const isCreator = existingAccount.created_by === user.id;
+
+    // Check general edit permission
+    let hasEditPermission = isWorkspaceOwner || isOwner || isCreator;
+
+    if (!hasEditPermission) {
+      const { data: member } = await supabase
+        .from('workspace_members')
+        .select('role_id')
+        .eq('user_id', user.id)
+        .eq('workspace_id', existingAccount.workspace_id)
         .single();
 
-      if (existingAccount) {
-        // Get workspace to check if user is owner
-        const { data: workspace } = await supabase
-          .from('workspaces')
-          .select('owner_id')
-          .eq('id', existingAccount.workspace_id)
+      if (member?.role_id) {
+        const { data: permission } = await supabase
+          .from('role_permissions')
+          .select(
+            `
+            can_access,
+            crm_module_features!inner (
+              feature_key,
+              crm_modules!inner (
+                module_key
+              )
+            )
+          `,
+          )
+          .eq('role_id', member.role_id)
+          .eq('crm_module_features.feature_key', 'edit')
+          .eq('crm_module_features.crm_modules.module_key', 'accounts')
           .single();
 
-        const isWorkspaceOwner = workspace?.owner_id === user.id;
-        const isCreator = existingAccount.created_by === user.id;
-
-        if (!isWorkspaceOwner && !isCreator) {
-          return NextResponse.json(
-            { message: 'Only workspace owner or creator can change visibility' },
-            { status: 403 },
-          );
+        if (permission?.can_access) {
+          hasEditPermission = true;
         }
+      }
+    }
+
+    if (!hasEditPermission) {
+      return NextResponse.json(
+        { message: 'You do not have permission to edit this account' },
+        { status: 403 },
+      );
+    }
+
+    // Check permissions for is_public updates - Only if value is CHANGING
+    if (
+      body.is_public !== undefined &&
+      body.is_public !== existingAccount.is_public
+    ) {
+      if (!isWorkspaceOwner && !isCreator) {
+        return NextResponse.json(
+          { message: 'Only workspace owner or creator can change visibility' },
+          { status: 403 },
+        );
       }
     }
 
