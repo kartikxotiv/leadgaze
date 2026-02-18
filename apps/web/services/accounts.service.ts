@@ -9,13 +9,23 @@ export interface Account {
   phone_number?: string;
   industry_id?: string;
   company_size?: string;
+  annual_revenue?: number;
+  employee_count?: number;
+  description?: string;
+  is_public?: boolean;
+  account_type?: string;
   billing_street?: string;
   billing_city?: string;
   billing_state?: string;
   billing_postal_code?: string;
   billing_country?: string;
-  description?: string;
-  is_public?: boolean;
+  shipping_street?: string;
+  shipping_city?: string;
+  shipping_state?: string;
+  shipping_postal_code?: string;
+  shipping_country?: string;
+  linkedin_url?: string;
+  twitter_handle?: string;
   status_id: string;
   owner_id?: string;
   created_by?: string;
@@ -36,6 +46,11 @@ export interface Account {
   industry?: {
     id: string;
     industry_name: string;
+  };
+  created_by_account?: {
+    id: string;
+    email: string;
+    name: string;
   };
 }
 

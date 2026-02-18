@@ -176,34 +176,82 @@ const updateLead = catchAsync(
       updateData.owner_id = body.owner_id || null;
     if (body.notes !== undefined) updateData.notes = body.notes || null;
     
-    // Check permissions for is_public updates
-    if (body.is_public !== undefined) {
-      // Get the lead to check permissions
-      const { data: existingLead } = await supabase
-        .from('crm_leads')
-        .select('workspace_id, created_by')
-        .eq('id', leadId)
+    // Get the lead to check permissions
+    const { data: existingLead } = await supabase
+      .from('crm_leads')
+      .select('workspace_id, owner_id, created_by, is_public')
+      .eq('id', leadId)
+      .single();
+
+    if (!existingLead) {
+      return NextResponse.json({ message: 'Lead not found' }, { status: 404 });
+    }
+
+    // Get workspace to check if user is owner
+    const { data: workspace } = await supabase
+      .from('workspaces')
+      .select('owner_id')
+      .eq('id', existingLead.workspace_id)
+      .single();
+
+    const isWorkspaceOwner = workspace?.owner_id === user.id;
+    const isOwner = existingLead.owner_id === user.id;
+    const isCreator = existingLead.created_by === user.id;
+
+    // Check general edit permission
+    let hasEditPermission = isWorkspaceOwner || isOwner || isCreator;
+
+    if (!hasEditPermission) {
+      const { data: member } = await supabase
+        .from('workspace_members')
+        .select('role_id')
+        .eq('user_id', user.id)
+        .eq('workspace_id', existingLead.workspace_id)
         .single();
 
-      if (existingLead) {
-        // Get workspace to check if user is owner
-        const { data: workspace } = await supabase
-          .from('workspaces')
-          .select('owner_id')
-          .eq('id', existingLead.workspace_id)
+      if (member?.role_id) {
+        const { data: permission } = await supabase
+          .from('role_permissions')
+          .select(
+            `
+            can_access,
+            crm_module_features!inner (
+              feature_key,
+              crm_modules!inner (
+                module_key
+              )
+            )
+          `,
+          )
+          .eq('role_id', member.role_id)
+          .eq('crm_module_features.feature_key', 'edit')
+          .eq('crm_module_features.crm_modules.module_key', 'leads')
           .single();
 
-        const isWorkspaceOwner = workspace?.owner_id === user.id;
-        const isCreator = existingLead.created_by === user.id;
-
-        if (!isWorkspaceOwner && !isCreator) {
-          return NextResponse.json(
-            { message: 'Only workspace owner or creator can change visibility' },
-            { status: 403 },
-          );
+        if (permission?.can_access) {
+          hasEditPermission = true;
         }
       }
+    }
 
+    if (!hasEditPermission) {
+      return NextResponse.json(
+        { message: 'You do not have permission to edit this lead' },
+        { status: 403 },
+      );
+    }
+
+    // Check permissions for is_public updates - Only if value is CHANGING
+    if (
+      body.is_public !== undefined &&
+      body.is_public !== existingLead.is_public
+    ) {
+      if (!isWorkspaceOwner && !isCreator) {
+        return NextResponse.json(
+          { message: 'Only workspace owner or creator can change visibility' },
+          { status: 403 },
+        );
+      }
       updateData.is_public = body.is_public;
     }
 

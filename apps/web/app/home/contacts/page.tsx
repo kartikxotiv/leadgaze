@@ -158,44 +158,46 @@ export default function ContactsPage() {
 
   return (
     <ModuleGuard module="contacts">
-      <div className="flex h-[100dvh] flex-col">
-        <PageHeader
-          className="bg-sidebar shrink-0 px-6 py-4"
-          title={`Contacts (${totalCount})`}
-          description="Manage your contacts (People)"
-        >
-          <div className="flex items-center gap-3">
-            <div className="relative w-64 lg:w-72">
-              <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search by name, email, or account..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-9 pl-10"
+      <div className="flex h-[100dvh] flex-col overflow-hidden">
+        <div className="bg-sidebar flex shrink-0 flex-col gap-2">
+          <PageHeader
+            className="bg-sidebar shrink-0 px-6 py-4"
+            title={`Contacts (${totalCount})`}
+            description="Manage your contacts (People)"
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative w-64 lg:w-72">
+                <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search by name, email, or account..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-9 pl-10"
+                />
+              </div>
+              {canAccess('contacts', 'create') && (
+                <Button
+                  onClick={() => setCreateDialogOpen(true)}
+                  className="h-9 gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  New Contact
+                </Button>
+              )}
+
+              <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+
+              <ColumnVisibilitySelector
+                columns={columns}
+                visibility={visibility}
+                onToggle={toggleVisibility}
+                onReset={reset}
               />
             </div>
-            {canAccess('contacts', 'create') && (
-              <Button
-                onClick={() => setCreateDialogOpen(true)}
-                className="h-9 gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                New Contact
-              </Button>
-            )}
+          </PageHeader>
+        </div>
 
-            <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
-
-            <ColumnVisibilitySelector
-              columns={columns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
-            />
-          </div>
-        </PageHeader>
-
-        <PageBody className="bg-sidebar sticky flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
+        <PageBody className="bg-sidebar sticky -mt-6 flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-0">
           <div className="flex min-h-0 flex-1 flex-col">
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
               <CardContent className="flex min-h-0 flex-1 flex-col p-0">
@@ -361,7 +363,9 @@ export default function ContactsPage() {
                               )}
                               {isVisible('created_by') && (
                                 <TableCell className="text-muted-foreground">
-                                  {contact.created_by || '-'}
+                                  {contact.created_by_account?.name ||
+                                    contact.created_by ||
+                                    '-'}
                                 </TableCell>
                               )}
                               {isVisible('created_at') && (

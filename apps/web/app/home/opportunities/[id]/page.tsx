@@ -580,6 +580,20 @@ export default function OpportunityDetailsPage() {
                     </span>
                   </div>
                 </div>
+                <Separator />
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-xs font-medium">
+                    Created By
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <User className="h-3 w-3" />
+                    <span className="text-sm">
+                      {opportunity.created_by_account?.name ||
+                        opportunity.created_by ||
+                        '-'}
+                    </span>
+                  </div>
+                </div>
                 <div className="space-y-1">
                   <p className="text-muted-foreground text-xs font-medium">
                     Last Updated

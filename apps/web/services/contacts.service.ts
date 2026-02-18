@@ -7,8 +7,20 @@ export interface Contact {
   first_name: string;
   last_name?: string;
   email?: string;
+  alt_email?: string;
   phone_number?: string;
+  mobile_number?: string;
+  alt_phone?: string;
   job_title?: string;
+  department?: string;
+  location?: string;
+  timezone?: string;
+  language?: string;
+  preferred_contact_method?: string;
+  do_not_call?: boolean;
+  do_not_email?: boolean;
+  linkedin_url?: string;
+  twitter_handle?: string;
   account_id?: string;
   notes?: string;
   is_public?: boolean;
@@ -32,6 +44,11 @@ export interface Contact {
     id: string;
     name: string;
     email: string;
+  };
+  created_by_account?: {
+    id: string;
+    email: string;
+    name: string;
   };
 }
 

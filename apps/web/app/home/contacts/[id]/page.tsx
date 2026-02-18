@@ -417,6 +417,20 @@ export default function ContactDetailsPage() {
                     </span>
                   </div>
                 </div>
+                <Separator />
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-xs font-medium">
+                    Created By
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <User className="h-3 w-3" />
+                    <span className="text-sm">
+                      {contact.created_by_account?.name ||
+                        contact.created_by ||
+                        '-'}
+                    </span>
+                  </div>
+                </div>
                 {contact.twitter_handle && (
                   <>
                     <Separator />

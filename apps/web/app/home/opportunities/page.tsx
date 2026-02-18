@@ -594,7 +594,9 @@ export default function OpportunitiesPage() {
                               )}
                               {isVisible('created_by') && (
                                 <TableCell className="text-muted-foreground">
-                                  {opportunity.created_by || '-'}
+                                  {opportunity.created_by_account?.name ||
+                                    opportunity.created_by ||
+                                    '-'}
                                 </TableCell>
                               )}
                               {isVisible('created_at') && (

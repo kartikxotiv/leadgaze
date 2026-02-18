@@ -65,7 +65,8 @@ export const getContacts = catchAsync(
           *,
           status:entity_statuses(id, status_name, status_key, color, icon),
           account:crm_accounts(id, account_name),
-          owner:accounts!crm_contacts_owner_id_fkey(id, email, name)
+          owner:accounts!crm_contacts_owner_id_fkey(id, email, name),
+          created_by_account:accounts!crm_contacts_created_by_fkey(id, email, name)
         `,
         { count: 'exact' },
       )

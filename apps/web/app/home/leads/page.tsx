@@ -323,7 +323,7 @@ export default function LeadsPage() {
                             style={{ backgroundColor: status.color }}
                           />
                           <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
-                            {status.status_name} ({displayCount})
+                            {status.status_name} ({stats.count})
                           </span>
                         </div>
                         <div className="flex items-baseline gap-2">
@@ -339,8 +339,8 @@ export default function LeadsPage() {
             </div>
           </div>
         </div>
-        <PageBody className="bg-sidebar sticky -mt-6 flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
-          <div className="flex min-h-0 flex-1 flex-col">
+        <PageBody className="bg-sidebar sticky -mt-6 flex min-h-0 flex-1 flex-col overflow-hidden pt-6">
+          <div className="flex min-h-0 flex-1 flex-col space-y-6">
             {/* Table */}
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
               <CardContent className="flex min-h-0 flex-1 flex-col p-0">
@@ -660,7 +660,9 @@ export default function LeadsPage() {
                             )}
                             {isVisible('created_by') && (
                               <TableCell className="text-muted-foreground">
-                                {lead.created_by || '-'}
+                                {lead.created_by_account?.name ||
+                                  lead.created_by ||
+                                  '-'}
                               </TableCell>
                             )}
                             {isVisible('created_at') && (
@@ -674,7 +676,9 @@ export default function LeadsPage() {
                             )}
                             {isVisible('updated_by') && (
                               <TableCell className="text-muted-foreground">
-                                {lead.updated_by || '-'}
+                                {lead.updated_by_account?.name ||
+                                  lead.updated_by ||
+                                  '-'}
                               </TableCell>
                             )}
 
@@ -701,7 +705,7 @@ export default function LeadsPage() {
             </Card>
 
             {totalCount > 0 && (
-              <div className="text-muted-foreground bg-sidebar flex shrink-0 items-center justify-between border-t p-4 px-6">
+              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mb-4 flex shrink-0 items-center justify-between border-t p-4 px-6 lg:-mb-8">
                 <div>
                   Showing{' '}
                   <span className="text-foreground font-medium">
