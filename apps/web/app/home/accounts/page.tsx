@@ -259,7 +259,9 @@ export default function AccountsPage() {
                         {isVisible('updated_by') && (
                           <TableHead>Last Updated By</TableHead>
                         )}
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead className="bg-card sticky right-0 text-right">
+                          Actions
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -428,10 +430,10 @@ export default function AccountsPage() {
                               )}
                               {isVisible('updated_by') && (
                                 <TableCell className="text-muted-foreground">
-                                  {account.updated_by || '-'}
+                                  {/* {account.updated_by || '-'} */}
                                 </TableCell>
                               )}
-                              <TableCell className="text-right">
+                              <TableCell className="bg-card sticky right-0 text-right">
                                 <div className="flex items-center justify-end gap-2">
                                   <EntityActionsDropdown
                                     id={account.id}

@@ -292,7 +292,7 @@ export default function LeadsPage() {
                 <CardContent className="p-3">
                   <div className="flex flex-col gap-1">
                     <span className="text-muted-foreground text-[12px] font-medium tracking-wider uppercase">
-                      All Leads ({totalCount})
+                      All Leads ({selectedStatus === 'all' ? totalCount : 0})
                     </span>
                     <div className="flex items-baseline gap-2">
                       {/* <span className="text-lg font-bold">{totalCount}</span> */}
@@ -305,8 +305,7 @@ export default function LeadsPage() {
                 const stats = leadsData.statusBreakdown[status.id] || {
                   count: 0,
                 };
-                const isSelected =
-                  selectedStatus === 'all' || selectedStatus === status.id;
+                const isSelected = selectedStatus === status.id;
                 const displayCount = isSelected ? stats.count : 0;
 
                 return (
@@ -323,7 +322,7 @@ export default function LeadsPage() {
                             style={{ backgroundColor: status.color }}
                           />
                           <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
-                            {status.status_name} ({stats.count})
+                            {status.status_name} ({displayCount})
                           </span>
                         </div>
                         <div className="flex items-baseline gap-2">
@@ -411,7 +410,9 @@ export default function LeadsPage() {
                         {isVisible('updated_by') && (
                           <TableHead>Last Updated By</TableHead>
                         )}
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead className="bg-card sticky right-0 text-right">
+                          Actions
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -682,7 +683,7 @@ export default function LeadsPage() {
                               </TableCell>
                             )}
 
-                            <TableCell className="text-right">
+                            <TableCell className="bg-card sticky right-0 text-right">
                               <div className="flex items-center justify-end gap-2">
                                 <EntityActionsDropdown
                                   id={lead.id}
