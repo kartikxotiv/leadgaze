@@ -101,6 +101,40 @@ import { getOpportunitiesService } from '~/services/opportunities.service';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export default function NotesPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -126,6 +160,9 @@ export default function NotesPage() {
       { id: 'content', label: 'Note Content' },
       { id: 'author', label: 'Author' },
       { id: 'updated_at', label: 'Updated At' },
+      { id: 'created_by', label: 'Created By' },
+      { id: 'created_at', label: 'Created On' },
+      { id: 'updated_by', label: 'Last Updated By' },
     ],
     [],
   );
@@ -137,7 +174,10 @@ export default function NotesPage() {
       associate: true,
       content: true,
       author: true,
-      updated_at: true,
+      updated_at: false,
+      created_by: false,
+      created_at: false,
+      updated_by: false,
     });
 
   const { data: notes = [], isLoading } = useQuery({
@@ -339,258 +379,290 @@ export default function NotesPage() {
 
   return (
     <>
-      <PageHeader
-        title={`Notes (${notes.length})`}
-        description="Capture and organize your important thoughts and information"
-      >
-        <div className="flex items-center gap-3">
-          <div className="relative w-64 lg:w-72">
-            <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search notes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-9 pl-10"
-            />
-          </div>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="h-9 w-40">
-              <Filter className="mr-2 h-4 w-4 text-gray-400" />
-              <SelectValue placeholder="Entity Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Entities</SelectItem>
-              <SelectItem value="lead">Leads</SelectItem>
-              <SelectItem value="contact">Contacts</SelectItem>
-              <SelectItem value="account">Accounts</SelectItem>
-              <SelectItem value="opportunity">Opportunities</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            className="h-9 gap-2"
-            onClick={() => {
-              setNewNoteContent('');
-              setEntityType('lead');
-              setEntityId('');
-              setIsCreateDialogOpen(true);
-            }}
+      <div className="flex h-[100dvh] flex-col">
+        <div className="bg-sidebar flex shrink-0 flex-col gap-2">
+          <PageHeader
+            title={`Notes (${notes.length})`}
+            description="Capture and organize your important thoughts and information"
           >
-            <Plus className="h-4 w-4" />
-            New Note
-          </Button>
+            <div className="flex items-center gap-3">
+              <div className="relative w-64 lg:w-72">
+                <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search notes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-9 pl-10"
+                />
+              </div>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="h-9 w-40">
+                  <Filter className="mr-2 h-4 w-4 text-gray-400" />
+                  <SelectValue placeholder="Entity Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Entities</SelectItem>
+                  <SelectItem value="lead">Leads</SelectItem>
+                  <SelectItem value="contact">Contacts</SelectItem>
+                  <SelectItem value="account">Accounts</SelectItem>
+                  <SelectItem value="opportunity">Opportunities</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                className="h-9 gap-2"
+                onClick={() => {
+                  setNewNoteContent('');
+                  setEntityType('lead');
+                  setEntityId('');
+                  setIsCreateDialogOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                New Note
+              </Button>
 
-          <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+              <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
 
-          <ColumnVisibilitySelector
-            columns={noteColumns}
-            visibility={visibility}
-            onToggle={toggleVisibility}
-            onReset={reset}
-          />
+              <ColumnVisibilitySelector
+                columns={noteColumns}
+                visibility={visibility}
+                onToggle={toggleVisibility}
+                onReset={reset}
+              />
+            </div>
+          </PageHeader>
         </div>
-      </PageHeader>
-      <PageBody>
-        <div className="space-y-6">
-          {/* Notes Table */}
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {isVisible('sno') && (
-                      <TableHead className="w-[80px] pl-6">S. No.</TableHead>
-                    )}
-                    {isVisible('category') && <TableHead>Category</TableHead>}
-                    {isVisible('associate') && (
-                      <TableHead>Associate With</TableHead>
-                    )}
-                    {isVisible('content') && (
-                      <TableHead className="min-w-[300px]">
-                        Note Content
-                      </TableHead>
-                    )}
-                    {isVisible('author') && <TableHead>Author</TableHead>}
-                    {isVisible('updated_at') && (
-                      <TableHead>Updated At</TableHead>
-                    )}
-                    <TableHead className="pr-6 text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={
-                          visibility
-                            ? Object.values(visibility).filter(
-                                (v) => v !== false,
-                              ).length + 1
-                            : 6
-                        }
-                        className="h-24 text-center"
-                      >
-                        <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
-                      </TableCell>
-                    </TableRow>
-                  ) : paginatedNotes.length > 0 ? (
-                    paginatedNotes.map((note: Note, index: number) => (
-                      <TableRow key={note.id}>
+        <PageBody className="sticky -mt-6 flex min-h-0 flex-1 shrink-0 flex-col overflow-hidden pt-6">
+          <div className="flex min-h-0 flex-1 flex-col space-y-6">
+            {/* Notes Table */}
+            <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
+              <CardContent className="flex min-h-0 flex-1 flex-col p-0">
+                <div className="sticky flex flex-1 overflow-auto rounded-lg">
+                  <Table>
+                    <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                      <TableRow>
                         {isVisible('sno') && (
-                          <TableCell className="text-muted-foreground pl-6">
-                            {(currentPage - 1) * itemsPerPage + index + 1}
-                          </TableCell>
+                          <TableHead className="w-12 whitespace-nowrap">
+                            S. No.
+                          </TableHead>
                         )}
                         {isVisible('category') && (
-                          <TableCell>
-                            {getCategoryBadge(note.entity_type)}
-                          </TableCell>
+                          <TableHead>Category</TableHead>
                         )}
                         {isVisible('associate') && (
-                          <TableCell>
-                            <span
-                              className="inline-block max-w-[150px] truncate text-sm font-medium"
-                              title={note.entity_name || 'General'}
-                            >
-                              {note.entity_name || '-'}
-                            </span>
-                          </TableCell>
+                          <TableHead>Associate With</TableHead>
                         )}
                         {isVisible('content') && (
-                          <TableCell>
-                            <p className="line-clamp-2 max-w-[400px] text-sm whitespace-pre-wrap">
-                              {note.content}
-                            </p>
-                          </TableCell>
+                          <TableHead className="min-w-[300px]">
+                            Note Content
+                          </TableHead>
                         )}
-                        {isVisible('author') && (
-                          <TableCell className="text-muted-foreground text-sm">
-                            {note.created_by_user?.name || '-'}
-                          </TableCell>
-                        )}
+                        {isVisible('author') && <TableHead>Author</TableHead>}
                         {isVisible('updated_at') && (
-                          <TableCell className="text-muted-foreground text-sm">
-                            <div className="flex flex-col">
-                              <span>
-                                {new Date(note.created_at).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </TableCell>
+                          <TableHead>Updated At</TableHead>
                         )}
-                        <TableCell className="pr-6 text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                className="gap-2"
-                                onClick={() => handleEdit(note)}
-                              >
-                                <Edit className="h-4 w-4" /> Edit Note
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="gap-2 text-red-500"
-                                onClick={() => handleDelete(note.id)}
-                              >
-                                <Trash2 className="h-4 w-4" /> Delete Note
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+                        {isVisible('created_by') && (
+                          <TableHead>Created By</TableHead>
+                        )}
+                        {isVisible('created_at') && (
+                          <TableHead>Created On</TableHead>
+                        )}
+                        {isVisible('updated_by') && (
+                          <TableHead>Last Updated By</TableHead>
+                        )}
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={
-                          visibility
-                            ? Object.values(visibility).filter(
-                                (v) => v !== false,
-                              ).length + 1
-                            : 6
-                        }
-                        className="text-muted-foreground h-24 text-center"
-                      >
-                        {searchTerm || categoryFilter !== 'all'
-                          ? 'No notes found matching your filters.'
-                          : 'No notes found for this workspace.'}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between border-t px-6 py-4">
-                  <div className="text-muted-foreground text-sm">
-                    Showing{' '}
-                    <span className="text-foreground font-medium">
-                      {(currentPage - 1) * itemsPerPage + 1}
-                    </span>{' '}
-                    to{' '}
-                    <span className="text-foreground font-medium">
-                      {Math.min(currentPage * itemsPerPage, totalCount)}
-                    </span>{' '}
-                    of{' '}
-                    <span className="text-foreground font-medium">
-                      {totalCount}
-                    </span>{' '}
-                    notes
-                  </div>
-                  <Pagination className="w-auto">
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious
-                          className={
-                            currentPage === 1
-                              ? 'pointer-events-none opacity-50'
-                              : 'cursor-pointer'
-                          }
-                          onClick={() =>
-                            setCurrentPage((prev) => Math.max(prev - 1, 1))
-                          }
-                        />
-                      </PaginationItem>
-                      {Array.from({ length: totalPages }).map((_, i) => (
-                        <PaginationItem key={i}>
-                          <PaginationLink
-                            isActive={currentPage === i + 1}
-                            onClick={() => setCurrentPage(i + 1)}
-                            className="cursor-pointer"
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={
+                              visibility
+                                ? Object.values(visibility).filter(
+                                    (v) => v !== false,
+                                  ).length + 1
+                                : 6
+                            }
+                            className="h-24 text-center"
                           >
-                            {i + 1}
-                          </PaginationLink>
-                        </PaginationItem>
-                      ))}
-                      <PaginationItem>
-                        <PaginationNext
-                          className={
-                            currentPage === totalPages
-                              ? 'pointer-events-none opacity-50'
-                              : 'cursor-pointer'
-                          }
-                          onClick={() =>
-                            setCurrentPage((prev) =>
-                              Math.min(prev + 1, totalPages),
-                            )
-                          }
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
+                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
+                          </TableCell>
+                        </TableRow>
+                      ) : paginatedNotes.length > 0 ? (
+                        paginatedNotes.map((note: Note, index: number) => (
+                          <TableRow key={note.id}>
+                            {isVisible('sno') && (
+                              <TableCell className="text-muted-foreground w-12">
+                                {(currentPage - 1) * itemsPerPage + index + 1}
+                              </TableCell>
+                            )}
+                            {isVisible('category') && (
+                              <TableCell>
+                                {getCategoryBadge(note.entity_type)}
+                              </TableCell>
+                            )}
+                            {isVisible('associate') && (
+                              <TableCell>
+                                <span
+                                  className="inline-block max-w-[150px] truncate text-sm font-medium"
+                                  title={note.entity_name || 'General'}
+                                >
+                                  {note.entity_name || '-'}
+                                </span>
+                              </TableCell>
+                            )}
+                            {isVisible('content') && (
+                              <TableCell>
+                                <p className="line-clamp-2 max-w-[400px] text-sm whitespace-pre-wrap">
+                                  {note.content}
+                                </p>
+                              </TableCell>
+                            )}
+                            {isVisible('author') && (
+                              <TableCell className="text-muted-foreground text-sm">
+                                {note.created_by_user?.name || '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('updated_at') && (
+                              <TableCell className="text-muted-foreground text-sm">
+                                {new Date(
+                                  note.updated_at || note.created_at,
+                                ).toLocaleDateString()}
+                              </TableCell>
+                            )}
+                            {isVisible('created_by') && (
+                              <TableCell className="text-muted-foreground text-sm">
+                                {note.created_by_user?.name || '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('created_at') && (
+                              <TableCell className="text-muted-foreground text-sm">
+                                {new Date(note.created_at).toLocaleDateString()}
+                              </TableCell>
+                            )}
+                            {isVisible('updated_by') && (
+                              <TableCell className="text-muted-foreground text-sm">
+                                {note.updated_by || '-'}
+                              </TableCell>
+                            )}
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    className="gap-2"
+                                    onClick={() => handleEdit(note)}
+                                  >
+                                    <Edit className="h-4 w-4" /> Edit Note
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="gap-2 text-red-500"
+                                    onClick={() => handleDelete(note.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" /> Delete Note
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell
+                            colSpan={
+                              visibility
+                                ? Object.values(visibility).filter(
+                                    (v) => v !== false,
+                                  ).length + 1
+                                : 6
+                            }
+                            className="text-muted-foreground h-24 text-center"
+                          >
+                            {searchTerm || categoryFilter !== 'all'
+                              ? 'No notes found matching your filters.'
+                              : 'No notes found for this workspace.'}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </PageBody>
+              </CardContent>
+            </Card>
+
+            {/* Pagination */}
+            {totalCount > 1 && (
+              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 -mb-4 flex shrink-0 items-center justify-between border-t p-4 px-4 lg:-mx-8 lg:-mb-8 lg:px-8">
+                <div>
+                  Showing{' '}
+                  <span className="text-foreground font-medium">
+                    {(currentPage - 1) * itemsPerPage + 1}
+                  </span>{' '}
+                  to{' '}
+                  <span className="text-foreground font-medium">
+                    {Math.min(currentPage * itemsPerPage, totalCount)}
+                  </span>{' '}
+                  of{' '}
+                  <span className="text-foreground font-medium">
+                    {totalCount}
+                  </span>{' '}
+                  notes
+                </div>
+                <Pagination className="w-auto">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        className={
+                          currentPage === 1
+                            ? 'pointer-events-none opacity-50'
+                            : 'cursor-pointer'
+                        }
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.max(prev - 1, 1))
+                        }
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }).map((_, i) => (
+                      <PaginationItem key={i}>
+                        <PaginationLink
+                          isActive={currentPage === i + 1}
+                          onClick={() => setCurrentPage(i + 1)}
+                          className="cursor-pointer"
+                        >
+                          {i + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        className={
+                          currentPage === totalPages
+                            ? 'pointer-events-none opacity-50'
+                            : 'cursor-pointer'
+                        }
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(prev + 1, totalPages),
+                          )
+                        }
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </div>
+        </PageBody>
+      </div>
 
       {/* Create Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>

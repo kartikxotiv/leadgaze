@@ -11,10 +11,13 @@ import {
   Briefcase,
   Building2,
   Calendar,
+  Clock,
   Globe,
+  Linkedin,
   Mail,
   MapPin,
   Phone,
+  Trash2,
   User,
 } from 'lucide-react';
 
@@ -24,6 +27,12 @@ import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { PageBody } from '@kit/ui/page';
 import { Separator } from '@kit/ui/separator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 
 import {
   useCanAccessData,
@@ -33,6 +42,7 @@ import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getContactByIdService } from '~/services/contacts.service';
 
+import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
 import {
   EntityDocuments,
   EntityMeetings,
@@ -45,8 +55,10 @@ import { EditContactDialog } from '../components/edit-contact-dialog';
 
 export default function ContactDetailsPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params?.id as string;
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const {
     data: contact,
@@ -59,7 +71,7 @@ export default function ContactDetailsPage() {
   });
 
   const { data: user } = useUser();
-  const { currentWorkspace: workspace } = useRBAC();
+  const { currentWorkspace: workspace, canAccess } = useRBAC();
   const editPermission = usePermissionDetail('contacts', 'edit');
   const canEdit = useCanAccessData(editPermission, contact?.owner_id, user?.id);
 
@@ -100,17 +112,15 @@ export default function ContactDetailsPage() {
               Back
             </Link>
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditDialogOpen(true)}
-            disabled={!canEdit}
-            title={
-              !canEdit ? 'You do not have permission to edit this contact' : ''
-            }
-          >
-            Edit Contact
-          </Button>
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditDialogOpen(true)}
+            >
+              Edit Contact
+            </Button>
+          )}
         </div>
 
         <div className="flex items-start justify-between">
@@ -139,6 +149,21 @@ export default function ContactDetailsPage() {
                     {contact.account.account_name}
                   </Link>
                 )}
+                <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <Clock className="h-3 w-3" />
+                  <span>
+                    Created on{' '}
+                    {new Date(contact.created_at).toLocaleDateString(
+                      undefined,
+                      {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      },
+                    )}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -146,6 +171,14 @@ export default function ContactDetailsPage() {
       </div>
 
       <PageBody>
+        <DeleteEntityDialog
+          isOpen={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          entityId={id}
+          entityType="contact"
+          entityName={`${contact.first_name} ${contact.last_name || ''}`}
+          onSuccess={() => router.push('/home/contacts')}
+        />
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="space-y-6 lg:col-span-2">
@@ -252,6 +285,27 @@ export default function ContactDetailsPage() {
                   <span className="text-sm">{contact.department || '-'}</span>
                 </div>
 
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-sm font-medium">
+                    LinkedIn
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Linkedin className="text-muted-foreground h-4 w-4" />
+                    {contact.linkedin_url ? (
+                      <a
+                        href={contact.linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm break-all hover:underline"
+                      >
+                        {contact.linkedin_url}
+                      </a>
+                    ) : (
+                      <span className="text-sm">-</span>
+                    )}
+                  </div>
+                </div>
+
                 {contact.notes && (
                   <div className="col-span-2 space-y-1">
                     <p className="text-muted-foreground text-sm font-medium">
@@ -288,6 +342,47 @@ export default function ContactDetailsPage() {
             <EntityReminders entityType="contact" entityId={id} />
             <EntityMeetings entityType="contact" entityId={id} />
             <EntityDocuments entityType="contact" entityId={id} />
+
+            {/* Danger Zone */}
+            {canAccess('contacts', 'delete') && (
+              <Card className="border-destructive/50 border-solid">
+                <CardHeader>
+                  <CardTitle className="text-destructive text-lg"></CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="font-medium">Delete Contact</p>
+                      <p className="text-muted-foreground text-sm">
+                        Once you delete a contact, there is no going back.
+                        Please be certain.
+                      </p>
+                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              variant="destructive"
+                              disabled={!canAccess('contacts', 'delete')}
+                              onClick={() => setDeleteDialogOpen(true)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Contact
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        {!canAccess('contacts', 'delete') && (
+                          <TooltipContent>
+                            <p>You do not have permission to delete</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -322,34 +417,35 @@ export default function ContactDetailsPage() {
                     </span>
                   </div>
                 </div>
-                {(contact.linkedin_url || contact.twitter_handle) && (
+                <Separator />
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-xs font-medium">
+                    Created By
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <User className="h-3 w-3" />
+                    <span className="text-sm">
+                      {contact.created_by_account?.name ||
+                        contact.created_by ||
+                        '-'}
+                    </span>
+                  </div>
+                </div>
+                {contact.twitter_handle && (
                   <>
                     <Separator />
                     <div className="space-y-2">
                       <p className="text-muted-foreground text-xs font-medium">
                         Social
                       </p>
-                      {contact.linkedin_url && (
-                        <a
-                          href={contact.linkedin_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block text-sm text-blue-600 hover:underline"
-                        >
-                          LinkedIn Profile: @
-                          {contact.linkedin_url.replace('@', '')}
-                        </a>
-                      )}
-                      {contact.twitter_handle && (
-                        <a
-                          href={`https://twitter.com/${contact.twitter_handle.replace('@', '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block text-sm text-blue-600 hover:underline"
-                        >
-                          Twitter: @{contact.twitter_handle.replace('@', '')}
-                        </a>
-                      )}
+                      <a
+                        href={`https://twitter.com/${contact.twitter_handle.replace('@', '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-sm text-blue-600 hover:underline"
+                      >
+                        Twitter: @{contact.twitter_handle.replace('@', '')}
+                      </a>
                     </div>
                   </>
                 )}

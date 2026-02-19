@@ -13,6 +13,8 @@ export interface Opportunity {
   account_id: string;
   primary_contact_id?: string;
   owner_id: string;
+  created_by?: string;
+  updated_by?: string;
   created_at: string;
   updated_at: string;
   priority?: 'High' | 'Medium' | 'Low';
@@ -38,6 +40,16 @@ export interface Opportunity {
     id: string;
     name: string;
     email: string;
+  };
+  created_by_account?: {
+    id: string;
+    email: string;
+    name: string;
+  };
+  updated_by_account?: {
+    id: string;
+    email: string;
+    name: string;
   };
 }
 
@@ -103,10 +115,16 @@ const getOpportunityStatusesService = asyncHandlerClient(
   },
 );
 
+const deleteOpportunityService = asyncHandlerClient(async (id: string) => {
+  const response = await ApiClient.delete(`/opportunities/${id}`);
+  return response.data?.data;
+});
+
 export {
   getOpportunitiesService,
   getOpportunityByIdService,
   updateOpportunityService,
   createOpportunityService,
   getOpportunityStatusesService,
+  deleteOpportunityService,
 };

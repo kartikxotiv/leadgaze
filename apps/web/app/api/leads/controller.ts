@@ -34,6 +34,16 @@ type LeadWithRelations = Lead & {
     id: string;
     industry_name: string;
   } | null;
+  created_by_account?: {
+    id: string;
+    email: string;
+    name: string;
+  } | null;
+  updated_by_account?: {
+    id: string;
+    email: string;
+    name: string;
+  } | null;
 };
 
 /**
@@ -96,6 +106,7 @@ const getLeads = catchAsync(
           source:lead_sources(id, source_name, source_key, color, icon),
           owner:accounts!crm_leads_owner_id_fkey(id, email, name),
           created_by_account:accounts!crm_leads_created_by_fkey(id, email, name),
+          updated_by_account:accounts!crm_leads_updated_by_fkey(id, email, name),
           industry:crm_industries(id, industry_name)
         `,
         { count: 'exact' },

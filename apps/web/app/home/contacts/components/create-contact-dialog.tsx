@@ -71,11 +71,13 @@ export function CreateContactDialog({
     }
   }, [open, defaultAccountId]);
 
-  const { data: accounts = [], refetch: refetchAccounts } = useQuery({
+  const { data: accountsData, refetch: refetchAccounts } = useQuery({
     queryKey: ['accounts', workspace?.id],
-    queryFn: () => getAccountsService(workspace?.id || ''),
+    queryFn: () => getAccountsService({ workspaceId: workspace!.id }),
     enabled: !!workspace?.id && open,
   });
+
+  const accounts = (accountsData as any)?.data || [];
 
   const mutation = useMutation({
     mutationFn: async (payload: any) => {
@@ -86,7 +88,7 @@ export function CreateContactDialog({
     },
     onSuccess: (data) => {
       toast.success('Contact created successfully');
-      queryClient.invalidateQueries({ queryKey: ['contacts', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
       resetForm();
       onOpenChange(false);
       if (onSuccess) onSuccess(data);
@@ -229,7 +231,13 @@ export function CreateContactDialog({
                   <SelectTrigger>
                     <SelectValue placeholder="Select associated account" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent
+                    position="popper"
+                    side="bottom"
+                    align="start"
+                    sideOffset={4}
+                    avoidCollisions={false}
+                  >
                     {accounts.map((account: any) => (
                       <SelectItem key={account.id} value={account.id}>
                         {account.account_name}

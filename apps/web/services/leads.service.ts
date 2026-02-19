@@ -65,6 +65,16 @@ export interface Lead {
     id: string;
     industry_name: string;
   };
+  created_by_account?: {
+    id: string;
+    email: string;
+    name: string;
+  };
+  updated_by_account?: {
+    id: string;
+    email: string;
+    name: string;
+  };
 }
 
 export interface CreateLeadPayload {

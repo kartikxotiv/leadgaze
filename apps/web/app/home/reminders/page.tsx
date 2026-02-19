@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -101,6 +100,24 @@ import { getOpportunitiesService } from '~/services/opportunities.service';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export default function RemindersPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -131,6 +148,9 @@ export default function RemindersPage() {
       { id: 'priority', label: 'Priority' },
       { id: 'status', label: 'Status' },
       { id: 'entity', label: 'Entity' },
+      { id: 'created_by', label: 'Created By' },
+      { id: 'created_at', label: 'Created On' },
+      { id: 'updated_by', label: 'Last Updated By' },
     ],
     [],
   );
@@ -144,6 +164,9 @@ export default function RemindersPage() {
       priority: true,
       status: true,
       entity: true,
+      created_by: false,
+      created_at: false,
+      updated_by: false,
     });
 
   const { data: reminders = [], isLoading } = useQuery({
@@ -273,8 +296,21 @@ export default function RemindersPage() {
   const totalPages = Math.ceil(filteredReminders.length / itemsPerPage);
   const totalCount = filteredReminders.length;
 
+  const safeShowPicker = (
+    e: React.MouseEvent<HTMLInputElement> | React.FocusEvent<HTMLInputElement>,
+  ) => {
+    try {
+      if ('showPicker' in e.currentTarget) {
+        (e.currentTarget as any).showPicker();
+      }
+    } catch (error) {
+      console.warn('showPicker not supported or failed:', error);
+    }
+  };
+
   const handleCreate = () => {
-    if (!formData.title.trim() || !formData.entityId) return;
+    if (!formData.title.trim() || !formData.entityId || !formData.due_date)
+      return;
     createMutation.mutate(formData);
   };
 
@@ -294,7 +330,8 @@ export default function RemindersPage() {
   };
 
   const handleSave = () => {
-    if (!editingReminder || !formData.title.trim()) return;
+    if (!editingReminder || !formData.title.trim() || !formData.due_date)
+      return;
     updateMutation.mutate({
       title: formData.title,
       description: formData.description,
@@ -389,287 +426,332 @@ export default function RemindersPage() {
 
   return (
     <>
-      <PageHeader
-        title={`Reminders (${reminders.length})`}
-        description="Keep track of your important tasks and reminders"
-      >
-        <div className="flex items-center gap-3">
-          <div className="relative w-64 lg:w-72">
-            <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search tasks..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-9 pl-10"
-            />
-          </div>
-          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger className="h-9 w-40">
-              <Filter className="mr-2 h-4 w-4 text-gray-400" />
-              <SelectValue placeholder="Priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Priorities</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-9 w-40">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            className="h-9 gap-2"
-            onClick={() => {
-              setFormData({
-                title: '',
-                description: '',
-                due_date: '',
-                priority: 'medium',
-                entity_type: 'lead',
-                entityId: '',
-              });
-              setIsCreateDialogOpen(true);
-            }}
+      <div className="flex h-[100dvh] flex-col">
+        <div className="flex shrink-0 flex-col gap-2">
+          <PageHeader
+            title={`Reminders (${reminders.length})`}
+            description="Keep track of your important tasks and reminders"
           >
-            <Plus className="h-4 w-4" />
-            New Reminder
-          </Button>
+            <div className="flex items-center gap-3">
+              <div className="relative w-64 lg:w-72">
+                <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search tasks..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-9 pl-10"
+                />
+              </div>
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger className="h-9 w-40">
+                  <Filter className="mr-2 h-4 w-4 text-gray-400" />
+                  <SelectValue placeholder="Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Priorities</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-9 w-40">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                className="h-9 gap-2"
+                onClick={() => {
+                  setFormData({
+                    title: '',
+                    description: '',
+                    due_date: '',
+                    priority: 'medium',
+                    entity_type: 'lead',
+                    entityId: '',
+                  });
+                  setIsCreateDialogOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                New Reminder
+              </Button>
 
-          <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+              <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
 
-          <ColumnVisibilitySelector
-            columns={reminderColumns}
-            visibility={visibility}
-            onToggle={toggleVisibility}
-            onReset={reset}
-          />
+              <ColumnVisibilitySelector
+                columns={reminderColumns}
+                visibility={visibility}
+                onToggle={toggleVisibility}
+                onReset={reset}
+              />
+            </div>
+          </PageHeader>
         </div>
-      </PageHeader>
 
-      <PageBody>
-        <div className="space-y-6">
-          {/* Reminders List Table */}
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {isVisible('sno') && (
-                      <TableHead className="w-[80px] pl-6">S. No.</TableHead>
-                    )}
-                    {isVisible('title') && <TableHead>Task Title</TableHead>}
-                    {isVisible('description') && (
-                      <TableHead>Description</TableHead>
-                    )}
-                    {isVisible('priority') && <TableHead>Priority</TableHead>}
-                    {isVisible('due_date') && <TableHead>Due Date</TableHead>}
-                    {isVisible('status') && <TableHead>Status</TableHead>}
-                    {isVisible('entity') && <TableHead>Entity</TableHead>}
-                    <TableHead className="pr-6 text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={
-                          visibility
-                            ? Object.values(visibility).filter(
-                                (v) => v !== false,
-                              ).length + 1
-                            : 6
-                        }
-                        className="h-24 text-center"
-                      >
-                        <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
-                      </TableCell>
-                    </TableRow>
-                  ) : paginatedReminders.length > 0 ? (
-                    paginatedReminders.map(
-                      (reminder: Reminder, index: number) => (
-                        <TableRow key={reminder.id}>
-                          {isVisible('sno') && (
-                            <TableCell className="text-muted-foreground pl-6">
-                              {(currentPage - 1) * itemsPerPage + index + 1}
-                            </TableCell>
-                          )}
-                          {isVisible('title') && (
-                            <TableCell className="font-medium">
-                              <div className={isVisible('sno') ? '' : 'pl-6'}>
-                                {reminder.title}
-                              </div>
-                            </TableCell>
-                          )}
-                          {isVisible('description') && (
-                            <TableCell className="text-muted-foreground">
-                              {reminder.description ? (
-                                <p
-                                  className="max-w-[200px] truncate"
-                                  title={reminder.description}
-                                >
-                                  {reminder.description}
-                                </p>
-                              ) : (
-                                '-'
-                              )}
-                            </TableCell>
-                          )}
-                          {isVisible('priority') && (
-                            <TableCell>
-                              {getPriorityBadge(reminder.priority)}
-                            </TableCell>
-                          )}
-                          {isVisible('due_date') && (
-                            <TableCell className="text-muted-foreground">
-                              {reminder.due_date
-                                ? new Date(reminder.due_date).toLocaleString()
-                                : '-'}
-                            </TableCell>
-                          )}
-                          {isVisible('status') && (
-                            <TableCell>
-                              {getStatusBadge(reminder.is_completed)}
-                            </TableCell>
-                          )}
-                          {isVisible('entity') && (
-                            <TableCell>
-                              {reminder.entity_name && (
-                                <span
-                                  className="text-muted-foreground text-xs"
-                                  title={`${reminder.entity_type}: ${reminder.entity_name}`}
-                                >
-                                  {reminder.entity_name}
-                                </span>
-                              )}
-                            </TableCell>
-                          )}
-                          <TableCell className="pr-6 text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  className="gap-2"
-                                  onClick={() => handleEdit(reminder)}
-                                >
-                                  <Pencil className="h-4 w-4" /> Edit Task
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="gap-2 text-green-600"
-                                  onClick={() => toggleCompletion(reminder)}
-                                >
-                                  <CheckCircle2 className="h-4 w-4" />{' '}
-                                  {reminder.is_completed
-                                    ? 'Mark as Pending'
-                                    : 'Mark as Completed'}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="gap-2 text-red-500"
-                                  onClick={() => handleDelete(reminder.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" /> Delete Reminder
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+        <PageBody className="sticky -mt-6 flex min-h-0 flex-1 shrink-0 flex-col overflow-hidden pt-6">
+          <div className="flex min-h-0 flex-1 flex-col space-y-6">
+            {/* Reminders List Table */}
+            <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
+              <CardContent className="flex min-h-0 flex-1 flex-col p-0">
+                <div className="sticky flex flex-1 overflow-auto rounded-lg">
+                  <Table>
+                    <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                      <TableRow>
+                        {isVisible('sno') && (
+                          <TableHead className="w-12 whitespace-nowrap">
+                            S. No.
+                          </TableHead>
+                        )}
+                        {isVisible('title') && (
+                          <TableHead>Task Title</TableHead>
+                        )}
+                        {isVisible('description') && (
+                          <TableHead>Description</TableHead>
+                        )}
+                        {isVisible('priority') && (
+                          <TableHead>Priority</TableHead>
+                        )}
+                        {isVisible('due_date') && (
+                          <TableHead>Due Date</TableHead>
+                        )}
+                        {isVisible('status') && <TableHead>Status</TableHead>}
+                        {isVisible('entity') && <TableHead>Entity</TableHead>}
+                        {isVisible('created_by') && (
+                          <TableHead>Created By</TableHead>
+                        )}
+                        {isVisible('created_at') && (
+                          <TableHead>Created On</TableHead>
+                        )}
+                        {isVisible('updated_by') && (
+                          <TableHead>Last Updated By</TableHead>
+                        )}
+                        <TableHead className="bg-card sticky right-0 px-4 text-right">
+                          Actions
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={
+                              visibility
+                                ? Object.values(visibility).filter(
+                                    (v) => v !== false,
+                                  ).length + 1
+                                : 6
+                            }
+                            className="h-24 text-center"
+                          >
+                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
                           </TableCell>
                         </TableRow>
-                      ),
-                    )
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={
-                          visibility
-                            ? Object.values(visibility).filter(
-                                (v) => v !== false,
-                              ).length + 1
-                            : 6
-                        }
-                        className="text-muted-foreground h-24 text-center"
-                      >
-                        No reminders found matching your filters.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between border-t px-6 py-4">
-                  <div className="text-muted-foreground text-sm">
-                    Showing{' '}
-                    <span className="text-foreground font-medium">
-                      {(currentPage - 1) * itemsPerPage + 1}
-                    </span>{' '}
-                    to{' '}
-                    <span className="text-foreground font-medium">
-                      {Math.min(currentPage * itemsPerPage, totalCount)}
-                    </span>{' '}
-                    of{' '}
-                    <span className="text-foreground font-medium">
-                      {totalCount}
-                    </span>{' '}
-                    reminders
-                  </div>
-                  <Pagination className="w-auto">
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious
-                          className={
-                            currentPage === 1
-                              ? 'pointer-events-none opacity-50'
-                              : 'cursor-pointer'
-                          }
-                          onClick={() =>
-                            setCurrentPage((prev) => Math.max(prev - 1, 1))
-                          }
-                        />
-                      </PaginationItem>
-                      {Array.from({ length: totalPages }).map((_, i) => (
-                        <PaginationItem key={i}>
-                          <PaginationLink
-                            isActive={currentPage === i + 1}
-                            onClick={() => setCurrentPage(i + 1)}
-                            className="cursor-pointer"
+                      ) : paginatedReminders.length > 0 ? (
+                        paginatedReminders.map(
+                          (reminder: Reminder, index: number) => (
+                            <TableRow key={reminder.id}>
+                              {isVisible('sno') && (
+                                <TableCell className="text-muted-foreground w-12">
+                                  {(currentPage - 1) * itemsPerPage + index + 1}
+                                </TableCell>
+                              )}
+                              {isVisible('title') && (
+                                <TableCell className="font-medium">
+                                  <div className="">{reminder.title}</div>
+                                </TableCell>
+                              )}
+                              {isVisible('description') && (
+                                <TableCell className="text-muted-foreground">
+                                  {reminder.description ? (
+                                    <p
+                                      className="max-w-[200px] truncate"
+                                      title={reminder.description}
+                                    >
+                                      {reminder.description}
+                                    </p>
+                                  ) : (
+                                    '-'
+                                  )}
+                                </TableCell>
+                              )}
+                              {isVisible('priority') && (
+                                <TableCell>
+                                  {getPriorityBadge(reminder.priority)}
+                                </TableCell>
+                              )}
+                              {isVisible('due_date') && (
+                                <TableCell className="text-muted-foreground">
+                                  {reminder.due_date
+                                    ? new Date(
+                                        reminder.due_date,
+                                      ).toLocaleString()
+                                    : '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('status') && (
+                                <TableCell>
+                                  {getStatusBadge(reminder.is_completed)}
+                                </TableCell>
+                              )}
+                              {isVisible('entity') && (
+                                <TableCell>
+                                  {reminder.entity_name && (
+                                    <span
+                                      className="text-muted-foreground text-xs"
+                                      title={`${reminder.entity_type}: ${reminder.entity_name}`}
+                                    >
+                                      {reminder.entity_name}
+                                    </span>
+                                  )}
+                                </TableCell>
+                              )}
+                              {isVisible('created_by') && (
+                                <TableCell className="text-muted-foreground">
+                                  {reminder.created_by_user?.name || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('created_at') && (
+                                <TableCell className="text-muted-foreground">
+                                  {reminder.created_at
+                                    ? new Date(
+                                        reminder.created_at,
+                                      ).toLocaleDateString()
+                                    : '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('updated_by') && (
+                                <TableCell className="text-muted-foreground">
+                                  {reminder.updated_by || '-'}
+                                </TableCell>
+                              )}
+                              <TableCell className="bg-card sticky right-0 px-4 text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      className="gap-2"
+                                      onClick={() => handleEdit(reminder)}
+                                    >
+                                      <Pencil className="h-4 w-4" /> Edit Task
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="gap-2 text-green-600"
+                                      onClick={() => toggleCompletion(reminder)}
+                                    >
+                                      <CheckCircle2 className="h-4 w-4" />{' '}
+                                      {reminder.is_completed
+                                        ? 'Mark as Pending'
+                                        : 'Mark as Completed'}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="gap-2 text-red-500"
+                                      onClick={() => handleDelete(reminder.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" /> Delete
+                                      Reminder
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ),
+                        )
+                      ) : (
+                        <TableRow>
+                          <TableCell
+                            colSpan={
+                              visibility
+                                ? Object.values(visibility).filter(
+                                    (v) => v !== false,
+                                  ).length + 1
+                                : 6
+                            }
+                            className="text-muted-foreground h-24 text-center"
                           >
-                            {i + 1}
-                          </PaginationLink>
-                        </PaginationItem>
-                      ))}
-                      <PaginationItem>
-                        <PaginationNext
-                          className={
-                            currentPage === totalPages
-                              ? 'pointer-events-none opacity-50'
-                              : 'cursor-pointer'
-                          }
-                          onClick={() =>
-                            setCurrentPage((prev) =>
-                              Math.min(prev + 1, totalPages),
-                            )
-                          }
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
+                            No reminders found matching your filters.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </PageBody>
+              </CardContent>
+            </Card>
+
+            {/* Pagination */}
+            {totalCount > 1 && (
+              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 -mb-4 flex shrink-0 items-center justify-between border-t p-4 px-4 lg:-mx-8 lg:-mb-8 lg:px-8">
+                <div>
+                  Showing{' '}
+                  <span className="text-foreground font-medium">
+                    {(currentPage - 1) * itemsPerPage + 1}
+                  </span>{' '}
+                  to{' '}
+                  <span className="text-foreground font-medium">
+                    {Math.min(currentPage * itemsPerPage, totalCount)}
+                  </span>{' '}
+                  of{' '}
+                  <span className="text-foreground font-medium">
+                    {totalCount}
+                  </span>{' '}
+                  reminders
+                </div>
+                <Pagination className="w-auto">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        className={
+                          currentPage === 1
+                            ? 'pointer-events-none opacity-50'
+                            : 'cursor-pointer'
+                        }
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.max(prev - 1, 1))
+                        }
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }).map((_, i) => (
+                      <PaginationItem key={i}>
+                        <PaginationLink
+                          isActive={currentPage === i + 1}
+                          onClick={() => setCurrentPage(i + 1)}
+                          className="cursor-pointer"
+                        >
+                          {i + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        className={
+                          currentPage === totalPages
+                            ? 'pointer-events-none opacity-50'
+                            : 'cursor-pointer'
+                        }
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(prev + 1, totalPages),
+                          )
+                        }
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </div>
+        </PageBody>
+      </div>
 
       {/* Create Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -804,19 +886,25 @@ export default function RemindersPage() {
             </div>
             <div className="space-y-2">
               <Label>Due Date</Label>
-              <Input
-                type="datetime-local"
-                value={formData.due_date}
-                onChange={(e) =>
-                  setFormData({ ...formData, due_date: e.target.value })
-                }
-              />
+              <div className="relative">
+                <CalendarIcon className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                <Input
+                  type="datetime-local"
+                  onClick={(e) => e.currentTarget.showPicker()}
+                  value={formData.due_date}
+                  onChange={(e) =>
+                    setFormData({ ...formData, due_date: e.target.value })
+                  }
+                  className="pl-10"
+                />
+              </div>
             </div>
             <Button
               onClick={handleCreate}
               disabled={
                 !formData.title.trim() ||
                 !formData.entityId ||
+                !formData.due_date ||
                 createMutation.isPending
               }
               className="w-full"
@@ -878,17 +966,26 @@ export default function RemindersPage() {
             </div>
             <div className="space-y-2">
               <Label>Due Date</Label>
-              <Input
-                type="datetime-local"
-                value={formData.due_date}
-                onChange={(e) =>
-                  setFormData({ ...formData, due_date: e.target.value })
-                }
-              />
+              <div className="relative">
+                <CalendarIcon className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                <Input
+                  type="datetime-local"
+                  onClick={(e) => e.currentTarget.showPicker()}
+                  value={formData.due_date}
+                  onChange={(e) =>
+                    setFormData({ ...formData, due_date: e.target.value })
+                  }
+                  className="pl-10"
+                />
+              </div>
             </div>
             <Button
               onClick={handleSave}
-              disabled={!formData.title.trim() || updateMutation.isPending}
+              disabled={
+                !formData.title.trim() ||
+                !formData.due_date ||
+                updateMutation.isPending
+              }
               className="w-full"
             >
               {updateMutation.isPending ? (

@@ -103,4 +103,8 @@
     --sidebar-border: var(--border);
     --sidebar-ring: var(--color-blue-500);
   }
+
+  .dark input::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
 }

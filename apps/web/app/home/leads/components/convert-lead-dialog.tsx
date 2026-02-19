@@ -563,7 +563,7 @@ export function ConvertLeadDialog({
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="new" id="opp-new" />
                         <FormLabel htmlFor="opp-new" className="font-normal">
-                          Create New Opportunity
+                          New Opportunity
                         </FormLabel>
                       </div>
 

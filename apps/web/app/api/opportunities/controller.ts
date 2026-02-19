@@ -66,7 +66,8 @@ export const getOpportunities = catchAsync(
           *,
           stage:entity_statuses(id, status_name, status_key, color, icon),
           account:crm_accounts(id, account_name),
-          owner:accounts!crm_opportunities_owner_id_fkey(id, email, name)
+          owner:accounts!crm_opportunities_owner_id_fkey(id, email, name),
+          created_by_account:accounts!crm_opportunities_created_by_fkey(id, email, name)
         `,
         { count: 'exact' },
       )
