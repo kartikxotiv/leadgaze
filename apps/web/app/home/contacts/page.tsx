@@ -3,10 +3,12 @@
 import React, { useMemo, useState } from 'react';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Trash2 } from 'lucide-react';
 
+import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
@@ -29,6 +31,12 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
@@ -36,14 +44,20 @@ import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { Contact, getContactsService } from '~/services/contacts.service';
 
+import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
+import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { CreateContactDialog } from './components/create-contact-dialog';
 
 export default function ContactsPage() {
+  const router = useRouter();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
+  const { data: user } = useUser();
 
   const columns = useMemo(
     () => [
@@ -58,8 +72,9 @@ export default function ContactsPage() {
       { id: 'notes', label: 'Notes' },
       { id: 'is_public', label: 'Public' },
       { id: 'owner', label: 'Owner' },
+      { id: 'created_by', label: 'Created By' },
       { id: 'created_at', label: 'Created On' },
-      { id: 'updated_at', label: 'Last Updated On' },
+      { id: 'updated_by', label: 'Last Updated By' },
     ],
     [],
   );
@@ -77,8 +92,9 @@ export default function ContactsPage() {
       notes: false,
       is_public: false,
       owner: true,
+      created_by: false,
       created_at: false,
-      updated_at: false,
+      updated_by: false,
     });
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -142,47 +158,49 @@ export default function ContactsPage() {
 
   return (
     <ModuleGuard module="contacts">
-      <div className="flex h-[100dvh] flex-col">
-        <PageHeader
-          className="bg-sidebar shrink-0 px-6 py-4"
-          title={`Contacts (${totalCount})`}
-          description="Manage your contacts (People)"
-        >
-          <div className="flex items-center gap-3">
-            <div className="relative w-64 lg:w-72">
-              <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search by name, email, or account..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-9 pl-10"
+      <div className="flex h-[100dvh] flex-col overflow-hidden">
+        <div className="bg-sidebar flex shrink-0 flex-col gap-2">
+          <PageHeader
+            className="bg-sidebar shrink-0 px-6 py-4"
+            title={`Contacts (${totalCount})`}
+            description="Manage your contacts (People)"
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative w-64 lg:w-72">
+                <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search by name, email, or account..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-9 pl-10"
+                />
+              </div>
+              {canAccess('contacts', 'create') && (
+                <Button
+                  onClick={() => setCreateDialogOpen(true)}
+                  className="h-9 gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  New Contact
+                </Button>
+              )}
+
+              <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+
+              <ColumnVisibilitySelector
+                columns={columns}
+                visibility={visibility}
+                onToggle={toggleVisibility}
+                onReset={reset}
               />
             </div>
-            {canAccess('contacts', 'create') && (
-              <Button
-                onClick={() => setCreateDialogOpen(true)}
-                className="h-9 gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                New Contact
-              </Button>
-            )}
+          </PageHeader>
+        </div>
 
-            <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
-
-            <ColumnVisibilitySelector
-              columns={columns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
-            />
-          </div>
-        </PageHeader>
-
-        <PageBody className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden pt-6">
-          <div className="flex min-h-0 flex-1 flex-col space-y-6">
+        <PageBody className="bg-sidebar sticky -mt-6 flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-0">
+          <div className="flex min-h-0 flex-1 flex-col">
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
-              <CardContent className="flex min-h-0 flex-1 flex-col p-2">
+              <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                 <div className="flex-1 overflow-auto rounded-lg">
                   <table className="w-full caption-bottom text-sm">
                     <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
@@ -210,13 +228,18 @@ export default function ContactsPage() {
                           <TableHead>Public</TableHead>
                         )}
                         {isVisible('owner') && <TableHead>Owner</TableHead>}
+                        {isVisible('created_by') && (
+                          <TableHead>Created By</TableHead>
+                        )}
                         {isVisible('created_at') && (
                           <TableHead>Created On</TableHead>
                         )}
-                        {isVisible('updated_at') && (
-                          <TableHead>Last Updated On</TableHead>
+                        {isVisible('updated_by') && (
+                          <TableHead>Last Updated By</TableHead>
                         )}
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead className="bg-card sticky right-0 px-4 text-right">
+                          Actions
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -261,21 +284,24 @@ export default function ContactsPage() {
                       ) : (
                         paginatedContacts.map(
                           (contact: Contact, index: number) => (
-                            <TableRow key={contact.id}>
+                            <TableRow
+                              key={contact.id}
+                              className="hover:bg-muted/50 cursor-pointer"
+                              onClick={() =>
+                                router.push(`/home/contacts/${contact.id}`)
+                              }
+                            >
                               {isVisible('sno') && (
-                                <TableCell className="text-muted-foreground w-12 p-4">
+                                <TableCell className="text-muted-foreground w-12">
                                   {(currentPage - 1) * itemsPerPage + index + 1}
                                 </TableCell>
                               )}
                               {isVisible('name') && (
                                 <TableCell className="font-medium">
-                                  <Link
-                                    href={`/home/contacts/${contact.id}`}
-                                    className="hover:underline"
-                                  >
+                                  <span>
                                     {contact.first_name}{' '}
                                     {contact.last_name || ''}
-                                  </Link>
+                                  </span>
                                 </TableCell>
                               )}
                               {isVisible('first_name') && (
@@ -337,32 +363,39 @@ export default function ContactsPage() {
                                   {contact.owner?.name || '-'}
                                 </TableCell>
                               )}
+                              {isVisible('created_by') && (
+                                <TableCell className="text-muted-foreground">
+                                  {contact.created_by_account?.name ||
+                                    contact.created_by ||
+                                    '-'}
+                                </TableCell>
+                              )}
                               {isVisible('created_at') && (
                                 <TableCell className="text-muted-foreground">
-                                  {new Date(
-                                    contact.created_at,
-                                  ).toLocaleDateString()}
+                                  {contact.created_at
+                                    ? new Date(
+                                        contact.created_at,
+                                      ).toLocaleDateString()
+                                    : '-'}
                                 </TableCell>
                               )}
-                              {isVisible('updated_at') && (
+                              {isVisible('updated_by') && (
                                 <TableCell className="text-muted-foreground">
-                                  {new Date(
-                                    contact.updated_at,
-                                  ).toLocaleDateString()}
+                                  {/* {contact.updated_by || '-'} */}
                                 </TableCell>
                               )}
-                              <TableCell className="text-right">
-                                <Button
-                                  variant="link"
-                                  asChild
-                                  className="text-primary h-auto p-0 hover:underline"
-                                >
-                                  {canAccess('contacts', 'view') && (
-                                    <Link href={`/home/contacts/${contact.id}`}>
-                                      View
-                                    </Link>
-                                  )}
-                                </Button>
+                              <TableCell className="bg-card sticky right-0 px-4 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <EntityActionsDropdown
+                                    id={contact.id}
+                                    viewPath={`/home/contacts/${contact.id}`}
+                                    canDelete={canAccess('contacts', 'delete')}
+                                    onDelete={() => {
+                                      setContactToDelete(contact);
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                  />
+                                </div>
                               </TableCell>
                             </TableRow>
                           ),
@@ -375,7 +408,7 @@ export default function ContactsPage() {
             </Card>
 
             {totalCount > 0 && (
-              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mb-4 flex items-center justify-between border-t p-4 px-6 lg:-mb-8">
+              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 flex items-center justify-between border-t p-4 px-6">
                 <div>
                   Showing{' '}
                   <span className="text-foreground font-medium">
@@ -439,6 +472,18 @@ export default function ContactsPage() {
               open={createDialogOpen}
               onOpenChange={setCreateDialogOpen}
               onSuccess={() => refetch()}
+            />
+
+            <DeleteEntityDialog
+              isOpen={deleteDialogOpen}
+              onOpenChange={setDeleteDialogOpen}
+              entityId={contactToDelete?.id || ''}
+              entityType="contact"
+              entityName={`${contactToDelete?.first_name} ${contactToDelete?.last_name || ''}`}
+              onSuccess={() => {
+                setContactToDelete(null);
+                refetch();
+              }}
             />
           </div>
         </PageBody>

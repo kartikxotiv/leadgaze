@@ -12,6 +12,7 @@ import {
   Mail,
   MapPin,
   Phone,
+  Trash2,
   User,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -29,6 +30,12 @@ import {
 import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Separator } from '@kit/ui/separator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 import { cn } from '@kit/ui/utils';
 
 import { PublicPrivateToggle } from '~/home/_components/public-private-toggle';
@@ -45,6 +52,7 @@ import {
   updateLeadService,
 } from '~/services/leads.service';
 
+import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
 import {
   EntityDocuments,
   EntityMeetings,
@@ -63,7 +71,7 @@ import { LogCallDialog } from '../components/log-call-dialog';
 export default function LeadDetailsPage() {
   const router = useRouter();
   const params = useParams();
-  const { currentWorkspace: workspace } = useRBAC();
+  const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -73,6 +81,7 @@ export default function LeadDetailsPage() {
   const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedDraft, setSelectedDraft] = useState<any>(null);
 
   const queryClient = useQueryClient();
@@ -290,6 +299,14 @@ export default function LeadDetailsPage() {
       </PageHeader>
 
       <PageBody>
+        <DeleteEntityDialog
+          isOpen={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          entityId={leadId}
+          entityType="lead"
+          entityName={`${lead.first_name} ${lead.last_name || ''}`}
+          onSuccess={() => router.push('/home/leads')}
+        />
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="space-y-6 lg:col-span-2">
@@ -689,6 +706,47 @@ export default function LeadDetailsPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Danger Zone */}
+            {canAccess('leads', 'delete') && (
+              <Card className="border-destructive/50 border-solid">
+                <CardHeader>
+                  <CardTitle className="text-destructive text-lg"></CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="font-medium">Delete Lead</p>
+                      <p className="text-muted-foreground text-sm">
+                        Once you delete a lead, there is no going back. Please
+                        be certain.
+                      </p>
+                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              variant="destructive"
+                              disabled={!canAccess('leads', 'delete')}
+                              onClick={() => setDeleteDialogOpen(true)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Lead
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        {!canAccess('leads', 'delete') && (
+                          <TooltipContent>
+                            <p>You do not have permission to delete</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}

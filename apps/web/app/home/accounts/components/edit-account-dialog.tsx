@@ -8,449 +8,552 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { useUser } from '@kit/supabase/hooks/use-user';
 import { Button } from '@kit/ui/button';
+import { Checkbox } from '@kit/ui/checkbox';
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
 } from '@kit/ui/dialog';
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@kit/ui/form';
 import { Input } from '@kit/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@kit/ui/select';
-import { Textarea } from '@kit/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
+import { Textarea } from '@kit/ui/textarea';
 
-import { updateAccountService } from '~/services/accounts.service';
-import { IndustrySelect } from '../../_components/industry-select';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { Account, updateAccountService } from '~/services/accounts.service';
+
+import { IndustrySelect } from '../../_components/industry-select';
 
 const formSchema = z.object({
-    account_name: z.string().min(1, 'Account Name is required'),
-    website: z.string().optional().or(z.literal('')),
-    phone_number: z.string().optional().or(z.literal('')),
-    industry_id: z.string().optional().or(z.literal('')),
-    company_size: z.string().optional().or(z.literal('')),
-    annual_revenue: z.string().optional().or(z.literal('')),
-    employee_count: z.string().optional().or(z.literal('')),
-    account_type: z.string().optional(),
-    billing_street: z.string().optional().or(z.literal('')),
-    billing_city: z.string().optional().or(z.literal('')),
-    billing_state: z.string().optional().or(z.literal('')),
-    billing_postal_code: z.string().optional().or(z.literal('')),
-    billing_country: z.string().optional().or(z.literal('')),
-    shipping_street: z.string().optional().or(z.literal('')),
-    shipping_city: z.string().optional().or(z.literal('')),
-    shipping_state: z.string().optional().or(z.literal('')),
-    shipping_postal_code: z.string().optional().or(z.literal('')),
-    shipping_country: z.string().optional().or(z.literal('')),
-    linkedin_url: z.string().optional().or(z.literal('')),
-    twitter_handle: z.string().optional().or(z.literal('')),
-    description: z.string().optional().or(z.literal('')),
+  account_name: z.string().min(1, 'Account Name is required'),
+  website: z.string().optional().or(z.literal('')),
+  phone_number: z.string().optional().or(z.literal('')),
+  industry_id: z.string().optional().or(z.literal('')),
+  company_size: z.string().optional().or(z.literal('')),
+  annual_revenue: z.string().optional().or(z.literal('')),
+  employee_count: z.string().optional().or(z.literal('')),
+  account_type: z.string().optional(),
+  billing_street: z.string().optional().or(z.literal('')),
+  billing_city: z.string().optional().or(z.literal('')),
+  billing_state: z.string().optional().or(z.literal('')),
+  billing_postal_code: z.string().optional().or(z.literal('')),
+  billing_country: z.string().optional().or(z.literal('')),
+  shipping_street: z.string().optional().or(z.literal('')),
+  shipping_city: z.string().optional().or(z.literal('')),
+  shipping_state: z.string().optional().or(z.literal('')),
+  shipping_postal_code: z.string().optional().or(z.literal('')),
+  shipping_country: z.string().optional().or(z.literal('')),
+  linkedin_url: z.string().optional().or(z.literal('')),
+  twitter_handle: z.string().optional().or(z.literal('')),
+  description: z.string().optional().or(z.literal('')),
+  is_public: z.boolean().optional(),
 });
 
 interface EditAccountDialogProps {
-    isOpen: boolean;
-    onOpenChange: (open: boolean) => void;
-    account: any;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  account: Account;
 }
 
 export function EditAccountDialog({
-    isOpen,
-    onOpenChange,
-    account,
+  isOpen,
+  onOpenChange,
+  account,
 }: EditAccountDialogProps) {
-    const { currentWorkspace: workspace } = useRBAC();
-    const queryClient = useQueryClient();
+  const { currentWorkspace: workspace } = useRBAC();
+  const { data: user } = useUser();
+  const queryClient = useQueryClient();
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            account_name: '',
-            website: '',
-            phone_number: '',
-            industry_id: '',
-            company_size: '',
-            annual_revenue: '',
-            employee_count: '',
-            account_type: '',
-            billing_street: '',
-            billing_city: '',
-            billing_state: '',
-            billing_postal_code: '',
-            billing_country: '',
-            shipping_street: '',
-            shipping_city: '',
-            shipping_state: '',
-            shipping_postal_code: '',
-            shipping_country: '',
-            linkedin_url: '',
-            twitter_handle: '',
-            description: '',
-        },
-    });
+  const isWorkspaceOwner = workspace?.owner_id === user?.id;
+  const isCreator = account.created_by === user?.id;
+  const canChangeVisibility = isWorkspaceOwner || isCreator;
 
-    useEffect(() => {
-        if (isOpen && account) {
-            form.reset({
-                account_name: account.account_name || '',
-                website: account.website || '',
-                phone_number: account.phone_number || '',
-                industry_id: account.industry_id || '',
-                company_size: account.company_size || '',
-                annual_revenue: account.annual_revenue ? String(account.annual_revenue) : '',
-                employee_count: account.employee_count ? String(account.employee_count) : '',
-                account_type: account.account_type || undefined,
-                billing_street: account.billing_street || '',
-                billing_city: account.billing_city || '',
-                billing_state: account.billing_state || '',
-                billing_postal_code: account.billing_postal_code || '',
-                billing_country: account.billing_country || '',
-                shipping_street: account.shipping_street || '',
-                shipping_city: account.shipping_city || '',
-                shipping_state: account.shipping_state || '',
-                shipping_postal_code: account.shipping_postal_code || '',
-                shipping_country: account.shipping_country || '',
-                linkedin_url: account.linkedin_url || '',
-                twitter_handle: account.twitter_handle || '',
-                description: account.description || '',
-            });
-        }
-    }, [account, form, isOpen]);
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      account_name: '',
+      website: '',
+      phone_number: '',
+      industry_id: '',
+      company_size: '',
+      annual_revenue: '',
+      employee_count: '',
+      account_type: '',
+      billing_street: '',
+      billing_city: '',
+      billing_state: '',
+      billing_postal_code: '',
+      billing_country: '',
+      shipping_street: '',
+      shipping_city: '',
+      shipping_state: '',
+      shipping_postal_code: '',
+      shipping_country: '',
+      linkedin_url: '',
+      twitter_handle: '',
+      description: '',
+      is_public: false,
+    },
+  });
 
-    const updateMutation = useMutation({
-        mutationFn: (values: z.infer<typeof formSchema>) => {
-            const payload = {
-                ...values,
-                annual_revenue: values.annual_revenue ? parseFloat(values.annual_revenue) : null,
-                employee_count: values.employee_count ? parseInt(values.employee_count) : null,
-            };
-            return updateAccountService(account.id, payload);
-        },
-        onSuccess: () => {
-            toast.success('Account updated successfully');
-            queryClient.invalidateQueries({ queryKey: ['account', account.id] });
-            onOpenChange(false);
-        },
-        onError: () => toast.error('Failed to update account'),
-    });
-
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        updateMutation.mutate(values);
+  useEffect(() => {
+    if (isOpen && account) {
+      form.reset({
+        account_name: account.account_name || '',
+        website: account.website || '',
+        phone_number: account.phone_number || '',
+        industry_id: account.industry_id || '',
+        company_size: account.company_size || '',
+        annual_revenue: account.annual_revenue
+          ? String(account.annual_revenue)
+          : '',
+        employee_count: account.employee_count
+          ? String(account.employee_count)
+          : '',
+        account_type: account.account_type || undefined,
+        billing_street: account.billing_street || '',
+        billing_city: account.billing_city || '',
+        billing_state: account.billing_state || '',
+        billing_postal_code: account.billing_postal_code || '',
+        billing_country: account.billing_country || '',
+        shipping_street: account.shipping_street || '',
+        shipping_city: account.shipping_city || '',
+        shipping_state: account.shipping_state || '',
+        shipping_postal_code: account.shipping_postal_code || '',
+        shipping_country: account.shipping_country || '',
+        linkedin_url: account.linkedin_url || '',
+        twitter_handle: account.twitter_handle || '',
+        description: account.description || '',
+        is_public: account.is_public || false,
+      });
     }
+  }, [account, form, isOpen]);
 
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>Edit Account</DialogTitle>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <Tabs defaultValue="general" className="w-full">
-                            <TabsList className="grid w-full grid-cols-4">
-                                <TabsTrigger value="general">General</TabsTrigger>
-                                <TabsTrigger value="details">Details</TabsTrigger>
-                                <TabsTrigger value="address">Address</TabsTrigger>
-                                <TabsTrigger value="social">Social</TabsTrigger>
-                            </TabsList>
+  const updateMutation = useMutation({
+    mutationFn: (values: z.infer<typeof formSchema>) => {
+      const payload: any = {
+        ...values,
+        annual_revenue: values.annual_revenue
+          ? parseFloat(values.annual_revenue)
+          : null,
+        employee_count: values.employee_count
+          ? parseInt(values.employee_count)
+          : null,
+      };
 
-                            <TabsContent value="general" className="space-y-4 pt-4">
-                                <FormField
-                                    control={form.control}
-                                    name="account_name"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Account Name</FormLabel>
-                                            <FormControl>
-                                                <Input {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="website"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Website</FormLabel>
-                                                <FormControl>
-                                                    <Input {...field} placeholder="https://example.com" />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="phone_number"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Phone</FormLabel>
-                                                <FormControl>
-                                                    <Input {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                                <FormField
-                                    control={form.control}
-                                    name="industry_id"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Industry</FormLabel>
-                                            <FormControl>
-                                                <IndustrySelect
-                                                    value={field.value}
-                                                    onValueChange={field.onChange}
-                                                    disabled={updateMutation.isPending}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="account_type"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Type</FormLabel>
-                                            <Select
-                                                onValueChange={field.onChange}
-                                                defaultValue={field.value}
-                                                value={field.value}
-                                            >
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select type" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="Customer">Customer</SelectItem>
-                                                    <SelectItem value="Prospect">Prospect</SelectItem>
-                                                    <SelectItem value="Partner">Partner</SelectItem>
-                                                    <SelectItem value="Vendor">Vendor</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="description"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Description</FormLabel>
-                                            <FormControl>
-                                                <Textarea {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </TabsContent>
+      // Only include is_public if it has changed
+      if (values.is_public === account.is_public) {
+        delete payload.is_public;
+      }
 
-                            <TabsContent value="details" className="space-y-4 pt-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="annual_revenue"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Annual Revenue</FormLabel>
-                                                <FormControl>
-                                                    <Input {...field} type="number" />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="employee_count"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Employees</FormLabel>
-                                                <FormControl>
-                                                    <Input {...field} type="number" />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                                <FormField
-                                    control={form.control}
-                                    name="company_size"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Company Size Range</FormLabel>
-                                            <FormControl>
-                                                <Input {...field} placeholder="e.g. 1-10, 50-100" />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </TabsContent>
+      return updateAccountService(account.id, payload);
+    },
+    onSuccess: () => {
+      toast.success('Account updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['account', account.id] });
+      onOpenChange(false);
+    },
+    onError: () => toast.error('Failed to update account'),
+  });
 
-                            <TabsContent value="address" className="space-y-4 pt-4">
-                                <div className="space-y-4">
-                                    <h4 className="font-medium text-sm text-primary">Billing Address</h4>
-                                    <FormField
-                                        control={form.control}
-                                        name="billing_street"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormControl>
-                                                    <Input {...field} placeholder="Street" />
-                                                </FormControl>
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <FormField
-                                            control={form.control}
-                                            name="billing_city"
-                                            render={({ field }) => (
-                                                <FormItem><FormControl><Input {...field} placeholder="City" /></FormControl></FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="billing_state"
-                                            render={({ field }) => (
-                                                <FormItem><FormControl><Input {...field} placeholder="State" /></FormControl></FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="billing_postal_code"
-                                            render={({ field }) => (
-                                                <FormItem><FormControl><Input {...field} placeholder="Zip" /></FormControl></FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="billing_country"
-                                            render={({ field }) => (
-                                                <FormItem><FormControl><Input {...field} placeholder="Country" /></FormControl></FormItem>
-                                            )}
-                                        />
-                                    </div>
-                                </div>
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    updateMutation.mutate(values);
+  }
 
-                                <div className="space-y-4 border-t pt-4">
-                                    <h4 className="font-medium text-sm text-primary">Shipping Address</h4>
-                                    <FormField
-                                        control={form.control}
-                                        name="shipping_street"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormControl>
-                                                    <Input {...field} placeholder="Street" />
-                                                </FormControl>
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <FormField
-                                            control={form.control}
-                                            name="shipping_city"
-                                            render={({ field }) => (
-                                                <FormItem><FormControl><Input {...field} placeholder="City" /></FormControl></FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="shipping_state"
-                                            render={({ field }) => (
-                                                <FormItem><FormControl><Input {...field} placeholder="State" /></FormControl></FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="shipping_postal_code"
-                                            render={({ field }) => (
-                                                <FormItem><FormControl><Input {...field} placeholder="Zip" /></FormControl></FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="shipping_country"
-                                            render={({ field }) => (
-                                                <FormItem><FormControl><Input {...field} placeholder="Country" /></FormControl></FormItem>
-                                            )}
-                                        />
-                                    </div>
-                                </div>
-                            </TabsContent>
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[700px]">
+        <DialogHeader>
+          <DialogTitle>Edit Account</DialogTitle>
+          <DialogDescription>
+            Update the information for this account.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <Tabs defaultValue="general" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="general">General</TabsTrigger>
+                <TabsTrigger value="details">Details</TabsTrigger>
+                <TabsTrigger value="address">Address</TabsTrigger>
+                <TabsTrigger value="social">Social</TabsTrigger>
+              </TabsList>
 
-                            <TabsContent value="social" className="space-y-4 pt-4">
-                                <FormField
-                                    control={form.control}
-                                    name="linkedin_url"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>LinkedIn URL</FormLabel>
-                                            <FormControl>
-                                                <Input {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="twitter_handle"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Twitter Handle</FormLabel>
-                                            <FormControl>
-                                                <Input {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </TabsContent>
-                        </Tabs>
+              <TabsContent value="general" className="space-y-4 pt-4">
+                <FormField
+                  control={form.control}
+                  name="account_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Account Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="website"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Website</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="https://example.com" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="phone_number"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="industry_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Industry</FormLabel>
+                      <FormControl>
+                        <IndustrySelect
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={updateMutation.isPending}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="account_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Customer">Customer</SelectItem>
+                          <SelectItem value="Prospect">Prospect</SelectItem>
+                          <SelectItem value="Partner">Partner</SelectItem>
+                          <SelectItem value="Vendor">Vendor</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </TabsContent>
 
-                        <div className="flex justify-end gap-2 pt-4">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => onOpenChange(false)}
-                                disabled={updateMutation.isPending}
-                            >
-                                Cancel
-                            </Button>
-                            <Button type="submit" disabled={updateMutation.isPending}>
-                                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
-                            </Button>
+              <TabsContent value="details" className="space-y-4 pt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="annual_revenue"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Annual Revenue</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="number" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="employee_count"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Employees</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="number" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="company_size"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company Size Range</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. 1-10, 50-100" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </TabsContent>
+
+              <TabsContent value="address" className="space-y-4 pt-4">
+                <div className="space-y-4">
+                  <h4 className="text-primary text-sm font-medium">
+                    Billing Address
+                  </h4>
+                  <FormField
+                    control={form.control}
+                    name="billing_street"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input {...field} placeholder="Street" />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <FormField
+                      control={form.control}
+                      name="billing_city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} placeholder="City" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="billing_state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} placeholder="State" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="billing_postal_code"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} placeholder="Zip" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="billing_country"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} placeholder="Country" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4 border-t pt-4">
+                  <h4 className="text-primary text-sm font-medium">
+                    Shipping Address
+                  </h4>
+                  <FormField
+                    control={form.control}
+                    name="shipping_street"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input {...field} placeholder="Street" />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <FormField
+                      control={form.control}
+                      name="shipping_city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} placeholder="City" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="shipping_state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} placeholder="State" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="shipping_postal_code"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} placeholder="Zip" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="shipping_country"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} placeholder="Country" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="social" className="space-y-4 pt-4">
+                <FormField
+                  control={form.control}
+                  name="linkedin_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>LinkedIn URL</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="twitter_handle"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Twitter Handle</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="space-y-4 border-t pt-4">
+                  <h4 className="text-sm font-medium">Visibility Settings</h4>
+                  <FormField
+                    control={form.control}
+                    name="is_public"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-y-0 space-x-3 p-1">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            disabled={!canChangeVisibility}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel
+                            className={
+                              !canChangeVisibility
+                                ? 'cursor-not-allowed opacity-70'
+                                : 'cursor-pointer'
+                            }
+                          >
+                            Make this account public
+                          </FormLabel>
+                          <p className="text-muted-foreground text-xs">
+                            When public, this account will be visible to all
+                            team members.
+                          </p>
+                          {!canChangeVisibility && (
+                            <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                              Only workspace owner or creator can change
+                              visibility
+                            </p>
+                          )}
                         </div>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    );
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={updateMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
 }

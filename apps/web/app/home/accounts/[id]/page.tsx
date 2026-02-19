@@ -17,6 +17,7 @@ import {
   Mail,
   MapPin,
   Phone,
+  Trash2,
   User,
   Users,
 } from 'lucide-react';
@@ -27,6 +28,12 @@ import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { PageBody } from '@kit/ui/page';
 import { Separator } from '@kit/ui/separator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 
 import {
   useCanAccessData,
@@ -38,6 +45,7 @@ import { getAccountByIdService } from '~/services/accounts.service';
 import { getContactsService } from '~/services/contacts.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
 
+import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
 import {
   EntityDocuments,
   EntityMeetings,
@@ -52,8 +60,10 @@ import { EditAccountDialog } from '../components/edit-account-dialog';
 
 export default function AccountDetailsPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params?.id as string;
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
   const [isOpportunityDialogOpen, setIsOpportunityDialogOpen] = useState(false);
   const { currentWorkspace: workspace } = useRBAC();
@@ -185,6 +195,14 @@ export default function AccountDetailsPage() {
       </div>
 
       <PageBody>
+        <DeleteEntityDialog
+          isOpen={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          entityId={id}
+          entityType="account"
+          entityName={account.account_name}
+          onSuccess={() => router.push('/home/accounts')}
+        />
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="space-y-6 lg:col-span-2">
@@ -490,6 +508,47 @@ export default function AccountDetailsPage() {
             <EntityReminders entityType="account" entityId={id} />
             <EntityMeetings entityType="account" entityId={id} />
             <EntityDocuments entityType="account" entityId={id} />
+
+            {/* Danger Zone */}
+            {rbacCanAccess('accounts', 'delete') && (
+              <Card className="border-destructive/50 border-solid">
+                <CardHeader>
+                  <CardTitle className="text-destructive text-lg"></CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="font-medium">Delete Account</p>
+                      <p className="text-muted-foreground text-sm">
+                        Once you delete an account, there is no going back.
+                        Please be certain.
+                      </p>
+                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              variant="destructive"
+                              disabled={!rbacCanAccess('accounts', 'delete')}
+                              onClick={() => setDeleteDialogOpen(true)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Account
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        {!rbacCanAccess('accounts', 'delete') && (
+                          <TooltipContent>
+                            <p>You do not have permission to delete</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}

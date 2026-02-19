@@ -3,10 +3,12 @@
 import React, { useMemo, useState } from 'react';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import { Filter, Plus, Search } from 'lucide-react';
+import { Filter, Plus, Search, Trash2 } from 'lucide-react';
 
+import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
@@ -36,6 +38,12 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
@@ -47,6 +55,8 @@ import {
   getOpportunityStatusesService,
 } from '~/services/opportunities.service';
 
+import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
+import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { OpportunityDialog } from './components/opportunity-dialog';
 
 function PriorityBadge({ priority }: { priority: string | null | undefined }) {
@@ -84,12 +94,17 @@ function PriorityBadge({ priority }: { priority: string | null | undefined }) {
 }
 
 export default function OpportunitiesPage() {
+  const router = useRouter();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [opportunityToDelete, setOpportunityToDelete] =
+    useState<Opportunity | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
+  const { data: user } = useUser();
 
   const columns = useMemo(
     () => [
@@ -110,8 +125,9 @@ export default function OpportunitiesPage() {
       { id: 'close_reason', label: 'Close Reason' },
       { id: 'is_public', label: 'Public' },
       { id: 'owner', label: 'Owner' },
+      { id: 'created_by', label: 'Created By' },
       { id: 'created_at', label: 'Created On' },
-      { id: 'updated_at', label: 'Last Updated On' },
+      { id: 'updated_by', label: 'Last Updated By' },
     ],
     [],
   );
@@ -135,8 +151,9 @@ export default function OpportunitiesPage() {
       close_reason: false,
       is_public: false,
       owner: true,
+      created_by: false,
       created_at: false,
-      updated_at: false,
+      updated_by: false,
     });
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -303,6 +320,11 @@ export default function OpportunitiesPage() {
                   total_amount: 0,
                   count: 0,
                 };
+                const isSelected =
+                  selectedStage === 'all' || selectedStage === stage.id;
+                const displayCount = isSelected ? stats.count : 0;
+                const displayAmount = isSelected ? stats.total_amount : 0;
+
                 return (
                   <Card
                     key={stage.id}
@@ -317,7 +339,7 @@ export default function OpportunitiesPage() {
                             style={{ backgroundColor: stage.color }}
                           />
                           <span className="text-muted-foreground truncate text-[10px] font-medium tracking-wider uppercase">
-                            {stage.status_name} ({stats.count})
+                            {stage.status_name} ({displayCount})
                           </span>
                         </div>
                         <div className="flex items-baseline gap-2">
@@ -326,7 +348,7 @@ export default function OpportunitiesPage() {
                               style: 'currency',
                               currency: 'USD',
                               maximumFractionDigits: 0,
-                            }).format(stats.total_amount)}
+                            }).format(displayAmount)}
                           </span>
                         </div>
                       </div>
@@ -338,10 +360,10 @@ export default function OpportunitiesPage() {
           </div>
         </div>
 
-        <PageBody className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden pt-6">
-          <div className="flex min-h-0 flex-1 flex-col space-y-6">
+        <PageBody className="bg-sidebar sticky flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
+          <div className="flex min-h-0 flex-1 flex-col">
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
-              <CardContent className="flex min-h-0 flex-1 flex-col p-2">
+              <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                 <div className="flex-1 overflow-auto rounded-lg">
                   <table className="w-full caption-bottom text-sm">
                     <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
@@ -383,13 +405,18 @@ export default function OpportunitiesPage() {
                           <TableHead>Public</TableHead>
                         )}
                         {isVisible('owner') && <TableHead>Owner</TableHead>}
+                        {isVisible('created_by') && (
+                          <TableHead>Created By</TableHead>
+                        )}
                         {isVisible('created_at') && (
                           <TableHead>Created On</TableHead>
                         )}
-                        {isVisible('updated_at') && (
-                          <TableHead>Last Updated On</TableHead>
+                        {isVisible('updated_by') && (
+                          <TableHead>Last Updated By</TableHead>
                         )}
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead className="bg-card sticky right-0 px-4 text-right">
+                          Actions
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -434,20 +461,23 @@ export default function OpportunitiesPage() {
                       ) : (
                         paginatedOpportunities.map(
                           (opportunity: Opportunity, index: number) => (
-                            <TableRow key={opportunity.id}>
+                            <TableRow
+                              key={opportunity.id}
+                              className="hover:bg-muted/50 cursor-pointer"
+                              onClick={() =>
+                                router.push(
+                                  `/home/opportunities/${opportunity.id}`,
+                                )
+                              }
+                            >
                               {isVisible('sno') && (
-                                <TableCell className="text-muted-foreground w-12 p-4">
+                                <TableCell className="text-muted-foreground w-12">
                                   {(currentPage - 1) * itemsPerPage + index + 1}
                                 </TableCell>
                               )}
                               {isVisible('name') && (
                                 <TableCell className="font-medium">
-                                  <Link
-                                    href={`/home/opportunities/${opportunity.id}`}
-                                    className="hover:underline"
-                                  >
-                                    {opportunity.opportunity_name}
-                                  </Link>
+                                  <span>{opportunity.opportunity_name}</span>
                                 </TableCell>
                               )}
                               {isVisible('account') && (
@@ -564,34 +594,42 @@ export default function OpportunitiesPage() {
                                   {opportunity.owner?.name || '-'}
                                 </TableCell>
                               )}
+                              {isVisible('created_by') && (
+                                <TableCell className="text-muted-foreground">
+                                  {opportunity.created_by_account?.name ||
+                                    opportunity.created_by ||
+                                    '-'}
+                                </TableCell>
+                              )}
                               {isVisible('created_at') && (
                                 <TableCell className="text-muted-foreground">
-                                  {new Date(
-                                    opportunity.created_at,
-                                  ).toLocaleDateString()}
+                                  {opportunity.created_at
+                                    ? new Date(
+                                        opportunity.created_at,
+                                      ).toLocaleDateString()
+                                    : '-'}
                                 </TableCell>
                               )}
-                              {isVisible('updated_at') && (
+                              {isVisible('updated_by') && (
                                 <TableCell className="text-muted-foreground">
-                                  {new Date(
-                                    opportunity.updated_at,
-                                  ).toLocaleDateString()}
+                                  {opportunity.updated_by || '-'}
                                 </TableCell>
                               )}
-                              <TableCell className="text-right">
-                                {canAccess('opportunities', 'view') && (
-                                  <Button
-                                    variant="link"
-                                    asChild
-                                    className="text-primary h-auto p-0 hover:underline"
-                                  >
-                                    <Link
-                                      href={`/home/opportunities/${opportunity.id}`}
-                                    >
-                                      View
-                                    </Link>
-                                  </Button>
-                                )}
+                              <TableCell className="bg-card sticky right-0 px-4 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <EntityActionsDropdown
+                                    id={opportunity.id}
+                                    viewPath={`/home/opportunities/${opportunity.id}`}
+                                    canDelete={canAccess(
+                                      'opportunities',
+                                      'delete',
+                                    )}
+                                    onDelete={() => {
+                                      setOpportunityToDelete(opportunity);
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                  />
+                                </div>
                               </TableCell>
                             </TableRow>
                           ),
@@ -604,7 +642,7 @@ export default function OpportunitiesPage() {
             </Card>
 
             {totalCount > 0 && (
-              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mb-4 flex items-center justify-between border-t p-4 px-6 lg:-mb-8">
+              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 flex items-center justify-between border-t p-4 px-6">
                 <div>
                   Showing{' '}
                   <span className="text-foreground font-medium">
@@ -667,6 +705,18 @@ export default function OpportunitiesPage() {
             <OpportunityDialog
               isOpen={isCreateDialogOpen}
               onOpenChange={setIsCreateDialogOpen}
+            />
+
+            <DeleteEntityDialog
+              isOpen={deleteDialogOpen}
+              onOpenChange={setDeleteDialogOpen}
+              entityId={opportunityToDelete?.id || ''}
+              entityType="opportunity"
+              entityName={opportunityToDelete?.opportunity_name || ''}
+              onSuccess={() => {
+                setOpportunityToDelete(null);
+                refetch();
+              }}
             />
           </div>
         </PageBody>

@@ -185,236 +185,253 @@ export default function TeamMembersPage() {
 
   return (
     <ModuleGuard module="team_members">
-      <PageHeader
-        title={`Team Members (${members.length})`}
-        description="Manage your workspace team members and permissions"
-      >
-        <div className="flex items-center gap-3">
-          {canAccess('team_members', 'create') && (
-            <Button
-              onClick={() => setInviteDialogOpen(true)}
-              size="sm"
-              className="h-9 gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Invite Member
-            </Button>
-          )}
+      <div className="flex h-[100dvh] flex-col overflow-hidden">
+        <div className="flex shrink-0 flex-col gap-2">
+          <PageHeader
+            title={`Team Members (${members.length})`}
+            description="Manage your workspace team members and permissions"
+          >
+            <div className="flex items-center gap-3">
+              {canAccess('team_members', 'create') && (
+                <Button
+                  onClick={() => setInviteDialogOpen(true)}
+                  size="sm"
+                  className="h-9 gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Invite Member
+                </Button>
+              )}
 
-          <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+              <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
 
-          <ColumnVisibilitySelector
-            columns={columns}
-            visibility={visibility}
-            onToggle={toggleVisibility}
-            onReset={reset}
-          />
+              <ColumnVisibilitySelector
+                columns={columns}
+                visibility={visibility}
+                onToggle={toggleVisibility}
+                onReset={reset}
+              />
+            </div>
+          </PageHeader>
+          {/* Summary Cards - Fixed at top */}
+          <div className="px-6 pb-2">
+            <div className="grid shrink-0 grid-cols-1 gap-4 md:grid-cols-3">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-muted-foreground text-sm font-medium">
+                    Total Members
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{members.length}</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-muted-foreground text-sm font-medium">
+                    Active
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">
+                    {activeMembers.length}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-muted-foreground text-sm font-medium">
+                    Pending Invitations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">
+                    {pendingMembers.length}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
-      </PageHeader>
-      <PageBody>
-        <div className="space-y-6">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-muted-foreground text-sm font-medium">
-                  Total Members
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{members.length}</div>
-              </CardContent>
-            </Card>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-muted-foreground text-sm font-medium">
-                  Active
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{activeMembers.length}</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-muted-foreground text-sm font-medium">
-                  Pending Invitations
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">
-                  {pendingMembers.length}
+        <PageBody className="flex min-h-0 flex-1 flex-col overflow-hidden pt-4">
+          <div className="flex min-h-0 flex-1 flex-col space-y-6">
+            {/* Team Members Table - Scrollable area */}
+            <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
+              <CardHeader className="shrink-0 p-0 pb-4">
+                <div>
+                  <CardTitle>Workspace Members</CardTitle>
+                  <CardDescription>
+                    Manage team members and their roles
+                  </CardDescription>
                 </div>
+              </CardHeader>
+              <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+                  </div>
+                ) : error ? (
+                  <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border p-4">
+                    Failed to load team members
+                  </div>
+                ) : members.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <Users className="text-muted-foreground/30 mx-auto mb-4 h-12 w-12" />
+                    <p className="text-muted-foreground">No team members yet</p>
+                    <Button
+                      onClick={() => setInviteDialogOpen(true)}
+                      variant="outline"
+                      size="sm"
+                      className="mt-4"
+                    >
+                      Invite First Member
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex-1 overflow-auto rounded-lg [&>div]:overflow-visible">
+                    <Table className="w-full caption-bottom text-sm">
+                      <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                        <TableRow className="bg-card">
+                          {isVisible('member') && <TableHead>Member</TableHead>}
+                          {isVisible('email') && <TableHead>Email</TableHead>}
+                          {isVisible('role') && <TableHead>Role</TableHead>}
+                          {isVisible('status') && <TableHead>Status</TableHead>}
+                          {isVisible('primary_contact') && (
+                            <TableHead>Primary Contact</TableHead>
+                          )}
+                          <TableHead className="bg-card sticky right-0 px-4 text-right">
+                            Actions
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {members.map((member: WorkspaceMember) => (
+                          <TableRow
+                            key={member.id}
+                            className="hover:bg-muted/50"
+                          >
+                            {isVisible('member') && (
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
+                                    {(
+                                      member.user?.email?.charAt(0) || 'M'
+                                    ).toUpperCase()}
+                                  </div>
+                                  <span className="font-medium">
+                                    {member.user?.user_metadata?.full_name ||
+                                      'Team Member'}
+                                  </span>
+                                </div>
+                              </TableCell>
+                            )}
+                            {isVisible('email') && (
+                              <TableCell className="text-muted-foreground text-sm">
+                                {member.user?.email}
+                              </TableCell>
+                            )}
+                            {isVisible('role') && (
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="h-3 w-3 rounded-full"
+                                    style={{
+                                      backgroundColor: getRoleColor(
+                                        member.role,
+                                      ),
+                                    }}
+                                  />
+                                  <span className="font-medium">
+                                    {member.role?.role_name}
+                                  </span>
+                                </div>
+                              </TableCell>
+                            )}
+                            {isVisible('status') && (
+                              <TableCell>
+                                {getStatusBadge(member.status)}
+                              </TableCell>
+                            )}
+                            {isVisible('primary_contact') && (
+                              <TableCell>
+                                {member.is_primary_contact ? (
+                                  <Badge variant="secondary">Primary</Badge>
+                                ) : (
+                                  <span className="text-muted-foreground/50 text-xs">
+                                    —
+                                  </span>
+                                )}
+                              </TableCell>
+                            )}
+                            <TableCell className="bg-card sticky right-0 px-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                {member.status === 'pending' && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleResendInvitation(member.id)
+                                    }
+                                    className="gap-2"
+                                    disabled={resendMutation.isPending}
+                                  >
+                                    <RotateCcw className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {canAccess('team_members', 'edit') && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditMember(member)}
+                                    className="gap-2"
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {canAccess('team_members', 'delete') && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleRemoveMember(member.id)
+                                    }
+                                    className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
+                                    disabled={removeMutation.isPending}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Team Members Table */}
-          <Card>
-            <CardHeader>
-              <div>
-                <CardTitle>Workspace Members</CardTitle>
-                <CardDescription>
-                  Manage team members and their roles
-                </CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
-                </div>
-              ) : error ? (
-                <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border p-4">
-                  Failed to load team members
-                </div>
-              ) : members.length === 0 ? (
-                <div className="py-12 text-center">
-                  <Users className="text-muted-foreground/30 mx-auto mb-4 h-12 w-12" />
-                  <p className="text-muted-foreground">No team members yet</p>
-                  <Button
-                    onClick={() => setInviteDialogOpen(true)}
-                    variant="outline"
-                    size="sm"
-                    className="mt-4"
-                  >
-                    Invite First Member
-                  </Button>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        {isVisible('member') && <TableHead>Member</TableHead>}
-                        {isVisible('email') && <TableHead>Email</TableHead>}
-                        {isVisible('role') && <TableHead>Role</TableHead>}
-                        {isVisible('status') && <TableHead>Status</TableHead>}
-                        {isVisible('primary_contact') && (
-                          <TableHead>Primary Contact</TableHead>
-                        )}
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {members.map((member: WorkspaceMember) => (
-                        <TableRow key={member.id}>
-                          {isVisible('member') && (
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
-                                  {(
-                                    member.user?.email?.charAt(0) || 'M'
-                                  ).toUpperCase()}
-                                </div>
-                                <span className="font-medium">
-                                  {member.user?.user_metadata?.full_name ||
-                                    'Team Member'}
-                                </span>
-                              </div>
-                            </TableCell>
-                          )}
-                          {isVisible('email') && (
-                            <TableCell className="text-muted-foreground text-sm">
-                              {member.user?.email}
-                            </TableCell>
-                          )}
-                          {isVisible('role') && (
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="h-3 w-3 rounded-full"
-                                  style={{
-                                    backgroundColor: getRoleColor(member.role),
-                                  }}
-                                />
-                                <span className="font-medium">
-                                  {member.role?.role_name}
-                                </span>
-                              </div>
-                            </TableCell>
-                          )}
-                          {isVisible('status') && (
-                            <TableCell>
-                              {getStatusBadge(member.status)}
-                            </TableCell>
-                          )}
-                          {isVisible('primary_contact') && (
-                            <TableCell>
-                              {member.is_primary_contact ? (
-                                <Badge variant="secondary">Primary</Badge>
-                              ) : (
-                                <span className="text-muted-foreground/50 text-xs">
-                                  —
-                                </span>
-                              )}
-                            </TableCell>
-                          )}
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              {member.status === 'pending' && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleResendInvitation(member.id)
-                                  }
-                                  className="gap-2"
-                                  disabled={resendMutation.isPending}
-                                >
-                                  <RotateCcw className="h-4 w-4" />
-                                </Button>
-                              )}
-                              {canAccess('team_members', 'edit') && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEditMember(member)}
-                                  className="gap-2"
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </Button>
-                              )}
-                              {canAccess('team_members', 'delete') && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRemoveMember(member.id)}
-                                  className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
-                                  disabled={removeMutation.isPending}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Dialogs */}
-        <InviteMemberDialog
-          open={inviteDialogOpen}
-          onOpenChange={setInviteDialogOpen}
-        />
-
-        {updatingMember && (
-          <UpdateMemberDialog
-            member={updatingMember}
-            open={updateDialogOpen}
-            onOpenChange={setUpdateDialogOpen}
-            onSuccess={() => setUpdatingMember(null)}
+          {/* Dialogs */}
+          <InviteMemberDialog
+            open={inviteDialogOpen}
+            onOpenChange={setInviteDialogOpen}
           />
-        )}
-      </PageBody>
+
+          {updatingMember && (
+            <UpdateMemberDialog
+              member={updatingMember}
+              open={updateDialogOpen}
+              onOpenChange={setUpdateDialogOpen}
+              onSuccess={() => setUpdatingMember(null)}
+            />
+          )}
+        </PageBody>
+      </div>
     </ModuleGuard>
   );
 }

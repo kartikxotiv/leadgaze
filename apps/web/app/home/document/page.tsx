@@ -8,13 +8,13 @@ import {
   Building2,
   Download,
   Edit,
-  File,
   FileCode,
   FileImage,
   FileText,
   FileType,
   Filter,
   Loader2,
+  File as LucideFile,
   MoreHorizontal,
   Plus,
   Search,
@@ -106,6 +106,9 @@ export default function DocumentPage() {
       { id: 'uploader', label: 'Uploaded By' },
       { id: 'entity', label: 'Entity' },
       { id: 'last_modified', label: 'Last Modified' },
+      { id: 'created_by', label: 'Created By' },
+      { id: 'created_at', label: 'Created On' },
+      { id: 'updated_by', label: 'Last Updated By' },
     ],
     [],
   );
@@ -118,7 +121,10 @@ export default function DocumentPage() {
       size: true,
       uploader: true,
       entity: true,
-      last_modified: true,
+      last_modified: false,
+      created_by: false,
+      created_at: false,
+      updated_by: false,
     });
 
   const { data: documents = [], isLoading } = useQuery({
@@ -273,7 +279,7 @@ export default function DocumentPage() {
       return <FileType className="h-4 w-4 text-green-500" />;
     if (t.includes('markdown') || t.includes('md'))
       return <FileCode className="h-4 w-4 text-purple-500" />;
-    return <File className="h-4 w-4 text-gray-500" />;
+    return <LucideFile className="h-4 w-4 text-gray-500" />;
   };
 
   const formatSize = (bytes?: number) => {
@@ -293,260 +299,294 @@ export default function DocumentPage() {
 
   return (
     <>
-      <PageHeader
-        title={`Documents (${documents.length})`}
-        description="Manage and organize your files and documents"
-      >
-        <div className="flex items-center gap-3">
-          <div className="relative w-64 lg:w-72">
-            <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search documents..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-9 pl-10"
-            />
-          </div>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="h-9 w-40">
-              <Filter className="mr-2 h-4 w-4 text-gray-400" />
-              <SelectValue placeholder="File Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="pdf">PDF</SelectItem>
-              <SelectItem value="image">Image</SelectItem>
-              <SelectItem value="sheet">Spreadsheet</SelectItem>
-              <SelectItem value="document">Document</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            className="h-9 gap-2"
-            onClick={() => {
-              setFile(null);
-              setEntityType('lead');
-              setEntityId('');
-              setIsUploadDialogOpen(true);
-            }}
+      <div className="flex h-[100dvh] flex-col">
+        <div className="bg-sidebar flex shrink-0 flex-col gap-2">
+          <PageHeader
+            title={`Documents (${documents.length})`}
+            description="Manage and organize your files and documents"
           >
-            <Plus className="h-4 w-4" />
-            Upload Document
-          </Button>
+            <div className="flex items-center gap-3">
+              <div className="relative w-64 lg:w-72">
+                <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search documents..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-9 pl-10"
+                />
+              </div>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="h-9 w-40">
+                  <Filter className="mr-2 h-4 w-4 text-gray-400" />
+                  <SelectValue placeholder="File Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="pdf">PDF</SelectItem>
+                  <SelectItem value="image">Image</SelectItem>
+                  <SelectItem value="sheet">Spreadsheet</SelectItem>
+                  <SelectItem value="document">Document</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                className="h-9 gap-2"
+                onClick={() => {
+                  setFile(null);
+                  setEntityType('lead');
+                  setEntityId('');
+                  setIsUploadDialogOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                Upload Document
+              </Button>
 
-          <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+              <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
 
-          <ColumnVisibilitySelector
-            columns={documentColumns}
-            visibility={visibility}
-            onToggle={toggleVisibility}
-            onReset={reset}
-          />
+              <ColumnVisibilitySelector
+                columns={documentColumns}
+                visibility={visibility}
+                onToggle={toggleVisibility}
+                onReset={reset}
+              />
+            </div>
+          </PageHeader>
         </div>
-      </PageHeader>
-      <PageBody>
-        <div className="space-y-6">
-          {/* Documents List Table */}
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {isVisible('sno') && (
-                      <TableHead className="w-[80px] pl-6">S. No.</TableHead>
-                    )}
-                    {isVisible('name') && <TableHead>Name</TableHead>}
-                    {isVisible('type') && <TableHead>Type</TableHead>}
-                    {isVisible('size') && <TableHead>Size</TableHead>}
-                    {isVisible('uploader') && (
-                      <TableHead>Uploaded By</TableHead>
-                    )}
-                    {isVisible('entity') && <TableHead>Entity</TableHead>}
-                    {isVisible('last_modified') && (
-                      <TableHead>Last Modified</TableHead>
-                    )}
-                    <TableHead className="pr-6 text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={
-                          visibility
-                            ? Object.values(visibility).filter(
-                                (v) => v !== false,
-                              ).length + 1
-                            : 6
-                        }
-                        className="h-24 text-center"
-                      >
-                        <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredDocuments.length > 0 ? (
-                    filteredDocuments.map((doc: Document, index: number) => (
-                      <TableRow key={doc.id}>
+        <PageBody className="sticky -mt-6 flex min-h-0 flex-1 shrink-0 flex-col overflow-hidden pt-6">
+          <div className="flex min-h-0 flex-1 flex-col space-y-6">
+            {/* Documents List Table */}
+            <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
+              <CardContent className="flex min-h-0 flex-1 flex-col p-0">
+                <div className="sticky flex flex-1 overflow-auto rounded-lg">
+                  <Table>
+                    <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                      <TableRow>
                         {isVisible('sno') && (
-                          <TableCell className="text-muted-foreground pl-6">
-                            {index + 1}
-                          </TableCell>
+                          <TableHead className="w-12 whitespace-nowrap">
+                            S. No.
+                          </TableHead>
                         )}
-                        {isVisible('name') && (
-                          <TableCell className="pl-6 font-medium">
-                            <div
-                              className={`flex items-center gap-3 ${isVisible('sno') ? '' : 'pl-6'}`}
-                            >
-                              {getFileIcon(doc.file_type || '')}
-                              <span
-                                className="max-w-[200px] truncate"
-                                title={doc.name}
-                              >
-                                {doc.name}
-                              </span>
-                            </div>
-                          </TableCell>
-                        )}
-                        {isVisible('type') && (
-                          <TableCell className="text-muted-foreground">
-                            {doc.file_type || 'Unknown'}
-                          </TableCell>
-                        )}
-                        {isVisible('size') && (
-                          <TableCell className="text-muted-foreground">
-                            {formatSize(doc.size_bytes)}
-                          </TableCell>
-                        )}
+                        {isVisible('name') && <TableHead>Name</TableHead>}
+                        {isVisible('type') && <TableHead>Type</TableHead>}
+                        {isVisible('size') && <TableHead>Size</TableHead>}
                         {isVisible('uploader') && (
-                          <TableCell className="text-muted-foreground">
-                            {doc.created_by_user?.name || '-'}
-                          </TableCell>
+                          <TableHead>Uploaded By</TableHead>
                         )}
-                        {isVisible('entity') && (
-                          <TableCell>
-                            {doc.entity_name && (
-                              <span
-                                className="text-muted-foreground text-xs"
-                                title={`${doc.entity_type}: ${doc.entity_name}`}
-                              >
-                                {doc.entity_name}
-                              </span>
-                            )}
-                          </TableCell>
-                        )}
+                        {isVisible('entity') && <TableHead>Entity</TableHead>}
                         {isVisible('last_modified') && (
-                          <TableCell className="text-muted-foreground">
-                            {new Date(doc.created_at).toLocaleDateString()}
-                          </TableCell>
+                          <TableHead>Last Modified At</TableHead>
                         )}
-                        <TableCell className="pr-6 text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                className="gap-2"
-                                onClick={() => handleEdit(doc)}
-                              >
-                                <Edit className="h-4 w-4" /> Rename
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="gap-2 text-red-500"
-                                onClick={() => handleDelete(doc.id)}
-                              >
-                                <Trash2 className="h-4 w-4" /> Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+                        {isVisible('created_by') && (
+                          <TableHead>Created By</TableHead>
+                        )}
+                        {isVisible('created_at') && (
+                          <TableHead>Created On</TableHead>
+                        )}
+                        {isVisible('updated_by') && (
+                          <TableHead>Last Updated By</TableHead>
+                        )}
+                        <TableHead className="bg-card sticky right-0 px-4 text-right">
+                          Actions
+                        </TableHead>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={
-                          visibility
-                            ? Object.values(visibility).filter(
-                                (v) => v !== false,
-                              ).length + 1
-                            : 6
-                        }
-                        className="text-muted-foreground h-24 text-center"
-                      >
-                        No documents found matching your filters.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between border-t px-6 py-4">
-                  <div className="text-muted-foreground text-sm">
-                    Showing{' '}
-                    <span className="text-foreground font-medium">
-                      {(currentPage - 1) * itemsPerPage + 1}
-                    </span>{' '}
-                    to{' '}
-                    <span className="text-foreground font-medium">
-                      {Math.min(currentPage * itemsPerPage, totalCount)}
-                    </span>{' '}
-                    of{' '}
-                    <span className="text-foreground font-medium">
-                      {totalCount}
-                    </span>{' '}
-                    documents
-                  </div>
-                  <Pagination className="w-auto">
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious
-                          className={
-                            currentPage === 1
-                              ? 'pointer-events-none opacity-50'
-                              : 'cursor-pointer'
-                          }
-                          onClick={() =>
-                            setCurrentPage((prev) => Math.max(prev - 1, 1))
-                          }
-                        />
-                      </PaginationItem>
-                      {Array.from({ length: totalPages }).map((_, i) => (
-                        <PaginationItem key={i}>
-                          <PaginationLink
-                            isActive={currentPage === i + 1}
-                            onClick={() => setCurrentPage(i + 1)}
-                            className="cursor-pointer"
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={
+                              visibility
+                                ? Object.values(visibility).filter(
+                                    (v) => v !== false,
+                                  ).length + 1
+                                : 6
+                            }
+                            className="h-24 text-center"
                           >
-                            {i + 1}
-                          </PaginationLink>
-                        </PaginationItem>
-                      ))}
-                      <PaginationItem>
-                        <PaginationNext
-                          className={
-                            currentPage === totalPages
-                              ? 'pointer-events-none opacity-50'
-                              : 'cursor-pointer'
-                          }
-                          onClick={() =>
-                            setCurrentPage((prev) =>
-                              Math.min(prev + 1, totalPages),
-                            )
-                          }
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
+                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
+                          </TableCell>
+                        </TableRow>
+                      ) : paginatedDocs.length > 0 ? (
+                        paginatedDocs.map((doc: Document, index: number) => (
+                          <TableRow key={doc.id}>
+                            {isVisible('sno') && (
+                              <TableCell className="text-muted-foreground w-12">
+                                {(currentPage - 1) * itemsPerPage + index + 1}
+                              </TableCell>
+                            )}
+                            {isVisible('name') && (
+                              <TableCell className="font-medium">
+                                <div className="flex items-center gap-3">
+                                  {getFileIcon(doc.file_type || '')}
+                                  <span
+                                    className="max-w-[200px] truncate"
+                                    title={doc.name}
+                                  >
+                                    {doc.name}
+                                  </span>
+                                </div>
+                              </TableCell>
+                            )}
+                            {isVisible('type') && (
+                              <TableCell className="text-muted-foreground">
+                                {doc.file_type || 'Unknown'}
+                              </TableCell>
+                            )}
+                            {isVisible('size') && (
+                              <TableCell className="text-muted-foreground">
+                                {formatSize(doc.size_bytes)}
+                              </TableCell>
+                            )}
+                            {isVisible('uploader') && (
+                              <TableCell className="text-muted-foreground">
+                                {doc.created_by_user?.name || '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('entity') && (
+                              <TableCell>
+                                {doc.entity_name && (
+                                  <span
+                                    className="text-muted-foreground text-xs"
+                                    title={`${doc.entity_type}: ${doc.entity_name}`}
+                                  >
+                                    {doc.entity_name}
+                                  </span>
+                                )}
+                              </TableCell>
+                            )}
+                            {isVisible('last_modified') && (
+                              <TableCell className="text-muted-foreground">
+                                {new Date(
+                                  doc.updated_at || doc.created_at,
+                                ).toLocaleDateString()}
+                              </TableCell>
+                            )}
+                            {isVisible('created_by') && (
+                              <TableCell className="text-muted-foreground">
+                                {doc.created_by_user?.name || '-'}
+                              </TableCell>
+                            )}
+                            {isVisible('created_at') && (
+                              <TableCell className="text-muted-foreground">
+                                {new Date(doc.created_at).toLocaleDateString()}
+                              </TableCell>
+                            )}
+                            {isVisible('updated_by') && (
+                              <TableCell className="text-muted-foreground">
+                                {doc.updated_by || '-'}
+                              </TableCell>
+                            )}
+                            <TableCell className="bg-card sticky right-0 px-4 text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    className="gap-2"
+                                    onClick={() => handleEdit(doc)}
+                                  >
+                                    <Edit className="h-4 w-4" /> Rename
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="gap-2 text-red-500"
+                                    onClick={() => handleDelete(doc.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" /> Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell
+                            colSpan={
+                              visibility
+                                ? Object.values(visibility).filter(
+                                    (v) => v !== false,
+                                  ).length + 1
+                                : 6
+                            }
+                            className="text-muted-foreground h-24 text-center"
+                          >
+                            No documents found matching your filters.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </PageBody>
+              </CardContent>
+            </Card>
+
+            {/* Pagination */}
+            {totalCount > 0 && (
+              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 -mb-4 flex shrink-0 items-center justify-between border-t p-4 px-4 lg:-mx-8 lg:-mb-8 lg:px-8">
+                <div>
+                  Showing{' '}
+                  <span className="text-foreground font-medium">
+                    {(currentPage - 1) * itemsPerPage + 1}
+                  </span>{' '}
+                  to{' '}
+                  <span className="text-foreground font-medium">
+                    {Math.min(currentPage * itemsPerPage, totalCount)}
+                  </span>{' '}
+                  of{' '}
+                  <span className="text-foreground font-medium">
+                    {totalCount}
+                  </span>{' '}
+                  documents
+                </div>
+                <Pagination className="w-auto">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        className={
+                          currentPage === 1
+                            ? 'pointer-events-none opacity-50'
+                            : 'cursor-pointer'
+                        }
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.max(prev - 1, 1))
+                        }
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }).map((_, i) => (
+                      <PaginationItem key={i}>
+                        <PaginationLink
+                          isActive={currentPage === i + 1}
+                          onClick={() => setCurrentPage(i + 1)}
+                          className="cursor-pointer"
+                        >
+                          {i + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        className={
+                          currentPage === totalPages
+                            ? 'pointer-events-none opacity-50'
+                            : 'cursor-pointer'
+                        }
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(prev + 1, totalPages),
+                          )
+                        }
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </div>
+        </PageBody>
+      </div>
 
       {/* Upload Dialog */}
       <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>

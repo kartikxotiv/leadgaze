@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -16,6 +16,7 @@ import {
   Flag,
   Tag,
   Target,
+  Trash2,
   User,
   Wallet,
 } from 'lucide-react';
@@ -34,6 +35,12 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import { Separator } from '@kit/ui/separator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 
 import {
   useCanAccessData,
@@ -47,6 +54,7 @@ import {
 } from '~/services/opportunities.service';
 import { getOpportunityStatusesService } from '~/services/opportunities.service';
 
+import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
 import {
   EntityDocuments,
   EntityMeetings,
@@ -61,8 +69,10 @@ import { OpportunityStatusTimeline } from '../components/opportunity-status-time
 
 export default function OpportunityDetailsPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params?.id as string;
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const {
     data: opportunity,
@@ -352,6 +362,14 @@ export default function OpportunityDetailsPage() {
       </div>
 
       <PageBody>
+        <DeleteEntityDialog
+          isOpen={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          entityId={id}
+          entityType="opportunity"
+          entityName={opportunity.opportunity_name}
+          onSuccess={() => router.push('/home/opportunities')}
+        />
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="space-y-6 lg:col-span-2">
@@ -485,6 +503,49 @@ export default function OpportunityDetailsPage() {
             <EntityReminders entityType="opportunity" entityId={id} />
             <EntityMeetings entityType="opportunity" entityId={id} />
             <EntityDocuments entityType="opportunity" entityId={id} />
+
+            {/* Danger Zone */}
+            {rbacCanAccess('opportunities', 'delete') && (
+              <Card className="border-destructive/50 border-solid">
+                <CardHeader>
+                  <CardTitle className="text-destructive text-lg"></CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="font-medium">Delete Opportunity</p>
+                      <p className="text-muted-foreground text-sm">
+                        Once you delete an opportunity, there is no going back.
+                        Please be certain.
+                      </p>
+                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              variant="destructive"
+                              disabled={
+                                !rbacCanAccess('opportunities', 'delete')
+                              }
+                              onClick={() => setDeleteDialogOpen(true)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Opportunity
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        {!rbacCanAccess('opportunities', 'delete') && (
+                          <TooltipContent>
+                            <p>You do not have permission to delete</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -516,6 +577,20 @@ export default function OpportunityDetailsPage() {
                     <Calendar className="h-3 w-3" />
                     <span className="text-sm">
                       {new Date(opportunity.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+                <Separator />
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-xs font-medium">
+                    Created By
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <User className="h-3 w-3" />
+                    <span className="text-sm">
+                      {opportunity.created_by_account?.name ||
+                        opportunity.created_by ||
+                        '-'}
                     </span>
                   </div>
                 </div>

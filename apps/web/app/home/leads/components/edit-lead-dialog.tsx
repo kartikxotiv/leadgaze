@@ -5,6 +5,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
+import { useSupabase } from '@kit/supabase/hooks/use-supabase';
+import { useUser } from '@kit/supabase/hooks/use-user';
 import { Button } from '@kit/ui/button';
 import { Checkbox } from '@kit/ui/checkbox';
 import {
@@ -107,6 +109,11 @@ export default function EditLeadDialog({
     is_public: true,
     lead_score: 0,
   });
+
+  const { data: user } = useUser();
+  const isWorkspaceOwner = workspace?.owner_id === user?.id;
+  const isCreator = lead.created_by === user?.id;
+  const canChangeVisibility = isWorkspaceOwner || isCreator;
 
   const { data: statuses = [] } = useQuery({
     queryKey: ['lead-statuses', workspace?.id],
@@ -266,9 +273,13 @@ export default function EditLeadDialog({
         source_id: formData.source_id || null,
         trigger: formData.trigger,
         notes: formData.notes,
-        is_public: formData.is_public,
         lead_score: totalScore,
       };
+
+      // Only include is_public if it has changed
+      if (formData.is_public !== lead.is_public) {
+        payload.is_public = formData.is_public;
+      }
 
       await mutation.mutateAsync(payload);
     } finally {
@@ -698,16 +709,25 @@ export default function EditLeadDialog({
                     onCheckedChange={(checked) => {
                       handleInputChange('is_public', checked as boolean);
                     }}
-                    disabled={isLoading}
+                    disabled={isLoading || !canChangeVisibility}
                     className="mt-1"
                   />
                   <div className="flex-1">
                     <Label
                       htmlFor="is_public"
-                      className="cursor-pointer text-sm font-medium text-gray-900 dark:text-gray-100"
+                      className={`text-sm font-medium ${
+                        !canChangeVisibility
+                          ? 'cursor-not-allowed opacity-70'
+                          : 'cursor-pointer'
+                      } text-gray-900 dark:text-gray-100`}
                     >
                       Make this lead public
                     </Label>
+                    {!canChangeVisibility && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                        Only workspace owner or creator can change visibility
+                      </p>
+                    )}
                     <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                       When public, this lead will be visible to all team members
                       with "View leads" access.

@@ -70,14 +70,10 @@ export default function DashboardDemo() {
   }
 
   return (
-    <div
-      className={
-        'animate-in fade-in flex flex-col space-y-4 pb-36 duration-500'
-      }
-    >
+    <div className={'animate-in fade-in flex h-full flex-col p-4 duration-500'}>
       <div
         className={
-          'grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
+          'grid shrink-0 grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
         }
       >
         <Card className="h-32">
@@ -174,16 +170,16 @@ export default function DashboardDemo() {
 
       {/* <PageViewsChart /> */}
 
-      <div>
-        <Card>
-          <CardHeader>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-4">
+        <Card className="flex flex-1 flex-col overflow-hidden border-none shadow-none">
+          <CardHeader className="shrink-0 p-2 pb-4">
             <CardTitle>Recent Contacts</CardTitle>
             <CardDescription>
               Latest contacts added to your workspace
             </CardDescription>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
             <RecentContactsTable workspaceId={workspaceId!} />
           </CardContent>
         </Card>
@@ -283,59 +279,61 @@ function RecentContactsTable({ workspaceId }: { workspaceId: string }) {
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Contact</TableHead>
-          <TableHead>Company</TableHead>
-          <TableHead className="hidden md:table-cell">Job Title</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {contacts.map((contact: any) => (
-          <TableRow key={contact.id}>
-            <TableCell className={'flex flex-col'}>
-              <span className="font-medium">
-                {contact.first_name} {contact.last_name}
-              </span>
-              <span
-                className={'text-muted-foreground hidden text-xs sm:inline'}
-              >
-                {contact.email}
-              </span>
-            </TableCell>
-            <TableCell>{contact.account?.account_name || '-'}</TableCell>
-            <TableCell className="text-muted-foreground hidden text-sm md:table-cell">
-              {contact.job_title || '-'}
-            </TableCell>
-            <TableCell>
-              {contact.status ? (
-                <Badge
-                  variant="outline"
-                  style={{
-                    color: contact.status.color,
-                    borderColor: contact.status.color + '40',
-                    backgroundColor: contact.status.color + '10',
-                  }}
-                  className="h-5 text-[10px]"
-                >
-                  {contact.status.status_name}
-                </Badge>
-              ) : (
-                '-'
-              )}
-            </TableCell>
-            <TableCell className="text-right">
-              <Button variant="ghost" size="sm" asChild>
-                <Link href={`/home/contacts/${contact.id}`}>View</Link>
-              </Button>
-            </TableCell>
+    <div className="flex-1 overflow-auto [&>div]:overflow-visible">
+      <Table className="w-full caption-bottom text-sm">
+        <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+          <TableRow className="bg-card">
+            <TableHead>Contact</TableHead>
+            <TableHead>Company</TableHead>
+            <TableHead className="hidden md:table-cell">Job Title</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {contacts.map((contact: any) => (
+            <TableRow key={contact.id}>
+              <TableCell className={'flex flex-col'}>
+                <span className="font-medium">
+                  {contact.first_name} {contact.last_name}
+                </span>
+                <span
+                  className={'text-muted-foreground hidden text-xs sm:inline'}
+                >
+                  {contact.email}
+                </span>
+              </TableCell>
+              <TableCell>{contact.account?.account_name || '-'}</TableCell>
+              <TableCell className="text-muted-foreground hidden text-sm md:table-cell">
+                {contact.job_title || '-'}
+              </TableCell>
+              <TableCell>
+                {contact.status ? (
+                  <Badge
+                    variant="outline"
+                    style={{
+                      color: contact.status.color,
+                      borderColor: contact.status.color + '40',
+                      backgroundColor: contact.status.color + '10',
+                    }}
+                    className="h-5 text-[10px]"
+                  >
+                    {contact.status.status_name}
+                  </Badge>
+                ) : (
+                  '-'
+                )}
+              </TableCell>
+              <TableCell className="text-right">
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href={`/home/contacts/${contact.id}`}>View</Link>
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 

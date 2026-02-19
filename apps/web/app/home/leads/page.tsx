@@ -3,10 +3,12 @@
 import React, { useMemo, useState } from 'react';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import { FileUp, Filter, Plus, Search } from 'lucide-react';
+import { FileUp, Filter, Plus, Search, Trash2 } from 'lucide-react';
 
+import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
@@ -36,6 +38,12 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
@@ -48,15 +56,21 @@ import {
 } from '~/services/leads.service';
 import { Lead } from '~/services/leads.service';
 
+import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
+import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import CreateLeadDialog from './components/create-lead-dialog';
 
 export default function LeadsPage() {
+  const router = useRouter();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
+  const { data: user } = useUser();
 
   const columns = useMemo(
     () => [
@@ -270,19 +284,16 @@ export default function LeadsPage() {
 
           {/* Status Distribution Cards */}
           <div className="bg-sidebar px-6 pb-7">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <div className="-mt-1 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               <Card
                 className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStatus === 'all' ? 'border-primary ring-primary ring-1' : ''}`}
                 onClick={() => setSelectedStatus('all')}
               >
                 <CardContent className="p-3">
                   <div className="flex flex-col gap-1">
-                    <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
+                    <span className="text-muted-foreground text-[12px] font-medium tracking-wider uppercase">
                       All Leads ({totalCount})
                     </span>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-lg font-bold">{totalCount}</span>
-                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -291,26 +302,30 @@ export default function LeadsPage() {
                 const stats = leadsData.statusBreakdown[status.id] || {
                   count: 0,
                 };
+                const isSelected = selectedStatus === status.id;
+                // Default (all): show real count. Specific status selected: only show count for that card, others 0
+                const displayCount =
+                  selectedStatus === 'all'
+                    ? stats.count
+                    : isSelected
+                      ? stats.count
+                      : 0;
+
                 return (
                   <Card
                     key={status.id}
-                    className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStatus === status.id ? 'border-primary ring-primary ring-1' : ''}`}
+                    className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${isSelected ? 'border-primary ring-primary ring-1' : ''}`}
                     onClick={() => setSelectedStatus(status.id)}
                   >
-                    <CardContent className="p-3">
+                    <CardContent className="h-8 p-3">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
                           <div
                             className="h-2 w-2 rounded-full"
                             style={{ backgroundColor: status.color }}
                           />
-                          <span className="text-muted-foreground truncate text-[10px] font-medium tracking-wider uppercase">
-                            {status.status_name} ({stats.count})
-                          </span>
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-lg font-bold">
-                            {stats.count}
+                          <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
+                            {status.status_name} ({displayCount})
                           </span>
                         </div>
                       </div>
@@ -321,17 +336,17 @@ export default function LeadsPage() {
             </div>
           </div>
         </div>
-        <PageBody className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden pt-6">
+        <PageBody className="bg-sidebar sticky -mt-6 flex min-h-0 flex-1 flex-col overflow-hidden pt-6">
           <div className="flex min-h-0 flex-1 flex-col space-y-6">
             {/* Table */}
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
-              <CardContent className="flex min-h-0 flex-1 flex-col p-2">
+              <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                 <div className="flex-1 overflow-auto rounded-lg">
                   <table className="w-full caption-bottom text-sm">
                     <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                       <TableRow>
                         {isVisible('sno') && (
-                          <TableHead className="w-12 p-4 whitespace-nowrap">
+                          <TableHead className="w-12 whitespace-nowrap">
                             S. No.
                           </TableHead>
                         )}
@@ -393,7 +408,9 @@ export default function LeadsPage() {
                         {isVisible('updated_by') && (
                           <TableHead>Last Updated By</TableHead>
                         )}
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead className="bg-card sticky right-0 px-4 text-right">
+                          Actions
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -437,7 +454,13 @@ export default function LeadsPage() {
                         </TableRow>
                       ) : (
                         paginatedLeads.map((lead: Lead, index: number) => (
-                          <TableRow key={lead.id}>
+                          <TableRow
+                            key={lead.id}
+                            className="hover:bg-muted/50 cursor-pointer"
+                            onClick={() =>
+                              router.push(`/home/leads/${lead.id}`)
+                            }
+                          >
                             {isVisible('sno') && (
                               <TableCell className="text-muted-foreground w-12">
                                 {(currentPage - 1) * itemsPerPage + index + 1}
@@ -445,12 +468,9 @@ export default function LeadsPage() {
                             )}
                             {isVisible('name') && (
                               <TableCell className="font-medium">
-                                <Link
-                                  href={`/home/leads/${lead.id}`}
-                                  className="hover:underline"
-                                >
+                                <span>
                                   {lead.first_name} {lead.last_name || ''}
-                                </Link>
+                                </span>
                               </TableCell>
                             )}
                             {isVisible('first_name') && (
@@ -639,7 +659,9 @@ export default function LeadsPage() {
                             )}
                             {isVisible('created_by') && (
                               <TableCell className="text-muted-foreground">
-                                {lead.created_by || '-'}
+                                {lead.created_by_account?.name ||
+                                  lead.created_by ||
+                                  '-'}
                               </TableCell>
                             )}
                             {isVisible('created_at') && (
@@ -653,17 +675,24 @@ export default function LeadsPage() {
                             )}
                             {isVisible('updated_by') && (
                               <TableCell className="text-muted-foreground">
-                                {lead.updated_by || '-'}
+                                {lead.updated_by_account?.name ||
+                                  lead.updated_by ||
+                                  '-'}
                               </TableCell>
                             )}
 
-                            <TableCell className="text-right">
-                              <Link
-                                href={`/home/leads/${lead.id}`}
-                                className="text-primary text-sm font-medium hover:underline"
-                              >
-                                View
-                              </Link>
+                            <TableCell className="bg-card sticky right-0 px-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <EntityActionsDropdown
+                                  id={lead.id}
+                                  viewPath={`/home/leads/${lead.id}`}
+                                  canDelete={canAccess('leads', 'delete')}
+                                  onDelete={() => {
+                                    setLeadToDelete(lead);
+                                    setDeleteDialogOpen(true);
+                                  }}
+                                />
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))
@@ -741,6 +770,18 @@ export default function LeadsPage() {
             open={isCreateDialogOpen}
             onOpenChange={setIsCreateDialogOpen}
             onSuccess={handleCreateSuccess}
+          />
+
+          <DeleteEntityDialog
+            isOpen={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            entityId={leadToDelete?.id || ''}
+            entityType="lead"
+            entityName={`${leadToDelete?.first_name} ${leadToDelete?.last_name || ''}`}
+            onSuccess={() => {
+              setLeadToDelete(null);
+              refetch();
+            }}
           />
         </PageBody>
       </div>
