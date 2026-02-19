@@ -292,11 +292,8 @@ export default function LeadsPage() {
                 <CardContent className="p-3">
                   <div className="flex flex-col gap-1">
                     <span className="text-muted-foreground text-[12px] font-medium tracking-wider uppercase">
-                      All Leads ({selectedStatus === 'all' ? totalCount : 0})
+                      All Leads ({totalCount})
                     </span>
-                    <div className="flex items-baseline gap-2">
-                      {/* <span className="text-lg font-bold">{totalCount}</span> */}
-                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -306,12 +303,18 @@ export default function LeadsPage() {
                   count: 0,
                 };
                 const isSelected = selectedStatus === status.id;
-                const displayCount = isSelected ? stats.count : 0;
+                // Default (all): show real count. Specific status selected: only show count for that card, others 0
+                const displayCount =
+                  selectedStatus === 'all'
+                    ? stats.count
+                    : isSelected
+                      ? stats.count
+                      : 0;
 
                 return (
                   <Card
                     key={status.id}
-                    className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStatus === status.id ? 'border-primary ring-primary ring-1' : ''}`}
+                    className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${isSelected ? 'border-primary ring-primary ring-1' : ''}`}
                     onClick={() => setSelectedStatus(status.id)}
                   >
                     <CardContent className="h-8 p-3">
@@ -323,11 +326,6 @@ export default function LeadsPage() {
                           />
                           <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
                             {status.status_name} ({displayCount})
-                          </span>
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-lg font-bold">
-                            {/* {stats.count} */}
                           </span>
                         </div>
                       </div>
@@ -410,7 +408,7 @@ export default function LeadsPage() {
                         {isVisible('updated_by') && (
                           <TableHead>Last Updated By</TableHead>
                         )}
-                        <TableHead className="bg-card sticky right-0 text-right">
+                        <TableHead className="bg-card sticky right-0 px-4 text-right">
                           Actions
                         </TableHead>
                       </TableRow>
@@ -683,7 +681,7 @@ export default function LeadsPage() {
                               </TableCell>
                             )}
 
-                            <TableCell className="bg-card sticky right-0 text-right">
+                            <TableCell className="bg-card sticky right-0 px-4 text-right">
                               <div className="flex items-center justify-end gap-2">
                                 <EntityActionsDropdown
                                   id={lead.id}
