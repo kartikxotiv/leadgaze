@@ -642,7 +642,7 @@ export default function DocumentPage() {
                         {isVisible('updated_by') && (
                           <TableHead>Last Updated By</TableHead>
                         )}
-                        <TableHead className="bg-card sticky right-0 text-right">
+                        <TableHead className="bg-card sticky right-0 px-4 text-right">
                           Actions
                         </TableHead>
                       </TableRow>
@@ -733,7 +733,7 @@ export default function DocumentPage() {
                                 {doc.updated_by || '-'}
                               </TableCell>
                             )}
-                            <TableCell className="bg-card sticky right-0 text-right">
+                            <TableCell className="bg-card sticky right-0 px-4 text-right">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="icon">
