@@ -414,7 +414,7 @@ export default function OpportunitiesPage() {
                         {isVisible('updated_by') && (
                           <TableHead>Last Updated By</TableHead>
                         )}
-                        <TableHead className="bg-card sticky right-0 text-right">
+                        <TableHead className="bg-card sticky right-0 px-4 text-right">
                           Actions
                         </TableHead>
                       </TableRow>
@@ -615,7 +615,7 @@ export default function OpportunitiesPage() {
                                   {opportunity.updated_by || '-'}
                                 </TableCell>
                               )}
-                              <TableCell className="bg-card sticky right-0 text-right">
+                              <TableCell className="bg-card sticky right-0 px-4 text-right">
                                 <div className="flex items-center justify-end gap-2">
                                   <EntityActionsDropdown
                                     id={opportunity.id}

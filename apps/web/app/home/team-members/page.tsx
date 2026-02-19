@@ -302,7 +302,7 @@ export default function TeamMembersPage() {
                           {isVisible('primary_contact') && (
                             <TableHead>Primary Contact</TableHead>
                           )}
-                          <TableHead className="bg-card sticky right-0 text-right">
+                          <TableHead className="bg-card sticky right-0 px-4 text-right">
                             Actions
                           </TableHead>
                         </TableRow>
@@ -366,7 +366,7 @@ export default function TeamMembersPage() {
                                 )}
                               </TableCell>
                             )}
-                            <TableCell className="bg-card sticky right-0 text-right">
+                            <TableCell className="bg-card sticky right-0 px-4 text-right">
                               <div className="flex items-center justify-end gap-2">
                                 {member.status === 'pending' && (
                                   <Button

@@ -237,7 +237,7 @@ export default function RolesPage() {
                           )}
                           {isVisible('type') && <TableHead>Type</TableHead>}
                           {isVisible('status') && <TableHead>Status</TableHead>}
-                          <TableHead className="bg-card sticky right-0 text-right">
+                          <TableHead className="bg-card sticky right-0 px-4 text-right">
                             Actions
                           </TableHead>
                         </TableRow>
@@ -296,7 +296,7 @@ export default function RolesPage() {
                                 )}
                               </TableCell>
                             )}
-                            <TableCell className="bg-card sticky right-0 text-right">
+                            <TableCell className="bg-card sticky right-0 px-4 text-right">
                               <div className="flex items-center justify-end gap-2">
                                 {!role.is_system &&
                                   canAccess('roles', 'edit') && (
