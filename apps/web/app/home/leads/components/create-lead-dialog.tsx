@@ -105,7 +105,7 @@ export default function CreateLeadDialog({
     source_id: '',
     trigger: '',
     notes: '',
-    is_public: true,
+    is_public: false,
     lead_score: 0,
   });
 
