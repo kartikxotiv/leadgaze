@@ -929,7 +929,9 @@ export default function OpportunitiesPage() {
                               )}
                               {isVisible('updated_by') && (
                                 <TableCell className="text-muted-foreground">
-                                  {opportunity.updated_by || '-'}
+                                  {opportunity.updated_by_account?.name ||
+                                    opportunity.updated_by ||
+                                    '-'}
                                 </TableCell>
                               )}
                               <TableCell className="bg-card sticky right-0 px-4 text-right">

@@ -147,7 +147,7 @@ export default function LeadsPage() {
       score: true,
       created_by: false,
       created_at: false,
-      updated_by: false,
+      updated_by: true,
     });
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);

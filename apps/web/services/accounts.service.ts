@@ -29,6 +29,7 @@ export interface Account {
   status_id: string;
   owner_id?: string | null;
   created_by?: string;
+  updated_by?: string;
   created_from_lead_id?: string | null;
   created_at: string;
   updated_at: string;
@@ -48,6 +49,11 @@ export interface Account {
     industry_name: string;
   };
   created_by_account?: {
+    id: string;
+    email: string;
+    name: string;
+  };
+  updated_by_account?: {
     id: string;
     email: string;
     name: string;
