@@ -479,7 +479,9 @@ export default function AccountsPage() {
                               )}
                               {isVisible('updated_by') && (
                                 <TableCell className="text-muted-foreground">
-                                  {/* {account.updated_by || '-'} */}
+                                  {account.updated_by_account?.name ||
+                                    account.updated_by ||
+                                    '-'}
                                 </TableCell>
                               )}
                               <TableCell className="bg-card sticky right-0 px-4 text-right">

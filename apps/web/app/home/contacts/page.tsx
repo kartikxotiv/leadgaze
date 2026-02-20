@@ -96,7 +96,7 @@ export default function ContactsPage() {
       owner: true,
       created_by: false,
       created_at: false,
-      updated_by: false,
+      updated_by: true,
     });
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -421,7 +421,9 @@ export default function ContactsPage() {
                               )}
                               {isVisible('updated_by') && (
                                 <TableCell className="text-muted-foreground">
-                                  {/* {contact.updated_by || '-'} */}
+                                  {contact.updated_by_account?.name ||
+                                    contact.updated_by ||
+                                    '-'}
                                 </TableCell>
                               )}
                               <TableCell className="bg-card sticky right-0 px-4 text-right">

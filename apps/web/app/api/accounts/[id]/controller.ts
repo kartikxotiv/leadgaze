@@ -33,7 +33,8 @@ export const getAccountById = catchAsync(
           *,
           status:entity_statuses(id, status_name, status_key, color, icon),
           industry:crm_industries(id, industry_name),
-          owner:accounts!crm_accounts_owner_id_fkey(id, email, name)
+          owner:accounts!crm_accounts_owner_id_fkey(id, email, name),
+          updated_by_account:accounts!crm_accounts_updated_by_fkey(id, email, name)
         `,
       )
       .eq('id', id)
@@ -166,10 +167,19 @@ export const updateAccount = catchAsync(
       .from('crm_accounts')
       .update({
         ...body,
+        updated_by: user.id,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .select()
+      .select(
+        `
+          *,
+          status:entity_statuses(id, status_name, status_key, color, icon),
+          industry:crm_industries(id, industry_name),
+          owner:accounts!crm_accounts_owner_id_fkey(id, email, name),
+          updated_by_account:accounts!crm_accounts_updated_by_fkey(id, email, name)
+        `
+      )
       .single();
 
     if (error) {

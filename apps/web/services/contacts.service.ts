@@ -26,6 +26,7 @@ export interface Contact {
   status_id: string;
   owner_id?: string;
   created_by?: string;
+  updated_by?: string;
   notes?: string | null;
   created_at: string;
   updated_at: string;
@@ -45,6 +46,11 @@ export interface Contact {
     email: string;
   };
   created_by_account?: {
+    id: string;
+    email: string;
+    name: string;
+  };
+  updated_by_account?: {
     id: string;
     email: string;
     name: string;
