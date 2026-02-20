@@ -308,7 +308,7 @@ export default function OpportunitiesPage() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
-                          className="border-input hover:bg-accent flex h-9 w-9 items-center justify-center rounded-md border bg-transparent"
+                          className="border-input hover:bg-accent flex h-8 w-8 items-center justify-center rounded-md border bg-transparent"
                           onClick={() => setIsSearchOpen(true)}
                         >
                           <Search className="h-4 w-4 text-gray-400" />
@@ -332,7 +332,7 @@ export default function OpportunitiesPage() {
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
                       <button
-                        className={`border-input hover:bg-accent relative flex h-9 w-9 items-center justify-center rounded-md border bg-transparent ${
+                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent ${
                           isFilterOpen ? 'bg-accent' : ''
                         }`}
                       >
@@ -446,14 +446,14 @@ export default function OpportunitiesPage() {
                             className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
                               selectedStage === 'all'
                                 ? 'border-primary bg-transparent'
-                                : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                : 'border-black/20 bg-transparent group-hover:border-white/50 dark:border-white/30'
                             }`}
                           >
                             {selectedStage === 'all' && (
                               <div className="bg-primary animate-in fade-in zoom-in h-2 w-2 rounded-full duration-200" />
                             )}
                           </div>
-                          <span className="truncate font-medium text-gray-200">
+                          <span className="truncate font-medium text-black dark:text-gray-200">
                             All Stages
                           </span>
                         </label>
@@ -477,14 +477,14 @@ export default function OpportunitiesPage() {
                                 className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
                                   isChecked
                                     ? 'border-primary bg-transparent'
-                                    : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                    : 'border-black/20 bg-transparent group-hover:border-white/50 dark:border-white/30'
                                 }`}
                               >
                                 {isChecked && (
                                   <div className="bg-primary animate-in fade-in zoom-in h-2 w-2 rounded-full duration-200" />
                                 )}
                               </div>
-                              <span className="truncate font-medium text-gray-200">
+                              <span className="truncate font-medium text-black dark:text-gray-200">
                                 {stage.status_name}
                               </span>
                             </label>
@@ -511,14 +511,14 @@ export default function OpportunitiesPage() {
                             className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
                               selectedCreatedId === 'all'
                                 ? 'border-primary bg-transparent'
-                                : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                : 'border-black/20 bg-transparent group-hover:border-white/50 dark:border-white/30'
                             }`}
                           >
                             {selectedCreatedId === 'all' && (
                               <div className="bg-primary animate-in fade-in zoom-in h-2 w-2 rounded-full duration-200" />
                             )}
                           </div>
-                          <span className="truncate font-medium text-gray-200">
+                          <span className="truncate font-medium text-black dark:text-gray-200">
                             All Members
                           </span>
                         </label>
@@ -551,14 +551,14 @@ export default function OpportunitiesPage() {
                                   className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
                                     isChecked
                                       ? 'border-primary bg-transparent'
-                                      : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                      : 'border-black/20 bg-transparent group-hover:border-white/50 dark:border-white/30'
                                   }`}
                                 >
                                   {isChecked && (
                                     <div className="bg-primary animate-in fade-in zoom-in h-2 w-2 rounded-full duration-200" />
                                   )}
                                 </div>
-                                <span className="truncate font-medium text-gray-200">
+                                <span className="truncate font-medium text-black dark:text-gray-200">
                                   {memberName}
                                 </span>
                               </label>
@@ -584,7 +584,7 @@ export default function OpportunitiesPage() {
                   <TooltipTrigger asChild>
                     <Button
                       onClick={() => setIsCreateDialogOpen(true)}
-                      className="h-9 w-9 bg-[#4eacff] p-0 text-white hover:bg-[none]"
+                      className="h-8 w-8 bg-[#4eacff] p-0 text-white hover:bg-[none]"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -609,18 +609,18 @@ export default function OpportunitiesPage() {
 
           {/* Pipeline Summary Cards */}
           <div className="bg-sidebar px-6 pb-7">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
               <Card
                 className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStage === 'all' ? 'border-primary ring-primary ring-1' : ''}`}
                 onClick={() => setSelectedStage('all')}
               >
                 <CardContent className="p-3">
                   <div className="flex flex-col gap-1">
-                    <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
+                    <span className="text-muted-foreground text-[10px] font-medium whitespace-nowrap uppercase">
                       All Opportunities ({totalCount})
                     </span>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-lg font-bold">
+                      <span className="text-[15px] font-bold">
                         {new Intl.NumberFormat('en-US', {
                           style: 'currency',
                           currency: 'USD',
@@ -652,15 +652,15 @@ export default function OpportunitiesPage() {
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
                           <div
-                            className="h-2 w-2 rounded-full"
+                            className="h-2 w-2 shrink-0 rounded-full"
                             style={{ backgroundColor: stage.color }}
                           />
-                          <span className="text-muted-foreground truncate text-[10px] font-medium tracking-wider uppercase">
+                          <span className="text-muted-foreground text-[10px] font-medium whitespace-nowrap uppercase">
                             {stage.status_name} ({displayCount})
                           </span>
                         </div>
                         <div className="flex items-baseline gap-2">
-                          <span className="text-lg font-bold">
+                          <span className="text-[15px] font-bold">
                             {new Intl.NumberFormat('en-US', {
                               style: 'currency',
                               currency: 'USD',
@@ -677,7 +677,7 @@ export default function OpportunitiesPage() {
           </div>
         </div>
 
-        <PageBody className="bg-sidebar sticky flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
+        <PageBody className="bg-sidebar sticky -mt-6 flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
           <div className="flex min-h-0 flex-1 flex-col">
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
               <CardContent className="flex min-h-0 flex-1 flex-col p-0">

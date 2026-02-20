@@ -437,7 +437,7 @@ export default function WorkspaceSettingsPage() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <DialogTrigger asChild>
-                        <Button className="h-9 w-9 bg-[#4eacff] p-0 text-white hover:bg-[#4eacff]/90">
+                        <Button className="h-8 w-8 bg-[#4eacff] p-0 text-white hover:bg-[#4eacff]/90">
                           <Plus className="h-4 w-4" />
                         </Button>
                       </DialogTrigger>

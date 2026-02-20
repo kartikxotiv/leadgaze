@@ -68,7 +68,6 @@ export default function LeadsPage() {
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedCreatedBy, setSelectedCreatedBy] = useState<string>('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -84,7 +83,7 @@ export default function LeadsPage() {
   const { data: user } = useUser();
 
   const activeFilterCount =
-    selectedStatuses.length + (selectedCreatedBy ? 1 : 0);
+    (selectedStatus !== 'all' ? 1 : 0) + (selectedCreatedBy ? 1 : 0);
 
   const columns = useMemo(
     () => [
@@ -152,10 +151,6 @@ export default function LeadsPage() {
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  // Derive selectedStatus from multi-select for API compat (send first or 'all')
-  const effectiveStatusId =
-    selectedStatuses.length === 1 ? selectedStatuses[0] : 'all';
-
   const {
     data: leadsData = { data: [], count: 0, statusBreakdown: {} },
     isLoading,
@@ -167,7 +162,7 @@ export default function LeadsPage() {
       workspace?.id,
       currentPage,
       debouncedSearchTerm,
-      selectedStatuses,
+      selectedStatus,
       selectedCreatedBy,
     ],
     queryFn: () =>
@@ -176,7 +171,7 @@ export default function LeadsPage() {
         page: currentPage,
         limit: itemsPerPage,
         searchTerm: debouncedSearchTerm,
-        statusId: effectiveStatusId,
+        statusId: selectedStatus,
       }),
     enabled: !!workspace?.id,
   });
@@ -197,26 +192,21 @@ export default function LeadsPage() {
   const leads = leadsData.data;
   const totalCount = leadsData.count;
 
-  // Client-side filter for multi-selected statuses and created-by
+  // Client-side filter for created-by (status is now server-side only for consistency)
   const filteredLeads = useMemo(() => {
     let result = leads;
-    if (selectedStatuses.length > 0) {
-      result = result.filter((lead: Lead) =>
-        selectedStatuses.includes(lead.status_id),
-      );
-    }
     if (selectedCreatedBy) {
       result = result.filter(
         (lead: Lead) => lead.created_by === selectedCreatedBy,
       );
     }
     return result;
-  }, [leads, selectedStatuses, selectedCreatedBy]);
+  }, [leads, selectedCreatedBy]);
 
   // Reset to first page when search or filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, selectedStatuses, selectedCreatedBy]);
+  }, [debouncedSearchTerm, selectedStatus, selectedCreatedBy]);
 
   const paginatedLeads = filteredLeads;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
@@ -275,10 +265,10 @@ export default function LeadsPage() {
                       <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
                       <Input
                         ref={searchInputRef}
-                        placeholder="Search leads..."
+                        placeholder="Search by name or email"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-9 pl-10"
+                        className="h-8 pl-10"
                         onBlur={() => {
                           if (!searchTerm) setIsSearchOpen(false);
                         }}
@@ -315,7 +305,7 @@ export default function LeadsPage() {
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
                       <button
-                        className={`border-input hover:bg-accent relative flex h-9 w-9 items-center justify-center rounded-md border bg-transparent ${
+                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent ${
                           isFilterOpen ? 'bg-accent' : ''
                         }`}
                       >
@@ -356,7 +346,7 @@ export default function LeadsPage() {
                     <button
                       className="text-muted-foreground hover:text-foreground text-xs underline"
                       onClick={() => {
-                        setSelectedStatuses([]);
+                        setSelectedStatus('all');
                         setSelectedCreatedBy('');
                       }}
                     >
@@ -374,9 +364,11 @@ export default function LeadsPage() {
                           <div className="flex flex-col gap-1">
                             <span>Status</span>
                             <span className="text-muted-foreground text-xs font-normal">
-                              {selectedStatuses.length === 0
+                              {selectedStatus === 'all'
                                 ? 'All statuses'
-                                : `${selectedStatuses.length} selected`}
+                                : statuses.find(
+                                    (s: any) => s.id === selectedStatus,
+                                  )?.status_name || '1 selected'}
                             </span>
                           </div>
                           <ChevronRight className="h-4 w-4 text-gray-400" />
@@ -404,45 +396,33 @@ export default function LeadsPage() {
                     {filterView === 'status' && (
                       <div className="flex flex-col gap-1 p-1">
                         {statuses.map((status: any) => {
-                          const checked = selectedStatuses.includes(status.id);
+                          const isSelected = selectedStatus === status.id;
                           return (
                             <div
                               key={status.id}
                               className="hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors"
                               onClick={() => {
-                                setSelectedStatuses((prev) =>
-                                  checked
-                                    ? prev.filter((s) => s !== status.id)
-                                    : [...prev, status.id],
+                                setSelectedStatus(
+                                  isSelected ? 'all' : status.id,
                                 );
                               }}
                             >
                               <div
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border ${
-                                  checked
-                                    ? 'border-white bg-white'
-                                    : 'border-white/30'
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
+                                  isSelected
+                                    ? 'border-black bg-transparent dark:border-white'
+                                    : 'border-black/20 bg-transparent dark:border-white/30'
                                 }`}
                               >
-                                {checked && (
-                                  <svg
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="black"
-                                    strokeWidth="4"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    className="h-3 w-3"
-                                  >
-                                    <polyline points="20 6 9 17 4 12" />
-                                  </svg>
+                                {isSelected && (
+                                  <div className="h-2 w-2 rounded-full bg-black dark:bg-white" />
                                 )}
                               </div>
                               <div
                                 className="h-2 w-2 shrink-0 rounded-full"
                                 style={{ backgroundColor: status.color }}
                               />
-                              <span className="text-gray-200">
+                              <span className="text-black dark:text-gray-200">
                                 {status.status_name}
                               </span>
                             </div>
@@ -475,15 +455,15 @@ export default function LeadsPage() {
                                 <div
                                   className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
                                     isChecked
-                                      ? 'border-white bg-transparent'
-                                      : 'border-white/30 bg-transparent'
+                                      ? 'border-black bg-transparent dark:border-white'
+                                      : 'border-black/20 bg-transparent dark:border-white/30'
                                   }`}
                                 >
                                   {isChecked && (
-                                    <div className="h-2 w-2 rounded-full bg-white" />
+                                    <div className="h-2 w-2 rounded-full bg-black dark:bg-white" />
                                   )}
                                 </div>
-                                <span className="truncate text-gray-200">
+                                <span className="truncate text-black dark:text-gray-200">
                                   {memberName}
                                 </span>
                               </div>
@@ -504,7 +484,7 @@ export default function LeadsPage() {
                       <Button
                         onClick={() => setIsCreateDialogOpen(true)}
                         variant="outline"
-                        className="h-9 w-9 p-0"
+                        className="h-8 w-8 p-0"
                       >
                         <FileUp className="h-4 w-4 text-gray-500" />
                       </Button>
@@ -523,7 +503,7 @@ export default function LeadsPage() {
                     <TooltipTrigger asChild>
                       <Button
                         onClick={() => setIsCreateDialogOpen(true)}
-                        className="h-9 w-9 bg-[#4eacff] p-0 text-white hover:bg-[none]"
+                        className="h-8 w-8 bg-[#4eacff] p-0 text-white hover:bg-[none]"
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
@@ -717,7 +697,7 @@ export default function LeadsPage() {
                             >
                               <div className="text-gray-500">
                                 {searchTerm || selectedStatus !== 'all'
-                                  ? 'No leads match your filters'
+                                  ? 'No leads match your search'
                                   : 'No leads yet. Create one to get started!'}
                               </div>
                             </TableCell>
@@ -855,23 +835,25 @@ export default function LeadsPage() {
                                   {lead.notes || '-'}
                                 </TableCell>
                               )}
-                              <TableCell className="text-muted-foreground text-center">
-                                {lead.is_public ? (
-                                  <Badge
-                                    variant="outline"
-                                    className="border-green-200 bg-green-50 text-green-600"
-                                  >
-                                    Public
-                                  </Badge>
-                                ) : (
-                                  <Badge
-                                    variant="outline"
-                                    className="border-amber-200 bg-amber-50 text-amber-600"
-                                  >
-                                    Private
-                                  </Badge>
-                                )}
-                              </TableCell>
+                              {isVisible('is_public') && (
+                                <TableCell className="text-muted-foreground text-center">
+                                  {lead.is_public ? (
+                                    <Badge
+                                      variant="outline"
+                                      className="border-green-200 bg-green-50 text-green-600"
+                                    >
+                                      Public
+                                    </Badge>
+                                  ) : (
+                                    <Badge
+                                      variant="outline"
+                                      className="border-amber-200 bg-amber-50 text-amber-600"
+                                    >
+                                      Private
+                                    </Badge>
+                                  )}
+                                </TableCell>
+                              )}
                               {isVisible('score') && (
                                 <TableCell>
                                   <div className="flex items-center gap-1">
