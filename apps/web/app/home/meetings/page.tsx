@@ -406,7 +406,7 @@ export default function MeetingsPage() {
             title={`Meetings (${meetings.length})`}
             description="Manage and schedule your meetings with leads and clients"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <div className="flex items-center">
                 <div
                   className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${
@@ -415,7 +415,7 @@ export default function MeetingsPage() {
                 >
                   {isSearchOpen ? (
                     <div className="relative w-full">
-                      <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                      <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-500 dark:text-white" />
                       <Input
                         ref={searchInputRef}
                         placeholder="Search by title or host..."
@@ -432,10 +432,10 @@ export default function MeetingsPage() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
-                          className="border-input hover:bg-accent flex h-9 w-9 items-center justify-center rounded-md border bg-transparent"
+                          className="border-input hover:bg-accent -mr-6 flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white text-gray-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
                           onClick={() => setIsSearchOpen(true)}
                         >
-                          <Search className="h-4 w-4 text-gray-400" />
+                          <Search className="h-4 w-4 text-gray-500 dark:text-white" />
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom">
@@ -456,11 +456,11 @@ export default function MeetingsPage() {
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
                       <button
-                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent ${
+                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white dark:border-zinc-700 dark:bg-zinc-900 ${
                           isFilterOpen ? 'bg-accent' : ''
                         }`}
                       >
-                        <Filter className="h-4 w-4 text-gray-400" />
+                        <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
                         {(statusFilter !== 'all' ||
                           dateRange.from ||
                           dateRange.to) && (
@@ -638,7 +638,8 @@ export default function MeetingsPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    className="h-8 w-8 bg-[#4eacff] p-0 text-white hover:bg-[none]"
+                    variant="outline"
+                    className="h-8 w-8 rounded-md border-gray-200 bg-white p-0 text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
                     onClick={() => {
                       setFormData({
                         title: '',
@@ -653,7 +654,7 @@ export default function MeetingsPage() {
                       setIsCreateDialogOpen(true);
                     }}
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-4 w-4 text-gray-500 dark:text-white" />
                   </Button>
                 </TooltipTrigger>
 
@@ -662,7 +663,7 @@ export default function MeetingsPage() {
                 </TooltipContent>
               </Tooltip>
 
-              <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+              {/* <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" /> */}
 
               <ColumnVisibilitySelector
                 columns={meetingColumns}

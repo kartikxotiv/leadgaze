@@ -74,6 +74,7 @@ const formSchema = z.object({
 interface OpportunityDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
   opportunity?: any;
   defaultAccountId?: string;
 }
@@ -81,6 +82,7 @@ interface OpportunityDialogProps {
 export function OpportunityDialog({
   isOpen,
   onOpenChange,
+  onSuccess,
   opportunity,
   defaultAccountId,
 }: OpportunityDialogProps) {
@@ -210,6 +212,7 @@ export function OpportunityDialog({
         });
       }
       onOpenChange(false);
+      if (onSuccess) onSuccess();
     },
     onError: (error: any) => {
       console.error(error);

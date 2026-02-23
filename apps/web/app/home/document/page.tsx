@@ -326,7 +326,7 @@ export default function DocumentPage() {
             title={`Documents (${documents.length})`}
             description="Manage and organize your files and documents"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <div className="flex items-center">
                 <div
                   className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${
@@ -341,7 +341,7 @@ export default function DocumentPage() {
                         placeholder="Search by document name"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-9 pl-10"
+                        className="h-8 pl-10"
                         onBlur={() => {
                           if (!searchTerm) setIsSearchOpen(false);
                         }}
@@ -352,10 +352,10 @@ export default function DocumentPage() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
-                          className="border-input hover:bg-accent flex h-9 w-9 items-center justify-center rounded-md border bg-transparent"
+                          className="border-input hover:bg-accent -mr-6 flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white text-gray-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
                           onClick={() => setIsSearchOpen(true)}
                         >
-                          <Search className="h-4 w-4 text-gray-400" />
+                          <Search className="h-4 w-4 text-gray-500 dark:text-white" />
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom">
@@ -376,11 +376,11 @@ export default function DocumentPage() {
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
                       <button
-                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent ${
+                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white dark:border-zinc-700 dark:bg-zinc-900 ${
                           isFilterOpen ? 'bg-accent' : ''
                         }`}
                       >
-                        <Filter className="h-4 w-4 text-gray-400" />
+                        <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
                         {(typeFilter !== 'all' ||
                           entityTypeFilter !== 'all') && (
                           <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
@@ -581,7 +581,8 @@ export default function DocumentPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    className="h-8 w-8 bg-[#4eacff] p-0 text-white hover:bg-[none]"
+                    variant="outline"
+                    className="-mr-2 h-8 w-8 bg-white p-0 text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
                     onClick={() => {
                       setFile(null);
                       setEntityType('lead');
@@ -589,7 +590,7 @@ export default function DocumentPage() {
                       setIsUploadDialogOpen(true);
                     }}
                   >
-                    <FileText className="h-4 w-4" />
+                    <FileText className="h-4 w-4 text-gray-500 dark:text-white" />
                   </Button>
                 </TooltipTrigger>
 
@@ -598,7 +599,9 @@ export default function DocumentPage() {
                 </TooltipContent>
               </Tooltip>
 
-              <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+              <div />
+
+              {/* <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" /> */}
 
               <ColumnVisibilitySelector
                 columns={documentColumns}

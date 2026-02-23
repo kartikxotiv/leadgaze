@@ -5,8 +5,21 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { useQuery } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowDown, ArrowUp, Menu, TrendingUp } from 'lucide-react';
-import { Building2, FileText, Target, Users } from 'lucide-react';
+import {
+  AlertTriangle,
+  Briefcase,
+  BriefcaseBusiness,
+  Building2,
+  FileText,
+  Mail,
+  Phone,
+  Plus,
+  Target,
+  User,
+  Users,
+} from 'lucide-react';
 import {
   Area,
   AreaChart,
@@ -44,17 +57,44 @@ import {
 } from '@kit/ui/table';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
-import { getDashboardMetricsService } from '~/services/dashboard.service';
+import {
+  DashboardMetrics,
+  DashboardTask,
+  getDashboardMetricsService,
+} from '~/services/dashboard.service';
+
+import { CreateAccountDialog } from '../accounts/components/create-account-dialog';
+import { CreateContactDialog } from '../contacts/components/create-contact-dialog';
+import CreateLeadDialog from '../leads/components/create-lead-dialog';
+import { OpportunityDialog } from '../opportunities/components/opportunity-dialog';
 
 export default function DashboardDemo() {
   const { currentWorkspace } = useRBAC();
   const workspaceId = currentWorkspace?.id;
 
-  const { data: metrics, isLoading } = useQuery({
+  const {
+    data: metrics,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ['dashboard-metrics', workspaceId],
     queryFn: () => getDashboardMetricsService(workspaceId!),
     enabled: !!workspaceId,
   });
+
+  const queryClient = useQueryClient();
+  const [isCreateLeadOpen, setIsCreateLeadOpen] = useState(false);
+  const [isCreateContactOpen, setIsCreateContactOpen] = useState(false);
+  const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
+  const [isCreateOpportunityOpen, setIsCreateOpportunityOpen] = useState(false);
+
+  const handleCreateSuccess = () => {
+    refetch();
+    // Also refetch recent contacts if table is visible
+    queryClient.invalidateQueries({
+      queryKey: ['contacts', 'recent', workspaceId],
+    });
+  };
 
   const leadsTrend = useMemo(() => generateDemoData(), []);
   const contactsTrend = useMemo(() => generateDemoData(), []);
@@ -170,7 +210,7 @@ export default function DashboardDemo() {
 
       {/* <PageViewsChart /> */}
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-4">
+      {/* <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-4">
         <Card className="flex flex-1 flex-col overflow-hidden border-none shadow-none">
           <CardHeader className="shrink-0 p-2 pb-4">
             <CardTitle>Recent Contacts</CardTitle>
@@ -183,8 +223,226 @@ export default function DashboardDemo() {
             <RecentContactsTable workspaceId={workspaceId!} />
           </CardContent>
         </Card>
+      </div> */}
+
+      {/* section 2 */}
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Button
+          variant="outline"
+          className="h-24 flex-col gap-2 rounded-xl border-slate-200 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          onClick={() => setIsCreateLeadOpen(true)}
+        >
+          <div className="flex items-center gap-2">
+            <Plus className="h-6 w-6 text-slate-500 dark:text-zinc-400" />
+            <span className="text-xl font-semibold text-slate-700 dark:text-zinc-200">
+              Add Lead
+            </span>
+          </div>
+        </Button>
+        {/* font-heading text-2xl font-semibold */}
+
+        <Button
+          variant="outline"
+          className="h-24 flex-col gap-2 rounded-xl border-slate-200 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          onClick={() => setIsCreateContactOpen(true)}
+        >
+          {/* <Contact /> */}
+          <div className="flex items-center gap-2">
+            <User className="h-6 w-6 text-slate-500 dark:text-zinc-400" />
+            <span className="text-xl font-semibold text-slate-700 dark:text-zinc-200">
+              Add Contact
+            </span>
+          </div>
+        </Button>
+
+        <Button
+          variant="outline"
+          className="h-24 flex-col gap-2 rounded-xl border-slate-200 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          onClick={() => setIsCreateAccountOpen(true)}
+        >
+          <div className="flex items-center gap-2">
+            <Briefcase className="h-6 w-6 text-slate-500 dark:text-zinc-400" />
+            <span className="text-xl font-semibold text-slate-700 dark:text-zinc-200">
+              Add Account
+            </span>
+          </div>
+        </Button>
+
+        <Button
+          variant="outline"
+          className="h-24 flex-col gap-2 rounded-xl border-slate-200 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          onClick={() => setIsCreateOpportunityOpen(true)}
+        >
+          <div className="flex items-center gap-2">
+            <BriefcaseBusiness className="h-6 w-6 text-slate-500 dark:text-zinc-400" />
+            <span className="text-xl font-semibold text-slate-700 dark:text-zinc-200">
+              Add Opportunity
+            </span>
+          </div>
+        </Button>
+      </div>
+
+      <CreateLeadDialog
+        open={isCreateLeadOpen}
+        onOpenChange={setIsCreateLeadOpen}
+        onSuccess={handleCreateSuccess}
+      />
+
+      <CreateContactDialog
+        open={isCreateContactOpen}
+        onOpenChange={setIsCreateContactOpen}
+        onSuccess={handleCreateSuccess}
+      />
+
+      <CreateAccountDialog
+        open={isCreateAccountOpen}
+        onOpenChange={setIsCreateAccountOpen}
+        onSuccess={handleCreateSuccess}
+      />
+
+      <OpportunityDialog
+        isOpen={isCreateOpportunityOpen}
+        onOpenChange={setIsCreateOpportunityOpen}
+        onSuccess={handleCreateSuccess}
+      />
+
+      {/* Section 3: Pipeline & Upcoming Tasks */}
+      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">
+            Pipeline Overview
+          </h2>
+          <PipelineOverview metrics={metrics} />
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">
+            Upcoming Tasks
+          </h2>
+          <UpcomingTasks tasks={metrics.upcomingTasks} />
+        </div>
       </div>
     </div>
+  );
+}
+
+function PipelineOverview({ metrics }: { metrics: DashboardMetrics }) {
+  const pipeline = metrics.pipeline || {
+    newLeads: 0,
+    contacted: 0,
+    qualified: 0,
+    proposalSent: 0,
+    won: 0,
+  };
+
+  const stages = [
+    { label: 'New Leads', value: pipeline.newLeads },
+    { label: 'Contacted', value: pipeline.contacted },
+    { label: 'Qualified', value: pipeline.qualified },
+    { label: 'Proposal Sent', value: pipeline.proposalSent },
+    { label: 'Won', value: pipeline.won },
+  ];
+
+  const maxValue = Math.max(...stages.map((s) => s.value), 1);
+
+  return (
+    <Card className="border-none bg-transparent shadow-none">
+      <CardContent className="space-y-4 p-0">
+        <div className="space-y-6 rounded-xl border bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+          {stages.map((stage) => (
+            <div key={stage.label} className="flex items-center gap-6">
+              <span className="w-32 text-sm font-medium text-slate-700 dark:text-zinc-400">
+                {stage.label}
+              </span>
+              <div className="h-4 flex-1 overflow-hidden rounded-md bg-slate-50">
+                <div
+                  className="h-full rounded-md bg-[#8EADF3] transition-all duration-500"
+                  style={{ width: `${(stage.value / maxValue) * 100}%` }}
+                />
+              </div>
+              <span className="w-10 text-right text-sm font-semibold text-slate-900 dark:text-zinc-200">
+                {stage.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
+  const formatDueDateShort = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const timeDiff = date.getTime() - today.getTime();
+    const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+    if (dayDiff === 0) return 'Today';
+    if (dayDiff === 1) return 'Tomorrow';
+    if (dayDiff > 1 && dayDiff <= 7) return `In ${dayDiff} days`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const getTaskIcon = (title: string) => {
+    const t = title.toLowerCase();
+    if (t.includes('call'))
+      return <Phone className="h-5 w-5 fill-[#E07A5F] text-[#E07A5F]" />;
+    if (t.includes('email')) return <Mail className="h-5 w-5 text-blue-400" />;
+    if (t.includes('follow') || t.includes('urgent'))
+      return (
+        <AlertTriangle className="h-5 w-5 fill-[#F2CC8F] text-[#F2CC8F]" />
+      );
+    return <FileText className="h-5 w-5 text-slate-400" />;
+  };
+
+  return (
+    <Card className="border-none bg-transparent shadow-none">
+      <CardContent className="p-0">
+        <div className="divide-y rounded-xl border border-slate-100 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+          {tasks.length === 0 ? (
+            <div className="flex h-40 flex-col items-center justify-center text-slate-400">
+              <FileText className="mb-2 h-8 w-8 opacity-20" />
+              <p className="text-sm">No upcoming tasks</p>
+            </div>
+          ) : (
+            tasks.map((task) => (
+              <Link
+                key={task.id}
+                href={`/home/${task.entityType === 'opportunity' ? 'opportunities' : `${task.entityType}s`}/${task.entityId}`}
+                className="flex items-center justify-between p-5 transition-colors hover:bg-slate-50 dark:hover:bg-zinc-800"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex h-6 w-6 items-center justify-center">
+                    {getTaskIcon(task.title)}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[15px] font-medium text-slate-700 dark:text-zinc-200">
+                      {task.title}
+                      {task.entityName && (
+                        <span className="font-normal text-slate-500">
+                          {' '}
+                          - {task.entityName}
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-[15px] text-slate-400">
+                      · {formatDueDateShort(task.dueDate)}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-[15px] font-semibold text-slate-700 dark:text-zinc-300">
+                  {formatDueDateShort(task.dueDate)}
+                </div>
+              </Link>
+            ))
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
