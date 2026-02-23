@@ -190,7 +190,7 @@ export default function AccountsPage() {
                       placeholder="Search by account name..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="h-9 pl-10"
+                      className="h-8 pl-10"
                       onBlur={() => {
                         if (!searchTerm) setIsSearchOpen(false);
                       }}
@@ -230,7 +230,7 @@ export default function AccountsPage() {
                   <Button
                     onClick={() => setCreateDialogOpen(true)}
                     variant="outline"
-                    className="h-9 w-9 bg-[#4eacff] p-0 text-white hover:bg-[none]"
+                    className="h-8 w-8 bg-[#4eacff] p-0 text-white hover:bg-[none]"
                   >
                     <Plus className="h-4 w-4 text-white" />
                   </Button>

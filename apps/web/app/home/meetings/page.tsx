@@ -267,7 +267,10 @@ export default function MeetingsPage() {
     return meetings.filter((meeting: Meeting) => {
       const matchesSearch =
         meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        meeting.location?.toLowerCase().includes(searchTerm.toLowerCase());
+        meeting.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        meeting.created_by_user?.name
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase());
 
       const now = new Date();
       const endTime = new Date(meeting.end_time);
@@ -418,7 +421,7 @@ export default function MeetingsPage() {
                         placeholder="Search by title or host..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-9 pl-10"
+                        className="h-8 pl-10"
                         onBlur={() => {
                           if (!searchTerm) setIsSearchOpen(false);
                         }}
@@ -453,7 +456,7 @@ export default function MeetingsPage() {
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
                       <button
-                        className={`border-input hover:bg-accent relative flex h-9 w-9 items-center justify-center rounded-md border bg-transparent ${
+                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent ${
                           isFilterOpen ? 'bg-accent' : ''
                         }`}
                       >
@@ -635,7 +638,7 @@ export default function MeetingsPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    className="h-9 w-9 bg-[#4eacff] p-0 text-white hover:bg-[none]"
+                    className="h-8 w-8 bg-[#4eacff] p-0 text-white hover:bg-[none]"
                     onClick={() => {
                       setFormData({
                         title: '',
@@ -924,7 +927,12 @@ export default function MeetingsPage() {
                             }
                             className="text-muted-foreground h-24 text-center"
                           >
-                            No meetings found matching your filters.
+                            {searchTerm ||
+                            statusFilter !== 'all' ||
+                            dateRange.from ||
+                            dateRange.to
+                              ? 'No meetings match your search'
+                              : 'No meetings found.'}
                           </TableCell>
                         </TableRow>
                       )}

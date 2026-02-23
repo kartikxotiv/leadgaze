@@ -211,10 +211,10 @@ export default function TeamMembersPage() {
 
               {canAccess('team_members', 'create') && (
                 <Tooltip>
-                  <TooltipTrigger>
+                  <TooltipTrigger asChild>
                     <Button
                       onClick={() => setInviteDialogOpen(true)}
-                      className="h-9 w-9 bg-[#4eacff] p-0 text-white hover:bg-[none]"
+                      className="h-8 w-8 bg-[#4eacff] p-0 text-white hover:bg-[none]"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>

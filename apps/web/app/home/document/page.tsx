@@ -338,7 +338,7 @@ export default function DocumentPage() {
                       <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
                       <Input
                         ref={searchInputRef}
-                        placeholder="Search documents..."
+                        placeholder="Search by document name"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="h-9 pl-10"
@@ -376,7 +376,7 @@ export default function DocumentPage() {
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
                       <button
-                        className={`border-input hover:bg-accent relative flex h-9 w-9 items-center justify-center rounded-md border bg-transparent ${
+                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent ${
                           isFilterOpen ? 'bg-accent' : ''
                         }`}
                       >
@@ -581,7 +581,7 @@ export default function DocumentPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    className="h-9 w-9 bg-[#4eacff] p-0 text-white hover:bg-[none]"
+                    className="h-8 w-8 bg-[#4eacff] p-0 text-white hover:bg-[none]"
                     onClick={() => {
                       setFile(null);
                       setEntityType('lead');
@@ -589,7 +589,7 @@ export default function DocumentPage() {
                       setIsUploadDialogOpen(true);
                     }}
                   >
-                    <Plus className="h-4 w-4" />
+                    <FileText className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
 
@@ -770,7 +770,7 @@ export default function DocumentPage() {
                             }
                             className="text-muted-foreground h-24 text-center"
                           >
-                            No documents found matching your filters.
+                            No documents match your search.
                           </TableCell>
                         </TableRow>
                       )}

@@ -483,10 +483,10 @@ export default function RemindersPage() {
                       <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
                       <Input
                         ref={searchInputRef}
-                        placeholder="Search tasks..."
+                        placeholder="Search by task title"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-9 pl-10"
+                        className="h-8 pl-10"
                         onBlur={() => {
                           if (!searchTerm) setIsSearchOpen(false);
                         }}
@@ -521,7 +521,7 @@ export default function RemindersPage() {
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
                       <button
-                        className={`border-input hover:bg-accent relative flex h-9 w-9 items-center justify-center rounded-md border bg-transparent ${
+                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent ${
                           isFilterOpen ? 'bg-accent' : ''
                         }`}
                       >
@@ -654,14 +654,14 @@ export default function RemindersPage() {
                                 className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
                                   isChecked
                                     ? 'border-primary bg-transparent'
-                                    : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                    : 'border-black/20 bg-transparent group-hover:border-white/50 dark:border-white/30'
                                 }`}
                               >
                                 {isChecked && (
                                   <div className="bg-primary animate-in fade-in zoom-in h-2 w-2 rounded-full duration-200" />
                                 )}
                               </div>
-                              <span className="truncate font-medium text-gray-200">
+                              <span className="truncate font-medium text-black dark:text-gray-200">
                                 {s.label}
                               </span>
                             </label>
@@ -697,14 +697,14 @@ export default function RemindersPage() {
                                 className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
                                   isChecked
                                     ? 'border-primary bg-transparent'
-                                    : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                    : 'border-black/20 bg-transparent group-hover:border-white/50 dark:border-white/30'
                                 }`}
                               >
                                 {isChecked && (
                                   <div className="bg-primary animate-in fade-in zoom-in h-2 w-2 rounded-full duration-200" />
                                 )}
                               </div>
-                              <span className="truncate font-medium text-gray-200">
+                              <span className="truncate font-medium text-black dark:text-gray-200">
                                 {p.label}
                               </span>
                             </label>
@@ -782,7 +782,7 @@ export default function RemindersPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    className="h-9 w-9 bg-[#4eacff] p-0 text-white hover:bg-[none]"
+                    className="h-8 w-8 bg-[#4eacff] p-0 text-white hover:bg-[none]"
                     onClick={() => {
                       setFormData({
                         title: '',
@@ -1000,7 +1000,7 @@ export default function RemindersPage() {
                             }
                             className="text-muted-foreground h-24 text-center"
                           >
-                            No reminders found matching your filters.
+                            No reminders match your search.
                           </TableCell>
                         </TableRow>
                       )}

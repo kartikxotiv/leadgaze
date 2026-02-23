@@ -167,6 +167,22 @@ import { getOpportunitiesService } from '~/services/opportunities.service';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export default function NotesPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -433,10 +449,10 @@ export default function NotesPage() {
                       <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
                       <Input
                         ref={searchInputRef}
-                        placeholder="Search notes..."
+                        placeholder="Search by note content"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-9 pl-10"
+                        className="h-8 pl-10"
                         onBlur={() => {
                           if (!searchTerm) setIsSearchOpen(false);
                         }}
@@ -471,7 +487,7 @@ export default function NotesPage() {
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
                       <button
-                        className={`border-input hover:bg-accent relative flex h-9 w-9 items-center justify-center rounded-md border bg-transparent ${
+                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent ${
                           isFilterOpen ? 'bg-accent' : ''
                         }`}
                       >
@@ -564,15 +580,15 @@ export default function NotesPage() {
                               <div
                                 className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
                                   isChecked
-                                    ? 'border-white bg-transparent'
-                                    : 'border-white/30 bg-transparent group-hover:border-white/50'
+                                    ? 'border-black bg-transparent dark:border-white'
+                                    : 'border-black/20 bg-transparent group-hover:border-white/50 dark:border-white/30'
                                 }`}
                               >
                                 {isChecked && (
-                                  <div className="animate-in fade-in zoom-in h-2 w-2 rounded-full bg-white duration-200" />
+                                  <div className="animate-in fade-in zoom-in h-2 w-2 rounded-full bg-black duration-200 dark:bg-white" />
                                 )}
                               </div>
-                              <span className="truncate font-medium text-gray-200">
+                              <span className="truncate font-medium text-black dark:text-gray-200">
                                 {e.label}
                               </span>
                             </label>
@@ -599,7 +615,7 @@ export default function NotesPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    className="h-9 w-9 bg-[#4eacff] p-0 text-white hover:bg-[none]"
+                    className="h-8 w-8 bg-[#4eacff] p-0 text-white hover:bg-[none]"
                     onClick={() => {
                       setNewNoteContent('');
                       setEntityType('lead');
@@ -783,7 +799,7 @@ export default function NotesPage() {
                             className="text-muted-foreground h-24 text-center"
                           >
                             {searchTerm || categoryFilter !== 'all'
-                              ? 'No notes found matching your filters.'
+                              ? 'No notes match your search.'
                               : 'No notes found for this workspace.'}
                           </TableCell>
                         </TableRow>

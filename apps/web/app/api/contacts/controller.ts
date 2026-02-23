@@ -80,9 +80,41 @@ export const getContacts = catchAsync(
 
     // Search term
     if (searchTerm) {
-      query = query.or(
-        `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`,
-      );
+      // First, find accounts that match the search term in this workspace
+      const { data: matchedAccounts } = await supabase
+        .from('crm_accounts')
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .ilike('account_name', `%${searchTerm}%`);
+
+      const accountIds = matchedAccounts?.map((a) => a.id) || [];
+
+      let orFilter = `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`;
+
+      if (accountIds.length > 0) {
+        orFilter += `,account_id.in.(${accountIds.join(',')})`;
+      }
+
+      // Full name search logic
+      const parts = searchTerm.split(' ').filter(Boolean);
+      if (parts.length >= 2) {
+        const part1 = parts[0];
+        const part2 = parts[1];
+        const { data: nameMatched } = await supabase
+          .from('crm_contacts')
+          .select('id')
+          .eq('workspace_id', workspaceId)
+          .or(
+            `and(first_name.ilike.%${part1}%,last_name.ilike.%${part2}%),and(first_name.ilike.%${part2}%,last_name.ilike.%${part1}%)`,
+          );
+
+        const matchedIds = nameMatched?.map((c) => c.id) || [];
+        if (matchedIds.length > 0) {
+          orFilter += `,id.in.(${matchedIds.join(',')})`;
+        }
+      }
+
+      query = query.or(orFilter);
     }
 
     // If not owner, filter for public contacts, contacts assigned to current user, or contacts created by current user
@@ -117,6 +149,11 @@ export const getContacts = catchAsync(
         ascending: false,
       })
       .range(from, to);
+
+    if (error) {
+      console.error('Get contacts error:', error);
+      throw error;
+    }
 
     if (error) {
       console.error('Get contacts error:', error);
