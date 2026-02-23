@@ -253,7 +253,7 @@ export default function LeadsPage() {
             title={`Leads (${totalCount})`}
             description="Manage and track your sales leads"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <div className="flex items-center">
                 <div
                   className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${
@@ -279,7 +279,7 @@ export default function LeadsPage() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
-                          className="border-input hover:bg-accent flex h-9 w-9 items-center justify-center rounded-md border bg-transparent"
+                          className="border-input hover:bg-accent -mr-6 flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white text-gray-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
                           onClick={() => setIsSearchOpen(true)}
                         >
                           <Search className="h-4 w-4 text-gray-400" />
@@ -305,11 +305,11 @@ export default function LeadsPage() {
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
                       <button
-                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent ${
+                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white dark:border-zinc-700 dark:bg-zinc-900 ${
                           isFilterOpen ? 'bg-accent' : ''
                         }`}
                       >
-                        <Filter className="h-4 w-4 text-gray-400" />
+                        <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
                         {activeFilterCount > 0 && (
                           <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
                             {activeFilterCount}
@@ -475,8 +475,6 @@ export default function LeadsPage() {
                 </PopoverContent>
               </Popover>
 
-              <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
-
               {canAccess('leads', 'import') && (
                 <TooltipProvider>
                   <Tooltip>
@@ -486,7 +484,7 @@ export default function LeadsPage() {
                         variant="outline"
                         className="h-8 w-8 p-0"
                       >
-                        <FileUp className="h-4 w-4 text-gray-500" />
+                        <FileUp className="h-4 w-4 text-gray-500 dark:text-white" />
                       </Button>
                     </TooltipTrigger>
 
@@ -503,9 +501,10 @@ export default function LeadsPage() {
                     <TooltipTrigger asChild>
                       <Button
                         onClick={() => setIsCreateDialogOpen(true)}
-                        className="h-8 w-8 bg-[#4eacff] p-0 text-white hover:bg-[none]"
+                        variant="outline"
+                        className="h-8 w-8 bg-white p-0 text-black dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-4 w-4 text-gray-500 dark:text-white" />
                       </Button>
                     </TooltipTrigger>
 
@@ -515,8 +514,7 @@ export default function LeadsPage() {
                   </Tooltip>
                 </TooltipProvider>
               )}
-
-              <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+              {/* <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" /> */}
 
               <ColumnVisibilitySelector
                 columns={columns}

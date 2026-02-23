@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
+import { getEntityName } from '../_helpers/get-entity-name';
 
 /**
  * GET /api/dashboard
@@ -158,9 +159,103 @@ export const getDashboardMetrics = catchAsync(
       0,
     );
 
-    // 5. Get Recent Trends (Last 6 months placeholder or real data)
-    // For simplicity, we'll return the totals and new counts
-    // In a full implementation, we'd group by month.
+    // 5. Build Pipeline Metrics
+    // Get all statuses to match keys
+    const { data: allStatuses } = await supabase
+      .from('entity_statuses')
+      .select('id, status_key, module:crm_modules(module_key)')
+      .eq('workspace_id', workspaceId);
+
+    const getStatusId = (moduleKey: string, statusKey: string) => {
+      return allStatuses?.find(
+        (s: any) =>
+          s.status_key === statusKey && s.module?.module_key === moduleKey,
+      )?.id;
+    };
+
+    const pipelineKeys = {
+      newLeads: getStatusId('leads', 'new'),
+      contacted: getStatusId('leads', 'contacted'),
+      qualified: getStatusId('leads', 'qualified'),
+      proposalSent: getStatusId('opportunities', 'propose'),
+      won: getStatusId('opportunities', 'closed_won'),
+    };
+
+    const getCountForStatus = async (table: string, statusId?: string) => {
+      if (!statusId) return 0;
+      let q = supabase
+        .from(table as any)
+        .select('*', { count: 'exact', head: true })
+        .eq('workspace_id', workspaceId)
+        .eq('is_deleted', false)
+        .eq(table === 'crm_opportunities' ? 'stage_id' : 'status_id', statusId);
+
+      if (!isOwner) {
+        // Use the same OR filter logic as the main queries
+        const assigneeTable =
+          table === 'crm_leads' ? 'lead_assignees' : 'opportunity_assignees';
+        const idField = table === 'crm_leads' ? 'lead_id' : 'opportunity_id';
+
+        const { data: assignedEntityIds } = await (supabase
+          .from(assigneeTable as any)
+          .select(idField)
+          .eq('workspace_id', workspaceId)
+          .eq('assigned_to_user_id', user.id)
+          .eq('assignment_status', 'active') as any);
+
+        const assignedIds =
+          assignedEntityIds?.map((a: any) => a[idField]) || [];
+
+        q = q.or(
+          `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
+        );
+      }
+
+      const { count } = await q;
+      return count || 0;
+    };
+
+    const [newLeadsCount, contactedCount, qualifiedCount, proposalSentCount, wonCount] = await Promise.all([
+      getCountForStatus('crm_leads', pipelineKeys.newLeads),
+      getCountForStatus('crm_leads', pipelineKeys.contacted),
+      getCountForStatus('crm_leads', pipelineKeys.qualified),
+      getCountForStatus('crm_opportunities', pipelineKeys.proposalSent),
+      getCountForStatus('crm_opportunities', pipelineKeys.won),
+    ]);
+
+    // 6. Get Upcoming Tasks (Reminders)
+    let remindersQuery = supabase
+      .from('crm_reminders')
+      .select('id, title, due_date, entity_type, entity_id')
+      .eq('workspace_id', workspaceId)
+      .eq('is_deleted', false)
+      .eq('is_completed', false)
+      .order('due_date', { ascending: true })
+      .limit(5);
+
+    if (!isOwner) {
+      remindersQuery = remindersQuery.eq('created_by', user.id);
+    }
+
+    const { data: remindersData } = await remindersQuery;
+
+    const upcomingTasks = await Promise.all(
+      (remindersData || []).map(async (reminder: any) => {
+        const entityName = await getEntityName(
+          supabase,
+          reminder.entity_type,
+          reminder.entity_id,
+        );
+        return {
+          id: reminder.id,
+          title: reminder.title,
+          dueDate: reminder.due_date,
+          entityType: reminder.entity_type,
+          entityId: reminder.entity_id,
+          entityName: entityName,
+        };
+      }),
+    );
 
     return successDataResponse('Dashboard metrics retrieved successfully', {
       leads: {
@@ -181,6 +276,14 @@ export const getDashboardMetrics = catchAsync(
         totalAmount: totalOpportunityAmount,
         count: (opportunitiesData || []).length,
       },
+      pipeline: {
+        newLeads: newLeadsCount,
+        contacted: contactedCount,
+        qualified: qualifiedCount,
+        proposalSent: proposalSentCount,
+        won: wonCount,
+      },
+      upcomingTasks,
     });
   },
 );

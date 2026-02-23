@@ -47,7 +47,7 @@ export function ColumnVisibilitySelector({
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-8 w-8 p-2">
-                <Settings2 className="h-4 w-4 text-gray-400" />
+                <Settings2 className="h-4 w-4 text-gray-500" />
               </Button>
             </DropdownMenuTrigger>
           </TooltipTrigger>

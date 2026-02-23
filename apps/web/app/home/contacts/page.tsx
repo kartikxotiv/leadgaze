@@ -167,7 +167,7 @@ export default function ContactsPage() {
             title={`Contacts (${totalCount})`}
             description="Manage your contacts (People)"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <div className="flex items-center">
                 <div
                   className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${
@@ -176,7 +176,7 @@ export default function ContactsPage() {
                 >
                   {isSearchOpen ? (
                     <div className="relative w-full">
-                      <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                      <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-500 dark:text-white" />
                       <Input
                         ref={searchInputRef}
                         placeholder="Search by name, email, or account..."
@@ -193,10 +193,10 @@ export default function ContactsPage() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
-                          className="border-input hover:bg-accent flex h-9 w-9 items-center justify-center rounded-md border bg-transparent"
+                          className="border-input hover:bg-accent -mr-6 flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white text-gray-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
                           onClick={() => setIsSearchOpen(true)}
                         >
-                          <Search className="h-4 w-4 text-gray-400" />
+                          <Search className="h-4 w-4 text-gray-500 dark:text-white" />
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom">
@@ -211,11 +211,11 @@ export default function ContactsPage() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      onClick={() => setCreateDialogOpen(true)}
                       variant="outline"
-                      className="h-8 w-8 bg-[#4eacff] p-0 text-white hover:bg-[none]"
+                      onClick={() => setCreateDialogOpen(true)}
+                      className="h-8 w-8 bg-white p-0 text-black dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
                     >
-                      <Plus className="h-4 w-4 text-white" />
+                      <Plus className="h-4 w-4 text-gray-500 dark:text-white" />
                     </Button>
                   </TooltipTrigger>
 
@@ -224,8 +224,6 @@ export default function ContactsPage() {
                   </TooltipContent>
                 </Tooltip>
               )}
-
-              <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
 
               <ColumnVisibilitySelector
                 columns={columns}

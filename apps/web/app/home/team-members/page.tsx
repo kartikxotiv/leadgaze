@@ -197,7 +197,7 @@ export default function TeamMembersPage() {
             title={`Team Members (${members.length})`}
             description="Manage your workspace team members and permissions"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {/* {canAccess('team_members', 'create') && (
                 <Button
                   onClick={() => setInviteDialogOpen(true)}
@@ -213,10 +213,11 @@ export default function TeamMembersPage() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
+                      variant="outline"
                       onClick={() => setInviteDialogOpen(true)}
-                      className="h-8 w-8 bg-[#4eacff] p-0 text-white hover:bg-[none]"
+                      className="h-8 w-8 bg-white p-0 text-black dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-4 w-4 text-gray-500 dark:text-white" />
                     </Button>
                   </TooltipTrigger>
 
@@ -226,7 +227,7 @@ export default function TeamMembersPage() {
                 </Tooltip>
               )}
 
-              <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+              {/* <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" /> */}
 
               <ColumnVisibilitySelector
                 columns={columns}
