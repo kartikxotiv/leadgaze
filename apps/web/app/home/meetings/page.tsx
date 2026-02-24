@@ -282,9 +282,20 @@ export default function MeetingsPage() {
         (statusFilter === 'scheduled' && !isCompleted);
 
       const meetingDate = new Date(meeting.start_time);
+      const toEndOfDay = dateRange.to
+        ? new Date(
+            dateRange.to.getFullYear(),
+            dateRange.to.getMonth(),
+            dateRange.to.getDate(),
+            23,
+            59,
+            59,
+            999,
+          )
+        : undefined;
       const matchesDateRange =
         (!dateRange.from || meetingDate >= dateRange.from) &&
-        (!dateRange.to || meetingDate <= dateRange.to);
+        (!toEndOfDay || meetingDate <= toEndOfDay);
 
       return matchesSearch && matchesStatus && matchesDateRange;
     });
