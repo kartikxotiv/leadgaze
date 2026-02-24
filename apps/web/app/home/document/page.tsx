@@ -241,14 +241,36 @@ export default function DocumentPage() {
     setCurrentPage(1);
   }, [searchTerm, typeFilter, entityTypeFilter]);
 
+  const getFileTypeCategory = (fileType: string): string => {
+    const t = (fileType || '').toLowerCase();
+    if (t.includes('pdf')) return 'pdf';
+    if (
+      t.includes('image') ||
+      t.includes('png') ||
+      t.includes('jpg') ||
+      t.includes('jpeg')
+    )
+      return 'image';
+    if (
+      t.includes('sheet') ||
+      t.includes('excel') ||
+      t.includes('xlsx') ||
+      t.includes('xls') ||
+      t.includes('csv')
+    )
+      return 'sheet';
+    return 'document';
+  };
+
   const filteredDocuments = useMemo(() => {
     return documents.filter((doc: Document) => {
       const matchesSearch = doc.name
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
-      const matchesType =
-        typeFilter === 'all' ||
-        (doc.file_type || '').toLowerCase().includes(typeFilter.toLowerCase());
+
+      const category = getFileTypeCategory(doc.file_type || '');
+      const matchesType = typeFilter === 'all' || category === typeFilter;
+
       const matchesEntityType =
         entityTypeFilter === 'all' ||
         doc.entity_type?.toLowerCase() === entityTypeFilter.toLowerCase();
@@ -292,14 +314,13 @@ export default function DocumentPage() {
   };
 
   const getFileIcon = (type: string) => {
-    const t = type?.toLowerCase() || '';
-    if (t.includes('pdf')) return <FileText className="h-4 w-4 text-red-500" />;
-    if (t.includes('image') || t.includes('png') || t.includes('jpg'))
+    const category = getFileTypeCategory(type);
+    if (category === 'pdf')
+      return <FileText className="h-4 w-4 text-red-500" />;
+    if (category === 'image')
       return <FileImage className="h-4 w-4 text-blue-500" />;
-    if (t.includes('sheet') || t.includes('xlsx') || t.includes('csv'))
+    if (category === 'sheet')
       return <FileType className="h-4 w-4 text-green-500" />;
-    if (t.includes('markdown') || t.includes('md'))
-      return <FileCode className="h-4 w-4 text-purple-500" />;
     return <LucideFile className="h-4 w-4 text-gray-500" />;
   };
 
@@ -308,6 +329,23 @@ export default function DocumentPage() {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getFileTypeDisplay = (fileType: string): string => {
+    const t = (fileType || '').toLowerCase();
+    const category = getFileTypeCategory(t);
+
+    if (category === 'image') {
+      return fileType || 'Image';
+    }
+
+    if (category === 'pdf') return 'PDF';
+    if (category === 'sheet') {
+      if (t.includes('csv')) return 'CSV';
+      return 'Sheet';
+    }
+
+    return 'Document';
   };
 
   if (!workspace) {
@@ -689,7 +727,7 @@ export default function DocumentPage() {
                             )}
                             {isVisible('type') && (
                               <TableCell className="text-muted-foreground">
-                                {doc.file_type || 'Unknown'}
+                                {getFileTypeDisplay(doc.file_type || '')}
                               </TableCell>
                             )}
                             {isVisible('size') && (

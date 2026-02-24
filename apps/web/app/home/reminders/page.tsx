@@ -721,12 +721,18 @@ export default function RemindersPage() {
                             from: dateRange.from,
                             to: dateRange.to,
                           }}
-                          onSelect={(range) =>
+                          onSelect={(range) => {
+                            const to = range?.to
+                              ? new Date(range.to)
+                              : undefined;
+                            if (to) {
+                              to.setHours(23, 59, 59, 999);
+                            }
                             setDateRange({
                               from: range?.from,
-                              to: range?.to,
-                            })
-                          }
+                              to,
+                            });
+                          }}
                           initialFocus
                         />
                         <div className="grid grid-cols-2 gap-2">
@@ -737,7 +743,9 @@ export default function RemindersPage() {
                             onClick={() => {
                               const today = new Date();
                               today.setHours(0, 0, 0, 0);
-                              setDateRange({ from: today, to: today });
+                              const todayEnd = new Date();
+                              todayEnd.setHours(23, 59, 59, 999);
+                              setDateRange({ from: today, to: todayEnd });
                             }}
                           >
                             Today
@@ -748,9 +756,12 @@ export default function RemindersPage() {
                             className="text-xs"
                             onClick={() => {
                               const today = new Date();
+                              const todayEnd = new Date();
+                              todayEnd.setHours(23, 59, 59, 999);
                               const lastWeek = new Date();
                               lastWeek.setDate(today.getDate() - 7);
-                              setDateRange({ from: lastWeek, to: today });
+                              lastWeek.setHours(0, 0, 0, 0);
+                              setDateRange({ from: lastWeek, to: todayEnd });
                             }}
                           >
                             Last 7 Days
