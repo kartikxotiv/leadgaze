@@ -8,6 +8,7 @@ export interface DashboardTask {
   entityType: string;
   entityId: string;
   entityName: string | null;
+  type: 'reminder' | 'meeting';
 }
 
 export interface DashboardMetrics {

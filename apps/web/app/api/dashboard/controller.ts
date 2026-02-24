@@ -223,23 +223,42 @@ export const getDashboardMetrics = catchAsync(
       getCountForStatus('crm_opportunities', pipelineKeys.won),
     ]);
 
-    // 6. Get Upcoming Tasks (Reminders)
+    // 6. Get Upcoming Tasks (Reminders & Meetings)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString();
+
     let remindersQuery = supabase
       .from('crm_reminders')
       .select('id, title, due_date, entity_type, entity_id')
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false)
       .eq('is_completed', false)
+      .gte('due_date', todayStr)
       .order('due_date', { ascending: true })
-      .limit(5);
+      .limit(10);
+
+    let meetingsQuery = supabase
+      .from('crm_meetings')
+      .select('id, title, start_time, entity_type, entity_id')
+      .eq('workspace_id', workspaceId)
+      .eq('is_deleted', false)
+      .gte('start_time', new Date().toISOString())
+      .order('start_time', { ascending: true })
+      .limit(10);
 
     if (!isOwner) {
       remindersQuery = remindersQuery.eq('created_by', user.id);
+      meetingsQuery = meetingsQuery.eq('created_by', user.id);
     }
 
-    const { data: remindersData } = await remindersQuery;
+    const [{ data: remindersData }, { data: meetingsData }] = await Promise.all([
+      remindersQuery,
+      meetingsQuery,
+    ]);
 
-    const upcomingTasks = await Promise.all(
+    // Process reminders
+    const processedReminders = await Promise.all(
       (remindersData || []).map(async (reminder: any) => {
         const entityName = await getEntityName(
           supabase,
@@ -253,9 +272,38 @@ export const getDashboardMetrics = catchAsync(
           entityType: reminder.entity_type,
           entityId: reminder.entity_id,
           entityName: entityName,
+          type: 'reminder',
         };
       }),
     );
+
+    // Process meetings
+    const processedMeetings = await Promise.all(
+      (meetingsData || []).map(async (meeting: any) => {
+        const entityName = await getEntityName(
+          supabase,
+          meeting.entity_type,
+          meeting.entity_id,
+        );
+        return {
+          id: meeting.id,
+          title: meeting.title,
+          dueDate: meeting.start_time,
+          entityType: meeting.entity_type,
+          entityId: meeting.entity_id,
+          entityName: entityName,
+          type: 'meeting',
+        };
+      }),
+    );
+
+    // Combine and sort
+    const upcomingTasks = [...processedReminders, ...processedMeetings]
+      .sort(
+        (a, b) =>
+          new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+      )
+      .slice(0, 10);
 
     return successDataResponse('Dashboard metrics retrieved successfully', {
       leads: {

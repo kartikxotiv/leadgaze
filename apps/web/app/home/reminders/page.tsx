@@ -400,6 +400,31 @@ export default function RemindersPage() {
     });
   };
 
+  const formatDueDateShort = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+
+    const dateMidnight = new Date(date);
+    dateMidnight.setHours(0, 0, 0, 0);
+
+    const todayMidnight = new Date(today);
+    todayMidnight.setHours(0, 0, 0, 0);
+
+    const timeDiff = dateMidnight.getTime() - todayMidnight.getTime();
+    const dayDiff = Math.round(timeDiff / (1000 * 3600 * 24));
+
+    if (dayDiff === 0) return 'Today';
+    if (dayDiff === 1) return 'Tomorrow';
+    if (dayDiff > 1) return `In ${dayDiff} days`;
+    if (dayDiff === -1) return 'Yesterday';
+    if (dayDiff < -1) return 'Overdue';
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
   const getPriorityBadge = (priority: string) => {
     switch (priority?.toLowerCase()) {
       case 'high':
@@ -922,9 +947,7 @@ export default function RemindersPage() {
                               {isVisible('due_date') && (
                                 <TableCell className="text-muted-foreground">
                                   {reminder.due_date
-                                    ? new Date(
-                                        reminder.due_date,
-                                      ).toLocaleString()
+                                    ? formatDueDateShort(reminder.due_date)
                                     : '-'}
                                 </TableCell>
                               )}

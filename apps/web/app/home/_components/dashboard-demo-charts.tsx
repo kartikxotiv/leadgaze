@@ -19,6 +19,7 @@ import {
   Target,
   User,
   Users,
+  Video,
 } from 'lucide-react';
 import {
   Area,
@@ -110,10 +111,14 @@ export default function DashboardDemo() {
   }
 
   return (
-    <div className={'animate-in fade-in flex h-full flex-col p-4 duration-500'}>
+    <div
+      className={
+        'animate-in fade-in flex h-full flex-col overflow-y-auto p-4 duration-500'
+      }
+    >
       <div
         className={
-          'grid shrink-0 grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
+          'grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
         }
       >
         <Card className="h-32">
@@ -230,12 +235,12 @@ export default function DashboardDemo() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Button
           variant="outline"
-          className="h-24 flex-col gap-2 rounded-xl border-slate-200 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateLeadOpen(true)}
         >
           <div className="flex items-center gap-2">
             <Plus className="h-6 w-6 text-slate-500 dark:text-zinc-400" />
-            <span className="text-xl font-semibold text-slate-700 dark:text-zinc-200">
+            <span className="text-[16px] font-semibold text-slate-700 dark:text-zinc-200">
               Add Lead
             </span>
           </div>
@@ -244,13 +249,13 @@ export default function DashboardDemo() {
 
         <Button
           variant="outline"
-          className="h-24 flex-col gap-2 rounded-xl border-slate-200 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateContactOpen(true)}
         >
           {/* <Contact /> */}
           <div className="flex items-center gap-2">
             <User className="h-6 w-6 text-slate-500 dark:text-zinc-400" />
-            <span className="text-xl font-semibold text-slate-700 dark:text-zinc-200">
+            <span className="text-[16px] font-semibold text-slate-700 dark:text-zinc-200">
               Add Contact
             </span>
           </div>
@@ -258,12 +263,12 @@ export default function DashboardDemo() {
 
         <Button
           variant="outline"
-          className="h-24 flex-col gap-2 rounded-xl border-slate-200 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateAccountOpen(true)}
         >
           <div className="flex items-center gap-2">
             <Briefcase className="h-6 w-6 text-slate-500 dark:text-zinc-400" />
-            <span className="text-xl font-semibold text-slate-700 dark:text-zinc-200">
+            <span className="text-[16px] font-semibold text-slate-700 dark:text-zinc-200">
               Add Account
             </span>
           </div>
@@ -271,12 +276,12 @@ export default function DashboardDemo() {
 
         <Button
           variant="outline"
-          className="h-24 flex-col gap-2 rounded-xl border-slate-200 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateOpportunityOpen(true)}
         >
           <div className="flex items-center gap-2">
             <BriefcaseBusiness className="h-6 w-6 text-slate-500 dark:text-zinc-400" />
-            <span className="text-xl font-semibold text-slate-700 dark:text-zinc-200">
+            <span className="text-[16px] font-semibold text-slate-700 dark:text-zinc-200">
               Add Opportunity
             </span>
           </div>
@@ -349,7 +354,7 @@ function PipelineOverview({ metrics }: { metrics: DashboardMetrics }) {
   return (
     <Card className="border-none bg-transparent shadow-none">
       <CardContent className="space-y-4 p-0">
-        <div className="space-y-6 rounded-xl border bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="max-h-[400px] space-y-6 overflow-y-auto rounded-xl border bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
           {stages.map((stage) => (
             <div key={stage.label} className="flex items-center gap-6">
               <span className="w-32 text-sm font-medium text-slate-700 dark:text-zinc-400">
@@ -376,69 +381,98 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
   const formatDueDateShort = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
 
-    const timeDiff = date.getTime() - today.getTime();
-    const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    // Normalize both dates to midnight local time for comparison
+    const dateMidnight = new Date(date);
+    dateMidnight.setHours(0, 0, 0, 0);
+
+    const todayMidnight = new Date(today);
+    todayMidnight.setHours(0, 0, 0, 0);
+
+    const timeDiff = dateMidnight.getTime() - todayMidnight.getTime();
+    const dayDiff = Math.round(timeDiff / (1000 * 3600 * 24));
 
     if (dayDiff === 0) return 'Today';
     if (dayDiff === 1) return 'Tomorrow';
-    if (dayDiff > 1 && dayDiff <= 7) return `In ${dayDiff} days`;
+    if (dayDiff > 1) return `In ${dayDiff} days`;
+    if (dayDiff === -1) return 'Yesterday';
+    if (dayDiff < -1) return 'Overdue';
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const getTaskIcon = (title: string) => {
-    const t = title.toLowerCase();
-    if (t.includes('call'))
+  const getTaskIcon = (task: DashboardTask) => {
+    if (task.type === 'meeting') {
+      return <Video className="h-5 w-5 text-purple-500" />;
+    }
+
+    const title = task.title.toLowerCase();
+    if (title.includes('call'))
       return <Phone className="h-5 w-5 fill-[#E07A5F] text-[#E07A5F]" />;
-    if (t.includes('email')) return <Mail className="h-5 w-5 text-blue-400" />;
-    if (t.includes('follow') || t.includes('urgent'))
+    if (title.includes('email'))
+      return <Mail className="h-5 w-5 text-blue-400" />;
+    if (title.includes('follow') || title.includes('urgent'))
       return (
         <AlertTriangle className="h-5 w-5 fill-[#F2CC8F] text-[#F2CC8F]" />
       );
     return <FileText className="h-5 w-5 text-slate-400" />;
   };
 
+  // Group tasks by formatted date
+  const groupedTasks = useMemo(() => {
+    const groups: Record<string, DashboardTask[]> = {};
+    tasks.forEach((task) => {
+      const label = formatDueDateShort(task.dueDate);
+      if (!groups[label]) groups[label] = [];
+      groups[label].push(task);
+    });
+    return groups;
+  }, [tasks]);
+
   return (
     <Card className="border-none bg-transparent shadow-none">
       <CardContent className="p-0">
-        <div className="divide-y rounded-xl border border-slate-100 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="max-h-[500px] overflow-y-auto rounded-xl border border-slate-100 bg-white dark:border-zinc-800 dark:bg-zinc-900">
           {tasks.length === 0 ? (
             <div className="flex h-40 flex-col items-center justify-center text-slate-400">
               <FileText className="mb-2 h-8 w-8 opacity-20" />
               <p className="text-sm">No upcoming tasks</p>
             </div>
           ) : (
-            tasks.map((task) => (
-              <Link
-                key={task.id}
-                href={`/home/${task.entityType === 'opportunity' ? 'opportunities' : `${task.entityType}s`}/${task.entityId}`}
-                className="flex items-center justify-between p-5 transition-colors hover:bg-slate-50 dark:hover:bg-zinc-800"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="flex h-6 w-6 items-center justify-center">
-                    {getTaskIcon(task.title)}
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[15px] font-medium text-slate-700 dark:text-zinc-200">
-                      {task.title}
-                      {task.entityName && (
-                        <span className="font-normal text-slate-500">
-                          {' '}
-                          - {task.entityName}
+            <div className="divide-y dark:divide-zinc-800">
+              {tasks.map((task) => {
+                const relativeDate = formatDueDateShort(task.dueDate);
+                return (
+                  <div
+                    key={task.id}
+                    className="flex items-center justify-between p-5"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-6 w-6 items-center justify-center">
+                        {getTaskIcon(task)}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[15px] font-medium text-slate-700 dark:text-zinc-200">
+                          {task.title}
+                          {task.entityName && (
+                            <span className="font-normal text-slate-500">
+                              {' '}
+                              - {task.entityName}
+                            </span>
+                          )}
                         </span>
-                      )}
-                    </span>
-                    <span className="text-[15px] text-slate-400">
-                      · {formatDueDateShort(task.dueDate)}
-                    </span>
+                        <span className="text-[13px] text-slate-400">
+                          {' '}
+                          · {relativeDate}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-[13px] font-medium text-slate-500 dark:text-zinc-400">
+                      {relativeDate}
+                    </div>
                   </div>
-                </div>
-                <div className="text-[15px] font-semibold text-slate-700 dark:text-zinc-300">
-                  {formatDueDateShort(task.dueDate)}
-                </div>
-              </Link>
-            ))
+                );
+              })}
+            </div>
           )}
         </div>
       </CardContent>

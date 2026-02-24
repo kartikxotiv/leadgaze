@@ -2,6 +2,8 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
+import Image from 'next/image';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Briefcase,
@@ -14,6 +16,7 @@ import {
   FileImage,
   FileText,
   FileType,
+  FileUp,
   Filter,
   Loader2,
   File as LucideFile,
@@ -628,7 +631,13 @@ export default function DocumentPage() {
                       setIsUploadDialogOpen(true);
                     }}
                   >
-                    <FileText className="h-4 w-4 text-gray-500 dark:text-white" />
+                    <Image
+                      src="/images/upload-file.png"
+                      alt="Upload"
+                      width={16}
+                      height={16}
+                      className="h-4.5 w-4.5"
+                    />
                   </Button>
                 </TooltipTrigger>
 
