@@ -366,6 +366,31 @@ export default function MeetingsPage() {
     }
   };
 
+  const formatDueDateShort = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+
+    const dateMidnight = new Date(date);
+    dateMidnight.setHours(0, 0, 0, 0);
+
+    const todayMidnight = new Date(today);
+    todayMidnight.setHours(0, 0, 0, 0);
+
+    const timeDiff = dateMidnight.getTime() - todayMidnight.getTime();
+    const dayDiff = Math.round(timeDiff / (1000 * 3600 * 24));
+
+    if (dayDiff === 0) return 'Today';
+    if (dayDiff === 1) return 'Tomorrow';
+    if (dayDiff > 1) return `In ${dayDiff} days`;
+    if (dayDiff === -1) return 'Yesterday';
+    if (dayDiff < -1) return 'Overdue';
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
   const getStatusBadge = (startTime: string, endTime: string) => {
     const now = new Date();
     const start = new Date(startTime);
@@ -836,26 +861,9 @@ export default function MeetingsPage() {
                               )}
                               {isVisible('date_time') && (
                                 <TableCell>
-                                  <div className="flex flex-col">
+                                  <div className="text-muted-foreground flex flex-col">
                                     <span className="text-sm font-medium">
-                                      {new Date(
-                                        meeting.start_time,
-                                      ).toLocaleDateString()}
-                                    </span>
-                                    <span className="text-muted-foreground text-xs">
-                                      {new Date(
-                                        meeting.start_time,
-                                      ).toLocaleTimeString([], {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                      })}{' '}
-                                      -{' '}
-                                      {new Date(
-                                        meeting.end_time,
-                                      ).toLocaleTimeString([], {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                      })}
+                                      {formatDueDateShort(meeting.start_time)}
                                     </span>
                                   </div>
                                 </TableCell>
