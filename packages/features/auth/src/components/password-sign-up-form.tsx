@@ -38,6 +38,7 @@ export function PasswordSignUpForm({
     email: string;
     password: string;
     repeatPassword: string;
+    fullName: string;
   }) => unknown;
   loading: boolean;
 }) {
@@ -49,6 +50,7 @@ export function PasswordSignUpForm({
       email: defaultValues?.email ?? '',
       password: '',
       repeatPassword: '',
+      fullName: '',
     },
   });
 
@@ -58,6 +60,29 @@ export function PasswordSignUpForm({
         className={'w-full space-y-2.5'}
         onSubmit={form.handleSubmit(onSubmit)}
       >
+        <FormField
+          control={form.control}
+          name={'fullName'}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                <Trans i18nKey={'Full Name'} />
+              </FormLabel>
+
+              <FormControl>
+                <Input
+                  data-test={'full-name-input'}
+                  required
+                  placeholder={t('Enter your full name')}
+                  {...field}
+                />
+              </FormControl>
+
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name={'email'}

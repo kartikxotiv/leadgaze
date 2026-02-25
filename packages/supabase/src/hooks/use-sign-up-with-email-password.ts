@@ -5,6 +5,7 @@ import { useSupabase } from './use-supabase';
 interface Credentials {
   email: string;
   password: string;
+  fullName: string;
   emailRedirectTo: string;
   captchaToken?: string;
 }
@@ -25,6 +26,9 @@ export function useSignUpWithEmailAndPassword() {
       options: {
         emailRedirectTo,
         captchaToken,
+        data: {
+          name: params.fullName,
+        },
       },
     });
 

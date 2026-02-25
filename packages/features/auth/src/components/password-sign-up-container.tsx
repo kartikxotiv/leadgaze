@@ -44,7 +44,11 @@ export function EmailPasswordSignUpContainer({
   const loading = signUpMutation.isPending || redirecting.current;
 
   const onSignupRequested = useCallback(
-    async (credentials: { email: string; password: string }) => {
+    async (credentials: {
+      email: string;
+      password: string;
+      fullName: string;
+    }) => {
       if (loading) {
         return;
       }
