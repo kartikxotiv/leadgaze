@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -52,6 +52,8 @@ export default function AccountsPage() {
   const router = useRouter();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
@@ -173,17 +175,46 @@ export default function AccountsPage() {
           title={`Accounts (${totalCount})`}
           description="Manage your client accounts and organizations"
         >
-          <div className="flex items-center gap-3">
-            <div className="relative w-64 lg:w-72">
-              <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search by account name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-9 pl-10"
-              />
+          <div className="flex items-center gap-2">
+            <div className="flex items-center">
+              <div
+                className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${
+                  isSearchOpen ? 'w-64 lg:w-72' : 'w-9'
+                }`}
+              >
+                {isSearchOpen ? (
+                  <div className="relative w-full">
+                    <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-500 dark:text-white" />
+                    <Input
+                      ref={searchInputRef}
+                      placeholder="Search by account name..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="h-8 pl-10"
+                      onBlur={() => {
+                        if (!searchTerm) setIsSearchOpen(false);
+                      }}
+                      autoFocus
+                    />
+                  </div>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        className="border-input hover:bg-accent -mr-6 flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white text-gray-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                        onClick={() => setIsSearchOpen(true)}
+                      >
+                        <Search className="h-4 w-4 text-gray-500 dark:text-white" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p>Search</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
             </div>
-            {canAccess('accounts', 'create') && (
+            {/* {canAccess('accounts', 'create') && (
               <Button
                 onClick={() => setCreateDialogOpen(true)}
                 className="h-9 gap-2"
@@ -191,9 +222,27 @@ export default function AccountsPage() {
                 <Plus className="h-4 w-4" />
                 New Account
               </Button>
+            )} */}
+
+            {canAccess('accounts', 'create') && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    onClick={() => setCreateDialogOpen(true)}
+                    className="h-8 w-8 bg-white p-0 text-black dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
+                  >
+                    <Plus className="h-4 w-4 text-gray-500 dark:text-white" />
+                  </Button>
+                </TooltipTrigger>
+
+                <TooltipContent side="bottom">
+                  <p>New Account</p>
+                </TooltipContent>
+              </Tooltip>
             )}
 
-            <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+            {/* <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" /> */}
 
             <ColumnVisibilitySelector
               columns={columns}
@@ -430,7 +479,9 @@ export default function AccountsPage() {
                               )}
                               {isVisible('updated_by') && (
                                 <TableCell className="text-muted-foreground">
-                                  {/* {account.updated_by || '-'} */}
+                                  {account.updated_by_account?.name ||
+                                    account.updated_by ||
+                                    '-'}
                                 </TableCell>
                               )}
                               <TableCell className="bg-card sticky right-0 px-4 text-right">

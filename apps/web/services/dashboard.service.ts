@@ -1,6 +1,16 @@
 import { asyncHandlerClient } from '~/utils/async-handler';
 import ApiClient from '~/utils/axios-client';
 
+export interface DashboardTask {
+  id: string;
+  title: string;
+  dueDate: string;
+  entityType: string;
+  entityId: string;
+  entityName: string | null;
+  type: 'reminder' | 'meeting';
+}
+
 export interface DashboardMetrics {
   leads: {
     total: number;
@@ -17,6 +27,14 @@ export interface DashboardMetrics {
     totalAmount: number;
     count: number;
   };
+  pipeline: {
+    newLeads: number;
+    contacted: number;
+    qualified: number;
+    proposalSent: number;
+    won: number;
+  };
+  upcomingTasks: DashboardTask[];
 }
 
 const getDashboardMetricsService = asyncHandlerClient(

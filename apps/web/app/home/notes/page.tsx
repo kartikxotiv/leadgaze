@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Briefcase,
   Building2,
-  Calendar,
+  ChevronLeft,
+  ChevronRight,
   Edit,
   Filter,
   Loader2,
@@ -47,6 +48,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@kit/ui/pagination';
+import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@kit/ui/radio-group';
 import {
   Select,
@@ -64,6 +66,12 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { Textarea } from '@kit/ui/textarea';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
@@ -135,11 +143,79 @@ import { getOpportunitiesService } from '~/services/opportunities.service';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export default function NotesPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [filterView, setFilterView] = useState<'main' | 'entity'>('main');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
@@ -385,30 +461,169 @@ export default function NotesPage() {
             title={`Notes (${notes.length})`}
             description="Capture and organize your important thoughts and information"
           >
-            <div className="flex items-center gap-3">
-              <div className="relative w-64 lg:w-72">
-                <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search notes..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-9 pl-10"
-                />
+            <div className="flex items-center gap-2">
+              <div className="flex items-center">
+                <div
+                  className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${
+                    isSearchOpen ? 'w-64 lg:w-72' : 'w-9'
+                  }`}
+                >
+                  {isSearchOpen ? (
+                    <div className="relative w-full">
+                      <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        ref={searchInputRef}
+                        placeholder="Search by note content"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="h-8 pl-10"
+                        onBlur={() => {
+                          if (!searchTerm) setIsSearchOpen(false);
+                        }}
+                        autoFocus
+                      />
+                    </div>
+                  ) : (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          className="border-input hover:bg-accent -mr-6 flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white text-gray-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                          onClick={() => setIsSearchOpen(true)}
+                        >
+                          <Search className="h-4 w-4 text-gray-500 dark:text-white" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>Search</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
               </div>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="h-9 w-40">
-                  <Filter className="mr-2 h-4 w-4 text-gray-400" />
-                  <SelectValue placeholder="Entity Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Entities</SelectItem>
-                  <SelectItem value="lead">Leads</SelectItem>
-                  <SelectItem value="contact">Contacts</SelectItem>
-                  <SelectItem value="account">Accounts</SelectItem>
-                  <SelectItem value="opportunity">Opportunities</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
+              <Popover
+                open={isFilterOpen}
+                onOpenChange={(open) => {
+                  setIsFilterOpen(open);
+                  if (!open) setFilterView('main');
+                }}
+              >
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                      <button
+                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white dark:border-zinc-700 dark:bg-zinc-900 ${
+                          isFilterOpen ? 'bg-accent' : ''
+                        }`}
+                      >
+                        <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
+                        {categoryFilter !== 'all' && (
+                          <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
+                            1
+                          </span>
+                        )}
+                      </button>
+                    </PopoverTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Filter</p>
+                  </TooltipContent>
+                </Tooltip>
+                <PopoverContent className="w-80 p-0" align="end">
+                  <div className="flex items-center justify-between border-b px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {filterView !== 'main' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => setFilterView('main')}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <span className="text-sm font-semibold">
+                        {filterView === 'main' ? 'Filters' : 'Filter by Entity'}
+                      </span>
+                    </div>
+                    <button
+                      className="text-muted-foreground hover:text-foreground text-xs underline"
+                      onClick={() => {
+                        setCategoryFilter('all');
+                      }}
+                    >
+                      Clear all
+                    </button>
+                  </div>
+
+                  <div className="p-2">
+                    {filterView === 'main' && (
+                      <div className="flex flex-col gap-1">
+                        <button
+                          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
+                          onClick={() => setFilterView('entity')}
+                        >
+                          <div className="flex flex-col gap-1">
+                            <span>Entity</span>
+                            <span className="text-muted-foreground text-xs font-normal">
+                              {categoryFilter === 'all'
+                                ? 'All entities'
+                                : categoryFilter.charAt(0).toUpperCase() +
+                                  categoryFilter.slice(1) +
+                                  's'}
+                            </span>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-gray-400" />
+                        </button>
+                      </div>
+                    )}
+
+                    {filterView === 'entity' && (
+                      <div className="flex flex-col gap-1 p-1">
+                        {[
+                          { id: 'all', label: 'All Entities' },
+                          { id: 'lead', label: 'Leads' },
+                          { id: 'contact', label: 'Contacts' },
+                          { id: 'account', label: 'Accounts' },
+                          { id: 'opportunity', label: 'Opportunities' },
+                        ].map((e) => {
+                          const isChecked = categoryFilter === e.id;
+                          return (
+                            <label
+                              key={e.id}
+                              className={`group hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-all ${
+                                isChecked ? 'bg-muted/40' : ''
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="entity-filter"
+                                className="sr-only"
+                                checked={isChecked}
+                                onChange={() => setCategoryFilter(e.id)}
+                              />
+                              <div
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                                  isChecked
+                                    ? 'border-black bg-transparent dark:border-white'
+                                    : 'border-black/20 bg-transparent group-hover:border-white/50 dark:border-white/30'
+                                }`}
+                              >
+                                {isChecked && (
+                                  <div className="animate-in fade-in zoom-in h-2 w-2 rounded-full bg-black duration-200 dark:bg-white" />
+                                )}
+                              </div>
+                              <span className="truncate font-medium text-black dark:text-gray-200">
+                                {e.label}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              {/* <Button
                 className="h-9 gap-2"
                 onClick={() => {
                   setNewNoteContent('');
@@ -419,9 +634,30 @@ export default function NotesPage() {
               >
                 <Plus className="h-4 w-4" />
                 New Note
-              </Button>
+              </Button> */}
 
-              <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="h-8 w-8 bg-white p-0 text-black dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
+                    onClick={() => {
+                      setNewNoteContent('');
+                      setEntityType('lead');
+                      setEntityId('');
+                      setIsCreateDialogOpen(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 text-gray-500 dark:text-white" />
+                  </Button>
+                </TooltipTrigger>
+
+                <TooltipContent side="bottom">
+                  <p>New Note</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" /> */}
 
               <ColumnVisibilitySelector
                 columns={noteColumns}
@@ -588,7 +824,7 @@ export default function NotesPage() {
                             className="text-muted-foreground h-24 text-center"
                           >
                             {searchTerm || categoryFilter !== 'all'
-                              ? 'No notes found matching your filters.'
+                              ? 'No notes match your search.'
                               : 'No notes found for this workspace.'}
                           </TableCell>
                         </TableRow>

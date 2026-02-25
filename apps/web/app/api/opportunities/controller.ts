@@ -67,7 +67,8 @@ export const getOpportunities = catchAsync(
           stage:entity_statuses(id, status_name, status_key, color, icon),
           account:crm_accounts(id, account_name),
           owner:accounts!crm_opportunities_owner_id_fkey(id, email, name),
-          created_by_account:accounts!crm_opportunities_created_by_fkey(id, email, name)
+          created_by_account:accounts!crm_opportunities_created_by_fkey(id, email, name),
+          updated_by_account:accounts!crm_opportunities_updated_by_fkey(id, email, name)
         `,
         { count: 'exact' },
       )
@@ -85,9 +86,22 @@ export const getOpportunities = catchAsync(
 
     // Search term
     if (searchTerm) {
-      query = query.or(
-        `opportunity_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`,
-      );
+      // Find accounts that match the search term
+      const { data: matchedAccounts } = await supabase
+        .from('crm_accounts')
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .ilike('account_name', `%${searchTerm}%`);
+
+      const accountIds = matchedAccounts?.map((a) => a.id) || [];
+
+      let orFilter = `opportunity_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`;
+
+      if (accountIds.length > 0) {
+        orFilter += `,account_id.in.(${accountIds.join(',')})`;
+      }
+
+      query = query.or(orFilter);
     }
 
     // If not owner, filter for public opportunities, opportunities assigned to current user, or opportunities created by current user
@@ -123,6 +137,11 @@ export const getOpportunities = catchAsync(
       })
       .range(from, to);
 
+    if (error) {
+      console.error('Get opportunities error:', error);
+      throw error;
+    }
+
     // For stage breakdown, we need a query grouped by stage_id
     // We ignore the selected stageId filter here to show the whole pipeline
     let breakdownQuery = supabase
@@ -136,9 +155,21 @@ export const getOpportunities = catchAsync(
     }
 
     if (searchTerm) {
-      breakdownQuery = breakdownQuery.or(
-        `opportunity_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`,
-      );
+      const { data: matchedAccounts } = await supabase
+        .from('crm_accounts')
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .ilike('account_name', `%${searchTerm}%`);
+
+      const accountIds = matchedAccounts?.map((a) => a.id) || [];
+
+      let orFilter = `opportunity_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`;
+
+      if (accountIds.length > 0) {
+        orFilter += `,account_id.in.(${accountIds.join(',')})`;
+      }
+
+      breakdownQuery = breakdownQuery.or(orFilter);
     }
 
     if (!isOwner) {

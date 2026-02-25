@@ -7,5 +7,6 @@ export const PasswordSignUpSchema = z
     email: z.string().email(),
     password: RefinedPasswordSchema,
     repeatPassword: RefinedPasswordSchema,
+    fullName: z.string().min(2).max(100),
   })
   .superRefine(refineRepeatPassword);

@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Briefcase,
   Building2,
   Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Filter,
   Loader2,
@@ -23,6 +25,7 @@ import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
+import { Calendar } from '@kit/ui/calendar';
 import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import {
@@ -48,6 +51,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@kit/ui/pagination';
+import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@kit/ui/radio-group';
 import {
   Select,
@@ -64,6 +68,12 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
@@ -83,7 +93,20 @@ export default function MeetingsPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [filterView, setFilterView] = useState<
+    'main' | 'status' | 'date_range'
+  >('main');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>({
+    from: undefined,
+    to: undefined,
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
@@ -244,8 +267,9 @@ export default function MeetingsPage() {
     return meetings.filter((meeting: Meeting) => {
       const matchesSearch =
         meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (meeting.created_by_user?.name || '')
-          .toLowerCase()
+        meeting.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        meeting.created_by_user?.name
+          ?.toLowerCase()
           .includes(searchTerm.toLowerCase());
 
       const now = new Date();
@@ -257,9 +281,25 @@ export default function MeetingsPage() {
         (statusFilter === 'completed' && isCompleted) ||
         (statusFilter === 'scheduled' && !isCompleted);
 
-      return matchesSearch && matchesStatus;
+      const meetingDate = new Date(meeting.start_time);
+      const toEndOfDay = dateRange.to
+        ? new Date(
+            dateRange.to.getFullYear(),
+            dateRange.to.getMonth(),
+            dateRange.to.getDate(),
+            23,
+            59,
+            59,
+            999,
+          )
+        : undefined;
+      const matchesDateRange =
+        (!dateRange.from || meetingDate >= dateRange.from) &&
+        (!toEndOfDay || meetingDate <= toEndOfDay);
+
+      return matchesSearch && matchesStatus && matchesDateRange;
     });
-  }, [meetings, searchTerm, statusFilter]);
+  }, [meetings, searchTerm, statusFilter, dateRange]);
 
   const paginatedMeetings = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -326,6 +366,31 @@ export default function MeetingsPage() {
     }
   };
 
+  const formatDueDateShort = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+
+    const dateMidnight = new Date(date);
+    dateMidnight.setHours(0, 0, 0, 0);
+
+    const todayMidnight = new Date(today);
+    todayMidnight.setHours(0, 0, 0, 0);
+
+    const timeDiff = dateMidnight.getTime() - todayMidnight.getTime();
+    const dayDiff = Math.round(timeDiff / (1000 * 3600 * 24));
+
+    if (dayDiff === 0) return 'Today';
+    if (dayDiff === 1) return 'Tomorrow';
+    if (dayDiff > 1) return `In ${dayDiff} days`;
+    if (dayDiff === -1) return 'Yesterday';
+    if (dayDiff < -1) return 'Overdue';
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
   const getStatusBadge = (startTime: string, endTime: string) => {
     const now = new Date();
     const start = new Date(startTime);
@@ -377,28 +442,216 @@ export default function MeetingsPage() {
             title={`Meetings (${meetings.length})`}
             description="Manage and schedule your meetings with leads and clients"
           >
-            <div className="flex items-center gap-3">
-              <div className="relative w-64 lg:w-72">
-                <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search by title or host..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-9 pl-10"
-                />
+            <div className="flex items-center gap-2">
+              <div className="flex items-center">
+                <div
+                  className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${
+                    isSearchOpen ? 'w-64 lg:w-72' : 'w-9'
+                  }`}
+                >
+                  {isSearchOpen ? (
+                    <div className="relative w-full">
+                      <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-500 dark:text-white" />
+                      <Input
+                        ref={searchInputRef}
+                        placeholder="Search by title or host..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="h-8 pl-10"
+                        onBlur={() => {
+                          if (!searchTerm) setIsSearchOpen(false);
+                        }}
+                        autoFocus
+                      />
+                    </div>
+                  ) : (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          className="border-input hover:bg-accent -mr-6 flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white text-gray-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                          onClick={() => setIsSearchOpen(true)}
+                        >
+                          <Search className="h-4 w-4 text-gray-500 dark:text-white" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>Search</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-9 w-40">
-                  <Filter className="mr-2 h-4 w-4 text-gray-400" />
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="scheduled">Scheduled</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
+              <Popover
+                open={isFilterOpen}
+                onOpenChange={(open) => {
+                  setIsFilterOpen(open);
+                  if (!open) setFilterView('main');
+                }}
+              >
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                      <button
+                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white dark:border-zinc-700 dark:bg-zinc-900 ${
+                          isFilterOpen ? 'bg-accent' : ''
+                        }`}
+                      >
+                        <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
+                        {(statusFilter !== 'all' ||
+                          dateRange.from ||
+                          dateRange.to) && (
+                          <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
+                            {(statusFilter !== 'all' ? 1 : 0) +
+                              (dateRange.from || dateRange.to ? 1 : 0)}
+                          </span>
+                        )}
+                      </button>
+                    </PopoverTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Filter</p>
+                  </TooltipContent>
+                </Tooltip>
+                <PopoverContent className="w-80 p-0" align="end">
+                  <div className="flex items-center justify-between border-b px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {filterView !== 'main' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => setFilterView('main')}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <span className="text-sm font-semibold">
+                        {filterView === 'main'
+                          ? 'Filters'
+                          : filterView === 'status'
+                            ? 'Filter by Status'
+                            : 'Filter by Date Range'}
+                      </span>
+                    </div>
+                    <button
+                      className="text-muted-foreground hover:text-foreground text-xs underline"
+                      onClick={() => {
+                        setStatusFilter('all');
+                        setDateRange({ from: undefined, to: undefined });
+                      }}
+                    >
+                      Clear all
+                    </button>
+                  </div>
+
+                  <div className="p-2">
+                    {filterView === 'main' && (
+                      <div className="flex flex-col gap-1">
+                        <button
+                          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
+                          onClick={() => setFilterView('status')}
+                        >
+                          <div className="flex flex-col gap-1">
+                            <span>Status</span>
+                            <span className="text-muted-foreground text-xs font-normal">
+                              {statusFilter === 'all'
+                                ? 'All statuses'
+                                : statusFilter.charAt(0).toUpperCase() +
+                                  statusFilter.slice(1)}
+                            </span>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-gray-400" />
+                        </button>
+                        <button
+                          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
+                          onClick={() => setFilterView('date_range')}
+                        >
+                          <div className="flex flex-col gap-1">
+                            <span>Date Range</span>
+                            <span className="text-muted-foreground text-xs font-normal">
+                              {dateRange.from || dateRange.to
+                                ? `${dateRange.from?.toLocaleDateString() || ''} - ${dateRange.to?.toLocaleDateString() || ''}`
+                                : 'All time'}
+                            </span>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-gray-400" />
+                        </button>
+                      </div>
+                    )}
+
+                    {filterView === 'status' && (
+                      <div className="flex flex-col gap-1 p-1">
+                        {[
+                          { id: 'all', label: 'All Statuses' },
+                          { id: 'scheduled', label: 'Scheduled' },
+                          { id: 'completed', label: 'Completed' },
+                        ].map((s) => (
+                          <label
+                            key={s.id}
+                            className="hover:bg-muted/50 flex cursor-pointer items-center gap-2 rounded-md p-2 text-sm transition-colors"
+                          >
+                            <input
+                              type="radio"
+                              name="status-filter"
+                              className="accent-[#4eacff]"
+                              checked={statusFilter === s.id}
+                              onChange={() => setStatusFilter(s.id)}
+                            />
+                            <span>{s.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+
+                    {filterView === 'date_range' && (
+                      <div className="flex flex-col gap-4 p-2">
+                        <Calendar
+                          mode="range"
+                          selected={{
+                            from: dateRange.from,
+                            to: dateRange.to,
+                          }}
+                          onSelect={(range) =>
+                            setDateRange({
+                              from: range?.from,
+                              to: range?.to,
+                            })
+                          }
+                          initialFocus
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs"
+                            onClick={() => {
+                              const today = new Date();
+                              today.setHours(0, 0, 0, 0);
+                              setDateRange({ from: today, to: today });
+                            }}
+                          >
+                            Today
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs"
+                            onClick={() => {
+                              const today = new Date();
+                              const lastWeek = new Date();
+                              lastWeek.setDate(today.getDate() - 7);
+                              setDateRange({ from: lastWeek, to: today });
+                            }}
+                          >
+                            Last 7 Days
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              {/* <Button
                 className="h-9 gap-2"
                 onClick={() => {
                   setFormData({
@@ -416,9 +669,37 @@ export default function MeetingsPage() {
               >
                 <Plus className="h-4 w-4" />
                 New Meeting
-              </Button>
+              </Button> */}
 
-              <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="h-8 w-8 rounded-md border-gray-200 bg-white p-0 text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
+                    onClick={() => {
+                      setFormData({
+                        title: '',
+                        description: '',
+                        start_time: '',
+                        end_time: '',
+                        location: '',
+                        meeting_link: '',
+                        entity_type: 'lead',
+                        entityId: '',
+                      });
+                      setIsCreateDialogOpen(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 text-gray-500 dark:text-white" />
+                  </Button>
+                </TooltipTrigger>
+
+                <TooltipContent side="bottom">
+                  <p>New Meeting</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" /> */}
 
               <ColumnVisibilitySelector
                 columns={meetingColumns}
@@ -580,26 +861,9 @@ export default function MeetingsPage() {
                               )}
                               {isVisible('date_time') && (
                                 <TableCell>
-                                  <div className="flex flex-col">
+                                  <div className="text-muted-foreground flex flex-col">
                                     <span className="text-sm font-medium">
-                                      {new Date(
-                                        meeting.start_time,
-                                      ).toLocaleDateString()}
-                                    </span>
-                                    <span className="text-muted-foreground text-xs">
-                                      {new Date(
-                                        meeting.start_time,
-                                      ).toLocaleTimeString([], {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                      })}{' '}
-                                      -{' '}
-                                      {new Date(
-                                        meeting.end_time,
-                                      ).toLocaleTimeString([], {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                      })}
+                                      {formatDueDateShort(meeting.start_time)}
                                     </span>
                                   </div>
                                 </TableCell>
@@ -683,7 +947,12 @@ export default function MeetingsPage() {
                             }
                             className="text-muted-foreground h-24 text-center"
                           >
-                            No meetings found matching your filters.
+                            {searchTerm ||
+                            statusFilter !== 'all' ||
+                            dateRange.from ||
+                            dateRange.to
+                              ? 'No meetings match your search'
+                              : 'No meetings found.'}
                           </TableCell>
                         </TableRow>
                       )}
