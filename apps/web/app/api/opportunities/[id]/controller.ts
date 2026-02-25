@@ -34,7 +34,8 @@ export const getOpportunityById = catchAsync(
           stage:entity_statuses(id, status_name, status_key, color, icon),
           account:crm_accounts(id, account_name),
           owner:accounts!crm_opportunities_owner_id_fkey(id, email, name),
-          created_by_account:accounts!crm_opportunities_created_by_fkey(id, email, name)
+          created_by_account:accounts!crm_opportunities_created_by_fkey(id, email, name),
+          updated_by_account:accounts!crm_opportunities_updated_by_fkey(id, email, name)
         `,
       )
       .eq('id', id)
@@ -170,10 +171,20 @@ export const updateOpportunity = catchAsync(
       .from('crm_opportunities')
       .update({
         ...body,
+        updated_by: user.id,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .select()
+      .select(
+        `
+          *,
+          stage:entity_statuses(id, status_name, status_key, color, icon),
+          account:crm_accounts(id, account_name),
+          owner:accounts!crm_opportunities_owner_id_fkey(id, email, name),
+          created_by_account:accounts!crm_opportunities_created_by_fkey(id, email, name),
+          updated_by_account:accounts!crm_opportunities_updated_by_fkey(id, email, name)
+        `
+      )
       .single();
 
     if (error) {

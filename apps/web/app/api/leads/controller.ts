@@ -121,9 +121,27 @@ const getLeads = catchAsync(
 
     // Search term
     if (searchTerm) {
-      query = query.or(
-        `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%`,
-      );
+      const parts = searchTerm.split(' ').filter(Boolean);
+      let orFilter = `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%,mobile_number.ilike.%${searchTerm}%`;
+
+      if (parts.length >= 2) {
+        const part1 = parts[0];
+        const part2 = parts[1];
+        const { data: nameMatched } = await supabase
+          .from('crm_leads')
+          .select('id')
+          .eq('workspace_id', workspaceId)
+          .or(
+            `and(first_name.ilike.%${part1}%,last_name.ilike.%${part2}%),and(first_name.ilike.%${part2}%,last_name.ilike.%${part1}%)`,
+          );
+
+        const matchedIds = nameMatched?.map((l) => l.id) || [];
+        if (matchedIds.length > 0) {
+          orFilter += `,id.in.(${matchedIds.join(',')})`;
+        }
+      }
+
+      query = query.or(orFilter);
     }
 
     // If not owner, filter for public leads, leads assigned to current user, or leads created by current user
@@ -158,6 +176,11 @@ const getLeads = catchAsync(
       })
       .range(from, to);
 
+    if (error) {
+      console.error('Get leads error:', error);
+      throw error;
+    }
+
     // For status breakdown, we need a query grouped by status_id
     // We ignore the selected statusId filter here to show the whole distribution
     let breakdownQuery = supabase
@@ -167,9 +190,27 @@ const getLeads = catchAsync(
       .eq('is_deleted', false);
 
     if (searchTerm) {
-      breakdownQuery = breakdownQuery.or(
-        `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%`,
-      );
+      const parts = searchTerm.split(' ').filter(Boolean);
+      let orFilter = `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%,mobile_number.ilike.%${searchTerm}%`;
+
+      if (parts.length >= 2) {
+        const part1 = parts[0];
+        const part2 = parts[1];
+        const { data: nameMatched } = await supabase
+          .from('crm_leads')
+          .select('id')
+          .eq('workspace_id', workspaceId)
+          .or(
+            `and(first_name.ilike.%${part1}%,last_name.ilike.%${part2}%),and(first_name.ilike.%${part2}%,last_name.ilike.%${part1}%)`,
+          );
+
+        const matchedIds = nameMatched?.map((l) => l.id) || [];
+        if (matchedIds.length > 0) {
+          orFilter += `,id.in.(${matchedIds.join(',')})`;
+        }
+      }
+
+      breakdownQuery = breakdownQuery.or(orFilter);
     }
 
     if (!isOwner) {

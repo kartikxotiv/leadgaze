@@ -66,7 +66,8 @@ export const getContacts = catchAsync(
           status:entity_statuses(id, status_name, status_key, color, icon),
           account:crm_accounts(id, account_name),
           owner:accounts!crm_contacts_owner_id_fkey(id, email, name),
-          created_by_account:accounts!crm_contacts_created_by_fkey(id, email, name)
+          created_by_account:accounts!crm_contacts_created_by_fkey(id, email, name),
+          updated_by_account:accounts!crm_contacts_updated_by_fkey(id, email, name)
         `,
         { count: 'exact' },
       )
@@ -79,10 +80,53 @@ export const getContacts = catchAsync(
 
     // Search term
     if (searchTerm) {
-      query = query.or(
-        `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`,
-      );
+      // First, find accounts that match the search term in this workspace
+      const { data: matchedAccounts } = await supabase
+        .from('crm_accounts')
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .ilike('account_name', `%${searchTerm}%`);
+
+      const accountIds = matchedAccounts?.map((a) => a.id) || [];
+
+      let orFilter = `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`;
+
+      if (accountIds.length > 0) {
+        orFilter += `,account_id.in.(${accountIds.join(',')})`;
+      }
+
+      // Full name search logic - try multiple splits and combinations
+      const parts = searchTerm.split(' ').filter(Boolean);
+      if (parts.length >= 2) {
+        const conditions: string[] = [];
+        
+        for (let i = 1; i < parts.length; i++) {
+          const part1 = parts.slice(0, i).join(' ');
+          const part2 = parts.slice(i).join(' ');
+
+          conditions.push(
+            `and(first_name.ilike.%${part1}%,last_name.ilike.%${part2}%)`,
+          );
+          conditions.push(
+            `and(first_name.ilike.%${part2}%,last_name.ilike.%${part1}%)`,
+          );
+        }
+
+        const { data: nameMatched } = await supabase
+          .from('crm_contacts')
+          .select('id')
+          .eq('workspace_id', workspaceId)
+          .or(conditions.join(','));
+
+        const matchedIds = nameMatched?.map((c) => c.id) || [];
+        if (matchedIds.length > 0) {
+          orFilter += `,id.in.(${matchedIds.join(',')})`;
+        }
+      }
+
+      query = query.or(orFilter);
     }
+  
 
     // If not owner, filter for public contacts, contacts assigned to current user, or contacts created by current user
     if (!isOwner) {
@@ -116,6 +160,11 @@ export const getContacts = catchAsync(
         ascending: false,
       })
       .range(from, to);
+
+    if (error) {
+      console.error('Get contacts error:', error);
+      throw error;
+    }
 
     if (error) {
       console.error('Get contacts error:', error);

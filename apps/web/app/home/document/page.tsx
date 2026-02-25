@@ -1,17 +1,22 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+
+import Image from 'next/image';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Briefcase,
   Building2,
+  ChevronLeft,
+  ChevronRight,
   Download,
   Edit,
   FileCode,
   FileImage,
   FileText,
   FileType,
+  FileUp,
   Filter,
   Loader2,
   File as LucideFile,
@@ -24,6 +29,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
@@ -50,6 +56,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@kit/ui/pagination';
+import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@kit/ui/radio-group';
 import {
   Select,
@@ -66,6 +73,12 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
@@ -85,7 +98,14 @@ export default function DocumentPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [typeFilter, setTypeFilter] = useState('all');
+  const [entityTypeFilter, setEntityTypeFilter] = useState('all');
+  const [filterView, setFilterView] = useState<'main' | 'type' | 'entity'>(
+    'main',
+  );
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
@@ -222,19 +242,45 @@ export default function DocumentPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, typeFilter]);
+  }, [searchTerm, typeFilter, entityTypeFilter]);
+
+  const getFileTypeCategory = (fileType: string): string => {
+    const t = (fileType || '').toLowerCase();
+    if (t.includes('pdf')) return 'pdf';
+    if (
+      t.includes('image') ||
+      t.includes('png') ||
+      t.includes('jpg') ||
+      t.includes('jpeg')
+    )
+      return 'image';
+    if (
+      t.includes('sheet') ||
+      t.includes('excel') ||
+      t.includes('xlsx') ||
+      t.includes('xls') ||
+      t.includes('csv')
+    )
+      return 'sheet';
+    return 'document';
+  };
 
   const filteredDocuments = useMemo(() => {
     return documents.filter((doc: Document) => {
       const matchesSearch = doc.name
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
-      const matchesType =
-        typeFilter === 'all' ||
-        (doc.file_type || '').toLowerCase().includes(typeFilter.toLowerCase());
-      return matchesSearch && matchesType;
+
+      const category = getFileTypeCategory(doc.file_type || '');
+      const matchesType = typeFilter === 'all' || category === typeFilter;
+
+      const matchesEntityType =
+        entityTypeFilter === 'all' ||
+        doc.entity_type?.toLowerCase() === entityTypeFilter.toLowerCase();
+
+      return matchesSearch && matchesType && matchesEntityType;
     });
-  }, [documents, searchTerm, typeFilter]);
+  }, [documents, searchTerm, typeFilter, entityTypeFilter]);
 
   const paginatedDocs = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -271,14 +317,13 @@ export default function DocumentPage() {
   };
 
   const getFileIcon = (type: string) => {
-    const t = type?.toLowerCase() || '';
-    if (t.includes('pdf')) return <FileText className="h-4 w-4 text-red-500" />;
-    if (t.includes('image') || t.includes('png') || t.includes('jpg'))
+    const category = getFileTypeCategory(type);
+    if (category === 'pdf')
+      return <FileText className="h-4 w-4 text-red-500" />;
+    if (category === 'image')
       return <FileImage className="h-4 w-4 text-blue-500" />;
-    if (t.includes('sheet') || t.includes('xlsx') || t.includes('csv'))
+    if (category === 'sheet')
       return <FileType className="h-4 w-4 text-green-500" />;
-    if (t.includes('markdown') || t.includes('md'))
-      return <FileCode className="h-4 w-4 text-purple-500" />;
     return <LucideFile className="h-4 w-4 text-gray-500" />;
   };
 
@@ -287,6 +332,23 @@ export default function DocumentPage() {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getFileTypeDisplay = (fileType: string): string => {
+    const t = (fileType || '').toLowerCase();
+    const category = getFileTypeCategory(t);
+
+    if (category === 'image') {
+      return fileType || 'Image';
+    }
+
+    if (category === 'pdf') return 'PDF';
+    if (category === 'sheet') {
+      if (t.includes('csv')) return 'CSV';
+      return 'Sheet';
+    }
+
+    return 'Document';
   };
 
   if (!workspace) {
@@ -305,30 +367,246 @@ export default function DocumentPage() {
             title={`Documents (${documents.length})`}
             description="Manage and organize your files and documents"
           >
-            <div className="flex items-center gap-3">
-              <div className="relative w-64 lg:w-72">
-                <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search documents..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-9 pl-10"
-                />
+            <div className="flex items-center gap-2">
+              <div className="flex items-center">
+                <div
+                  className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${
+                    isSearchOpen ? 'w-64 lg:w-72' : 'w-9'
+                  }`}
+                >
+                  {isSearchOpen ? (
+                    <div className="relative w-full">
+                      <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        ref={searchInputRef}
+                        placeholder="Search by document name"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="h-8 pl-10"
+                        onBlur={() => {
+                          if (!searchTerm) setIsSearchOpen(false);
+                        }}
+                        autoFocus
+                      />
+                    </div>
+                  ) : (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          className="border-input hover:bg-accent -mr-6 flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white text-gray-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                          onClick={() => setIsSearchOpen(true)}
+                        >
+                          <Search className="h-4 w-4 text-gray-500 dark:text-white" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>Search</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
               </div>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="h-9 w-40">
-                  <Filter className="mr-2 h-4 w-4 text-gray-400" />
-                  <SelectValue placeholder="File Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="pdf">PDF</SelectItem>
-                  <SelectItem value="image">Image</SelectItem>
-                  <SelectItem value="sheet">Spreadsheet</SelectItem>
-                  <SelectItem value="document">Document</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
+              <Popover
+                open={isFilterOpen}
+                onOpenChange={(open) => {
+                  setIsFilterOpen(open);
+                  if (!open) setFilterView('main');
+                }}
+              >
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                      <button
+                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white dark:border-zinc-700 dark:bg-zinc-900 ${
+                          isFilterOpen ? 'bg-accent' : ''
+                        }`}
+                      >
+                        <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
+                        {(typeFilter !== 'all' ||
+                          entityTypeFilter !== 'all') && (
+                          <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
+                            {(typeFilter !== 'all' ? 1 : 0) +
+                              (entityTypeFilter !== 'all' ? 1 : 0)}
+                          </span>
+                        )}
+                      </button>
+                    </PopoverTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Filter</p>
+                  </TooltipContent>
+                </Tooltip>
+                <PopoverContent className="w-80 p-0" align="end">
+                  <div className="flex items-center justify-between border-b px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {filterView !== 'main' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => setFilterView('main')}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <span className="text-sm font-semibold">
+                        {filterView === 'main'
+                          ? 'Filters'
+                          : filterView === 'type'
+                            ? 'Filter by Type'
+                            : 'Filter by Entity'}
+                      </span>
+                    </div>
+                    <button
+                      className="text-muted-foreground hover:text-foreground text-xs underline"
+                      onClick={() => {
+                        setTypeFilter('all');
+                        setEntityTypeFilter('all');
+                      }}
+                    >
+                      Clear all
+                    </button>
+                  </div>
+
+                  <div className="p-2">
+                    {filterView === 'main' && (
+                      <div className="flex flex-col gap-1">
+                        <button
+                          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
+                          onClick={() => setFilterView('type')}
+                        >
+                          <div className="flex flex-col gap-1">
+                            <span>File Type</span>
+                            <span className="text-muted-foreground text-xs font-normal">
+                              {typeFilter === 'all'
+                                ? 'All types'
+                                : typeFilter.toUpperCase()}
+                            </span>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-gray-400" />
+                        </button>
+                        <button
+                          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
+                          onClick={() => setFilterView('entity')}
+                        >
+                          <div className="flex flex-col gap-1">
+                            <span>Entity</span>
+                            <span className="text-muted-foreground text-xs font-normal">
+                              {entityTypeFilter === 'all'
+                                ? 'All entities'
+                                : entityTypeFilter.charAt(0).toUpperCase() +
+                                  entityTypeFilter.slice(1) +
+                                  's'}
+                            </span>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-gray-400" />
+                        </button>
+                      </div>
+                    )}
+
+                    {filterView === 'type' && (
+                      <div className="flex flex-col gap-1 p-1">
+                        {[
+                          { id: 'all', label: 'All Types' },
+                          { id: 'pdf', label: 'PDF' },
+                          { id: 'image', label: 'Images' },
+                          { id: 'sheet', label: 'Spreadsheets' },
+                          { id: 'document', label: 'Documents' },
+                        ].map((t) => {
+                          const isChecked = typeFilter === t.id;
+                          return (
+                            <label
+                              key={t.id}
+                              className={`group hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-all ${
+                                isChecked ? 'bg-muted/40' : ''
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="type-filter"
+                                className="sr-only"
+                                checked={isChecked}
+                                onChange={() => setTypeFilter(t.id)}
+                              />
+                              <div
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                                  isChecked
+                                    ? 'border-[#4eacff] bg-[#4eacff]'
+                                    : 'border-gray-300 group-hover:border-gray-400'
+                                }`}
+                              >
+                                {isChecked && (
+                                  <div className="animate-in fade-in zoom-in h-1.5 w-1.5 rounded-full bg-white duration-200" />
+                                )}
+                              </div>
+                              <span
+                                className={`truncate font-medium transition-colors ${
+                                  isChecked
+                                    ? 'text-[#4eacff]'
+                                    : 'text-foreground'
+                                }`}
+                              >
+                                {t.label}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {filterView === 'entity' && (
+                      <div className="flex flex-col gap-1 p-1">
+                        {[
+                          { id: 'all', label: 'All Entities' },
+                          { id: 'lead', label: 'Leads' },
+                          { id: 'contact', label: 'Contacts' },
+                          { id: 'account', label: 'Accounts' },
+                          { id: 'opportunity', label: 'Opportunities' },
+                        ].map((e) => {
+                          const isChecked = entityTypeFilter === e.id;
+                          return (
+                            <label
+                              key={e.id}
+                              className={`group hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-all ${
+                                isChecked ? 'bg-muted/40' : ''
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="entity-filter"
+                                className="sr-only"
+                                checked={isChecked}
+                                onChange={() => setEntityTypeFilter(e.id)}
+                              />
+                              <div
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                                  isChecked
+                                    ? 'border-[#4eacff] bg-[#4eacff]'
+                                    : 'border-gray-300 group-hover:border-gray-400'
+                                }`}
+                              >
+                                {isChecked && (
+                                  <div className="animate-in fade-in zoom-in h-1.5 w-1.5 rounded-full bg-white duration-200" />
+                                )}
+                              </div>
+                              <span
+                                className={`truncate font-medium transition-colors ${
+                                  isChecked
+                                    ? 'text-[#4eacff]'
+                                    : 'text-foreground'
+                                }`}
+                              >
+                                {e.label}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              {/* <Button
                 className="h-9 gap-2"
                 onClick={() => {
                   setFile(null);
@@ -338,10 +616,39 @@ export default function DocumentPage() {
                 }}
               >
                 <Plus className="h-4 w-4" />
-                Upload Document
-              </Button>
+                
+              </Button> */}
 
-              <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="-mr-2 h-8 w-8 bg-white p-0 text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
+                    onClick={() => {
+                      setFile(null);
+                      setEntityType('lead');
+                      setEntityId('');
+                      setIsUploadDialogOpen(true);
+                    }}
+                  >
+                    <Image
+                      src="/images/upload-file.png"
+                      alt="Upload"
+                      width={16}
+                      height={16}
+                      className="h-4.5 w-4.5 dark:invert"
+                    />
+                  </Button>
+                </TooltipTrigger>
+
+                <TooltipContent side="bottom">
+                  <p>Upload File</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <div />
+
+              {/* <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" /> */}
 
               <ColumnVisibilitySelector
                 columns={documentColumns}
@@ -429,7 +736,7 @@ export default function DocumentPage() {
                             )}
                             {isVisible('type') && (
                               <TableCell className="text-muted-foreground">
-                                {doc.file_type || 'Unknown'}
+                                {getFileTypeDisplay(doc.file_type || '')}
                               </TableCell>
                             )}
                             {isVisible('size') && (
@@ -513,7 +820,7 @@ export default function DocumentPage() {
                             }
                             className="text-muted-foreground h-24 text-center"
                           >
-                            No documents found matching your filters.
+                            No documents match your search.
                           </TableCell>
                         </TableRow>
                       )}

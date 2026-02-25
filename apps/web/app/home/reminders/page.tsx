@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -9,6 +9,8 @@ import {
   Building2,
   Calendar as CalendarIcon,
   CheckCircle2,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   Clock,
   Filter,
   Loader2,
@@ -24,6 +26,7 @@ import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
+import { Calendar } from '@kit/ui/calendar';
 import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import {
@@ -49,6 +52,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@kit/ui/pagination';
+import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@kit/ui/radio-group';
 import {
   Select,
@@ -65,6 +69,12 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
@@ -122,8 +132,21 @@ export default function RemindersPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [filterView, setFilterView] = useState<
+    'main' | 'status' | 'date_range' | 'priority'
+  >('main');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>({
+    from: undefined,
+    to: undefined,
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
@@ -274,19 +297,35 @@ export default function RemindersPage() {
 
   const filteredReminders = useMemo(() => {
     return reminders.filter((reminder: Reminder) => {
-      const matchesSearch = reminder.title
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+      const matchesSearch =
+        reminder.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        reminder.description?.toLowerCase().includes(searchTerm.toLowerCase());
+
       const matchesPriority =
         priorityFilter === 'all' ||
-        reminder.priority.toLowerCase() === priorityFilter.toLowerCase();
+        (reminder.priority || '').toLowerCase() === priorityFilter;
+
+      const STATUS_COMPLETED = 'completed';
+      const STATUS_PENDING = 'pending';
+
       const matchesStatus =
         statusFilter === 'all' ||
-        (statusFilter === 'completed' && reminder.is_completed) ||
-        (statusFilter === 'pending' && !reminder.is_completed);
-      return matchesSearch && matchesPriority && matchesStatus;
+        (statusFilter === STATUS_COMPLETED && reminder.is_completed) ||
+        (statusFilter === STATUS_PENDING && !reminder.is_completed);
+
+      const reminderDate = reminder.due_date
+        ? new Date(reminder.due_date)
+        : null;
+      const matchesDateRange =
+        !reminderDate ||
+        ((!dateRange.from || reminderDate >= dateRange.from) &&
+          (!dateRange.to || reminderDate <= dateRange.to));
+
+      return (
+        matchesSearch && matchesPriority && matchesStatus && matchesDateRange
+      );
     });
-  }, [reminders, searchTerm, priorityFilter, statusFilter]);
+  }, [reminders, searchTerm, priorityFilter, statusFilter, dateRange]);
 
   const paginatedReminders = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -361,6 +400,31 @@ export default function RemindersPage() {
     });
   };
 
+  const formatDueDateShort = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+
+    const dateMidnight = new Date(date);
+    dateMidnight.setHours(0, 0, 0, 0);
+
+    const todayMidnight = new Date(today);
+    todayMidnight.setHours(0, 0, 0, 0);
+
+    const timeDiff = dateMidnight.getTime() - todayMidnight.getTime();
+    const dayDiff = Math.round(timeDiff / (1000 * 3600 * 24));
+
+    if (dayDiff === 0) return 'Today';
+    if (dayDiff === 1) return 'Tomorrow';
+    if (dayDiff > 1) return `In ${dayDiff} days`;
+    if (dayDiff === -1) return 'Yesterday';
+    if (dayDiff < -1) return 'Overdue';
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
   const getPriorityBadge = (priority: string) => {
     switch (priority?.toLowerCase()) {
       case 'high':
@@ -432,39 +496,308 @@ export default function RemindersPage() {
             title={`Reminders (${reminders.length})`}
             description="Keep track of your important tasks and reminders"
           >
-            <div className="flex items-center gap-3">
-              <div className="relative w-64 lg:w-72">
-                <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search tasks..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-9 pl-10"
-                />
+            <div className="flex items-center gap-2">
+              <div className="flex items-center">
+                <div
+                  className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${
+                    isSearchOpen ? 'w-64 lg:w-72' : 'w-9'
+                  }`}
+                >
+                  {isSearchOpen ? (
+                    <div className="relative w-full">
+                      <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        ref={searchInputRef}
+                        placeholder="Search by task title"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="h-8 pl-10"
+                        onBlur={() => {
+                          if (!searchTerm) setIsSearchOpen(false);
+                        }}
+                        autoFocus
+                      />
+                    </div>
+                  ) : (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          className="border-input hover:bg-accent -mr-6 flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white text-gray-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                          onClick={() => setIsSearchOpen(true)}
+                        >
+                          <Search className="h-4 w-4 text-gray-500 dark:text-white" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>Search</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
               </div>
-              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                <SelectTrigger className="h-9 w-40">
-                  <Filter className="mr-2 h-4 w-4 text-gray-400" />
-                  <SelectValue placeholder="Priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Priorities</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-9 w-40">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
+              <Popover
+                open={isFilterOpen}
+                onOpenChange={(open) => {
+                  setIsFilterOpen(open);
+                  if (!open) setFilterView('main');
+                }}
+              >
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                      <button
+                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white dark:border-zinc-700 dark:bg-zinc-900 ${
+                          isFilterOpen ? 'bg-accent' : ''
+                        }`}
+                      >
+                        <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
+                        {(statusFilter !== 'all' ||
+                          priorityFilter !== 'all' ||
+                          dateRange.from ||
+                          dateRange.to) && (
+                          <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
+                            {(statusFilter !== 'all' ? 1 : 0) +
+                              (priorityFilter !== 'all' ? 1 : 0) +
+                              (dateRange.from || dateRange.to ? 1 : 0)}
+                          </span>
+                        )}
+                      </button>
+                    </PopoverTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Filter</p>
+                  </TooltipContent>
+                </Tooltip>
+                <PopoverContent className="w-80 p-0" align="end">
+                  <div className="flex items-center justify-between border-b px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {filterView !== 'main' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => setFilterView('main')}
+                        >
+                          <ChevronLeftIcon className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <span className="text-sm font-semibold">
+                        {filterView === 'main'
+                          ? 'Filters'
+                          : filterView === 'status'
+                            ? 'Filter by Status'
+                            : filterView === 'priority'
+                              ? 'Filter by Priority'
+                              : 'Filter by Date Range'}
+                      </span>
+                    </div>
+                    <button
+                      className="text-muted-foreground hover:text-foreground text-xs underline"
+                      onClick={() => {
+                        setStatusFilter('all');
+                        setPriorityFilter('all');
+                        setDateRange({ from: undefined, to: undefined });
+                      }}
+                    >
+                      Clear all
+                    </button>
+                  </div>
+
+                  <div className="p-2">
+                    {filterView === 'main' && (
+                      <div className="flex flex-col gap-1">
+                        <button
+                          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
+                          onClick={() => setFilterView('status')}
+                        >
+                          <div className="flex flex-col gap-1">
+                            <span>Status</span>
+                            <span className="text-muted-foreground text-xs font-normal">
+                              {statusFilter === 'all'
+                                ? 'All statuses'
+                                : statusFilter.charAt(0).toUpperCase() +
+                                  statusFilter.slice(1)}
+                            </span>
+                          </div>
+                          <ChevronRightIcon className="h-4 w-4 text-gray-400" />
+                        </button>
+                        <button
+                          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
+                          onClick={() => setFilterView('priority')}
+                        >
+                          <div className="flex flex-col gap-1">
+                            <span>Priority</span>
+                            <span className="text-muted-foreground text-xs font-normal">
+                              {priorityFilter === 'all'
+                                ? 'All priorities'
+                                : priorityFilter.charAt(0).toUpperCase() +
+                                  priorityFilter.slice(1)}
+                            </span>
+                          </div>
+                          <ChevronRightIcon className="h-4 w-4 text-gray-400" />
+                        </button>
+                        <button
+                          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
+                          onClick={() => setFilterView('date_range')}
+                        >
+                          <div className="flex flex-col gap-1">
+                            <span>Date Range</span>
+                            <span className="text-muted-foreground text-xs font-normal">
+                              {dateRange.from || dateRange.to
+                                ? `${dateRange.from?.toLocaleDateString() || ''} - ${dateRange.to?.toLocaleDateString() || ''}`
+                                : 'All time'}
+                            </span>
+                          </div>
+                          <ChevronRightIcon className="h-4 w-4 text-gray-400" />
+                        </button>
+                      </div>
+                    )}
+
+                    {filterView === 'status' && (
+                      <div className="flex flex-col gap-1 p-1">
+                        {[
+                          { id: 'all', label: 'All Statuses' },
+                          { id: 'pending', label: 'Pending' },
+                          { id: 'completed', label: 'Completed' },
+                        ].map((s) => {
+                          const isChecked = statusFilter === s.id;
+                          return (
+                            <label
+                              key={s.id}
+                              className={`group hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-all ${
+                                isChecked ? 'bg-muted/40' : ''
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="status-filter"
+                                className="sr-only"
+                                checked={isChecked}
+                                onChange={() => setStatusFilter(s.id)}
+                              />
+                              <div
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                                  isChecked
+                                    ? 'border-primary bg-transparent'
+                                    : 'border-black/20 bg-transparent group-hover:border-white/50 dark:border-white/30'
+                                }`}
+                              >
+                                {isChecked && (
+                                  <div className="bg-primary animate-in fade-in zoom-in h-2 w-2 rounded-full duration-200" />
+                                )}
+                              </div>
+                              <span className="truncate font-medium text-black dark:text-gray-200">
+                                {s.label}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {filterView === 'priority' && (
+                      <div className="flex flex-col gap-1 p-1">
+                        {[
+                          { id: 'all', label: 'All Priorities' },
+                          { id: 'high', label: 'High' },
+                          { id: 'medium', label: 'Medium' },
+                          { id: 'low', label: 'Low' },
+                        ].map((p) => {
+                          const isChecked = priorityFilter === p.id;
+                          return (
+                            <label
+                              key={p.id}
+                              className={`group hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-all ${
+                                isChecked ? 'bg-muted/40' : ''
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="priority-filter"
+                                className="sr-only"
+                                checked={isChecked}
+                                onChange={() => setPriorityFilter(p.id)}
+                              />
+                              <div
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                                  isChecked
+                                    ? 'border-primary bg-transparent'
+                                    : 'border-black/20 bg-transparent group-hover:border-white/50 dark:border-white/30'
+                                }`}
+                              >
+                                {isChecked && (
+                                  <div className="bg-primary animate-in fade-in zoom-in h-2 w-2 rounded-full duration-200" />
+                                )}
+                              </div>
+                              <span className="truncate font-medium text-black dark:text-gray-200">
+                                {p.label}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {filterView === 'date_range' && (
+                      <div className="flex flex-col gap-4 p-2">
+                        <Calendar
+                          mode="range"
+                          selected={{
+                            from: dateRange.from,
+                            to: dateRange.to,
+                          }}
+                          onSelect={(range) => {
+                            const to = range?.to
+                              ? new Date(range.to)
+                              : undefined;
+                            if (to) {
+                              to.setHours(23, 59, 59, 999);
+                            }
+                            setDateRange({
+                              from: range?.from,
+                              to,
+                            });
+                          }}
+                          initialFocus
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs"
+                            onClick={() => {
+                              const today = new Date();
+                              today.setHours(0, 0, 0, 0);
+                              const todayEnd = new Date();
+                              todayEnd.setHours(23, 59, 59, 999);
+                              setDateRange({ from: today, to: todayEnd });
+                            }}
+                          >
+                            Today
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs"
+                            onClick={() => {
+                              const today = new Date();
+                              const todayEnd = new Date();
+                              todayEnd.setHours(23, 59, 59, 999);
+                              const lastWeek = new Date();
+                              lastWeek.setDate(today.getDate() - 7);
+                              lastWeek.setHours(0, 0, 0, 0);
+                              setDateRange({ from: lastWeek, to: todayEnd });
+                            }}
+                          >
+                            Last 7 Days
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              {/* <Button
                 className="h-9 gap-2"
                 onClick={() => {
                   setFormData({
@@ -480,9 +813,35 @@ export default function RemindersPage() {
               >
                 <Plus className="h-4 w-4" />
                 New Reminder
-              </Button>
+              </Button> */}
 
-              <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="h-8 w-8 bg-white p-0 text-black dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
+                    onClick={() => {
+                      setFormData({
+                        title: '',
+                        description: '',
+                        due_date: '',
+                        priority: 'medium',
+                        entity_type: 'lead',
+                        entityId: '',
+                      });
+                      setIsCreateDialogOpen(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 text-gray-500 dark:text-white" />
+                  </Button>
+                </TooltipTrigger>
+
+                <TooltipContent side="bottom">
+                  <p>New Reminder</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" /> */}
 
               <ColumnVisibilitySelector
                 columns={reminderColumns}
@@ -588,9 +947,7 @@ export default function RemindersPage() {
                               {isVisible('due_date') && (
                                 <TableCell className="text-muted-foreground">
                                   {reminder.due_date
-                                    ? new Date(
-                                        reminder.due_date,
-                                      ).toLocaleString()
+                                    ? formatDueDateShort(reminder.due_date)
                                     : '-'}
                                 </TableCell>
                               )}
@@ -678,7 +1035,7 @@ export default function RemindersPage() {
                             }
                             className="text-muted-foreground h-24 text-center"
                           >
-                            No reminders found matching your filters.
+                            No reminders match your search.
                           </TableCell>
                         </TableRow>
                       )}

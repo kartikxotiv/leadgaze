@@ -4,6 +4,13 @@ import React from 'react';
 
 import { Settings2 } from 'lucide-react';
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
+
 import { Button } from '../shadcn/button';
 import {
   DropdownMenu,
@@ -35,12 +42,21 @@ export function ColumnVisibilitySelector({
 }: ColumnVisibilitySelectorProps) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="h-9 gap-2">
-          <Settings2 className="h-4 w-4 text-gray-400" />
-          <span>Columns</span>
-        </Button>
-      </DropdownMenuTrigger>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 w-8 p-2">
+                <Settings2 className="h-4 w-4 text-gray-500" />
+              </Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+
+          <TooltipContent side="bottom">
+            <span>Columns</span>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <DropdownMenuContent align="end" className="w-[220px]">
         <DropdownMenuLabel className="flex items-center justify-between">
           <span>Toggle Columns</span>

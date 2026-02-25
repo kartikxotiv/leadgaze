@@ -25,6 +25,12 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { ModuleGuard } from '~/lib/rbac/module-guard';
@@ -131,8 +137,8 @@ export default function RolesPage() {
             title={`Roles Management (${roles?.length || 0})`}
             description="Create and manage workspace roles with custom permissions"
           >
-            <div className="flex items-center gap-3">
-              {canAccess('roles', 'create') && (
+            <div className="flex items-center gap-2">
+              {/* {canAccess('roles', 'create') && (
                 <Button
                   onClick={() => setCreateDialogOpen(true)}
                   size="sm"
@@ -141,9 +147,25 @@ export default function RolesPage() {
                   <Plus className="h-4 w-4" />
                   New Role
                 </Button>
-              )}
+              )} */}
 
-              <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
+              {canAccess('roles', 'create') && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      onClick={() => setCreateDialogOpen(true)}
+                      className="h-8 w-8 bg-white p-0 text-black dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
+                    >
+                      <Plus className="h-4 w-4 text-gray-500 dark:text-white" />
+                    </Button>
+                  </TooltipTrigger>
+
+                  <TooltipContent side="bottom">
+                    <p>New Role</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
 
               <ColumnVisibilitySelector
                 columns={columns}
