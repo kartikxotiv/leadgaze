@@ -636,7 +636,7 @@ export default function DocumentPage() {
                       alt="Upload"
                       width={16}
                       height={16}
-                      className="h-4.5 w-4.5"
+                      className="h-4.5 w-4.5 dark:invert"
                     />
                   </Button>
                 </TooltipTrigger>
