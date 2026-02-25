@@ -417,40 +417,32 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
     return <FileText className="h-5 w-5 text-slate-400" />;
   };
 
-  // Group tasks by formatted date
-  const groupedTasks = useMemo(() => {
-    const groups: Record<string, DashboardTask[]> = {};
-    tasks.forEach((task) => {
-      const label = formatDueDateShort(task.dueDate);
-      if (!groups[label]) groups[label] = [];
-      groups[label].push(task);
-    });
-    return groups;
-  }, [tasks]);
+  // Limit to latest 3 tasks
+  const latestTasks = useMemo(() => tasks.slice(0, 3), [tasks]);
 
   return (
     <Card className="border-none bg-transparent shadow-none">
       <CardContent className="p-0">
         <div className="max-h-[500px] overflow-y-auto rounded-xl border border-slate-100 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          {tasks.length === 0 ? (
+          {latestTasks.length === 0 ? (
             <div className="flex h-40 flex-col items-center justify-center text-slate-400">
               <FileText className="mb-2 h-8 w-8 opacity-20" />
               <p className="text-sm">No upcoming tasks</p>
             </div>
           ) : (
             <div className="divide-y dark:divide-zinc-800">
-              {tasks.map((task) => {
+              {latestTasks.map((task) => {
                 const relativeDate = formatDueDateShort(task.dueDate);
                 return (
                   <div
                     key={task.id}
-                    className="flex items-center justify-between p-5"
+                    className="flex items-center justify-between p-5 transition-colors hover:bg-slate-50/30 dark:hover:bg-zinc-800/30"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="flex h-6 w-6 items-center justify-center">
+                      <div className="flex h-10 w-6 items-center justify-center">
                         {getTaskIcon(task)}
                       </div>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <span className="text-[15px] font-medium text-slate-700 dark:text-zinc-200">
                           {task.title}
                           {task.entityName && (
@@ -460,13 +452,13 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
                             </span>
                           )}
                         </span>
-                        <span className="text-[13px] text-slate-400">
+                        <span className="text-[15px] text-slate-400">
                           {' '}
                           · {relativeDate}
                         </span>
                       </div>
                     </div>
-                    <div className="text-[13px] font-medium text-slate-500 dark:text-zinc-400">
+                    <div className="text-[15px] font-bold text-slate-700 dark:text-zinc-200">
                       {relativeDate}
                     </div>
                   </div>
