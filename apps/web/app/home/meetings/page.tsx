@@ -2,6 +2,8 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
+import Link from 'next/link';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Briefcase,
@@ -711,13 +713,13 @@ export default function MeetingsPage() {
           </PageHeader>
         </div>
 
-        <PageBody className="sticky -mt-6 flex min-h-0 flex-1 shrink-0 flex-col overflow-hidden pt-6">
+        <PageBody className="sticky -mt-6 flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pt-6">
           <div className="flex min-h-0 flex-1 flex-col space-y-6">
             {/* Meetings List Table */}
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
               <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-                <div className="sticky flex flex-1 overflow-auto rounded-lg">
-                  <Table>
+                <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
+                  <Table className="w-max min-w-full border-separate border-spacing-0 caption-bottom text-sm">
                     <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                       <TableRow>
                         {isVisible('sno') && (
@@ -898,12 +900,13 @@ export default function MeetingsPage() {
                               {isVisible('entity') && (
                                 <TableCell>
                                   {meeting.entity_name && (
-                                    <span
-                                      className="text-muted-foreground text-xs"
+                                    <Link
+                                      href={`/home/${meeting.entity_type === 'opportunity' ? 'opportunities' : `${meeting.entity_type}s`}/${meeting.entity_id}`}
+                                      className="hover:text-primary text-muted-foreground text-xs hover:underline"
                                       title={`${meeting.entity_type}: ${meeting.entity_name}`}
                                     >
                                       {meeting.entity_name}
-                                    </span>
+                                    </Link>
                                   )}
                                 </TableCell>
                               )}
@@ -964,7 +967,7 @@ export default function MeetingsPage() {
 
             {/* Pagination */}
             {totalCount > 1 && (
-              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 -mb-4 flex shrink-0 items-center justify-between border-t p-4 px-4 lg:-mx-8 lg:-mb-8 lg:px-8">
+              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t py-1.5 px-4 lg:-mx-8 lg:px-8">
                 <div>
                   Showing{' '}
                   <span className="text-foreground font-medium">
