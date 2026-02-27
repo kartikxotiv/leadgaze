@@ -855,7 +855,7 @@ export default function RemindersPage() {
           </PageHeader>
         </div>
 
-        <PageBody className="sticky -mt-6 flex min-h-0 flex-1 shrink-0 flex-col overflow-hidden pt-6">
+        <PageBody className="bg-sidebar sticky flex min-h-0 flex-1 shrink-0 flex-col overflow-hidden pt-6 pb-6">
           <div className="flex min-h-0 flex-1 flex-col space-y-6">
             {/* Reminders List Table */}
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
@@ -916,7 +916,10 @@ export default function RemindersPage() {
                       ) : paginatedReminders.length > 0 ? (
                         paginatedReminders.map(
                           (reminder: Reminder, index: number) => (
-                            <TableRow key={reminder.id}>
+                            <TableRow
+                              key={reminder.id}
+                              className="hover:bg-muted/50"
+                            >
                               {isVisible('sno') && (
                                 <TableCell className="text-muted-foreground w-12">
                                   {(currentPage - 1) * itemsPerPage + index + 1}

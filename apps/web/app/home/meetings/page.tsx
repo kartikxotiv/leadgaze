@@ -713,7 +713,7 @@ export default function MeetingsPage() {
           </PageHeader>
         </div>
 
-        <PageBody className="sticky -mt-6 flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pt-6">
+        <PageBody className="bg-sidebar sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pt-6 pb-6">
           <div className="flex min-h-0 flex-1 flex-col space-y-6">
             {/* Meetings List Table */}
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
@@ -754,7 +754,9 @@ export default function MeetingsPage() {
                           <TableHead>Public</TableHead>
                         )}
                         {isVisible('entity') && <TableHead>Entity</TableHead>}
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead className="bg-card sticky right-0 px-4 text-right">
+                          Actions
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -776,7 +778,10 @@ export default function MeetingsPage() {
                       ) : paginatedMeetings.length > 0 ? (
                         paginatedMeetings.map(
                           (meeting: Meeting, index: number) => (
-                            <TableRow key={meeting.id}>
+                            <TableRow
+                              key={meeting.id}
+                              className="hover:bg-muted/50"
+                            >
                               {isVisible('sno') && (
                                 <TableCell className="text-muted-foreground w-12">
                                   {(currentPage - 1) * itemsPerPage + index + 1}
@@ -910,7 +915,7 @@ export default function MeetingsPage() {
                                   )}
                                 </TableCell>
                               )}
-                              <TableCell className="text-right">
+                              <TableCell className="bg-card sticky right-0 px-4 text-right">
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="icon">

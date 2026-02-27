@@ -27,7 +27,6 @@ import {
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -280,13 +279,15 @@ export default function TeamMembersPage() {
           </div>
         </div>
 
-        <PageBody className="flex min-h-0 flex-1 flex-col overflow-hidden pt-4">
+        <PageBody className="bg-sidebar sticky flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
           <div className="flex min-h-0 flex-1 flex-col space-y-6">
             {/* Team Members Table - Scrollable area */}
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
-              <CardHeader className="shrink-0 p-0 pb-4">
+              <CardHeader className="shrink-0 px-0 pt-2 pb-4">
                 <div>
-                  <CardTitle>Workspace Members</CardTitle>
+                  <CardTitle className="leading-tight">
+                    Workspace Members
+                  </CardTitle>
                   <CardDescription>
                     Manage team members and their roles
                   </CardDescription>
@@ -315,8 +316,8 @@ export default function TeamMembersPage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex-1 overflow-auto rounded-lg [&>div]:overflow-visible">
-                    <Table className="w-full caption-bottom text-sm">
+                  <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
+                    <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
                       <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                         <TableRow className="bg-card">
                           {isVisible('member') && <TableHead>Member</TableHead>}
@@ -433,7 +434,7 @@ export default function TeamMembersPage() {
                           </TableRow>
                         ))}
                       </TableBody>
-                    </Table>
+                    </table>
                   </div>
                 )}
               </CardContent>

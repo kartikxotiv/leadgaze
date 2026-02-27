@@ -60,7 +60,6 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -672,13 +671,13 @@ export default function NotesPage() {
             </div>
           </PageHeader>
         </div>
-        <PageBody className="sticky -mt-6 flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pt-6">
+        <PageBody className="bg-sidebar sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pt-6 pb-6">
           <div className="flex min-h-0 flex-1 flex-col space-y-6">
             {/* Notes Table */}
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
               <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                 <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
-                  <Table className="w-max min-w-full border-separate border-spacing-0 caption-bottom text-sm">
+                  <table className="w-max min-w-full border-separate border-spacing-0 caption-bottom text-sm">
                     <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                       <TableRow>
                         {isVisible('sno') && (
@@ -710,7 +709,9 @@ export default function NotesPage() {
                         {isVisible('updated_by') && (
                           <TableHead>Last Updated By</TableHead>
                         )}
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead className="bg-card sticky right-0 text-right">
+                          Actions
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -731,7 +732,7 @@ export default function NotesPage() {
                         </TableRow>
                       ) : paginatedNotes.length > 0 ? (
                         paginatedNotes.map((note: Note, index: number) => (
-                          <TableRow key={note.id}>
+                          <TableRow key={note.id} className="hover:bg-muted/50">
                             {isVisible('sno') && (
                               <TableCell className="text-muted-foreground w-12">
                                 {(currentPage - 1) * itemsPerPage + index + 1}
@@ -796,7 +797,7 @@ export default function NotesPage() {
                                 {note.updated_by || '-'}
                               </TableCell>
                             )}
-                            <TableCell className="text-right">
+                            <TableCell className="bg-card sticky right-0 text-right">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button
@@ -844,7 +845,7 @@ export default function NotesPage() {
                         </TableRow>
                       )}
                     </TableBody>
-                  </Table>
+                  </table>
                 </div>
               </CardContent>
             </Card>
