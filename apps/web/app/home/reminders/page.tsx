@@ -2,6 +2,8 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
+import Link from 'next/link';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
@@ -858,8 +860,8 @@ export default function RemindersPage() {
             {/* Reminders List Table */}
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
               <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-                <div className="sticky flex flex-1 overflow-auto rounded-lg">
-                  <Table>
+                <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
+                  <Table className="w-max min-w-full border-separate border-spacing-0 caption-bottom text-sm">
                     <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                       <TableRow>
                         {isVisible('sno') && (
@@ -959,12 +961,13 @@ export default function RemindersPage() {
                               {isVisible('entity') && (
                                 <TableCell>
                                   {reminder.entity_name && (
-                                    <span
-                                      className="text-muted-foreground text-xs"
+                                    <Link
+                                      href={`/home/${reminder.entity_type === 'opportunity' ? 'opportunities' : `${reminder.entity_type}s`}/${reminder.entity_id}`}
+                                      className="hover:text-primary text-muted-foreground text-xs hover:underline"
                                       title={`${reminder.entity_type}: ${reminder.entity_name}`}
                                     >
                                       {reminder.entity_name}
-                                    </span>
+                                    </Link>
                                   )}
                                 </TableCell>
                               )}
@@ -1047,7 +1050,7 @@ export default function RemindersPage() {
 
             {/* Pagination */}
             {totalCount > 1 && (
-              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 -mb-4 flex shrink-0 items-center justify-between border-t p-4 px-4 lg:-mx-8 lg:-mb-8 lg:px-8">
+              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t py-1.5 px-4 lg:-mx-8 lg:px-8">
                 <div>
                   Showing{' '}
                   <span className="text-foreground font-medium">

@@ -3,6 +3,8 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
+import Link from 'next/link';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Briefcase,
@@ -86,6 +88,8 @@ import {
 import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -668,13 +672,13 @@ export default function NotesPage() {
             </div>
           </PageHeader>
         </div>
-        <PageBody className="sticky -mt-6 flex min-h-0 flex-1 shrink-0 flex-col overflow-hidden pt-6">
+        <PageBody className="sticky -mt-6 flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pt-6">
           <div className="flex min-h-0 flex-1 flex-col space-y-6">
             {/* Notes Table */}
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
               <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-                <div className="sticky flex flex-1 overflow-auto rounded-lg">
-                  <Table>
+                <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
+                  <Table className="w-max min-w-full border-separate border-spacing-0 caption-bottom text-sm">
                     <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                       <TableRow>
                         {isVisible('sno') && (
@@ -740,12 +744,22 @@ export default function NotesPage() {
                             )}
                             {isVisible('associate') && (
                               <TableCell>
-                                <span
-                                  className="inline-block max-w-[150px] truncate text-sm font-medium"
-                                  title={note.entity_name || 'General'}
-                                >
-                                  {note.entity_name || '-'}
-                                </span>
+                                {note.entity_id ? (
+                                  <Link
+                                    href={`/home/${note.entity_type === 'opportunity' ? 'opportunities' : `${note.entity_type}s`}/${note.entity_id}`}
+                                    className="hover:text-primary inline-block max-w-[150px] truncate text-sm font-medium hover:underline"
+                                    title={note.entity_name || 'General'}
+                                  >
+                                    {note.entity_name || '-'}
+                                  </Link>
+                                ) : (
+                                  <span
+                                    className="inline-block max-w-[150px] truncate text-sm font-medium"
+                                    title={note.entity_name || 'General'}
+                                  >
+                                    {note.entity_name || '-'}
+                                  </span>
+                                )}
                               </TableCell>
                             )}
                             {isVisible('content') && (
@@ -837,7 +851,7 @@ export default function NotesPage() {
 
             {/* Pagination */}
             {totalCount > 1 && (
-              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 -mb-4 flex shrink-0 items-center justify-between border-t p-4 px-4 lg:-mx-8 lg:-mb-8 lg:px-8">
+              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t py-1.5 px-4 lg:-mx-8 lg:px-8">
                 <div>
                   Showing{' '}
                   <span className="text-foreground font-medium">
