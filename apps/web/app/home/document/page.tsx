@@ -66,7 +66,6 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -659,13 +658,13 @@ export default function DocumentPage() {
             </div>
           </PageHeader>
         </div>
-        <PageBody className="sticky -mt-6 flex min-h-0 flex-1 shrink-0 flex-col overflow-hidden pt-6">
+        <PageBody className="bg-sidebar sticky flex min-h-0 flex-1 shrink-0 flex-col overflow-hidden pt-6 pb-6">
           <div className="flex min-h-0 flex-1 flex-col space-y-6">
             {/* Documents List Table */}
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
               <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-                <div className="sticky flex flex-1 overflow-auto rounded-lg">
-                  <Table>
+                <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
+                  <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
                     <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                       <TableRow>
                         {isVisible('sno') && (
@@ -715,7 +714,7 @@ export default function DocumentPage() {
                         </TableRow>
                       ) : paginatedDocs.length > 0 ? (
                         paginatedDocs.map((doc: Document, index: number) => (
-                          <TableRow key={doc.id}>
+                          <TableRow key={doc.id} className="hover:bg-muted/50">
                             {isVisible('sno') && (
                               <TableCell className="text-muted-foreground w-12">
                                 {(currentPage - 1) * itemsPerPage + index + 1}
@@ -825,7 +824,7 @@ export default function DocumentPage() {
                         </TableRow>
                       )}
                     </TableBody>
-                  </Table>
+                  </table>
                 </div>
               </CardContent>
             </Card>

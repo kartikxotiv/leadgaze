@@ -113,29 +113,30 @@ export default function DashboardDemo() {
   return (
     <div
       className={
-        'animate-in fade-in flex h-full flex-col overflow-y-auto p-4 duration-500'
+        'animate-in fade-in flex h-full flex-col overflow-y-auto p-4 duration-500 xl:overflow-hidden xl:p-3 2xl:overflow-y-auto 2xl:p-4'
       }
     >
       <div
         className={
-          'grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
+          'grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-3 xl:pb-4 2xl:grid-cols-4 2xl:gap-4 2xl:pb-6'
         }
       >
-        <Card className="h-32">
-          <CardHeader>
-            <CardTitle className={'flex items-center gap-2.5'}>
-              <FileText className="text-muted-foreground h-4 w-4" />
+        <Card className="h-32 xl:h-28 2xl:h-32">
+          <CardHeader className="xl:p-3 xl:pb-2 2xl:p-6">
+            <CardTitle
+              className={
+                'flex items-center gap-2.5 xl:text-[13px] 2xl:text-base'
+              }
+            >
+              <FileText className="text-muted-foreground h-4 w-4 xl:h-3 xl:w-3 2xl:h-4 2xl:w-4" />
               <span>Total Leads</span>
-              {/* {metrics.leads.trend > 0 && (
-                <Trend trend={'up'}>{metrics.leads.trend}%</Trend>
-              )} */}
             </CardTitle>
 
-            <CardDescription>
+            <CardDescription className="xl:text-[11px] 2xl:text-sm">
               <span>Potential customers in the funnel</span>
             </CardDescription>
 
-            <div>
+            <div className="xl:mt-1 2xl:mt-0">
               <Figure>{metrics.leads.total}</Figure>
             </div>
           </CardHeader>
@@ -145,18 +146,22 @@ export default function DashboardDemo() {
           </CardContent>
         </Card>
 
-        <Card className="h-32">
-          <CardHeader>
-            <CardTitle className={'flex items-center gap-2.5'}>
-              <Users className="text-muted-foreground h-4 w-4" />
+        <Card className="h-32 xl:h-28 2xl:h-32">
+          <CardHeader className="xl:p-3 xl:pb-2 2xl:p-6">
+            <CardTitle
+              className={
+                'flex items-center gap-2.5 xl:text-[13px] 2xl:text-base'
+              }
+            >
+              <Users className="text-muted-foreground h-4 w-4 xl:h-3 xl:w-3 2xl:h-4 2xl:w-4" />
               <span>Contacts</span>
             </CardTitle>
 
-            <CardDescription>
+            <CardDescription className="xl:text-[11px] 2xl:text-sm">
               <span>Total individual relationships</span>
             </CardDescription>
 
-            <div>
+            <div className="xl:mt-1 2xl:mt-0">
               <Figure>{metrics.contacts.total}</Figure>
             </div>
           </CardHeader>
@@ -164,18 +169,22 @@ export default function DashboardDemo() {
           <CardContent>{/* <Chart data={contactsTrend[0]} /> */}</CardContent>
         </Card>
 
-        <Card className="h-32">
-          <CardHeader>
-            <CardTitle className={'flex items-center gap-2.5'}>
-              <Building2 className="text-muted-foreground h-4 w-4" />
+        <Card className="h-32 xl:h-28 2xl:h-32">
+          <CardHeader className="xl:p-3 xl:pb-2 2xl:p-6">
+            <CardTitle
+              className={
+                'flex items-center gap-2.5 xl:text-[13px] 2xl:text-base'
+              }
+            >
+              <Building2 className="text-muted-foreground h-4 w-4 xl:h-3 xl:w-3 2xl:h-4 2xl:w-4" />
               <span>Accounts</span>
             </CardTitle>
 
-            <CardDescription>
+            <CardDescription className="xl:text-[11px] 2xl:text-sm">
               <span>Total company organizations</span>
             </CardDescription>
 
-            <div>
+            <div className="xl:mt-1 2xl:mt-0">
               <Figure>{metrics.accounts.total}</Figure>
             </div>
           </CardHeader>
@@ -183,18 +192,22 @@ export default function DashboardDemo() {
           <CardContent>{/* <Chart data={accountsTrend[0]} /> */}</CardContent>
         </Card>
 
-        <Card className="h-32">
-          <CardHeader>
-            <CardTitle className={'flex items-center gap-2.5'}>
-              <Target className="text-muted-foreground h-4 w-4" />
+        <Card className="h-32 xl:h-28 2xl:h-32">
+          <CardHeader className="xl:p-3 xl:pb-2 2xl:p-6">
+            <CardTitle
+              className={
+                'flex items-center gap-2.5 xl:text-[13px] 2xl:text-base'
+              }
+            >
+              <Target className="text-muted-foreground h-4 w-4 xl:h-3 xl:w-3 2xl:h-4 2xl:w-4" />
               <span>Pipeline Value</span>
             </CardTitle>
 
-            <CardDescription>
+            <CardDescription className="xl:text-[11px] 2xl:text-sm">
               <span>Total value of opportunities</span>
             </CardDescription>
 
-            <div>
+            <div className="xl:mt-1 2xl:mt-0">
               <Figure>
                 {new Intl.NumberFormat('en-US', {
                   style: 'currency',
@@ -232,15 +245,15 @@ export default function DashboardDemo() {
 
       {/* section 2 */}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-3 2xl:grid-cols-4 2xl:gap-4">
         <Button
           variant="outline"
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateLeadOpen(true)}
         >
-          <div className="flex items-center gap-2">
-            <Plus className="h-6 w-6 text-slate-500 dark:text-zinc-400" />
-            <span className="text-[16px] font-semibold text-slate-700 dark:text-zinc-200">
+          <div className="flex items-center gap-2 xl:gap-1.5 2xl:gap-2">
+            <Plus className="h-6 w-6 text-slate-500 xl:h-4 xl:w-4 2xl:h-6 2xl:w-6 dark:text-zinc-400" />
+            <span className="text-[16px] font-semibold text-slate-700 xl:text-sm 2xl:text-[16px] dark:text-zinc-200">
               Add Lead
             </span>
           </div>
@@ -253,9 +266,9 @@ export default function DashboardDemo() {
           onClick={() => setIsCreateContactOpen(true)}
         >
           {/* <Contact /> */}
-          <div className="flex items-center gap-2">
-            <User className="h-6 w-6 text-slate-500 dark:text-zinc-400" />
-            <span className="text-[16px] font-semibold text-slate-700 dark:text-zinc-200">
+          <div className="flex items-center gap-2 xl:gap-1.5 2xl:gap-2">
+            <User className="h-6 w-6 text-slate-500 xl:h-4 xl:w-4 2xl:h-6 2xl:w-6 dark:text-zinc-400" />
+            <span className="text-[16px] font-semibold text-slate-700 xl:text-sm 2xl:text-[16px] dark:text-zinc-200">
               Add Contact
             </span>
           </div>
@@ -266,9 +279,9 @@ export default function DashboardDemo() {
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateAccountOpen(true)}
         >
-          <div className="flex items-center gap-2">
-            <Briefcase className="h-6 w-6 text-slate-500 dark:text-zinc-400" />
-            <span className="text-[16px] font-semibold text-slate-700 dark:text-zinc-200">
+          <div className="flex items-center gap-2 xl:gap-1.5 2xl:gap-2">
+            <Briefcase className="h-6 w-6 text-slate-500 xl:h-4 xl:w-4 2xl:h-6 2xl:w-6 dark:text-zinc-400" />
+            <span className="text-[16px] font-semibold text-slate-700 xl:text-sm 2xl:text-[16px] dark:text-zinc-200">
               Add Account
             </span>
           </div>
@@ -279,9 +292,9 @@ export default function DashboardDemo() {
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateOpportunityOpen(true)}
         >
-          <div className="flex items-center gap-2">
-            <BriefcaseBusiness className="h-6 w-6 text-slate-500 dark:text-zinc-400" />
-            <span className="text-[16px] font-semibold text-slate-700 dark:text-zinc-200">
+          <div className="flex items-center gap-2 xl:gap-1.5 2xl:gap-2">
+            <BriefcaseBusiness className="h-6 w-6 text-slate-500 xl:h-4 xl:w-4 2xl:h-6 2xl:w-6 dark:text-zinc-400" />
+            <span className="text-[16px] font-semibold text-slate-700 xl:text-sm 2xl:text-[16px] dark:text-zinc-200">
               Add Opportunity
             </span>
           </div>
@@ -313,16 +326,16 @@ export default function DashboardDemo() {
       />
 
       {/* Section 3: Pipeline & Upcoming Tasks */}
-      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
+      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2 xl:mt-4 xl:gap-4 2xl:mt-8 2xl:gap-8">
         <div className="space-y-4">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">
+          <h2 className="text-xl font-bold text-slate-900 xl:text-[16px] 2xl:text-xl dark:text-zinc-100">
             Pipeline Overview
           </h2>
           <PipelineOverview metrics={metrics} />
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">
+          <h2 className="text-xl font-bold text-slate-900 xl:text-[16px] 2xl:text-xl dark:text-zinc-100">
             Upcoming Tasks
           </h2>
           <UpcomingTasks tasks={metrics.upcomingTasks} />
@@ -354,7 +367,7 @@ function PipelineOverview({ metrics }: { metrics: DashboardMetrics }) {
   return (
     <Card className="border-none bg-transparent shadow-none">
       <CardContent className="space-y-4 p-0">
-        <div className="max-h-[400px] space-y-6 overflow-y-auto rounded-xl border bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="max-h-[400px] space-y-6 rounded-xl border bg-white p-6 xl:max-h-[300px] xl:space-y-3 xl:p-4 2xl:max-h-[400px] 2xl:space-y-6 2xl:p-6 dark:border-zinc-800 dark:bg-zinc-900">
           {stages.map((stage) => (
             <div key={stage.label} className="flex items-center gap-6">
               <span className="w-32 text-sm font-medium text-slate-700 dark:text-zinc-400">
@@ -423,7 +436,7 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
   return (
     <Card className="border-none bg-transparent shadow-none">
       <CardContent className="p-0">
-        <div className="max-h-[500px] overflow-y-auto rounded-xl border border-slate-100 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="max-h-[500px] overflow-y-auto rounded-xl border border-slate-100 bg-white xl:max-h-[350px] 2xl:max-h-[500px] dark:border-zinc-800 dark:bg-zinc-900">
           {latestTasks.length === 0 ? (
             <div className="flex h-40 flex-col items-center justify-center text-slate-400">
               <FileText className="mb-2 h-8 w-8 opacity-20" />
@@ -436,7 +449,7 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
                 return (
                   <div
                     key={task.id}
-                    className="flex items-center justify-between p-5 transition-colors hover:bg-slate-50/30 dark:hover:bg-zinc-800/30"
+                    className="flex items-center justify-between p-5 transition-colors hover:bg-slate-50/30 xl:p-3 2xl:p-5 dark:hover:bg-zinc-800/30"
                   >
                     <div className="flex items-center gap-4">
                       <div className="flex h-10 w-6 items-center justify-center">
@@ -645,7 +658,9 @@ function RecentContactsTable({ workspaceId }: { workspaceId: string }) {
 
 function Figure(props: React.PropsWithChildren) {
   return (
-    <div className={'font-heading text-2xl font-semibold'}>
+    <div
+      className={'font-heading text-2xl font-semibold xl:text-xl 2xl:text-2xl'}
+    >
       {props.children}
     </div>
   );
