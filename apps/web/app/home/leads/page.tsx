@@ -246,8 +246,8 @@ export default function LeadsPage() {
 
   return (
     <ModuleGuard module="leads">
-      <div className="flex h-[100dvh] flex-col">
-        <div className="bg-sidebar flex shrink-0 flex-col gap-2">
+      <div className="flex h-[100dvh] w-full max-w-full min-w-0 flex-col overflow-hidden">
+        <div className="bg-sidebar flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
           <PageHeader
             className="bg-sidebar px-6 py-4"
             title={`Leads (${totalCount})`}
@@ -526,8 +526,8 @@ export default function LeadsPage() {
           </PageHeader>
 
           {/* Status Distribution Cards */}
-          <div className="bg-sidebar px-6 pb-7">
-            <div className="-mt-1 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="bg-sidebar -mt-1 w-full max-w-full min-w-0 overflow-x-auto px-6 pb-7">
+            <div className="-mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               <Card
                 className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStatus === 'all' ? 'border-primary ring-primary ring-1' : ''}`}
                 onClick={() => setSelectedStatus('all')}
@@ -579,14 +579,14 @@ export default function LeadsPage() {
             </div>
           </div>
         </div>
-        <PageBody className="bg-sidebar sticky -mt-6 flex min-h-0 flex-1 flex-col overflow-hidden pt-6">
-          <div className="flex min-h-0 flex-1 gap-0">
-            <div className="flex min-h-0 flex-1 flex-col space-y-6">
+        <PageBody className="bg-sidebar sticky -mt-3 flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-6">
+          <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+            <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col space-y-6">
               {/* Table */}
-              <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
-                <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-                  <div className="flex-1 overflow-auto rounded-lg">
-                    <table className="w-full caption-bottom text-sm">
+              <Card className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col border-none shadow-none">
+                <CardContent className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col p-0">
+                  <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
+                    <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
                       <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                         <TableRow>
                           {isVisible('sno') && (
@@ -955,7 +955,7 @@ export default function LeadsPage() {
               </Card>
 
               {totalCount > 0 && (
-                <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mb-4 flex shrink-0 items-center justify-between border-t p-4 px-6 lg:-mb-8">
+                <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
                   <div>
                     Showing{' '}
                     <span className="text-foreground font-medium">

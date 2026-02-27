@@ -18,7 +18,6 @@ import {
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -217,13 +216,13 @@ export default function RolesPage() {
             </div>
           </div>
         </div>
-        <PageBody className="sticky -mt-6 flex min-h-0 flex-1 shrink-0 flex-col overflow-hidden pt-6">
+        <PageBody className="bg-sidebar sticky flex min-h-0 flex-1 shrink-0 flex-col overflow-hidden pt-6 pb-6">
           <div className="flex min-h-0 flex-1 flex-col space-y-6">
             {/* Roles Table */}
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
               <CardHeader className="px-0">
                 <div>
-                  <CardTitle>Workspace Roles</CardTitle>
+                  <CardTitle className="leading-tight">Workspace Roles</CardTitle>
                   <CardDescription>
                     Manage roles and their permissions
                   </CardDescription>
@@ -244,8 +243,8 @@ export default function RolesPage() {
                     <p className="text-muted-foreground">No roles found</p>
                   </div>
                 ) : (
-                  <div className="sticky flex flex-1 overflow-auto rounded-lg">
-                    <Table>
+                  <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
+                    <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
                       <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                         <TableRow>
                           {isVisible('role_name') && (
@@ -352,7 +351,7 @@ export default function RolesPage() {
                           </TableRow>
                         ))}
                       </TableBody>
-                    </Table>
+                    </table>
                   </div>
                 )}
               </CardContent>
