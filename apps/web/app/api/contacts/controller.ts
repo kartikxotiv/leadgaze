@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import { Database } from '../../../lib/database.types';
+import { getHierarchyVisibleUserIds } from '../../../lib/permissions/hierarchy-utils';
 import {
   catchAsync,
   successDataResponse,
@@ -19,6 +22,7 @@ export const getContacts = catchAsync(
     params?: Record<string, string>;
   }) => {
     const supabase = getSupabaseServerClient();
+    const adminClient = getSupabaseServerAdminClient<Database>();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
     const accountId = url.searchParams.get('accountId');
@@ -44,7 +48,7 @@ export const getContacts = catchAsync(
     }
 
     // Check permissions (Workspace Access)
-    const { data: workspace, error: workspaceError } = await supabase
+    const { data: workspace, error: workspaceError } = await adminClient
       .from('workspaces')
       .select('owner_id')
       .eq('id', workspaceId)
@@ -57,8 +61,23 @@ export const getContacts = catchAsync(
 
     const isOwner = workspace?.owner_id === user.id;
 
+    const { data: membership } = await adminClient
+      .from('workspace_members')
+      .select('id')
+      .eq('workspace_id', workspaceId)
+      .eq('user_id', user.id)
+      .eq('status', 'accepted')
+      .maybeSingle();
+
+    if (!isOwner && !membership) {
+      return NextResponse.json(
+        { message: 'Forbidden: You are not a member of this workspace' },
+        { status: 403 },
+      );
+    }
+
     // Build the query
-    let query = supabase
+    let query = adminClient
       .from('crm_contacts')
       .select(
         `
@@ -66,13 +85,26 @@ export const getContacts = catchAsync(
           status:entity_statuses(id, status_name, status_key, color, icon),
           account:crm_accounts(id, account_name),
           owner:accounts!crm_contacts_owner_id_fkey(id, email, name),
-          created_by_account:accounts!crm_contacts_created_by_fkey(id, email, name),
-          updated_by_account:accounts!crm_contacts_updated_by_fkey(id, email, name)
+          created_by_account:accounts!crm_contacts_created_by_fkey(id, email, name)
         `,
         { count: 'exact' },
       )
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
+
+    // Apply hierarchy-based visibility filtering.
+    // Workspace owners bypass all hierarchy restrictions.
+    if (!isOwner) {
+      const hierarchyFilter = await getHierarchyVisibleUserIds(
+        adminClient,
+        workspaceId,
+        user.id,
+      );
+      if (hierarchyFilter.type === 'restricted') {
+        const userIds = hierarchyFilter.userIds;
+        query = query.or(`owner_id.in.(${userIds.join(',')}),created_by.in.(${userIds.join(',')})`);
+      }
+    }
 
     if (accountId) {
       query = query.eq('account_id', accountId);
@@ -81,7 +113,7 @@ export const getContacts = catchAsync(
     // Search term
     if (searchTerm) {
       // First, find accounts that match the search term in this workspace
-      const { data: matchedAccounts } = await supabase
+      const { data: matchedAccounts } = await adminClient
         .from('crm_accounts')
         .select('id')
         .eq('workspace_id', workspaceId)
@@ -112,7 +144,7 @@ export const getContacts = catchAsync(
           );
         }
 
-        const { data: nameMatched } = await supabase
+        const { data: nameMatched } = await adminClient
           .from('crm_contacts')
           .select('id')
           .eq('workspace_id', workspaceId)
@@ -128,24 +160,8 @@ export const getContacts = catchAsync(
     }
   
 
-    // If not owner, filter for public contacts, contacts assigned to current user, or contacts created by current user
-    if (!isOwner) {
-      // Get contacts assigned to the current user
-      const { data: assignedContactIds } = await (supabase
-        .from('contact_assignees' as any)
-        .select('contact_id')
-        .eq('workspace_id', workspaceId)
-        .eq('assigned_to_user_id', user.id)
-        .eq('assignment_status', 'active') as any);
-
-      const assignedIds =
-        assignedContactIds?.map((a: any) => a.contact_id) || [];
-
-      // Filter: public contacts OR assigned contacts OR created by current user
-      query = query.or(
-        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
-      );
-    }
+    // RLS handles visibility based on hierarchy, ownership, and assignment.
+    // No manual filtering needed here.
 
     // Pagination
     const from = (page - 1) * limit;

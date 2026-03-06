@@ -2234,6 +2234,44 @@ export type Database = {
           },
         ]
       }
+      workspace_hierarchies: {
+        Row: {
+          created_at: string
+          id: string
+          is_system: boolean
+          level: number
+          name: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          level: number
+          name: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          level?: number
+          name?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_hierarchies_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_invitations: {
         Row: {
           accepted_at: string | null
@@ -2376,6 +2414,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          hierarchy_id: string | null
           hierarchy_level: number
           id: string
           is_active: boolean
@@ -2390,6 +2429,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          hierarchy_id?: string | null
           hierarchy_level?: number
           id?: string
           is_active?: boolean
@@ -2404,6 +2444,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          hierarchy_id?: string | null
           hierarchy_level?: number
           id?: string
           is_active?: boolean
@@ -2414,6 +2455,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "workspace_roles_hierarchy_id_fkey"
+            columns: ["hierarchy_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_hierarchies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "workspace_roles_workspace_id_fkey"
             columns: ["workspace_id"]

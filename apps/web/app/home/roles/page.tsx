@@ -34,6 +34,7 @@ import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { getHierarchiesService } from '~/services/hierarchies.service';
 import {
   type Role,
   deleteRoleService,
@@ -79,9 +80,15 @@ export default function RolesPage() {
     queryKey: ['workspaceRoles', currentWorkspace?.id],
     queryFn: async () => {
       const res = await getRolesService(currentWorkspace?.id || '');
-
-      return res?.data;
+      return res?.data || [];
     },
+    enabled: !!currentWorkspace?.id,
+  });
+
+  // Fetch persistent hierarchies
+  const { data: hierarchiesData, isLoading: hierarchiesLoading } = useQuery({
+    queryKey: ['workspaceHierarchies', currentWorkspace?.id],
+    queryFn: () => getHierarchiesService(currentWorkspace?.id || ''),
     enabled: !!currentWorkspace?.id,
   });
 
@@ -123,9 +130,21 @@ export default function RolesPage() {
     return colorMap[role.role_key] || '#6b7280';
   };
 
-  const getHierarchyLabel = (level: number) => {
-    if (level >= 100) return 'Admin';
-    return 'Custom';
+  const getHierarchyLabel = (role: Role) => {
+    if (!hierarchiesData) return 'Loading...';
+
+    const hierarchy = hierarchiesData.find(
+      (h: any) => h.id === role.hierarchy_id,
+    );
+    if (hierarchy) {
+      return `${hierarchy.name} (${hierarchy.level})`;
+    }
+
+    if (role.role_key === 'admin') {
+      return 'Admin (100)';
+    }
+
+    return 'Unknown';
   };
 
   return (
@@ -133,7 +152,7 @@ export default function RolesPage() {
       <div className="flex h-[100dvh] flex-col">
         <div className="flex shrink-0 flex-col gap-2">
           <PageHeader
-            title={`Roles Management (${roles?.length || 0})`}
+            title={`Roles Management (${Array.isArray(roles) ? roles.length : 0})`}
             description="Create and manage workspace roles with custom permissions"
           >
             <div className="flex items-center gap-2">
@@ -196,7 +215,9 @@ export default function RolesPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">
-                    {roles?.filter((r: Role) => r.is_system).length}
+                    {Array.isArray(roles)
+                      ? roles.filter((r: Role) => r.is_system).length
+                      : 0}
                   </div>
                 </CardContent>
               </Card>
@@ -209,7 +230,9 @@ export default function RolesPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">
-                    {roles?.filter((r: Role) => !r.is_system).length}
+                    {Array.isArray(roles)
+                      ? roles.filter((r: Role) => !r.is_system).length
+                      : 0}
                   </div>
                 </CardContent>
               </Card>
@@ -222,7 +245,9 @@ export default function RolesPage() {
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
               <CardHeader className="px-0">
                 <div>
-                  <CardTitle className="leading-tight">Workspace Roles</CardTitle>
+                  <CardTitle className="leading-tight">
+                    Workspace Roles
+                  </CardTitle>
                   <CardDescription>
                     Manage roles and their permissions
                   </CardDescription>
@@ -237,7 +262,7 @@ export default function RolesPage() {
                   <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border p-4">
                     Failed to load roles
                   </div>
-                ) : roles?.length === 0 ? (
+                ) : !Array.isArray(roles) || roles.length === 0 ? (
                   <div className="py-12 text-center">
                     <Shield className="text-muted-foreground/30 mx-auto mb-4 h-12 w-12" />
                     <p className="text-muted-foreground">No roles found</p>
@@ -291,7 +316,7 @@ export default function RolesPage() {
                             {isVisible('hierarchy') && (
                               <TableCell>
                                 <Badge variant="outline">
-                                  {getHierarchyLabel(role.hierarchy_level)}
+                                  {getHierarchyLabel(role)}
                                 </Badge>
                               </TableCell>
                             )}
