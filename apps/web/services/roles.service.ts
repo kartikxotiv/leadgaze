@@ -7,7 +7,7 @@ interface Role {
   role_key: string;
   role_name: string;
   description?: string;
-  hierarchy_level: number;
+  hierarchy_id: string;
   is_system: boolean;
   is_active: boolean;
   color?: string;
@@ -17,7 +17,7 @@ interface CreateRolePayload {
   role_key: string;
   role_name: string;
   description?: string;
-  hierarchy_level: number;
+  hierarchy_id: string;
   color?: string;
   permissions?: RolePermission[];
 }
