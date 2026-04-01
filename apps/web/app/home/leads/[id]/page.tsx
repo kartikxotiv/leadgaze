@@ -58,6 +58,8 @@ import { EmailLeadDialog } from '../components/email-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
 import { LogCallDialog } from '../components/log-call-dialog';
 
+import { getWorkspaceEmailAccountService } from '~/services/email.service';
+
 export default function LeadDetailsPage() {
   const router = useRouter();
   const params = useParams();
@@ -87,6 +89,19 @@ export default function LeadDetailsPage() {
       return getLeadByIdService(leadId);
     },
     enabled: !!leadId && !!workspace,
+  });
+  const {
+    data: workspaceEmailAccount,
+    isLoading: workspaceEmailAccountLoading,
+    error: workspaceEmailAccountError,
+    refetch: workspaceEmailAccountRefetch,
+  } = useQuery({
+    queryKey: ['workspace_id', workspace?.id],
+    queryFn: () => {
+      if (!workspace?.id) throw new Error('Workspace ID is required');
+      return getWorkspaceEmailAccountService(workspace.id);
+    },
+    enabled: !!workspace?.id,
   });
 
   const { data: user } = useUser();
@@ -798,65 +813,65 @@ export default function LeadDetailsPage() {
                         {/* Engagement Score Breakdown */}
                         {Object.keys(scoringResult.breakdown.engagement)
                           .length > 0 && (
-                          <div className="space-y-1 pt-2">
-                            <p className="text-xs font-semibold text-gray-400">
-                              Engagement
-                            </p>
-                            {Object.entries(
-                              scoringResult.breakdown.engagement,
-                            ).map(([label, score]) => (
-                              <div
-                                key={label}
-                                className="flex justify-between text-xs"
-                              >
-                                <span className="text-gray-600 dark:text-gray-400">
-                                  {label}
-                                </span>
-                                <span className="font-medium text-blue-600">
-                                  +{score}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                            <div className="space-y-1 pt-2">
+                              <p className="text-xs font-semibold text-gray-400">
+                                Engagement
+                              </p>
+                              {Object.entries(
+                                scoringResult.breakdown.engagement,
+                              ).map(([label, score]) => (
+                                <div
+                                  key={label}
+                                  className="flex justify-between text-xs"
+                                >
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    {label}
+                                  </span>
+                                  <span className="font-medium text-blue-600">
+                                    +{score}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
 
                         {/* Adjustments (Status) */}
                         {Object.keys(scoringResult.breakdown.adjustments)
                           .length > 0 && (
-                          <div className="space-y-1 pt-2">
-                            <p className="text-xs font-semibold text-gray-400">
-                              Status Adjustments
-                            </p>
-                            {Object.entries(
-                              scoringResult.breakdown.adjustments,
-                            ).map(([label, score]) => (
-                              <div
-                                key={label}
-                                className="flex justify-between text-xs"
-                              >
-                                <span className="text-gray-600 dark:text-gray-400">
-                                  {label}
-                                </span>
-                                <span
-                                  className={cn(
-                                    'font-medium',
-                                    score > 0
-                                      ? 'text-green-600'
-                                      : score === -100
-                                        ? 'text-red-600'
-                                        : 'text-amber-600',
-                                  )}
+                            <div className="space-y-1 pt-2">
+                              <p className="text-xs font-semibold text-gray-400">
+                                Status Adjustments
+                              </p>
+                              {Object.entries(
+                                scoringResult.breakdown.adjustments,
+                              ).map(([label, score]) => (
+                                <div
+                                  key={label}
+                                  className="flex justify-between text-xs"
                                 >
-                                  {score > 0
-                                    ? `+${score}`
-                                    : score === -100
-                                      ? 'Reset'
-                                      : score}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    {label}
+                                  </span>
+                                  <span
+                                    className={cn(
+                                      'font-medium',
+                                      score > 0
+                                        ? 'text-green-600'
+                                        : score === -100
+                                          ? 'text-red-600'
+                                          : 'text-amber-600',
+                                    )}
+                                  >
+                                    {score > 0
+                                      ? `+${score}`
+                                      : score === -100
+                                        ? 'Reset'
+                                        : score}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                       </div>
                     )}
                   </div>
@@ -1003,6 +1018,7 @@ export default function LeadDetailsPage() {
           leadEmail={lead.email || ''}
           leadName={fullName}
           initialDraft={selectedDraft}
+          workspaceEmailAccount={workspaceEmailAccount?.[0]}
         />
       )}
     </ModuleGuard>

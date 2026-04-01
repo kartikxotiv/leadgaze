@@ -69,6 +69,7 @@ interface EmailLeadDialogProps {
   leadEmail: string;
   leadName?: string;
   initialDraft?: any;
+  workspaceEmailAccount: any;
 }
 
 export function EmailLeadDialog({
@@ -78,6 +79,7 @@ export function EmailLeadDialog({
   leadEmail,
   leadName,
   initialDraft,
+  workspaceEmailAccount
 }: EmailLeadDialogProps) {
   const queryClient = useQueryClient();
   const { data: user } = useUser();
@@ -394,9 +396,7 @@ export function EmailLeadDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="user">
-                  {user?.email
-                    ? `${user.email.split('@')[0]} <${user.email}>`
-                    : 'Loading...'}
+                  {workspaceEmailAccount?.email || "Please add an email in workspace settings"}
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -751,7 +751,7 @@ export function EmailLeadDialog({
           <Button
             onClick={handleSend}
             className="h-auto rounded-full bg-blue-600 px-10 py-2.5 font-bold text-white shadow-md transition-all hover:bg-blue-700 active:scale-95"
-            disabled={isSending}
+            disabled={isSending || !workspaceEmailAccount?.email}
           >
             {isSending ? (
               <Loader2 className="h-4 w-4 animate-spin" />

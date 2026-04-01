@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase
         .from('email_accounts')
-        .select('*')
+        .select('id,email,created_at,from_name,is_active,provider,workspace_id')
         .eq('workspace_id', workspaceId)
         .order('created_at', { ascending: false });
 
