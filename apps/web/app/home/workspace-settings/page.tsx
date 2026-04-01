@@ -274,7 +274,7 @@ export default function WorkspaceSettingsPage() {
 
   const handleGoogleConnect = () => {
     if (!workspace?.id) return;
-    globalThis.location.href = `/api/email/google/auth?workspace_id=${workspace.id}&from_name=${'Programea'}`;
+    globalThis.location.href = `/api/email/google/auth?workspace_id=${workspace.id}&from_name=${workspace?.name ?? 'Leadgaze'}`;
   };
 
   const handleDelete = async (id: string) => {
