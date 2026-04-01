@@ -1671,7 +1671,7 @@ export type Database = {
           entity_id: string | null
           entity_type: string | null
           from_email: string | null
-          gmail_message_id: string
+          gmail_message_id: string | null
           html_body: string | null
           id: string
           received_at: string | null
@@ -1695,7 +1695,7 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string | null
           from_email?: string | null
-          gmail_message_id: string
+          gmail_message_id?: string | null
           html_body?: string | null
           id?: string
           received_at?: string | null
@@ -1719,7 +1719,7 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string | null
           from_email?: string | null
-          gmail_message_id?: string
+          gmail_message_id?: string | null
           html_body?: string | null
           id?: string
           received_at?: string | null
@@ -2321,7 +2321,41 @@ export type Database = {
           },
         ]
       }
-
+      workspace_email_variables: {
+        Row: {
+          created_at: string | null
+          id: number
+          key: string
+          updated_at: string | null
+          value: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          key: string
+          updated_at?: string | null
+          value: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          key?: string
+          updated_at?: string | null
+          value?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_email_variables_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_invitations: {
         Row: {
           accepted_at: string | null
@@ -2502,7 +2536,6 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
-
           {
             foreignKeyName: "workspace_roles_workspace_id_fkey"
             columns: ["workspace_id"]

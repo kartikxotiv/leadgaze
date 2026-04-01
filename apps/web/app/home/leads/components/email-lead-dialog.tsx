@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
   AlignCenter,
@@ -19,12 +19,12 @@ import {
   ListOrdered,
   Loader2,
   Mail,
-  Minus,
   Paperclip,
   Save,
   Type,
   Underline,
   X,
+  LayoutTemplate,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -62,6 +62,11 @@ import {
   sendLeadEmailService,
 } from '~/services/leads.service';
 import { saveEmailActivityService } from '~/services/email.service';
+import { 
+  getEmailTemplatesService, 
+  getWorkspaceVariablesService 
+} from '~/services/email-templates.service';
+import { replaceTemplateVariables } from '~/lib/email/template-utils';
 
 interface EmailLeadDialogProps {
   open: boolean;
@@ -96,6 +101,24 @@ export function EmailLeadDialog({
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ['email-templates', workspaceEmailAccount?.workspace_id],
+    queryFn: () => getEmailTemplatesService(workspaceEmailAccount?.workspace_id || ''),
+    enabled: !!workspaceEmailAccount?.workspace_id && open,
+  });
+
+  const { data: workspaceVariables = [] } = useQuery({
+    queryKey: ['workspace-variables', workspaceEmailAccount?.workspace_id],
+    queryFn: () => getWorkspaceVariablesService(workspaceEmailAccount?.workspace_id || ''),
+    enabled: !!workspaceEmailAccount?.workspace_id && open,
+  });
+
+  const { data: leadData } = useQuery({
+    queryKey: ['lead', leadId],
+    queryFn: () => getLeadByIdService(leadId),
+    enabled: !!leadId && open,
+  });
 
   // Load activity on open
   useEffect(() => {
@@ -256,6 +279,30 @@ export function EmailLeadDialog({
     }
   };
 
+  const handleTemplateSelect = (template: any) => {
+    if (!template) return;
+
+    const data: Record<string, string> = {
+      first_name: leadData?.first_name || '',
+      last_name: leadData?.last_name || '',
+      email: leadEmail,
+    };
+
+    // Merge workspace variables (environment variables)
+    workspaceVariables.forEach((v: any) => {
+      data[v.key] = v.value;
+    });
+
+    const renderedSubject = replaceTemplateVariables(template.subject, data);
+    const renderedBody = replaceTemplateVariables(template.html_body, data);
+
+    setSubject(renderedSubject);
+    if (editorRef.current) {
+      editorRef.current.innerHTML = renderedBody;
+    }
+    toast.success(`Applied template: ${template.name}`);
+  };
+
   const handleSend = async () => {
     const message = editorRef.current?.innerHTML || '';
 
@@ -319,15 +366,33 @@ export function EmailLeadDialog({
         </DialogHeader>
 
         {/* Custom Header */}
-        <div className="flex items-center justify-between border-b px-4 py-1.5">
+        <div className="flex items-center justify-between border-b px-4 py-1.5 shrink-0 bg-white dark:bg-slate-950">
           <div className="flex items-center gap-2">
             <Mail className="h-5 w-5 text-slate-600" />
             <span className="text-lg font-semibold text-slate-800 dark:text-slate-200">
               Email
             </span>
           </div>
-          <div className="flex items-center gap-3 pr-8">
-            {/* Minimize and Maximize buttons removed */}
+          <div className="flex items-center gap-3 pr-2">
+            <Select onValueChange={(val) => handleTemplateSelect(templates.find((t: any) => t.id.toString() === val))}>
+              <SelectTrigger className="h-8 w-40 border-slate-200 bg-white text-xs dark:bg-slate-900 focus:ring-0">
+                <div className="flex items-center gap-2">
+                  <LayoutTemplate className="h-3.5 w-3.5 text-blue-500" />
+                  <SelectValue placeholder="Use Template" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                {templates.length === 0 ? (
+                  <div className="p-2 text-xs text-center text-slate-500">No templates found</div>
+                ) : (
+                  templates.map((template: any) => (
+                    <SelectItem key={template.id} value={template.id.toString()}>
+                      {template.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
