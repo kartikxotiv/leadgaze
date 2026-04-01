@@ -237,8 +237,10 @@ const sendLeadEmailService = asyncHandlerClient(
     body: string;
     cc?: string | string[];
     bcc?: string | string[];
+    scheduledAt?: string;
+    emailId?: string;
   }) => {
-    console.log({ payload });
+    // console.log({ payload });
 
     const response = await ApiClient.post(`/email/send`, payload);
     return response.data?.data || null;
