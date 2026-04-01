@@ -265,9 +265,8 @@ export function CreateRoleDialog({
                           <div className="flex items-center gap-2">
                             <CollapsibleTrigger className="flex items-center gap-2">
                               <ChevronDown
-                                className={`h-4 w-4 transition-transform ${
-                                  expandedModules[module.id] ? '' : '-rotate-90'
-                                }`}
+                                className={`h-4 w-4 transition-transform ${expandedModules[module.id] ? '' : '-rotate-90'
+                                  }`}
                               />
                             </CollapsibleTrigger>
                             <Checkbox
@@ -336,7 +335,7 @@ export function CreateRoleDialog({
             </div>
           </div>
 
-          <DialogFooter className="shrink-0 border-t bg-white px-6 py-4">
+          <DialogFooter className="shrink-0 border-t  px-6 py-4">
             <Button
               type="button"
               variant="outline"
