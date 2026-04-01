@@ -5,6 +5,9 @@
  * Description: Creates the hierarchy levels for workspaces and links them to roles
  * -------------------------------------------------------
  */
+
+ DROP TABLE IF EXISTS public.workspace_hierarchies CASCADE;
+
 -- Create workspace_hierarchies table
 CREATE TABLE IF NOT EXISTS public.workspace_hierarchies (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

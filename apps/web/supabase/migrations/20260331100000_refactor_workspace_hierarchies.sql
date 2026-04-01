@@ -31,4 +31,3 @@ ALTER TABLE public.crm_accounts DROP COLUMN IF EXISTS is_public;
 ALTER TABLE public.crm_contacts DROP COLUMN IF EXISTS is_public;
 ALTER TABLE public.crm_opportunities DROP COLUMN IF EXISTS is_public;
 ALTER TABLE public.crm_meetings DROP COLUMN IF EXISTS is_public;
-ALTER TABLE public.crm_activities DROP COLUMN IF EXISTS is_public;
