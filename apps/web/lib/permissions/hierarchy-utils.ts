@@ -13,17 +13,7 @@ export async function getHierarchyVisibleUserIds(
 ): Promise<HierarchyFilter> {
   const resolveEffectiveLevel = (
     hierarchyLevel: number | null | undefined,
-    hierarchyRelation: { level?: number | null } | { level?: number | null }[] | null | undefined,
   ) => {
-    const hierarchy = Array.isArray(hierarchyRelation)
-      ? hierarchyRelation[0]
-      : hierarchyRelation;
-
-    // Prefer level from workspace_hierarchies when present; fallback to legacy hierarchy_level.
-    if (typeof hierarchy?.level === 'number') {
-      return hierarchy.level;
-    }
-
     return hierarchyLevel ?? 0;
   };
 
@@ -36,10 +26,8 @@ export async function getHierarchyVisibleUserIds(
         id,
         role_key,
         role_name,
-        hierarchy_level,
-        hierarchy:workspace_hierarchies!workspace_roles_hierarchy_id_fkey(
-          level
-        )
+        role_name,
+        hierarchy_level
       )
     `)
     .eq('workspace_id', workspaceId)
@@ -57,7 +45,6 @@ export async function getHierarchyVisibleUserIds(
   const roleData = Array.isArray(member.role) ? member.role[0] : member.role;
   const userLevel = resolveEffectiveLevel(
     roleData?.hierarchy_level,
-    roleData?.hierarchy,
   );
 
   // Only top hierarchy level (100+) gets full visibility.
@@ -72,10 +59,7 @@ export async function getHierarchyVisibleUserIds(
     .from('workspace_roles')
     .select(`
       id,
-      hierarchy_level,
-      hierarchy:workspace_hierarchies!workspace_roles_hierarchy_id_fkey(
-        level
-      )
+      hierarchy_level
     `)
     .eq('workspace_id', workspaceId);
 
@@ -89,7 +73,6 @@ export async function getHierarchyVisibleUserIds(
       ?.filter((role) => {
         const roleLevel = resolveEffectiveLevel(
           role.hierarchy_level,
-          role.hierarchy,
         );
         return roleLevel < userLevel;
       })

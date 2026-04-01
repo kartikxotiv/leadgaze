@@ -7,7 +7,7 @@ interface Role {
   role_key: string;
   role_name: string;
   description?: string;
-  hierarchy_id: string;
+  hierarchy_level: number;
   is_system: boolean;
   is_active: boolean;
   color?: string;
@@ -17,7 +17,6 @@ interface CreateRolePayload {
   role_key: string;
   role_name: string;
   description?: string;
-  hierarchy_id: string;
   color?: string;
   permissions?: RolePermission[];
 }
@@ -99,12 +98,20 @@ const updateRolePermissionsService = asyncHandlerClient(
   },
 );
 
+const reorderRolesService = asyncHandlerClient(
+  async (payload: { workspaceId: string; orderedRoleIds: string[] }) => {
+    const response = await ApiClient.put('/roles/reorder', payload);
+    return response.data;
+  },
+);
+
 export {
   getRolesService,
   getRoleByIdService,
   createRoleService,
   updateRoleService,
   deleteRoleService,
+  reorderRolesService,
   getModulesService,
   getRolePermissionsService,
   updateRolePermissionsService,

@@ -102,7 +102,21 @@ export const getContacts = catchAsync(
       );
       if (hierarchyFilter.type === 'restricted') {
         const userIds = hierarchyFilter.userIds;
-        query = query.or(`owner_id.in.(${userIds.join(',')}),created_by.in.(${userIds.join(',')})`);
+
+        // Fetch assigned contacts for this user (only active assignments)
+        const { data: assignments } = await adminClient
+          .from('contact_assignees')
+          .select('contact_id')
+          .eq('workspace_id', workspaceId)
+          .eq('assigned_to_user_id', user.id)
+          .eq('assignment_status', 'active');
+
+        const assignedIds = assignments?.map((a) => a.contact_id) || [];
+        const assignedIdsFilter = assignedIds.length > 0 
+          ? `,id.in.(${assignedIds.join(',')})` 
+          : '';
+
+        query = query.or(`owner_id.in.(${userIds.join(',')}),created_by.in.(${userIds.join(',')})${assignedIdsFilter}`);
       }
     }
 
@@ -160,8 +174,7 @@ export const getContacts = catchAsync(
     }
   
 
-    // RLS handles visibility based on hierarchy, ownership, and assignment.
-    // No manual filtering needed here.
+
 
     // Pagination
     const from = (page - 1) * limit;
@@ -274,7 +287,6 @@ export const createContact = catchAsync(
         status_id: statusId,
         owner_id: payload.owner_id || user.id,
         created_by: user.id,
-        is_public: payload.is_public ?? true, // Default to public
         ...cleanedData,
       })
       .select()

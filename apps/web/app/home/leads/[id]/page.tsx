@@ -6,7 +6,6 @@ import { useParams, useRouter } from 'next/navigation';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  ChevronDown,
   Clock,
   Edit2,
   Mail,
@@ -21,15 +20,7 @@ import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@kit/ui/dropdown-menu';
-import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
-import { Separator } from '@kit/ui/separator';
 import {
   Tooltip,
   TooltipContent,
@@ -38,7 +29,6 @@ import {
 } from '@kit/ui/tooltip';
 import { cn } from '@kit/ui/utils';
 
-import { PublicPrivateToggle } from '~/home/_components/public-private-toggle';
 import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
 import {
   useCanAccessData,
@@ -75,9 +65,6 @@ export default function LeadDetailsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
-  const [selectedNewStatus, setSelectedNewStatus] = useState<string | null>(
-    null,
-  );
   const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
@@ -379,18 +366,6 @@ export default function LeadDetailsPage() {
                       {lead.source.source_name}
                     </Badge>
                   )}
-                  {lead.is_public ? (
-                    <Badge variant="outline" className="px-3 py-1">
-                      Public
-                    </Badge>
-                  ) : (
-                    <Badge
-                      variant="outline"
-                      className="bg-gray-100 px-3 py-1 dark:bg-gray-800"
-                    >
-                      Private
-                    </Badge>
-                  )}
                 </div>
 
                 {/* Key Information Grid */}
@@ -642,17 +617,6 @@ export default function LeadDetailsPage() {
             {/* Lead Assignees Section */}
             {workspace?.id && (
               <LeadAssignees leadId={leadId} workspaceId={workspace.id} />
-            )}
-
-            {/* Public/Private Toggle */}
-            {workspace?.id && lead && (
-              <PublicPrivateToggle
-                entityType="lead"
-                entityId={leadId}
-                isPublic={lead.is_public}
-                createdBy={lead.created_by}
-                workspaceId={workspace.id}
-              />
             )}
 
             {/* Notes Section */}

@@ -142,6 +142,7 @@ const getLeads = catchAsync(
       | { type: 'all' }
       | { type: 'restricted'; userIds: string[] } = { type: 'all' };
     let visibleUserIds: string[] | null = null;
+    let assignedLeadIds: string[] = [];
 
     if (!isOwner) {
       hierarchyFilter = await getHierarchyVisibleUserIds(
@@ -151,6 +152,16 @@ const getLeads = catchAsync(
       );
       if (hierarchyFilter.type === 'restricted') {
         visibleUserIds = hierarchyFilter.userIds;
+
+        // Fetch assigned leads for these users (only active assignments)
+        const { data: assignments } = await adminClient
+          .from('lead_assignees')
+          .select('lead_id')
+          .eq('workspace_id', workspaceId)
+          .eq('assigned_to_user_id', actorAccountId)
+          .eq('assignment_status', 'active');
+
+        assignedLeadIds = assignments?.map((a) => a.lead_id) || [];
       }
     }
 
@@ -173,8 +184,12 @@ const getLeads = catchAsync(
       .eq('is_deleted', false);
 
     if (!isOwner && visibleUserIds && visibleUserIds.length > 0) {
+      const assignedIdsFilter = assignedLeadIds.length > 0
+        ? `,id.in.(${assignedLeadIds.join(',')})`
+        : '';
+        
       query = query.or(
-        `owner_id.in.(${visibleUserIds.join(',')}),created_by.in.(${visibleUserIds.join(',')})`,
+        `owner_id.in.(${visibleUserIds.join(',')}),created_by.in.(${visibleUserIds.join(',')})${assignedIdsFilter}`,
       );
     }
 
@@ -238,8 +253,12 @@ const getLeads = catchAsync(
       .eq('is_deleted', false);
 
     if (!isOwner && visibleUserIds && visibleUserIds.length > 0) {
+      const assignedIdsFilter = assignedLeadIds.length > 0
+        ? `,id.in.(${assignedLeadIds.join(',')})`
+        : '';
+        
       breakdownQuery = breakdownQuery.or(
-        `owner_id.in.(${visibleUserIds.join(',')}),created_by.in.(${visibleUserIds.join(',')})`,
+        `owner_id.in.(${visibleUserIds.join(',')}),created_by.in.(${visibleUserIds.join(',')})${assignedIdsFilter}`,
       );
     }
 
@@ -399,7 +418,6 @@ const createLead = catchAsync(
         tags: tags || [],
         custom_fields: custom_fields || {},
         created_by: user.id,
-        is_public: body.is_public ?? true,
       })
       .select(
         `

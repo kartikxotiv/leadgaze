@@ -92,7 +92,7 @@ export const updateOpportunity = catchAsync(
     // Get the opportunity to check permissions
     const { data: existingOpportunity } = await supabase
       .from('crm_opportunities')
-      .select('workspace_id, owner_id, created_by, is_public')
+      .select('workspace_id, owner_id, created_by')
       .eq('id', id)
       .single();
 
@@ -154,18 +154,6 @@ export const updateOpportunity = catchAsync(
       );
     }
 
-    // Check permissions for is_public updates - Only if value is CHANGING
-    if (
-      body.is_public !== undefined &&
-      body.is_public !== existingOpportunity.is_public
-    ) {
-      if (!isWorkspaceOwner && !isCreator) {
-        return NextResponse.json(
-          { message: 'Only workspace owner or creator can change visibility' },
-          { status: 403 },
-        );
-      }
-    }
 
     const { data: opportunity, error } = await supabase
       .from('crm_opportunities')

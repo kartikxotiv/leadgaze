@@ -97,6 +97,7 @@ export const getOpportunities = catchAsync(
     let hierarchyFilter:
       | { type: 'all' }
       | { type: 'restricted'; userIds: string[] } = { type: 'all' };
+    let assignedOpportunityIds: string[] = [];
 
     if (!isOwner) {
       hierarchyFilter = await getHierarchyVisibleUserIds(
@@ -106,8 +107,22 @@ export const getOpportunities = catchAsync(
       );
       if (hierarchyFilter.type === 'restricted') {
         const userIds = hierarchyFilter.userIds;
+
+        // Fetch assigned opportunities for this user (only active assignments)
+        const { data: assignments } = await adminClient
+          .from('opportunity_assignees')
+          .select('opportunity_id')
+          .eq('workspace_id', workspaceId)
+          .eq('assigned_to_user_id', user.id)
+          .eq('assignment_status', 'active');
+
+        assignedOpportunityIds = assignments?.map((a) => a.opportunity_id) || [];
+        const assignedIdsFilter = assignedOpportunityIds.length > 0 
+          ? `,id.in.(${assignedOpportunityIds.join(',')})` 
+          : '';
+
         query = query.or(
-          `owner_id.in.(${userIds.join(',')}),created_by.in.(${userIds.join(',')})`,
+          `owner_id.in.(${userIds.join(',')}),created_by.in.(${userIds.join(',')})${assignedIdsFilter}`,
         );
       }
     }
@@ -141,8 +156,7 @@ export const getOpportunities = catchAsync(
       query = query.or(orFilter);
     }
 
-    // RLS handles visibility based on hierarchy, ownership, and assignment.
-    // No manual filtering needed here.
+
 
     // Pagination
     const from = (page - 1) * limit;
@@ -174,7 +188,11 @@ export const getOpportunities = catchAsync(
     // Reuse the same filter from above
     if (!isOwner && hierarchyFilter.type === 'restricted') {
       const userIds = hierarchyFilter.userIds;
-      breakdownQuery = breakdownQuery.or(`owner_id.in.(${userIds.join(',')}),created_by.in.(${userIds.join(',')})`);
+      const assignedIdsFilter = assignedOpportunityIds.length > 0 
+        ? `,id.in.(${assignedOpportunityIds.join(',')})` 
+        : '';
+        
+      breakdownQuery = breakdownQuery.or(`owner_id.in.(${userIds.join(',')}),created_by.in.(${userIds.join(',')})${assignedIdsFilter}`);
     }
 
     if (accountId) {
