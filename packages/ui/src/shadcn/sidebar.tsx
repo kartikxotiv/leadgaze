@@ -7,7 +7,12 @@ import { usePathname } from 'next/navigation';
 
 import { Slot } from '@radix-ui/react-slot';
 import { VariantProps, cva } from 'class-variance-authority';
-import { ChevronDown, PanelLeft } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  PanelLeft,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { useIsMobile } from '../hooks/use-mobile';
@@ -261,7 +266,7 @@ const Sidebar: React.FC<
       />
       <div
         className={cn(
-          'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex',
+          'fixed inset-y-0 z-30 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex',
           side === 'left'
             ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]'
             : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]',
@@ -316,7 +321,11 @@ const SidebarTrigger: React.FC<React.ComponentProps<typeof Button>> = ({
       }}
       {...props}
     >
-      <PanelLeft />
+      {context.open ? (
+        <ChevronLeft className="h-4 w-4" />
+      ) : (
+        <ChevronRight className="h-4 w-4" />
+      )}
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );

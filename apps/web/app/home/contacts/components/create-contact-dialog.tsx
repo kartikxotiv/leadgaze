@@ -61,7 +61,6 @@ export function CreateContactDialog({
     job_title: '',
     account_id: defaultAccountId || '',
     notes: '',
-    is_public: true,
   });
 
   // Update account_id when dialog opens with defaultAccountId
@@ -71,11 +70,13 @@ export function CreateContactDialog({
     }
   }, [open, defaultAccountId]);
 
-  const { data: accounts = [], refetch: refetchAccounts } = useQuery({
+  const { data: accountsData, refetch: refetchAccounts } = useQuery({
     queryKey: ['accounts', workspace?.id],
-    queryFn: () => getAccountsService(workspace?.id || ''),
+    queryFn: () => getAccountsService({ workspaceId: workspace!.id }),
     enabled: !!workspace?.id && open,
   });
+
+  const accounts = (accountsData as any)?.data || [];
 
   const mutation = useMutation({
     mutationFn: async (payload: any) => {
@@ -86,7 +87,7 @@ export function CreateContactDialog({
     },
     onSuccess: (data) => {
       toast.success('Contact created successfully');
-      queryClient.invalidateQueries({ queryKey: ['contacts', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
       resetForm();
       onOpenChange(false);
       if (onSuccess) onSuccess(data);
@@ -105,7 +106,6 @@ export function CreateContactDialog({
       job_title: '',
       account_id: '',
       notes: '',
-      is_public: true,
     });
   };
 
@@ -229,7 +229,13 @@ export function CreateContactDialog({
                   <SelectTrigger>
                     <SelectValue placeholder="Select associated account" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent
+                    position="popper"
+                    side="bottom"
+                    align="start"
+                    sideOffset={4}
+                    avoidCollisions={false}
+                  >
                     {accounts.map((account: any) => (
                       <SelectItem key={account.id} value={account.id}>
                         {account.account_name}
@@ -251,33 +257,6 @@ export function CreateContactDialog({
                 placeholder="Add some context about this contact..."
                 rows={3}
               />
-            </div>
-
-            <div className="flex items-start gap-3 pt-4">
-              <Checkbox
-                id="is_public"
-                checked={formData.is_public}
-                onCheckedChange={(checked) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    is_public: checked as boolean,
-                  }));
-                }}
-                className="mt-1"
-              />
-              <div className="flex-1">
-                <Label
-                  htmlFor="is_public"
-                  className="cursor-pointer text-sm font-medium"
-                >
-                  Make this contact public
-                </Label>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  When public, this contact will be visible to all team members
-                  with "View contacts" access. When private, only you and
-                  assigned team members can see it.
-                </p>
-              </div>
             </div>
 
             <DialogFooter>

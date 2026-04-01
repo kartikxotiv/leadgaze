@@ -7,11 +7,25 @@ export interface Contact {
   first_name: string;
   last_name?: string;
   email?: string;
+  alt_email?: string;
   phone_number?: string;
+  mobile_number?: string;
+  alt_phone?: string;
   job_title?: string;
-  account_id?: string;
+  department?: string;
+  location?: string;
+  timezone?: string;
+  language?: string;
+  preferred_contact_method?: string;
+  do_not_call?: boolean;
+  do_not_email?: boolean;
+  linkedin_url?: string;
+  twitter_handle?: string;
   status_id: string;
   owner_id?: string;
+  created_by?: string;
+  updated_by?: string;
+  notes?: string | null;
   created_at: string;
   updated_at: string;
   // Relations
@@ -28,6 +42,16 @@ export interface Contact {
     id: string;
     name: string;
     email: string;
+  };
+  created_by_account?: {
+    id: string;
+    email: string;
+    name: string;
+  };
+  updated_by_account?: {
+    id: string;
+    email: string;
+    name: string;
   };
 }
 
@@ -77,9 +101,16 @@ const updateContactService = asyncHandlerClient(
   },
 );
 
+const deleteContactService = asyncHandlerClient(async (id: string) => {
+  const response = await ApiClient.delete(`/contacts/${id}`);
+  return response.data?.data;
+});
+
 export {
   getContactsService,
   getContactByIdService,
   createContactService,
+
   updateContactService,
+  deleteContactService,
 };

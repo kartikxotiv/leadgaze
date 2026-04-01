@@ -5,8 +5,22 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { useQuery } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowDown, ArrowUp, Menu, TrendingUp } from 'lucide-react';
-import { Building2, FileText, Target, Users } from 'lucide-react';
+import {
+  AlertTriangle,
+  Briefcase,
+  BriefcaseBusiness,
+  Building2,
+  FileText,
+  Mail,
+  Phone,
+  Plus,
+  Target,
+  User,
+  Users,
+  Video,
+} from 'lucide-react';
 import {
   Area,
   AreaChart,
@@ -44,17 +58,44 @@ import {
 } from '@kit/ui/table';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
-import { getDashboardMetricsService } from '~/services/dashboard.service';
+import {
+  DashboardMetrics,
+  DashboardTask,
+  getDashboardMetricsService,
+} from '~/services/dashboard.service';
+
+import { CreateAccountDialog } from '../accounts/components/create-account-dialog';
+import { CreateContactDialog } from '../contacts/components/create-contact-dialog';
+import CreateLeadDialog from '../leads/components/create-lead-dialog';
+import { OpportunityDialog } from '../opportunities/components/opportunity-dialog';
 
 export default function DashboardDemo() {
   const { currentWorkspace } = useRBAC();
   const workspaceId = currentWorkspace?.id;
 
-  const { data: metrics, isLoading } = useQuery({
+  const {
+    data: metrics,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ['dashboard-metrics', workspaceId],
     queryFn: () => getDashboardMetricsService(workspaceId!),
     enabled: !!workspaceId,
   });
+
+  const queryClient = useQueryClient();
+  const [isCreateLeadOpen, setIsCreateLeadOpen] = useState(false);
+  const [isCreateContactOpen, setIsCreateContactOpen] = useState(false);
+  const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
+  const [isCreateOpportunityOpen, setIsCreateOpportunityOpen] = useState(false);
+
+  const handleCreateSuccess = () => {
+    refetch();
+    // Also refetch recent contacts if table is visible
+    queryClient.invalidateQueries({
+      queryKey: ['contacts', 'recent', workspaceId],
+    });
+  };
 
   const leadsTrend = useMemo(() => generateDemoData(), []);
   const contactsTrend = useMemo(() => generateDemoData(), []);
@@ -72,29 +113,30 @@ export default function DashboardDemo() {
   return (
     <div
       className={
-        'animate-in fade-in flex flex-col space-y-4 pb-36 duration-500'
+        'animate-in fade-in flex h-full flex-col overflow-y-auto p-4 duration-500 xl:overflow-hidden xl:p-3 2xl:overflow-y-auto 2xl:p-4'
       }
     >
       <div
         className={
-          'grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
+          'grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-3 xl:pb-4 2xl:grid-cols-4 2xl:gap-4 2xl:pb-6'
         }
       >
-        <Card>
-          <CardHeader>
-            <CardTitle className={'flex items-center gap-2.5'}>
-              <FileText className="text-muted-foreground h-4 w-4" />
+        <Card className="h-32 xl:h-28 2xl:h-32">
+          <CardHeader className="xl:p-3 xl:pb-2 2xl:p-6">
+            <CardTitle
+              className={
+                'flex items-center gap-2.5 xl:text-[13px] 2xl:text-base'
+              }
+            >
+              <FileText className="text-muted-foreground h-4 w-4 xl:h-3 xl:w-3 2xl:h-4 2xl:w-4" />
               <span>Total Leads</span>
-              {/* {metrics.leads.trend > 0 && (
-                <Trend trend={'up'}>{metrics.leads.trend}%</Trend>
-              )} */}
             </CardTitle>
 
-            <CardDescription>
+            <CardDescription className="xl:text-[11px] 2xl:text-sm">
               <span>Potential customers in the funnel</span>
             </CardDescription>
 
-            <div>
+            <div className="xl:mt-1 2xl:mt-0">
               <Figure>{metrics.leads.total}</Figure>
             </div>
           </CardHeader>
@@ -104,18 +146,22 @@ export default function DashboardDemo() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className={'flex items-center gap-2.5'}>
-              <Users className="text-muted-foreground h-4 w-4" />
+        <Card className="h-32 xl:h-28 2xl:h-32">
+          <CardHeader className="xl:p-3 xl:pb-2 2xl:p-6">
+            <CardTitle
+              className={
+                'flex items-center gap-2.5 xl:text-[13px] 2xl:text-base'
+              }
+            >
+              <Users className="text-muted-foreground h-4 w-4 xl:h-3 xl:w-3 2xl:h-4 2xl:w-4" />
               <span>Contacts</span>
             </CardTitle>
 
-            <CardDescription>
+            <CardDescription className="xl:text-[11px] 2xl:text-sm">
               <span>Total individual relationships</span>
             </CardDescription>
 
-            <div>
+            <div className="xl:mt-1 2xl:mt-0">
               <Figure>{metrics.contacts.total}</Figure>
             </div>
           </CardHeader>
@@ -123,18 +169,22 @@ export default function DashboardDemo() {
           <CardContent>{/* <Chart data={contactsTrend[0]} /> */}</CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className={'flex items-center gap-2.5'}>
-              <Building2 className="text-muted-foreground h-4 w-4" />
+        <Card className="h-32 xl:h-28 2xl:h-32">
+          <CardHeader className="xl:p-3 xl:pb-2 2xl:p-6">
+            <CardTitle
+              className={
+                'flex items-center gap-2.5 xl:text-[13px] 2xl:text-base'
+              }
+            >
+              <Building2 className="text-muted-foreground h-4 w-4 xl:h-3 xl:w-3 2xl:h-4 2xl:w-4" />
               <span>Accounts</span>
             </CardTitle>
 
-            <CardDescription>
+            <CardDescription className="xl:text-[11px] 2xl:text-sm">
               <span>Total company organizations</span>
             </CardDescription>
 
-            <div>
+            <div className="xl:mt-1 2xl:mt-0">
               <Figure>{metrics.accounts.total}</Figure>
             </div>
           </CardHeader>
@@ -142,18 +192,22 @@ export default function DashboardDemo() {
           <CardContent>{/* <Chart data={accountsTrend[0]} /> */}</CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className={'flex items-center gap-2.5'}>
-              <Target className="text-muted-foreground h-4 w-4" />
+        <Card className="h-32 xl:h-28 2xl:h-32">
+          <CardHeader className="xl:p-3 xl:pb-2 2xl:p-6">
+            <CardTitle
+              className={
+                'flex items-center gap-2.5 xl:text-[13px] 2xl:text-base'
+              }
+            >
+              <Target className="text-muted-foreground h-4 w-4 xl:h-3 xl:w-3 2xl:h-4 2xl:w-4" />
               <span>Pipeline Value</span>
             </CardTitle>
 
-            <CardDescription>
+            <CardDescription className="xl:text-[11px] 2xl:text-sm">
               <span>Total value of opportunities</span>
             </CardDescription>
 
-            <div>
+            <div className="xl:mt-1 2xl:mt-0">
               <Figure>
                 {new Intl.NumberFormat('en-US', {
                   style: 'currency',
@@ -174,21 +228,260 @@ export default function DashboardDemo() {
 
       {/* <PageViewsChart /> */}
 
-      <div>
-        <Card>
-          <CardHeader>
+      {/* <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-4">
+        <Card className="flex flex-1 flex-col overflow-hidden border-none shadow-none">
+          <CardHeader className="shrink-0 p-2 pb-4">
             <CardTitle>Recent Contacts</CardTitle>
             <CardDescription>
               Latest contacts added to your workspace
             </CardDescription>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
             <RecentContactsTable workspaceId={workspaceId!} />
           </CardContent>
         </Card>
+      </div> */}
+
+      {/* section 2 */}
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-3 2xl:grid-cols-4 2xl:gap-4">
+        <Button
+          variant="outline"
+          className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          onClick={() => setIsCreateLeadOpen(true)}
+        >
+          <div className="flex items-center gap-2 xl:gap-1.5 2xl:gap-2">
+            <Plus className="h-6 w-6 text-slate-500 xl:h-4 xl:w-4 2xl:h-6 2xl:w-6 dark:text-zinc-400" />
+            <span className="text-[16px] font-semibold text-slate-700 xl:text-sm 2xl:text-[16px] dark:text-zinc-200">
+              Add Lead
+            </span>
+          </div>
+        </Button>
+        {/* font-heading text-2xl font-semibold */}
+
+        <Button
+          variant="outline"
+          className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          onClick={() => setIsCreateContactOpen(true)}
+        >
+          {/* <Contact /> */}
+          <div className="flex items-center gap-2 xl:gap-1.5 2xl:gap-2">
+            <User className="h-6 w-6 text-slate-500 xl:h-4 xl:w-4 2xl:h-6 2xl:w-6 dark:text-zinc-400" />
+            <span className="text-[16px] font-semibold text-slate-700 xl:text-sm 2xl:text-[16px] dark:text-zinc-200">
+              Add Contact
+            </span>
+          </div>
+        </Button>
+
+        <Button
+          variant="outline"
+          className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          onClick={() => setIsCreateAccountOpen(true)}
+        >
+          <div className="flex items-center gap-2 xl:gap-1.5 2xl:gap-2">
+            <Briefcase className="h-6 w-6 text-slate-500 xl:h-4 xl:w-4 2xl:h-6 2xl:w-6 dark:text-zinc-400" />
+            <span className="text-[16px] font-semibold text-slate-700 xl:text-sm 2xl:text-[16px] dark:text-zinc-200">
+              Add Account
+            </span>
+          </div>
+        </Button>
+
+        <Button
+          variant="outline"
+          className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          onClick={() => setIsCreateOpportunityOpen(true)}
+        >
+          <div className="flex items-center gap-2 xl:gap-1.5 2xl:gap-2">
+            <BriefcaseBusiness className="h-6 w-6 text-slate-500 xl:h-4 xl:w-4 2xl:h-6 2xl:w-6 dark:text-zinc-400" />
+            <span className="text-[16px] font-semibold text-slate-700 xl:text-sm 2xl:text-[16px] dark:text-zinc-200">
+              Add Opportunity
+            </span>
+          </div>
+        </Button>
+      </div>
+
+      <CreateLeadDialog
+        open={isCreateLeadOpen}
+        onOpenChange={setIsCreateLeadOpen}
+        onSuccess={handleCreateSuccess}
+      />
+
+      <CreateContactDialog
+        open={isCreateContactOpen}
+        onOpenChange={setIsCreateContactOpen}
+        onSuccess={handleCreateSuccess}
+      />
+
+      <CreateAccountDialog
+        open={isCreateAccountOpen}
+        onOpenChange={setIsCreateAccountOpen}
+        onSuccess={handleCreateSuccess}
+      />
+
+      <OpportunityDialog
+        isOpen={isCreateOpportunityOpen}
+        onOpenChange={setIsCreateOpportunityOpen}
+        onSuccess={handleCreateSuccess}
+      />
+
+      {/* Section 3: Pipeline & Upcoming Tasks */}
+      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2 xl:mt-4 xl:gap-4 2xl:mt-8 2xl:gap-8">
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-slate-900 xl:text-[16px] 2xl:text-xl dark:text-zinc-100">
+            Pipeline Overview
+          </h2>
+          <PipelineOverview metrics={metrics} />
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-slate-900 xl:text-[16px] 2xl:text-xl dark:text-zinc-100">
+            Upcoming Tasks
+          </h2>
+          <UpcomingTasks tasks={metrics.upcomingTasks} />
+        </div>
       </div>
     </div>
+  );
+}
+
+function PipelineOverview({ metrics }: { metrics: DashboardMetrics }) {
+  const pipeline = metrics.pipeline || {
+    newLeads: 0,
+    contacted: 0,
+    qualified: 0,
+    proposalSent: 0,
+    won: 0,
+  };
+
+  const stages = [
+    { label: 'New Leads', value: pipeline.newLeads },
+    { label: 'Contacted', value: pipeline.contacted },
+    { label: 'Qualified', value: pipeline.qualified },
+    { label: 'Proposal Sent', value: pipeline.proposalSent },
+    { label: 'Won', value: pipeline.won },
+  ];
+
+  const maxValue = Math.max(...stages.map((s) => s.value), 1);
+
+  return (
+    <Card className="border-none bg-transparent shadow-none">
+      <CardContent className="space-y-4 p-0">
+        <div className="max-h-[400px] space-y-6 rounded-xl border bg-white p-6 xl:max-h-[300px] xl:space-y-3 xl:p-4 2xl:max-h-[400px] 2xl:space-y-6 2xl:p-6 dark:border-zinc-800 dark:bg-zinc-900">
+          {stages.map((stage) => (
+            <div key={stage.label} className="flex items-center gap-6">
+              <span className="w-32 text-sm font-medium text-slate-700 dark:text-zinc-400">
+                {stage.label}
+              </span>
+              <div className="h-4 flex-1 overflow-hidden rounded-md bg-slate-50">
+                <div
+                  className="h-full rounded-md bg-[#8EADF3] transition-all duration-500"
+                  style={{ width: `${(stage.value / maxValue) * 100}%` }}
+                />
+              </div>
+              <span className="w-10 text-right text-sm font-semibold text-slate-900 dark:text-zinc-200">
+                {stage.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
+  const formatDueDateShort = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+
+    // Normalize both dates to midnight local time for comparison
+    const dateMidnight = new Date(date);
+    dateMidnight.setHours(0, 0, 0, 0);
+
+    const todayMidnight = new Date(today);
+    todayMidnight.setHours(0, 0, 0, 0);
+
+    const timeDiff = dateMidnight.getTime() - todayMidnight.getTime();
+    const dayDiff = Math.round(timeDiff / (1000 * 3600 * 24));
+
+    if (dayDiff === 0) return 'Today';
+    if (dayDiff === 1) return 'Tomorrow';
+    if (dayDiff > 1) return `In ${dayDiff} days`;
+    if (dayDiff === -1) return 'Yesterday';
+    if (dayDiff < -1) return 'Overdue';
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const getTaskIcon = (task: DashboardTask) => {
+    if (task.type === 'meeting') {
+      return <Video className="h-5 w-5 text-purple-500" />;
+    }
+
+    const title = task.title.toLowerCase();
+    if (title.includes('call'))
+      return <Phone className="h-5 w-5 fill-[#E07A5F] text-[#E07A5F]" />;
+    if (title.includes('email'))
+      return <Mail className="h-5 w-5 text-blue-400" />;
+    if (title.includes('follow') || title.includes('urgent'))
+      return (
+        <AlertTriangle className="h-5 w-5 fill-[#F2CC8F] text-[#F2CC8F]" />
+      );
+    return <FileText className="h-5 w-5 text-slate-400" />;
+  };
+
+  // Limit to latest 3 tasks
+  const latestTasks = useMemo(() => tasks.slice(0, 3), [tasks]);
+
+  return (
+    <Card className="border-none bg-transparent shadow-none">
+      <CardContent className="p-0">
+        <div className="max-h-[500px] overflow-y-auto rounded-xl border border-slate-100 bg-white xl:max-h-[350px] 2xl:max-h-[500px] dark:border-zinc-800 dark:bg-zinc-900">
+          {latestTasks.length === 0 ? (
+            <div className="flex h-40 flex-col items-center justify-center text-slate-400">
+              <FileText className="mb-2 h-8 w-8 opacity-20" />
+              <p className="text-sm">No upcoming tasks</p>
+            </div>
+          ) : (
+            <div className="divide-y dark:divide-zinc-800">
+              {latestTasks.map((task) => {
+                const relativeDate = formatDueDateShort(task.dueDate);
+                return (
+                  <div
+                    key={task.id}
+                    className="flex items-center justify-between p-5 transition-colors hover:bg-slate-50/30 xl:p-3 2xl:p-5 dark:hover:bg-zinc-800/30"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-10 w-6 items-center justify-center">
+                        {getTaskIcon(task)}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[15px] font-medium text-slate-700 dark:text-zinc-200">
+                          {task.title}
+                          {task.entityName && (
+                            <span className="font-normal text-slate-500">
+                              {' '}
+                              - {task.entityName}
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-[15px] text-slate-400">
+                          {' '}
+                          · {relativeDate}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-[15px] font-bold text-slate-700 dark:text-zinc-200">
+                      {relativeDate}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -283,59 +576,61 @@ function RecentContactsTable({ workspaceId }: { workspaceId: string }) {
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Contact</TableHead>
-          <TableHead>Company</TableHead>
-          <TableHead className="hidden md:table-cell">Job Title</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {contacts.map((contact: any) => (
-          <TableRow key={contact.id}>
-            <TableCell className={'flex flex-col'}>
-              <span className="font-medium">
-                {contact.first_name} {contact.last_name}
-              </span>
-              <span
-                className={'text-muted-foreground hidden text-xs sm:inline'}
-              >
-                {contact.email}
-              </span>
-            </TableCell>
-            <TableCell>{contact.account?.account_name || '-'}</TableCell>
-            <TableCell className="text-muted-foreground hidden text-sm md:table-cell">
-              {contact.job_title || '-'}
-            </TableCell>
-            <TableCell>
-              {contact.status ? (
-                <Badge
-                  variant="outline"
-                  style={{
-                    color: contact.status.color,
-                    borderColor: contact.status.color + '40',
-                    backgroundColor: contact.status.color + '10',
-                  }}
-                  className="h-5 text-[10px]"
-                >
-                  {contact.status.status_name}
-                </Badge>
-              ) : (
-                '-'
-              )}
-            </TableCell>
-            <TableCell className="text-right">
-              <Button variant="ghost" size="sm" asChild>
-                <Link href={`/home/contacts/${contact.id}`}>View</Link>
-              </Button>
-            </TableCell>
+    <div className="flex-1 overflow-auto [&>div]:overflow-visible">
+      <Table className="w-full caption-bottom text-sm">
+        <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+          <TableRow className="bg-card">
+            <TableHead>Contact</TableHead>
+            <TableHead>Company</TableHead>
+            <TableHead className="hidden md:table-cell">Job Title</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {contacts.map((contact: any) => (
+            <TableRow key={contact.id}>
+              <TableCell className={'flex flex-col'}>
+                <span className="font-medium">
+                  {contact.first_name} {contact.last_name}
+                </span>
+                <span
+                  className={'text-muted-foreground hidden text-xs sm:inline'}
+                >
+                  {contact.email}
+                </span>
+              </TableCell>
+              <TableCell>{contact.account?.account_name || '-'}</TableCell>
+              <TableCell className="text-muted-foreground hidden text-sm md:table-cell">
+                {contact.job_title || '-'}
+              </TableCell>
+              <TableCell>
+                {contact.status ? (
+                  <Badge
+                    variant="outline"
+                    style={{
+                      color: contact.status.color,
+                      borderColor: contact.status.color + '40',
+                      backgroundColor: contact.status.color + '10',
+                    }}
+                    className="h-5 text-[10px]"
+                  >
+                    {contact.status.status_name}
+                  </Badge>
+                ) : (
+                  '-'
+                )}
+              </TableCell>
+              <TableCell className="text-right">
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href={`/home/contacts/${contact.id}`}>View</Link>
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 
@@ -363,7 +658,9 @@ function RecentContactsTable({ workspaceId }: { workspaceId: string }) {
 
 function Figure(props: React.PropsWithChildren) {
   return (
-    <div className={'font-heading text-2xl font-semibold'}>
+    <div
+      className={'font-heading text-2xl font-semibold xl:text-xl 2xl:text-2xl'}
+    >
       {props.children}
     </div>
   );

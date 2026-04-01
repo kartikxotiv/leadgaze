@@ -27,8 +27,6 @@ export interface Lead {
   lead_score: number;
   owner_id?: string;
   created_by: string;
-  updated_by?: string;
-  is_public: boolean;
   last_contact_date?: string;
   next_followup_date?: string;
   contacted_count: number;
@@ -65,6 +63,16 @@ export interface Lead {
     id: string;
     industry_name: string;
   };
+  created_by_account?: {
+    id: string;
+    email: string;
+    name: string;
+  };
+  updated_by_account?: {
+    id: string;
+    email: string;
+    name: string;
+  };
 }
 
 export interface CreateLeadPayload {
@@ -93,8 +101,6 @@ export interface CreateLeadPayload {
   owner_id?: string;
   notes?: string;
   tags?: string[];
-  custom_fields?: Record<string, any>;
-  is_public?: boolean;
 }
 
 export interface UpdateLeadPayload {
@@ -122,8 +128,6 @@ export interface UpdateLeadPayload {
   owner_id?: string;
   notes?: string;
   tags?: string[];
-  custom_fields?: Record<string, any>;
-  is_public?: boolean;
 }
 
 const getLeadsService = asyncHandlerClient(
@@ -148,6 +152,10 @@ const getLeadsService = asyncHandlerClient(
     return {
       data: (response.data?.data || []) as Lead[],
       count: (response.data?.count || 0) as number,
+      statusBreakdown: (response.data?.statusBreakdown || {}) as Record<
+        string,
+        { count: number }
+      >,
     };
   },
 );
@@ -223,15 +231,13 @@ const convertLeadService = asyncHandlerClient(
 );
 
 const sendLeadEmailService = asyncHandlerClient(
-  async (
-    payload: {
-      leadId: string;
-      subject: string;
-      body: string;
-      cc?: string | string[];
-      bcc?: string | string[];
-    },
-  ) => {
+  async (payload: {
+    leadId: string;
+    subject: string;
+    body: string;
+    cc?: string | string[];
+    bcc?: string | string[];
+  }) => {
     console.log({ payload });
 
     const response = await ApiClient.post(`/email/send`, payload);

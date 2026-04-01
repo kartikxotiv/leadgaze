@@ -6,7 +6,7 @@ import { withI18n } from '~/lib/i18n/with-i18n';
 function UserSettingsLayout(props: React.PropsWithChildren) {
   return (
     <>
-      <PageHeader description={<AppBreadcrumbs />} />
+      <PageHeader title="Profile" description={<AppBreadcrumbs />} />
 
       {props.children}
     </>

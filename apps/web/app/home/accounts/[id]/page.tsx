@@ -10,11 +10,14 @@ import {
   ArrowLeft,
   Building2,
   Calendar,
+  Clock,
   DollarSign,
   Globe,
+  Linkedin,
   Mail,
   MapPin,
   Phone,
+  Trash2,
   User,
   Users,
 } from 'lucide-react';
@@ -25,6 +28,12 @@ import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { PageBody } from '@kit/ui/page';
 import { Separator } from '@kit/ui/separator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 
 import {
   useCanAccessData,
@@ -36,22 +45,24 @@ import { getAccountByIdService } from '~/services/accounts.service';
 import { getContactsService } from '~/services/contacts.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
 
+import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
 import {
   EntityDocuments,
   EntityMeetings,
   EntityReminders,
 } from '../../_components/entity-activity';
 import { EntityNotes } from '../../_components/entity-notes';
-import { PublicPrivateToggle } from '../../_components/public-private-toggle';
-import { CreateContactDialog } from '../../contacts/components/create-contact-dialog';
 import { OpportunityDialog } from '../../opportunities/components/opportunity-dialog';
 import { AccountAssignees } from '../components/account-assignees';
 import { EditAccountDialog } from '../components/edit-account-dialog';
+import { CreateContactDialog } from '~/home/contacts/components/create-contact-dialog';
 
 export default function AccountDetailsPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params?.id as string;
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
   const [isOpportunityDialogOpen, setIsOpportunityDialogOpen] = useState(false);
   const { currentWorkspace: workspace } = useRBAC();
@@ -78,6 +89,7 @@ export default function AccountDetailsPage() {
   const { data: user } = useUser();
   const editPermission = usePermissionDetail('accounts', 'edit');
   const canEdit = useCanAccessData(editPermission, account?.owner_id, user?.id);
+  const { canAccess: rbacCanAccess } = useRBAC();
 
   const { data: opportunitiesData } = useQuery({
     queryKey: ['opportunities', 'account', id],
@@ -124,17 +136,15 @@ export default function AccountDetailsPage() {
               Back
             </Link>
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditDialogOpen(true)}
-            disabled={!canEdit}
-            title={
-              !canEdit ? 'You do not have permission to edit this account' : ''
-            }
-          >
-            Edit Account
-          </Button>
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditDialogOpen(true)}
+            >
+              Edit Account
+            </Button>
+          )}
         </div>
 
         <div className="flex items-start justify-between">
@@ -162,6 +172,21 @@ export default function AccountDetailsPage() {
                     {account.website.replace(/^https?:\/\//, '')}
                   </a>
                 )}
+                <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <Clock className="h-3 w-3" />
+                  <span>
+                    Created on{' '}
+                    {new Date(account.created_at).toLocaleDateString(
+                      undefined,
+                      {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      },
+                    )}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -169,6 +194,14 @@ export default function AccountDetailsPage() {
       </div>
 
       <PageBody>
+        <DeleteEntityDialog
+          isOpen={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          entityId={id}
+          entityType="account"
+          entityName={account.account_name}
+          onSuccess={() => router.push('/home/accounts')}
+        />
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="space-y-6 lg:col-span-2">
@@ -213,9 +246,9 @@ export default function AccountDetailsPage() {
                     <span className="text-sm">
                       {account.annual_revenue
                         ? new Intl.NumberFormat('en-US', {
-                            style: 'currency',
-                            currency: 'USD',
-                          }).format(account.annual_revenue)
+                          style: 'currency',
+                          currency: 'USD',
+                        }).format(account.annual_revenue)
                         : '-'}
                     </span>
                   </div>
@@ -228,6 +261,27 @@ export default function AccountDetailsPage() {
                   <span className="text-sm capitalize">
                     {account.account_type || '-'}
                   </span>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-sm font-medium">
+                    LinkedIn
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Linkedin className="text-muted-foreground h-4 w-4" />
+                    {account.linkedin_url ? (
+                      <a
+                        href={account.linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm break-all hover:underline"
+                      >
+                        {account.linkedin_url}
+                      </a>
+                    ) : (
+                      <span className="text-sm">-</span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-1 sm:col-span-2">
@@ -285,56 +339,66 @@ export default function AccountDetailsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg font-bold">Contacts</CardTitle>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setIsContactDialogOpen(true)}
-                >
-                  Add Contact
-                </Button>
+                {rbacCanAccess('accounts', 'add_contact') && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsContactDialogOpen(true)}
+                  >
+                    Add Contact
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
-                {contacts && contacts.length > 0 ? (
-                  <div className="divide-y">
-                    {contacts.map((contact: any) => (
-                      <div
-                        key={contact.id}
-                        className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold">
-                            {contact.first_name[0]}
-                            {contact.last_name?.[0]}
+                {rbacCanAccess('accounts', 'view_contacts') ? (
+                  contacts && contacts.length > 0 ? (
+                    <div className="divide-y">
+                      {contacts.map((contact: any) => (
+                        <div
+                          key={contact.id}
+                          className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold">
+                              {contact.first_name[0]}
+                              {contact.last_name?.[0]}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">
+                                {contact.first_name} {contact.last_name}
+                              </p>
+                              <p className="text-muted-foreground text-xs">
+                                {contact.job_title}{' '}
+                                {contact.department
+                                  ? `(${contact.department})`
+                                  : ''}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium">
-                              {contact.first_name} {contact.last_name}
-                            </p>
-                            <p className="text-muted-foreground text-xs">
-                              {contact.job_title}{' '}
-                              {contact.department
-                                ? `(${contact.department})`
-                                : ''}
-                            </p>
+                          <div className="flex items-center gap-4">
+                            <div className="text-muted-foreground hidden text-right text-xs sm:block">
+                              <p>{contact.email}</p>
+                              <p>{contact.phone_number}</p>
+                            </div>
+                            {rbacCanAccess('contacts', 'view') && (
+                              <Button size="sm" variant="ghost" asChild>
+                                <Link href={`/home/contacts/${contact.id}`}>
+                                  View
+                                </Link>
+                              </Button>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-muted-foreground hidden text-right text-xs sm:block">
-                            <p>{contact.email}</p>
-                            <p>{contact.phone_number}</p>
-                          </div>
-                          <Button size="sm" variant="ghost" asChild>
-                            <Link href={`/home/contacts/${contact.id}`}>
-                              View
-                            </Link>
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-muted-foreground py-6 text-center text-sm">
+                      No contacts associated with this account.
+                    </div>
+                  )
                 ) : (
                   <div className="text-muted-foreground py-6 text-center text-sm">
-                    No contacts associated with this account.
+                    You do not have permission to view contacts.
                   </div>
                 )}
               </CardContent>
@@ -351,62 +415,70 @@ export default function AccountDetailsPage() {
                   variant="outline"
                   onClick={() => setIsOpportunityDialogOpen(true)}
                 >
-                  Add Opportunity
+                  New Opportunity
                 </Button>
               </CardHeader>
               <CardContent>
-                {opportunities && opportunities.length > 0 ? (
-                  <div className="divide-y">
-                    {opportunities.map((opp: any) => (
-                      <div
-                        key={opp.id}
-                        className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
-                      >
-                        <div>
-                          <p className="text-sm font-medium">
-                            {opp.opportunity_name}
-                          </p>
-                          <div className="mt-1 flex items-center gap-2">
-                            {opp.stage && (
-                              <Badge
-                                variant="outline"
-                                className="h-4 text-[10px]"
-                              >
-                                {opp.stage.status_name}
-                              </Badge>
-                            )}
-                            <span className="text-muted-foreground text-xs">
-                              {new Intl.NumberFormat('en-US', {
-                                style: 'currency',
-                                currency: opp.currency || 'USD',
-                              }).format(opp.amount)}
-                            </span>
+                {rbacCanAccess('accounts', 'view_opportunities') ? (
+                  opportunities && opportunities.length > 0 ? (
+                    <div className="divide-y">
+                      {opportunities.map((opp: any) => (
+                        <div
+                          key={opp.id}
+                          className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                        >
+                          <div>
+                            <p className="text-sm font-medium">
+                              {opp.opportunity_name}
+                            </p>
+                            <div className="mt-1 flex items-center gap-2">
+                              {opp.stage && (
+                                <Badge
+                                  variant="outline"
+                                  className="h-4 text-[10px]"
+                                >
+                                  {opp.stage.status_name}
+                                </Badge>
+                              )}
+                              <span className="text-muted-foreground text-xs">
+                                {new Intl.NumberFormat('en-US', {
+                                  style: 'currency',
+                                  currency: opp.currency || 'USD',
+                                }).format(opp.amount)}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-muted-foreground hidden text-right text-xs sm:block">
-                            <p>
-                              Expected Close:{' '}
-                              {opp.expected_close_date
-                                ? new Date(
+                          <div className="flex items-center gap-4">
+                            <div className="text-muted-foreground hidden text-right text-xs sm:block">
+                              <p>
+                                Expected Close:{' '}
+                                {opp.expected_close_date
+                                  ? new Date(
                                     opp.expected_close_date,
                                   ).toLocaleDateString()
-                                : '-'}
-                            </p>
-                            <p>Probability: {opp.probability}%</p>
+                                  : '-'}
+                              </p>
+                              <p>Probability: {opp.probability}%</p>
+                            </div>
+                            {rbacCanAccess('opportunities', 'view') && (
+                              <Button size="sm" variant="ghost" asChild>
+                                <Link href={`/home/opportunities/${opp.id}`}>
+                                  View
+                                </Link>
+                              </Button>
+                            )}
                           </div>
-                          <Button size="sm" variant="ghost" asChild>
-                            <Link href={`/home/opportunities/${opp.id}`}>
-                              View
-                            </Link>
-                          </Button>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-muted-foreground py-6 text-center text-sm">
+                      No opportunities associated with this account.
+                    </div>
+                  )
                 ) : (
                   <div className="text-muted-foreground py-6 text-center text-sm">
-                    No opportunities associated with this account.
+                    You do not have permission to view opportunities.
                   </div>
                 )}
               </CardContent>
@@ -417,17 +489,6 @@ export default function AccountDetailsPage() {
               <AccountAssignees accountId={id} workspaceId={workspace.id} />
             )}
 
-            {/* Public/Private Toggle */}
-            {workspace?.id && account && (
-              <PublicPrivateToggle
-                entityType="account"
-                entityId={id}
-                isPublic={account.is_public ?? true}
-                createdBy={account.created_by}
-                workspaceId={workspace.id}
-              />
-            )}
-
             {/* Notes Section */}
             <EntityNotes entityType="account" entityId={id} />
 
@@ -435,6 +496,47 @@ export default function AccountDetailsPage() {
             <EntityReminders entityType="account" entityId={id} />
             <EntityMeetings entityType="account" entityId={id} />
             <EntityDocuments entityType="account" entityId={id} />
+
+            {/* Danger Zone */}
+            {rbacCanAccess('accounts', 'delete') && (
+              <Card className="border-destructive/50 border-solid">
+                <CardHeader>
+                  <CardTitle className="text-destructive text-lg"></CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="font-medium">Delete Account</p>
+                      <p className="text-muted-foreground text-sm">
+                        Once you delete an account, there is no going back.
+                        Please be certain.
+                      </p>
+                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              variant="destructive"
+                              disabled={!rbacCanAccess('accounts', 'delete')}
+                              onClick={() => setDeleteDialogOpen(true)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Account
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        {!rbacCanAccess('accounts', 'delete') && (
+                          <TooltipContent>
+                            <p>You do not have permission to delete</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -480,24 +582,7 @@ export default function AccountDetailsPage() {
                     </span>
                   </div>
                 </div>
-                {account.linkedin_url && (
-                  <>
-                    <Separator />
-                    <div className="space-y-1">
-                      <p className="text-muted-foreground text-xs font-medium">
-                        LinkedIn
-                      </p>
-                      <a
-                        href={account.linkedin_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm break-all text-blue-600 hover:underline"
-                      >
-                        {account.linkedin_url}
-                      </a>
-                    </div>
-                  </>
-                )}
+
                 {account.twitter_handle && (
                   <>
                     <Separator />

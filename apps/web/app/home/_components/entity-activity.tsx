@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -29,6 +29,7 @@ import {
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 
+import { useHasPermission } from '~/lib/permissions/use-permissions';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 
 import {
@@ -332,6 +333,18 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
 
 export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
   const { currentWorkspace: workspace } = useRBAC();
+
+  const moduleKey = useMemo(() => {
+    const mapping: Record<string, string> = {
+      lead: 'leads',
+      contact: 'contacts',
+      account: 'accounts',
+      opportunity: 'opportunities',
+    };
+    return mapping[entityType] || entityType;
+  }, [entityType]);
+
+  const canScheduleMeeting = useHasPermission(moduleKey, 'schedule_meeting');
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -456,96 +469,98 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
           <Calendar className="h-5 w-5 text-gray-400" />
           <CardTitle className="text-base">Meetings</CardTitle>
         </div>
-        <Dialog
-          open={isOpen}
-          onOpenChange={(open) => {
-            setIsOpen(open);
-            if (!open) {
-              setEditingMeeting(null);
-              setFormData({
-                title: '',
-                start_time: '',
-                end_time: '',
-                location: '',
-                meeting_link: '',
-              });
-            }
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button size="sm" variant="ghost" className="gap-1 text-xs">
-              <Plus className="h-3 w-3" />
-              Schedule
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>
-                {editingMeeting ? 'Edit Meeting' : 'Schedule Meeting'}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label>Title</Label>
-                <Input
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                  placeholder="Demo meeting..."
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Start</Label>
-                  <Input
-                    type="datetime-local"
-                    value={formData.start_time}
-                    onChange={(e) =>
-                      setFormData({ ...formData, start_time: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>End</Label>
-                  <Input
-                    type="datetime-local"
-                    value={formData.end_time}
-                    onChange={(e) =>
-                      setFormData({ ...formData, end_time: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Location / Link</Label>
-                <Input
-                  value={formData.location}
-                  onChange={(e) =>
-                    setFormData({ ...formData, location: e.target.value })
-                  }
-                  placeholder="Zoom, Google Meet, or Office..."
-                />
-              </div>
-              <Button
-                onClick={handleSave}
-                disabled={
-                  !formData.title ||
-                  !formData.start_time ||
-                  createMutation.isPending ||
-                  updateMutation.isPending
-                }
-                className="w-full"
-              >
-                {createMutation.isPending || updateMutation.isPending
-                  ? 'Saving...'
-                  : editingMeeting
-                    ? 'Update Meeting'
-                    : 'Schedule Meeting'}
+        {canScheduleMeeting && (
+          <Dialog
+            open={isOpen}
+            onOpenChange={(open) => {
+              setIsOpen(open);
+              if (!open) {
+                setEditingMeeting(null);
+                setFormData({
+                  title: '',
+                  start_time: '',
+                  end_time: '',
+                  location: '',
+                  meeting_link: '',
+                });
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button size="sm" variant="ghost" className="gap-1 text-xs">
+                <Plus className="h-3 w-3" />
+                Schedule
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingMeeting ? 'Edit Meeting' : 'Schedule Meeting'}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label>Title</Label>
+                  <Input
+                    value={formData.title}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                    placeholder="Demo meeting..."
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-1">
+                  <div className="space-y-2">
+                    <Label>Start</Label>
+                    <Input
+                      type="datetime-local"
+                      value={formData.start_time}
+                      onChange={(e) =>
+                        setFormData({ ...formData, start_time: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>End</Label>
+                    <Input
+                      type="datetime-local"
+                      value={formData.end_time}
+                      onChange={(e) =>
+                        setFormData({ ...formData, end_time: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Location / Link</Label>
+                  <Input
+                    value={formData.location}
+                    onChange={(e) =>
+                      setFormData({ ...formData, location: e.target.value })
+                    }
+                    placeholder="Zoom, Google Meet, or Office..."
+                  />
+                </div>
+                <Button
+                  onClick={handleSave}
+                  disabled={
+                    !formData.title ||
+                    !formData.start_time ||
+                    createMutation.isPending ||
+                    updateMutation.isPending
+                  }
+                  className="w-full"
+                >
+                  {createMutation.isPending || updateMutation.isPending
+                    ? 'Saving...'
+                    : editingMeeting
+                      ? 'Update Meeting'
+                      : 'Schedule Meeting'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </CardHeader>
       <CardContent>
         {isLoading ? (

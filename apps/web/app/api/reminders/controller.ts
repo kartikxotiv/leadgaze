@@ -173,6 +173,8 @@ export const createReminder = catchAsync(
       entity_type,
       entity_id,
       title,
+      description,
+      priority,
       due_date,
       assigned_to,
     } = body;
@@ -193,6 +195,8 @@ export const createReminder = catchAsync(
         entity_type,
         entity_id,
         title,
+        description: description || null,
+        priority: priority || 'medium',
         due_date,
         assigned_to: assigned_to || null,
         created_by: user.id,
@@ -222,21 +226,26 @@ export const updateReminder = catchAsync(
     const supabase = getSupabaseServerClient();
     const reminderId = params?.id;
     const body = await request.json();
-    const { title, due_date, assigned_to, is_completed } = body;
+    const { title, description, priority, due_date, assigned_to, is_completed } = body;
 
     if (!reminderId) {
       return NextResponse.json({ message: 'ID required' }, { status: 400 });
     }
 
+    const updatePayload: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (title !== undefined) updatePayload.title = title;
+    if (description !== undefined) updatePayload.description = description;
+    if (priority !== undefined) updatePayload.priority = priority;
+    if (due_date !== undefined) updatePayload.due_date = due_date;
+    if (assigned_to !== undefined) updatePayload.assigned_to = assigned_to || null;
+    if (is_completed !== undefined) updatePayload.is_completed = is_completed;
+
     const { data: reminder, error } = await supabase
       .from('crm_reminders')
-      .update({
-        title,
-        due_date,
-        assigned_to: assigned_to || null,
-        is_completed,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updatePayload)
       .eq('id', reminderId)
       .select(
         '*, assigned_to_user:accounts!crm_reminders_assigned_to_fkey(name, email)',

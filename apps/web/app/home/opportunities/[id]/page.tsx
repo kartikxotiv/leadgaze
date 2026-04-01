@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -11,10 +11,12 @@ import {
   Building2,
   Calendar,
   CheckCircle,
+  Clock,
   FileText,
   Flag,
   Tag,
   Target,
+  Trash2,
   User,
   Wallet,
 } from 'lucide-react';
@@ -33,6 +35,12 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import { Separator } from '@kit/ui/separator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 
 import {
   useCanAccessData,
@@ -46,22 +54,23 @@ import {
 } from '~/services/opportunities.service';
 import { getOpportunityStatusesService } from '~/services/opportunities.service';
 
+import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
 import {
   EntityDocuments,
   EntityMeetings,
   EntityReminders,
 } from '../../_components/entity-activity';
 import { EntityNotes } from '../../_components/entity-notes';
-import { PublicPrivateToggle } from '../../_components/public-private-toggle';
 import { EditOpportunityDialog } from '../components/edit-opportunity-dialog';
 import { OpportunityAssignees } from '../components/opportunity-assignees';
-import { OpportunityDialog } from '../components/opportunity-dialog';
 import { OpportunityStatusTimeline } from '../components/opportunity-status-timeline';
 
 export default function OpportunityDetailsPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params?.id as string;
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const {
     data: opportunity,
@@ -80,7 +89,7 @@ export default function OpportunityDetailsPage() {
     }
   }, [opportunity]);
 
-  const { currentWorkspace } = useRBAC();
+  const { currentWorkspace, canAccess: rbacCanAccess } = useRBAC();
   const { data: stages = [] } = useQuery({
     queryKey: ['opportunity-stages', currentWorkspace?.id],
     queryFn: () => getOpportunityStatusesService(currentWorkspace!.id),
@@ -91,6 +100,33 @@ export default function OpportunityDetailsPage() {
   const editPermission = usePermissionDetail('opportunities', 'edit');
   const canEdit = useCanAccessData(
     editPermission,
+    opportunity?.owner_id,
+    user?.id,
+  );
+
+  const changeStagePermission = usePermissionDetail(
+    'opportunities',
+    'change_stage',
+  );
+  const canChangeStage = useCanAccessData(
+    changeStagePermission,
+    opportunity?.owner_id,
+    user?.id,
+  );
+
+  const closeWonPermission = usePermissionDetail('opportunities', 'close_won');
+  const canCloseWon = useCanAccessData(
+    closeWonPermission,
+    opportunity?.owner_id,
+    user?.id,
+  );
+
+  const closeLostPermission = usePermissionDetail(
+    'opportunities',
+    'close_lost',
+  );
+  const canCloseLost = useCanAccessData(
+    closeLostPermission,
     opportunity?.owner_id,
     user?.id,
   );
@@ -133,49 +169,118 @@ export default function OpportunityDetailsPage() {
             </Link>
           </Button>
           <div className="flex gap-2">
-            <Select
-              value={opportunity.stage_id}
-              onValueChange={async (value) => {
-                try {
-                  await updateOpportunityService(id, { stage_id: value });
-                  toast.success('Opportunity stage updated');
-                  refetch();
-                } catch (error) {
-                  toast.error('Failed to update stage');
-                }
-              }}
-              disabled={!canEdit}
-            >
-              <SelectTrigger className="h-9 w-[180px]">
-                <SelectValue placeholder="Update Stage" />
-              </SelectTrigger>
-              <SelectContent>
-                {stages.map((stage: any) => (
-                  <SelectItem key={stage.id} value={stage.id}>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="h-2 w-2 rounded-full"
-                        style={{ backgroundColor: stage.color }}
-                      />
-                      {stage.status_name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditDialogOpen(true)}
-              disabled={!canEdit}
-              title={
-                !canEdit
-                  ? 'You do not have permission to edit this opportunity'
-                  : ''
-              }
-            >
-              Edit Opportunity
-            </Button>
+            {rbacCanAccess('opportunities', 'change_stage') && (
+              <Select
+                value={opportunity.stage_id}
+                onValueChange={async (value) => {
+                  try {
+                    await updateOpportunityService(id, { stage_id: value });
+                    toast.success('Opportunity stage updated');
+                    refetch();
+                  } catch (error) {
+                    toast.error('Failed to update stage');
+                  }
+                }}
+                disabled={!canChangeStage}
+              >
+                <SelectTrigger className="h-9 w-[180px]">
+                  <SelectValue placeholder="Update Stage" />
+                </SelectTrigger>
+                <SelectContent>
+                  {stages
+                    .filter((stage: any) => {
+                      const isWon =
+                        stage.status_name.toLowerCase().includes('won') ||
+                        stage.is_won;
+                      const isLost =
+                        stage.status_name.toLowerCase().includes('lost') ||
+                        stage.is_lost;
+
+                      if (isWon && !canCloseWon) return false;
+                      if (isLost && !canCloseLost) return false;
+                      return true;
+                    })
+                    .map((stage: any) => (
+                      <SelectItem key={stage.id} value={stage.id}>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: stage.color }}
+                          />
+                          {stage.status_name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            )}
+            {rbacCanAccess('opportunities', 'close_won') && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-green-600 text-green-600 hover:bg-green-50"
+                disabled={!canCloseWon}
+                onClick={async () => {
+                  const wonStage = stages.find(
+                    (s: any) =>
+                      s.status_name.toLowerCase().includes('won') || s.is_won,
+                  );
+                  if (wonStage) {
+                    try {
+                      await updateOpportunityService(id, {
+                        stage_id: wonStage.id,
+                        is_closed: true,
+                        is_won: true,
+                      });
+                      toast.success('Opportunity marked as Won');
+                      refetch();
+                    } catch (error) {
+                      toast.error('Failed to update status');
+                    }
+                  }
+                }}
+              >
+                Close as Won
+              </Button>
+            )}
+            {rbacCanAccess('opportunities', 'close_lost') && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-red-600 text-red-600 hover:bg-red-50"
+                disabled={!canCloseLost}
+                onClick={async () => {
+                  const lostStage = stages.find(
+                    (s: any) =>
+                      s.status_name.toLowerCase().includes('lost') || s.is_lost,
+                  );
+                  if (lostStage) {
+                    try {
+                      await updateOpportunityService(id, {
+                        stage_id: lostStage.id,
+                        is_closed: true,
+                        is_won: false,
+                      });
+                      toast.success('Opportunity marked as Lost');
+                      refetch();
+                    } catch (error) {
+                      toast.error('Failed to update status');
+                    }
+                  }
+                }}
+              >
+                Close as Lost
+              </Button>
+            )}
+            {canEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditDialogOpen(true)}
+              >
+                Edit Opportunity
+              </Button>
+            )}
           </div>
         </div>
 
@@ -203,6 +308,21 @@ export default function OpportunityDetailsPage() {
                     • {opportunity.type}
                   </span>
                 )}
+                <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <Clock className="h-3 w-3" />
+                  <span>
+                    Created on{' '}
+                    {new Date(opportunity.created_at).toLocaleDateString(
+                      undefined,
+                      {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      },
+                    )}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -240,6 +360,14 @@ export default function OpportunityDetailsPage() {
       </div>
 
       <PageBody>
+        <DeleteEntityDialog
+          isOpen={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          entityId={id}
+          entityType="opportunity"
+          entityName={opportunity.opportunity_name}
+          onSuccess={() => router.push('/home/opportunities')}
+        />
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="space-y-6 lg:col-span-2">
@@ -324,6 +452,26 @@ export default function OpportunityDetailsPage() {
                     {opportunity.lead_source || '-'}
                   </span>
                 </div>
+
+                {opportunity.description && (
+                  <div className="col-span-2 space-y-1">
+                    <p className="text-muted-foreground text-sm font-medium">
+                      Description
+                    </p>
+                    <p className="text-sm whitespace-pre-wrap">
+                      {opportunity.description}
+                    </p>
+                  </div>
+                )}
+
+                {opportunity.competitor && (
+                  <div className="col-span-2 space-y-1">
+                    <p className="text-muted-foreground text-sm font-medium">
+                      Competitor
+                    </p>
+                    <span className="text-sm">{opportunity.competitor}</span>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -335,17 +483,6 @@ export default function OpportunityDetailsPage() {
               />
             )}
 
-            {/* Public/Private Toggle */}
-            {currentWorkspace?.id && opportunity && (
-              <PublicPrivateToggle
-                entityType="opportunity"
-                entityId={id}
-                isPublic={opportunity.is_public}
-                createdBy={opportunity.created_by}
-                workspaceId={currentWorkspace.id}
-              />
-            )}
-
             {/* Notes Section */}
             <EntityNotes entityType="opportunity" entityId={id} />
 
@@ -353,6 +490,49 @@ export default function OpportunityDetailsPage() {
             <EntityReminders entityType="opportunity" entityId={id} />
             <EntityMeetings entityType="opportunity" entityId={id} />
             <EntityDocuments entityType="opportunity" entityId={id} />
+
+            {/* Danger Zone */}
+            {rbacCanAccess('opportunities', 'delete') && (
+              <Card className="border-destructive/50 border-solid">
+                <CardHeader>
+                  <CardTitle className="text-destructive text-lg"></CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="font-medium">Delete Opportunity</p>
+                      <p className="text-muted-foreground text-sm">
+                        Once you delete an opportunity, there is no going back.
+                        Please be certain.
+                      </p>
+                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              variant="destructive"
+                              disabled={
+                                !rbacCanAccess('opportunities', 'delete')
+                              }
+                              onClick={() => setDeleteDialogOpen(true)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Opportunity
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        {!rbacCanAccess('opportunities', 'delete') && (
+                          <TooltipContent>
+                            <p>You do not have permission to delete</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -387,6 +567,20 @@ export default function OpportunityDetailsPage() {
                     </span>
                   </div>
                 </div>
+                <Separator />
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-xs font-medium">
+                    Created By
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <User className="h-3 w-3" />
+                    <span className="text-sm">
+                      {opportunity.created_by_account?.name ||
+                        opportunity.created_by ||
+                        '-'}
+                    </span>
+                  </div>
+                </div>
                 <div className="space-y-1">
                   <p className="text-muted-foreground text-xs font-medium">
                     Last Updated
@@ -404,7 +598,7 @@ export default function OpportunityDetailsPage() {
         </div>
       </PageBody>
 
-      <OpportunityDialog
+      <EditOpportunityDialog
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         opportunity={opportunity}

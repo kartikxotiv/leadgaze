@@ -102,6 +102,8 @@
     "./shadcn-sidebar": "./src/shadcn/sidebar.tsx",
     "./collapsible": "./src/shadcn/collapsible.tsx",
     "./utils": "./src/lib/utils/index.ts",
+    "./use-column-visibility": "./src/hooks/use-column-visibility.ts",
+    "./column-visibility-selector": "./src/makerkit/column-visibility-selector.tsx",
     "./if": "./src/makerkit/if.tsx",
     "./trans": "./src/makerkit/trans.tsx",
     "./sidebar": "./src/makerkit/sidebar.tsx",

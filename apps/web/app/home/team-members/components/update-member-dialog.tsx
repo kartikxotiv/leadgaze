@@ -45,7 +45,7 @@ export function UpdateMemberDialog({
   onOpenChange,
   onSuccess,
 }: UpdateMemberDialogProps) {
-  const { currentWorkspace } = useRBAC();
+  const { currentWorkspace, canAccess } = useRBAC();
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
@@ -121,7 +121,11 @@ export function UpdateMemberDialog({
               onValueChange={(value) =>
                 setFormData({ ...formData, role_id: value })
               }
-              disabled={rolesLoading || updateMutation.isPending}
+              disabled={
+                rolesLoading ||
+                updateMutation.isPending ||
+                !canAccess('team_members', 'change_role')
+              }
             >
               <SelectTrigger id="role">
                 <SelectValue />

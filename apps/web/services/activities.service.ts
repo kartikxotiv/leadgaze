@@ -6,6 +6,9 @@ export interface Note {
   id: string;
   content: string;
   created_at: string;
+  updated_at?: string;
+  created_by?: string;
+  updated_by?: string;
   entity_type: string;
   entity_id: string;
   entity_name?: string | null;
@@ -24,6 +27,10 @@ export interface Reminder {
   entity_name?: string | null;
   assigned_to_user?: { name: string; email: string };
   created_by_user?: { name: string; email: string };
+  created_at: string;
+  updated_at?: string;
+  created_by?: string;
+  updated_by?: string;
 }
 
 export interface Meeting {
@@ -36,8 +43,11 @@ export interface Meeting {
   end_time: string;
   entity_type: string;
   entity_id: string;
-  entity_name?: string | null;
   created_by_user?: { name: string; email: string };
+  created_at: string;
+  updated_at?: string;
+  created_by?: string;
+  updated_by?: string;
 }
 
 export interface Document {
@@ -46,6 +56,8 @@ export interface Document {
   file_type?: string;
   size_bytes?: number;
   created_at: string;
+  updated_at?: string;
+  updated_by?: string;
   entity_type: string;
   entity_id: string;
   entity_name?: string | null;

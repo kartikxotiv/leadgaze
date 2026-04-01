@@ -59,11 +59,11 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
 
       return [
         ...baseRoutes,
-        ...(salesItems.length > 0
-          ? [
-              {
-                label: 'Sales',
-                children: [
+        {
+          label: '',
+          children: [
+            ...(salesItems.length > 0
+              ? [
                   {
                     label: 'common:routes.dashboard',
                     path: pathsConfig.app.home,
@@ -77,13 +77,8 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
                       Icon: <IconComponent className="h-4 w-4" />,
                     };
                   }),
-                ],
-              },
-            ]
-          : []),
-        {
-          label: 'Communication',
-          children: [
+                ]
+              : []),
             {
               label: 'Meetings',
               path: '/home/meetings',
@@ -138,11 +133,11 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
 
     return [
       ...baseRoutes,
-      ...(salesItems.length > 0
-        ? [
-            {
-              label: 'Sales',
-              children: [
+      {
+        label: '', // Combined Sales and Communication
+        children: [
+          ...(salesItems.length > 0
+            ? [
                 {
                   label: 'common:routes.dashboard',
                   path: pathsConfig.app.home,
@@ -156,14 +151,8 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
                     Icon: <IconComponent className="h-4 w-4" />,
                   };
                 }),
-              ],
-            },
-          ]
-        : []),
-
-      {
-        label: 'Communication',
-        children: [
+              ]
+            : []),
           {
             label: 'Meetings',
             path: '/home/meetings',
@@ -231,7 +220,7 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
 
   return (
     <div className="flex h-full flex-col">
-      <WorkspaceSwitcher />
+      {/* <WorkspaceSwitcher /> */}
       <div className="flex-1 overflow-y-auto">
         <SidebarNavigation config={parsedConfig} />
       </div>

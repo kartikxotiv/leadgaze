@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '../../../lib/database.types';
+import { getHierarchyVisibleUserIds } from '../../../lib/permissions/hierarchy-utils';
 import {
   catchAsync,
   successDataResponse,
@@ -34,6 +36,16 @@ type LeadWithRelations = Lead & {
     id: string;
     industry_name: string;
   } | null;
+  created_by_account?: {
+    id: string;
+    email: string;
+    name: string;
+  } | null;
+  updated_by_account?: {
+    id: string;
+    email: string;
+    name: string;
+  } | null;
 };
 
 /**
@@ -48,12 +60,14 @@ const getLeads = catchAsync(
     params?: Record<string, string>;
   }) => {
     const supabase = getSupabaseServerClient();
+    const adminClient = getSupabaseServerAdminClient<Database>();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
     const page = parseInt(url.searchParams.get('page') || '1', 10);
     const limit = parseInt(url.searchParams.get('limit') || '20', 10);
     const searchTerm = url.searchParams.get('searchTerm') || '';
     const statusId = url.searchParams.get('statusId') || '';
+    const debug = url.searchParams.get('debug') === '1';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -72,8 +86,29 @@ const getLeads = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
+    // Resolve account id used by CRM tables/workspace_members.
+    // In some setups auth user id and accounts.id may differ.
+    let actorAccountId = user.id;
+    const { data: accountById } = await adminClient
+      .from('accounts')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (!accountById?.id && user.email) {
+      const { data: accountByEmail } = await adminClient
+        .from('accounts')
+        .select('id')
+        .eq('email', user.email)
+        .maybeSingle();
+
+      if (accountByEmail?.id) {
+        actorAccountId = accountByEmail.id;
+      }
+    }
+
     // Check if user is workspace owner
-    const { data: workspace, error: workspaceError } = await supabase
+    const { data: workspace, error: workspaceError } = await adminClient
       .from('workspaces')
       .select('owner_id')
       .eq('id', workspaceId)
@@ -84,10 +119,54 @@ const getLeads = catchAsync(
       throw workspaceError;
     }
 
-    const isOwner = workspace?.owner_id === user.id;
+    const isOwner =
+      workspace?.owner_id === actorAccountId || workspace?.owner_id === user.id;
 
-    // Build the query based on user role
-    let query = supabase
+    // Validate workspace membership when user is not owner
+    const { data: membership } = await adminClient
+      .from('workspace_members')
+      .select('id')
+      .eq('workspace_id', workspaceId)
+      .eq('user_id', actorAccountId)
+      .eq('status', 'accepted')
+      .maybeSingle();
+
+    if (!isOwner && !membership) {
+      return NextResponse.json(
+        { message: 'Forbidden: You are not a member of this workspace' },
+        { status: 403 },
+      );
+    }
+
+    let hierarchyFilter:
+      | { type: 'all' }
+      | { type: 'restricted'; userIds: string[] } = { type: 'all' };
+    let visibleUserIds: string[] | null = null;
+    let assignedLeadIds: string[] = [];
+
+    if (!isOwner) {
+      hierarchyFilter = await getHierarchyVisibleUserIds(
+        adminClient,
+        workspaceId,
+        actorAccountId,
+      );
+      if (hierarchyFilter.type === 'restricted') {
+        visibleUserIds = hierarchyFilter.userIds;
+
+        // Fetch assigned leads for these users (only active assignments)
+        const { data: assignments } = await adminClient
+          .from('lead_assignees')
+          .select('lead_id')
+          .eq('workspace_id', workspaceId)
+          .eq('assigned_to_user_id', actorAccountId)
+          .eq('assignment_status', 'active');
+
+        assignedLeadIds = assignments?.map((a) => a.lead_id) || [];
+      }
+    }
+
+    // Build the query
+    let query = adminClient
       .from('crm_leads')
       .select(
         `
@@ -96,12 +175,23 @@ const getLeads = catchAsync(
           source:lead_sources(id, source_name, source_key, color, icon),
           owner:accounts!crm_leads_owner_id_fkey(id, email, name),
           created_by_account:accounts!crm_leads_created_by_fkey(id, email, name),
+          updated_by_account:accounts!crm_leads_updated_by_fkey(id, email, name),
           industry:crm_industries(id, industry_name)
         `,
         { count: 'exact' },
       )
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
+
+    if (!isOwner && visibleUserIds && visibleUserIds.length > 0) {
+      const assignedIdsFilter = assignedLeadIds.length > 0
+        ? `,id.in.(${assignedLeadIds.join(',')})`
+        : '';
+        
+      query = query.or(
+        `owner_id.in.(${visibleUserIds.join(',')}),created_by.in.(${visibleUserIds.join(',')})${assignedIdsFilter}`,
+      );
+    }
 
     // Filter by status if provided
     if (statusId && statusId !== 'all') {
@@ -110,32 +200,34 @@ const getLeads = catchAsync(
 
     // Search term
     if (searchTerm) {
-      query = query.or(
-        `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%`,
-      );
-    }
+      const parts = searchTerm.split(' ').filter(Boolean);
+      let orFilter = `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%,mobile_number.ilike.%${searchTerm}%`;
 
-    // If not owner, filter for public leads, leads assigned to current user, or leads created by current user
-    if (!isOwner) {
-      // Get leads assigned to the current user
-      const { data: assignedLeadIds } = await supabase
-        .from('lead_assignees')
-        .select('lead_id')
-        .eq('workspace_id', workspaceId)
-        .eq('assigned_to_user_id', user.id)
-        .eq('assignment_status', 'active');
+      if (parts.length >= 2) {
+        const part1 = parts[0];
+        const part2 = parts[1];
+        const { data: nameMatched } = await adminClient
+          .from('crm_leads')
+          .select('id')
+          .eq('workspace_id', workspaceId)
+          .or(
+            `and(first_name.ilike.%${part1}%,last_name.ilike.%${part2}%),and(first_name.ilike.%${part2}%,last_name.ilike.%${part1}%)`,
+          );
 
-      const assignedIds = assignedLeadIds?.map((a) => a.lead_id) || [];
+        const matchedIds = nameMatched?.map((l) => l.id) || [];
+        if (matchedIds.length > 0) {
+          orFilter += `,id.in.(${matchedIds.join(',')})`;
+        }
+      }
 
-      // Filter: public leads OR assigned leads OR created by current user
-      query = query.or(
-        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
-      );
+      query = query.or(orFilter);
     }
 
     // Pagination
     const from = (page - 1) * limit;
     const to = from + limit - 1;
+
+    console.log(`[LEADS API] Executing query for user ${user.id} in workspace ${workspaceId}`);
 
     const {
       data: leads,
@@ -152,10 +244,84 @@ const getLeads = catchAsync(
       throw error;
     }
 
+    // For status breakdown, we need a query grouped by status_id
+    // We ignore the selected statusId filter here to show the whole distribution
+    let breakdownQuery = adminClient
+      .from('crm_leads')
+      .select('status_id')
+      .eq('workspace_id', workspaceId)
+      .eq('is_deleted', false);
+
+    if (!isOwner && visibleUserIds && visibleUserIds.length > 0) {
+      const assignedIdsFilter = assignedLeadIds.length > 0
+        ? `,id.in.(${assignedLeadIds.join(',')})`
+        : '';
+        
+      breakdownQuery = breakdownQuery.or(
+        `owner_id.in.(${visibleUserIds.join(',')}),created_by.in.(${visibleUserIds.join(',')})${assignedIdsFilter}`,
+      );
+    }
+
+    if (searchTerm) {
+      const parts = searchTerm.split(' ').filter(Boolean);
+      let orFilter = `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%,mobile_number.ilike.%${searchTerm}%`;
+
+      if (parts.length >= 2) {
+        const part1 = parts[0];
+        const part2 = parts[1];
+        const { data: nameMatched } = await adminClient
+          .from('crm_leads')
+          .select('id')
+          .eq('workspace_id', workspaceId)
+          .or(
+            `and(first_name.ilike.%${part1}%,last_name.ilike.%${part2}%),and(first_name.ilike.%${part2}%,last_name.ilike.%${part1}%)`,
+          );
+
+        const matchedIds = nameMatched?.map((l) => l.id) || [];
+        if (matchedIds.length > 0) {
+          orFilter += `,id.in.(${matchedIds.join(',')})`;
+        }
+      }
+
+      breakdownQuery = breakdownQuery.or(orFilter);
+    }
+
+    // RLS handles visibility for breakdownQuery too
+
+    const { data: breakdownData, error: breakdownError } = await breakdownQuery;
+
+    if (breakdownError) {
+      console.error('Get status breakdown error:', breakdownError);
+      throw breakdownError;
+    }
+
+    const statusBreakdownMap: Record<string, { count: number }> = {};
+    (breakdownData || []).forEach((lead) => {
+      const statusId = lead.status_id;
+      if (!statusBreakdownMap[statusId]) {
+        statusBreakdownMap[statusId] = { count: 0 };
+      }
+      statusBreakdownMap[statusId].count += 1;
+    });
+
     return NextResponse.json({
       message: 'Leads retrieved successfully',
       data: leads || [],
       count: count || 0,
+      statusBreakdown: statusBreakdownMap,
+      ...(debug
+        ? {
+            debug: {
+              workspaceId,
+              userId: user.id,
+              actorAccountId,
+              isOwner,
+              hasAllHierarchyAccess: hierarchyFilter.type === 'all',
+              visibleUserIds: visibleUserIds || [],
+              membershipStatus: membership ? 'accepted' : null,
+            },
+          }
+        : {}),
     });
   },
 );
@@ -252,7 +418,6 @@ const createLead = catchAsync(
         tags: tags || [],
         custom_fields: custom_fields || {},
         created_by: user.id,
-        is_public: body.is_public ?? true,
       })
       .select(
         `

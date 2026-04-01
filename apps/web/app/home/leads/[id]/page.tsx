@@ -6,12 +6,12 @@ import { useParams, useRouter } from 'next/navigation';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  ChevronDown,
   Clock,
   Edit2,
   Mail,
   MapPin,
   Phone,
+  Trash2,
   User,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -20,19 +20,15 @@ import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@kit/ui/dropdown-menu';
-import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
-import { Separator } from '@kit/ui/separator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 import { cn } from '@kit/ui/utils';
 
-// fixed
-import { PublicPrivateToggle } from '~/home/_components/public-private-toggle';
 import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
 import {
   useCanAccessData,
@@ -46,6 +42,7 @@ import {
   updateLeadService,
 } from '~/services/leads.service';
 
+import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
 import {
   EntityDocuments,
   EntityMeetings,
@@ -66,16 +63,14 @@ import { getWorkspaceEmailAccountService } from '~/services/email.service';
 export default function LeadDetailsPage() {
   const router = useRouter();
   const params = useParams();
-  const { currentWorkspace: workspace } = useRBAC();
+  const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
-  const [selectedNewStatus, setSelectedNewStatus] = useState<string | null>(
-    null,
-  );
   const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedDraft, setSelectedDraft] = useState<any>(null);
 
   const queryClient = useQueryClient();
@@ -238,37 +233,33 @@ export default function LeadDetailsPage() {
     <ModuleGuard module="leads">
       <PageHeader title="Lead Details">
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setStatusModalOpen(true)}
-            className="flex h-8 items-center justify-center px-4"
-            disabled={isSaving || !canEdit}
-            title={
-              !canEdit ? 'You do not have permission to edit this lead' : ''
-            }
-          >
-            Change Status
-          </Button>
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setStatusModalOpen(true)}
+              className="flex h-8 items-center justify-center px-4"
+              disabled={isSaving}
+            >
+              Change Status
+            </Button>
+          )}
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsLogCallDialogOpen(true)}
-            className="p-3"
-            disabled={!canEdit}
-            title={
-              !canEdit
-                ? 'You do not have permission to log calls'
-                : 'Log a call'
-            }
-          >
-            {/* Phone icon */}
-            {/* Log Call */}
-            <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
-              <Phone className="h-3 w-3 text-white" />
-            </div>
-          </Button>
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsLogCallDialogOpen(true)}
+              className="p-3"
+              title="Log a call"
+            >
+              {/* Phone icon */}
+              {/* Log Call */}
+              <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
+                <Phone className="h-3 w-3 text-white" />
+              </div>
+            </Button>
+          )}
 
           <Button
             variant="outline"
@@ -284,39 +275,40 @@ export default function LeadDetailsPage() {
               <Mail className="h-3.5 w-3.5 text-white" />
             </div>
           </Button>
-          {!lead.is_converted_to_account && (
+          {!lead.is_converted_to_account && canConvert && (
             <Button
               variant="outline"
               size="sm"
               onClick={handleConvertLead}
               className="flex h-8 items-center justify-center px-4"
-              disabled={isSaving || !canConvert}
-              title={
-                !canConvert
-                  ? 'You do not have permission to convert this lead'
-                  : ''
-              }
+              disabled={isSaving}
             >
               Convert Lead
             </Button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditDialogOpen(true)}
-            className="flex h-8 items-center justify-center gap-2 px-4"
-            disabled={!canEdit}
-            title={
-              !canEdit ? 'You do not have permission to edit this lead' : ''
-            }
-          >
-            <Edit2 className="h-4 w-4" />
-            Edit Full Profile
-          </Button>
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditDialogOpen(true)}
+              className="flex h-8 items-center justify-center gap-2 px-4"
+            >
+              <Edit2 className="h-4 w-4" />
+              Edit Full Profile
+            </Button>
+          )}
         </div>
       </PageHeader>
 
       <PageBody>
+        <DeleteEntityDialog
+          isOpen={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          entityId={leadId}
+          entityType="lead"
+          entityName={`${lead.first_name} ${lead.last_name || ''}`}
+          onSuccess={() => router.push('/home/leads')}
+        />
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="space-y-6 lg:col-span-2">
@@ -337,11 +329,28 @@ export default function LeadDetailsPage() {
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                       {fullName}
                     </h1>
-                    {lead.job_title && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {lead.job_title}
-                      </p>
-                    )}
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                      {lead.job_title && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {lead.job_title}
+                        </p>
+                      )}
+                      <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          Created on{' '}
+                          {new Date(lead.created_at).toLocaleDateString(
+                            undefined,
+                            {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            },
+                          )}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardHeader>
@@ -370,18 +379,6 @@ export default function LeadDetailsPage() {
                       }}
                     >
                       {lead.source.source_name}
-                    </Badge>
-                  )}
-                  {lead.is_public ? (
-                    <Badge variant="outline" className="px-3 py-1">
-                      Public
-                    </Badge>
-                  ) : (
-                    <Badge
-                      variant="outline"
-                      className="bg-gray-100 px-3 py-1 dark:bg-gray-800"
-                    >
-                      Private
                     </Badge>
                   )}
                 </div>
@@ -435,7 +432,7 @@ export default function LeadDetailsPage() {
               <CardHeader>
                 <CardTitle className="text-lg">About</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {lead.company_name && (
                   <EditableField
                     label="Company"
@@ -511,7 +508,7 @@ export default function LeadDetailsPage() {
                   />
                 )}
                 {lead.notes && (
-                  <div>
+                  <div className="md:col-span-2">
                     <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
                       Notes
                     </p>
@@ -528,7 +525,7 @@ export default function LeadDetailsPage() {
               <CardHeader>
                 <CardTitle className="text-lg">Contact Information</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {lead.email && (
                   <div className="flex items-start justify-between">
                     <div>
@@ -637,17 +634,6 @@ export default function LeadDetailsPage() {
               <LeadAssignees leadId={leadId} workspaceId={workspace.id} />
             )}
 
-            {/* Public/Private Toggle */}
-            {workspace?.id && lead && (
-              <PublicPrivateToggle
-                entityType="lead"
-                entityId={leadId}
-                isPublic={lead.is_public}
-                createdBy={lead.created_by}
-                workspaceId={workspace.id}
-              />
-            )}
-
             {/* Notes Section */}
             <EntityNotes entityType="lead" entityId={leadId} />
 
@@ -699,6 +685,47 @@ export default function LeadDetailsPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Danger Zone */}
+            {canAccess('leads', 'delete') && (
+              <Card className="border-destructive/50 border-solid">
+                <CardHeader>
+                  <CardTitle className="text-destructive text-lg"></CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="font-medium">Delete Lead</p>
+                      <p className="text-muted-foreground text-sm">
+                        Once you delete a lead, there is no going back. Please
+                        be certain.
+                      </p>
+                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              variant="destructive"
+                              disabled={!canAccess('leads', 'delete')}
+                              onClick={() => setDeleteDialogOpen(true)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Lead
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        {!canAccess('leads', 'delete') && (
+                          <TooltipContent>
+                            <p>You do not have permission to delete</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}

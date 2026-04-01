@@ -13,6 +13,8 @@ export interface Opportunity {
   account_id: string;
   primary_contact_id?: string;
   owner_id: string;
+  created_by?: string;
+  updated_by?: string;
   created_at: string;
   updated_at: string;
   priority?: 'High' | 'Medium' | 'Low';
@@ -22,7 +24,6 @@ export interface Opportunity {
   competitor?: string;
   is_closed?: boolean;
   is_won?: boolean;
-  close_reason?: string;
   // Relations
   stage?: {
     id: string;
@@ -37,6 +38,16 @@ export interface Opportunity {
     id: string;
     name: string;
     email: string;
+  };
+  created_by_account?: {
+    id: string;
+    email: string;
+    name: string;
+  };
+  updated_by_account?: {
+    id: string;
+    email: string;
+    name: string;
   };
 }
 
@@ -65,6 +76,11 @@ const getOpportunitiesService = asyncHandlerClient(
     return {
       data: (response.data?.data || []) as Opportunity[],
       count: (response.data?.count || 0) as number,
+      totalAmount: (response.data?.totalAmount || 0) as number,
+      stageBreakdown: (response.data?.stageBreakdown || {}) as Record<
+        string,
+        { total_amount: number; count: number }
+      >,
     };
   },
 );
@@ -97,10 +113,16 @@ const getOpportunityStatusesService = asyncHandlerClient(
   },
 );
 
+const deleteOpportunityService = asyncHandlerClient(async (id: string) => {
+  const response = await ApiClient.delete(`/opportunities/${id}`);
+  return response.data?.data;
+});
+
 export {
   getOpportunitiesService,
   getOpportunityByIdService,
   updateOpportunityService,
   createOpportunityService,
   getOpportunityStatusesService,
+  deleteOpportunityService,
 };

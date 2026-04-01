@@ -38,7 +38,10 @@ function SidebarLayout({ children }: React.PropsWithChildren) {
 
   return (
     <SidebarProvider defaultOpen={sidebarMinimized}>
-      <Page style={'sidebar'}>
+      <Page
+        style={'sidebar'}
+        contentContainerClassName="mx-auto flex h-screen w-full min-w-0 flex-col overflow-auto bg-inherit"
+      >
         <PageNavigation>
           <HomeSidebar user={user} />
         </PageNavigation>

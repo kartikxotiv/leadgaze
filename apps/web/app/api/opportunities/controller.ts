@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import { Database } from '../../../lib/database.types';
+import { getHierarchyVisibleUserIds } from '../../../lib/permissions/hierarchy-utils';
 import {
   catchAsync,
   successDataResponse,
@@ -19,6 +22,7 @@ export const getOpportunities = catchAsync(
     params?: Record<string, string>;
   }) => {
     const supabase = getSupabaseServerClient();
+    const adminClient = getSupabaseServerAdminClient<Database>();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
     const accountId = url.searchParams.get('accountId');
@@ -45,7 +49,7 @@ export const getOpportunities = catchAsync(
     }
 
     // Check permissions (Workspace Access)
-    const { data: workspace, error: workspaceError } = await supabase
+    const { data: workspace, error: workspaceError } = await adminClient
       .from('workspaces')
       .select('owner_id')
       .eq('id', workspaceId)
@@ -58,20 +62,70 @@ export const getOpportunities = catchAsync(
 
     const isOwner = workspace?.owner_id === user.id;
 
+    const { data: membership } = await adminClient
+      .from('workspace_members')
+      .select('id')
+      .eq('workspace_id', workspaceId)
+      .eq('user_id', user.id)
+      .eq('status', 'accepted')
+      .maybeSingle();
+
+    if (!isOwner && !membership) {
+      return NextResponse.json(
+        { message: 'Forbidden: You are not a member of this workspace' },
+        { status: 403 },
+      );
+    }
+
     // Build the query
-    let query = supabase
+    let query = adminClient
       .from('crm_opportunities')
       .select(
         `
           *,
           stage:entity_statuses(id, status_name, status_key, color, icon),
           account:crm_accounts(id, account_name),
-          owner:accounts!crm_opportunities_owner_id_fkey(id, email, name)
+          owner:accounts!crm_opportunities_owner_id_fkey(id, email, name),
+          created_by_account:accounts!crm_opportunities_created_by_fkey(id, email, name),
+          updated_by_account:accounts!crm_opportunities_updated_by_fkey(id, email, name)
         `,
         { count: 'exact' },
       )
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
+
+    let hierarchyFilter:
+      | { type: 'all' }
+      | { type: 'restricted'; userIds: string[] } = { type: 'all' };
+    let assignedOpportunityIds: string[] = [];
+
+    if (!isOwner) {
+      hierarchyFilter = await getHierarchyVisibleUserIds(
+        adminClient,
+        workspaceId,
+        user.id,
+      );
+      if (hierarchyFilter.type === 'restricted') {
+        const userIds = hierarchyFilter.userIds;
+
+        // Fetch assigned opportunities for this user (only active assignments)
+        const { data: assignments } = await adminClient
+          .from('opportunity_assignees')
+          .select('opportunity_id')
+          .eq('workspace_id', workspaceId)
+          .eq('assigned_to_user_id', user.id)
+          .eq('assignment_status', 'active');
+
+        assignedOpportunityIds = assignments?.map((a) => a.opportunity_id) || [];
+        const assignedIdsFilter = assignedOpportunityIds.length > 0 
+          ? `,id.in.(${assignedOpportunityIds.join(',')})` 
+          : '';
+
+        query = query.or(
+          `owner_id.in.(${userIds.join(',')}),created_by.in.(${userIds.join(',')})${assignedIdsFilter}`,
+        );
+      }
+    }
 
     if (accountId) {
       query = query.eq('account_id', accountId);
@@ -84,29 +138,25 @@ export const getOpportunities = catchAsync(
 
     // Search term
     if (searchTerm) {
-      query = query.or(
-        `opportunity_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`,
-      );
-    }
-
-    // If not owner, filter for public opportunities, opportunities assigned to current user, or opportunities created by current user
-    if (!isOwner) {
-      // Get opportunities assigned to the current user
-      const { data: assignedOpportunityIds } = await (supabase
-        .from('opportunity_assignees' as any)
-        .select('opportunity_id')
+      // Find accounts that match the search term
+      const { data: matchedAccounts } = await adminClient
+        .from('crm_accounts')
+        .select('id')
         .eq('workspace_id', workspaceId)
-        .eq('assigned_to_user_id', user.id)
-        .eq('assignment_status', 'active') as any);
+        .ilike('account_name', `%${searchTerm}%`);
 
-      const assignedIds =
-        assignedOpportunityIds?.map((a: any) => a.opportunity_id) || [];
+      const accountIds = matchedAccounts?.map((a) => a.id) || [];
 
-      // Filter: public opportunities OR assigned opportunities OR created by current user
-      query = query.or(
-        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
-      );
+      let orFilter = `opportunity_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`;
+
+      if (accountIds.length > 0) {
+        orFilter += `,account_id.in.(${accountIds.join(',')})`;
+      }
+
+      query = query.or(orFilter);
     }
+
+
 
     // Pagination
     const from = (page - 1) * limit;
@@ -127,10 +177,79 @@ export const getOpportunities = catchAsync(
       throw error;
     }
 
+    // For stage breakdown, we need a query grouped by stage_id
+    // We ignore the selected stageId filter here to show the whole pipeline
+    let breakdownQuery = adminClient
+      .from('crm_opportunities')
+      .select('stage_id, amount')
+      .eq('workspace_id', workspaceId)
+      .eq('is_deleted', false);
+
+    // Reuse the same filter from above
+    if (!isOwner && hierarchyFilter.type === 'restricted') {
+      const userIds = hierarchyFilter.userIds;
+      const assignedIdsFilter = assignedOpportunityIds.length > 0 
+        ? `,id.in.(${assignedOpportunityIds.join(',')})` 
+        : '';
+        
+      breakdownQuery = breakdownQuery.or(`owner_id.in.(${userIds.join(',')}),created_by.in.(${userIds.join(',')})${assignedIdsFilter}`);
+    }
+
+    if (accountId) {
+      breakdownQuery = breakdownQuery.eq('account_id', accountId);
+    }
+
+    if (searchTerm) {
+      const { data: matchedAccounts } = await adminClient
+        .from('crm_accounts')
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .ilike('account_name', `%${searchTerm}%`);
+
+      const accountIds = matchedAccounts?.map((a) => a.id) || [];
+
+      let orFilter = `opportunity_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`;
+
+      if (accountIds.length > 0) {
+        orFilter += `,account_id.in.(${accountIds.join(',')})`;
+      }
+
+      breakdownQuery = breakdownQuery.or(orFilter);
+    }
+
+    // RLS handles visibility for breakdown as well.
+
+    const { data: breakdownData, error: breakdownError } = await breakdownQuery;
+
+    if (breakdownError) {
+      console.error('Get stage breakdown error:', breakdownError);
+      throw breakdownError;
+    }
+
+    const stageBreakdownMap: Record<
+      string,
+      { total_amount: number; count: number }
+    > = {};
+    (breakdownData || []).forEach((opp) => {
+      const stageId = opp.stage_id;
+      if (!stageBreakdownMap[stageId]) {
+        stageBreakdownMap[stageId] = { total_amount: 0, count: 0 };
+      }
+      stageBreakdownMap[stageId].total_amount += opp.amount || 0;
+      stageBreakdownMap[stageId].count += 1;
+    });
+
+    const totalAmount = Object.values(stageBreakdownMap).reduce(
+      (sum, s) => sum + s.total_amount,
+      0,
+    );
+
     return NextResponse.json({
       message: 'Opportunities retrieved successfully',
       data: opportunities || [],
       count: count || 0,
+      totalAmount,
+      stageBreakdown: stageBreakdownMap,
     });
   },
 );

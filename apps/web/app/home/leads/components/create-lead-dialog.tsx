@@ -72,7 +72,6 @@ interface FormDataState {
   source_id: string;
   trigger: string;
   notes: string;
-  is_public: boolean;
   lead_score: number;
 }
 
@@ -105,7 +104,6 @@ export default function CreateLeadDialog({
     source_id: '',
     trigger: '',
     notes: '',
-    is_public: true,
     lead_score: 0,
   });
 
@@ -218,7 +216,6 @@ export default function CreateLeadDialog({
       source_id: '',
       trigger: '',
       notes: '',
-      is_public: true,
       lead_score: 0,
     });
   };
@@ -281,7 +278,6 @@ export default function CreateLeadDialog({
         source_id: formData.source_id || null,
         trigger: formData.trigger,
         notes: formData.notes,
-        is_public: formData.is_public,
         lead_score: totalScore,
       };
 
@@ -747,34 +743,6 @@ export default function CreateLeadDialog({
                 Additional Information
               </h3>
               <Separator className="bg-gray-200 dark:bg-slate-800" />
-
-              <div className="flex items-start gap-3">
-                <Checkbox
-                  id="is_public"
-                  checked={formData.is_public}
-                  onCheckedChange={(checked) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      is_public: checked as boolean,
-                    }));
-                  }}
-                  disabled={isLoading}
-                  className="mt-1"
-                />
-                <div className="flex-1">
-                  <Label
-                    htmlFor="is_public"
-                    className="cursor-pointer text-sm font-medium text-gray-900 dark:text-gray-100"
-                  >
-                    Make this lead public
-                  </Label>
-                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    When public, this lead will be visible to all team members
-                    with &quot;View leads&quot; access. When private, only you
-                    and assigned team members can see it.
-                  </p>
-                </div>
-              </div>
 
               <div>
                 <Label
