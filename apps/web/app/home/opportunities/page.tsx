@@ -2,7 +2,6 @@
 
 import React, { useMemo, useRef, useState } from 'react';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
@@ -12,7 +11,6 @@ import {
   Filter,
   Plus,
   Search,
-  Trash2,
 } from 'lucide-react';
 
 import { useUser } from '@kit/supabase/hooks/use-user';
@@ -39,7 +37,6 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -49,7 +46,6 @@ import {
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
@@ -120,7 +116,6 @@ export default function OpportunitiesPage() {
     useState<Opportunity | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
-  const { data: user } = useUser();
 
   const columns = useMemo(
     () => [
@@ -138,8 +133,6 @@ export default function OpportunitiesPage() {
       { id: 'competitor', label: 'Competitor' },
       { id: 'is_closed', label: 'Closed' },
       { id: 'is_won', label: 'Won' },
-      { id: 'close_reason', label: 'Close Reason' },
-      { id: 'is_public', label: 'Public' },
       { id: 'owner', label: 'Owner' },
       { id: 'created_by', label: 'Created By' },
       { id: 'created_at', label: 'Created On' },
@@ -164,8 +157,6 @@ export default function OpportunitiesPage() {
       competitor: false,
       is_closed: false,
       is_won: false,
-      close_reason: false,
-      is_public: false,
       owner: true,
       created_by: false,
       created_at: false,
@@ -217,7 +208,6 @@ export default function OpportunitiesPage() {
   });
   const members = (membersData?.data || []) as any[];
 
-  const opportunities = opportunitiesData.data;
   const totalCount = opportunitiesData.count;
 
   // Reset to first page when search or filters change
@@ -238,8 +228,7 @@ export default function OpportunitiesPage() {
     return result;
   }, [opportunitiesData.data, selectedCreatedId]);
 
-  // No longer needed: deriving stages from current page leads to incomplete filters
-  const availableStages: any[] = [];
+
 
   // Pagination Logic
   const totalPages = Math.ceil(totalCount / itemsPerPage);
@@ -716,12 +705,6 @@ export default function OpportunitiesPage() {
                           <TableHead>Closed</TableHead>
                         )}
                         {isVisible('is_won') && <TableHead>Won</TableHead>}
-                        {isVisible('close_reason') && (
-                          <TableHead>Close Reason</TableHead>
-                        )}
-                        {isVisible('is_public') && (
-                          <TableHead>Public</TableHead>
-                        )}
                         {isVisible('owner') && <TableHead>Owner</TableHead>}
                         {isVisible('created_by') && (
                           <TableHead>Created By</TableHead>
@@ -886,25 +869,6 @@ export default function OpportunitiesPage() {
                               {isVisible('close_reason') && (
                                 <TableCell className="text-muted-foreground max-w-[200px] truncate">
                                   {opportunity.close_reason || '-'}
-                                </TableCell>
-                              )}
-                              {isVisible('is_public') && (
-                                <TableCell className="text-muted-foreground text-center">
-                                  {opportunity.is_public ? (
-                                    <Badge
-                                      variant="outline"
-                                      className="border-green-200 bg-green-50 text-green-600"
-                                    >
-                                      Public
-                                    </Badge>
-                                  ) : (
-                                    <Badge
-                                      variant="outline"
-                                      className="border-amber-200 bg-amber-50 text-amber-600"
-                                    >
-                                      Private
-                                    </Badge>
-                                  )}
                                 </TableCell>
                               )}
                               {isVisible('owner') && (

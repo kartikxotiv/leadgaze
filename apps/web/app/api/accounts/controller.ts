@@ -101,8 +101,22 @@ export const getAccounts = catchAsync(
       );
       if (hierarchyFilter.type === 'restricted') {
         const userIds = hierarchyFilter.userIds;
+
+        // Fetch assigned accounts for this user (only active assignments)
+        const { data: assignments } = await adminClient
+          .from('account_assignees')
+          .select('account_id')
+          .eq('workspace_id', workspaceId)
+          .eq('assigned_to_user_id', user.id)
+          .eq('assignment_status', 'active');
+
+        const assignedIds = assignments?.map((a) => a.account_id) || [];
+        const assignedIdsFilter = assignedIds.length > 0 
+          ? `,id.in.(${assignedIds.join(',')})` 
+          : '';
+
         query = query.or(
-          `owner_id.in.(${userIds.join(',')}),created_by.in.(${userIds.join(',')})`,
+          `owner_id.in.(${userIds.join(',')}),created_by.in.(${userIds.join(',')})${assignedIdsFilter}`,
         );
       }
     }
@@ -114,8 +128,7 @@ export const getAccounts = catchAsync(
       );
     }
 
-    // RLS handles visibility based on hierarchy, ownership, and assignment.
-    // No manual filtering needed here.
+
 
     // Pagination
     const from = (page - 1) * limit;
@@ -224,7 +237,6 @@ export const createAccount = catchAsync(
         status_id: statusId,
         owner_id: user.id,
         created_by: user.id,
-        is_public: payload.is_public ?? true, // Default to public
         ...cleanedData,
       })
       .select()

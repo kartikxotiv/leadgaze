@@ -1,10 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, Loader2, Plus } from 'lucide-react';
-import { toast } from 'sonner';
+import { ChevronDown, Loader2 } from 'lucide-react';
 
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Button } from '@kit/ui/button';
@@ -24,7 +22,7 @@ import {
 } from '@kit/ui/dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
+
 import {
   Select,
   SelectContent,
@@ -35,10 +33,6 @@ import {
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
-  createHierarchyService,
-  getHierarchiesService,
-} from '~/services/hierarchies.service';
-import {
   type Role,
   type RolePermission,
   getModulesService,
@@ -46,6 +40,8 @@ import {
   updateRolePermissionsService,
   updateRoleService,
 } from '~/services/roles.service';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 interface EditRoleDialogProps {
   role: Role;
@@ -77,50 +73,11 @@ export function EditRoleDialog({
   const [formData, setFormData] = useState({
     role_name: '',
     description: '',
-    hierarchy_id: '',
     color: '#3b82f6',
     is_active: true,
   });
 
-  const [isCustomHierarchy, setIsCustomHierarchy] = useState(false);
-  const [customHierarchyName, setCustomHierarchyName] = useState('');
 
-  // Fetch persistent hierarchies
-  const { data: hierarchiesData, isLoading: hierarchiesLoading } = useQuery({
-    queryKey: ['workspaceHierarchies', currentWorkspace?.id],
-    queryFn: () => getHierarchiesService(currentWorkspace?.id || ''),
-    enabled: !!currentWorkspace?.id && open,
-  });
-
-  const hierarchyOptions = useMemo(() => {
-    if (!hierarchiesData || hierarchiesData.length === 0) {
-      return [];
-    }
-    return (hierarchiesData as any[]).map((h) => ({
-      value: h.id,
-      levelValue: h.level.toString(),
-      label: `${h.name} (${h.level})`,
-    }));
-  }, [hierarchiesData]);
-
-  const createHierarchyMutation = useMutation({
-    mutationFn: (payload: { name: string; level: number }) =>
-      createHierarchyService({
-        workspace_id: currentWorkspace?.id || '',
-        ...payload,
-      }),
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({
-        queryKey: ['workspaceHierarchies', currentWorkspace?.id],
-      });
-      toast.success('New hierarchy level created');
-      setFormData({ ...formData, hierarchy_id: data.id });
-      setIsCustomHierarchy(false);
-    },
-    onError: (err: any) => {
-      toast.error(err.message || 'Failed to create hierarchy level');
-    },
-  });
 
   const [selectedPermissions, setSelectedPermissions] = useState<
     Record<string, boolean>
@@ -151,11 +108,9 @@ export function EditRoleDialog({
       setFormData({
         role_name: role.role_name,
         description: role.description || '',
-        hierarchy_id: role.hierarchy_id || '',
         color: role.color || '#3b82f6',
         is_active: role.is_active,
       });
-      setIsCustomHierarchy(false);
     }
   }, [open, role]);
 
@@ -178,7 +133,6 @@ export function EditRoleDialog({
       await updateRoleService(role.id, {
         role_name: formData.role_name,
         description: formData.description,
-        hierarchy_id: formData.hierarchy_id,
         color: formData.color,
         is_active: formData.is_active,
       });
@@ -219,10 +173,6 @@ export function EditRoleDialog({
     e.preventDefault();
     if (!formData.role_name) {
       toast.error('Role name is required');
-      return;
-    }
-    if (!formData.hierarchy_id) {
-      toast.error('Hierarchy level is required');
       return;
     }
     if (permissionsLoading || modulesLoading) {
@@ -297,147 +247,7 @@ export function EditRoleDialog({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="hierarchy">Hierarchy Level *</Label>
-                    {isCustomHierarchy && (
-                      <Button
-                        variant="link"
-                        size="sm"
-                        className="h-auto p-0 text-xs text-blue-600"
-                        onClick={() => {
-                          setIsCustomHierarchy(false);
-                          setFormData({
-                            ...formData,
-                            hierarchy_id:
-                              role.hierarchy_id ||
-                              hierarchyOptions[0]?.value ||
-                              '',
-                          });
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    )}
-                  </div>
-                  {isCustomHierarchy ? (
-                    <div className="space-y-3">
-                      <Input
-                        placeholder="Hierarchy Name (e.g., Sub Admin)"
-                        value={customHierarchyName}
-                        onChange={(e) => setCustomHierarchyName(e.target.value)}
-                      />
-                      <div className="flex gap-2">
-                        <Input
-                          type="number"
-                          placeholder="Level (e.g., 95)"
-                          min="0"
-                          max="1000"
-                          value={(formData as any).temp_level || ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setFormData({
-                              ...formData,
-                              temp_level: val,
-                            } as any);
-                          }}
-                          autoFocus
-                        />
-                        <Button
-                          type="button"
-                          onClick={() => {
-                            const levelToUse = (formData as any).temp_level;
-                            if (!customHierarchyName || !levelToUse) {
-                              toast.error('Please enter name and level');
-                              return;
-                            }
-                            createHierarchyMutation.mutate({
-                              name: customHierarchyName,
-                              level: parseInt(levelToUse),
-                            });
-                          }}
-                          disabled={createHierarchyMutation.isPending}
-                        >
-                          {createHierarchyMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            'Save'
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          className="w-full justify-between font-normal"
-                        >
-                          {hierarchiesLoading ? (
-                            <span className="flex items-center gap-2">
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                              Loading...
-                            </span>
-                          ) : hierarchyOptions.length > 0 ? (
-                            hierarchyOptions.find(
-                              (opt: any) => opt.value === formData.hierarchy_id,
-                            )?.label || 'Select Level'
-                          ) : (
-                            'No levels available'
-                          )}
-                          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
-                        <div className="flex flex-col">
-                          {hierarchyOptions.map((level: any) => (
-                            <div
-                              key={level.value}
-                              className="flex items-center gap-1 p-1 hover:bg-slate-50"
-                            >
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setIsCustomHierarchy(true);
-                                  setCustomHierarchyName(
-                                    level.label.split(' (')[0],
-                                  );
-                                  setFormData({
-                                    ...formData,
-                                    hierarchy_id: '',
-                                    temp_level: '',
-                                  } as any);
-                                }}
-                                title="Add Custom Sub-Level"
-                              >
-                                <Plus className="h-4 w-4 font-bold" />
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                className="h-8 flex-1 justify-start font-normal"
-                                onClick={() =>
-                                  setFormData({
-                                    ...formData,
-                                    hierarchy_id: level.value,
-                                  })
-                                }
-                              >
-                                {level.label}
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  )}
-                </div>
+              <div className="grid grid-cols-1 gap-4">
 
                 <div className="space-y-2">
                   <Label htmlFor="color">Color</Label>
@@ -503,9 +313,8 @@ export function EditRoleDialog({
                           <div className="flex items-center gap-2">
                             <CollapsibleTrigger className="flex items-center gap-2">
                               <ChevronDown
-                                className={`h-4 w-4 transition-transform ${
-                                  expandedModules[module.id] ? '' : '-rotate-90'
-                                }`}
+                                className={`h-4 w-4 transition-transform ${expandedModules[module.id] ? '' : '-rotate-90'
+                                  }`}
                               />
                             </CollapsibleTrigger>
                             <Checkbox

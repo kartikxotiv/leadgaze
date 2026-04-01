@@ -179,7 +179,7 @@ const updateLead = catchAsync(
     // Get the lead to check permissions
     const { data: existingLead } = await supabase
       .from('crm_leads')
-      .select('workspace_id, owner_id, created_by, is_public')
+      .select('workspace_id, owner_id, created_by')
       .eq('id', leadId)
       .single();
 
@@ -241,19 +241,6 @@ const updateLead = catchAsync(
       );
     }
 
-    // Check permissions for is_public updates - Only if value is CHANGING
-    if (
-      body.is_public !== undefined &&
-      body.is_public !== existingLead.is_public
-    ) {
-      if (!isWorkspaceOwner && !isCreator) {
-        return NextResponse.json(
-          { message: 'Only workspace owner or creator can change visibility' },
-          { status: 403 },
-        );
-      }
-      updateData.is_public = body.is_public;
-    }
 
     updateData.updated_by = user.id;
     updateData.updated_at = new Date().toISOString();

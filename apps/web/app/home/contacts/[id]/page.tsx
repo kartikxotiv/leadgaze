@@ -49,7 +49,6 @@ import {
   EntityReminders,
 } from '../../_components/entity-activity';
 import { EntityNotes } from '../../_components/entity-notes';
-import { PublicPrivateToggle } from '../../_components/public-private-toggle';
 import { ContactAssignees } from '../components/contact-assignees';
 import { EditContactDialog } from '../components/edit-contact-dialog';
 
@@ -322,17 +321,6 @@ export default function ContactDetailsPage() {
             {/* Contact Assignees Section */}
             {workspace?.id && (
               <ContactAssignees contactId={id} workspaceId={workspace.id} />
-            )}
-
-            {/* Public/Private Toggle */}
-            {workspace?.id && contact && (
-              <PublicPrivateToggle
-                entityType="contact"
-                entityId={id}
-                isPublic={contact.is_public ?? true}
-                createdBy={contact.created_by}
-                workspaceId={workspace.id}
-              />
             )}
 
             {/* Notes Section */}

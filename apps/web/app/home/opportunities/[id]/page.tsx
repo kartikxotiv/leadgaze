@@ -61,10 +61,8 @@ import {
   EntityReminders,
 } from '../../_components/entity-activity';
 import { EntityNotes } from '../../_components/entity-notes';
-import { PublicPrivateToggle } from '../../_components/public-private-toggle';
 import { EditOpportunityDialog } from '../components/edit-opportunity-dialog';
 import { OpportunityAssignees } from '../components/opportunity-assignees';
-import { OpportunityDialog } from '../components/opportunity-dialog';
 import { OpportunityStatusTimeline } from '../components/opportunity-status-timeline';
 
 export default function OpportunityDetailsPage() {
@@ -485,17 +483,6 @@ export default function OpportunityDetailsPage() {
               />
             )}
 
-            {/* Public/Private Toggle */}
-            {currentWorkspace?.id && opportunity && (
-              <PublicPrivateToggle
-                entityType="opportunity"
-                entityId={id}
-                isPublic={opportunity.is_public}
-                createdBy={opportunity.created_by}
-                workspaceId={currentWorkspace.id}
-              />
-            )}
-
             {/* Notes Section */}
             <EntityNotes entityType="opportunity" entityId={id} />
 
@@ -611,7 +598,7 @@ export default function OpportunityDetailsPage() {
         </div>
       </PageBody>
 
-      <OpportunityDialog
+      <EditOpportunityDialog
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         opportunity={opportunity}

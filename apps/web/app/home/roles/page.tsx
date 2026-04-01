@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Edit2, Loader2, Plus, Shield, Trash2 } from 'lucide-react';
+import { Edit2, GripVertical, Loader2, Plus, Shield, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
@@ -27,22 +27,23 @@ import {
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
-import { getHierarchiesService } from '~/services/hierarchies.service';
 import {
   type Role,
   deleteRoleService,
   getRolesService,
+  reorderRolesService,
 } from '~/services/roles.service';
 
 import { CreateRoleDialog } from './components/create-role-dialog';
 import { EditRoleDialog } from './components/edit-role-dialog';
+
+const EMPTY_ROLES: Role[] = [];
 
 export default function RolesPage() {
   const queryClient = useQueryClient();
@@ -50,12 +51,14 @@ export default function RolesPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [orderedRoles, setOrderedRoles] = useState<Role[]>([]);
+  const [draggedRoleIndex, setDraggedRoleIndex] = useState<number | null>(null);
 
   const columns = useMemo(
     () => [
       { id: 'role_name', label: 'Role Name' },
       { id: 'role_key', label: 'Role Key' },
-      { id: 'hierarchy', label: 'Hierarchy' },
+      { id: 'hierarchy', label: 'Access Level' },
       { id: 'type', label: 'Type' },
       { id: 'status', label: 'Status' },
     ],
@@ -73,7 +76,7 @@ export default function RolesPage() {
 
   // Fetch roles
   const {
-    data: roles = [],
+    data: roles = EMPTY_ROLES,
     isLoading,
     error,
   } = useQuery({
@@ -85,12 +88,68 @@ export default function RolesPage() {
     enabled: !!currentWorkspace?.id,
   });
 
-  // Fetch persistent hierarchies
-  const { data: hierarchiesData, isLoading: hierarchiesLoading } = useQuery({
-    queryKey: ['workspaceHierarchies', currentWorkspace?.id],
-    queryFn: () => getHierarchiesService(currentWorkspace?.id || ''),
-    enabled: !!currentWorkspace?.id,
+  // Reorder mutation
+  const reorderRolesMutation = useMutation({
+    mutationFn: (orderedIds: string[]) =>
+      reorderRolesService({
+        workspaceId: currentWorkspace?.id || '',
+        orderedRoleIds: orderedIds,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['workspaceRoles', currentWorkspace?.id],
+      });
+      toast.success('Role order updated successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || 'Failed to update role order');
+    },
   });
+
+  // Sync state when data fetches
+  useEffect(() => {
+    if (Array.isArray(roles)) {
+      setOrderedRoles(
+        [...roles].sort((a: Role, b: Role) => (b.hierarchy_level || 0) - (a.hierarchy_level || 0))
+      );
+    }
+  }, [roles]);
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedRoleIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    const img = new Image();
+    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    e.dataTransfer.setDragImage(img, 0, 0);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedRoleIndex === null || draggedRoleIndex === index) return;
+    
+    // Optimistic UI update
+    const newOrderedRoles = [...orderedRoles];
+    const draggedRole = newOrderedRoles[draggedRoleIndex];
+    if (draggedRole) {
+       newOrderedRoles.splice(draggedRoleIndex, 1);
+       newOrderedRoles.splice(index, 0, draggedRole);
+       setDraggedRoleIndex(index);
+       setOrderedRoles(newOrderedRoles);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedRoleIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDraggedRoleIndex(null);
+    
+    // Save to server
+    const orderedIds = orderedRoles.map((r) => r.id);
+    reorderRolesMutation.mutate(orderedIds);
+  };
 
   // Delete role mutation
   const deleteRoleMutation = useMutation({
@@ -131,20 +190,11 @@ export default function RolesPage() {
   };
 
   const getHierarchyLabel = (role: Role) => {
-    if (!hierarchiesData) return 'Loading...';
-
-    const hierarchy = hierarchiesData.find(
-      (h: any) => h.id === role.hierarchy_id,
-    );
-    if (hierarchy) {
-      return `${hierarchy.name} (${hierarchy.level})`;
-    }
-
     if (role.role_key === 'admin') {
-      return 'Admin (100)';
+      return 'Admin (Highest)';
     }
 
-    return 'Unknown';
+    return `Level ${role.hierarchy_level || 0}`;
   };
 
   return (
@@ -203,7 +253,7 @@ export default function RolesPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{roles?.length}</div>
+                  <div className="text-3xl font-bold">{roles.length}</div>
                 </CardContent>
               </Card>
 
@@ -279,7 +329,7 @@ export default function RolesPage() {
                             <TableHead>Role Key</TableHead>
                           )}
                           {isVisible('hierarchy') && (
-                            <TableHead>Hierarchy</TableHead>
+                            <TableHead>Access Level</TableHead>
                           )}
                           {isVisible('type') && <TableHead>Type</TableHead>}
                           {isVisible('status') && <TableHead>Status</TableHead>}
@@ -289,11 +339,22 @@ export default function RolesPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {roles?.map((role: Role) => (
-                          <TableRow key={role.id}>
+                        {orderedRoles?.map((role: Role, index: number) => (
+                          <TableRow
+                            key={role.id}
+                            className={draggedRoleIndex === index ? 'opacity-50' : ''}
+                            draggable={canAccess('roles', 'edit')}
+                            onDragStart={(e) => handleDragStart(e, index)}
+                            onDragOver={(e) => handleDragOver(e, index)}
+                            onDrop={(e) => handleDrop(e)}
+                            onDragEnd={handleDragEnd}
+                          >
                             {isVisible('role_name') && (
                               <TableCell>
                                 <div className="flex items-center gap-3">
+                                  {canAccess('roles', 'edit') && (
+                                    <GripVertical className="h-4 w-4 cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing" />
+                                  )}
                                   <div
                                     className="h-3 w-3 rounded-full"
                                     style={{

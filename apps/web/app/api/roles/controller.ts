@@ -54,7 +54,6 @@ const createRole = catchAsync(
       role_key,
       role_name,
       description,
-      hierarchy_id,
       color,
       permissions,
     } = await request.json();
@@ -62,8 +61,7 @@ const createRole = catchAsync(
     if (
       !workspaceId ||
       !role_key ||
-      !role_name ||
-      !hierarchy_id
+      !role_name
     ) {
       return NextResponse.json(
         { message: 'Missing required fields' },
@@ -91,19 +89,7 @@ const createRole = catchAsync(
       );
     }
 
-    const { data: hierarchy, error: hierarchyError } = await supabase
-      .from('workspace_hierarchies')
-      .select('level')
-      .eq('id', hierarchy_id)
-      .eq('workspace_id', workspaceId)
-      .single();
 
-    if (!hierarchy || hierarchyError) {
-      return NextResponse.json(
-        { message: 'Hierarchy not found in workspace' },
-        { status: 404 },
-      );
-    }
 
     const { data: createdRole, error: createRoleError } = await supabase
       .from('workspace_roles')
@@ -112,8 +98,7 @@ const createRole = catchAsync(
         role_key,
         role_name,
         description,
-        hierarchy_id,
-        hierarchy_level: hierarchy.level,
+        hierarchy_level: 0,
         color,
         is_system: false,
         is_active: true,
