@@ -11,6 +11,11 @@ import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { cn } from '@kit/ui/utils';
 
+import {
+  getEntityEmailActivityService,
+  deleteEmailActivityService,
+} from '~/services/email.service';
+
 interface EntityEmailsProps {
   leadId: string;
   onOpenDraft: (draft: any) => void;
@@ -29,39 +34,22 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
   // Ensure we are on client
   const isClient = typeof window !== 'undefined';
 
-  // Unified Local Storage Query
+  // Database Query
   const { data: combinedItems = [], isLoading } = useQuery({
     queryKey: ['lead-drafts', leadId],
-    queryFn: () => {
-      if (typeof window === 'undefined') return [];
-      const local = localStorage.getItem(`email_activities_${leadId}`);
-      const activities = local ? JSON.parse(local) : [];
-
-      return activities.sort((a: any, b: any) => {
-        const dateA = new Date(
-          a.timestamp || a.sent_at || a.updated_at || a.created_at || 0,
-        ).getTime();
-        const dateB = new Date(
-          b.timestamp || b.sent_at || b.updated_at || b.created_at || 0,
-        ).getTime();
-        return dateB - dateA;
-      });
-    },
+    queryFn: () => getEntityEmailActivityService(leadId, 'lead'),
+    enabled: !!leadId,
   });
 
-  // Handle local delete
+  // Handle delete
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    const local = localStorage.getItem(`email_activities_${leadId}`);
-    if (local) {
-      const activities = JSON.parse(local);
-      const filtered = activities.filter((item: any) => item.id !== id);
-      localStorage.setItem(
-        `email_activities_${leadId}`,
-        JSON.stringify(filtered),
-      );
+    try {
+      await deleteEmailActivityService(id);
       queryClient.invalidateQueries({ queryKey: ['lead-drafts', leadId] });
       toast.success('Record removed');
+    } catch (error: any) {
+      toast.error('Failed to remove record');
     }
   };
 
@@ -122,25 +110,25 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
                 key={item.id}
                 className={cn(
                   'group relative rounded-lg border border-gray-100 bg-gray-50 p-3 transition-all dark:border-gray-800 dark:bg-slate-900',
-                  item.type !== 'sent'
+                  item.status !== 'sent'
                     ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800'
                     : 'cursor-default',
                 )}
-                onClick={() => item.type !== 'sent' && onOpenDraft(item)}
+                onClick={() => item.status !== 'sent' && onOpenDraft(item)}
               >
                 <div className="flex items-start gap-3">
                   <div
                     className={`mt-0.5 rounded-full p-2 ${
-                      item.type === 'sent'
+                      item.status === 'sent'
                         ? 'bg-green-100 text-green-600'
-                        : item.type === 'scheduled'
+                        : item.status === 'scheduled'
                           ? 'bg-blue-100 text-blue-600'
                           : 'bg-amber-100 text-amber-600'
                     }`}
                   >
-                    {item.type === 'sent' ? (
+                    {item.status === 'sent' ? (
                       <Mail className="h-4 w-4" />
-                    ) : item.type === 'scheduled' ? (
+                    ) : item.status === 'scheduled' ? (
                       <Clock className="h-4 w-4" />
                     ) : (
                       <FileText className="h-4 w-4" />
@@ -154,16 +142,16 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
                       <Badge
                         variant="outline"
                         className={`h-4 px-1 text-[10px] ${
-                          item.type === 'sent'
+                          item.status === 'sent'
                             ? 'border-green-200 bg-green-50 text-green-600'
-                            : item.type === 'scheduled'
+                            : item.status === 'scheduled'
                               ? 'border-blue-200 bg-blue-50 text-blue-600'
                               : 'border-amber-200 bg-amber-50 text-amber-600'
                         }`}
                       >
-                        {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                        {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                       </Badge>
-                      {item.type !== 'sent' && (
+                      {item.status !== 'sent' && (
                         <span className="text-[10px] text-blue-500 italic opacity-0 transition-opacity group-hover:opacity-100">
                           • Click to Edit
                         </span>
@@ -171,35 +159,31 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
                     </div>
                     <p
                       className="mt-1 line-clamp-2 text-xs text-gray-600 dark:text-gray-400"
-                      dangerouslySetInnerHTML={{ __html: item.body }}
+                      dangerouslySetInnerHTML={{ __html: item.html_body }}
                     />
                     <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-gray-400">
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         <span>
                           {new Date(
-                            item.timestamp ||
-                              item.sent_at ||
-                              item.updated_at ||
-                              item.created_at ||
-                              new Date(),
+                            item.sent_at ||
+                            item.updated_at ||
+                            item.created_at ||
+                            new Date(),
                           ).toLocaleString()}
                         </span>
                       </div>
-                      {item.recipients && (
+                      {item.to_emails && (
                         <span className="max-w-[150px] truncate">
-                          To: {item.recipients}
+                          To: {item.to_emails}
                         </span>
                       )}
-                      {(item.cc || item.cc_recipients) && (
+                      {item.cc_emails && (
                         <span className="max-w-[100px] truncate">
-                          CC:{' '}
-                          {Array.isArray(item.cc || item.cc_recipients)
-                            ? (item.cc || item.cc_recipients).join(', ')
-                            : item.cc || item.cc_recipients}
+                          CC: {item.cc_emails}
                         </span>
                       )}
-                      {item.type === 'scheduled' && (
+                      {item.status === 'scheduled' && item.scheduled_at && (
                         <span className="font-semibold text-blue-600">
                           Due: {new Date(item.scheduled_at).toLocaleString()}
                         </span>
@@ -207,7 +191,7 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
                     </div>
                   </div>
                 </div>
-                {item.type !== 'sent' && (
+                {item.status !== 'sent' && (
                   <button
                     onClick={(e) => handleDelete(e, item.id)}
                     className="absolute top-3 right-3 p-1 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500"
