@@ -12,6 +12,8 @@ export const sendEmail = catchAsync(async ({ request }) => {
 
   const {
     leadId,
+    workspaceId: payloadWorkspaceId,
+    toEmails: payloadToEmails,
     cc,
     bcc,
     subject,
@@ -20,37 +22,49 @@ export const sendEmail = catchAsync(async ({ request }) => {
     emailId, // Existing record ID to update
   } = payload;
 
-  if (!leadId) {
-    return NextResponse.json({ error: 'Missing lead_id' }, { status: 400 });
+  let workspaceId = payloadWorkspaceId;
+  let toEmails = payloadToEmails;
+
+  if (leadId) {
+    // FETCH LEAD
+    const { data: lead, error: leadError } = await (
+      supabase.from('crm_leads').select() as any
+    )
+      .eq('id', leadId)
+      .eq('is_deleted', false)
+      .single();
+
+    if (!lead) {
+      return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+    }
+
+    if (leadError) {
+      throw leadError;
+    }
+
+    if (!lead.email) {
+      return NextResponse.json(
+        { error: 'Lead email not found' },
+        { status: 404 },
+      );
+    }
+
+    workspaceId = lead.workspace_id;
+    toEmails = lead.email;
   }
 
-  // FETCH LEAD
-  const { data: lead, error: leadError } = await (
-    supabase.from('crm_leads').select() as any
-  )
-    .eq('id', leadId)
-    .eq('is_deleted', false)
-    .single();
-
-  if (!lead) {
-    return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+  if (!workspaceId) {
+    return NextResponse.json({ error: 'Missing workspace_id' }, { status: 400 });
   }
 
-  if (leadError) {
-    throw leadError;
-  }
-
-  if (!lead.email) {
-    return NextResponse.json(
-      { error: 'Lead email not found' },
-      { status: 404 },
-    );
+  if (!toEmails) {
+    return NextResponse.json({ error: 'Missing recipient email' }, { status: 400 });
   }
 
   const { data: account, error: accountError } = await supabase
     .from('email_accounts')
     .select('*')
-    .eq('workspace_id', lead.workspace_id)
+    .eq('workspace_id', workspaceId)
     .single();
 
   if (accountError) {
@@ -72,7 +86,7 @@ export const sendEmail = catchAsync(async ({ request }) => {
     info = await sendMail({
       account,
       from: account?.email,
-      to: lead.email,
+      to: toEmails,
       cc,
       bcc,
       subject,
@@ -82,10 +96,10 @@ export const sendEmail = catchAsync(async ({ request }) => {
 
   // PERSIST IN DATABASE
   const emailData = {
-    workspace_id: lead.workspace_id,
+    workspace_id: workspaceId,
     direction: 'outbound',
     from_email: account.email,
-    to_emails: lead.email,
+    to_emails: toEmails,
     cc_emails: Array.isArray(cc) ? cc.join(', ') : cc,
     bcc_emails: Array.isArray(bcc) ? bcc.join(', ') : bcc,
     subject,
@@ -93,8 +107,8 @@ export const sendEmail = catchAsync(async ({ request }) => {
     status: isScheduled ? 'scheduled' : 'sent',
     scheduled_at: scheduledAt || null,
     sent_at: isScheduled ? null : new Date().toISOString(),
-    entity_type: 'lead',
-    entity_id: leadId,
+    entity_type: leadId ? 'lead' : null,
+    entity_id: leadId || null,
     gmail_message_id: info?.messageId || null,
   } as any;
 

@@ -71,11 +71,18 @@ import { replaceTemplateVariables } from '~/lib/email/template-utils';
 interface EmailLeadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  leadId: string;
-  leadEmail: string;
+  leadId?: string;
+  leadEmail?: string;
   leadName?: string;
   initialDraft?: any;
   workspaceEmailAccount: any;
+  entityId?: string;
+  entityType?: 'lead' | 'contact';
+  replyTo?: {
+    subject: string;
+    email: string;
+    name?: string;
+  };
 }
 
 export function EmailLeadDialog({
@@ -85,10 +92,13 @@ export function EmailLeadDialog({
   leadEmail,
   leadName,
   initialDraft,
-  workspaceEmailAccount
+  workspaceEmailAccount,
+  entityId,
+  entityType = 'lead',
+  replyTo
 }: EmailLeadDialogProps) {
   const queryClient = useQueryClient();
-  const { data: user } = useUser();
+  useUser();
   const [subject, setSubject] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [scheduledAt, setScheduledAt] = useState<Date | undefined>(undefined);
@@ -126,6 +136,10 @@ export function EmailLeadDialog({
       setSubject(draft.subject || '');
       if (editorRef.current) {
         editorRef.current.innerHTML = draft.html_body || draft.body || '';
+      } else {
+        setTimeout(() => {
+           if (editorRef.current) editorRef.current.innerHTML = draft.html_body || draft.body || '';
+        }, 100);
       }
       if (draft.scheduled_at) {
         setScheduledAt(new Date(draft.scheduled_at));
@@ -144,7 +158,7 @@ export function EmailLeadDialog({
     };
 
     const resetFields = () => {
-      setSubject('');
+      setSubject(replyTo ? `Re: ${replyTo.subject}` : '');
       if (editorRef.current) {
         editorRef.current.innerHTML = '';
       }
@@ -156,8 +170,7 @@ export function EmailLeadDialog({
       setShowBcc(false);
     };
 
-    if (open && leadId) {
-      // Use a small timeout to ensure the editorRef is mounted when the dialog opens
+    if (open) {
       const timer = setTimeout(() => {
         if (initialDraft) {
           populateFields(initialDraft);
@@ -167,7 +180,7 @@ export function EmailLeadDialog({
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [open, leadId, initialDraft]);
+  }, [open, leadId, initialDraft, replyTo]);
 
   const handleFormat = (command: string, value: string | null = null) => {
     const editor = editorRef.current;
@@ -230,11 +243,11 @@ export function EmailLeadDialog({
       await saveEmailActivityService({
         id: initialDraft?.id,
         workspace_id: workspaceEmailAccount?.workspace_id,
-        entity_id: leadId,
-        entity_type: 'lead',
+        entity_id: entityId || leadId,
+        entity_type: entityType,
         subject,
         body: message,
-        to_emails: leadEmail,
+        to_emails: replyTo?.email || leadEmail,
         cc_emails: ccRecipients,
         bcc_emails: bccRecipients,
         status: scheduledAt ? 'scheduled' : 'draft',
@@ -243,7 +256,7 @@ export function EmailLeadDialog({
       });
 
       toast.success(scheduledAt ? 'Email scheduled' : 'Draft saved');
-      queryClient.invalidateQueries({ queryKey: ['lead-drafts', leadId] });
+      queryClient.invalidateQueries({ queryKey: ['lead-drafts', entityId || leadId] });
     } catch (error: any) {
       toast.error(error.message || 'Failed to save draft');
     } finally {
@@ -251,9 +264,10 @@ export function EmailLeadDialog({
     }
   };
 
-  const handleScheduleClick = () => {
-    setIsSchedulePopoverOpen(true);
-  };
+  // Unused but kept for reference if needed
+  // const handleScheduleClick = () => {
+  //   setIsSchedulePopoverOpen(true);
+  // };
 
   const handleSelectSchedule = (date: Date | undefined) => {
     if (date) {
@@ -285,7 +299,7 @@ export function EmailLeadDialog({
     const data: Record<string, string> = {
       first_name: leadData?.first_name || '',
       last_name: leadData?.last_name || '',
-      email: leadEmail,
+      email: leadEmail || '',
     };
 
     // Merge workspace variables (environment variables)
@@ -325,7 +339,9 @@ export function EmailLeadDialog({
         .filter((e) => e.length > 0);
 
       await sendLeadEmailService({
-        leadId,
+        leadId: entityId || leadId,
+        workspaceId: workspaceEmailAccount?.workspace_id as string,
+        toEmails: (replyTo?.email || leadEmail) as string,
         subject,
         body: message,
         cc: cc.length > 0 ? cc : undefined,
@@ -340,7 +356,7 @@ export function EmailLeadDialog({
         toast.success(`Email scheduled for ${format(scheduledAt, 'PPp')}`);
       }
 
-      queryClient.invalidateQueries({ queryKey: ['lead-drafts', leadId] });
+      queryClient.invalidateQueries({ queryKey: ['lead-drafts', entityId || leadId] });
 
       onOpenChange(false);
       setSubject('');
@@ -396,14 +412,14 @@ export function EmailLeadDialog({
           </div>
         </div>
 
-        <div className="space-y-1.5 p-4 overflow-y-auto flex-1">
+        <div className="space-y-1 p-3 overflow-y-auto flex-1">
           {/* From Field - Real Dropdown */}
           <div className="flex items-center gap-2">
             <Label className="w-12 text-sm text-slate-500">
               <span className="text-red-500">*</span> From
             </Label>
             <Select defaultValue="user">
-              <SelectTrigger className="h-auto flex-1 border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-700 focus:ring-0 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+              <SelectTrigger className="h-8 flex-1 border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700 focus:ring-0 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -418,7 +434,7 @@ export function EmailLeadDialog({
           <div className="flex items-center gap-2">
             <Label className="w-12 text-sm text-slate-500">To</Label>
             <Select defaultValue="lead">
-              <SelectTrigger className="h-auto flex-1 border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-700 focus:ring-0 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+              <SelectTrigger className="h-8 flex-1 border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700 focus:ring-0 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -429,9 +445,9 @@ export function EmailLeadDialog({
                       className="flex items-center gap-1 border-emerald-100 bg-emerald-50 text-emerald-700"
                     >
                       <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                      {leadName || 'Lead'}
+                      {replyTo?.name || leadName || 'Recipient'}
                     </Badge>
-                    <span className="text-xs text-slate-500">{`<${leadEmail}>`}</span>
+                    <span className="text-xs text-slate-500">{`<${replyTo?.email || leadEmail}>`}</span>
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -460,7 +476,7 @@ export function EmailLeadDialog({
           {showCc && (
             <div className="flex items-center gap-2">
               <Label className="w-12 text-sm text-slate-500">Cc</Label>
-              <div className="flex flex-1 flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5 dark:border-slate-800 dark:bg-slate-950">
+              <div className="flex flex-1 flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1 dark:border-slate-800 dark:bg-slate-950">
                 <input
                   className="min-w-[50px] flex-1 bg-transparent text-sm outline-none"
                   placeholder="Enter Cc recipients (comma separated)..."
@@ -478,7 +494,7 @@ export function EmailLeadDialog({
           {showBcc && (
             <div className="flex items-center gap-2">
               <Label className="w-12 text-sm text-slate-500">Bcc</Label>
-              <div className="flex flex-1 flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5 dark:border-slate-800 dark:bg-slate-950">
+              <div className="flex flex-1 flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1 dark:border-slate-800 dark:bg-slate-950">
                 <input
                   className="min-w-[50px] flex-1 bg-transparent text-sm outline-none"
                   placeholder="Enter Bcc recipients (comma separated)..."
@@ -495,7 +511,7 @@ export function EmailLeadDialog({
           {/* Subject Field */}
           <div className="flex items-center gap-2">
             <Label className="w-12 text-sm text-slate-500">Subject</Label>
-            <div className="flex flex-1 items-center rounded-md border border-slate-200 bg-white px-3 py-1.5 dark:border-slate-800 dark:bg-slate-950">
+            <div className="flex flex-1 items-center rounded-md border border-slate-200 bg-white px-3 py-1 dark:border-slate-800 dark:bg-slate-950">
               <input
                 className="flex-1 bg-transparent text-sm text-slate-700 outline-none dark:text-slate-300"
                 placeholder="Enter Subject..."
@@ -507,11 +523,11 @@ export function EmailLeadDialog({
 
           {/* Toolbar */}
           <div className="overflow-hidden rounded-md border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex flex-wrap items-center gap-1 border-b bg-white p-1.5 dark:bg-slate-950">
+            <div className="flex flex-wrap items-center gap-1 border-b bg-white p-1 dark:bg-slate-950">
               <Select
                 onValueChange={(value) => handleFormat('fontName', value)}
               >
-                <SelectTrigger className="h-7 w-[80px] border-none bg-transparent px-2 text-xs text-slate-600 hover:bg-slate-100 focus:ring-0">
+                <SelectTrigger className="h-6 w-[80px] border-none bg-transparent px-2 text-xs text-slate-600 hover:bg-slate-100 focus:ring-0">
                   <SelectValue placeholder="Font" />
                 </SelectTrigger>
                 <SelectContent>
@@ -525,7 +541,7 @@ export function EmailLeadDialog({
               <Select
                 onValueChange={(value) => handleFormat('fontSize', value)}
               >
-                <SelectTrigger className="h-7 w-[70px] border-none bg-transparent px-2 text-xs text-slate-600 hover:bg-slate-100 focus:ring-0">
+                <SelectTrigger className="h-6 w-[70px] border-none bg-transparent px-2 text-xs text-slate-600 hover:bg-slate-100 focus:ring-0">
                   <SelectValue placeholder="Size" />
                 </SelectTrigger>
                 <SelectContent>
@@ -535,45 +551,45 @@ export function EmailLeadDialog({
                   <SelectItem value="7">Huge</SelectItem>
                 </SelectContent>
               </Select>
-              <Separator orientation="vertical" className="mx-1 h-4" />
+              <Separator orientation="vertical" className="mx-1 h-3" />
               <button
-                className="rounded p-1.5 font-bold text-slate-700 hover:bg-slate-100"
+                className="rounded p-1 font-bold text-slate-700 hover:bg-slate-100"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   handleFormat('bold');
                 }}
               >
-                <Bold className="h-4 w-4" />
+                <Bold className="h-3.5 w-3.5" />
               </button>
               <button
-                className="rounded p-1.5 text-slate-700 italic hover:bg-slate-100"
+                className="rounded p-1 text-slate-700 italic hover:bg-slate-100"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   handleFormat('italic');
                 }}
               >
-                <Italic className="h-4 w-4" />
+                <Italic className="h-3.5 w-3.5" />
               </button>
               <button
-                className="rounded p-1.5 text-slate-700 underline hover:bg-slate-100"
+                className="rounded p-1 text-slate-700 underline hover:bg-slate-100"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   handleFormat('underline');
                 }}
               >
-                <Underline className="h-4 w-4" />
+                <Underline className="h-3.5 w-3.5" />
               </button>
               <button
-                className="flex items-center gap-0.5 rounded p-1.5 text-slate-600 hover:bg-slate-100"
+                className="flex items-center gap-0.5 rounded p-1 text-slate-600 hover:bg-slate-100"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   handlePrompt('foreColor', 'Enter hex color (e.g., #ff0000)');
                 }}
               >
-                <Type className="h-4 w-4" />
-                <ChevronDown className="h-3 w-3" />
+                <Type className="h-3.5 w-3.5" />
+                <ChevronDown className="h-2 w-2" />
               </button>
-              <Separator orientation="vertical" className="mx-1 h-4" />
+              <Separator orientation="vertical" className="mx-1 h-3" />
               <input
                 type="file"
                 ref={fileInputRef}
@@ -583,9 +599,9 @@ export function EmailLeadDialog({
               />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-0.5 rounded p-1.5 text-slate-600 hover:bg-slate-100">
-                    <ImageIcon className="h-4 w-4" />
-                    <ChevronDown className="h-3 w-3" />
+                  <button className="flex items-center gap-0.5 rounded p-1 text-slate-600 hover:bg-slate-100">
+                    <ImageIcon className="h-3.5 w-3.5" />
+                    <ChevronDown className="h-2 w-2" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-48">
@@ -607,76 +623,76 @@ export function EmailLeadDialog({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Separator orientation="vertical" className="mx-1 h-4" />
+              <Separator orientation="vertical" className="mx-1 h-3" />
               <button
-                className="rounded p-1.5 text-slate-600 hover:bg-slate-100"
+                className="rounded p-1 text-slate-600 hover:bg-slate-100"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   handleFormat('insertOrderedList');
                 }}
               >
-                <ListOrdered className="h-4 w-4" />
+                <ListOrdered className="h-3.5 w-3.5" />
               </button>
               <button
-                className="rounded p-1.5 text-slate-600 hover:bg-slate-100"
+                className="rounded p-1 text-slate-600 hover:bg-slate-100"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   handleFormat('insertUnorderedList');
                 }}
               >
-                <List className="h-4 w-4" />
+                <List className="h-3.5 w-3.5" />
               </button>
-              <Separator orientation="vertical" className="mx-1 h-4" />
+              <Separator orientation="vertical" className="mx-1 h-3" />
               <button
-                className="rounded p-1.5 text-slate-600 hover:bg-slate-100"
+                className="rounded p-1 text-slate-600 hover:bg-slate-100"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   handleFormat('justifyLeft');
                 }}
               >
-                <AlignLeft className="h-4 w-4" />
+                <AlignLeft className="h-3.5 w-3.5" />
               </button>
               <button
-                className="rounded p-1.5 text-slate-600 hover:bg-slate-100"
+                className="rounded p-1 text-slate-600 hover:bg-slate-100"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   handleFormat('justifyCenter');
                 }}
               >
-                <AlignCenter className="h-4 w-4" />
+                <AlignCenter className="h-3.5 w-3.5" />
               </button>
               <button
-                className="rounded p-1.5 text-slate-600 hover:bg-slate-100"
+                className="rounded p-1 text-slate-600 hover:bg-slate-100"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   handleFormat('justifyRight');
                 }}
               >
-                <AlignRight className="h-4 w-4" />
+                <AlignRight className="h-3.5 w-3.5" />
               </button>
             </div>
-            <div className="border-b bg-white p-1.5 dark:bg-slate-950">
+            <div className="border-b bg-white p-1 dark:bg-slate-950">
               <button
-                className="rounded border p-1.5 text-slate-600 hover:bg-slate-100"
+                className="rounded border p-1 text-slate-600 hover:bg-slate-100"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   handlePrompt('createLink', 'Enter the link URL');
                 }}
               >
-                <LinkIcon className="h-4 w-4" />
+                <LinkIcon className="h-3.5 w-3.5" />
               </button>
             </div>
             <div
               ref={editorRef}
               contentEditable
-              className="min-h-[200px] max-h-[400px] overflow-y-auto bg-white p-4 text-sm text-slate-800 outline-none dark:bg-slate-950 dark:text-slate-200 [&_ol]:list-decimal [&_ol]:pl-8 [&_ul]:list-disc [&_ul]:pl-8"
+              className="min-h-[180px] max-h-[350px] overflow-y-auto bg-white p-3 text-sm text-slate-800 outline-none dark:bg-slate-950 dark:text-slate-200 [&_ol]:list-decimal [&_ol]:pl-8 [&_ul]:list-disc [&_ul]:pl-8"
               onInput={() => { }}
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t bg-slate-50 px-4 py-2 dark:bg-slate-900">
+        <div className="flex items-center justify-end gap-3 border-t bg-slate-50 px-4 py-1.5 dark:bg-slate-900">
           <Button
             onClick={handleSaveDraft}
             variant="outline"

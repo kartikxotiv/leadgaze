@@ -91,7 +91,7 @@ const successDataResponse = <T>(
 
 const successListDataResponse = (
   listData: any,
-  { object, has_more = false, total = null, page = 1 }: any,
+  { object, has_more = false, total = null, page = 1, count = null, limit = null, offset = null }: any,
 ) => {
   const response: any = {
     success: true,
@@ -102,6 +102,9 @@ const successListDataResponse = (
   };
 
   if (total !== null) response.total = total;
+  if (count !== null) response.count = count;
+  if (limit !== null) response.limit = limit;
+  if (offset !== null) response.offset = offset;
 
   return NextResponse.json(response, { status: 200 });
 };
