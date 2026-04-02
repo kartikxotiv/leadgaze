@@ -21,8 +21,6 @@ export interface Contact {
   do_not_email?: boolean;
   linkedin_url?: string;
   twitter_handle?: string;
-  account_id?: string;
-  is_public?: boolean;
   status_id: string;
   owner_id?: string;
   created_by?: string;

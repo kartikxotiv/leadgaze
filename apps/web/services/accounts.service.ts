@@ -11,8 +11,6 @@ export interface Account {
   company_size?: string;
   annual_revenue?: number;
   employee_count?: number;
-  description?: string;
-  is_public?: boolean;
   account_type?: string;
   billing_street?: string;
   billing_city?: string;

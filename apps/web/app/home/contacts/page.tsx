@@ -71,10 +71,7 @@ export default function ContactsPage() {
       { id: 'email', label: 'Email' },
       { id: 'phone', label: 'Phone' },
       { id: 'account', label: 'Account' },
-      { id: 'notes', label: 'Notes' },
-      { id: 'is_public', label: 'Public' },
       { id: 'owner', label: 'Owner' },
-      { id: 'created_by', label: 'Created By' },
       { id: 'created_at', label: 'Created On' },
       { id: 'updated_by', label: 'Last Updated By' },
     ],
@@ -92,7 +89,6 @@ export default function ContactsPage() {
       phone: true,
       account: true,
       notes: false,
-      is_public: false,
       owner: true,
       created_by: false,
       created_at: false,
@@ -261,10 +257,6 @@ export default function ContactsPage() {
                         {isVisible('email') && <TableHead>Email</TableHead>}
                         {isVisible('phone') && <TableHead>Phone</TableHead>}
                         {isVisible('account') && <TableHead>Account</TableHead>}
-                        {isVisible('notes') && <TableHead>Notes</TableHead>}
-                        {isVisible('is_public') && (
-                          <TableHead>Public</TableHead>
-                        )}
                         {isVisible('owner') && <TableHead>Owner</TableHead>}
                         {isVisible('created_by') && (
                           <TableHead>Created By</TableHead>
@@ -375,25 +367,6 @@ export default function ContactsPage() {
                               {isVisible('notes') && (
                                 <TableCell className="text-muted-foreground max-w-[200px] truncate">
                                   {contact.notes || '-'}
-                                </TableCell>
-                              )}
-                              {isVisible('is_public') && (
-                                <TableCell className="text-muted-foreground text-center">
-                                  {contact.is_public ? (
-                                    <Badge
-                                      variant="outline"
-                                      className="border-green-200 bg-green-50 text-green-600"
-                                    >
-                                      Public
-                                    </Badge>
-                                  ) : (
-                                    <Badge
-                                      variant="outline"
-                                      className="border-amber-200 bg-amber-50 text-amber-600"
-                                    >
-                                      Private
-                                    </Badge>
-                                  )}
                                 </TableCell>
                               )}
                               {isVisible('owner') && (

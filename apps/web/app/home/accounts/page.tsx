@@ -75,7 +75,6 @@ export default function AccountsPage() {
       { id: 'billing_postal_code', label: 'Postal Code' },
       { id: 'billing_country', label: 'Country' },
       { id: 'description', label: 'Description' },
-      { id: 'is_public', label: 'Public' },
       { id: 'owner', label: 'Owner' },
       { id: 'created_by', label: 'Created By' },
       { id: 'created_at', label: 'Created On' },
@@ -98,8 +97,6 @@ export default function AccountsPage() {
       billing_postal_code: false,
       billing_country: false,
       description: false,
-      is_public: false,
-      owner: true,
       created_by: false,
       created_at: false,
       updated_by: false,
@@ -178,9 +175,8 @@ export default function AccountsPage() {
           <div className="flex items-center gap-2">
             <div className="flex items-center">
               <div
-                className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${
-                  isSearchOpen ? 'w-64 lg:w-72' : 'w-9'
-                }`}
+                className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${isSearchOpen ? 'w-64 lg:w-72' : 'w-9'
+                  }`}
               >
                 {isSearchOpen ? (
                   <div className="relative w-full">
@@ -295,9 +291,6 @@ export default function AccountsPage() {
                         {isVisible('description') && (
                           <TableHead>Description</TableHead>
                         )}
-                        {isVisible('is_public') && (
-                          <TableHead>Public</TableHead>
-                        )}
                         {isVisible('owner') && <TableHead>Owner</TableHead>}
                         {isVisible('created_by') && (
                           <TableHead>Created By</TableHead>
@@ -320,8 +313,8 @@ export default function AccountsPage() {
                             colSpan={
                               visibility
                                 ? Object.values(visibility).filter(
-                                    (v) => v !== false,
-                                  ).length + 1
+                                  (v) => v !== false,
+                                ).length + 1
                                 : 6
                             }
                             className="h-24 text-center"
@@ -339,8 +332,8 @@ export default function AccountsPage() {
                             colSpan={
                               visibility
                                 ? Object.values(visibility).filter(
-                                    (v) => v !== false,
-                                  ).length + 1
+                                  (v) => v !== false,
+                                ).length + 1
                                 : 6
                             }
                             className="h-24 text-center"
@@ -437,25 +430,7 @@ export default function AccountsPage() {
                                   {account.description || '-'}
                                 </TableCell>
                               )}
-                              {isVisible('is_public') && (
-                                <TableCell className="text-muted-foreground text-center">
-                                  {account.is_public ? (
-                                    <Badge
-                                      variant="outline"
-                                      className="border-green-200 bg-green-50 text-green-600"
-                                    >
-                                      Public
-                                    </Badge>
-                                  ) : (
-                                    <Badge
-                                      variant="outline"
-                                      className="border-amber-200 bg-amber-50 text-amber-600"
-                                    >
-                                      Private
-                                    </Badge>
-                                  )}
-                                </TableCell>
-                              )}
+
                               {isVisible('owner') && (
                                 <TableCell className="text-muted-foreground">
                                   {account.owner?.name || '-'}
@@ -472,8 +447,8 @@ export default function AccountsPage() {
                                 <TableCell className="text-muted-foreground">
                                   {account.created_at
                                     ? new Date(
-                                        account.created_at,
-                                      ).toLocaleDateString()
+                                      account.created_at,
+                                    ).toLocaleDateString()
                                     : '-'}
                                 </TableCell>
                               )}

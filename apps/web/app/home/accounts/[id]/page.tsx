@@ -52,11 +52,10 @@ import {
   EntityReminders,
 } from '../../_components/entity-activity';
 import { EntityNotes } from '../../_components/entity-notes';
-import { PublicPrivateToggle } from '../../_components/public-private-toggle';
-import { CreateContactDialog } from '../../contacts/components/create-contact-dialog';
 import { OpportunityDialog } from '../../opportunities/components/opportunity-dialog';
 import { AccountAssignees } from '../components/account-assignees';
 import { EditAccountDialog } from '../components/edit-account-dialog';
+import { CreateContactDialog } from '~/home/contacts/components/create-contact-dialog';
 
 export default function AccountDetailsPage() {
   const params = useParams();
@@ -247,9 +246,9 @@ export default function AccountDetailsPage() {
                     <span className="text-sm">
                       {account.annual_revenue
                         ? new Intl.NumberFormat('en-US', {
-                            style: 'currency',
-                            currency: 'USD',
-                          }).format(account.annual_revenue)
+                          style: 'currency',
+                          currency: 'USD',
+                        }).format(account.annual_revenue)
                         : '-'}
                     </span>
                   </div>
@@ -455,8 +454,8 @@ export default function AccountDetailsPage() {
                                 Expected Close:{' '}
                                 {opp.expected_close_date
                                   ? new Date(
-                                      opp.expected_close_date,
-                                    ).toLocaleDateString()
+                                    opp.expected_close_date,
+                                  ).toLocaleDateString()
                                   : '-'}
                               </p>
                               <p>Probability: {opp.probability}%</p>
@@ -488,17 +487,6 @@ export default function AccountDetailsPage() {
             {/* Account Assignees Section */}
             {workspace?.id && (
               <AccountAssignees accountId={id} workspaceId={workspace.id} />
-            )}
-
-            {/* Public/Private Toggle */}
-            {workspace?.id && account && (
-              <PublicPrivateToggle
-                entityType="account"
-                entityId={id}
-                isPublic={account.is_public ?? true}
-                createdBy={account.created_by}
-                workspaceId={workspace.id}
-              />
             )}
 
             {/* Notes Section */}

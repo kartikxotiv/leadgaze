@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '~/lib/database.types';
@@ -90,8 +91,8 @@ const assignOpportunityToUser = catchAsync(
       return NextResponse.json({ message: 'Opportunity not found' }, { status: 404 });
     }
 
-    // Check if assignment already exists
-    const { data: existingAssignment } = await (supabase
+    // Check if an active assignment already exists
+    const { data: existingActive } = await (supabase
       .from('opportunity_assignees' as any)
       .select('id')
       .eq('opportunity_id', opportunityId)
@@ -99,7 +100,7 @@ const assignOpportunityToUser = catchAsync(
       .eq('assignment_status', 'active')
       .single() as any);
 
-    if (existingAssignment) {
+    if (existingActive) {
       return NextResponse.json(
         { message: 'User is already assigned to this opportunity' },
         { status: 409 },
@@ -115,31 +116,66 @@ const assignOpportunityToUser = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // Insert new assignment
-    const { data: assignee, error: insertError } = await (supabase
+    // Check if an inactive assignment exists - reactivate it instead of inserting
+    const { data: existingInactive } = await (supabase
       .from('opportunity_assignees' as any)
-      .insert({
-        opportunity_id: opportunityId,
-        assigned_to_user_id,
-        workspace_id: opportunity.workspace_id,
-        assigned_by: user.id,
-        created_by: user.id,
-        assignment_status: 'active',
-        assigned_at: new Date().toISOString(),
-      })
-      .select()
+      .select('id')
+      .eq('opportunity_id', opportunityId)
+      .eq('assigned_to_user_id', assigned_to_user_id)
+      .eq('assignment_status', 'inactive')
       .single() as any);
 
-    if (insertError) {
-      console.error('Assign user error:', insertError);
-      throw insertError;
+    const adminClient = getSupabaseServerAdminClient();
+
+    let assigneeId: string;
+
+    if (existingInactive) {
+      const { data: reactivated, error: reactivateError } = await (adminClient
+        .from('opportunity_assignees' as any)
+        .update({
+          assignment_status: 'active',
+          assigned_at: new Date().toISOString(),
+          assigned_by: user.id,
+          unassigned_at: null,
+          updated_by: user.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingInactive.id)
+        .select()
+        .single() as any);
+
+      if (reactivateError) {
+        console.error('Reactivate assignment error:', reactivateError);
+        throw reactivateError;
+      }
+      assigneeId = reactivated.id;
+    } else {
+      const { data: assignee, error: insertError } = await (adminClient
+        .from('opportunity_assignees' as any)
+        .insert({
+          opportunity_id: opportunityId,
+          assigned_to_user_id,
+          workspace_id: opportunity.workspace_id,
+          assigned_by: user.id,
+          created_by: user.id,
+          assignment_status: 'active',
+          assigned_at: new Date().toISOString(),
+        })
+        .select()
+        .single() as any);
+
+      if (insertError) {
+        console.error('Assign user error:', insertError);
+        throw insertError;
+      }
+      assigneeId = assignee.id;
     }
 
     // Return with full details
     const { data: fullAssignee } = await (supabase
       .from('opportunity_assignees_with_details' as any)
       .select('*')
-      .eq('id', assignee.id)
+      .eq('id', assigneeId)
       .single() as any);
 
     return NextResponse.json(
@@ -183,21 +219,18 @@ const unassignOpportunityFromUser = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // Soft delete by setting status to inactive
-    const { error: updateError } = await (supabase
+    // Hard delete the assignment row to avoid UNIQUE constraint conflicts
+    const adminClient = getSupabaseServerAdminClient();
+
+    const { error: deleteError } = await (adminClient
       .from('opportunity_assignees' as any)
-      .update({
-        assignment_status: 'inactive',
-        unassigned_at: new Date().toISOString(),
-        updated_by: user.id,
-        updated_at: new Date().toISOString(),
-      })
+      .delete()
       .eq('id', assigneeId)
       .eq('opportunity_id', opportunityId) as any);
 
-    if (updateError) {
-      console.error('Unassign user error:', updateError);
-      throw updateError;
+    if (deleteError) {
+      console.error('Unassign user error:', deleteError);
+      throw deleteError;
     }
 
     return successDataResponse('User unassigned from opportunity successfully');

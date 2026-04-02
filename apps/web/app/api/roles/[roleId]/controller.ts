@@ -57,7 +57,7 @@ const updateRole = catchAsync(
   }) => {
     const supabase = getSupabaseServerClient();
     const roleId = params?.roleId;
-    const { role_name, description, hierarchy_level, color, is_active } =
+    const { role_name, description, hierarchy_id, color, is_active } =
       await request.json();
 
     if (!roleId) {
@@ -94,8 +94,24 @@ const updateRole = catchAsync(
     const updateData: any = {};
     if (role_name !== undefined) updateData.role_name = role_name;
     if (description !== undefined) updateData.description = description;
-    if (hierarchy_level !== undefined)
-      updateData.hierarchy_level = hierarchy_level;
+    if (hierarchy_id !== undefined) {
+      const { data: hierarchy, error: hierarchyError } = await supabase
+        .from('workspace_hierarchies')
+        .select('level')
+        .eq('id', hierarchy_id)
+        .eq('workspace_id', currentRole.workspace_id)
+        .single();
+
+      if (!hierarchy || hierarchyError) {
+        return NextResponse.json(
+          { message: 'Hierarchy not found in workspace' },
+          { status: 404 },
+        );
+      }
+
+      updateData.hierarchy_id = hierarchy_id;
+      updateData.hierarchy_level = hierarchy.level;
+    }
     if (color !== undefined) updateData.color = color;
     if (is_active !== undefined) updateData.is_active = is_active;
 

@@ -6,7 +6,6 @@ import { useParams, useRouter } from 'next/navigation';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  ChevronDown,
   Clock,
   Edit2,
   Mail,
@@ -21,15 +20,7 @@ import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@kit/ui/dropdown-menu';
-import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
-import { Separator } from '@kit/ui/separator';
 import {
   Tooltip,
   TooltipContent,
@@ -38,7 +29,6 @@ import {
 } from '@kit/ui/tooltip';
 import { cn } from '@kit/ui/utils';
 
-import { PublicPrivateToggle } from '~/home/_components/public-private-toggle';
 import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
 import {
   useCanAccessData,
@@ -68,6 +58,8 @@ import { EmailLeadDialog } from '../components/email-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
 import { LogCallDialog } from '../components/log-call-dialog';
 
+import { getWorkspaceEmailAccountService } from '~/services/email.service';
+
 export default function LeadDetailsPage() {
   const router = useRouter();
   const params = useParams();
@@ -75,9 +67,6 @@ export default function LeadDetailsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
-  const [selectedNewStatus, setSelectedNewStatus] = useState<string | null>(
-    null,
-  );
   const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
@@ -100,6 +89,19 @@ export default function LeadDetailsPage() {
       return getLeadByIdService(leadId);
     },
     enabled: !!leadId && !!workspace,
+  });
+  const {
+    data: workspaceEmailAccount,
+    isLoading: workspaceEmailAccountLoading,
+    error: workspaceEmailAccountError,
+    refetch: workspaceEmailAccountRefetch,
+  } = useQuery({
+    queryKey: ['workspace_id', workspace?.id],
+    queryFn: () => {
+      if (!workspace?.id) throw new Error('Workspace ID is required');
+      return getWorkspaceEmailAccountService(workspace.id);
+    },
+    enabled: !!workspace?.id,
   });
 
   const { data: user } = useUser();
@@ -379,18 +381,6 @@ export default function LeadDetailsPage() {
                       {lead.source.source_name}
                     </Badge>
                   )}
-                  {lead.is_public ? (
-                    <Badge variant="outline" className="px-3 py-1">
-                      Public
-                    </Badge>
-                  ) : (
-                    <Badge
-                      variant="outline"
-                      className="bg-gray-100 px-3 py-1 dark:bg-gray-800"
-                    >
-                      Private
-                    </Badge>
-                  )}
                 </div>
 
                 {/* Key Information Grid */}
@@ -644,17 +634,6 @@ export default function LeadDetailsPage() {
               <LeadAssignees leadId={leadId} workspaceId={workspace.id} />
             )}
 
-            {/* Public/Private Toggle */}
-            {workspace?.id && lead && (
-              <PublicPrivateToggle
-                entityType="lead"
-                entityId={leadId}
-                isPublic={lead.is_public}
-                createdBy={lead.created_by}
-                workspaceId={workspace.id}
-              />
-            )}
-
             {/* Notes Section */}
             <EntityNotes entityType="lead" entityId={leadId} />
 
@@ -834,65 +813,65 @@ export default function LeadDetailsPage() {
                         {/* Engagement Score Breakdown */}
                         {Object.keys(scoringResult.breakdown.engagement)
                           .length > 0 && (
-                          <div className="space-y-1 pt-2">
-                            <p className="text-xs font-semibold text-gray-400">
-                              Engagement
-                            </p>
-                            {Object.entries(
-                              scoringResult.breakdown.engagement,
-                            ).map(([label, score]) => (
-                              <div
-                                key={label}
-                                className="flex justify-between text-xs"
-                              >
-                                <span className="text-gray-600 dark:text-gray-400">
-                                  {label}
-                                </span>
-                                <span className="font-medium text-blue-600">
-                                  +{score}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                            <div className="space-y-1 pt-2">
+                              <p className="text-xs font-semibold text-gray-400">
+                                Engagement
+                              </p>
+                              {Object.entries(
+                                scoringResult.breakdown.engagement,
+                              ).map(([label, score]) => (
+                                <div
+                                  key={label}
+                                  className="flex justify-between text-xs"
+                                >
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    {label}
+                                  </span>
+                                  <span className="font-medium text-blue-600">
+                                    +{score}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
 
                         {/* Adjustments (Status) */}
                         {Object.keys(scoringResult.breakdown.adjustments)
                           .length > 0 && (
-                          <div className="space-y-1 pt-2">
-                            <p className="text-xs font-semibold text-gray-400">
-                              Status Adjustments
-                            </p>
-                            {Object.entries(
-                              scoringResult.breakdown.adjustments,
-                            ).map(([label, score]) => (
-                              <div
-                                key={label}
-                                className="flex justify-between text-xs"
-                              >
-                                <span className="text-gray-600 dark:text-gray-400">
-                                  {label}
-                                </span>
-                                <span
-                                  className={cn(
-                                    'font-medium',
-                                    score > 0
-                                      ? 'text-green-600'
-                                      : score === -100
-                                        ? 'text-red-600'
-                                        : 'text-amber-600',
-                                  )}
+                            <div className="space-y-1 pt-2">
+                              <p className="text-xs font-semibold text-gray-400">
+                                Status Adjustments
+                              </p>
+                              {Object.entries(
+                                scoringResult.breakdown.adjustments,
+                              ).map(([label, score]) => (
+                                <div
+                                  key={label}
+                                  className="flex justify-between text-xs"
                                 >
-                                  {score > 0
-                                    ? `+${score}`
-                                    : score === -100
-                                      ? 'Reset'
-                                      : score}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    {label}
+                                  </span>
+                                  <span
+                                    className={cn(
+                                      'font-medium',
+                                      score > 0
+                                        ? 'text-green-600'
+                                        : score === -100
+                                          ? 'text-red-600'
+                                          : 'text-amber-600',
+                                    )}
+                                  >
+                                    {score > 0
+                                      ? `+${score}`
+                                      : score === -100
+                                        ? 'Reset'
+                                        : score}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                       </div>
                     )}
                   </div>
@@ -1039,6 +1018,7 @@ export default function LeadDetailsPage() {
           leadEmail={lead.email || ''}
           leadName={fullName}
           initialDraft={selectedDraft}
+          workspaceEmailAccount={workspaceEmailAccount?.[0]}
         />
       )}
     </ModuleGuard>

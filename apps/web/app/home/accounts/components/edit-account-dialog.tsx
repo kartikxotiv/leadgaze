@@ -64,7 +64,6 @@ const formSchema = z.object({
   linkedin_url: z.string().optional().or(z.literal('')),
   twitter_handle: z.string().optional().or(z.literal('')),
   description: z.string().optional().or(z.literal('')),
-  is_public: z.boolean().optional(),
 });
 
 interface EditAccountDialogProps {
@@ -110,7 +109,6 @@ export function EditAccountDialog({
       linkedin_url: '',
       twitter_handle: '',
       description: '',
-      is_public: false,
     },
   });
 
@@ -142,7 +140,6 @@ export function EditAccountDialog({
         linkedin_url: account.linkedin_url || '',
         twitter_handle: account.twitter_handle || '',
         description: account.description || '',
-        is_public: account.is_public || false,
       });
     }
   }, [account, form, isOpen]);
@@ -158,12 +155,6 @@ export function EditAccountDialog({
           ? parseInt(values.employee_count)
           : null,
       };
-
-      // Only include is_public if it has changed
-      if (values.is_public === account.is_public) {
-        delete payload.is_public;
-      }
-
       return updateAccountService(account.id, payload);
     },
     onSuccess: () => {
@@ -496,45 +487,6 @@ export function EditAccountDialog({
                     </FormItem>
                   )}
                 />
-                <div className="space-y-4 border-t pt-4">
-                  <h4 className="text-sm font-medium">Visibility Settings</h4>
-                  <FormField
-                    control={form.control}
-                    name="is_public"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-y-0 space-x-3 p-1">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={!canChangeVisibility}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel
-                            className={
-                              !canChangeVisibility
-                                ? 'cursor-not-allowed opacity-70'
-                                : 'cursor-pointer'
-                            }
-                          >
-                            Make this account public
-                          </FormLabel>
-                          <p className="text-muted-foreground text-xs">
-                            When public, this account will be visible to all
-                            team members.
-                          </p>
-                          {!canChangeVisibility && (
-                            <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                              Only workspace owner or creator can change
-                              visibility
-                            </p>
-                          )}
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                </div>
               </TabsContent>
             </Tabs>
 

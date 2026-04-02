@@ -80,13 +80,13 @@ export const sendEmail = catchAsync(async ({ request }: { request: NextRequest }
             to_email: to,
             from_email: from,
             subject: template.subject,
-            provider_message_id: info.messageId,
+            provider_message_id: 'info.messageId',
             status: "sent"
         });
 
         return NextResponse.json({
             success: true,
-            messageId: info.messageId
+            messageId: 'info.messageId'
         });
     } catch (err: any) {
         return NextResponse.json(

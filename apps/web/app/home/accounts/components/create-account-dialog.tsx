@@ -58,7 +58,6 @@ export function CreateAccountDialog({
     billing_postal_code: '',
     billing_country: '',
     description: '',
-    is_public: true,
   });
 
   const mutation = useMutation({
@@ -93,7 +92,6 @@ export function CreateAccountDialog({
       billing_postal_code: '',
       billing_country: '',
       description: '',
-      is_public: true,
     });
   };
 
@@ -274,33 +272,6 @@ export function CreateAccountDialog({
               placeholder="Add some details about the account..."
               rows={3}
             />
-          </div>
-
-          <div className="flex items-start gap-3 pt-4">
-            <Checkbox
-              id="is_public"
-              checked={formData.is_public}
-              onCheckedChange={(checked) => {
-                setFormData((prev) => ({
-                  ...prev,
-                  is_public: checked as boolean,
-                }));
-              }}
-              className="mt-1"
-            />
-            <div className="flex-1">
-              <Label
-                htmlFor="is_public"
-                className="cursor-pointer text-sm font-medium"
-              >
-                Make this account public
-              </Label>
-              <p className="text-muted-foreground mt-1 text-sm">
-                When public, this account will be visible to all team members
-                with "View accounts" access. When private, only you and assigned
-                team members can see it.
-              </p>
-            </div>
           </div>
 
           <DialogFooter>

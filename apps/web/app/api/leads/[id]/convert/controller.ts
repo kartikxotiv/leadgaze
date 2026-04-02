@@ -83,7 +83,6 @@ export const convertLead = catchAsync(
           owner_id: user.id, // Assign to current user or lead owner
           created_by: user.id,
           created_from_lead_id: leadId,
-          is_public: lead.is_public ?? true, // Preserve visibility from lead
         })
         .select('id')
         .single();
@@ -120,7 +119,6 @@ export const convertLead = catchAsync(
           department: lead.department,
           location: lead.location,
           timezone: lead.timezone,
-          is_public: lead.is_public ?? true, // Preserve visibility from lead
         })
         .select('id')
         .single();
@@ -147,7 +145,6 @@ export const convertLead = catchAsync(
             owner_id: user.id,
             created_by: user.id,
             created_from_lead_id: leadId,
-            is_public: lead.is_public ?? true, // Preserve visibility from lead
             lead_source: (lead as any).source?.source_name || null,
           })
           .select('id')

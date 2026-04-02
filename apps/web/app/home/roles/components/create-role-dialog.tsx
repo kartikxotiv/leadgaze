@@ -23,6 +23,7 @@ import {
 } from '@kit/ui/dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
+
 import {
   Select,
   SelectContent,
@@ -42,13 +43,6 @@ interface CreateRoleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const HIERARCHY_LEVELS = [
-  { value: '100', label: 'Admin (100)' },
-  // { value: '50', label: 'Manager (50)' },
-  // { value: '10', label: 'User (10)' },
-  // { value: '1', label: 'Viewer (1)' },
-];
 
 const ROLE_COLORS = [
   { value: '#ef4444', label: 'Red' },
@@ -77,9 +71,10 @@ export function CreateRoleDialog({
     role_name: '',
     role_key: '',
     description: '',
-    hierarchy_level: '10',
     color: '#3b82f6',
   });
+
+
 
   // Fetch modules and features
   const { data: modulesData, isLoading: modulesLoading } = useQuery({
@@ -103,7 +98,6 @@ export function CreateRoleDialog({
         role_name: formData.role_name,
         role_key: formData.role_key,
         description: formData.description,
-        hierarchy_level: parseInt(formData.hierarchy_level),
         color: formData.color,
         permissions,
       });
@@ -117,7 +111,6 @@ export function CreateRoleDialog({
         role_name: '',
         role_key: '',
         description: '',
-        hierarchy_level: '10',
         color: '#3b82f6',
       });
       setSelectedPermissions({});
@@ -222,27 +215,7 @@ export function CreateRoleDialog({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="hierarchy">Hierarchy Level *</Label>
-                    <Select
-                      value={formData.hierarchy_level}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, hierarchy_level: value })
-                      }
-                    >
-                      <SelectTrigger id="hierarchy">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {HIERARCHY_LEVELS.map((level) => (
-                          <SelectItem key={level.value} value={level.value}>
-                            {level.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="grid grid-cols-1 gap-4">
 
                   <div className="space-y-2">
                     <Label htmlFor="color">Color</Label>
@@ -292,9 +265,8 @@ export function CreateRoleDialog({
                           <div className="flex items-center gap-2">
                             <CollapsibleTrigger className="flex items-center gap-2">
                               <ChevronDown
-                                className={`h-4 w-4 transition-transform ${
-                                  expandedModules[module.id] ? '' : '-rotate-90'
-                                }`}
+                                className={`h-4 w-4 transition-transform ${expandedModules[module.id] ? '' : '-rotate-90'
+                                  }`}
                               />
                             </CollapsibleTrigger>
                             <Checkbox
@@ -363,7 +335,7 @@ export function CreateRoleDialog({
             </div>
           </div>
 
-          <DialogFooter className="shrink-0 border-t bg-white px-6 py-4">
+          <DialogFooter className="shrink-0 border-t  px-6 py-4">
             <Button
               type="button"
               variant="outline"
