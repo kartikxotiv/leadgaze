@@ -8,7 +8,6 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { useUser } from '@kit/supabase/hooks/use-user';
 import { Button } from '@kit/ui/button';
 import { Checkbox } from '@kit/ui/checkbox';
 import {
@@ -57,7 +56,6 @@ const formSchema = z.object({
   is_closed: z.boolean().optional(),
   is_won: z.boolean().optional(),
   close_reason: z.string().optional().or(z.literal('')),
-  is_public: z.boolean().optional(),
 });
 
 interface EditOpportunityDialogProps {
@@ -72,12 +70,7 @@ export function EditOpportunityDialog({
   opportunity,
 }: EditOpportunityDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
-  const { data: user } = useUser();
   const queryClient = useQueryClient();
-
-  const isWorkspaceOwner = workspace?.owner_id === user?.id;
-  const isCreator = opportunity.created_by === user?.id;
-  const canChangeVisibility = isWorkspaceOwner || isCreator;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -95,7 +88,6 @@ export function EditOpportunityDialog({
       is_closed: false,
       is_won: false,
       close_reason: '',
-      is_public: false,
     },
   });
 
@@ -121,7 +113,6 @@ export function EditOpportunityDialog({
         is_closed: opportunity.is_closed || false,
         is_won: opportunity.is_won || false,
         close_reason: opportunity.close_reason || '',
-        is_public: opportunity.is_public || false,
       });
     }
   }, [opportunity, form, isOpen]);
@@ -134,11 +125,6 @@ export function EditOpportunityDialog({
         probability: values.probability ? parseInt(values.probability) : null,
         expected_close_date: values.expected_close_date || null,
       };
-
-      // Only include is_public if it has changed
-      if (values.is_public === opportunity.is_public) {
-        delete payload.is_public;
-      }
 
       return updateOpportunityService(opportunity.id, payload);
     },
@@ -393,45 +379,6 @@ export function EditOpportunityDialog({
                 />
               )}
 
-              <div className="space-y-4 border-t pt-4">
-                <h4 className="text-sm font-medium">Visibility Settings</h4>
-                <FormField
-                  control={form.control}
-                  name="is_public"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-y-0 space-x-3 p-1">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          disabled={!canChangeVisibility}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel
-                          className={
-                            !canChangeVisibility
-                              ? 'cursor-not-allowed opacity-70'
-                              : 'cursor-pointer'
-                          }
-                        >
-                          Make this opportunity public
-                        </FormLabel>
-                        <p className="text-muted-foreground text-xs">
-                          When public, this opportunity will be visible to all
-                          team members.
-                        </p>
-                        {!canChangeVisibility && (
-                          <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                            Only workspace owner or creator can change
-                            visibility
-                          </p>
-                        )}
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-4">

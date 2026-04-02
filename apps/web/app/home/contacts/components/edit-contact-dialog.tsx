@@ -60,7 +60,6 @@ const formSchema = z.object({
   linkedin_url: z.string().optional().or(z.literal('')),
   twitter_handle: z.string().optional().or(z.literal('')),
   notes: z.string().optional().or(z.literal('')),
-  is_public: z.boolean().optional(),
 });
 
 interface EditContactDialogProps {
@@ -77,10 +76,6 @@ export function EditContactDialog({
   const { currentWorkspace: workspace } = useRBAC();
   const { data: user } = useUser();
   const queryClient = useQueryClient();
-
-  const isWorkspaceOwner = workspace?.owner_id === user?.id;
-  const isCreator = contact.created_by === user?.id;
-  const canChangeVisibility = isWorkspaceOwner || isCreator;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -103,7 +98,6 @@ export function EditContactDialog({
       linkedin_url: '',
       twitter_handle: '',
       notes: '',
-      is_public: false,
     },
   });
 
@@ -128,7 +122,6 @@ export function EditContactDialog({
         linkedin_url: contact.linkedin_url || '',
         twitter_handle: contact.twitter_handle || '',
         notes: contact.notes || '',
-        is_public: contact.is_public || false,
       });
     }
   }, [contact, form, isOpen]);
@@ -136,10 +129,6 @@ export function EditContactDialog({
   const updateMutation = useMutation({
     mutationFn: (values: z.infer<typeof formSchema>) => {
       const payload: any = { ...values };
-      // Only include is_public if it has changed
-      if (values.is_public === contact.is_public) {
-        delete payload.is_public;
-      }
       return updateContactService(contact.id, payload);
     },
     onSuccess: () => {
@@ -442,45 +431,6 @@ export function EditContactDialog({
                   />
                 </div>
 
-                <div className="space-y-4 border-t pt-4">
-                  <h4 className="text-sm font-medium">Visibility Settings</h4>
-                  <FormField
-                    control={form.control}
-                    name="is_public"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-y-0 space-x-3 p-1">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={!canChangeVisibility}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel
-                            className={
-                              !canChangeVisibility
-                                ? 'cursor-not-allowed opacity-70'
-                                : 'cursor-pointer'
-                            }
-                          >
-                            Make this contact public
-                          </FormLabel>
-                          <p className="text-muted-foreground text-xs">
-                            When public, this contact will be visible to all
-                            team members.
-                          </p>
-                          {!canChangeVisibility && (
-                            <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                              Only workspace owner or creator can change
-                              visibility
-                            </p>
-                          )}
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                </div>
               </TabsContent>
             </Tabs>
 

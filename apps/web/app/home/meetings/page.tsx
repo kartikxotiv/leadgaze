@@ -137,8 +137,6 @@ export default function MeetingsPage() {
       { id: 'created_at', label: 'Created On' },
       { id: 'updated_by', label: 'Last Updated By' },
       { id: 'date_time', label: 'Date & Time' },
-      { id: 'status', label: 'Status' },
-      { id: 'is_public', label: 'Public' },
       { id: 'entity', label: 'Entity' },
     ],
     [],
@@ -155,8 +153,6 @@ export default function MeetingsPage() {
       created_at: false,
       updated_by: false,
       date_time: true,
-      status: true,
-      is_public: false,
       entity: true,
     });
 
@@ -749,10 +745,6 @@ export default function MeetingsPage() {
                         {isVisible('date_time') && (
                           <TableHead>Date & Time</TableHead>
                         )}
-                        {isVisible('status') && <TableHead>Status</TableHead>}
-                        {isVisible('is_public') && (
-                          <TableHead>Public</TableHead>
-                        )}
                         {isVisible('entity') && <TableHead>Entity</TableHead>}
                         <TableHead className="bg-card sticky right-0 px-4 text-right">
                           Actions
@@ -880,25 +872,6 @@ export default function MeetingsPage() {
                                   {getStatusBadge(
                                     meeting.start_time,
                                     meeting.end_time,
-                                  )}
-                                </TableCell>
-                              )}
-                              {isVisible('is_public') && (
-                                <TableCell className="text-muted-foreground text-center">
-                                  {meeting.is_public ? (
-                                    <Badge
-                                      variant="outline"
-                                      className="border-green-200 bg-green-50 text-green-600"
-                                    >
-                                      Public
-                                    </Badge>
-                                  ) : (
-                                    <Badge
-                                      variant="outline"
-                                      className="border-amber-200 bg-amber-50 text-amber-600"
-                                    >
-                                      Private
-                                    </Badge>
                                   )}
                                 </TableCell>
                               )}

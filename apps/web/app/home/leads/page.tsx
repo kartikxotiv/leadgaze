@@ -109,7 +109,6 @@ export default function LeadsPage() {
       { id: 'source', label: 'Source' },
       { id: 'trigger', label: 'Trigger' },
       { id: 'notes', label: 'Notes' },
-      { id: 'is_public', label: 'Public' },
       { id: 'score', label: 'Score' },
       { id: 'created_by', label: 'Created By' },
       { id: 'created_at', label: 'Created On' },
@@ -142,7 +141,6 @@ export default function LeadsPage() {
       source: false,
       trigger: false,
       notes: false,
-      is_public: false,
       score: true,
       created_by: false,
       created_at: false,
@@ -643,9 +641,6 @@ export default function LeadsPage() {
                             <TableHead>Trigger</TableHead>
                           )}
                           {isVisible('notes') && <TableHead>Notes</TableHead>}
-                          {isVisible('is_public') && (
-                            <TableHead>Public</TableHead>
-                          )}
                           {isVisible('score') && <TableHead>Score</TableHead>}
                           {isVisible('created_by') && (
                             <TableHead>Created By</TableHead>
@@ -831,25 +826,6 @@ export default function LeadsPage() {
                               {isVisible('notes') && (
                                 <TableCell className="text-muted-foreground max-w-[200px] truncate">
                                   {lead.notes || '-'}
-                                </TableCell>
-                              )}
-                              {isVisible('is_public') && (
-                                <TableCell className="text-muted-foreground text-center">
-                                  {lead.is_public ? (
-                                    <Badge
-                                      variant="outline"
-                                      className="border-green-200 bg-green-50 text-green-600"
-                                    >
-                                      Public
-                                    </Badge>
-                                  ) : (
-                                    <Badge
-                                      variant="outline"
-                                      className="border-amber-200 bg-amber-50 text-amber-600"
-                                    >
-                                      Private
-                                    </Badge>
-                                  )}
                                 </TableCell>
                               )}
                               {isVisible('score') && (

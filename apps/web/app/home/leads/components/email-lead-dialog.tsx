@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
   AlignCenter,
@@ -19,12 +19,12 @@ import {
   ListOrdered,
   Loader2,
   Mail,
-  Minus,
   Paperclip,
   Save,
   Type,
   Underline,
   X,
+  LayoutTemplate,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -61,6 +61,12 @@ import {
   getLeadByIdService,
   sendLeadEmailService,
 } from '~/services/leads.service';
+import { saveEmailActivityService } from '~/services/email.service';
+import { 
+  getEmailTemplatesService, 
+  getWorkspaceVariablesService 
+} from '~/services/email-templates.service';
+import { replaceTemplateVariables } from '~/lib/email/template-utils';
 
 interface EmailLeadDialogProps {
   open: boolean;
@@ -69,6 +75,7 @@ interface EmailLeadDialogProps {
   leadEmail: string;
   leadName?: string;
   initialDraft?: any;
+  workspaceEmailAccount: any;
 }
 
 export function EmailLeadDialog({
@@ -78,6 +85,7 @@ export function EmailLeadDialog({
   leadEmail,
   leadName,
   initialDraft,
+  workspaceEmailAccount
 }: EmailLeadDialogProps) {
   const queryClient = useQueryClient();
   const { data: user } = useUser();
@@ -94,38 +102,30 @@ export function EmailLeadDialog({
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { data: templates = [] } = useQuery({
+    queryKey: ['email-templates', workspaceEmailAccount?.workspace_id],
+    queryFn: () => getEmailTemplatesService(workspaceEmailAccount?.workspace_id || ''),
+    enabled: !!workspaceEmailAccount?.workspace_id && open,
+  });
+
+  const { data: workspaceVariables = [] } = useQuery({
+    queryKey: ['workspace-variables', workspaceEmailAccount?.workspace_id],
+    queryFn: () => getWorkspaceVariablesService(workspaceEmailAccount?.workspace_id || ''),
+    enabled: !!workspaceEmailAccount?.workspace_id && open,
+  });
+
+  const { data: leadData } = useQuery({
+    queryKey: ['lead', leadId],
+    queryFn: () => getLeadByIdService(leadId),
+    enabled: !!leadId && open,
+  });
+
   // Load activity on open
   useEffect(() => {
-    function loadLocalActivity() {
-      if (open && leadId) {
-        if (initialDraft) {
-          populateFields(initialDraft);
-          return;
-        }
-
-        // Default: find the most recent 'draft' or 'scheduled' item for this lead
-        const activities = JSON.parse(
-          localStorage.getItem(`email_activities_${leadId}`) || '[]',
-        );
-        const latestDraft = activities
-          .filter((a: any) => a.type === 'draft' || a.type === 'scheduled')
-          .sort(
-            (a: any, b: any) =>
-              new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-          )[0];
-
-        if (latestDraft) {
-          populateFields(latestDraft);
-        } else {
-          resetFields();
-        }
-      }
-    }
-
     const populateFields = (draft: any) => {
       setSubject(draft.subject || '');
       if (editorRef.current) {
-        editorRef.current.innerHTML = draft.body || '';
+        editorRef.current.innerHTML = draft.html_body || draft.body || '';
       }
       if (draft.scheduled_at) {
         setScheduledAt(new Date(draft.scheduled_at));
@@ -134,11 +134,11 @@ export function EmailLeadDialog({
         setScheduledAt(undefined);
         setScheduledTime('09:00');
       }
-      const cc = draft.cc || '';
+      const cc = draft.cc || draft.cc_emails || '';
       setCcRecipients(Array.isArray(cc) ? cc.join(', ') : cc);
       if (cc) setShowCc(true);
 
-      const bcc = draft.bcc || '';
+      const bcc = draft.bcc || draft.bcc_emails || '';
       setBccRecipients(Array.isArray(bcc) ? bcc.join(', ') : bcc);
       if (bcc) setShowBcc(true);
     };
@@ -156,7 +156,17 @@ export function EmailLeadDialog({
       setShowBcc(false);
     };
 
-    loadLocalActivity();
+    if (open && leadId) {
+      // Use a small timeout to ensure the editorRef is mounted when the dialog opens
+      const timer = setTimeout(() => {
+        if (initialDraft) {
+          populateFields(initialDraft);
+        } else {
+          resetFields();
+        }
+      }, 0);
+      return () => clearTimeout(timer);
+    }
   }, [open, leadId, initialDraft]);
 
   const handleFormat = (command: string, value: string | null = null) => {
@@ -217,38 +227,25 @@ export function EmailLeadDialog({
 
     setIsSavingDraft(true);
     try {
-      const draftData = {
-        id: initialDraft?.id || Math.random().toString(36).substr(2, 9),
-        type: scheduledAt ? 'scheduled' : 'draft',
+      await saveEmailActivityService({
+        id: initialDraft?.id,
+        workspace_id: workspaceEmailAccount?.workspace_id,
+        entity_id: leadId,
+        entity_type: 'lead',
         subject,
         body: message,
-        recipients: leadEmail,
-        cc: ccRecipients,
-        bcc: bccRecipients,
+        to_emails: leadEmail,
+        cc_emails: ccRecipients,
+        bcc_emails: bccRecipients,
+        status: scheduledAt ? 'scheduled' : 'draft',
         scheduled_at: scheduledAt ? scheduledAt.toISOString() : null,
-        timestamp: new Date().toISOString(),
-      };
+        from_email: workspaceEmailAccount?.email,
+      });
 
-      // Unified Local Storage
-      const activities = JSON.parse(
-        localStorage.getItem(`email_activities_${leadId}`) || '[]',
-      );
-      const existingIndex = activities.findIndex(
-        (a: any) => a.id === draftData.id,
-      );
-
-      if (existingIndex > -1) {
-        activities[existingIndex] = draftData;
-      } else {
-        activities.unshift(draftData);
-      }
-
-      localStorage.setItem(
-        `email_activities_${leadId}`,
-        JSON.stringify(activities),
-      );
       toast.success(scheduledAt ? 'Email scheduled' : 'Draft saved');
       queryClient.invalidateQueries({ queryKey: ['lead-drafts', leadId] });
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to save draft');
     } finally {
       setIsSavingDraft(false);
     }
@@ -282,6 +279,30 @@ export function EmailLeadDialog({
     }
   };
 
+  const handleTemplateSelect = (template: any) => {
+    if (!template) return;
+
+    const data: Record<string, string> = {
+      first_name: leadData?.first_name || '',
+      last_name: leadData?.last_name || '',
+      email: leadEmail,
+    };
+
+    // Merge workspace variables (environment variables)
+    workspaceVariables.forEach((v: any) => {
+      data[v.key] = v.value;
+    });
+
+    const renderedSubject = replaceTemplateVariables(template.subject, data);
+    const renderedBody = replaceTemplateVariables(template.html_body, data);
+
+    setSubject(renderedSubject);
+    if (editorRef.current) {
+      editorRef.current.innerHTML = renderedBody;
+    }
+    toast.success(`Applied template: ${template.name}`);
+  };
+
   const handleSend = async () => {
     const message = editorRef.current?.innerHTML || '';
 
@@ -294,55 +315,30 @@ export function EmailLeadDialog({
 
     setIsSending(true);
     try {
-      if (!scheduledAt) {
-        const cc = ccRecipients
-          .split(',')
-          .map((e) => e.trim())
-          .filter((e) => e.length > 0);
-        const bcc = bccRecipients
-          .split(',')
-          .map((e) => e.trim())
-          .filter((e) => e.length > 0);
+      const cc = ccRecipients
+        .split(',')
+        .map((e) => e.trim())
+        .filter((e) => e.length > 0);
+      const bcc = bccRecipients
+        .split(',')
+        .map((e) => e.trim())
+        .filter((e) => e.length > 0);
 
-        const result = await sendLeadEmailService({
-          leadId,
-          subject,
-          body: message,
-          cc: cc.length > 0 ? cc : undefined,
-          bcc: bcc.length > 0 ? bcc : undefined,
-        });
-        console.log('Send result:', result);
+      await sendLeadEmailService({
+        leadId,
+        subject,
+        body: message,
+        cc: cc.length > 0 ? cc : undefined,
+        bcc: bcc.length > 0 ? bcc : undefined,
+        scheduledAt: scheduledAt ? scheduledAt.toISOString() : undefined,
+        emailId: initialDraft?.id,
+      });
+
+      if (!scheduledAt) {
         toast.success('Email sent successfully');
       } else {
         toast.success(`Email scheduled for ${format(scheduledAt, 'PPp')}`);
       }
-
-      // Unified Local Storage Update
-      const activities = JSON.parse(
-        localStorage.getItem(`email_activities_${leadId}`) || '[]',
-      );
-
-      // Remove the draft/scheduled item if we were editing one
-      const filtered = activities.filter((a: any) => a.id !== initialDraft?.id);
-
-      // Add as "sent" or "scheduled"
-      const sentItem = {
-        id: Math.random().toString(36).substr(2, 9),
-        type: scheduledAt ? 'scheduled' : 'sent',
-        subject,
-        body: message,
-        sent_at: scheduledAt ? null : new Date().toISOString(),
-        scheduled_at: scheduledAt ? scheduledAt.toISOString() : null,
-        timestamp: new Date().toISOString(),
-        recipients: leadEmail,
-        cc: ccRecipients,
-        bcc: bccRecipients,
-      };
-
-      localStorage.setItem(
-        `email_activities_${leadId}`,
-        JSON.stringify([sentItem, ...filtered]),
-      );
 
       queryClient.invalidateQueries({ queryKey: ['lead-drafts', leadId] });
 
@@ -364,25 +360,43 @@ export function EmailLeadDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl overflow-hidden border-none bg-white p-0 shadow-2xl dark:bg-slate-950 h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl overflow-hidden border-none bg-white p-0 shadow-2xl dark:bg-slate-950 max-h-[95vh] h-auto flex flex-col">
         <DialogHeader className="sr-only">
           <DialogTitle>Email Lead</DialogTitle>
         </DialogHeader>
 
         {/* Custom Header */}
-        <div className="flex items-center justify-between border-b px-4 py-2">
+        <div className="flex items-center justify-between border-b px-4 py-1.5 shrink-0 bg-white dark:bg-slate-950">
           <div className="flex items-center gap-2">
             <Mail className="h-5 w-5 text-slate-600" />
             <span className="text-lg font-semibold text-slate-800 dark:text-slate-200">
               Email
             </span>
           </div>
-          <div className="flex items-center gap-3 pr-8">
-            {/* Minimize and Maximize buttons removed */}
+          <div className="flex items-center gap-3 pr-2">
+            <Select onValueChange={(val) => handleTemplateSelect(templates.find((t: any) => t.id.toString() === val))}>
+              <SelectTrigger className="h-8 w-40 border-slate-200 bg-white text-xs dark:bg-slate-900 focus:ring-0">
+                <div className="flex items-center gap-2">
+                  <LayoutTemplate className="h-3.5 w-3.5 text-blue-500" />
+                  <SelectValue placeholder="Use Template" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                {templates.length === 0 ? (
+                  <div className="p-2 text-xs text-center text-slate-500">No templates found</div>
+                ) : (
+                  templates.map((template: any) => (
+                    <SelectItem key={template.id} value={template.id.toString()}>
+                      {template.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
-        <div className="space-y-3 p-4">
+        <div className="space-y-1.5 p-4 overflow-y-auto flex-1">
           {/* From Field - Real Dropdown */}
           <div className="flex items-center gap-2">
             <Label className="w-12 text-sm text-slate-500">
@@ -394,9 +408,7 @@ export function EmailLeadDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="user">
-                  {user?.email
-                    ? `${user.email.split('@')[0]} <${user.email}>`
-                    : 'Loading...'}
+                  {workspaceEmailAccount?.email || "Please add an email in workspace settings"}
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -657,14 +669,14 @@ export function EmailLeadDialog({
             <div
               ref={editorRef}
               contentEditable
-              className="min-h-[250px] overflow-y-auto bg-white p-4 text-sm text-slate-800 outline-none dark:bg-slate-950 dark:text-slate-200 [&_ol]:list-decimal [&_ol]:pl-8 [&_ul]:list-disc [&_ul]:pl-8"
+              className="min-h-[200px] max-h-[400px] overflow-y-auto bg-white p-4 text-sm text-slate-800 outline-none dark:bg-slate-950 dark:text-slate-200 [&_ol]:list-decimal [&_ol]:pl-8 [&_ul]:list-disc [&_ul]:pl-8"
               onInput={() => { }}
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t bg-slate-50 px-4 py-3 dark:bg-slate-900">
+        <div className="flex items-center justify-end gap-3 border-t bg-slate-50 px-4 py-2 dark:bg-slate-900">
           <Button
             onClick={handleSaveDraft}
             variant="outline"
@@ -751,7 +763,7 @@ export function EmailLeadDialog({
           <Button
             onClick={handleSend}
             className="h-auto rounded-full bg-blue-600 px-10 py-2.5 font-bold text-white shadow-md transition-all hover:bg-blue-700 active:scale-95"
-            disabled={isSending}
+            disabled={isSending || !workspaceEmailAccount?.email}
           >
             {isSending ? (
               <Loader2 className="h-4 w-4 animate-spin" />

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { MeetingChecker } from '~/lib/cron/meeting-checker';
 import { ReminderChecker } from '~/lib/cron/reminder-checker';
+import { EmailScheduler } from '~/lib/cron/email-scheduler';
 
 const notificationReminderController = async (request: NextRequest) => {
   try {
@@ -33,10 +34,11 @@ const notificationReminderController = async (request: NextRequest) => {
     console.log('[Cron] Starting notification check...');
     const startTime = Date.now();
 
-    // Check reminders and meetings in parallel
-    const [reminderCount, meetingCount] = await Promise.all([
+    // Check reminders, meetings, and emails in parallel
+    const [reminderCount, meetingCount, emailCount] = await Promise.all([
       ReminderChecker.checkAndNotify(),
       MeetingChecker.checkAndNotify(),
+      EmailScheduler.checkAndSend(),
     ]);
 
     const duration = Date.now() - startTime;
@@ -48,7 +50,8 @@ const notificationReminderController = async (request: NextRequest) => {
       notifications: {
         reminders: reminderCount,
         meetings: meetingCount,
-        total: reminderCount + meetingCount,
+        emails: emailCount,
+        total: reminderCount + meetingCount + emailCount,
       },
     };
 

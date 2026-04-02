@@ -1,6 +1,4 @@
-import { NextRequest } from "next/server";
+import { enhanceRouteHandler } from '@kit/next/routes';
 import { sendEmail } from "./controller";
 
-export const POST = (request: NextRequest) => {
-    return sendEmail({ request });
-};
+export const POST = enhanceRouteHandler(sendEmail);

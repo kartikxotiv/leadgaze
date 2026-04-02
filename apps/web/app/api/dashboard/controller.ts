@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import { Database } from '~/lib/database.types';
+import { getHierarchyVisibleUserIds } from '~/lib/permissions/hierarchy-utils';
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
 import { getEntityName } from '../_helpers/get-entity-name';
 
@@ -12,6 +15,7 @@ import { getEntityName } from '../_helpers/get-entity-name';
 export const getDashboardMetrics = catchAsync(
   async ({ request }: { request: NextRequest }) => {
     const supabase = getSupabaseServerClient();
+    const adminClient = getSupabaseServerAdminClient<Database>();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
 
@@ -32,8 +36,28 @@ export const getDashboardMetrics = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
+    // Resolve account id used by CRM/workspace tables.
+    let actorAccountId = user.id;
+    const { data: accountById } = await adminClient
+      .from('accounts')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (!accountById?.id && user.email) {
+      const { data: accountByEmail } = await adminClient
+        .from('accounts')
+        .select('id')
+        .eq('email', user.email)
+        .maybeSingle();
+
+      if (accountByEmail?.id) {
+        actorAccountId = accountByEmail.id;
+      }
+    }
+
     // Check if user is workspace owner
-    const { data: workspace, error: workspaceError } = await supabase
+    const { data: workspace, error: workspaceError } = await adminClient
       .from('workspaces')
       .select('owner_id')
       .eq('id', workspaceId)
@@ -44,7 +68,35 @@ export const getDashboardMetrics = catchAsync(
       throw workspaceError;
     }
 
-    const isOwner = workspace?.owner_id === user.id;
+    const isOwner =
+      workspace?.owner_id === actorAccountId || workspace?.owner_id === user.id;
+
+    const { data: membership } = await adminClient
+      .from('workspace_members')
+      .select('id')
+      .eq('workspace_id', workspaceId)
+      .eq('user_id', actorAccountId)
+      .eq('status', 'accepted')
+      .maybeSingle();
+
+    if (!isOwner && !membership) {
+      return NextResponse.json(
+        { message: 'Forbidden: You are not a member of this workspace' },
+        { status: 403 },
+      );
+    }
+
+    let hierarchyFilter:
+      | { type: 'all' }
+      | { type: 'restricted'; userIds: string[] } = { type: 'all' };
+
+    if (!isOwner) {
+      hierarchyFilter = await getHierarchyVisibleUserIds(
+        adminClient,
+        workspaceId,
+        actorAccountId,
+      );
+    }
 
     // Current date and 30 days ago for trends
     const thirtyDaysAgo = new Date();
@@ -52,103 +104,72 @@ export const getDashboardMetrics = catchAsync(
     const thirtyDaysAgoStr = thirtyDaysAgo.toISOString();
 
     // 1. Get Leads metrics
-    let leadsQuery = supabase
+    let leadsQuery = adminClient
       .from('crm_leads')
       .select('*', { count: 'exact', head: true })
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
 
-    let newLeadsQuery = supabase
+    let newLeadsQuery = adminClient
       .from('crm_leads')
       .select('*', { count: 'exact', head: true })
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false)
       .gte('created_at', thirtyDaysAgoStr);
 
-    if (!isOwner) {
-      const { data: assignedLeadIds } = await supabase
-        .from('lead_assignees')
-        .select('lead_id')
-        .eq('workspace_id', workspaceId)
-        .eq('assigned_to_user_id', user.id)
-        .eq('assignment_status', 'active');
-
-      const assignedIds = assignedLeadIds?.map((a) => a.lead_id) || [];
-      const filterStr = `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`;
-      leadsQuery = leadsQuery.or(filterStr);
-      newLeadsQuery = newLeadsQuery.or(filterStr);
+    if (!isOwner && hierarchyFilter.type === 'restricted') {
+      const userIds = hierarchyFilter.userIds;
+      const leadsVisibilityFilter = `owner_id.in.(${userIds.join(',')}),created_by.in.(${userIds.join(',')})`;
+      leadsQuery = leadsQuery.or(leadsVisibilityFilter);
+      newLeadsQuery = newLeadsQuery.or(leadsVisibilityFilter);
     }
 
     const { count: leadsTotal } = await leadsQuery;
     const { count: leadsNew } = await newLeadsQuery;
 
+    const hierarchyUserIds =
+      hierarchyFilter.type === 'restricted' ? hierarchyFilter.userIds : null;
+
     // 2. Get Contacts metrics
-    let contactsQuery = supabase
+    let contactsQuery = adminClient
       .from('crm_contacts')
       .select('*', { count: 'exact', head: true })
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
 
-    if (!isOwner) {
-      const { data: assignedContactIds } = await (supabase
-        .from('contact_assignees' as any)
-        .select('contact_id')
-        .eq('workspace_id', workspaceId)
-        .eq('assigned_to_user_id', user.id)
-        .eq('assignment_status', 'active') as any);
-
-      const assignedIds =
-        assignedContactIds?.map((a: any) => a.contact_id) || [];
+    if (!isOwner && hierarchyUserIds) {
       contactsQuery = contactsQuery.or(
-        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
+        `owner_id.in.(${hierarchyUserIds.join(',')}),created_by.in.(${hierarchyUserIds.join(',')})`,
       );
     }
 
     const { count: contactsTotal } = await contactsQuery;
 
     // 3. Get Accounts metrics
-    let accountsQuery = supabase
+    let accountsQuery = adminClient
       .from('crm_accounts')
       .select('*', { count: 'exact', head: true })
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
 
-    if (!isOwner) {
-      const { data: assignedAccountIds } = await (supabase
-        .from('account_assignees' as any)
-        .select('account_id')
-        .eq('workspace_id', workspaceId)
-        .eq('assigned_to_user_id', user.id)
-        .eq('assignment_status', 'active') as any);
-
-      const assignedIds =
-        assignedAccountIds?.map((a: any) => a.account_id) || [];
+    if (!isOwner && hierarchyUserIds) {
       accountsQuery = accountsQuery.or(
-        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
+        `owner_id.in.(${hierarchyUserIds.join(',')}),created_by.in.(${hierarchyUserIds.join(',')})`,
       );
     }
 
     const { count: accountsTotal } = await accountsQuery;
 
     // 4. Get Opportunities metrics
-    let opportunitiesQuery = supabase
+    let opportunitiesQuery = adminClient
       .from('crm_opportunities')
       .select('amount')
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
 
-    if (!isOwner) {
-      const { data: assignedOpportunityIds } = await (supabase
-        .from('opportunity_assignees' as any)
-        .select('opportunity_id')
-        .eq('workspace_id', workspaceId)
-        .eq('assigned_to_user_id', user.id)
-        .eq('assignment_status', 'active') as any);
-
-      const assignedIds =
-        assignedOpportunityIds?.map((a: any) => a.opportunity_id) || [];
+    if (!isOwner && hierarchyUserIds) {
       opportunitiesQuery = opportunitiesQuery.or(
-        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
+        `owner_id.in.(${hierarchyUserIds.join(',')}),created_by.in.(${hierarchyUserIds.join(',')})`,
       );
     }
 
@@ -190,24 +211,13 @@ export const getDashboardMetrics = catchAsync(
         .eq('is_deleted', false)
         .eq(table === 'crm_opportunities' ? 'stage_id' : 'status_id', statusId);
 
-      if (!isOwner) {
-        // Use the same OR filter logic as the main queries
-        const assigneeTable =
-          table === 'crm_leads' ? 'lead_assignees' : 'opportunity_assignees';
-        const idField = table === 'crm_leads' ? 'lead_id' : 'opportunity_id';
-
-        const { data: assignedEntityIds } = await (supabase
-          .from(assigneeTable as any)
-          .select(idField)
-          .eq('workspace_id', workspaceId)
-          .eq('assigned_to_user_id', user.id)
-          .eq('assignment_status', 'active') as any);
-
-        const assignedIds =
-          assignedEntityIds?.map((a: any) => a[idField]) || [];
-
+      if (
+        !isOwner &&
+        hierarchyUserIds &&
+        (table === 'crm_leads' || table === 'crm_opportunities')
+      ) {
         q = q.or(
-          `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
+          `owner_id.in.(${hierarchyUserIds.join(',')}),created_by.in.(${hierarchyUserIds.join(',')})`,
         );
       }
 

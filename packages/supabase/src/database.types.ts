@@ -327,7 +327,6 @@ export type Database = {
           id: string
           industry_id: string | null
           is_deleted: boolean
-          is_public: boolean
           last_activity_date: string | null
           linkedin_url: string | null
           owner_id: string | null
@@ -343,6 +342,7 @@ export type Database = {
           total_revenue: number | null
           twitter_handle: string | null
           updated_at: string
+          updated_by: string | null
           website: string | null
           workspace_id: string
         }
@@ -368,7 +368,6 @@ export type Database = {
           id?: string
           industry_id?: string | null
           is_deleted?: boolean
-          is_public?: boolean
           last_activity_date?: string | null
           linkedin_url?: string | null
           owner_id?: string | null
@@ -384,6 +383,7 @@ export type Database = {
           total_revenue?: number | null
           twitter_handle?: string | null
           updated_at?: string
+          updated_by?: string | null
           website?: string | null
           workspace_id: string
         }
@@ -409,7 +409,6 @@ export type Database = {
           id?: string
           industry_id?: string | null
           is_deleted?: boolean
-          is_public?: boolean
           last_activity_date?: string | null
           linkedin_url?: string | null
           owner_id?: string | null
@@ -425,6 +424,7 @@ export type Database = {
           total_revenue?: number | null
           twitter_handle?: string | null
           updated_at?: string
+          updated_by?: string | null
           website?: string | null
           workspace_id?: string
         }
@@ -479,7 +479,83 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "crm_accounts_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "crm_accounts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_call_logs: {
+        Row: {
+          call_type: string
+          comments: string | null
+          contact_name: string | null
+          created_at: string
+          created_by: string | null
+          date_time: string
+          deleted_at: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          is_deleted: boolean
+          status: string
+          subject: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          call_type?: string
+          comments?: string | null
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_time: string
+          deleted_at?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          is_deleted?: boolean
+          status?: string
+          subject: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          call_type?: string
+          comments?: string | null
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_time?: string
+          deleted_at?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          is_deleted?: boolean
+          status?: string
+          subject?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_call_logs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_call_logs_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -507,7 +583,6 @@ export type Database = {
           id: string
           is_deleted: boolean
           is_primary: boolean
-          is_public: boolean
           job_title: string | null
           language: string | null
           last_contact_date: string | null
@@ -525,6 +600,7 @@ export type Database = {
           timezone: string | null
           twitter_handle: string | null
           updated_at: string
+          updated_by: string | null
           workspace_id: string
         }
         Insert: {
@@ -546,7 +622,6 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           is_primary?: boolean
-          is_public?: boolean
           job_title?: string | null
           language?: string | null
           last_contact_date?: string | null
@@ -564,6 +639,7 @@ export type Database = {
           timezone?: string | null
           twitter_handle?: string | null
           updated_at?: string
+          updated_by?: string | null
           workspace_id: string
         }
         Update: {
@@ -585,7 +661,6 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           is_primary?: boolean
-          is_public?: boolean
           job_title?: string | null
           language?: string | null
           last_contact_date?: string | null
@@ -603,6 +678,7 @@ export type Database = {
           timezone?: string | null
           twitter_handle?: string | null
           updated_at?: string
+          updated_by?: string | null
           workspace_id?: string
         }
         Relationships: [
@@ -653,6 +729,13 @@ export type Database = {
             columns: ["status_id"]
             isOneToOne: false
             referencedRelation: "entity_statuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
           {
@@ -795,7 +878,6 @@ export type Database = {
           id: string
           industry_id: string | null
           is_deleted: boolean
-          is_public: boolean
           job_title: string | null
           last_contact_date: string | null
           last_name: string | null
@@ -835,7 +917,6 @@ export type Database = {
           id?: string
           industry_id?: string | null
           is_deleted?: boolean
-          is_public?: boolean
           job_title?: string | null
           last_contact_date?: string | null
           last_name?: string | null
@@ -875,7 +956,6 @@ export type Database = {
           id?: string
           industry_id?: string | null
           is_deleted?: boolean
-          is_public?: boolean
           job_title?: string | null
           last_contact_date?: string | null
           last_name?: string | null
@@ -1202,7 +1282,6 @@ export type Database = {
           id: string
           is_closed: boolean
           is_deleted: boolean
-          is_public: boolean
           is_won: boolean
           lead_source: string | null
           opportunity_name: string
@@ -1215,6 +1294,7 @@ export type Database = {
           stage_id: string
           tags: Json | null
           updated_at: string
+          updated_by: string | null
           workspace_id: string
         }
         Insert: {
@@ -1237,7 +1317,6 @@ export type Database = {
           id?: string
           is_closed?: boolean
           is_deleted?: boolean
-          is_public?: boolean
           is_won?: boolean
           lead_source?: string | null
           opportunity_name: string
@@ -1250,6 +1329,7 @@ export type Database = {
           stage_id: string
           tags?: Json | null
           updated_at?: string
+          updated_by?: string | null
           workspace_id: string
         }
         Update: {
@@ -1272,7 +1352,6 @@ export type Database = {
           id?: string
           is_closed?: boolean
           is_deleted?: boolean
-          is_public?: boolean
           is_won?: boolean
           lead_source?: string | null
           opportunity_name?: string
@@ -1285,6 +1364,7 @@ export type Database = {
           stage_id?: string
           tags?: Json | null
           updated_at?: string
+          updated_by?: string | null
           workspace_id?: string
         }
         Relationships: [
@@ -1335,6 +1415,13 @@ export type Database = {
             columns: ["stage_id"]
             isOneToOne: false
             referencedRelation: "entity_statuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_opportunities_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
           {
@@ -1584,7 +1671,7 @@ export type Database = {
           entity_id: string | null
           entity_type: string | null
           from_email: string | null
-          gmail_message_id: string
+          gmail_message_id: string | null
           html_body: string | null
           id: string
           received_at: string | null
@@ -1608,7 +1695,7 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string | null
           from_email?: string | null
-          gmail_message_id: string
+          gmail_message_id?: string | null
           html_body?: string | null
           id?: string
           received_at?: string | null
@@ -1632,7 +1719,7 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string | null
           from_email?: string | null
-          gmail_message_id?: string
+          gmail_message_id?: string | null
           html_body?: string | null
           id?: string
           received_at?: string | null
@@ -2227,6 +2314,41 @@ export type Database = {
           },
           {
             foreignKeyName: "workspace_email_templates_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_email_variables: {
+        Row: {
+          created_at: string | null
+          id: number
+          key: string
+          updated_at: string | null
+          value: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          key: string
+          updated_at?: string | null
+          value: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          key?: string
+          updated_at?: string | null
+          value?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_email_variables_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"

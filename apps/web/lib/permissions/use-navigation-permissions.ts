@@ -162,12 +162,16 @@ export function usePermissionBasedNavigationConfig() {
         label: item.label,
         path: item.path,
         Icon: item.Icon,
+        moduleKey: item.moduleKey,
+        featureKey: item.featureKey,
         end: true,
       })),
       teamItems: teamItems.map((item) => ({
         label: item.label,
         path: item.path,
         Icon: item.Icon,
+        moduleKey: item.moduleKey,
+        featureKey: item.featureKey,
         end: true,
       })),
     };

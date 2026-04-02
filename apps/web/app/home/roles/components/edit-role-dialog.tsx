@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Button } from '@kit/ui/button';
@@ -24,6 +22,7 @@ import {
 } from '@kit/ui/dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
+
 import {
   Select,
   SelectContent,
@@ -41,6 +40,8 @@ import {
   updateRolePermissionsService,
   updateRoleService,
 } from '~/services/roles.service';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 interface EditRoleDialogProps {
   role: Role;
@@ -48,13 +49,6 @@ interface EditRoleDialogProps {
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
 }
-
-const HIERARCHY_LEVELS = [
-  { value: '100', label: 'Admin (100)' },
-  // { value: '50', label: 'Manager (50)' },
-  // { value: '10', label: 'User (10)' },
-  // { value: '1', label: 'Viewer (1)' },
-];
 
 const ROLE_COLORS = [
   { value: '#ef4444', label: 'Red' },
@@ -79,10 +73,11 @@ export function EditRoleDialog({
   const [formData, setFormData] = useState({
     role_name: '',
     description: '',
-    hierarchy_level: '10',
     color: '#3b82f6',
     is_active: true,
   });
+
+
 
   const [selectedPermissions, setSelectedPermissions] = useState<
     Record<string, boolean>
@@ -113,7 +108,6 @@ export function EditRoleDialog({
       setFormData({
         role_name: role.role_name,
         description: role.description || '',
-        hierarchy_level: role.hierarchy_level.toString(),
         color: role.color || '#3b82f6',
         is_active: role.is_active,
       });
@@ -139,7 +133,6 @@ export function EditRoleDialog({
       await updateRoleService(role.id, {
         role_name: formData.role_name,
         description: formData.description,
-        hierarchy_level: parseInt(formData.hierarchy_level),
         color: formData.color,
         is_active: formData.is_active,
       });
@@ -254,27 +247,7 @@ export function EditRoleDialog({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="hierarchy">Hierarchy Level *</Label>
-                  <Select
-                    value={formData.hierarchy_level}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, hierarchy_level: value })
-                    }
-                  >
-                    <SelectTrigger id="hierarchy">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {HIERARCHY_LEVELS.map((level) => (
-                        <SelectItem key={level.value} value={level.value}>
-                          {level.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="grid grid-cols-1 gap-4">
 
                 <div className="space-y-2">
                   <Label htmlFor="color">Color</Label>
@@ -340,9 +313,8 @@ export function EditRoleDialog({
                           <div className="flex items-center gap-2">
                             <CollapsibleTrigger className="flex items-center gap-2">
                               <ChevronDown
-                                className={`h-4 w-4 transition-transform ${
-                                  expandedModules[module.id] ? '' : '-rotate-90'
-                                }`}
+                                className={`h-4 w-4 transition-transform ${expandedModules[module.id] ? '' : '-rotate-90'
+                                  }`}
                               />
                             </CollapsibleTrigger>
                             <Checkbox

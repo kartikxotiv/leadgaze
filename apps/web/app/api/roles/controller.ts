@@ -29,7 +29,8 @@ const getAllRoles = catchAsync(
       .from('workspace_roles')
       .select('*')
       .eq('workspace_id', workspaceId)
-      .order('hierarchy_level', { ascending: false });
+      .order('hierarchy_level', { ascending: false })
+      .order('role_name', { ascending: true });
 
     if (error) {
       console.error('Get roles error:', error);
@@ -53,7 +54,6 @@ const createRole = catchAsync(
       role_key,
       role_name,
       description,
-      hierarchy_level,
       color,
       permissions,
     } = await request.json();
@@ -61,8 +61,7 @@ const createRole = catchAsync(
     if (
       !workspaceId ||
       !role_key ||
-      !role_name ||
-      hierarchy_level === undefined
+      !role_name
     ) {
       return NextResponse.json(
         { message: 'Missing required fields' },
@@ -90,14 +89,16 @@ const createRole = catchAsync(
       );
     }
 
-    const { data: role, error } = await supabase
+
+
+    const { data: createdRole, error: createRoleError } = await supabase
       .from('workspace_roles')
       .insert({
         workspace_id: workspaceId,
         role_key,
         role_name,
         description,
-        hierarchy_level,
+        hierarchy_level: 0,
         color,
         is_system: false,
         is_active: true,
@@ -105,16 +106,16 @@ const createRole = catchAsync(
       .select()
       .single();
 
-    if (error) {
-      console.error('Create role error:', error);
-      throw error;
+    if (createRoleError) {
+      console.error('Create role error:', createRoleError);
+      throw createRoleError;
     }
 
     // Insert permissions if provided
     if (permissions && permissions.length > 0) {
       const permissionRecords = permissions.map((perm: any) => ({
         workspace_id: workspaceId,
-        role_id: role.id,
+        role_id: createdRole.id,
         module_feature_id: perm.module_feature_id,
         can_access: perm.can_access,
         access_level: perm.access_level || 'none',
@@ -131,7 +132,7 @@ const createRole = catchAsync(
     }
 
     return successDataResponse({
-      data: role,
+      data: createdRole,
       message: 'Role created successfully',
       statusCode: 201,
     });

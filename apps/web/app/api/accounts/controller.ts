@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import { Database } from '../../../lib/database.types';
+import { getHierarchyVisibleUserIds } from '../../../lib/permissions/hierarchy-utils';
 import {
   catchAsync,
   successDataResponse,
@@ -19,6 +22,7 @@ export const getAccounts = catchAsync(
     params?: Record<string, string>;
   }) => {
     const supabase = getSupabaseServerClient();
+    const adminClient = getSupabaseServerAdminClient<Database>();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
     const page = parseInt(url.searchParams.get('page') || '1', 10);
@@ -43,7 +47,7 @@ export const getAccounts = catchAsync(
     }
 
     // Check if user is workspace owner
-    const { data: workspace, error: workspaceError } = await supabase
+    const { data: workspace, error: workspaceError } = await adminClient
       .from('workspaces')
       .select('owner_id')
       .eq('id', workspaceId)
@@ -56,8 +60,23 @@ export const getAccounts = catchAsync(
 
     const isOwner = workspace?.owner_id === user.id;
 
+    const { data: membership } = await adminClient
+      .from('workspace_members')
+      .select('id')
+      .eq('workspace_id', workspaceId)
+      .eq('user_id', user.id)
+      .eq('status', 'accepted')
+      .maybeSingle();
+
+    if (!isOwner && !membership) {
+      return NextResponse.json(
+        { message: 'Forbidden: You are not a member of this workspace' },
+        { status: 403 },
+      );
+    }
+
     // Build the query
-    let query = supabase
+    let query = adminClient
       .from('crm_accounts')
       .select(
         `
@@ -65,13 +84,42 @@ export const getAccounts = catchAsync(
           status:entity_statuses(id, status_name, status_key, color, icon),
           owner:accounts!crm_accounts_owner_id_fkey(id, email, name),
           created_by_account:accounts!crm_accounts_created_by_fkey(id, email, name),
-          updated_by_account:accounts!crm_accounts_updated_by_fkey(id, email, name),
           industry:crm_industries(id, industry_name)
         `,
         { count: 'exact' },
       )
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
+
+    // Apply hierarchy-based visibility filtering.
+    // Workspace owners bypass all hierarchy restrictions.
+    if (!isOwner) {
+      const hierarchyFilter = await getHierarchyVisibleUserIds(
+        adminClient,
+        workspaceId,
+        user.id,
+      );
+      if (hierarchyFilter.type === 'restricted') {
+        const userIds = hierarchyFilter.userIds;
+
+        // Fetch assigned accounts for this user (only active assignments)
+        const { data: assignments } = await adminClient
+          .from('account_assignees')
+          .select('account_id')
+          .eq('workspace_id', workspaceId)
+          .eq('assigned_to_user_id', user.id)
+          .eq('assignment_status', 'active');
+
+        const assignedIds = assignments?.map((a) => a.account_id) || [];
+        const assignedIdsFilter = assignedIds.length > 0 
+          ? `,id.in.(${assignedIds.join(',')})` 
+          : '';
+
+        query = query.or(
+          `owner_id.in.(${userIds.join(',')}),created_by.in.(${userIds.join(',')})${assignedIdsFilter}`,
+        );
+      }
+    }
 
     // Search term
     if (searchTerm) {
@@ -80,24 +128,7 @@ export const getAccounts = catchAsync(
       );
     }
 
-    // If not owner, filter for public accounts, accounts assigned to current user, or accounts created by current user
-    if (!isOwner) {
-      // Get accounts assigned to the current user
-      const { data: assignedAccountIds } = await (supabase
-        .from('account_assignees' as any)
-        .select('account_id')
-        .eq('workspace_id', workspaceId)
-        .eq('assigned_to_user_id', user.id)
-        .eq('assignment_status', 'active') as any);
 
-      const assignedIds =
-        assignedAccountIds?.map((a: any) => a.account_id) || [];
-
-      // Filter: public accounts OR assigned accounts OR created by current user
-      query = query.or(
-        `is_public.eq.true,id.in.(${assignedIds.length > 0 ? assignedIds.join(',') : '00000000-0000-0000-0000-000000000000'}),created_by.eq.${user.id}`,
-      );
-    }
 
     // Pagination
     const from = (page - 1) * limit;
@@ -206,7 +237,6 @@ export const createAccount = catchAsync(
         status_id: statusId,
         owner_id: user.id,
         created_by: user.id,
-        is_public: payload.is_public ?? true, // Default to public
         ...cleanedData,
       })
       .select()
