@@ -232,7 +232,9 @@ const convertLeadService = asyncHandlerClient(
 
 const sendLeadEmailService = asyncHandlerClient(
   async (payload: {
-    leadId: string;
+    leadId?: string;
+    workspaceId: string;
+    toEmails: string;
     subject: string;
     body: string;
     cc?: string | string[];

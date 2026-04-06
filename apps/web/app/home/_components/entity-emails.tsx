@@ -35,11 +35,13 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
   const isClient = typeof window !== 'undefined';
 
   // Database Query
-  const { data: combinedItems = [], isLoading } = useQuery({
+  const { data: response, isLoading } = useQuery({
     queryKey: ['lead-drafts', leadId],
     queryFn: () => getEntityEmailActivityService(leadId, 'lead'),
     enabled: !!leadId,
   });
+
+  const combinedItems = response?.data || [];
 
   // Handle delete
   const handleDelete = async (e: React.MouseEvent, id: string) => {
@@ -118,15 +120,20 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
               >
                 <div className="flex items-start gap-3">
                   <div
-                    className={`mt-0.5 rounded-full p-2 ${
-                      item.status === 'sent'
-                        ? 'bg-green-100 text-green-600'
-                        : item.status === 'scheduled'
-                          ? 'bg-blue-100 text-blue-600'
-                          : 'bg-amber-100 text-amber-600'
-                    }`}
+                    className={cn(
+                      'mt-0.5 rounded-full p-2',
+                      item.direction === 'inbound'
+                        ? 'bg-purple-100 text-purple-600'
+                        : item.status === 'sent'
+                          ? 'bg-green-100 text-green-600'
+                          : item.status === 'scheduled'
+                            ? 'bg-blue-100 text-blue-600'
+                            : 'bg-amber-100 text-amber-600'
+                    )}
                   >
-                    {item.status === 'sent' ? (
+                    {item.direction === 'inbound' ? (
+                      <Mail className="h-4 w-4" />
+                    ) : item.status === 'sent' ? (
                       <Mail className="h-4 w-4" />
                     ) : item.status === 'scheduled' ? (
                       <Clock className="h-4 w-4" />
@@ -141,17 +148,22 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
                       </p>
                       <Badge
                         variant="outline"
-                        className={`h-4 px-1 text-[10px] ${
-                          item.status === 'sent'
-                            ? 'border-green-200 bg-green-50 text-green-600'
-                            : item.status === 'scheduled'
-                              ? 'border-blue-200 bg-blue-50 text-blue-600'
-                              : 'border-amber-200 bg-amber-50 text-amber-600'
-                        }`}
+                        className={cn(
+                          'h-4 px-1 text-[10px]',
+                          item.direction === 'inbound'
+                            ? 'border-purple-200 bg-purple-50 text-purple-600'
+                            : item.status === 'sent'
+                              ? 'border-green-200 bg-green-50 text-green-600'
+                              : item.status === 'scheduled'
+                                ? 'border-blue-200 bg-blue-50 text-blue-600'
+                                : 'border-amber-200 bg-amber-50 text-amber-600'
+                        )}
                       >
-                        {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                        {item.direction === 'inbound' 
+                          ? 'Inbound' 
+                          : item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                       </Badge>
-                      {item.status !== 'sent' && (
+                      {item.direction !== 'inbound' && item.status !== 'sent' && (
                         <span className="text-[10px] text-blue-500 italic opacity-0 transition-opacity group-hover:opacity-100">
                           • Click to Edit
                         </span>
@@ -166,6 +178,7 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
                         <Clock className="h-3 w-3" />
                         <span>
                           {new Date(
+                            item.received_at ||
                             item.sent_at ||
                             item.updated_at ||
                             item.created_at ||
@@ -173,7 +186,11 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
                           ).toLocaleString()}
                         </span>
                       </div>
-                      {item.to_emails && (
+                      {item.direction === 'inbound' ? (
+                        <span className="max-w-[150px] truncate">
+                          From: {item.from_email}
+                        </span>
+                      ) : (
                         <span className="max-w-[150px] truncate">
                           To: {item.to_emails}
                         </span>
@@ -191,7 +208,7 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
                     </div>
                   </div>
                 </div>
-                {item.status !== 'sent' && (
+                {item.status !== 'sent' && item.direction !== 'inbound' && (
                   <button
                     onClick={(e) => handleDelete(e, item.id)}
                     className="absolute top-3 right-3 p-1 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500"
