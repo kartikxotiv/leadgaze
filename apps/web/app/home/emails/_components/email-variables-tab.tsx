@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Edit2, Plus, Trash2, LayoutTemplate, Search } from 'lucide-react';
+import { Edit2, LayoutTemplate, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import { Input } from '@kit/ui/input';
 import {
   Table,
   TableBody,
@@ -15,15 +17,23 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import { Input } from '@kit/ui/input';
-import { getWorkspaceVariablesService, deleteWorkspaceVariableService } from '~/services/email-templates.service';
+
+import { useRBAC } from '~/lib/rbac/rbac-provider';
+import {
+  deleteWorkspaceVariableService,
+  getWorkspaceVariablesService,
+} from '~/services/email-templates.service';
+
 import { VariableDialog } from './variable-dialog';
 
-export function EmailVariablesSettings({ workspace }: { workspace: any }) {
+export function EmailVariablesTab() {
   const queryClient = useQueryClient();
+  const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [isVariableDialogOpen, setIsVariableDialogOpen] = useState(false);
   const [selectedVariable, setSelectedVariable] = useState<any>(null);
+
+  const canManage = canAccess('emails', 'manage_variables');
 
   const { data: variables = [], isLoading: isLoadingVariables } = useQuery({
     queryKey: ['workspace-variables', workspace?.id],
@@ -31,9 +41,10 @@ export function EmailVariablesSettings({ workspace }: { workspace: any }) {
     enabled: !!workspace?.id,
   });
 
-  const filteredVariables = variables.filter((v: any) =>
-    v.key.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.value.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredVariables = variables.filter(
+    (v: any) =>
+      v.key.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.value.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const handleEditVariable = (variable: any) => {
@@ -47,7 +58,9 @@ export function EmailVariablesSettings({ workspace }: { workspace: any }) {
     try {
       await deleteWorkspaceVariableService(id);
       toast.success('Variable deleted successfully');
-      queryClient.invalidateQueries({ queryKey: ['workspace-variables', workspace?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-variables', workspace?.id],
+      });
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete variable');
     }
@@ -62,7 +75,7 @@ export function EmailVariablesSettings({ workspace }: { workspace: any }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div className="relative w-full max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
             placeholder="Search variables..."
             className="pl-10"
@@ -70,10 +83,16 @@ export function EmailVariablesSettings({ workspace }: { workspace: any }) {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Button onClick={handleCreateVariable} size="sm" className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          New Variable
-        </Button>
+        {canManage && (
+          <Button
+            onClick={handleCreateVariable}
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            New Variable
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -83,20 +102,30 @@ export function EmailVariablesSettings({ workspace }: { workspace: any }) {
               <TableRow>
                 <TableHead className="w-[300px]">Variable Key</TableHead>
                 <TableHead>Value</TableHead>
-                <TableHead className="w-[100px] text-right">Actions</TableHead>
+                {canManage && (
+                  <TableHead className="w-[100px] text-right">
+                    Actions
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoadingVariables ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={canManage ? 3 : 2}
+                    className="text-muted-foreground h-24 text-center"
+                  >
                     Loading variables...
                   </TableCell>
                 </TableRow>
               ) : filteredVariables.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center">
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                  <TableCell
+                    colSpan={canManage ? 3 : 2}
+                    className="h-24 text-center"
+                  >
+                    <div className="text-muted-foreground flex flex-col items-center gap-2">
                       <LayoutTemplate className="h-8 w-8 opacity-20" />
                       <p>No variables found</p>
                     </div>
@@ -106,32 +135,36 @@ export function EmailVariablesSettings({ workspace }: { workspace: any }) {
                 filteredVariables.map((variable: any) => (
                   <TableRow key={variable.id} className="group">
                     <TableCell>
-                      <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-mono text-primary dark:bg-zinc-800 dark:text-primary">
-                        {"{{"}{variable.key}{"}}"}
+                      <code className="text-primary dark:text-primary rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-xs dark:bg-zinc-800">
+                        {'{{'}
+                        {variable.key}
+                        {'}}'}
                       </code>
                     </TableCell>
-                    <TableCell className="text-muted-foreground truncate max-w-lg">
+                    <TableCell className="text-muted-foreground max-w-lg truncate">
                       {variable.value}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditVariable(variable)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDeleteVariable(variable.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {canManage && (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditVariable(variable)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteVariable(variable.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}

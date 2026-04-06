@@ -2,38 +2,54 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Building2, ChevronDown, Check, Mail, LayoutTemplate, Settings2, ShieldCheck } from 'lucide-react';
 
+import { useRouter } from 'next/navigation';
+
+import { Building2, Check, ChevronDown, Mail, Settings2 } from 'lucide-react';
+
+import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
+import { useUser } from '@kit/supabase/hooks/use-user';
 import { Button } from '@kit/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@kit/ui/card';
-import { PageBody, PageHeader } from '@kit/ui/page';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@kit/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@kit/ui/dropdown-menu';
-import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
-import { useUser } from '@kit/supabase/hooks/use-user';
+import { PageBody, PageHeader } from '@kit/ui/page';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
+
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 
 import { EmailAccountsSettings } from './_components/email-accounts-settings';
-import { EmailTemplatesSettings } from './_components/email-templates-settings';
-import { EmailVariablesSettings } from './_components/email-variables-settings';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
   const { data: user } = useUser();
   const router = useRouter();
   const [workspaces, setWorkspaces] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchWorkspaces = async () => {
       if (!user?.id) return;
-
-      setIsLoading(true);
       const supabase = getSupabaseBrowserClient();
 
       try {
@@ -68,8 +84,6 @@ function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
         setWorkspaces(uniqueWorkspaces);
       } catch (error) {
         console.error('Failed to fetch workspaces:', error);
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -136,34 +150,20 @@ export default function WorkspaceSettingsPage() {
       />
       <PageBody>
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="bg-transparent border-b rounded-none w-full justify-start h-auto p-0 gap-8">
+          <TabsList className="h-auto w-full justify-start gap-8 rounded-none border-b bg-transparent p-0">
             <TabsTrigger
               value="general"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2"
+              className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
             >
-              <Settings2 className="h-4 w-4 mr-2" />
+              <Settings2 className="mr-2 h-4 w-4" />
               General
             </TabsTrigger>
             <TabsTrigger
               value="emails"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2"
+              className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
             >
-              <Mail className="h-4 w-4 mr-2" />
+              <Mail className="mr-2 h-4 w-4" />
               Email Accounts
-            </TabsTrigger>
-            <TabsTrigger
-              value="templates"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2"
-            >
-              <LayoutTemplate className="h-4 w-4 mr-2" />
-              Email Templates
-            </TabsTrigger>
-            <TabsTrigger
-              value="variables"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2"
-            >
-              <ShieldCheck className="h-4 w-4 mr-2" />
-              Variables
             </TabsTrigger>
           </TabsList>
 
@@ -173,14 +173,6 @@ export default function WorkspaceSettingsPage() {
 
           <TabsContent value="emails">
             <EmailAccountsSettings workspace={workspace} />
-          </TabsContent>
-
-          <TabsContent value="templates">
-            <EmailTemplatesSettings workspace={workspace} />
-          </TabsContent>
-
-          <TabsContent value="variables">
-            <EmailVariablesSettings workspace={workspace} />
           </TabsContent>
         </Tabs>
       </PageBody>

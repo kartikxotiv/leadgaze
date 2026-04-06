@@ -3,18 +3,16 @@
 import { useMemo } from 'react';
 
 import {
-  Activity,
   BarChart3,
   Briefcase,
   History,
-  Settings,
+  Mail,
   ShieldCheck,
   User,
   Users,
 } from 'lucide-react';
 
 import pathsConfig from '~/config/paths.config';
-import { useHasPermission } from '~/lib/permissions';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 
 interface NavItem {
@@ -57,9 +55,13 @@ const SALES_MODULES: NavItem[] = [
     feature: 'view',
     module: 'opportunities',
   },
-  
-
-  
+  {
+    label: 'Emails',
+    path: pathsConfig.app.emails,
+    Icon: Mail,
+    feature: 'view_inbox',
+    module: 'emails',
+  },
 ];
 
 // Team Module Features
@@ -91,18 +93,6 @@ const TEAM_MODULES: NavItem[] = [
 
 export function useDynamicNavigation() {
   const { canAccess: rbacCanAccess } = useRBAC();
-
-  // Try to get permission system hooks
-  // These will be available if PermissionProvider is wrapping the component
-  let usePermissionHook: ((module: string, feature: string) => boolean) | null =
-    null;
-  try {
-    // We'll use this approach: try to use permission system in a wrapper
-    // For now, fall back to RBAC
-    usePermissionHook = null;
-  } catch {
-    usePermissionHook = null;
-  }
 
   const salesItems = useMemo(() => {
     return SALES_MODULES.map((item) => ({

@@ -13,28 +13,41 @@ export const getEmailActivity = catchAsync(async ({ request }) => {
   const { searchParams } = new URL(request.url);
   const entityId = searchParams.get('entityId');
   const entityType = searchParams.get('entityType');
+  const workspaceId = searchParams.get('workspaceId');
+  const limit = parseInt(searchParams.get('limit') || '20', 10);
+  const offset = parseInt(searchParams.get('offset') || '0', 10);
 
-  if (!entityId || !entityType) {
+  if (!workspaceId && (!entityId || !entityType)) {
     return NextResponse.json(
-      { error: 'Missing entityId or entityType' },
+      { error: 'Missing workspaceId or entityId/entityType' },
       { status: 400 },
     );
   }
 
   const supabase = getSupabaseServerClient();
+  let query = supabase.from('emails').select('*', { count: 'exact' });
 
-  const { data: emails, error } = await supabase
-    .from('emails')
-    .select('*')
-    .eq('entity_id', entityId)
-    .eq('entity_type', entityType)
-    .order('created_at', { ascending: false });
+  if (entityId && entityType) {
+    query = query.eq('entity_id', entityId).eq('entity_type', entityType);
+  } else if (workspaceId) {
+    query = query.eq('workspace_id', workspaceId);
+  }
+
+  const { data: emails, error, count } = await query
+    .order('received_at', { ascending: false })
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
 
   if (error) {
     throw error;
   }
 
-  return successListDataResponse(emails, { object: 'email_activity' });
+  return successListDataResponse(emails, { 
+    object: 'email_activity',
+    count,
+    limit,
+    offset
+  });
 });
 
 export const saveEmailActivity = catchAsync(async ({ request }) => {
