@@ -10,6 +10,7 @@ import {
   BarChart3,
   Briefcase,
   History,
+  Mail,
   ShieldCheck,
   User,
   Users,
@@ -97,6 +98,13 @@ const ALL_NAV_ITEMS: NavItem[] = [
     moduleKey: 'audit_logs',
     featureKey: 'view',
   },
+  {
+    label: 'Emails',
+    path: pathsConfig.app.emails,
+    Icon: Mail,
+    moduleKey: 'emails',
+    featureKey: 'view_inbox',
+  },
 ];
 
 /**
@@ -128,7 +136,7 @@ export function usePermissionBasedNavigation() {
   // Separate into sales and team items
   const salesItems = useMemo(() => {
     return filteredItems.filter((item) =>
-      ['leads', 'contacts', 'accounts', 'opportunities'].includes(
+      ['leads', 'contacts', 'accounts', 'opportunities', 'emails'].includes(
         item.moduleKey,
       ),
     );
