@@ -23,11 +23,18 @@ const submitEmailAccountService = asyncHandlerClient(async (workspaceId: string,
   return response.data;
 });
 
-const getEntityEmailActivityService = asyncHandlerClient(async (entityId: string, entityType: string) => {
+const getEntityEmailActivityService = asyncHandlerClient(async (entityId: string, entityType: string, limit = 20, offset = 0) => {
   const response = await ApiClient.get(
-    `/email/activity?entityId=${entityId}&entityType=${entityType}`,
+    `/email/activity?entityId=${entityId}&entityType=${entityType}&limit=${limit}&offset=${offset}`,
   );
-  return response.data?.data || [];
+  return response.data || { data: [], count: 0 };
+});
+
+const getWorkspaceEmailActivityService = asyncHandlerClient(async (workspaceId: string, limit = 20, offset = 0) => {
+  const response = await ApiClient.get(
+    `/email/activity?workspaceId=${workspaceId}&limit=${limit}&offset=${offset}`,
+  );
+  return response.data || { data: [], count: 0 };
 });
 
 const saveEmailActivityService = asyncHandlerClient(async (payload: any) => {
@@ -50,6 +57,7 @@ export {
   deleteEmailAccountService,
   submitEmailAccountService,
   getEntityEmailActivityService,
+  getWorkspaceEmailActivityService,
   saveEmailActivityService,
   deleteEmailActivityService
 };

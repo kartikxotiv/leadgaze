@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@kit/
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
+import { Separator } from '@kit/ui/separator';
 import {
   Table,
   TableBody,
@@ -52,6 +53,9 @@ const smtpSchema = z.object({
   username: z.string().min(1, 'Username is required'),
   password: z.string().min(1, 'Password is required'),
   secure: z.boolean(),
+  imap_host: z.string().optional(),
+  imap_port: z.coerce.number().int().positive().optional(),
+  imap_secure: z.boolean().optional(),
 });
 
 type SmtpFormValues = z.infer<typeof smtpSchema>;
@@ -83,6 +87,8 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
       defaultValues: {
         secure: true,
         port: 465,
+        imap_secure: true,
+        imap_port: 993,
       },
     });
 
@@ -145,7 +151,28 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
 
         <div className="flex items-center gap-2">
           <input type="checkbox" id="secure" {...form.register('secure')} className="rounded border-gray-300" />
-          <Label htmlFor="secure">Use SSL/TLS (Secure)</Label>
+          <Label htmlFor="secure">Use SSL/TLS for SMTP (Secure)</Label>
+        </div>
+
+        <Separator className="my-4" />
+        <div className="text-sm font-medium">IMAP Settings (For fetching emails)</div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>IMAP Host</Label>
+            <Input {...form.register('imap_host')} placeholder="imap.example.com" />
+            {form.formState.errors.imap_host && <p className="text-destructive text-xs">{form.formState.errors.imap_host.message}</p>}
+          </div>
+          <div className="space-y-2">
+            <Label>IMAP Port</Label>
+            <Input {...form.register('imap_port')} type="number" placeholder="993" />
+            {form.formState.errors.imap_port && <p className="text-destructive text-xs">{form.formState.errors.imap_port.message}</p>}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input type="checkbox" id="imap_secure" {...form.register('imap_secure')} className="rounded border-gray-300" />
+          <Label htmlFor="imap_secure">Use SSL/TLS for IMAP (Secure)</Label>
         </div>
 
         <Button type="submit" disabled={isSubmitting} className="w-full">

@@ -19,7 +19,10 @@ export const submitSMTPDetails = catchAsync(
             secure,
             username,
             password,
-            from_name
+            from_name,
+            imap_host,
+            imap_port,
+            imap_secure
         } = body;
 
         const { data, error } = await supabase.from("email_accounts").upsert({
@@ -31,6 +34,9 @@ export const submitSMTPDetails = catchAsync(
             username,
             password: encrypt(password),
             from_name,
+            imap_host,
+            imap_port,
+            imap_secure,
             provider: 'smtp'
         },
             {

@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Edit2, Plus, Trash2, LayoutTemplate, Search } from 'lucide-react';
+import { Edit2, LayoutTemplate, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import { Input } from '@kit/ui/input';
 import {
   Table,
   TableBody,
@@ -15,15 +17,23 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import { Input } from '@kit/ui/input';
-import { getEmailTemplatesService, deleteEmailTemplateService } from '~/services/email-templates.service';
+
+import { useRBAC } from '~/lib/rbac/rbac-provider';
+import {
+  deleteEmailTemplateService,
+  getEmailTemplatesService,
+} from '~/services/email-templates.service';
+
 import { TemplateDialog } from './template-dialog';
 
-export function EmailTemplatesSettings({ workspace }: { workspace: any }) {
+export function EmailTemplatesTab() {
   const queryClient = useQueryClient();
+  const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+
+  const canManage = canAccess('emails', 'manage_templates');
 
   const { data: templates = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['email-templates', workspace?.id],
@@ -31,9 +41,10 @@ export function EmailTemplatesSettings({ workspace }: { workspace: any }) {
     enabled: !!workspace?.id,
   });
 
-  const filteredTemplates = templates.filter((t: any) =>
-    t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.subject.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTemplates = templates.filter(
+    (t: any) =>
+      t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.subject.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const handleEdit = (template: any) => {
@@ -47,7 +58,9 @@ export function EmailTemplatesSettings({ workspace }: { workspace: any }) {
     try {
       await deleteEmailTemplateService(id);
       toast.success('Template deleted successfully');
-      queryClient.invalidateQueries({ queryKey: ['email-templates', workspace?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ['email-templates', workspace?.id],
+      });
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete template');
     }
@@ -62,7 +75,7 @@ export function EmailTemplatesSettings({ workspace }: { workspace: any }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div className="relative w-full max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
             placeholder="Search templates..."
             className="pl-10"
@@ -70,10 +83,16 @@ export function EmailTemplatesSettings({ workspace }: { workspace: any }) {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Button onClick={handleCreateTemplate} size="sm" className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          New Template
-        </Button>
+        {canManage && (
+          <Button
+            onClick={handleCreateTemplate}
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            New Template
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -84,20 +103,30 @@ export function EmailTemplatesSettings({ workspace }: { workspace: any }) {
                 <TableHead className="w-[300px]">Name</TableHead>
                 <TableHead>Subject</TableHead>
                 <TableHead className="w-[150px]">Last Updated</TableHead>
-                <TableHead className="w-[100px] text-right">Actions</TableHead>
+                {canManage && (
+                  <TableHead className="w-[100px] text-right">
+                    Actions
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoadingTemplates ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={canManage ? 4 : 3}
+                    className="text-muted-foreground h-24 text-center"
+                  >
                     Loading templates...
                   </TableCell>
                 </TableRow>
               ) : filteredTemplates.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                  <TableCell
+                    colSpan={canManage ? 4 : 3}
+                    className="h-24 text-center"
+                  >
+                    <div className="text-muted-foreground flex flex-col items-center gap-2">
                       <LayoutTemplate className="h-8 w-8 opacity-20" />
                       <p>No templates found</p>
                     </div>
@@ -109,31 +138,33 @@ export function EmailTemplatesSettings({ workspace }: { workspace: any }) {
                     <TableCell className="font-medium">
                       {template.name}
                     </TableCell>
-                    <TableCell className="text-muted-foreground truncate max-w-md">
+                    <TableCell className="text-muted-foreground max-w-md truncate">
                       {template.subject}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {new Date(template.updated_at).toLocaleDateString()}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(template)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDelete(template.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {canManage && (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(template)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDelete(template.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}
