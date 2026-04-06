@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { EmailScheduler } from '~/lib/cron/email-scheduler';
 import { EmailSyncChecker } from '~/lib/cron/email-sync-checker';
 import { MeetingChecker } from '~/lib/cron/meeting-checker';
 import { ReminderChecker } from '~/lib/cron/reminder-checker';
@@ -35,17 +36,13 @@ const notificationReminderController = async (_request: NextRequest) => {
     const startTime = Date.now();
 
     // Check reminders, meetings, and emails in parallel
-    const [
-      // reminderCount,
-      // meetingCount,
-      // emailCount,
-      syncedCount,
-    ] = await Promise.all([
-      // ReminderChecker.checkAndNotify(),
-      // MeetingChecker.checkAndNotify(),
-      // EmailScheduler.checkAndSend(),
-      EmailSyncChecker.syncAll(),
-    ]);
+    const [reminderCount, meetingCount, emailCount, syncedCount] =
+      await Promise.all([
+        ReminderChecker.checkAndNotify(),
+        MeetingChecker.checkAndNotify(),
+        EmailScheduler.checkAndSend(),
+        EmailSyncChecker.syncAll(),
+      ]);
 
     const duration = Date.now() - startTime;
 
@@ -54,11 +51,11 @@ const notificationReminderController = async (_request: NextRequest) => {
       timestamp: new Date().toISOString(),
       duration: `${duration}ms`,
       notifications: {
-        // reminders: reminderCount,
-        // meetings: meetingCount,
-        // emails: emailCount,
+        reminders: reminderCount,
+        meetings: meetingCount,
+        emails: emailCount,
         synced: syncedCount,
-        // total: reminderCount + meetingCount + emailCount + (syncedCount || 0),
+        total: reminderCount + meetingCount + emailCount + (syncedCount || 0),
       },
     };
 
