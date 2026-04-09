@@ -20,6 +20,13 @@ import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
 import { Input } from '@kit/ui/input';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@kit/ui/select';
+import {
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -36,7 +43,11 @@ import {
 import { cn } from '@kit/ui/utils';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
-import { getWorkspaceEmailActivityService } from '~/services/email.service';
+import {
+  EmailAccount,
+  getWorkspaceEmailAccountService,
+  getWorkspaceEmailActivityService,
+} from '~/services/email.service';
 
 import { EmailLeadDialog } from '../../leads/components/email-lead-dialog';
 import { EmailDetailDialog } from './email-detail-dialog';
@@ -46,6 +57,7 @@ export function InboxTab() {
   const { currentWorkspace: workspace } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'inbound' | 'outbound'>('all');
+  const [selectedInboxEmail, setSelectedInboxEmail] = useState<string>('all');
   const [page, setPage] = useState(1);
   const limit = 20;
 
@@ -53,32 +65,24 @@ export function InboxTab() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isReplyOpen, setIsReplyOpen] = useState(false);
 
-  // Fetch workspace email account for sending (replying)
-  const { data: accountData } = useQuery({
-    queryKey: ['workspace-email-account', workspace?.id],
-    queryFn: async () => {
-      // or use a dedicated service. Let's assume we have a workspace account service.
-      const { getSupabaseBrowserClient } = await import(
-        '@kit/supabase/browser-client'
-      );
-      const supabase = getSupabaseBrowserClient();
-      const { data: accounts } = await supabase
-        .from('email_accounts')
-        .select('*')
-        .eq('workspace_id', workspace?.id || '')
-        .limit(1);
-      return accounts?.[0];
-    },
+  const { data: accountData = [] } = useQuery({
+    queryKey: ['workspace-email-accounts', workspace?.id],
+    queryFn: () => getWorkspaceEmailAccountService(workspace?.id || ''),
     enabled: !!workspace?.id,
   });
 
+  const inboxAccounts = accountData.filter(
+    (account: EmailAccount) => account.can_view_inbox,
+  );
+
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['workspace-emails', workspace?.id, page],
+    queryKey: ['workspace-emails', workspace?.id, page, selectedInboxEmail],
     queryFn: () =>
       getWorkspaceEmailActivityService(
         workspace?.id || '',
         limit,
         (page - 1) * limit,
+        selectedInboxEmail !== 'all' ? selectedInboxEmail : undefined,
       ),
     enabled: !!workspace?.id,
   });
@@ -128,28 +132,50 @@ export function InboxTab() {
       <div className="flex h-full flex-col gap-4">
         {/* Filters and Search */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <Button
-              variant={filter === 'all' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('all')}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2">
+              <Button
+                variant={filter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFilter('all')}
+              >
+                All
+              </Button>
+              <Button
+                variant={filter === 'inbound' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFilter('inbound')}
+              >
+                Inbound
+              </Button>
+              <Button
+                variant={filter === 'outbound' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFilter('outbound')}
+              >
+                Outbound
+              </Button>
+            </div>
+
+            <Select
+              value={selectedInboxEmail}
+              onValueChange={(value) => {
+                setSelectedInboxEmail(value);
+                setPage(1);
+              }}
             >
-              All
-            </Button>
-            <Button
-              variant={filter === 'inbound' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('inbound')}
-            >
-              Inbound
-            </Button>
-            <Button
-              variant={filter === 'outbound' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('outbound')}
-            >
-              Outbound
-            </Button>
+              <SelectTrigger className="w-full sm:w-[260px]">
+                <SelectValue placeholder="Choose inbox" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All inboxes</SelectItem>
+                {inboxAccounts.map((account: EmailAccount) => (
+                  <SelectItem key={account.id} value={account.email}>
+                    {account.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="relative w-full max-w-sm">
@@ -181,7 +207,9 @@ export function InboxTab() {
                   <p className="text-sm text-gray-500">
                     {searchTerm
                       ? 'Try adjusting your search or filters.'
-                      : 'Your inbox is empty.'}
+                      : selectedInboxEmail === 'all'
+                        ? 'Your inbox is empty.'
+                        : `No emails found for ${selectedInboxEmail}.`}
                   </p>
                 </div>
               </div>
@@ -242,6 +270,20 @@ export function InboxTab() {
                                 )}
                               </span>
                             </div>
+                            {selectedInboxEmail === 'all' ? (
+                              <div className="mt-1">
+                                <Badge variant="outline" className="text-[10px]">
+                                  {email.direction === 'inbound'
+                                    ? `Inbox: ${inboxAccounts.find(
+                                        (account: EmailAccount) =>
+                                        email.to_emails
+                                          ?.toLowerCase()
+                                          .includes(account.email.toLowerCase()),
+                                      )?.email || 'Unknown'}`
+                                    : `Sent via: ${email.from_email || 'Unknown'}`}
+                                </Badge>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
 
@@ -375,7 +417,7 @@ export function InboxTab() {
         <EmailLeadDialog
           open={isReplyOpen}
           onOpenChange={setIsReplyOpen}
-          workspaceEmailAccount={accountData}
+          workspaceEmailAccounts={accountData}
           entityId={selectedEmail.entity_id}
           entityType={selectedEmail.entity_type || 'lead'}
           replyTo={{

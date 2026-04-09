@@ -1,4 +1,4 @@
-import { getSupabaseServerClient } from '@kit/supabase/server-client';
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { sendMail } from '../email/mailer';
 
 /**
@@ -10,7 +10,7 @@ export class EmailScheduler {
    * Returns the number of emails sent
    */
   static async checkAndSend(): Promise<number> {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerAdminClient();
     let sentCount = 0;
 
     try {
@@ -35,11 +35,11 @@ export class EmailScheduler {
 
       console.log(`[EmailScheduler] Found ${scheduledEmails.length} due scheduled emails`);
 
-      // 2. Fetch all relevant email accounts for these workspaces
+      // 2. Fetch all relevant active email accounts for these workspaces
       const workspaceIds = [...new Set(scheduledEmails.map((e) => e.workspace_id))];
-      const { data: accounts, error: accountsError } = await supabase
+      const { data: accounts, error: accountsError } = await (supabase
         .from('email_accounts')
-        .select('*')
+        .select('*') as any)
         .in('workspace_id', workspaceIds)
         .eq('is_active', true);
 
@@ -48,15 +48,24 @@ export class EmailScheduler {
         return 0;
       }
 
-      const accountMap = new Map(accounts?.map((a) => [a.workspace_id, a]));
+      const accountMap = new Map(
+        (accounts || []).map((account: any) => [
+          `${account.workspace_id}:${String(account.email).toLowerCase()}`,
+          account,
+        ]),
+      );
 
       // 3. Process each email
       for (const email of scheduledEmails) {
         try {
-          const account = accountMap.get(email.workspace_id);
+          const account = accountMap.get(
+            `${email.workspace_id}:${String(email.from_email || '').toLowerCase()}`,
+          ) as any;
 
           if (!account) {
-            console.warn(`[EmailScheduler] No active email account found for workspace ${email.workspace_id}, skipping email ${email.id}`);
+            console.warn(
+              `[EmailScheduler] No matching active email account found for ${email.from_email} in workspace ${email.workspace_id}, skipping email ${email.id}`,
+            );
             continue;
           }
 

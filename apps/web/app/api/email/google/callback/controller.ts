@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { catchAsync } from '~/utils/response-handler';
+import { getWorkspaceMemberContext } from '~/lib/email/email-account-access';
 
 export const googleAuthCallback = catchAsync(
     async ({
@@ -31,6 +32,7 @@ export const googleAuthCallback = catchAsync(
         let workspaceId: string;
         let returnUrl: string;
         let fromName: string;
+        let accessScope: string | null;
 
         try {
             const decodedState = JSON.parse(
@@ -39,6 +41,7 @@ export const googleAuthCallback = catchAsync(
             workspaceId = decodedState.workspaceId;
             returnUrl = decodedState.returnUrl;
             fromName = decodedState.fromName;
+            accessScope = decodedState.accessScope || null;
         } catch (e) {
             return NextResponse.redirect(
                 new URL('/home/workspace-settings?error=invalid_state', request.url)
@@ -68,6 +71,18 @@ export const googleAuthCallback = catchAsync(
             }
 
             const supabase = getSupabaseServerClient();
+            const memberContext = await getWorkspaceMemberContext(supabase, workspaceId);
+
+            if (!memberContext) {
+                return NextResponse.redirect(
+                    new URL('/home/workspace-settings?error=auth_failed', request.url)
+                );
+            }
+
+            const sanitizedAccessScope =
+                memberContext.isAdmin && accessScope === 'workspace'
+                    ? 'workspace'
+                    : 'private';
 
             // Save to database
             const { error: dbError } = await supabase.from('email_accounts').upsert(
@@ -80,9 +95,12 @@ export const googleAuthCallback = catchAsync(
                     refresh_token: tokens.refresh_token, // This might be undefined if not first time/prompt not forced
                     expires_at: tokens.expiry_date ? new Date(tokens.expiry_date).toISOString() : null,
                     is_active: true,
-                },
+                    is_sync_enabled: true,
+                    owner_user_id: memberContext.userId,
+                    access_scope: sanitizedAccessScope,
+                } as any,
                 {
-                    onConflict: 'workspace_id',
+                    onConflict: 'workspace_id,email',
                 }
             );
 

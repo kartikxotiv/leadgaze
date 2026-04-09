@@ -1,6 +1,6 @@
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
-import { getSupabaseServerClient } from '@kit/supabase/server-client';
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { decrypt } from '~/utils/crypto';
 
 interface ImapSyncOptions {
@@ -92,7 +92,7 @@ export class ImapSyncService {
 
         // Bulk upsert into emails table
         if (messagesToUpsert.length > 0) {
-          const supabase = getSupabaseServerClient();
+          const supabase = getSupabaseServerAdminClient();
           const { error } = await supabase
             .from('emails')
             .upsert(messagesToUpsert, {
@@ -105,7 +105,7 @@ export class ImapSyncService {
         }
 
         // Update last_synced_at in DB
-        const supabase = getSupabaseServerClient();
+        const supabase = getSupabaseServerAdminClient();
         await supabase
           .from('email_accounts')
           .update({ last_synced_at: new Date().toISOString() } as any)
@@ -164,7 +164,7 @@ export class ImapSyncService {
     
     // Split to handle multiple recipients if outbound
     const emails = targetEmails.split(',').map(e => e.trim().toLowerCase());
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerAdminClient();
 
     for (const email of emails) {
       // 1. Try Leads
