@@ -158,7 +158,7 @@ export async function getAccessibleInboxEmails(
   const accounts = await listWorkspaceEmailAccounts(supabase, workspaceId);
 
   return accounts
-    .filter((account) => account.can_view_inbox && account.is_active !== false)
+    .filter((account) => account.can_view_inbox)
     .map((account) => account.email.toLowerCase());
 }
 

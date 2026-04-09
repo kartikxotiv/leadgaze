@@ -7,11 +7,11 @@ export class EmailSyncChecker {
     console.log('[EmailSync] Starting sync for all accounts...');
     const supabase = getSupabaseServerAdminClient();
     
-    // Fetch all active accounts that are explicitly sync-enabled or still null from older rows.
+    // Fetch all accounts that are sync-enabled or still null from older rows.
+    // Inactive accounts should still sync inbox history; "is_active" only controls sending/selection.
     const { data: accounts, error } = await (supabase
       .from('email_accounts')
       .select('*') as any)
-      .eq('is_active', true)
       .or('is_sync_enabled.eq.true,is_sync_enabled.is.null');
 
     if (error) {

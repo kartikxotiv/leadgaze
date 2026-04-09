@@ -2,11 +2,11 @@
 import { NextResponse } from 'next/server';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
+
 import {
   getAccessibleInboxEmails,
   hasWorkspaceEmailFeatureAccess,
 } from '~/lib/email/email-account-access';
-
 import {
   catchAsync,
   successDataResponse,
@@ -87,7 +87,11 @@ export const getEmailActivity = catchAsync(async ({ request }) => {
     query = query.or(orFilters.join(','));
   }
 
-  const { data: emails, error, count } = await query
+  const {
+    data: emails,
+    error,
+    count,
+  } = await query
     .order('received_at', { ascending: false })
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
@@ -96,11 +100,11 @@ export const getEmailActivity = catchAsync(async ({ request }) => {
     throw error;
   }
 
-  return successListDataResponse(emails, { 
+  return successListDataResponse(emails, {
     object: 'email_activity',
     count,
     limit,
-    offset
+    offset,
   });
 });
 
