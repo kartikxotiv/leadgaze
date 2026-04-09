@@ -92,9 +92,6 @@ export default function LeadDetailsPage() {
   });
   const {
     data: workspaceEmailAccount,
-    isLoading: workspaceEmailAccountLoading,
-    error: workspaceEmailAccountError,
-    refetch: workspaceEmailAccountRefetch,
   } = useQuery({
     queryKey: ['workspace_id', workspace?.id],
     queryFn: () => {
@@ -1018,7 +1015,7 @@ export default function LeadDetailsPage() {
           leadEmail={lead.email || ''}
           leadName={fullName}
           initialDraft={selectedDraft}
-          workspaceEmailAccount={workspaceEmailAccount?.[0]}
+          workspaceEmailAccounts={workspaceEmailAccount || []}
         />
       )}
     </ModuleGuard>

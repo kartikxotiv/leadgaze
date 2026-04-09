@@ -28,7 +28,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Calendar } from '@kit/ui/calendar';
@@ -57,11 +56,15 @@ import {
 import { Separator } from '@kit/ui/separator';
 import { cn } from '@kit/ui/utils';
 
+import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
   getLeadByIdService,
   sendLeadEmailService,
 } from '~/services/leads.service';
-import { saveEmailActivityService } from '~/services/email.service';
+import {
+  EmailAccount,
+  saveEmailActivityService,
+} from '~/services/email.service';
 import { 
   getEmailTemplatesService, 
   getWorkspaceVariablesService 
@@ -75,7 +78,7 @@ interface EmailLeadDialogProps {
   leadEmail?: string;
   leadName?: string;
   initialDraft?: any;
-  workspaceEmailAccount: any;
+  workspaceEmailAccounts: EmailAccount[];
   entityId?: string;
   entityType?: 'lead' | 'contact';
   replyTo?: {
@@ -92,13 +95,13 @@ export function EmailLeadDialog({
   leadEmail,
   leadName,
   initialDraft,
-  workspaceEmailAccount,
+  workspaceEmailAccounts,
   entityId,
   entityType = 'lead',
   replyTo
 }: EmailLeadDialogProps) {
   const queryClient = useQueryClient();
-  useUser();
+  const { canAccess } = useRBAC();
   const [subject, setSubject] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [scheduledAt, setScheduledAt] = useState<Date | undefined>(undefined);
@@ -109,19 +112,29 @@ export function EmailLeadDialog({
   const [ccRecipients, setCcRecipients] = useState('');
   const [bccRecipients, setBccRecipients] = useState('');
   const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const sendableAccounts = workspaceEmailAccounts.filter(
+    (account) => account.can_send && account.is_active !== false,
+  );
+  const selectedAccount =
+    sendableAccounts.find(
+      (account) => account.id.toString() === selectedAccountId,
+    ) || sendableAccounts[0];
+  const canSendEmails = canAccess('emails', 'send_emails');
+
   const { data: templates = [] } = useQuery({
-    queryKey: ['email-templates', workspaceEmailAccount?.workspace_id],
-    queryFn: () => getEmailTemplatesService(workspaceEmailAccount?.workspace_id || ''),
-    enabled: !!workspaceEmailAccount?.workspace_id && open,
+    queryKey: ['email-templates', selectedAccount?.workspace_id],
+    queryFn: () => getEmailTemplatesService(selectedAccount?.workspace_id || ''),
+    enabled: !!selectedAccount?.workspace_id && open,
   });
 
   const { data: workspaceVariables = [] } = useQuery({
-    queryKey: ['workspace-variables', workspaceEmailAccount?.workspace_id],
-    queryFn: () => getWorkspaceVariablesService(workspaceEmailAccount?.workspace_id || ''),
-    enabled: !!workspaceEmailAccount?.workspace_id && open,
+    queryKey: ['workspace-variables', selectedAccount?.workspace_id],
+    queryFn: () => getWorkspaceVariablesService(selectedAccount?.workspace_id || ''),
+    enabled: !!selectedAccount?.workspace_id && open,
   });
 
   const { data: leadData } = useQuery({
@@ -129,6 +142,23 @@ export function EmailLeadDialog({
     queryFn: () => getLeadByIdService(leadId),
     enabled: !!leadId && open,
   });
+
+  useEffect(() => {
+    if (sendableAccounts.length > 0) {
+      setSelectedAccountId((current) => {
+        if (
+          current &&
+          sendableAccounts.some((account) => account.id.toString() === current)
+        ) {
+          return current;
+        }
+
+        return sendableAccounts[0]?.id.toString() || '';
+      });
+    } else {
+      setSelectedAccountId('');
+    }
+  }, [sendableAccounts]);
 
   // Load activity on open
   useEffect(() => {
@@ -242,7 +272,8 @@ export function EmailLeadDialog({
     try {
       await saveEmailActivityService({
         id: initialDraft?.id,
-        workspace_id: workspaceEmailAccount?.workspace_id,
+        workspace_id: selectedAccount?.workspace_id,
+        email_account_id: selectedAccount?.id,
         entity_id: entityId || leadId,
         entity_type: entityType,
         subject,
@@ -252,7 +283,7 @@ export function EmailLeadDialog({
         bcc_emails: bccRecipients,
         status: scheduledAt ? 'scheduled' : 'draft',
         scheduled_at: scheduledAt ? scheduledAt.toISOString() : null,
-        from_email: workspaceEmailAccount?.email,
+        from_email: selectedAccount?.email,
       });
 
       toast.success(scheduledAt ? 'Email scheduled' : 'Draft saved');
@@ -327,6 +358,16 @@ export function EmailLeadDialog({
       return;
     }
 
+    if (!selectedAccount) {
+      toast.error('Please select an email account');
+      return;
+    }
+
+    if (!canSendEmails) {
+      toast.error('You do not have permission to send emails');
+      return;
+    }
+
     setIsSending(true);
     try {
       const cc = ccRecipients
@@ -340,7 +381,8 @@ export function EmailLeadDialog({
 
       await sendLeadEmailService({
         leadId: entityId || leadId,
-        workspaceId: workspaceEmailAccount?.workspace_id as string,
+        workspaceId: selectedAccount.workspace_id,
+        emailAccountId: selectedAccount.id,
         toEmails: (replyTo?.email || leadEmail) as string,
         subject,
         body: message,
@@ -418,14 +460,26 @@ export function EmailLeadDialog({
             <Label className="w-12 text-sm text-slate-500">
               <span className="text-red-500">*</span> From
             </Label>
-            <Select defaultValue="user">
+            <Select
+              value={selectedAccountId || 'no-account'}
+              onValueChange={setSelectedAccountId}
+            >
               <SelectTrigger className="h-8 flex-1 border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700 focus:ring-0 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="user">
-                  {workspaceEmailAccount?.email || "Please add an email in workspace settings"}
-                </SelectItem>
+                {sendableAccounts.length === 0 ? (
+                  <SelectItem value="no-account" disabled>
+                    Please add an email in workspace settings
+                  </SelectItem>
+                ) : (
+                  sendableAccounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id.toString()}>
+                      {account.email}
+                      {account.access_scope === 'workspace' ? ' · Shared' : ''}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -779,7 +833,7 @@ export function EmailLeadDialog({
           <Button
             onClick={handleSend}
             className="h-auto rounded-full bg-blue-600 px-10 py-2.5 font-bold text-white shadow-md transition-all hover:bg-blue-700 active:scale-95"
-            disabled={isSending || !workspaceEmailAccount?.email}
+            disabled={isSending || !selectedAccount?.email || !canSendEmails}
           >
             {isSending ? (
               <Loader2 className="h-4 w-4 animate-spin" />

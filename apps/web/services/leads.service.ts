@@ -234,6 +234,7 @@ const sendLeadEmailService = asyncHandlerClient(
   async (payload: {
     leadId?: string;
     workspaceId: string;
+    emailAccountId?: number;
     toEmails: string;
     subject: string;
     body: string;

@@ -15,6 +15,7 @@ export const googleAuth = catchAsync(
         const workspaceId = searchParams.get('workspace_id');
         const returnUrl = searchParams.get('return_url');
         const fromName = searchParams.get('from_name');
+        const accessScope = searchParams.get('access_scope');
 
         if (!workspaceId) {
             return NextResponse.json(
@@ -32,6 +33,7 @@ export const googleAuth = catchAsync(
         const state = JSON.stringify({
             workspaceId,
             fromName,
+            accessScope,
             returnUrl: returnUrl || '/home/workspace-settings',
         });
 

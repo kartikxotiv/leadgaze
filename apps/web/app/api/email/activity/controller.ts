@@ -2,6 +2,10 @@
 import { NextResponse } from 'next/server';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
+import {
+  getAccessibleInboxEmails,
+  hasWorkspaceEmailFeatureAccess,
+} from '~/lib/email/email-account-access';
 
 import {
   catchAsync,
@@ -14,6 +18,7 @@ export const getEmailActivity = catchAsync(async ({ request }) => {
   const entityId = searchParams.get('entityId');
   const entityType = searchParams.get('entityType');
   const workspaceId = searchParams.get('workspaceId');
+  const accountEmail = searchParams.get('accountEmail');
   const limit = parseInt(searchParams.get('limit') || '20', 10);
   const offset = parseInt(searchParams.get('offset') || '0', 10);
 
@@ -30,7 +35,56 @@ export const getEmailActivity = catchAsync(async ({ request }) => {
   if (entityId && entityType) {
     query = query.eq('entity_id', entityId).eq('entity_type', entityType);
   } else if (workspaceId) {
+    const canViewInbox = await hasWorkspaceEmailFeatureAccess(
+      supabase,
+      workspaceId,
+      'view_inbox',
+    );
+
+    if (!canViewInbox) {
+      return NextResponse.json(
+        { error: 'You do not have permission to view inbox emails' },
+        { status: 403 },
+      );
+    }
+
     query = query.eq('workspace_id', workspaceId);
+
+    const accessibleInboxEmails = await getAccessibleInboxEmails(
+      supabase,
+      workspaceId,
+    );
+
+    if (accessibleInboxEmails.length === 0) {
+      return successListDataResponse([], {
+        object: 'email_activity',
+        count: 0,
+        limit,
+        offset,
+      });
+    }
+
+    const requestedAccountEmail = accountEmail?.toLowerCase();
+    if (
+      requestedAccountEmail &&
+      !accessibleInboxEmails.includes(requestedAccountEmail)
+    ) {
+      return NextResponse.json(
+        { error: 'You do not have access to this inbox' },
+        { status: 403 },
+      );
+    }
+
+    const inboxEmails = requestedAccountEmail
+      ? [requestedAccountEmail]
+      : accessibleInboxEmails;
+
+    const orFilters = inboxEmails.flatMap((email) => [
+      `from_email.eq.${email}`,
+      `to_emails.ilike.%${email}%`,
+    ]);
+
+    query = query.or(orFilters.join(','));
   }
 
   const { data: emails, error, count } = await query

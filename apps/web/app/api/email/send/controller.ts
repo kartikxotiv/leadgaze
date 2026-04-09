@@ -4,6 +4,10 @@ import { NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { sendMail } from '~/lib/email/mailer';
+import {
+  getSendableEmailAccountById,
+  hasWorkspaceEmailFeatureAccess,
+} from '~/lib/email/email-account-access';
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
 
 export const sendEmail = catchAsync(async ({ request }) => {
@@ -20,6 +24,7 @@ export const sendEmail = catchAsync(async ({ request }) => {
     body,
     scheduledAt,
     emailId, // Existing record ID to update
+    emailAccountId,
   } = payload;
 
   let workspaceId = payloadWorkspaceId;
@@ -61,20 +66,29 @@ export const sendEmail = catchAsync(async ({ request }) => {
     return NextResponse.json({ error: 'Missing recipient email' }, { status: 400 });
   }
 
-  const { data: account, error: accountError } = await supabase
-    .from('email_accounts')
-    .select('*')
-    .eq('workspace_id', workspaceId)
-    .single();
+  const canSendEmails = await hasWorkspaceEmailFeatureAccess(
+    supabase,
+    workspaceId,
+    'send_emails',
+  );
 
-  if (accountError) {
-    throw accountError;
+  if (!canSendEmails) {
+    return NextResponse.json(
+      { error: 'You do not have permission to send emails' },
+      { status: 403 },
+    );
   }
+
+  const account = await getSendableEmailAccountById(
+    supabase,
+    workspaceId,
+    emailAccountId ? Number(emailAccountId) : undefined,
+  );
 
   if (!account) {
     return NextResponse.json(
-      { error: 'Email account not found' },
-      { status: 404 },
+      { error: 'No sendable email account available' },
+      { status: 403 },
     );
   }
 
