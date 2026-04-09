@@ -48,6 +48,7 @@ import {
   EntityMeetings,
   EntityReminders,
 } from '../../_components/entity-activity';
+import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
 import { ContactAssignees } from '../components/contact-assignees';
 import { EditContactDialog } from '../components/edit-contact-dialog';
@@ -327,6 +328,12 @@ export default function ContactDetailsPage() {
             <EntityNotes entityType="contact" entityId={id} />
 
             {/* Activity Sections */}
+            <EntityEmails
+              entityId={id}
+              entityType="contact"
+              entityName={`${contact.first_name} ${contact.last_name || ''}`.trim()}
+              entityEmail={contact.email || undefined}
+            />
             <EntityReminders entityType="contact" entityId={id} />
             <EntityMeetings entityType="contact" entityId={id} />
             <EntityDocuments entityType="contact" entityId={id} />

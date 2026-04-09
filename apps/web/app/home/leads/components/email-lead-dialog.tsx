@@ -80,7 +80,7 @@ interface EmailLeadDialogProps {
   initialDraft?: any;
   workspaceEmailAccounts: EmailAccount[];
   entityId?: string;
-  entityType?: 'lead' | 'contact';
+  entityType?: 'lead' | 'contact' | 'account' | 'opportunity';
   replyTo?: {
     subject: string;
     email: string;
@@ -140,8 +140,10 @@ export function EmailLeadDialog({
   const { data: leadData } = useQuery({
     queryKey: ['lead', leadId],
     queryFn: () => getLeadByIdService(leadId),
-    enabled: !!leadId && open,
+    enabled: !!leadId && entityType === 'lead' && open,
   });
+
+  const entityQueryKey = ['entity-emails', entityType, entityId || leadId];
 
   useEffect(() => {
     if (sendableAccounts.length > 0) {
@@ -267,6 +269,8 @@ export function EmailLeadDialog({
   const handleSaveDraft = async () => {
     const message = editorRef.current?.innerHTML || '';
     if (!message && !subject) return;
+    const recipientEmail =
+      replyTo?.email || leadEmail || initialDraft?.to_emails || '';
 
     setIsSavingDraft(true);
     try {
@@ -278,7 +282,7 @@ export function EmailLeadDialog({
         entity_type: entityType,
         subject,
         body: message,
-        to_emails: replyTo?.email || leadEmail,
+        to_emails: recipientEmail,
         cc_emails: ccRecipients,
         bcc_emails: bccRecipients,
         status: scheduledAt ? 'scheduled' : 'draft',
@@ -287,7 +291,7 @@ export function EmailLeadDialog({
       });
 
       toast.success(scheduledAt ? 'Email scheduled' : 'Draft saved');
-      queryClient.invalidateQueries({ queryKey: ['lead-drafts', entityId || leadId] });
+      queryClient.invalidateQueries({ queryKey: entityQueryKey });
     } catch (error: any) {
       toast.error(error.message || 'Failed to save draft');
     } finally {
@@ -363,6 +367,14 @@ export function EmailLeadDialog({
       return;
     }
 
+    const recipientEmail =
+      replyTo?.email || leadEmail || initialDraft?.to_emails || '';
+
+    if (!recipientEmail) {
+      toast.error('Recipient email not found');
+      return;
+    }
+
     if (!canSendEmails) {
       toast.error('You do not have permission to send emails');
       return;
@@ -380,10 +392,11 @@ export function EmailLeadDialog({
         .filter((e) => e.length > 0);
 
       await sendLeadEmailService({
-        leadId: entityId || leadId,
         workspaceId: selectedAccount.workspace_id,
+        entityId: entityId || leadId,
+        entityType,
         emailAccountId: selectedAccount.id,
-        toEmails: (replyTo?.email || leadEmail) as string,
+        toEmails: recipientEmail,
         subject,
         body: message,
         cc: cc.length > 0 ? cc : undefined,
@@ -398,7 +411,10 @@ export function EmailLeadDialog({
         toast.success(`Email scheduled for ${format(scheduledAt, 'PPp')}`);
       }
 
-      queryClient.invalidateQueries({ queryKey: ['lead-drafts', entityId || leadId] });
+      queryClient.invalidateQueries({ queryKey: entityQueryKey });
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-email-activity', selectedAccount.workspace_id],
+      });
 
       onOpenChange(false);
       setSubject('');
