@@ -638,7 +638,10 @@ export default function LeadDetailsPage() {
             <EntityCalls entityType="lead" entityId={leadId} />
             {/* Email Activity (Drafts, Scheduled, Sent) */}
             <EntityEmails
-              leadId={leadId}
+              entityId={leadId}
+              entityType="lead"
+              entityName={fullName}
+              entityEmail={lead.email || undefined}
               onOpenDraft={(draft) => {
                 setSelectedDraft(draft);
                 setIsEmailDialogOpen(true);

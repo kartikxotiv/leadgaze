@@ -15,7 +15,8 @@ export const sendEmail = catchAsync(async ({ request }) => {
   const supabase = getSupabaseServerClient();
 
   const {
-    leadId,
+    entityId,
+    entityType,
     workspaceId: payloadWorkspaceId,
     toEmails: payloadToEmails,
     cc,
@@ -30,12 +31,11 @@ export const sendEmail = catchAsync(async ({ request }) => {
   let workspaceId = payloadWorkspaceId;
   let toEmails = payloadToEmails;
 
-  if (leadId) {
-    // FETCH LEAD
+  if (entityId && entityType === 'lead' && !toEmails) {
     const { data: lead, error: leadError } = await (
       supabase.from('crm_leads').select() as any
     )
-      .eq('id', leadId)
+      .eq('id', entityId)
       .eq('is_deleted', false)
       .single();
 
@@ -121,8 +121,8 @@ export const sendEmail = catchAsync(async ({ request }) => {
     status: isScheduled ? 'scheduled' : 'sent',
     scheduled_at: scheduledAt || null,
     sent_at: isScheduled ? null : new Date().toISOString(),
-    entity_type: leadId ? 'lead' : null,
-    entity_id: leadId || null,
+    entity_type: entityType || null,
+    entity_id: entityId || null,
     gmail_message_id: info?.messageId || null,
   } as any;
 

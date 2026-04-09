@@ -60,6 +60,7 @@ import {
   EntityMeetings,
   EntityReminders,
 } from '../../_components/entity-activity';
+import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
 import { EditOpportunityDialog } from '../components/edit-opportunity-dialog';
 import { OpportunityAssignees } from '../components/opportunity-assignees';
@@ -487,6 +488,11 @@ export default function OpportunityDetailsPage() {
             <EntityNotes entityType="opportunity" entityId={id} />
 
             {/* Activity Sections */}
+            <EntityEmails
+              entityId={id}
+              entityType="opportunity"
+              entityName={opportunity.opportunity_name}
+            />
             <EntityReminders entityType="opportunity" entityId={id} />
             <EntityMeetings entityType="opportunity" entityId={id} />
             <EntityDocuments entityType="opportunity" entityId={id} />
