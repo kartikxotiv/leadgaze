@@ -7,8 +7,8 @@
     "node": ">=v18.18.0"
   },
   "author": {
-    "url": "https://makerkit.dev",
-    "name": "MakerKit"
+    "url": "https://leadgaze.com",
+    "name": "Leadgaze"
   },
   "scripts": {
     "preinstall": "pnpm run --filter scripts requirements",
@@ -29,6 +29,7 @@
     "supabase:web:start": "pnpm --filter web supabase:start",
     "supabase:web:stop": "pnpm --filter web supabase:stop",
     "supabase:web:typegen": "pnpm --filter web supabase:typegen",
+    "supabase:web:apply": "pnpm --filter web supabase migration repair <migration-file> --status applied",
     "supabase:web:reset": "pnpm --filter web supabase:reset"
   },
   "prettier": "@kit/prettier-config",
