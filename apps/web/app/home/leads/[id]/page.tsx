@@ -92,9 +92,6 @@ export default function LeadDetailsPage() {
   });
   const {
     data: workspaceEmailAccount,
-    isLoading: workspaceEmailAccountLoading,
-    error: workspaceEmailAccountError,
-    refetch: workspaceEmailAccountRefetch,
   } = useQuery({
     queryKey: ['workspace_id', workspace?.id],
     queryFn: () => {
@@ -641,7 +638,10 @@ export default function LeadDetailsPage() {
             <EntityCalls entityType="lead" entityId={leadId} />
             {/* Email Activity (Drafts, Scheduled, Sent) */}
             <EntityEmails
-              leadId={leadId}
+              entityId={leadId}
+              entityType="lead"
+              entityName={fullName}
+              entityEmail={lead.email || undefined}
               onOpenDraft={(draft) => {
                 setSelectedDraft(draft);
                 setIsEmailDialogOpen(true);
@@ -1018,7 +1018,7 @@ export default function LeadDetailsPage() {
           leadEmail={lead.email || ''}
           leadName={fullName}
           initialDraft={selectedDraft}
-          workspaceEmailAccount={workspaceEmailAccount?.[0]}
+          workspaceEmailAccounts={workspaceEmailAccount || []}
         />
       )}
     </ModuleGuard>

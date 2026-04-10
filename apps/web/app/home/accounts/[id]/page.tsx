@@ -51,6 +51,7 @@ import {
   EntityMeetings,
   EntityReminders,
 } from '../../_components/entity-activity';
+import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
 import { OpportunityDialog } from '../../opportunities/components/opportunity-dialog';
 import { AccountAssignees } from '../components/account-assignees';
@@ -493,6 +494,11 @@ export default function AccountDetailsPage() {
             <EntityNotes entityType="account" entityId={id} />
 
             {/* Activity Sections */}
+            <EntityEmails
+              entityId={id}
+              entityType="account"
+              entityName={account.account_name}
+            />
             <EntityReminders entityType="account" entityId={id} />
             <EntityMeetings entityType="account" entityId={id} />
             <EntityDocuments entityType="account" entityId={id} />
