@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import { getSupabaseServerClient } from '@kit/supabase/server-client';
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
 export interface GmailSyncOptions {
   workspace_id: string;
@@ -62,7 +62,7 @@ export class GmailSyncService {
 
     // 3. Bulk upsert
     if (messagesToUpsert.length > 0) {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerAdminClient();
       const { error } = await supabase
         .from('emails')
         .upsert(messagesToUpsert, { onConflict: 'gmail_message_id' });
@@ -174,7 +174,7 @@ export class GmailSyncService {
   }
 
   private async findEntityByEmail(email: string) {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerAdminClient();
 
     // Check Leads
     const { data: lead } = await supabase
@@ -202,7 +202,7 @@ export class GmailSyncService {
   }
 
   private async updateAccountTokens(credentials: any) {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerAdminClient();
     await supabase
       .from('email_accounts')
       .update({
@@ -214,7 +214,7 @@ export class GmailSyncService {
   }
 
   private async updateLastSyncedAt() {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerAdminClient();
     await supabase
       .from('email_accounts')
       .update({

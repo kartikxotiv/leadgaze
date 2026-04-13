@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Clock, FileText, Loader2, Mail, Trash2 } from 'lucide-react';
@@ -10,35 +10,56 @@ import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { cn } from '@kit/ui/utils';
+import { useRBAC } from '~/lib/rbac/rbac-provider';
 
 import {
   getEntityEmailActivityService,
   deleteEmailActivityService,
+  getWorkspaceEmailAccountService,
 } from '~/services/email.service';
+import { EmailLeadDialog } from '../leads/components/email-lead-dialog';
+import { EmailDetailDialog } from '../emails/_components/email-detail-dialog';
 
 interface EntityEmailsProps {
-  leadId: string;
-  onOpenDraft: (draft: any) => void;
+  entityId: string;
+  entityType: 'lead' | 'contact' | 'account' | 'opportunity';
+  entityName?: string;
+  entityEmail?: string;
+  onOpenDraft?: (draft: any) => void;
 }
 
-export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
+export function EntityEmails({
+  entityId,
+  entityType,
+  entityName,
+  entityEmail,
+  onOpenDraft,
+}: EntityEmailsProps) {
   const queryClient = useQueryClient();
+  const { currentWorkspace: workspace } = useRBAC();
   const [mounted, setMounted] = useState(false);
+  const [selectedDraft, setSelectedDraft] = useState<any>(null);
+  const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [selectedEmail, setSelectedEmail] = useState<any>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  useMemo(() => {
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       setMounted(true);
     }
   }, []);
 
-  // Ensure we are on client
-  const isClient = typeof window !== 'undefined';
-
   // Database Query
   const { data: response, isLoading } = useQuery({
-    queryKey: ['lead-drafts', leadId],
-    queryFn: () => getEntityEmailActivityService(leadId, 'lead'),
-    enabled: !!leadId,
+    queryKey: ['entity-emails', entityType, entityId],
+    queryFn: () => getEntityEmailActivityService(entityId, entityType),
+    enabled: !!entityId,
+  });
+
+  const { data: workspaceEmailAccounts = [] } = useQuery({
+    queryKey: ['workspace-email-accounts', workspace?.id],
+    queryFn: () => getWorkspaceEmailAccountService(workspace?.id || ''),
+    enabled: !!workspace?.id,
   });
 
   const combinedItems = response?.data || [];
@@ -48,7 +69,7 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
     e.stopPropagation();
     try {
       await deleteEmailActivityService(id);
-      queryClient.invalidateQueries({ queryKey: ['lead-drafts', leadId] });
+      queryClient.invalidateQueries({ queryKey: ['entity-emails', entityType, entityId] });
       toast.success('Record removed');
     } catch (error: any) {
       toast.error('Failed to remove record');
@@ -56,6 +77,24 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
   };
 
   if (!mounted) {
+    return (
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <div className="flex items-center gap-2">
+            <Mail className="h-5 w-5 text-gray-400" />
+            <CardTitle className="text-lg">Emails</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center py-4">
+            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isLoading) {
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
@@ -93,19 +132,15 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <div className="flex items-center gap-2">
-          <Mail className="h-5 w-5 text-gray-400" />
-          <CardTitle className="text-lg">Emails</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex justify-center py-4">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <div className="flex items-center gap-2">
+            <Mail className="h-5 w-5 text-gray-400" />
+            <CardTitle className="text-lg">Emails</CardTitle>
           </div>
-        ) : (
+        </CardHeader>
+        <CardContent>
           <div className="space-y-4">
             {combinedItems.map((item: any) => (
               <div
@@ -116,7 +151,21 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
                     ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800'
                     : 'cursor-default',
                 )}
-                onClick={() => item.status !== 'sent' && onOpenDraft(item)}
+                onClick={() => {
+                  if (item.direction !== 'inbound' && item.status !== 'sent') {
+                    if (onOpenDraft) {
+                      onOpenDraft(item);
+                      return;
+                    }
+
+                    setSelectedDraft(item);
+                    setIsComposeOpen(true);
+                    return;
+                  }
+
+                  setSelectedEmail(item);
+                  setIsDetailOpen(true);
+                }}
               >
                 <div className="flex items-start gap-3">
                   <div
@@ -128,7 +177,7 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
                           ? 'bg-green-100 text-green-600'
                           : item.status === 'scheduled'
                             ? 'bg-blue-100 text-blue-600'
-                            : 'bg-amber-100 text-amber-600'
+                            : 'bg-amber-100 text-amber-600',
                     )}
                   >
                     {item.direction === 'inbound' ? (
@@ -156,11 +205,11 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
                               ? 'border-green-200 bg-green-50 text-green-600'
                               : item.status === 'scheduled'
                                 ? 'border-blue-200 bg-blue-50 text-blue-600'
-                                : 'border-amber-200 bg-amber-50 text-amber-600'
+                                : 'border-amber-200 bg-amber-50 text-amber-600',
                         )}
                       >
-                        {item.direction === 'inbound' 
-                          ? 'Inbound' 
+                        {item.direction === 'inbound'
+                          ? 'Inbound'
                           : item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                       </Badge>
                       {item.direction !== 'inbound' && item.status !== 'sent' && (
@@ -179,10 +228,10 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
                         <span>
                           {new Date(
                             item.received_at ||
-                            item.sent_at ||
-                            item.updated_at ||
-                            item.created_at ||
-                            new Date(),
+                              item.sent_at ||
+                              item.updated_at ||
+                              item.created_at ||
+                              new Date(),
                           ).toLocaleString()}
                         </span>
                       </div>
@@ -219,8 +268,51 @@ export function EntityEmails({ leadId, onOpenDraft }: EntityEmailsProps) {
               </div>
             ))}
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <EmailDetailDialog
+        open={isDetailOpen}
+        onOpenChange={setIsDetailOpen}
+        email={selectedEmail}
+        onReply={(email) => {
+          setSelectedEmail(email);
+          setSelectedDraft(null);
+          setIsDetailOpen(false);
+          setIsComposeOpen(true);
+        }}
+      />
+
+      <EmailLeadDialog
+        open={isComposeOpen}
+        onOpenChange={(open) => {
+          setIsComposeOpen(open);
+          if (!open) {
+            setSelectedDraft(null);
+          }
+        }}
+        leadEmail={entityEmail}
+        leadName={entityName}
+        initialDraft={selectedDraft}
+        workspaceEmailAccounts={workspaceEmailAccounts}
+        entityId={entityId}
+        entityType={entityType}
+        replyTo={
+          selectedEmail
+            ? {
+                subject: selectedEmail.subject,
+                email:
+                  selectedEmail.direction === 'inbound'
+                    ? selectedEmail.from_email
+                    : selectedEmail.to_emails,
+                name:
+                  selectedEmail.direction === 'inbound'
+                    ? selectedEmail.from_email
+                    : selectedEmail.to_emails,
+              }
+            : undefined
+        }
+      />
+    </>
   );
 }

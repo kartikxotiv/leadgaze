@@ -1,18 +1,18 @@
-import { getSupabaseServerClient } from '@kit/supabase/server-client';
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { GmailSyncService } from '../email/gmail-sync.service';
 import { ImapSyncService } from '../email/imap-sync.service';
 
 export class EmailSyncChecker {
   static async syncAll() {
     console.log('[EmailSync] Starting sync for all accounts...');
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerAdminClient();
     
-    // Fetch all active and sync-enabled accounts
-    const { data: accounts, error } = await supabase
+    // Fetch all accounts that are sync-enabled or still null from older rows.
+    // Inactive accounts should still sync inbox history; "is_active" only controls sending/selection.
+    const { data: accounts, error } = await (supabase
       .from('email_accounts')
-      .select('*')
-      .eq('is_active', true)
-      .eq('is_sync_enabled', true);
+      .select('*') as any)
+      .or('is_sync_enabled.eq.true,is_sync_enabled.is.null');
 
     if (error) {
       console.error('[EmailSync] Error fetching accounts:', error);
@@ -25,9 +25,27 @@ export class EmailSyncChecker {
     }
 
     let totalSynced = 0;
+    let processedAccounts = 0;
 
     for (const account of (accounts as any[])) {
       try {
+        if (account.provider === 'google' && !account.refresh_token) {
+          console.warn(
+            `[EmailSync] Skipping ${account.email}: missing refresh token for Google sync`,
+          );
+          continue;
+        }
+
+        if (
+          account.provider === 'smtp' &&
+          (!account.username || !account.password || !(account.imap_host || account.host))
+        ) {
+          console.warn(
+            `[EmailSync] Skipping ${account.email}: incomplete IMAP/SMTP sync configuration`,
+          );
+          continue;
+        }
+
         let syncService;
         
         if (account.provider === 'google') {
@@ -57,6 +75,7 @@ export class EmailSyncChecker {
         }
 
         if (syncService) {
+          processedAccounts += 1;
           const count = await syncService.sync();
           totalSynced += count;
           console.log(`[EmailSync] Synced ${count} messages for ${account.email} (${account.provider})`);
@@ -65,6 +84,10 @@ export class EmailSyncChecker {
         console.error(`[EmailSync] Error syncing account ${account.email}:`, err);
       }
     }
+
+    console.log(
+      `[EmailSync] Finished syncing ${processedAccounts} account(s), total messages synced: ${totalSynced}`,
+    );
 
     return totalSynced;
   }
