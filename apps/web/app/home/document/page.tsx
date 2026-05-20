@@ -363,15 +363,15 @@ export default function DocumentPage() {
       <div className="flex h-[100dvh] flex-col">
         <div className="bg-sidebar flex shrink-0 flex-col gap-2">
           <PageHeader
+            className='bg-sidebar'
             title={`Documents (${documents.length})`}
             description="Manage and organize your files and documents"
           >
             <div className="flex items-center gap-2">
               <div className="flex items-center">
                 <div
-                  className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${
-                    isSearchOpen ? 'w-64 lg:w-72' : 'w-9'
-                  }`}
+                  className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${isSearchOpen ? 'w-64 lg:w-72' : 'w-9'
+                    }`}
                 >
                   {isSearchOpen ? (
                     <div className="relative w-full">
@@ -416,18 +416,17 @@ export default function DocumentPage() {
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
                       <button
-                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white dark:border-zinc-700 dark:bg-zinc-900 ${
-                          isFilterOpen ? 'bg-accent' : ''
-                        }`}
+                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white dark:border-zinc-700 dark:bg-zinc-900 ${isFilterOpen ? 'bg-accent' : ''
+                          }`}
                       >
                         <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
                         {(typeFilter !== 'all' ||
                           entityTypeFilter !== 'all') && (
-                          <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
-                            {(typeFilter !== 'all' ? 1 : 0) +
-                              (entityTypeFilter !== 'all' ? 1 : 0)}
-                          </span>
-                        )}
+                            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
+                              {(typeFilter !== 'all' ? 1 : 0) +
+                                (entityTypeFilter !== 'all' ? 1 : 0)}
+                            </span>
+                          )}
                       </button>
                     </PopoverTrigger>
                   </TooltipTrigger>
@@ -494,8 +493,8 @@ export default function DocumentPage() {
                               {entityTypeFilter === 'all'
                                 ? 'All entities'
                                 : entityTypeFilter.charAt(0).toUpperCase() +
-                                  entityTypeFilter.slice(1) +
-                                  's'}
+                                entityTypeFilter.slice(1) +
+                                's'}
                             </span>
                           </div>
                           <ChevronRight className="h-4 w-4 text-gray-400" />
@@ -516,9 +515,8 @@ export default function DocumentPage() {
                           return (
                             <label
                               key={t.id}
-                              className={`group hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-all ${
-                                isChecked ? 'bg-muted/40' : ''
-                              }`}
+                              className={`group hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-all ${isChecked ? 'bg-muted/40' : ''
+                                }`}
                             >
                               <input
                                 type="radio"
@@ -528,22 +526,20 @@ export default function DocumentPage() {
                                 onChange={() => setTypeFilter(t.id)}
                               />
                               <div
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
-                                  isChecked
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${isChecked
                                     ? 'border-[#4eacff] bg-[#4eacff]'
                                     : 'border-gray-300 group-hover:border-gray-400'
-                                }`}
+                                  }`}
                               >
                                 {isChecked && (
                                   <div className="animate-in fade-in zoom-in h-1.5 w-1.5 rounded-full bg-white duration-200" />
                                 )}
                               </div>
                               <span
-                                className={`truncate font-medium transition-colors ${
-                                  isChecked
+                                className={`truncate font-medium transition-colors ${isChecked
                                     ? 'text-[#4eacff]'
                                     : 'text-foreground'
-                                }`}
+                                  }`}
                               >
                                 {t.label}
                               </span>
@@ -566,9 +562,8 @@ export default function DocumentPage() {
                           return (
                             <label
                               key={e.id}
-                              className={`group hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-all ${
-                                isChecked ? 'bg-muted/40' : ''
-                              }`}
+                              className={`group hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-all ${isChecked ? 'bg-muted/40' : ''
+                                }`}
                             >
                               <input
                                 type="radio"
@@ -578,22 +573,20 @@ export default function DocumentPage() {
                                 onChange={() => setEntityTypeFilter(e.id)}
                               />
                               <div
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
-                                  isChecked
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${isChecked
                                     ? 'border-[#4eacff] bg-[#4eacff]'
                                     : 'border-gray-300 group-hover:border-gray-400'
-                                }`}
+                                  }`}
                               >
                                 {isChecked && (
                                   <div className="animate-in fade-in zoom-in h-1.5 w-1.5 rounded-full bg-white duration-200" />
                                 )}
                               </div>
                               <span
-                                className={`truncate font-medium transition-colors ${
-                                  isChecked
+                                className={`truncate font-medium transition-colors ${isChecked
                                     ? 'text-[#4eacff]'
                                     : 'text-foreground'
-                                }`}
+                                  }`}
                               >
                                 {e.label}
                               </span>
@@ -703,8 +696,8 @@ export default function DocumentPage() {
                             colSpan={
                               visibility
                                 ? Object.values(visibility).filter(
-                                    (v) => v !== false,
-                                  ).length + 1
+                                  (v) => v !== false,
+                                ).length + 1
                                 : 6
                             }
                             className="h-24 text-center"
@@ -813,8 +806,8 @@ export default function DocumentPage() {
                             colSpan={
                               visibility
                                 ? Object.values(visibility).filter(
-                                    (v) => v !== false,
-                                  ).length + 1
+                                  (v) => v !== false,
+                                ).length + 1
                                 : 6
                             }
                             className="text-muted-foreground h-24 text-center"
