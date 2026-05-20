@@ -146,7 +146,7 @@ export default function WorkspaceSettingsPage() {
     <>
       <PageHeader
         className='bg-sidebar'
-        title="Workspace Settings"
+        title="Workspace"
         description="Manage your workspace configuration, email accounts, and templates."
       />
       <PageBody className="bg-sidebar sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pt-6 pb-6">

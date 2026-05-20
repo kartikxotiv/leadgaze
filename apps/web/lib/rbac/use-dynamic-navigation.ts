@@ -69,7 +69,7 @@ const SALES_MODULES: NavItem[] = [
 // Feature key: 'view'
 const TEAM_MODULES: NavItem[] = [
   {
-    label: 'Team Members',
+    label: 'Members',
     path: pathsConfig.app.teamMembers,
     Icon: Users,
     feature: 'view',
