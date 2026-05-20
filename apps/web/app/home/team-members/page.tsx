@@ -194,7 +194,7 @@ export default function TeamMembersPage() {
         <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
           <PageHeader
             className="bg-sidebar px-6 py-4"
-            title={`Team Members (${members.length})`}
+            title={`Members (${members.length})`}
             description="Manage your workspace team members and permissions"
           >
             <div className="flex items-center gap-2">
@@ -289,7 +289,7 @@ export default function TeamMembersPage() {
               <CardHeader className="shrink-0 p-4">
                 <div>
                   <CardTitle className="leading-tight">
-                    Workspace Members
+                    Members
                   </CardTitle>
                   <CardDescription>
                     Manage team members and their roles
