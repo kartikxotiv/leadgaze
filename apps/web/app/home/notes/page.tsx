@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -87,126 +86,6 @@ import {
 import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -461,15 +340,15 @@ export default function NotesPage() {
       <div className="flex h-[100dvh] flex-col">
         <div className="bg-sidebar flex shrink-0 flex-col gap-2">
           <PageHeader
+            className='bg-sidebar'
             title={`Notes (${notes.length})`}
             description="Capture and organize your important thoughts and information"
           >
             <div className="flex items-center gap-2">
               <div className="flex items-center">
                 <div
-                  className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${
-                    isSearchOpen ? 'w-64 lg:w-72' : 'w-9'
-                  }`}
+                  className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${isSearchOpen ? 'w-64 lg:w-72' : 'w-9'
+                    }`}
                 >
                   {isSearchOpen ? (
                     <div className="relative w-full">
@@ -514,9 +393,8 @@ export default function NotesPage() {
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
                       <button
-                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white dark:border-zinc-700 dark:bg-zinc-900 ${
-                          isFilterOpen ? 'bg-accent' : ''
-                        }`}
+                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white dark:border-zinc-700 dark:bg-zinc-900 ${isFilterOpen ? 'bg-accent' : ''
+                          }`}
                       >
                         <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
                         {categoryFilter !== 'all' && (
@@ -571,8 +449,8 @@ export default function NotesPage() {
                               {categoryFilter === 'all'
                                 ? 'All entities'
                                 : categoryFilter.charAt(0).toUpperCase() +
-                                  categoryFilter.slice(1) +
-                                  's'}
+                                categoryFilter.slice(1) +
+                                's'}
                             </span>
                           </div>
                           <ChevronRight className="h-4 w-4 text-gray-400" />
@@ -593,9 +471,8 @@ export default function NotesPage() {
                           return (
                             <label
                               key={e.id}
-                              className={`group hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-all ${
-                                isChecked ? 'bg-muted/40' : ''
-                              }`}
+                              className={`group hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-all ${isChecked ? 'bg-muted/40' : ''
+                                }`}
                             >
                               <input
                                 type="radio"
@@ -605,11 +482,10 @@ export default function NotesPage() {
                                 onChange={() => setCategoryFilter(e.id)}
                               />
                               <div
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
-                                  isChecked
-                                    ? 'border-black bg-transparent dark:border-white'
-                                    : 'border-black/20 bg-transparent group-hover:border-white/50 dark:border-white/30'
-                                }`}
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${isChecked
+                                  ? 'border-black bg-transparent dark:border-white'
+                                  : 'border-black/20 bg-transparent group-hover:border-white/50 dark:border-white/30'
+                                  }`}
                               >
                                 {isChecked && (
                                   <div className="animate-in fade-in zoom-in h-2 w-2 rounded-full bg-black duration-200 dark:bg-white" />
@@ -721,8 +597,8 @@ export default function NotesPage() {
                             colSpan={
                               visibility
                                 ? Object.values(visibility).filter(
-                                    (v) => v !== false,
-                                  ).length + 1
+                                  (v) => v !== false,
+                                ).length + 1
                                 : 6
                             }
                             className="h-24 text-center"
@@ -832,8 +708,8 @@ export default function NotesPage() {
                             colSpan={
                               visibility
                                 ? Object.values(visibility).filter(
-                                    (v) => v !== false,
-                                  ).length + 1
+                                  (v) => v !== false,
+                                ).length + 1
                                 : 6
                             }
                             className="text-muted-foreground h-24 text-center"
