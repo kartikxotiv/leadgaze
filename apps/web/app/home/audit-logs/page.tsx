@@ -146,6 +146,7 @@ export default function AuditLogsPage() {
     <ModuleGuard module="audit_logs">
       <div className="flex h-[100dvh] w-full max-w-full min-w-0 flex-col overflow-hidden">
         <PageHeader
+          className="bg-sidebar"
           title={`Audit Logs (${count})`}
           description="Track all activities and changes within your workspace"
         >
@@ -162,9 +163,8 @@ export default function AuditLogsPage() {
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
                       <button
-                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white dark:border-zinc-700 dark:bg-zinc-900 ${
-                          isFilterOpen ? 'bg-accent' : ''
-                        }`}
+                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white dark:border-zinc-700 dark:bg-zinc-900 ${isFilterOpen ? 'bg-accent' : ''
+                          }`}
                       >
                         <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
                         {activeFilterCount > 0 && (
@@ -273,11 +273,10 @@ export default function AuditLogsPage() {
                               }}
                             >
                               <div
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
-                                  isSelected
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${isSelected
                                     ? 'border-black bg-transparent dark:border-white'
                                     : 'border-black/20 bg-transparent dark:border-white/30'
-                                }`}
+                                  }`}
                               >
                                 {isSelected && (
                                   <div className="h-2 w-2 rounded-full bg-black dark:bg-white" />
@@ -309,11 +308,10 @@ export default function AuditLogsPage() {
                                 }}
                               >
                                 <div
-                                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
-                                    isSelected
+                                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${isSelected
                                       ? 'border-black bg-transparent dark:border-white'
                                       : 'border-black/20 bg-transparent dark:border-white/30'
-                                  }`}
+                                    }`}
                                 >
                                   {isSelected && (
                                     <div className="h-2 w-2 rounded-full bg-black dark:bg-white" />
@@ -407,8 +405,8 @@ export default function AuditLogsPage() {
                             colSpan={
                               visibility
                                 ? Object.values(visibility).filter(
-                                    (v) => v !== false,
-                                  ).length + 1
+                                  (v) => v !== false,
+                                ).length + 1
                                 : 6
                             }
                             className="h-32 text-center"
@@ -427,8 +425,8 @@ export default function AuditLogsPage() {
                             colSpan={
                               visibility
                                 ? Object.values(visibility).filter(
-                                    (v) => v !== false,
-                                  ).length + 1
+                                  (v) => v !== false,
+                                ).length + 1
                                 : 6
                             }
                             className="h-32 text-center"
