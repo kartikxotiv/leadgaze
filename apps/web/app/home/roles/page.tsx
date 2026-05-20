@@ -126,15 +126,15 @@ export default function RolesPage() {
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
     if (draggedRoleIndex === null || draggedRoleIndex === index) return;
-    
+
     // Optimistic UI update
     const newOrderedRoles = [...orderedRoles];
     const draggedRole = newOrderedRoles[draggedRoleIndex];
     if (draggedRole) {
-       newOrderedRoles.splice(draggedRoleIndex, 1);
-       newOrderedRoles.splice(index, 0, draggedRole);
-       setDraggedRoleIndex(index);
-       setOrderedRoles(newOrderedRoles);
+      newOrderedRoles.splice(draggedRoleIndex, 1);
+      newOrderedRoles.splice(index, 0, draggedRole);
+      setDraggedRoleIndex(index);
+      setOrderedRoles(newOrderedRoles);
     }
   };
 
@@ -145,7 +145,7 @@ export default function RolesPage() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDraggedRoleIndex(null);
-    
+
     // Save to server
     const orderedIds = orderedRoles.map((r) => r.id);
     reorderRolesMutation.mutate(orderedIds);
@@ -200,8 +200,9 @@ export default function RolesPage() {
   return (
     <ModuleGuard module="roles">
       <div className="flex h-[100dvh] flex-col">
-        <div className="flex shrink-0 flex-col gap-2">
+        <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
           <PageHeader
+            className="bg-sidebar px-6 py-4"
             title={`Roles Management (${Array.isArray(roles) ? roles.length : 0})`}
             description="Create and manage workspace roles with custom permissions"
           >
@@ -244,56 +245,54 @@ export default function RolesPage() {
             </div>
           </PageHeader>
           {/* Summary Cards */}
-          <div className="px-6 pb-7">
-            <div className="-mt-1 grid grid-cols-1 gap-4 md:grid-cols-3">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-muted-foreground text-sm font-medium">
-                    Total Roles
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{roles.length}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-muted-foreground text-sm font-medium">
-                    System Roles
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">
-                    {Array.isArray(roles)
-                      ? roles.filter((r: Role) => r.is_system).length
-                      : 0}
+          <div className="bg-sidebar -mt-1 w-full max-w-full min-w-0 overflow-x-auto px-6 pb-7">
+            <div className="-mb-3 flex items-center gap-3">
+              <Card className="hover:border-primary/50 bg-card transition-all w-52 shrink-0">
+                <CardContent className="h-10 p-3 flex items-center">
+                  <div className="flex flex-col gap-1 w-full">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-purple-500" />
+                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
+                        Total Roles ({Array.isArray(roles) ? roles.length : 0})
+                      </span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-muted-foreground text-sm font-medium">
-                    Custom Roles
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">
-                    {Array.isArray(roles)
-                      ? roles.filter((r: Role) => !r.is_system).length
-                      : 0}
+              <Card className="hover:border-primary/50 bg-card transition-all w-52 shrink-0">
+                <CardContent className="h-10 p-3 flex items-center">
+                  <div className="flex flex-col gap-1 w-full">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-blue-500" />
+                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
+                        System Roles ({Array.isArray(roles) ? roles.filter((r: Role) => r.is_system).length : 0})
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:border-primary/50 bg-card transition-all w-52 shrink-0">
+                <CardContent className="h-10 p-3 flex items-center">
+                  <div className="flex flex-col gap-1 w-full">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-indigo-500" />
+                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
+                        Custom Roles ({Array.isArray(roles) ? roles.filter((r: Role) => !r.is_system).length : 0})
+                      </span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
           </div>
         </div>
-        <PageBody className="bg-sidebar sticky flex min-h-0 flex-1 shrink-0 flex-col overflow-hidden pt-6 pb-6">
+        <PageBody className="bg-sidebar sticky flex min-h-0 flex-1 shrink-0 flex-col overflow-hidden pt-4 pb-6">
           <div className="flex min-h-0 flex-1 flex-col space-y-6">
             {/* Roles Table */}
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
-              <CardHeader className="px-0">
+              <CardHeader className="p-4">
                 <div>
                   <CardTitle className="leading-tight">
                     Workspace Roles

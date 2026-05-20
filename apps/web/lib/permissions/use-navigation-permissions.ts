@@ -85,6 +85,13 @@ const ALL_NAV_ITEMS: NavItem[] = [
     featureKey: 'view',
   },
   {
+    label: 'Teams',
+    path: pathsConfig.app.teams,
+    Icon: Users,
+    moduleKey: 'team_members',
+    featureKey: 'view',
+  },
+  {
     label: 'Roles',
     path: pathsConfig.app.roles,
     Icon: ShieldCheck,

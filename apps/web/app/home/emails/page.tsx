@@ -40,10 +40,11 @@ export default function EmailsPage() {
   return (
     <>
       <PageHeader
+        className='bg-sidebar'
         title="Emails"
         description="Manage your email inbox, templates, and variables."
       />
-      <PageBody>
+      <PageBody className="bg-sidebar sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pt-6 pb-6">
         {availableTabs.length > 0 ? (
           <Tabs defaultValue={availableTabs[0]!.value}>
             <TabsList>

@@ -191,8 +191,9 @@ export default function TeamMembersPage() {
   return (
     <ModuleGuard module="team_members">
       <div className="flex h-[100dvh] flex-col overflow-hidden">
-        <div className="flex shrink-0 flex-col gap-2">
+        <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
           <PageHeader
+            className="bg-sidebar px-6 py-4"
             title={`Team Members (${members.length})`}
             description="Manage your workspace team members and permissions"
           >
@@ -237,41 +238,43 @@ export default function TeamMembersPage() {
             </div>
           </PageHeader>
           {/* Summary Cards - Fixed at top */}
-          <div className="px-6 pb-2">
-            <div className="grid shrink-0 grid-cols-1 gap-4 md:grid-cols-3">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-muted-foreground text-sm font-medium">
-                    Total Members
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{members.length}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-muted-foreground text-sm font-medium">
-                    Active
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">
-                    {activeMembers.length}
+          <div className="bg-sidebar -mt-1 w-full max-w-full min-w-0 overflow-x-auto px-6 pb-7">
+            <div className="-mb-3 flex items-center gap-3">
+              <Card className="hover:border-primary/50 bg-card transition-all w-52 shrink-0">
+                <CardContent className="h-10 p-3 flex items-center">
+                  <div className="flex flex-col gap-1 w-full">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-blue-500" />
+                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
+                        Total Members ({members.length})
+                      </span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-muted-foreground text-sm font-medium">
-                    Pending Invitations
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">
-                    {pendingMembers.length}
+              <Card className="hover:border-primary/50 bg-card transition-all w-52 shrink-0">
+                <CardContent className="h-10 p-3 flex items-center">
+                  <div className="flex flex-col gap-1 w-full">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-green-500" />
+                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
+                        Active ({activeMembers.length})
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:border-primary/50 bg-card transition-all w-52 shrink-0">
+                <CardContent className="h-10 p-3 flex items-center">
+                  <div className="flex flex-col gap-1 w-full">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-yellow-500" />
+                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
+                        Pending Invitations ({pendingMembers.length})
+                      </span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -279,11 +282,11 @@ export default function TeamMembersPage() {
           </div>
         </div>
 
-        <PageBody className="bg-sidebar sticky flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
+        <PageBody className="bg-sidebar sticky flex min-h-0 flex-1 flex-col overflow-hidden pt-4 pb-6">
           <div className="flex min-h-0 flex-1 flex-col space-y-6">
             {/* Team Members Table - Scrollable area */}
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
-              <CardHeader className="shrink-0 px-0 pt-2 pb-4">
+              <CardHeader className="shrink-0 p-4">
                 <div>
                   <CardTitle className="leading-tight">
                     Workspace Members
