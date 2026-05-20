@@ -91,7 +91,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        'bg-background/95 sticky z-10 flex items-center justify-between py-5 backdrop-blur-md lg:px-4',
+        'bg-background/95 sticky z-10 flex items-center justify-between py-5 backdrop-blur-md px-6',
         {
           'top-0': !isHeaderLayout,
           'top-14 border-b': isHeaderLayout,

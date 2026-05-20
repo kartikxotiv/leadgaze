@@ -145,10 +145,11 @@ export default function WorkspaceSettingsPage() {
   return (
     <>
       <PageHeader
+        className='bg-sidebar'
         title="Workspace Settings"
         description="Manage your workspace configuration, email accounts, and templates."
       />
-      <PageBody>
+      <PageBody className="bg-sidebar sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pt-6 pb-6">
         <Tabs defaultValue="general" className="space-y-6">
           <TabsList className="h-auto w-full justify-start gap-8 rounded-none border-b bg-transparent p-0">
             <TabsTrigger

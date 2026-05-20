@@ -34,7 +34,7 @@ function PersonalAccountSettingsPage() {
   const userId = user.id;
 
   return (
-    <PageBody>
+    <PageBody className="bg-sidebar sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pt-6 pb-6">
       <div className={'flex w-full flex-1 flex-col lg:max-w-5xl'}>
         <PersonalAccountSettingsContainer
           userId={userId}

@@ -76,6 +76,13 @@ const TEAM_MODULES: NavItem[] = [
     module: 'team_members',
   },
   {
+    label: 'Teams',
+    path: pathsConfig.app.teams,
+    Icon: Users,
+    feature: 'view',
+    module: 'team_members',
+  },
+  {
     label: 'Roles',
     path: pathsConfig.app.roles,
     Icon: ShieldCheck,
