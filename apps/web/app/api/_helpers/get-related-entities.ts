@@ -1,9 +1,19 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 
 /**
- * Get all related entity IDs for notes/meetings/reminders/documents
- * If viewing account/contact/opportunity, includes the lead it was created from
- * If viewing lead, includes all accounts/contacts/opportunities created from it
+ * Get all related entity IDs for cross-module activity visibility.
+ *
+ * Relationship rules:
+ * - lead      → accounts, contacts, opportunities created from this lead
+ * - account   → lead it was created from (+ that lead's siblings), contacts and
+ *               opportunities that belong to this account
+ * - contact   → account it belongs to (+ that account's children), lead it was
+ *               created from (+ that lead's siblings)
+ * - opportunity → account it belongs to (+ that account's children), primary
+ *                 contact, lead it was created from (+ that lead's siblings)
+ *
+ * Deleted entities (is_deleted = true) are excluded from related results.
+ * The starting entity itself is always included regardless of is_deleted.
  */
 export async function getRelatedEntityIds(
   supabase: SupabaseClient,
@@ -14,121 +24,143 @@ export async function getRelatedEntityIds(
     { entity_type: entityType, entity_id: entityId },
   ];
 
-  let leadId = entityType === 'lead' ? entityId : null;
-  let accountId = entityType === 'account' ? entityId : null;
+  /** Dedup-safe push */
+  const addEntity = (type: string, id: string) => {
+    if (!entityIds.find((e) => e.entity_type === type && e.entity_id === id)) {
+      entityIds.push({ entity_type: type, entity_id: id });
+    }
+  };
 
-  // 1. Resolve Lead ID and Account ID from the current entity
-  if (['account', 'contact', 'opportunity'].includes(entityType)) {
-    const tableMap: Record<string, string> = {
-      account: 'crm_accounts',
-      contact: 'crm_contacts',
-      opportunity: 'crm_opportunities',
-    };
-    const tableName = tableMap[entityType];
+  /**
+   * Expand all non-deleted siblings created from a given lead:
+   * accounts, contacts, and opportunities with created_from_lead_id = leadId.
+   */
+  const expandLeadSiblings = async (leadId: string) => {
+    const [accountsRes, contactsRes, opportunitiesRes] = await Promise.all([
+      supabase
+        .from('crm_accounts' as any)
+        .select('id')
+        .eq('created_from_lead_id', leadId)
+        .eq('is_deleted', false),
+      supabase
+        .from('crm_contacts' as any)
+        .select('id')
+        .eq('created_from_lead_id', leadId)
+        .eq('is_deleted', false),
+      supabase
+        .from('crm_opportunities' as any)
+        .select('id')
+        .eq('created_from_lead_id', leadId)
+        .eq('is_deleted', false),
+    ]);
 
-    // Only select account_id for contacts and opportunities
-    const selectQuery = ['contact', 'opportunity'].includes(entityType)
-      ? 'created_from_lead_id, account_id'
-      : 'created_from_lead_id';
+    if (accountsRes.error) throw accountsRes.error;
+    if (contactsRes.error) throw contactsRes.error;
+    if (opportunitiesRes.error) throw opportunitiesRes.error;
 
-    const { data: entity } = await supabase
-      .from(tableName as any)
-      .select(selectQuery)
+    accountsRes.data?.forEach((r) => addEntity('account', r.id));
+    contactsRes.data?.forEach((r) => addEntity('contact', r.id));
+    opportunitiesRes.data?.forEach((r) => addEntity('opportunity', r.id));
+  };
+
+  /**
+   * Expand all non-deleted children that belong to a given account:
+   * contacts and opportunities with account_id = accountId.
+   */
+  const expandAccountChildren = async (accountId: string) => {
+    const [contactsRes, opportunitiesRes] = await Promise.all([
+      supabase
+        .from('crm_contacts' as any)
+        .select('id')
+        .eq('account_id', accountId)
+        .eq('is_deleted', false),
+      supabase
+        .from('crm_opportunities' as any)
+        .select('id')
+        .eq('account_id', accountId)
+        .eq('is_deleted', false),
+    ]);
+
+    if (contactsRes.error) throw contactsRes.error;
+    if (opportunitiesRes.error) throw opportunitiesRes.error;
+
+    contactsRes.data?.forEach((r) => addEntity('contact', r.id));
+    opportunitiesRes.data?.forEach((r) => addEntity('opportunity', r.id));
+  };
+
+  // ── Lead ──────────────────────────────────────────────────────────────────
+  if (entityType === 'lead') {
+    await expandLeadSiblings(entityId);
+    return entityIds;
+  }
+
+  // ── Account ───────────────────────────────────────────────────────────────
+  if (entityType === 'account') {
+    const { data: account, error } = await supabase
+      .from('crm_accounts' as any)
+      .select('created_from_lead_id')
       .eq('id', entityId)
       .single() as any;
 
-    if (entity) {
-      if (entity.created_from_lead_id) {
-        leadId = entity.created_from_lead_id;
-        // Add lead to list if not already there
-        if (!entityIds.find(e => e.entity_type === 'lead' && e.entity_id === leadId)) {
-             entityIds.push({
-                entity_type: 'lead',
-                entity_id: leadId!,
-              });
-        }
-      }
-      if (entity.account_id && !accountId) {
-        accountId = entity.account_id;
-         if (!entityIds.find(e => e.entity_type === 'account' && e.entity_id === accountId)) {
-             entityIds.push({
-                entity_type: 'account',
-                entity_id: accountId!,
-              });
-        }
-      }
+    if (error) throw error;
+
+    if (account?.created_from_lead_id) {
+      addEntity('lead', account.created_from_lead_id);
+      await expandLeadSiblings(account.created_from_lead_id);
     }
+
+    await expandAccountChildren(entityId);
+    return entityIds;
   }
 
-  // 2. If we have a Lead ID, fetch all siblings (Accounts, Contacts, Opportunities created from this lead)
-  if (leadId) {
-    // Get accounts
-    const { data: accounts } = await supabase
-      .from('crm_accounts' as any)
-      .select('id')
-      .eq('created_from_lead_id', leadId)
-      .eq('is_deleted', false);
-    
-    accounts?.forEach((acc) => {
-        if (!entityIds.find(e => e.entity_type === 'account' && e.entity_id === acc.id)) {
-            entityIds.push({ entity_type: 'account', entity_id: acc.id });
-        }
-    });
-
-    // Get contacts
-    const { data: contacts } = await supabase
+  // ── Contact ───────────────────────────────────────────────────────────────
+  if (entityType === 'contact') {
+    const { data: contact, error } = await supabase
       .from('crm_contacts' as any)
-      .select('id')
-      .eq('created_from_lead_id', leadId)
-      .eq('is_deleted', false);
-      
-    contacts?.forEach((cont) => {
-       if (!entityIds.find(e => e.entity_type === 'contact' && e.entity_id === cont.id)) {
-            entityIds.push({ entity_type: 'contact', entity_id: cont.id });
-        }
-    });
+      .select('account_id, created_from_lead_id')
+      .eq('id', entityId)
+      .single() as any;
 
-    // Get opportunities
-    const { data: opportunities } = await supabase
-      .from('crm_opportunities' as any)
-      .select('id')
-      .eq('created_from_lead_id', leadId)
-      .eq('is_deleted', false);
+    if (error) throw error;
 
-    opportunities?.forEach((opp) => {
-        if (!entityIds.find(e => e.entity_type === 'opportunity' && e.entity_id === opp.id)) {
-            entityIds.push({ entity_type: 'opportunity', entity_id: opp.id });
-        }
-    });
+    if (contact?.account_id) {
+      addEntity('account', contact.account_id);
+      await expandAccountChildren(contact.account_id);
+    }
+
+    if (contact?.created_from_lead_id) {
+      addEntity('lead', contact.created_from_lead_id);
+      await expandLeadSiblings(contact.created_from_lead_id);
+    }
+
+    return entityIds;
   }
 
-  // 3. If we have an Account ID (either input or found via relation), fetch its child Contacts and Opportunities
-  if (accountId) {
-      // Get contacts for this account
-      const { data: contacts } = await supabase
-      .from('crm_contacts' as any)
-      .select('id')
-      .eq('account_id', accountId)
-      .eq('is_deleted', false);
-
-      contacts?.forEach((cont) => {
-        if (!entityIds.find(e => e.entity_type === 'contact' && e.entity_id === cont.id)) {
-            entityIds.push({ entity_type: 'contact', entity_id: cont.id });
-        }
-      });
-
-      // Get opportunities for this account
-      const { data: opportunities } = await supabase
+  // ── Opportunity ───────────────────────────────────────────────────────────
+  if (entityType === 'opportunity') {
+    const { data: opportunity, error } = await supabase
       .from('crm_opportunities' as any)
-      .select('id')
-      .eq('account_id', accountId)
-      .eq('is_deleted', false);
+      .select('account_id, primary_contact_id, created_from_lead_id')
+      .eq('id', entityId)
+      .single() as any;
 
-       opportunities?.forEach((opp) => {
-        if (!entityIds.find(e => e.entity_type === 'opportunity' && e.entity_id === opp.id)) {
-            entityIds.push({ entity_type: 'opportunity', entity_id: opp.id });
-        }
-    });
+    if (error) throw error;
+
+    if (opportunity?.account_id) {
+      addEntity('account', opportunity.account_id);
+      await expandAccountChildren(opportunity.account_id);
+    }
+
+    if (opportunity?.primary_contact_id) {
+      addEntity('contact', opportunity.primary_contact_id);
+    }
+
+    if (opportunity?.created_from_lead_id) {
+      addEntity('lead', opportunity.created_from_lead_id);
+      await expandLeadSiblings(opportunity.created_from_lead_id);
+    }
+
+    return entityIds;
   }
 
   return entityIds;

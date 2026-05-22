@@ -12,6 +12,8 @@ import {
   successDataResponse,
   successListDataResponse,
 } from '~/utils/response-handler';
+import { getEntityName } from '../../_helpers/get-entity-name';
+import { getRelatedEntityIds } from '../../_helpers/get-related-entities';
 
 export const getEmailActivity = catchAsync(async ({ request }) => {
   const { searchParams } = new URL(request.url);
@@ -30,11 +32,59 @@ export const getEmailActivity = catchAsync(async ({ request }) => {
   }
 
   const supabase = getSupabaseServerClient();
+
+  // ── Entity-scoped path: cross-module fan-out ──────────────────────────────
+  if (entityId && entityType) {
+    const relatedEntities = await getRelatedEntityIds(supabase, entityType, entityId);
+
+    const emailPromises = relatedEntities.map(({ entity_type, entity_id }) =>
+      supabase
+        .from('emails')
+        .select('*')
+        .eq('entity_id', entity_id)
+        .eq('entity_type', entity_type),
+    );
+
+    const results = await Promise.all(emailPromises);
+    const allEmails = results.flatMap((r) => r.data || []);
+
+    // Deduplicate by email id
+    const unique = Array.from(
+      new Map(allEmails.map((e) => [e.id, e])).values(),
+    );
+
+    // Sort: received_at DESC, fallback to created_at DESC
+    unique.sort((a, b) => {
+      const aTime = new Date(a.received_at || a.created_at).getTime();
+      const bTime = new Date(b.received_at || b.created_at).getTime();
+      return bTime - aTime;
+    });
+
+    const totalCount = unique.length;
+
+    // Apply pagination to the combined sorted result
+    const paginated = unique.slice(offset, offset + limit);
+
+    // Annotate each email with the origin entity name
+    const withNames = await Promise.all(
+      paginated.map(async (email) => ({
+        ...email,
+        entity_name: await getEntityName(supabase, email.entity_type, email.entity_id),
+      })),
+    );
+
+    return successListDataResponse(withNames, {
+      object: 'email_activity',
+      count: totalCount,
+      limit,
+      offset,
+    });
+  }
+
+  // ── Workspace inbox path (unchanged) ─────────────────────────────────────
   let query = supabase.from('emails').select('*', { count: 'exact' });
 
-  if (entityId && entityType) {
-    query = query.eq('entity_id', entityId).eq('entity_type', entityType);
-  } else if (workspaceId) {
+  if (workspaceId) {
     const canViewInbox = await hasWorkspaceEmailFeatureAccess(
       supabase,
       workspaceId,

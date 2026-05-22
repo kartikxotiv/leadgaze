@@ -6,6 +6,7 @@ import {
     catchAsync,
     successDataResponse
 } from '~/utils/response-handler';
+import { getEntityName } from '../_helpers/get-entity-name';
 import { getRelatedEntityIds } from '../_helpers/get-related-entities';
 
 /**
@@ -81,7 +82,15 @@ export const getCalls = catchAsync(
                 new Date(b.date_time).getTime() - new Date(a.date_time).getTime(),
         );
 
-        return successDataResponse('Calls retrieved', uniqueCalls);
+        // Annotate each call with the origin entity name for cross-module display
+        const annotatedCalls = await Promise.all(
+            uniqueCalls.map(async (call) => ({
+                ...call,
+                entity_name: await getEntityName(supabase, call.entity_type, call.entity_id),
+            })),
+        );
+
+        return successDataResponse('Calls retrieved', annotatedCalls);
     },
 );
 

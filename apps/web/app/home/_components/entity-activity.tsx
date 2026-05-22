@@ -284,10 +284,9 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                       {reminder.created_by_user && (
                         <span>by {reminder.created_by_user.name}</span>
                       )}
-                      {reminder.entity_name &&
-                        reminder.entity_type !== entityType && (
+                      {reminder.entity_type !== entityType && (
                           <span className="text-blue-600 dark:text-blue-400">
-                            from {reminder.entity_type}: {reminder.entity_name}
+                            From {reminder.entity_type.charAt(0).toUpperCase() + reminder.entity_type.slice(1)}{reminder.entity_name ? `: ${reminder.entity_name}` : ''}
                           </span>
                         )}
                     </div>
@@ -589,10 +588,9 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
                     {meeting.created_by_user && (
                       <span>by {meeting.created_by_user.name}</span>
                     )}
-                    {meeting.entity_name &&
-                      meeting.entity_type !== entityType && (
+                    {meeting.entity_type !== entityType && (
                         <span className="text-blue-600 dark:text-blue-400">
-                          from {meeting.entity_type}: {meeting.entity_name}
+                          From {meeting.entity_type.charAt(0).toUpperCase() + meeting.entity_type.slice(1)}{meeting.entity_name ? `: ${meeting.entity_name}` : ''}
                         </span>
                       )}
                   </div>
