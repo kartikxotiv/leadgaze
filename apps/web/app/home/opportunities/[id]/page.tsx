@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Building2,
@@ -14,6 +14,8 @@ import {
   Clock,
   FileText,
   Flag,
+  Mail,
+  Phone,
   Tag,
   Target,
   Trash2,
@@ -48,6 +50,8 @@ import {
 } from '~/lib/permissions/use-permissions';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { type Contact, getContactsService } from '~/services/contacts.service';
+import { getWorkspaceEmailAccountService } from '~/services/email.service';
 import {
   getOpportunityByIdService,
   updateOpportunityService,
@@ -60,8 +64,11 @@ import {
   EntityMeetings,
   EntityReminders,
 } from '../../_components/entity-activity';
+import { EntityCalls } from '../../_components/entity-calls';
 import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
+import { EmailLeadDialog } from '../../leads/components/email-lead-dialog';
+import { LogCallDialog } from '../../leads/components/log-call-dialog';
 import { EditOpportunityDialog } from '../components/edit-opportunity-dialog';
 import { OpportunityAssignees } from '../components/opportunity-assignees';
 import { OpportunityStatusTimeline } from '../components/opportunity-status-timeline';
@@ -69,9 +76,12 @@ import { OpportunityStatusTimeline } from '../components/opportunity-status-time
 export default function OpportunityDetailsPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const id = params?.id as string;
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
 
   const {
     data: opportunity,
@@ -96,6 +106,55 @@ export default function OpportunityDetailsPage() {
     queryFn: () => getOpportunityStatusesService(currentWorkspace!.id),
     enabled: !!currentWorkspace?.id,
   });
+
+  const { data: workspaceEmailAccounts = [] } = useQuery({
+    queryKey: ['workspace-email-accounts', currentWorkspace?.id],
+    queryFn: () => getWorkspaceEmailAccountService(currentWorkspace?.id || ''),
+    enabled: !!currentWorkspace?.id,
+  });
+
+  const { data: accountContactsData } = useQuery({
+    queryKey: ['contacts', 'opportunity-account', opportunity?.account_id],
+    queryFn: () =>
+      getContactsService({
+        workspaceId: opportunity!.workspace_id,
+        accountId: opportunity!.account_id,
+        limit: 1000,
+      }),
+    enabled: !!opportunity?.workspace_id && !!opportunity?.account_id,
+  });
+  const accountContacts = accountContactsData?.data || [];
+  const opportunityEmailRecipients = useMemo(
+    () =>
+      accountContacts.flatMap((contact: Contact) => {
+        const name =
+          `${contact.first_name || ''} ${contact.last_name || ''}`.trim() ||
+          contact.email ||
+          'Contact';
+
+        return [
+          ...(contact.email
+            ? [
+                {
+                  email: contact.email,
+                  name,
+                  label: 'Primary Email',
+                },
+              ]
+            : []),
+          ...(contact.alt_email
+            ? [
+                {
+                  email: contact.alt_email,
+                  name,
+                  label: 'Alt Email',
+                },
+              ]
+            : []),
+        ];
+      }),
+    [accountContacts],
+  );
 
   const { data: user } = useUser();
   const editPermission = usePermissionDetail('opportunities', 'edit');
@@ -170,6 +229,39 @@ export default function OpportunityDetailsPage() {
             </Link>
           </Button>
           <div className="flex gap-2">
+            {canEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsLogCallDialogOpen(true)}
+                className="p-3"
+                title="Log a call"
+              >
+                <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
+                  <Phone className="h-3 w-3 text-white" />
+                </div>
+              </Button>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${
+                opportunityEmailRecipients.length === 0 ? 'opacity-50' : ''
+              }`}
+              disabled={opportunityEmailRecipients.length === 0}
+              onClick={() => setIsEmailDialogOpen(true)}
+              title={
+                opportunityEmailRecipients.length === 0
+                  ? 'Opportunity account has no contact email addresses'
+                  : 'Send email to opportunity contact'
+              }
+            >
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
+                <Mail className="h-3.5 w-3.5 text-white" />
+              </div>
+            </Button>
+
             {rbacCanAccess('opportunities', 'change_stage') && (
               <Select
                 value={opportunity.stage_id}
@@ -488,10 +580,12 @@ export default function OpportunityDetailsPage() {
             <EntityNotes entityType="opportunity" entityId={id} />
 
             {/* Activity Sections */}
+            <EntityCalls entityType="opportunity" entityId={id} />
             <EntityEmails
               entityId={id}
               entityType="opportunity"
               entityName={opportunity.opportunity_name}
+              recipientOptions={opportunityEmailRecipients}
             />
             <EntityReminders entityType="opportunity" entityId={id} />
             <EntityMeetings entityType="opportunity" entityId={id} />
@@ -608,6 +702,33 @@ export default function OpportunityDetailsPage() {
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         opportunity={opportunity}
+      />
+
+      {currentWorkspace?.id && (
+        <LogCallDialog
+          open={isLogCallDialogOpen}
+          onOpenChange={setIsLogCallDialogOpen}
+          onSuccess={async () => {
+            setIsLogCallDialogOpen(false);
+            await queryClient.invalidateQueries({
+              queryKey: ['calls', currentWorkspace.id, 'opportunity', id],
+            });
+          }}
+          entityType="opportunity"
+          entityId={id}
+          workspaceId={currentWorkspace.id}
+          defaultContactName={opportunity.opportunity_name}
+        />
+      )}
+
+      <EmailLeadDialog
+        open={isEmailDialogOpen}
+        onOpenChange={setIsEmailDialogOpen}
+        leadName={opportunity.opportunity_name}
+        recipientOptions={opportunityEmailRecipients}
+        workspaceEmailAccounts={workspaceEmailAccounts}
+        entityId={id}
+        entityType="opportunity"
       />
     </ModuleGuard>
   );

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Building2,
@@ -35,6 +35,7 @@ import {
   TooltipTrigger,
 } from '@kit/ui/tooltip';
 
+import { CreateContactDialog } from '~/home/contacts/components/create-contact-dialog';
 import {
   useCanAccessData,
   usePermissionDetail,
@@ -42,7 +43,8 @@ import {
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountByIdService } from '~/services/accounts.service';
-import { getContactsService } from '~/services/contacts.service';
+import { type Contact, getContactsService } from '~/services/contacts.service';
+import { getWorkspaceEmailAccountService } from '~/services/email.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
 
 import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
@@ -51,21 +53,26 @@ import {
   EntityMeetings,
   EntityReminders,
 } from '../../_components/entity-activity';
+import { EntityCalls } from '../../_components/entity-calls';
 import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
+import { EmailLeadDialog } from '../../leads/components/email-lead-dialog';
+import { LogCallDialog } from '../../leads/components/log-call-dialog';
 import { OpportunityDialog } from '../../opportunities/components/opportunity-dialog';
 import { AccountAssignees } from '../components/account-assignees';
 import { EditAccountDialog } from '../components/edit-account-dialog';
-import { CreateContactDialog } from '~/home/contacts/components/create-contact-dialog';
 
 export default function AccountDetailsPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const id = params?.id as string;
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
   const [isOpportunityDialogOpen, setIsOpportunityDialogOpen] = useState(false);
+  const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const { currentWorkspace: workspace } = useRBAC();
   const {
     data: account,
@@ -81,11 +88,43 @@ export default function AccountDetailsPage() {
 
   const { data: contactsData } = useQuery({
     queryKey: ['contacts', 'account', id],
-    queryFn: () => getContactsService({ workspaceId, accountId: id }),
+    queryFn: () =>
+      getContactsService({ workspaceId, accountId: id, limit: 1000 }),
     enabled: !!workspaceId && !!id,
   });
 
   const contacts = contactsData?.data || [];
+  const accountEmailRecipients = useMemo(
+    () =>
+      contacts.flatMap((contact: Contact) => {
+        const name =
+          `${contact.first_name || ''} ${contact.last_name || ''}`.trim() ||
+          contact.email ||
+          'Contact';
+
+        return [
+          ...(contact.email
+            ? [
+                {
+                  email: contact.email,
+                  name,
+                  label: 'Primary Email',
+                },
+              ]
+            : []),
+          ...(contact.alt_email
+            ? [
+                {
+                  email: contact.alt_email,
+                  name,
+                  label: 'Alt Email',
+                },
+              ]
+            : []),
+        ];
+      }),
+    [contacts],
+  );
 
   const { data: user } = useUser();
   const editPermission = usePermissionDetail('accounts', 'edit');
@@ -99,6 +138,12 @@ export default function AccountDetailsPage() {
   });
 
   const opportunities = opportunitiesData?.data || [];
+
+  const { data: workspaceEmailAccounts = [] } = useQuery({
+    queryKey: ['workspace-email-accounts', workspace?.id],
+    queryFn: () => getWorkspaceEmailAccountService(workspace?.id || ''),
+    enabled: !!workspace?.id,
+  });
 
   if (isLoading) {
     return (
@@ -137,15 +182,50 @@ export default function AccountDetailsPage() {
               Back
             </Link>
           </Button>
-          {canEdit && (
+          <div className="flex gap-2">
+            {canEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsLogCallDialogOpen(true)}
+                className="p-3"
+                title="Log a call"
+              >
+                <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
+                  <Phone className="h-3 w-3 text-white" />
+                </div>
+              </Button>
+            )}
+
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setIsEditDialogOpen(true)}
+              className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${
+                accountEmailRecipients.length === 0 ? 'opacity-50' : ''
+              }`}
+              disabled={accountEmailRecipients.length === 0}
+              onClick={() => setIsEmailDialogOpen(true)}
+              title={
+                accountEmailRecipients.length === 0
+                  ? 'Account has no contact email addresses'
+                  : 'Send email to account contact'
+              }
             >
-              Edit Account
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
+                <Mail className="h-3.5 w-3.5 text-white" />
+              </div>
             </Button>
-          )}
+
+            {canEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditDialogOpen(true)}
+              >
+                Edit Account
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="flex items-start justify-between">
@@ -247,9 +327,9 @@ export default function AccountDetailsPage() {
                     <span className="text-sm">
                       {account.annual_revenue
                         ? new Intl.NumberFormat('en-US', {
-                          style: 'currency',
-                          currency: 'USD',
-                        }).format(account.annual_revenue)
+                            style: 'currency',
+                            currency: 'USD',
+                          }).format(account.annual_revenue)
                         : '-'}
                     </span>
                   </div>
@@ -455,8 +535,8 @@ export default function AccountDetailsPage() {
                                 Expected Close:{' '}
                                 {opp.expected_close_date
                                   ? new Date(
-                                    opp.expected_close_date,
-                                  ).toLocaleDateString()
+                                      opp.expected_close_date,
+                                    ).toLocaleDateString()
                                   : '-'}
                               </p>
                               <p>Probability: {opp.probability}%</p>
@@ -494,10 +574,12 @@ export default function AccountDetailsPage() {
             <EntityNotes entityType="account" entityId={id} />
 
             {/* Activity Sections */}
+            <EntityCalls entityType="account" entityId={id} />
             <EntityEmails
               entityId={id}
               entityType="account"
               entityName={account.account_name}
+              recipientOptions={accountEmailRecipients}
             />
             <EntityReminders entityType="account" entityId={id} />
             <EntityMeetings entityType="account" entityId={id} />
@@ -650,6 +732,34 @@ export default function AccountDetailsPage() {
         isOpen={isOpportunityDialogOpen}
         onOpenChange={setIsOpportunityDialogOpen}
         defaultAccountId={id}
+      />
+
+      {workspace?.id && (
+        <LogCallDialog
+          open={isLogCallDialogOpen}
+          onOpenChange={setIsLogCallDialogOpen}
+          onSuccess={async () => {
+            setIsLogCallDialogOpen(false);
+            await queryClient.invalidateQueries({
+              queryKey: ['calls', workspace.id, 'account', id],
+            });
+          }}
+          entityType="account"
+          entityId={id}
+          workspaceId={workspace.id}
+          defaultContactName={account.account_name}
+          defaultPhoneNumber={account.phone_number}
+        />
+      )}
+
+      <EmailLeadDialog
+        open={isEmailDialogOpen}
+        onOpenChange={setIsEmailDialogOpen}
+        leadName={account.account_name}
+        recipientOptions={accountEmailRecipients}
+        workspaceEmailAccounts={workspaceEmailAccounts}
+        entityId={id}
+        entityType="account"
       />
     </ModuleGuard>
   );

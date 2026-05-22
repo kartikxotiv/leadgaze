@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -14,6 +14,7 @@ import {
   Clock,
   Image as ImageIcon,
   Italic,
+  LayoutTemplate,
   Link as LinkIcon,
   List,
   ListOrdered,
@@ -24,7 +25,6 @@ import {
   Type,
   Underline,
   X,
-  LayoutTemplate,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -56,20 +56,26 @@ import {
 import { Separator } from '@kit/ui/separator';
 import { cn } from '@kit/ui/utils';
 
+import { replaceTemplateVariables } from '~/lib/email/template-utils';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
-  getLeadByIdService,
-  sendLeadEmailService,
-} from '~/services/leads.service';
+  getEmailTemplatesService,
+  getWorkspaceVariablesService,
+} from '~/services/email-templates.service';
 import {
   EmailAccount,
   saveEmailActivityService,
 } from '~/services/email.service';
-import { 
-  getEmailTemplatesService, 
-  getWorkspaceVariablesService 
-} from '~/services/email-templates.service';
-import { replaceTemplateVariables } from '~/lib/email/template-utils';
+import {
+  getLeadByIdService,
+  sendLeadEmailService,
+} from '~/services/leads.service';
+
+interface EmailRecipientOption {
+  email: string;
+  name?: string;
+  label?: string;
+}
 
 interface EmailLeadDialogProps {
   open: boolean;
@@ -86,6 +92,8 @@ interface EmailLeadDialogProps {
     email: string;
     name?: string;
   };
+  recipientOptions?: EmailRecipientOption[];
+  initialRecipientEmail?: string;
 }
 
 export function EmailLeadDialog({
@@ -98,7 +106,9 @@ export function EmailLeadDialog({
   workspaceEmailAccounts,
   entityId,
   entityType = 'lead',
-  replyTo
+  replyTo,
+  recipientOptions = [],
+  initialRecipientEmail = '',
 }: EmailLeadDialogProps) {
   const queryClient = useQueryClient();
   const { canAccess } = useRBAC();
@@ -113,6 +123,7 @@ export function EmailLeadDialog({
   const [bccRecipients, setBccRecipients] = useState('');
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
+  const [selectedRecipientEmail, setSelectedRecipientEmail] = useState('');
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -124,16 +135,46 @@ export function EmailLeadDialog({
       (account) => account.id.toString() === selectedAccountId,
     ) || sendableAccounts[0];
   const canSendEmails = canAccess('emails', 'send_emails');
+  const fallbackRecipientEmail =
+    initialRecipientEmail ||
+    replyTo?.email ||
+    leadEmail ||
+    initialDraft?.to_emails ||
+    '';
+  const recipients = useMemo<EmailRecipientOption[]>(
+    () =>
+      [
+        ...(replyTo?.email
+          ? [{ email: replyTo.email, name: replyTo.name, label: 'Reply To' }]
+          : []),
+        ...recipientOptions,
+        ...(leadEmail ? [{ email: leadEmail, name: leadName }] : []),
+        ...(initialDraft?.to_emails
+          ? [{ email: initialDraft.to_emails, name: initialDraft.to_emails }]
+          : []),
+      ].filter(
+        (recipient, index, all) =>
+          recipient.email &&
+          all.findIndex((item) => item.email === recipient.email) === index,
+      ),
+    [initialDraft?.to_emails, leadEmail, leadName, recipientOptions, replyTo],
+  );
+  const selectedRecipient =
+    recipients.find(
+      (recipient) => recipient.email === selectedRecipientEmail,
+    ) || recipients[0];
 
   const { data: templates = [] } = useQuery({
     queryKey: ['email-templates', selectedAccount?.workspace_id],
-    queryFn: () => getEmailTemplatesService(selectedAccount?.workspace_id || ''),
+    queryFn: () =>
+      getEmailTemplatesService(selectedAccount?.workspace_id || ''),
     enabled: !!selectedAccount?.workspace_id && open,
   });
 
   const { data: workspaceVariables = [] } = useQuery({
     queryKey: ['workspace-variables', selectedAccount?.workspace_id],
-    queryFn: () => getWorkspaceVariablesService(selectedAccount?.workspace_id || ''),
+    queryFn: () =>
+      getWorkspaceVariablesService(selectedAccount?.workspace_id || ''),
     enabled: !!selectedAccount?.workspace_id && open,
   });
 
@@ -162,6 +203,21 @@ export function EmailLeadDialog({
     }
   }, [sendableAccounts]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    setSelectedRecipientEmail((current) => {
+      if (
+        current &&
+        recipients.some((recipient) => recipient.email === current)
+      ) {
+        return current;
+      }
+
+      return fallbackRecipientEmail || recipients[0]?.email || '';
+    });
+  }, [open, fallbackRecipientEmail, recipients]);
+
   // Load activity on open
   useEffect(() => {
     const populateFields = (draft: any) => {
@@ -170,7 +226,8 @@ export function EmailLeadDialog({
         editorRef.current.innerHTML = draft.html_body || draft.body || '';
       } else {
         setTimeout(() => {
-           if (editorRef.current) editorRef.current.innerHTML = draft.html_body || draft.body || '';
+          if (editorRef.current)
+            editorRef.current.innerHTML = draft.html_body || draft.body || '';
         }, 100);
       }
       if (draft.scheduled_at) {
@@ -270,7 +327,7 @@ export function EmailLeadDialog({
     const message = editorRef.current?.innerHTML || '';
     if (!message && !subject) return;
     const recipientEmail =
-      replyTo?.email || leadEmail || initialDraft?.to_emails || '';
+      selectedRecipientEmail || selectedRecipient?.email || '';
 
     setIsSavingDraft(true);
     try {
@@ -368,7 +425,7 @@ export function EmailLeadDialog({
     }
 
     const recipientEmail =
-      replyTo?.email || leadEmail || initialDraft?.to_emails || '';
+      selectedRecipientEmail || selectedRecipient?.email || '';
 
     if (!recipientEmail) {
       toast.error('Recipient email not found');
@@ -434,22 +491,28 @@ export function EmailLeadDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl overflow-hidden border-none bg-white p-0 shadow-2xl dark:bg-slate-950 max-h-[95vh] h-auto flex flex-col">
+      <DialogContent className="flex h-auto max-h-[95vh] max-w-2xl flex-col overflow-hidden border-none bg-white p-0 shadow-2xl dark:bg-slate-950">
         <DialogHeader className="sr-only">
           <DialogTitle>Email Lead</DialogTitle>
         </DialogHeader>
 
         {/* Custom Header */}
-        <div className="flex items-center justify-between border-b px-4 py-1.5 shrink-0 bg-white dark:bg-slate-950">
+        <div className="flex shrink-0 items-center justify-between border-b bg-white py-1.5 pr-12 pl-4 dark:bg-slate-950">
           <div className="flex items-center gap-2">
             <Mail className="h-5 w-5 text-slate-600" />
             <span className="text-lg font-semibold text-slate-800 dark:text-slate-200">
               Email
             </span>
           </div>
-          <div className="flex items-center gap-3 pr-2">
-            <Select onValueChange={(val) => handleTemplateSelect(templates.find((t: any) => t.id.toString() === val))}>
-              <SelectTrigger className="h-8 w-40 border-slate-200 bg-white text-xs dark:bg-slate-900 focus:ring-0">
+          <div className="flex items-center gap-3">
+            <Select
+              onValueChange={(val) =>
+                handleTemplateSelect(
+                  templates.find((t: any) => t.id.toString() === val),
+                )
+              }
+            >
+              <SelectTrigger className="h-8 w-40 border-slate-200 bg-white text-xs focus:ring-0 dark:bg-slate-900">
                 <div className="flex items-center gap-2">
                   <LayoutTemplate className="h-3.5 w-3.5 text-blue-500" />
                   <SelectValue placeholder="Use Template" />
@@ -457,10 +520,15 @@ export function EmailLeadDialog({
               </SelectTrigger>
               <SelectContent>
                 {templates.length === 0 ? (
-                  <div className="p-2 text-xs text-center text-slate-500">No templates found</div>
+                  <div className="p-2 text-center text-xs text-slate-500">
+                    No templates found
+                  </div>
                 ) : (
                   templates.map((template: any) => (
-                    <SelectItem key={template.id} value={template.id.toString()}>
+                    <SelectItem
+                      key={template.id}
+                      value={template.id.toString()}
+                    >
                       {template.name}
                     </SelectItem>
                   ))
@@ -470,7 +538,7 @@ export function EmailLeadDialog({
           </div>
         </div>
 
-        <div className="space-y-1 p-3 overflow-y-auto flex-1">
+        <div className="flex-1 space-y-1 overflow-y-auto p-3">
           {/* From Field - Real Dropdown */}
           <div className="flex items-center gap-2">
             <Label className="w-12 text-sm text-slate-500">
@@ -503,23 +571,34 @@ export function EmailLeadDialog({
           {/* To Field - Real Dropdown */}
           <div className="flex items-center gap-2">
             <Label className="w-12 text-sm text-slate-500">To</Label>
-            <Select defaultValue="lead">
+            <Select
+              value={selectedRecipientEmail || selectedRecipient?.email || ''}
+              onValueChange={setSelectedRecipientEmail}
+            >
               <SelectTrigger className="h-8 flex-1 border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700 focus:ring-0 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-                <SelectValue />
+                <SelectValue placeholder="Select recipient" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="lead">
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant="secondary"
-                      className="flex items-center gap-1 border-emerald-100 bg-emerald-50 text-emerald-700"
-                    >
-                      <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                      {replyTo?.name || leadName || 'Recipient'}
-                    </Badge>
-                    <span className="text-xs text-slate-500">{`<${replyTo?.email || leadEmail}>`}</span>
-                  </div>
-                </SelectItem>
+                {recipients.length === 0 ? (
+                  <SelectItem value="no-recipient" disabled>
+                    No contact email available
+                  </SelectItem>
+                ) : (
+                  recipients.map((recipient) => (
+                    <SelectItem key={recipient.email} value={recipient.email}>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="secondary"
+                          className="flex items-center gap-1 border-emerald-100 bg-emerald-50 text-emerald-700"
+                        >
+                          <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                          {recipient.name || recipient.label || 'Recipient'}
+                        </Badge>
+                        <span className="text-xs text-slate-500">{`<${recipient.email}>`}</span>
+                      </div>
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
             <div className="flex min-w-[60px] justify-end gap-2">
@@ -755,8 +834,8 @@ export function EmailLeadDialog({
             <div
               ref={editorRef}
               contentEditable
-              className="min-h-[180px] max-h-[350px] overflow-y-auto bg-white p-3 text-sm text-slate-800 outline-none dark:bg-slate-950 dark:text-slate-200 [&_ol]:list-decimal [&_ol]:pl-8 [&_ul]:list-disc [&_ul]:pl-8"
-              onInput={() => { }}
+              className="max-h-[350px] min-h-[180px] overflow-y-auto bg-white p-3 text-sm text-slate-800 outline-none dark:bg-slate-950 dark:text-slate-200 [&_ol]:list-decimal [&_ol]:pl-8 [&_ul]:list-disc [&_ul]:pl-8"
+              onInput={() => {}}
             />
           </div>
         </div>
@@ -787,7 +866,7 @@ export function EmailLeadDialog({
                 className={cn(
                   'flex items-center gap-2 rounded-full border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900',
                   scheduledAt &&
-                  'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20',
+                    'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20',
                 )}
                 disabled={isSending}
               >
