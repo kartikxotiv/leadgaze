@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Briefcase,
@@ -41,6 +41,7 @@ import {
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getContactByIdService } from '~/services/contacts.service';
+import { getWorkspaceEmailAccountService } from '~/services/email.service';
 
 import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
 import {
@@ -48,17 +49,23 @@ import {
   EntityMeetings,
   EntityReminders,
 } from '../../_components/entity-activity';
+import { EntityCalls } from '../../_components/entity-calls';
 import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
+import { EmailLeadDialog } from '../../leads/components/email-lead-dialog';
+import { LogCallDialog } from '../../leads/components/log-call-dialog';
 import { ContactAssignees } from '../components/contact-assignees';
 import { EditContactDialog } from '../components/edit-contact-dialog';
 
 export default function ContactDetailsPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const id = params?.id as string;
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
 
   const {
     data: contact,
@@ -74,6 +81,30 @@ export default function ContactDetailsPage() {
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const editPermission = usePermissionDetail('contacts', 'edit');
   const canEdit = useCanAccessData(editPermission, contact?.owner_id, user?.id);
+
+  const contactEmailRecipients = useMemo(() => {
+    if (!contact) return [];
+
+    const name =
+      `${contact.first_name || ''} ${contact.last_name || ''}`.trim() ||
+      contact.email ||
+      'Contact';
+
+    return [
+      ...(contact.email
+        ? [{ email: contact.email, name, label: 'Primary Email' }]
+        : []),
+      ...(contact.alt_email
+        ? [{ email: contact.alt_email, name, label: 'Alt Email' }]
+        : []),
+    ];
+  }, [contact]);
+
+  const { data: workspaceEmailAccounts = [] } = useQuery({
+    queryKey: ['workspace-email-accounts', workspace?.id],
+    queryFn: () => getWorkspaceEmailAccountService(workspace?.id || ''),
+    enabled: !!workspace?.id,
+  });
 
   if (isLoading) {
     return (
@@ -112,15 +143,50 @@ export default function ContactDetailsPage() {
               Back
             </Link>
           </Button>
-          {canEdit && (
+          <div className="flex gap-2">
+            {canEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsLogCallDialogOpen(true)}
+                className="p-3"
+                title="Log a call"
+              >
+                <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
+                  <Phone className="h-3 w-3 text-white" />
+                </div>
+              </Button>
+            )}
+
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setIsEditDialogOpen(true)}
+              className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${
+                contactEmailRecipients.length === 0 ? 'opacity-50' : ''
+              }`}
+              disabled={contactEmailRecipients.length === 0}
+              onClick={() => setIsEmailDialogOpen(true)}
+              title={
+                contactEmailRecipients.length === 0
+                  ? 'Contact has no email address'
+                  : 'Send email to contact'
+              }
             >
-              Edit Contact
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
+                <Mail className="h-3.5 w-3.5 text-white" />
+              </div>
             </Button>
-          )}
+
+            {canEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditDialogOpen(true)}
+              >
+                Edit Contact
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="flex items-start justify-between">
@@ -328,11 +394,32 @@ export default function ContactDetailsPage() {
             <EntityNotes entityType="contact" entityId={id} />
 
             {/* Activity Sections */}
+            <EntityCalls entityType="contact" entityId={id} />
             <EntityEmails
               entityId={id}
               entityType="contact"
               entityName={`${contact.first_name} ${contact.last_name || ''}`.trim()}
               entityEmail={contact.email || undefined}
+              recipientOptions={[
+                ...(contact.email
+                  ? [
+                      {
+                        email: contact.email,
+                        name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
+                        label: 'Primary Email',
+                      },
+                    ]
+                  : []),
+                ...(contact.alt_email
+                  ? [
+                      {
+                        email: contact.alt_email,
+                        name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
+                        label: 'Alt Email',
+                      },
+                    ]
+                  : []),
+              ]}
             />
             <EntityReminders entityType="contact" entityId={id} />
             <EntityMeetings entityType="contact" entityId={id} />
@@ -454,6 +541,37 @@ export default function ContactDetailsPage() {
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         contact={contact}
+      />
+
+      {workspace?.id && (
+        <LogCallDialog
+          open={isLogCallDialogOpen}
+          onOpenChange={setIsLogCallDialogOpen}
+          onSuccess={async () => {
+            setIsLogCallDialogOpen(false);
+            await queryClient.invalidateQueries({
+              queryKey: ['calls', workspace.id, 'contact', id],
+            });
+          }}
+          entityType="contact"
+          entityId={id}
+          workspaceId={workspace.id}
+          defaultContactName={`${contact.first_name} ${contact.last_name || ''}`.trim()}
+          defaultPhoneNumber={
+            contact.phone_number || contact.mobile_number || contact.alt_phone
+          }
+        />
+      )}
+
+      <EmailLeadDialog
+        open={isEmailDialogOpen}
+        onOpenChange={setIsEmailDialogOpen}
+        leadName={`${contact.first_name} ${contact.last_name || ''}`.trim()}
+        leadEmail={contact.email || undefined}
+        recipientOptions={contactEmailRecipients}
+        workspaceEmailAccounts={workspaceEmailAccounts}
+        entityId={id}
+        entityType="contact"
       />
     </ModuleGuard>
   );
