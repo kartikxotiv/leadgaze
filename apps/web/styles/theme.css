@@ -61,6 +61,19 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  --color-leadgaze-auth-1: #3935e7;
+  --color-leadgaze-auth-2: #3751e2;
+  --color-leadgaze-auth-3: #364fdd;
+  --color-leadgaze-auth-4: #344dd9;
+  --color-leadgaze-auth-5: #334ad4;
+  --color-leadgaze-auth-6: #3148cf;
+  --color-leadgaze-auth-7: #3046cb;
+  --color-leadgaze-auth-8: #2e44c6;
+  --color-leadgaze-auth-9: #2d42c1;
+  --color-leadgaze-auth-10: #2b40bd;
+  --color-leadgaze-auth-11: #2a3eb8;
+  --color-leadgaze-auth-surface: #f9fafb;
+
   --animate-fade-up: fade-up 0.5s;
   --animate-fade-down: fade-down 0.5s;
   --animate-accordion-down: accordion-down 0.2s ease-out;
