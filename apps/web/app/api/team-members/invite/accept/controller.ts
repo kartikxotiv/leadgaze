@@ -69,34 +69,63 @@ const acceptInvite = catchAsync(
       throw updateInviteError;
     }
 
-    // Create workspace member record
-    const { data: member, error: memberError } = await supabase
+    // Check if a member record already exists (e.g. previously removed user)
+    const { data: existingMember } = await supabase
       .from('workspace_members')
-      .insert({
-        workspace_id: invitation.workspace_id,
-        user_id: userId,
-        role_id: invitation.role_id,
-        status: 'accepted',
-        invited_by: invitation.invited_by,
-        invited_at: invitation.invited_at,
-        accepted_at: new Date().toISOString(),
-        is_primary_contact: invitation.is_primary_contact,
-        personal_settings: invitation.personal_settings,
-      })
-      .select()
-      .single();
+      .select('id')
+      .eq('workspace_id', invitation.workspace_id)
+      .eq('user_id', userId)
+      .maybeSingle();
 
-    if (memberError) {
-      // If member already exists, that's okay - just return success
-      if (memberError.code === '23505') {
-        // Unique constraint violation
-        return successDataResponse(
-          'Invitation accepted and workspace member access granted',
-          { workspace_id: invitation.workspace_id, user_id: userId },
-        );
+    let member;
+
+    if (existingMember) {
+      // Re-activate the existing member record instead of inserting a duplicate
+      const { data: updatedMember, error: updateMemberError } = await supabase
+        .from('workspace_members')
+        .update({
+          role_id: invitation.role_id,
+          status: 'accepted',
+          invited_by: invitation.invited_by,
+          invited_at: invitation.invited_at,
+          accepted_at: new Date().toISOString(),
+          is_primary_contact: invitation.is_primary_contact,
+          personal_settings: invitation.personal_settings,
+        })
+        .eq('id', existingMember.id)
+        .select()
+        .single();
+
+      if (updateMemberError) {
+        console.error('Re-activate member error:', updateMemberError);
+        throw updateMemberError;
       }
-      console.error('Create member error:', memberError);
-      throw memberError;
+
+      member = updatedMember;
+    } else {
+      // Create a new workspace member record
+      const { data: newMember, error: memberError } = await supabase
+        .from('workspace_members')
+        .insert({
+          workspace_id: invitation.workspace_id,
+          user_id: userId,
+          role_id: invitation.role_id,
+          status: 'accepted',
+          invited_by: invitation.invited_by,
+          invited_at: invitation.invited_at,
+          accepted_at: new Date().toISOString(),
+          is_primary_contact: invitation.is_primary_contact,
+          personal_settings: invitation.personal_settings,
+        })
+        .select()
+        .single();
+
+      if (memberError) {
+        console.error('Create member error:', memberError);
+        throw memberError;
+      }
+
+      member = newMember;
     }
 
     // Get workspace details to return
