@@ -210,6 +210,9 @@ importers:
       '@kit/auth':
         specifier: workspace:*
         version: link:../../packages/features/auth
+      '@kit/hrms':
+        specifier: workspace:*
+        version: link:../../packages/hrms
       '@kit/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
