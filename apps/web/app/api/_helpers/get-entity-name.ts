@@ -13,11 +13,10 @@ export async function getEntityName(
       case 'lead': {
         const { data } = await supabase
           .from('crm_leads' as any)
-          .select('first_name, last_name, company_name')
+          .select('first_name, last_name')
           .eq('id', entityId)
           .single();
         if (data) {
-          if (data.company_name) return data.company_name;
           return `${data.first_name || ''} ${data.last_name || ''}`.trim() || null;
         }
         break;

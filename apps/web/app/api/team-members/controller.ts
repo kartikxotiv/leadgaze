@@ -274,13 +274,28 @@ const inviteMember = catchAsync(
 
     // Send invitation email
     const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/invite?token=${token}`;
+    const { data: { user } = {} } = await supabase.auth.getUser();
+    let inviterName = user?.user_metadata?.email || 'Someone';
+    if (user) {
+      const { data: userData } = await supabase
+        .from('accounts')
+        .select('name')
+        .eq('id', user?.id)
+        .single();
+      inviterName = userData?.name || inviterName;
+    }
+
     try {
       await transporter.sendMail({
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: email,
-        subject: `You've been invited to join a workspace - ${process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze'}`,
+        subject: `${inviterName} invited you to join ${workspace?.name || 'Workspace'} on ${process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze'}`,
         html: INVITE_MEMBER_TEMPLATE({
           inviteLink: inviteUrl,
+          workspaceName: workspace?.name || 'Workspace',
+          inviterName,
+          productName: process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze',
+          appUrl: process.env.NEXT_PUBLIC_APP_URL,
         }),
       });
     } catch (error) {

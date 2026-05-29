@@ -216,9 +216,9 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
                       {note.created_by_user && (
                         <span>by {note.created_by_user.name}</span>
                       )}
-                      {note.entity_name && note.entity_type !== entityType && (
+                      {note.entity_type !== entityType && (
                         <span className="text-blue-600 dark:text-blue-400">
-                          from {note.entity_type}: {note.entity_name}
+                          From {note.entity_type.charAt(0).toUpperCase() + note.entity_type.slice(1)}{note.entity_name ? `: ${note.entity_name}` : ''}
                         </span>
                       )}
                     </div>
