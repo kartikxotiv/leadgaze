@@ -6,6 +6,7 @@ import { Badge } from '@kit/ui/badge';
 import { Card, CardContent } from '@kit/ui/card';
 import { Input } from '@kit/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@kit/ui/select';
+import { FUNDRAISING_FEATURE_KEYS, FUNDRAISING_MODULE_KEYS, useFundraisingPermissions } from '../../utils';
 
 const activityTypes = [
   'Investor Created',
@@ -18,8 +19,17 @@ const activityTypes = [
   'Follow-Up Updated',
 ];
 
-export function FundraisingActivitiesPage() {
+export function FundraisingActivitiesPage({ workspaceId }: { workspaceId: string }) {
   const [type, setType] = useState('all');
+  const { canAccess, isLoading } = useFundraisingPermissions(workspaceId);
+
+  if (isLoading) {
+    return <div className="p-6 text-sm text-muted-foreground">Checking permissions...</div>;
+  }
+
+  if (!canAccess(FUNDRAISING_MODULE_KEYS.pipeline, FUNDRAISING_FEATURE_KEYS.view)) {
+    return <div className="p-6 text-sm text-muted-foreground">You do not have permission to view fundraising activities.</div>;
+  }
 
   return (
     <div className="flex h-full w-full flex-col gap-5 p-6">

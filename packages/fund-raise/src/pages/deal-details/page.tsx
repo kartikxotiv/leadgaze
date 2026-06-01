@@ -5,14 +5,19 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@kit/ui/card';
 import { Badge } from '@kit/ui/badge';
 import { getCommitmentsService, getDealsService, getInvestorsService, getPipelineStagesService, getRoundsService } from '../../services';
+import { FUNDRAISING_FEATURE_KEYS, FUNDRAISING_MODULE_KEYS, useFundraisingPermissions } from '../../utils';
 
 export function FundraisingDealDetailsPage({ workspaceId, dealId }: { workspaceId: string; dealId: string }) {
+  const { canAccess, isLoading } = useFundraisingPermissions(workspaceId);
   const { data: deals = [] } = useQuery<any[]>({ queryKey: ['fundraising', 'deals', workspaceId], queryFn: () => getDealsService(workspaceId), enabled: !!workspaceId });
   const { data: investors = [] } = useQuery<any[]>({ queryKey: ['fundraising', 'investors', workspaceId], queryFn: () => getInvestorsService(workspaceId), enabled: !!workspaceId });
   const { data: rounds = [] } = useQuery<any[]>({ queryKey: ['fundraising', 'rounds', workspaceId], queryFn: () => getRoundsService(workspaceId), enabled: !!workspaceId });
   const { data: stages = [] } = useQuery<any[]>({ queryKey: ['fundraising', 'pipeline-stages', workspaceId], queryFn: () => getPipelineStagesService(workspaceId), enabled: !!workspaceId });
   const { data: commitments = [] } = useQuery<any[]>({ queryKey: ['fundraising', 'commitments', workspaceId], queryFn: () => getCommitmentsService(workspaceId), enabled: !!workspaceId });
   const deal = deals.find((item) => item.id === dealId);
+
+  if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Checking permissions...</div>;
+  if (!canAccess(FUNDRAISING_MODULE_KEYS.pipeline, FUNDRAISING_FEATURE_KEYS.view)) return <div className="p-6 text-sm text-muted-foreground">You do not have permission to view this deal.</div>;
 
   if (!deal) return <div className="p-6 text-sm text-muted-foreground">Deal not found.</div>;
 

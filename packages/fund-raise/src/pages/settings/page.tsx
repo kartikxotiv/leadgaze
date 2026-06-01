@@ -10,6 +10,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import { createPipelineStageService, deletePipelineStageService, getPipelineStagesService, updatePipelineStageService } from '../../services';
+import {
+  FUNDRAISING_FEATURE_KEYS,
+  FUNDRAISING_MODULE_KEYS,
+  useFundraisingPermissions,
+} from '../../utils';
 
 type Stage = { id: string; name: string; description: string | null; display_order: number; is_default: boolean; is_closed_won: boolean; is_closed_lost: boolean };
 
@@ -45,9 +50,19 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export function FundraisingSettingsPage({ workspaceId }: { workspaceId: string }) {
   const queryClient = useQueryClient();
+  const { canAccess, isLoading: isPermissionsLoading } = useFundraisingPermissions(workspaceId);
+  const canManageStages = canAccess(FUNDRAISING_MODULE_KEYS.pipeline, FUNDRAISING_FEATURE_KEYS.manageStages);
   const { data: stages = [] } = useQuery<Stage[]>({ queryKey: ['fundraising', 'pipeline-stages', workspaceId], queryFn: () => getPipelineStagesService(workspaceId), enabled: !!workspaceId });
   const deleteMutation = useMutation({ mutationFn: (id: string) => deletePipelineStageService(workspaceId, id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fundraising', 'pipeline-stages', workspaceId] }) });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['fundraising', 'pipeline-stages', workspaceId] });
+
+  if (isPermissionsLoading) {
+    return <div className="p-6 text-sm text-muted-foreground">Checking permissions...</div>;
+  }
+
+  if (!canManageStages) {
+    return <div className="p-6 text-sm text-muted-foreground">You do not have permission to manage fundraising settings.</div>;
+  }
 
   return (
     <div className="flex h-full w-full flex-col gap-6 p-6">

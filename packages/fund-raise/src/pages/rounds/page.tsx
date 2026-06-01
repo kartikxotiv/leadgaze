@@ -13,6 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@kit/ui/skeleton';
 import { Textarea } from '@kit/ui/textarea';
 import { createRoundService, deleteRoundService, getDealsService, getInvestorsService, getPipelineStagesService, getRoundsService, updateRoundService } from '../../services';
+import {
+  FUNDRAISING_FEATURE_KEYS,
+  FUNDRAISING_MODULE_KEYS,
+  useFundraisingPermissions,
+} from '../../utils';
 
 type Round = {
   id: string;
@@ -120,8 +125,17 @@ function Info({ label, value }: { label: string; value: React.ReactNode }) {
   return <div><div className="text-xs text-muted-foreground">{label}</div><div className="font-medium">{value}</div></div>;
 }
 
+function AccessDenied() {
+  return <div className="p-6 text-sm text-muted-foreground">You do not have permission to view funding rounds.</div>;
+}
+
 export function FundraisingRoundsPage({ workspaceId }: { workspaceId: string }) {
   const queryClient = useQueryClient();
+  const { canAccess, isLoading: isPermissionsLoading } = useFundraisingPermissions(workspaceId);
+  const canView = canAccess(FUNDRAISING_MODULE_KEYS.rounds, FUNDRAISING_FEATURE_KEYS.view);
+  const canCreate = canAccess(FUNDRAISING_MODULE_KEYS.rounds, FUNDRAISING_FEATURE_KEYS.create);
+  const canEdit = canAccess(FUNDRAISING_MODULE_KEYS.rounds, FUNDRAISING_FEATURE_KEYS.edit);
+  const canDelete = canAccess(FUNDRAISING_MODULE_KEYS.rounds, FUNDRAISING_FEATURE_KEYS.delete);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const { data: rounds = [], isLoading } = useQuery<Round[]>({ queryKey: ['fundraising', 'rounds', workspaceId], queryFn: () => getRoundsService(workspaceId), enabled: !!workspaceId });
@@ -130,11 +144,19 @@ export function FundraisingRoundsPage({ workspaceId }: { workspaceId: string }) 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['fundraising', 'rounds', workspaceId] });
   const formatCurrency = (value: number | null, currency = 'USD') => value == null ? '-' : new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(value);
 
+  if (isPermissionsLoading) {
+    return <div className="p-6"><Skeleton className="h-10 w-full" /></div>;
+  }
+
+  if (!canView) {
+    return <AccessDenied />;
+  }
+
   return (
     <div className="flex h-full w-full flex-col gap-5 p-6">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h1 className="text-3xl font-bold">Funding Rounds</h1><p className="text-muted-foreground">Manage all fundraising rounds.</p></div><RoundFormDialog workspaceId={workspaceId} onDone={refresh} /></div>
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h1 className="text-3xl font-bold">Funding Rounds</h1><p className="text-muted-foreground">Manage all fundraising rounds.</p></div>{canCreate && <RoundFormDialog workspaceId={workspaceId} onDone={refresh} />}</div>
       <div className="flex flex-col gap-3 sm:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="pl-9" placeholder="Search rounds..." value={search} onChange={(e) => setSearch(e.target.value)} /></div><Select value={status} onValueChange={setStatus}><SelectTrigger className="sm:w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Status</SelectItem><SelectItem value="planning">Planning</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="closed">Closed</SelectItem><SelectItem value="cancelled">Cancelled</SelectItem></SelectContent></Select></div>
-      <Card><CardContent className="p-0"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="border-b bg-muted/40 text-left text-xs uppercase text-muted-foreground"><tr><th className="p-3">Round Name</th><th className="p-3">Type</th><th className="p-3">Target</th><th className="p-3">Raised</th><th className="p-3">Valuation</th><th className="p-3">Status</th><th className="p-3">Start</th><th className="p-3">Close</th><th className="p-3 text-right">Actions</th></tr></thead><tbody>{isLoading ? [...Array(4)].map((_, i) => <tr key={i}><td className="p-3" colSpan={9}><Skeleton className="h-8 w-full" /></td></tr>) : filtered.map((round) => <tr key={round.id} className="border-b last:border-b-0"><td className="p-3 font-medium"><div className="flex items-center gap-2"><BarChart3 className="h-4 w-4 text-muted-foreground" />{round.round_name}</div></td><td className="p-3">{round.round_type}</td><td className="p-3">{formatCurrency(round.target_amount, round.currency)}</td><td className="p-3">{formatCurrency(round.raised_amount, round.currency)}</td><td className="p-3">{formatCurrency(round.valuation, round.currency)}</td><td className="p-3"><Badge variant="outline">{round.status}</Badge></td><td className="p-3">{round.start_date ?? '-'}</td><td className="p-3">{round.close_date ?? '-'}</td><td className="p-3 text-right"><div className="flex justify-end gap-1"><Dialog><DialogTrigger asChild><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></DialogTrigger><RoundDetails workspaceId={workspaceId} round={round} /></Dialog><RoundFormDialog workspaceId={workspaceId} round={round} onDone={refresh} /><Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(round.id)}><Trash2 className="h-4 w-4" /></Button></div></td></tr>)}</tbody></table></div></CardContent></Card>
+      <Card><CardContent className="p-0"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="border-b bg-muted/40 text-left text-xs uppercase text-muted-foreground"><tr><th className="p-3">Round Name</th><th className="p-3">Type</th><th className="p-3">Target</th><th className="p-3">Raised</th><th className="p-3">Valuation</th><th className="p-3">Status</th><th className="p-3">Start</th><th className="p-3">Close</th><th className="p-3 text-right">Actions</th></tr></thead><tbody>{isLoading ? [...Array(4)].map((_, i) => <tr key={i}><td className="p-3" colSpan={9}><Skeleton className="h-8 w-full" /></td></tr>) : filtered.map((round) => <tr key={round.id} className="border-b last:border-b-0"><td className="p-3 font-medium"><div className="flex items-center gap-2"><BarChart3 className="h-4 w-4 text-muted-foreground" />{round.round_name}</div></td><td className="p-3">{round.round_type}</td><td className="p-3">{formatCurrency(round.target_amount, round.currency)}</td><td className="p-3">{formatCurrency(round.raised_amount, round.currency)}</td><td className="p-3">{formatCurrency(round.valuation, round.currency)}</td><td className="p-3"><Badge variant="outline">{round.status}</Badge></td><td className="p-3">{round.start_date ?? '-'}</td><td className="p-3">{round.close_date ?? '-'}</td><td className="p-3 text-right"><div className="flex justify-end gap-1"><Dialog><DialogTrigger asChild><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></DialogTrigger><RoundDetails workspaceId={workspaceId} round={round} /></Dialog>{canEdit && <RoundFormDialog workspaceId={workspaceId} round={round} onDone={refresh} />}{canDelete && <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(round.id)}><Trash2 className="h-4 w-4" /></Button>}</div></td></tr>)}</tbody></table></div></CardContent></Card>
     </div>
   );
 }

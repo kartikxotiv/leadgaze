@@ -1,7 +1,8 @@
 'use server';
 
 import { NextResponse } from 'next/server';
-import { catchAsync, successDataResponse } from '../../utils';
+import { catchAsync, successDataResponse } from '../../utils/response-handler';
+import { assertFundraisingPermission } from '../_shared/permissions';
 import { assertWorkspaceAccess } from '../_shared/workspace-access';
 
 export const getPipelineStagesController = catchAsync(async ({ request }) => {
@@ -12,8 +13,9 @@ export const getPipelineStagesController = catchAsync(async ({ request }) => {
     return NextResponse.json({ success: false, message: 'workspaceId query parameter is required' }, { status: 400 });
   }
 
-  const { supabase, error } = await assertWorkspaceAccess(workspaceId);
-  if (error) return error;
+  const { supabase, user, error } = await assertWorkspaceAccess(workspaceId);
+  if (error || !user) return error!;
+  await assertFundraisingPermission({ supabase, userId: user.id, workspaceId, moduleKey: 'fundraising_pipeline', featureKey: 'view' });
 
   const { data, error: fetchError } = await (supabase as any)
     .schema('fundraising')
@@ -42,6 +44,7 @@ export const createPipelineStageController = catchAsync(async ({ request }) => {
 
   const { supabase, user, error } = await assertWorkspaceAccess(workspace_id);
   if (error || !user) return error!;
+  await assertFundraisingPermission({ supabase, userId: user.id, workspaceId: workspace_id, moduleKey: 'fundraising_pipeline', featureKey: 'manage_stages' });
 
   const { data, error: insertError } = await (supabase as any).schema('fundraising').from('pipeline_stages').insert({
     workspace_id,
@@ -69,6 +72,7 @@ export const updatePipelineStageController = catchAsync(async ({ request }) => {
   if (!body?.id || !workspaceId) return NextResponse.json({ success: false, message: 'id and workspace_id are required' }, { status: 400 });
   const { supabase, user, error } = await assertWorkspaceAccess(workspaceId);
   if (error || !user) return error!;
+  await assertFundraisingPermission({ supabase, userId: user.id, workspaceId, moduleKey: 'fundraising_pipeline', featureKey: 'manage_stages' });
   const payload = {
     name: body.name,
     description: body.description,
@@ -89,8 +93,9 @@ export const deletePipelineStageController = catchAsync(async ({ request }) => {
   const id = url.searchParams.get('id');
   const workspaceId = url.searchParams.get('workspaceId');
   if (!id || !workspaceId) return NextResponse.json({ success: false, message: 'id and workspaceId are required' }, { status: 400 });
-  const { supabase, error } = await assertWorkspaceAccess(workspaceId);
-  if (error) return error;
+  const { supabase, user, error } = await assertWorkspaceAccess(workspaceId);
+  if (error || !user) return error!;
+  await assertFundraisingPermission({ supabase, userId: user.id, workspaceId, moduleKey: 'fundraising_pipeline', featureKey: 'manage_stages' });
   const { error: deleteError } = await (supabase as any).schema('fundraising').from('pipeline_stages').delete().eq('workspace_id', workspaceId).eq('id', id);
   if (deleteError) return NextResponse.json({ success: false, message: 'Failed to delete pipeline stage' }, { status: 500 });
   return successDataResponse('Pipeline stage deleted successfully', { id });

@@ -5,14 +5,19 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@kit/ui/card';
 import { Badge } from '@kit/ui/badge';
 import { getDealsService, getInvestorsService, getPipelineStagesService, getRoundsService } from '../../services';
+import { FUNDRAISING_FEATURE_KEYS, FUNDRAISING_MODULE_KEYS, useFundraisingPermissions } from '../../utils';
 
 export function FundraisingRoundDetailsPage({ workspaceId, roundId }: { workspaceId: string; roundId: string }) {
+  const { canAccess, isLoading } = useFundraisingPermissions(workspaceId);
   const { data: rounds = [] } = useQuery<any[]>({ queryKey: ['fundraising', 'rounds', workspaceId], queryFn: () => getRoundsService(workspaceId), enabled: !!workspaceId });
   const { data: deals = [] } = useQuery<any[]>({ queryKey: ['fundraising', 'deals', workspaceId], queryFn: () => getDealsService(workspaceId), enabled: !!workspaceId });
   const { data: investors = [] } = useQuery<any[]>({ queryKey: ['fundraising', 'investors', workspaceId], queryFn: () => getInvestorsService(workspaceId), enabled: !!workspaceId });
   const { data: stages = [] } = useQuery<any[]>({ queryKey: ['fundraising', 'pipeline-stages', workspaceId], queryFn: () => getPipelineStagesService(workspaceId), enabled: !!workspaceId });
   const round = rounds.find((item) => item.id === roundId);
   const roundDeals = deals.filter((item) => item.round_id === roundId);
+
+  if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Checking permissions...</div>;
+  if (!canAccess(FUNDRAISING_MODULE_KEYS.rounds, FUNDRAISING_FEATURE_KEYS.view)) return <div className="p-6 text-sm text-muted-foreground">You do not have permission to view this funding round.</div>;
 
   if (!round) return <div className="p-6 text-sm text-muted-foreground">Round not found.</div>;
 

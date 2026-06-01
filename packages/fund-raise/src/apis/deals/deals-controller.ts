@@ -1,7 +1,8 @@
 'use server';
 
 import { NextResponse } from 'next/server';
-import { catchAsync, successDataResponse } from '../../utils';
+import { catchAsync, successDataResponse } from '../../utils/response-handler';
+import { assertFundraisingPermission } from '../_shared/permissions';
 import { assertWorkspaceAccess } from '../_shared/workspace-access';
 
 export const getDealsController = catchAsync(async ({ request }) => {
@@ -11,8 +12,9 @@ export const getDealsController = catchAsync(async ({ request }) => {
   const investorId = url.searchParams.get('investorId');
   const roundId = url.searchParams.get('roundId');
   if (!workspaceId) return NextResponse.json({ success: false, message: 'workspaceId query parameter is required' }, { status: 400 });
-  const { supabase, error } = await assertWorkspaceAccess(workspaceId);
-  if (error) return error;
+  const { supabase, user, error } = await assertWorkspaceAccess(workspaceId);
+  if (error || !user) return error!;
+  await assertFundraisingPermission({ supabase, userId: user.id, workspaceId, moduleKey: 'fundraising_pipeline', featureKey: 'view' });
   let query = (supabase as any).schema('fundraising').from('deals').select('*').eq('workspace_id', workspaceId).eq('is_deleted', false);
   if (id) query = query.eq('id', id).maybeSingle();
   else {
@@ -32,6 +34,7 @@ export const createDealController = catchAsync(async ({ request }) => {
   if (!workspace_id || !investor_id || !stage_id) return NextResponse.json({ success: false, message: 'workspace_id, investor_id, and stage_id are required' }, { status: 400 });
   const { supabase, user, error } = await assertWorkspaceAccess(workspace_id);
   if (error || !user) return error!;
+  await assertFundraisingPermission({ supabase, userId: user.id, workspaceId: workspace_id, moduleKey: 'fundraising_pipeline', featureKey: 'create_deal' });
   const { data, error: insertError } = await (supabase as any).schema('fundraising').from('deals').insert({ workspace_id, investor_id, round_id: round_id ?? null, stage_id, status, probability, expected_amount: expected_amount ?? null, currency, last_contact_date: last_contact_date ?? null, next_followup_date: next_followup_date ?? null, notes: notes ?? null, owner_id: owner_id ?? user.id, tags, custom_fields, created_by: user.id, updated_by: user.id }).select('*').single();
   if (insertError) return NextResponse.json({ success: false, message: 'Failed to create deal' }, { status: 500 });
   return NextResponse.json({ success: true, message: 'Deal created successfully', data }, { status: 201 });
@@ -43,6 +46,7 @@ export const updateDealController = catchAsync(async ({ request }) => {
   if (!body?.id || !workspaceId) return NextResponse.json({ success: false, message: 'id and workspace_id are required' }, { status: 400 });
   const { supabase, user, error } = await assertWorkspaceAccess(workspaceId);
   if (error || !user) return error!;
+  await assertFundraisingPermission({ supabase, userId: user.id, workspaceId, moduleKey: 'fundraising_pipeline', featureKey: body.stage_id || body.stageId ? 'move_stage' : 'edit_deal' });
   const payload = {
     investor_id: body.investor_id ?? body.investorId,
     round_id: body.round_id ?? body.roundId,
@@ -72,6 +76,7 @@ export const deleteDealController = catchAsync(async ({ request }) => {
   if (!id || !workspaceId) return NextResponse.json({ success: false, message: 'id and workspaceId are required' }, { status: 400 });
   const { supabase, user, error } = await assertWorkspaceAccess(workspaceId);
   if (error || !user) return error!;
+  await assertFundraisingPermission({ supabase, userId: user.id, workspaceId, moduleKey: 'fundraising_pipeline', featureKey: 'delete_deal' });
   const { error: deleteError } = await (supabase as any).schema('fundraising').from('deals').update({ is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: user.id }).eq('workspace_id', workspaceId).eq('id', id);
   if (deleteError) return NextResponse.json({ success: false, message: 'Failed to delete deal' }, { status: 500 });
   return successDataResponse('Deal deleted successfully', { id });

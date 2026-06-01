@@ -4,7 +4,10 @@ import { useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 
 import type { JwtPayload } from '@supabase/supabase-js';
-import { fundraiseRoutes } from '@kit/fund-raise';
+import {
+  getFundraiseRoutesForPermissions,
+  useFundraisingPermissions,
+} from '@kit/fund-raise';
 
 import {
   Activity,
@@ -26,8 +29,11 @@ import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getNavigationConfig } from '~/lib/rbac/use-dynamic-navigation';
 
 export function HomeSidebarClient(props: { user: JwtPayload }) {
-  const { canAccess } = useRBAC();
+  const { canAccess, currentWorkspace } = useRBAC();
   const pathname = usePathname() || '';
+  const { canAccess: canAccessFundraising } = useFundraisingPermissions(
+    currentWorkspace?.id,
+  );
 
   // Use permission-based navigation
   const permissionNavConfig = usePermissionBasedNavigationConfig();
@@ -44,7 +50,7 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
       const teamItems = permissionNavConfig?.teamItems || getNavigationConfig(canAccess).teamItems;
 
       return [
-        ...fundraiseRoutes,
+        ...getFundraiseRoutesForPermissions(canAccessFundraising),
         {
           label: 'common:routes.settings',
           children: [
@@ -214,7 +220,7 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
         ],
       },
     ];
-  }, [permissionNavConfig, canAccess, isFundraiseModule]);
+  }, [permissionNavConfig, canAccess, isFundraiseModule, canAccessFundraising]);
 
   // Parse the dynamic config to match NavigationConfigSchema
   const parsedConfig = useMemo(() => {

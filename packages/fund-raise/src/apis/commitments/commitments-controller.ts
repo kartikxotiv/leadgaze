@@ -1,7 +1,8 @@
 'use server';
 
 import { NextResponse } from 'next/server';
-import { catchAsync, successDataResponse } from '../../utils';
+import { catchAsync, successDataResponse } from '../../utils/response-handler';
+import { assertFundraisingPermission } from '../_shared/permissions';
 import { assertWorkspaceAccess } from '../_shared/workspace-access';
 
 export const getCommitmentsController = catchAsync(async ({ request }) => {
@@ -9,8 +10,9 @@ export const getCommitmentsController = catchAsync(async ({ request }) => {
   const workspaceId = url.searchParams.get('workspaceId');
   const dealId = url.searchParams.get('dealId');
   if (!workspaceId) return NextResponse.json({ success: false, message: 'workspaceId query parameter is required' }, { status: 400 });
-  const { supabase, error } = await assertWorkspaceAccess(workspaceId);
-  if (error) return error;
+  const { supabase, user, error } = await assertWorkspaceAccess(workspaceId);
+  if (error || !user) return error!;
+  await assertFundraisingPermission({ supabase, userId: user.id, workspaceId, moduleKey: 'fundraising_pipeline', featureKey: 'view' });
   let query = (supabase as any).schema('fundraising').from('commitments').select('*').eq('workspace_id', workspaceId);
   if (dealId) query = query.eq('deal_id', dealId);
   const { data, error: fetchError } = await query.order('created_at', { ascending: false });
@@ -25,6 +27,7 @@ export const createCommitmentController = catchAsync(async ({ request }) => {
   if (!workspace_id || !deal_id || promised_amount == null) return NextResponse.json({ success: false, message: 'workspace_id, deal_id, and promised_amount are required' }, { status: 400 });
   const { supabase, user, error } = await assertWorkspaceAccess(workspace_id);
   if (error || !user) return error!;
+  await assertFundraisingPermission({ supabase, userId: user.id, workspaceId: workspace_id, moduleKey: 'fundraising_pipeline', featureKey: 'edit_deal' });
   const { data, error: insertError } = await (supabase as any).schema('fundraising').from('commitments').insert({ workspace_id, deal_id, promised_amount, received_amount, currency, status, commitment_date: commitment_date ?? null, expected_close_date: expected_close_date ?? null, received_date: received_date ?? null, notes: notes ?? null, created_by: user.id, updated_by: user.id }).select('*').single();
   if (insertError) return NextResponse.json({ success: false, message: 'Failed to create commitment' }, { status: 500 });
   return NextResponse.json({ success: true, message: 'Commitment created successfully', data }, { status: 201 });
@@ -36,6 +39,7 @@ export const updateCommitmentController = catchAsync(async ({ request }) => {
   if (!body?.id || !workspaceId) return NextResponse.json({ success: false, message: 'id and workspace_id are required' }, { status: 400 });
   const { supabase, user, error } = await assertWorkspaceAccess(workspaceId);
   if (error || !user) return error!;
+  await assertFundraisingPermission({ supabase, userId: user.id, workspaceId, moduleKey: 'fundraising_pipeline', featureKey: 'edit_deal' });
   const payload = {
     deal_id: body.deal_id ?? body.dealId,
     promised_amount: body.promised_amount ?? body.promisedAmount,
@@ -59,8 +63,9 @@ export const deleteCommitmentController = catchAsync(async ({ request }) => {
   const id = url.searchParams.get('id');
   const workspaceId = url.searchParams.get('workspaceId');
   if (!id || !workspaceId) return NextResponse.json({ success: false, message: 'id and workspaceId are required' }, { status: 400 });
-  const { supabase, error } = await assertWorkspaceAccess(workspaceId);
-  if (error) return error;
+  const { supabase, user, error } = await assertWorkspaceAccess(workspaceId);
+  if (error || !user) return error!;
+  await assertFundraisingPermission({ supabase, userId: user.id, workspaceId, moduleKey: 'fundraising_pipeline', featureKey: 'edit_deal' });
   const { error: deleteError } = await (supabase as any).schema('fundraising').from('commitments').delete().eq('workspace_id', workspaceId).eq('id', id);
   if (deleteError) return NextResponse.json({ success: false, message: 'Failed to delete commitment' }, { status: 500 });
   return successDataResponse('Commitment deleted successfully', { id });

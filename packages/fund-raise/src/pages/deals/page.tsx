@@ -23,6 +23,11 @@ import {
   getRoundsService,
   updateDealService,
 } from '../../services';
+import {
+  FUNDRAISING_FEATURE_KEYS,
+  FUNDRAISING_MODULE_KEYS,
+  useFundraisingPermissions,
+} from '../../utils';
 
 type Deal = { id: string; investor_id: string; round_id: string | null; stage_id: string; status: string; probability: number; expected_amount: number | null; currency: string; last_contact_date: string | null; next_followup_date: string | null; notes: string | null; owner_id: string | null };
 type Lookup = { id: string; name?: string; round_name?: string; display_order?: number };
@@ -62,7 +67,7 @@ function DealFormDialog({ workspaceId, deal, onDone }: { workspaceId: string; de
   );
 }
 
-function CommitmentSection({ workspaceId, dealId }: { workspaceId: string; dealId: string }) {
+function CommitmentSection({ workspaceId, dealId, canEditDeal }: { workspaceId: string; dealId: string; canEditDeal: boolean }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState({ promised_amount: '', received_amount: '0', status: 'pending', commitment_date: '', expected_close_date: '', received_date: '', notes: '' });
   const { data: commitments = [] } = useQuery<Commitment[]>({ queryKey: ['fundraising', 'commitments', workspaceId, dealId], queryFn: () => getCommitmentsService(workspaceId), select: (rows) => rows.filter((row: Commitment) => row.deal_id === dealId), enabled: !!dealId });
@@ -71,13 +76,13 @@ function CommitmentSection({ workspaceId, dealId }: { workspaceId: string; dealI
   return (
     <section className="grid gap-3">
       <h3 className="font-semibold">Commitments</h3>
-      <div className="grid gap-2 sm:grid-cols-3"><Input placeholder="Promised amount" type="number" value={form.promised_amount} onChange={(e) => setForm((p) => ({ ...p, promised_amount: e.target.value }))} /><Input placeholder="Received amount" type="number" value={form.received_amount} onChange={(e) => setForm((p) => ({ ...p, received_amount: e.target.value }))} /><Select value={form.status} onValueChange={(status) => setForm((p) => ({ ...p, status }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pending">Pending</SelectItem><SelectItem value="partially_received">Partially Received</SelectItem><SelectItem value="fully_received">Fully Received</SelectItem><SelectItem value="cancelled">Cancelled</SelectItem></SelectContent></Select><Input type="date" value={form.commitment_date} onChange={(e) => setForm((p) => ({ ...p, commitment_date: e.target.value }))} /><Input type="date" value={form.expected_close_date} onChange={(e) => setForm((p) => ({ ...p, expected_close_date: e.target.value }))} /><Button disabled={!form.promised_amount || createMutation.isPending} onClick={() => createMutation.mutate({ workspace_id: workspaceId, deal_id: dealId, promised_amount: Number(form.promised_amount), received_amount: Number(form.received_amount || 0), status: form.status, commitment_date: form.commitment_date || null, expected_close_date: form.expected_close_date || null, received_date: form.received_date || null, notes: form.notes || null })}>Add Commitment</Button></div>
-      <div className="rounded-md border">{commitments.length === 0 ? <div className="p-4 text-sm text-muted-foreground">No commitments recorded.</div> : commitments.map((item) => <div key={item.id} className="flex items-center justify-between border-b p-3 text-sm last:border-b-0"><div><div className="font-medium">{item.promised_amount} promised · {item.received_amount} received</div><div className="text-muted-foreground">{item.status}</div></div><Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(item.id)}><Trash2 className="h-4 w-4" /></Button></div>)}</div>
+      {canEditDeal && <div className="grid gap-2 sm:grid-cols-3"><Input placeholder="Promised amount" type="number" value={form.promised_amount} onChange={(e) => setForm((p) => ({ ...p, promised_amount: e.target.value }))} /><Input placeholder="Received amount" type="number" value={form.received_amount} onChange={(e) => setForm((p) => ({ ...p, received_amount: e.target.value }))} /><Select value={form.status} onValueChange={(status) => setForm((p) => ({ ...p, status }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pending">Pending</SelectItem><SelectItem value="partially_received">Partially Received</SelectItem><SelectItem value="fully_received">Fully Received</SelectItem><SelectItem value="cancelled">Cancelled</SelectItem></SelectContent></Select><Input type="date" value={form.commitment_date} onChange={(e) => setForm((p) => ({ ...p, commitment_date: e.target.value }))} /><Input type="date" value={form.expected_close_date} onChange={(e) => setForm((p) => ({ ...p, expected_close_date: e.target.value }))} /><Button disabled={!form.promised_amount || createMutation.isPending} onClick={() => createMutation.mutate({ workspace_id: workspaceId, deal_id: dealId, promised_amount: Number(form.promised_amount), received_amount: Number(form.received_amount || 0), status: form.status, commitment_date: form.commitment_date || null, expected_close_date: form.expected_close_date || null, received_date: form.received_date || null, notes: form.notes || null })}>Add Commitment</Button></div>}
+      <div className="rounded-md border">{commitments.length === 0 ? <div className="p-4 text-sm text-muted-foreground">No commitments recorded.</div> : commitments.map((item) => <div key={item.id} className="flex items-center justify-between border-b p-3 text-sm last:border-b-0"><div><div className="font-medium">{item.promised_amount} promised · {item.received_amount} received</div><div className="text-muted-foreground">{item.status}</div></div>{canEditDeal && <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(item.id)}><Trash2 className="h-4 w-4" /></Button>}</div>)}</div>
     </section>
   );
 }
 
-function DealDetails({ workspaceId, deal, investors, rounds, stages, onChanged }: { workspaceId: string; deal: Deal; investors: Lookup[]; rounds: Lookup[]; stages: Lookup[]; onChanged: () => void }) {
+function DealDetails({ workspaceId, deal, investors, rounds, stages, canEditDeal }: { workspaceId: string; deal: Deal; investors: Lookup[]; rounds: Lookup[]; stages: Lookup[]; canEditDeal: boolean }) {
   const investor = investors.find((item) => item.id === deal.investor_id);
   const round = rounds.find((item) => item.id === deal.round_id);
   const stage = stages.find((item) => item.id === deal.stage_id);
@@ -87,7 +92,7 @@ function DealDetails({ workspaceId, deal, investors, rounds, stages, onChanged }
       <div className="grid gap-6">
         <section className="grid gap-3 text-sm sm:grid-cols-3"><Info label="Investor" value={investor?.name ?? deal.investor_id} /><Info label="Round" value={round?.round_name ?? '-'} /><Info label="Stage" value={stage?.name ?? deal.stage_id} /><Info label="Expected Amount" value={deal.expected_amount ?? '-'} /><Info label="Probability" value={`${deal.probability}%`} /><Info label="Owner" value={deal.owner_id ?? '-'} /></section>
         <section className="grid gap-3"><h3 className="font-semibold">Follow-Ups</h3><div className="grid gap-3 text-sm sm:grid-cols-2"><Info label="Last Contact Date" value={deal.last_contact_date ?? '-'} /><Info label="Next Follow-Up Date" value={deal.next_followup_date ?? '-'} /></div></section>
-        <CommitmentSection workspaceId={workspaceId} dealId={deal.id} />
+        <CommitmentSection workspaceId={workspaceId} dealId={deal.id} canEditDeal={canEditDeal} />
         <section className="text-sm text-muted-foreground">Notes, Meetings, Documents, and Activities should use entity_type <code>fundraising_deal</code> and entity_id <code>{deal.id}</code>.</section>
       </div>
     </DialogContent>
@@ -98,8 +103,18 @@ function Info({ label, value }: { label: string; value: React.ReactNode }) {
   return <div><div className="text-xs text-muted-foreground">{label}</div><div className="font-medium">{value}</div></div>;
 }
 
+function AccessDenied() {
+  return <div className="p-6 text-sm text-muted-foreground">You do not have permission to view the fundraising pipeline.</div>;
+}
+
 export function FundraisingDealsPage({ workspaceId }: { workspaceId: string }) {
   const queryClient = useQueryClient();
+  const { canAccess, isLoading: isPermissionsLoading } = useFundraisingPermissions(workspaceId);
+  const canView = canAccess(FUNDRAISING_MODULE_KEYS.pipeline, FUNDRAISING_FEATURE_KEYS.view);
+  const canCreateDeal = canAccess(FUNDRAISING_MODULE_KEYS.pipeline, FUNDRAISING_FEATURE_KEYS.createDeal);
+  const canEditDeal = canAccess(FUNDRAISING_MODULE_KEYS.pipeline, FUNDRAISING_FEATURE_KEYS.editDeal);
+  const canDeleteDeal = canAccess(FUNDRAISING_MODULE_KEYS.pipeline, FUNDRAISING_FEATURE_KEYS.deleteDeal);
+  const canMoveStage = canAccess(FUNDRAISING_MODULE_KEYS.pipeline, FUNDRAISING_FEATURE_KEYS.moveStage);
   const { data: deals = [] } = useQuery<Deal[]>({ queryKey: ['fundraising', 'deals', workspaceId], queryFn: () => getDealsService(workspaceId), enabled: !!workspaceId });
   const { data: investors = [] } = useQuery<Lookup[]>({ queryKey: ['fundraising', 'investors', workspaceId], queryFn: () => getInvestorsService(workspaceId), enabled: !!workspaceId });
   const { data: rounds = [] } = useQuery<Lookup[]>({ queryKey: ['fundraising', 'rounds', workspaceId], queryFn: () => getRoundsService(workspaceId), enabled: !!workspaceId });
@@ -112,9 +127,17 @@ export function FundraisingDealsPage({ workspaceId }: { workspaceId: string }) {
   const roundName = (id: string | null) => rounds.find((item) => item.id === id)?.round_name ?? '-';
   const committedAmount = (dealId: string) => commitments.filter((item) => item.deal_id === dealId).reduce((sum, item) => sum + (Number(item.promised_amount) || 0), 0);
 
+  if (isPermissionsLoading) {
+    return <div className="p-6 text-sm text-muted-foreground">Checking permissions...</div>;
+  }
+
+  if (!canView) {
+    return <AccessDenied />;
+  }
+
   return (
     <div className="flex h-full w-full flex-col gap-5 p-6">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h1 className="text-3xl font-bold">Pipeline</h1><p className="text-muted-foreground">Track investor progress through fundraising stages.</p></div><DealFormDialog workspaceId={workspaceId} onDone={refresh} /></div>
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h1 className="text-3xl font-bold">Pipeline</h1><p className="text-muted-foreground">Track investor progress through fundraising stages.</p></div>{canCreateDeal && <DealFormDialog workspaceId={workspaceId} onDone={refresh} />}</div>
       <div className="grid min-h-[560px] auto-cols-[minmax(280px,1fr)] grid-flow-col gap-4 overflow-x-auto pb-4">
         {stages.map((stage) => {
           const stageDeals = deals.filter((deal) => deal.stage_id === stage.id);
@@ -127,8 +150,8 @@ export function FundraisingDealsPage({ workspaceId }: { workspaceId: string }) {
                     <CardContent className="grid gap-3 p-4">
                       <div><div className="font-medium">{investorName(deal.investor_id)}</div><div className="text-xs text-muted-foreground">{roundName(deal.round_id)}</div></div>
                       <div className="grid grid-cols-2 gap-2 text-xs"><Info label="Expected" value={deal.expected_amount ?? '-'} /><Info label="Committed" value={committedAmount(deal.id)} /><Info label="Follow-Up" value={deal.next_followup_date ?? '-'} /><Info label="Owner" value={deal.owner_id ?? '-'} /></div>
-                      <div className="grid gap-2"><Select value={deal.stage_id} onValueChange={(stage_id) => updateMutation.mutate({ id: deal.id, workspace_id: workspaceId, stage_id })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{stages.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select><Input type="date" value={deal.next_followup_date?.slice(0, 10) ?? ''} onChange={(e) => updateMutation.mutate({ id: deal.id, workspace_id: workspaceId, next_followup_date: e.target.value || null })} /></div>
-                      <div className="flex justify-end gap-1"><Dialog><DialogTrigger asChild><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></DialogTrigger><DealDetails workspaceId={workspaceId} deal={deal} investors={investors} rounds={rounds} stages={stages} onChanged={refresh} /></Dialog><DealFormDialog workspaceId={workspaceId} deal={deal} onDone={refresh} /><Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(deal.id)}><Trash2 className="h-4 w-4" /></Button></div>
+                      {(canMoveStage || canEditDeal) && <div className="grid gap-2">{canMoveStage && <Select value={deal.stage_id} onValueChange={(stage_id) => updateMutation.mutate({ id: deal.id, workspace_id: workspaceId, stage_id })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{stages.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select>}{canEditDeal && <Input type="date" value={deal.next_followup_date?.slice(0, 10) ?? ''} onChange={(e) => updateMutation.mutate({ id: deal.id, workspace_id: workspaceId, next_followup_date: e.target.value || null })} />}</div>}
+                      <div className="flex justify-end gap-1"><Dialog><DialogTrigger asChild><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></DialogTrigger><DealDetails workspaceId={workspaceId} deal={deal} investors={investors} rounds={rounds} stages={stages} canEditDeal={canEditDeal} /></Dialog>{canEditDeal && <DealFormDialog workspaceId={workspaceId} deal={deal} onDone={refresh} />}{canDeleteDeal && <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(deal.id)}><Trash2 className="h-4 w-4" /></Button>}</div>
                     </CardContent>
                   </Card>
                 ))}

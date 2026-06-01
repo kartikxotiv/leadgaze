@@ -5,12 +5,17 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@kit/ui/card';
 import { Badge } from '@kit/ui/badge';
 import { getDealsService, getInvestorContactsService, getInvestorsService } from '../../services';
+import { FUNDRAISING_FEATURE_KEYS, FUNDRAISING_MODULE_KEYS, useFundraisingPermissions } from '../../utils';
 
 export function FundraisingInvestorDetailsPage({ workspaceId, investorId }: { workspaceId: string; investorId: string }) {
+  const { canAccess, isLoading } = useFundraisingPermissions(workspaceId);
   const { data: investors = [] } = useQuery<any[]>({ queryKey: ['fundraising', 'investors', workspaceId], queryFn: () => getInvestorsService(workspaceId), enabled: !!workspaceId });
   const { data: contacts = [] } = useQuery<any[]>({ queryKey: ['fundraising', 'contacts', workspaceId], queryFn: () => getInvestorContactsService(workspaceId), enabled: !!workspaceId });
   const { data: deals = [] } = useQuery<any[]>({ queryKey: ['fundraising', 'deals', workspaceId], queryFn: () => getDealsService(workspaceId), enabled: !!workspaceId });
   const investor = investors.find((item) => item.id === investorId);
+
+  if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Checking permissions...</div>;
+  if (!canAccess(FUNDRAISING_MODULE_KEYS.investors, FUNDRAISING_FEATURE_KEYS.view)) return <div className="p-6 text-sm text-muted-foreground">You do not have permission to view this investor.</div>;
 
   if (!investor) return <div className="p-6 text-sm text-muted-foreground">Investor not found.</div>;
 

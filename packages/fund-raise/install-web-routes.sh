@@ -185,9 +185,13 @@ write_file app/home/funds/activities/page.tsx \
 "'use client';" \
 "" \
 "import { FundraisingActivitiesPage } from '@kit/fund-raise';" \
+"import { useRBAC } from '~/lib/rbac/rbac-provider';" \
 "" \
 "export default function FundingActivitiesRoute() {" \
-"  return <FundraisingActivitiesPage />;" \
+"  const { currentWorkspace } = useRBAC();" \
+"  const workspaceId = currentWorkspace?.id;" \
+"  if (!workspaceId) return <div>No workspace selected</div>;" \
+"  return <FundraisingActivitiesPage workspaceId={workspaceId} />;" \
 "}"
 
 write_file app/home/funds/settings/page.tsx \

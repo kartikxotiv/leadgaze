@@ -1,7 +1,8 @@
 'use server';
 
 import { NextResponse } from 'next/server';
-import { catchAsync, successDataResponse } from '../../utils';
+import { catchAsync, successDataResponse } from '../../utils/response-handler';
+import { assertFundraisingPermission } from '../_shared/permissions';
 import { assertWorkspaceAccess } from '../_shared/workspace-access';
 
 export const getInvestorsController = catchAsync(async ({ request }) => {
@@ -10,8 +11,9 @@ export const getInvestorsController = catchAsync(async ({ request }) => {
   const id = url.searchParams.get('id');
   if (!workspaceId) return NextResponse.json({ success: false, message: 'workspaceId query parameter is required' }, { status: 400 });
 
-  const { supabase, error } = await assertWorkspaceAccess(workspaceId);
-  if (error) return error;
+  const { supabase, user, error } = await assertWorkspaceAccess(workspaceId);
+  if (error || !user) return error!;
+  await assertFundraisingPermission({ supabase, userId: user.id, workspaceId, moduleKey: 'fundraising_investors', featureKey: 'view' });
 
   let query = (supabase as any).schema('fundraising').from('investors').select('*').eq('workspace_id', workspaceId).eq('is_deleted', false);
   if (id) query = query.eq('id', id).maybeSingle();
@@ -45,6 +47,7 @@ export const createInvestorController = catchAsync(async ({ request }) => {
 
   const { supabase, user, error } = await assertWorkspaceAccess(workspace_id);
   if (error || !user) return error!;
+  await assertFundraisingPermission({ supabase, userId: user.id, workspaceId: workspace_id, moduleKey: 'fundraising_investors', featureKey: 'create' });
 
   const { data, error: insertError } = await (supabase as any).schema('fundraising').from('investors').insert({
     workspace_id,
@@ -76,6 +79,7 @@ export const updateInvestorController = catchAsync(async ({ request }) => {
 
   const { supabase, user, error } = await assertWorkspaceAccess(workspaceId);
   if (error || !user) return error!;
+  await assertFundraisingPermission({ supabase, userId: user.id, workspaceId, moduleKey: 'fundraising_investors', featureKey: 'edit' });
 
   const payload = {
     name: body.name ?? body.investor_name,
@@ -109,6 +113,7 @@ export const deleteInvestorController = catchAsync(async ({ request }) => {
 
   const { supabase, user, error } = await assertWorkspaceAccess(workspaceId);
   if (error || !user) return error!;
+  await assertFundraisingPermission({ supabase, userId: user.id, workspaceId, moduleKey: 'fundraising_investors', featureKey: 'delete' });
   const { error: deleteError } = await (supabase as any).schema('fundraising').from('investors').update({ is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: user.id }).eq('workspace_id', workspaceId).eq('id', id);
   if (deleteError) return NextResponse.json({ success: false, message: 'Failed to delete investor' }, { status: 500 });
   return successDataResponse('Investor deleted successfully', { id });
