@@ -1,11 +1,10 @@
 'use client'
 import {
     Activity,
-    Calendar,
-    FileText,
     Building2,
     TrendingUp,
     Users2,
+    Settings,
 } from 'lucide-react';
 
 const fundraiseRoutes = [
@@ -29,18 +28,18 @@ const fundraiseRoutes = [
             },
             {
                 label: 'Deals',
-                path: '/home/fund/deals',
+                path: '/home/fund/pipeline',
                 Icon: <Users2 className="h-4 w-4" />,
             },
             {
-                label: 'Meetings',
-                path: '/home/fund/meetings',
-                Icon: <Calendar className="h-4 w-4" />,
+                label: 'Activities',
+                path: '/home/fund/activities',
+                Icon: <Activity className="h-4 w-4" />,
             },
             {
-                label: 'Documents',
-                path: '/home/fund/documents',
-                Icon: <FileText className="h-4 w-4" />,
+                label: 'Settings',
+                path: '/home/fund/settings',
+                Icon: <Settings className="h-4 w-4" />,
             },
         ],
     },

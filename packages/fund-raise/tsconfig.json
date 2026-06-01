@@ -1,7 +1,9 @@
 {
   "extends": "@kit/tsconfig/base.json",
   "compilerOptions": {
-    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
+    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",
+    "jsx": "preserve",
+    "lib": ["dom", "dom.iterable", "esnext"]
   },
   "include": ["."],
   "exclude": ["node_modules"]
