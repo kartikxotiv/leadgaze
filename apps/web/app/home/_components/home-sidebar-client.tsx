@@ -1,8 +1,13 @@
 'use client';
 
 import { useMemo } from 'react';
+import { usePathname } from 'next/navigation';
 
 import type { JwtPayload } from '@supabase/supabase-js';
+import {
+  getFundraiseRoutesForPermissions,
+  useFundraisingPermissions,
+} from '@kit/fund-raise';
 
 import {
   Activity,
@@ -23,36 +28,55 @@ import { usePermissionBasedNavigationConfig } from '~/lib/permissions/use-naviga
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getNavigationConfig } from '~/lib/rbac/use-dynamic-navigation';
 
-import { WorkspaceSwitcher } from './workspace-switcher';
-
 export function HomeSidebarClient(props: { user: JwtPayload }) {
-  const { canAccess } = useRBAC();
+  const { canAccess, currentWorkspace } = useRBAC();
+  const pathname = usePathname() || '';
+  const { canAccess: canAccessFundraising } = useFundraisingPermissions(
+    currentWorkspace?.id,
+  );
 
   // Use permission-based navigation
   const permissionNavConfig = usePermissionBasedNavigationConfig();
+
+  const isFundraiseModule = pathname.startsWith('/home/fund');
 
   const navConfig = useMemo(() => {
     // Basic routes that always exist
     const baseRoutes: any[] = [];
 
-    const settingsRoutes = [
-      {
-        label: 'common:routes.settings',
-        children: [
-          {
-            label: 'common:routes.profile',
-            path: pathsConfig.app.profileSettings,
-            Icon: <UserPen className="h-4 w-4" />,
-          },
-          {
-            label: 'common:routes.workspace-settings',
-            path: pathsConfig.app.workspaceSettings,
-            Icon: <Settings className="h-4 w-4" />,
-          },
-        ],
-      },
-    ];
+    // 1. If we are in the Fundraising Module (/home/fund*), render fundraising features.
+    if (isFundraiseModule) {
+      // Team / settings items should remain in all modules
+      const teamItems = permissionNavConfig?.teamItems || getNavigationConfig(canAccess).teamItems;
 
+      return [
+        ...getFundraiseRoutesForPermissions(canAccessFundraising),
+        {
+          label: 'common:routes.settings',
+          children: [
+            {
+              label: 'common:routes.profile',
+              path: pathsConfig.app.profileSettings,
+              Icon: <UserPen className="h-4 w-4" />,
+            },
+            {
+              label: 'common:routes.workspace-settings',
+              path: pathsConfig.app.workspaceSettings,
+              Icon: <Settings className="h-4 w-4" />,
+            },
+            ...teamItems.map((item) => {
+              const IconComponent = item.Icon;
+              return {
+                ...item,
+                Icon: <IconComponent className="h-4 w-4" />,
+              };
+            }),
+          ],
+        },
+      ];
+    }
+
+    // 2. Default: Sales CRM Module
     // Use permission-based navigation if available
     if (permissionNavConfig) {
       const { salesItems, teamItems } = permissionNavConfig;
@@ -64,20 +88,20 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
           children: [
             ...(salesItems.length > 0
               ? [
-                  {
-                    label: 'common:routes.dashboard',
-                    path: pathsConfig.app.home,
-                    Icon: <Activity className="h-4 w-4" />,
-                    end: true,
-                  },
-                  ...salesItems.map((item) => {
-                    const IconComponent = item.Icon;
-                    return {
-                      ...item,
-                      Icon: <IconComponent className="h-4 w-4" />,
-                    };
-                  }),
-                ]
+                {
+                  label: 'common:routes.dashboard',
+                  path: pathsConfig.app.home,
+                  Icon: <Activity className="h-4 w-4" />,
+                  end: true,
+                },
+                ...salesItems.map((item) => {
+                  const IconComponent = item.Icon;
+                  return {
+                    ...item,
+                    Icon: <IconComponent className="h-4 w-4" />,
+                  };
+                }),
+              ]
               : []),
             {
               label: 'Meetings',
@@ -116,12 +140,12 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
             },
             ...(teamItems.length > 0
               ? teamItems.map((item) => {
-                  const IconComponent = item.Icon;
-                  return {
-                    ...item,
-                    Icon: <IconComponent className="h-4 w-4" />,
-                  };
-                })
+                const IconComponent = item.Icon;
+                return {
+                  ...item,
+                  Icon: <IconComponent className="h-4 w-4" />,
+                };
+              })
               : []),
           ],
         },
@@ -138,20 +162,20 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
         children: [
           ...(salesItems.length > 0
             ? [
-                {
-                  label: 'common:routes.dashboard',
-                  path: pathsConfig.app.home,
-                  Icon: <Activity className="h-4 w-4" />,
-                  end: true,
-                },
-                ...salesItems.map((item) => {
-                  const IconComponent = item.Icon;
-                  return {
-                    ...item,
-                    Icon: <IconComponent className="h-4 w-4" />,
-                  };
-                }),
-              ]
+              {
+                label: 'common:routes.dashboard',
+                path: pathsConfig.app.home,
+                Icon: <Activity className="h-4 w-4" />,
+                end: true,
+              },
+              ...salesItems.map((item) => {
+                const IconComponent = item.Icon;
+                return {
+                  ...item,
+                  Icon: <IconComponent className="h-4 w-4" />,
+                };
+              }),
+            ]
             : []),
           {
             label: 'Meetings',
@@ -186,17 +210,17 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
           },
           ...(teamItems.length > 0
             ? teamItems.map((item) => {
-                const IconComponent = item.Icon;
-                return {
-                  ...item,
-                  Icon: <IconComponent className="h-4 w-4" />,
-                };
-              })
+              const IconComponent = item.Icon;
+              return {
+                ...item,
+                Icon: <IconComponent className="h-4 w-4" />,
+              };
+            })
             : []),
         ],
       },
     ];
-  }, [permissionNavConfig, canAccess]);
+  }, [permissionNavConfig, canAccess, isFundraiseModule, canAccessFundraising]);
 
   // Parse the dynamic config to match NavigationConfigSchema
   const parsedConfig = useMemo(() => {
