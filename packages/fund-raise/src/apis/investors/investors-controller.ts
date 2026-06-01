@@ -2,6 +2,7 @@
 
 import { NextResponse } from 'next/server';
 import { catchAsync, successDataResponse } from '../../utils/response-handler';
+import { enrichFundraisingData } from '../_shared/enrichment';
 import { assertFundraisingPermission } from '../_shared/permissions';
 import { assertWorkspaceAccess } from '../_shared/workspace-access';
 
@@ -21,7 +22,8 @@ export const getInvestorsController = catchAsync(async ({ request }) => {
 
   const { data, error: fetchError } = await query;
   if (fetchError) return NextResponse.json({ success: false, message: 'Failed to retrieve investors' }, { status: 500 });
-  return successDataResponse('Investors retrieved successfully', data ?? (id ? null : []));
+  const enriched = await enrichFundraisingData(supabase, workspaceId, data ?? (id ? null : []));
+  return successDataResponse('Investors retrieved successfully', enriched);
 });
 
 export const createInvestorController = catchAsync(async ({ request }) => {
@@ -69,7 +71,8 @@ export const createInvestorController = catchAsync(async ({ request }) => {
     updated_by: user.id,
   }).select('*').single();
   if (insertError) return NextResponse.json({ success: false, message: 'Failed to create investor' }, { status: 500 });
-  return NextResponse.json({ success: true, message: 'Investor created successfully', data }, { status: 201 });
+  const enriched = await enrichFundraisingData(supabase, workspace_id, data);
+  return NextResponse.json({ success: true, message: 'Investor created successfully', data: enriched }, { status: 201 });
 });
 
 export const updateInvestorController = catchAsync(async ({ request }) => {
@@ -102,7 +105,8 @@ export const updateInvestorController = catchAsync(async ({ request }) => {
 
   const { data, error: updateError } = await (supabase as any).schema('fundraising').from('investors').update(payload).eq('workspace_id', workspaceId).eq('id', body.id).select('*').single();
   if (updateError) return NextResponse.json({ success: false, message: 'Failed to update investor' }, { status: 500 });
-  return successDataResponse('Investor updated successfully', data);
+  const enriched = await enrichFundraisingData(supabase, workspaceId, data);
+  return successDataResponse('Investor updated successfully', enriched);
 });
 
 export const deleteInvestorController = catchAsync(async ({ request }) => {
