@@ -1512,17 +1512,77 @@ export type Database = {
           },
         ]
       }
+      email_account_access_grants: {
+        Row: {
+          can_send: boolean
+          created_at: string
+          created_by: string | null
+          email_account_id: number
+          grantee_user_id: string
+          id: string
+          workspace_id: string
+        }
+        Insert: {
+          can_send?: boolean
+          created_at?: string
+          created_by?: string | null
+          email_account_id: number
+          grantee_user_id: string
+          id?: string
+          workspace_id: string
+        }
+        Update: {
+          can_send?: boolean
+          created_at?: string
+          created_by?: string | null
+          email_account_id?: number
+          grantee_user_id?: string
+          id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_account_access_grants_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_account_access_grants_email_account_workspace_fkey"
+            columns: ["email_account_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "email_accounts"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "email_account_access_grants_grantee_user_id_fkey"
+            columns: ["grantee_user_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_accounts: {
         Row: {
+          access_scope: Database["public"]["Enums"]["email_account_access_scope"]
           access_token: string | null
           created_at: string | null
           created_by: string | null
           email: string
           expires_at: string | null
           from_name: string | null
+          history_id: string | null
           host: string | null
           id: number
+          imap_host: string | null
+          imap_port: number | null
+          imap_secure: boolean | null
           is_active: boolean | null
+          is_sync_enabled: boolean | null
+          last_synced_at: string | null
+          owner_user_id: string
           password: string | null
           port: number | null
           provider: Database["public"]["Enums"]["email_provider"]
@@ -1534,15 +1594,23 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          access_scope?: Database["public"]["Enums"]["email_account_access_scope"]
           access_token?: string | null
           created_at?: string | null
           created_by?: string | null
           email: string
           expires_at?: string | null
           from_name?: string | null
+          history_id?: string | null
           host?: string | null
           id?: number
+          imap_host?: string | null
+          imap_port?: number | null
+          imap_secure?: boolean | null
           is_active?: boolean | null
+          is_sync_enabled?: boolean | null
+          last_synced_at?: string | null
+          owner_user_id: string
           password?: string | null
           port?: number | null
           provider?: Database["public"]["Enums"]["email_provider"]
@@ -1554,15 +1622,23 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          access_scope?: Database["public"]["Enums"]["email_account_access_scope"]
           access_token?: string | null
           created_at?: string | null
           created_by?: string | null
           email?: string
           expires_at?: string | null
           from_name?: string | null
+          history_id?: string | null
           host?: string | null
           id?: number
+          imap_host?: string | null
+          imap_port?: number | null
+          imap_secure?: boolean | null
           is_active?: boolean | null
+          is_sync_enabled?: boolean | null
+          last_synced_at?: string | null
+          owner_user_id?: string
           password?: string | null
           port?: number | null
           provider?: Database["public"]["Enums"]["email_provider"]
@@ -1582,6 +1658,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "email_accounts_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "email_accounts_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
@@ -1591,7 +1674,7 @@ export type Database = {
           {
             foreignKeyName: "email_accounts_workspace_id_fkey"
             columns: ["workspace_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
@@ -2545,6 +2628,120 @@ export type Database = {
           },
         ]
       }
+      workspace_team_members: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          id: string
+          is_manager: boolean
+          team_id: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          is_manager?: boolean
+          team_id: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          is_manager?: boolean
+          team_id?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_team_members_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_team_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_teams: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          updated_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_teams_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_teams_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_teams_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspaces: {
         Row: {
           created_at: string
@@ -2799,6 +2996,18 @@ export type Database = {
       }
     }
     Functions: {
+      current_user_can_send_from_email_account: {
+        Args: { p_email_account_id: number }
+        Returns: boolean
+      }
+      current_user_is_workspace_admin: {
+        Args: { p_workspace_id: string }
+        Returns: boolean
+      }
+      current_user_is_workspace_member: {
+        Args: { p_workspace_id: string }
+        Returns: boolean
+      }
       initialize_workspace_crm_data: {
         Args: { p_workspace_id: string }
         Returns: undefined
@@ -2813,6 +3022,7 @@ export type Database = {
         | "export"
         | "import"
         | "bulk"
+      email_account_access_scope: "private" | "workspace"
       email_provider: "google" | "outlook" | "smtp"
       invitation_status:
         | "pending"
@@ -2951,6 +3161,7 @@ export const Constants = {
     Enums: {
       company_size: ["startup", "small", "medium", "large", "enterprise"],
       crm_feature_type: ["crud", "action", "view", "export", "import", "bulk"],
+      email_account_access_scope: ["private", "workspace"],
       email_provider: ["google", "outlook", "smtp"],
       invitation_status: [
         "pending",
