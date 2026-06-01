@@ -16,14 +16,14 @@ mkdir -p \
   app/api/funds/investors \
   app/api/funds/pipeline-stages \
   app/api/funds/rounds \
-  app/home/fund/activities \
-  app/home/fund/deals/[id] \
-  app/home/fund/investors/[id] \
-  app/home/fund/investors \
-  app/home/fund/pipeline \
-  app/home/fund/rounds/[id] \
-  app/home/fund/rounds \
-  app/home/fund/settings
+  app/home/funds/activities \
+  app/home/funds/deals/[id] \
+  app/home/funds/investors/[id] \
+  app/home/funds/investors \
+  app/home/funds/pipeline \
+  app/home/funds/rounds/[id] \
+  app/home/funds/rounds \
+  app/home/funds/settings
 
 write_file() {
   local file="$1"
@@ -90,7 +90,7 @@ write_file app/api/funds/pipeline-stages/route.ts \
 "export const PATCH = enhanceRouteHandler(updatePipelineStageController, { auth: false });" \
 "export const DELETE = enhanceRouteHandler(deletePipelineStageController, { auth: false });"
 
-write_file app/home/fund/page.tsx \
+write_file app/home/funds/page.tsx \
 "'use client';" \
 "" \
 "import { FundraisingDashboardPage } from '@kit/fund-raise';" \
@@ -103,7 +103,7 @@ write_file app/home/fund/page.tsx \
 "  return <FundraisingDashboardPage workspaceId={workspaceId} />;" \
 "}"
 
-write_file app/home/fund/investors/page.tsx \
+write_file app/home/funds/investors/page.tsx \
 "'use client';" \
 "" \
 "import { FundraisingInvestorsPage } from '@kit/fund-raise';" \
@@ -116,7 +116,7 @@ write_file app/home/fund/investors/page.tsx \
 "  return <FundraisingInvestorsPage workspaceId={workspaceId} />;" \
 "}"
 
-write_file app/home/fund/investors/[id]/page.tsx \
+write_file app/home/funds/investors/[id]/page.tsx \
 "'use client';" \
 "" \
 "import { FundraisingInvestorDetailsPage } from '@kit/fund-raise';" \
@@ -129,7 +129,7 @@ write_file app/home/fund/investors/[id]/page.tsx \
 "  return <FundraisingInvestorDetailsPage workspaceId={workspaceId} investorId={params.id} />;" \
 "}"
 
-write_file app/home/fund/rounds/page.tsx \
+write_file app/home/funds/rounds/page.tsx \
 "'use client';" \
 "" \
 "import { FundraisingRoundsPage } from '@kit/fund-raise';" \
@@ -142,7 +142,7 @@ write_file app/home/fund/rounds/page.tsx \
 "  return <FundraisingRoundsPage workspaceId={workspaceId} />;" \
 "}"
 
-write_file app/home/fund/rounds/[id]/page.tsx \
+write_file app/home/funds/rounds/[id]/page.tsx \
 "'use client';" \
 "" \
 "import { FundraisingRoundDetailsPage } from '@kit/fund-raise';" \
@@ -155,7 +155,7 @@ write_file app/home/fund/rounds/[id]/page.tsx \
 "  return <FundraisingRoundDetailsPage workspaceId={workspaceId} roundId={params.id} />;" \
 "}"
 
-write_file app/home/fund/pipeline/page.tsx \
+write_file app/home/funds/pipeline/page.tsx \
 "'use client';" \
 "" \
 "import { FundraisingPipelinePage } from '@kit/fund-raise';" \
@@ -168,7 +168,7 @@ write_file app/home/fund/pipeline/page.tsx \
 "  return <FundraisingPipelinePage workspaceId={workspaceId} />;" \
 "}"
 
-write_file app/home/fund/deals/[id]/page.tsx \
+write_file app/home/funds/deals/[id]/page.tsx \
 "'use client';" \
 "" \
 "import { FundraisingDealDetailsPage } from '@kit/fund-raise';" \
@@ -181,7 +181,7 @@ write_file app/home/fund/deals/[id]/page.tsx \
 "  return <FundraisingDealDetailsPage workspaceId={workspaceId} dealId={params.id} />;" \
 "}"
 
-write_file app/home/fund/activities/page.tsx \
+write_file app/home/funds/activities/page.tsx \
 "'use client';" \
 "" \
 "import { FundraisingActivitiesPage } from '@kit/fund-raise';" \
@@ -190,7 +190,7 @@ write_file app/home/fund/activities/page.tsx \
 "  return <FundraisingActivitiesPage />;" \
 "}"
 
-write_file app/home/fund/settings/page.tsx \
+write_file app/home/funds/settings/page.tsx \
 "'use client';" \
 "" \
 "import { FundraisingSettingsPage } from '@kit/fund-raise';" \

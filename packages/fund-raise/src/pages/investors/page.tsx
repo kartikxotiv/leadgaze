@@ -52,6 +52,8 @@ type Contact = {
   is_primary: boolean;
 };
 
+const investorTypes = ['VC', 'Angel', 'PE', 'Family Office', 'Corporate Investor'];
+
 const emptyInvestor = {
   name: '',
   investor_type: 'VC',
@@ -129,7 +131,16 @@ function InvestorFormDialog({
         </DialogHeader>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Name"><Input value={form.name} onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))} /></Field>
-          <Field label="Investor Type"><Input value={form.investor_type} onChange={(event) => setForm((prev) => ({ ...prev, investor_type: event.target.value }))} /></Field>
+          <Field label="Investor Type">
+            <Select value={form.investor_type} onValueChange={(value) => setForm((prev) => ({ ...prev, investor_type: value }))}>
+              <SelectTrigger><SelectValue placeholder="Select investor type" /></SelectTrigger>
+              <SelectContent>
+                {investorTypes.map((item) => (
+                  <SelectItem key={item} value={item}>{item}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
           <Field label="Website"><Input value={form.website} onChange={(event) => setForm((prev) => ({ ...prev, website: event.target.value }))} /></Field>
           <Field label="LinkedIn URL"><Input value={form.linkedin_url} onChange={(event) => setForm((prev) => ({ ...prev, linkedin_url: event.target.value }))} /></Field>
           <Field label="Industry Focus"><Input value={form.industry_focus} onChange={(event) => setForm((prev) => ({ ...prev, industry_focus: event.target.value }))} /></Field>

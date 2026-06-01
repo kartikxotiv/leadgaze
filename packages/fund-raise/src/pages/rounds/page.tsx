@@ -29,6 +29,15 @@ type Round = {
   description: string | null;
 };
 
+const roundTypes = [
+  { value: 'pre_seed', label: 'Pre-Seed' },
+  { value: 'seed', label: 'Seed' },
+  { value: 'series_a', label: 'Series A' },
+  { value: 'series_b', label: 'Series B' },
+  { value: 'series_c', label: 'Series C' },
+  { value: 'bridge', label: 'Bridge' },
+];
+
 const emptyRound = { round_name: '', round_type: 'seed', target_amount: '', raised_amount: '0', valuation: '', currency: 'USD', status: 'planning', start_date: '', close_date: '', description: '' };
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -61,7 +70,16 @@ function RoundFormDialog({ workspaceId, round, onDone }: { workspaceId: string; 
         <DialogHeader><DialogTitle>{round ? 'Edit Round' : 'Create Round'}</DialogTitle><DialogDescription>Manage funding round details.</DialogDescription></DialogHeader>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Round Name"><Input value={form.round_name} onChange={(e) => setForm((p) => ({ ...p, round_name: e.target.value }))} /></Field>
-          <Field label="Round Type"><Input value={form.round_type} onChange={(e) => setForm((p) => ({ ...p, round_type: e.target.value }))} /></Field>
+          <Field label="Round Type">
+            <Select value={form.round_type} onValueChange={(value) => setForm((p) => ({ ...p, round_type: value }))}>
+              <SelectTrigger><SelectValue placeholder="Select round type" /></SelectTrigger>
+              <SelectContent>
+                {roundTypes.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
           <Field label="Target Amount"><Input type="number" value={form.target_amount} onChange={(e) => setForm((p) => ({ ...p, target_amount: e.target.value }))} /></Field>
           <Field label="Raised Amount"><Input type="number" value={form.raised_amount} onChange={(e) => setForm((p) => ({ ...p, raised_amount: e.target.value }))} /></Field>
           <Field label="Valuation"><Input type="number" value={form.valuation} onChange={(e) => setForm((p) => ({ ...p, valuation: e.target.value }))} /></Field>

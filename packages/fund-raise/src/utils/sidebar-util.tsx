@@ -13,32 +13,32 @@ const fundraiseRoutes = [
         children: [
             {
                 label: 'Overview',
-                path: '/home/fund',
+                path: '/home/funds',
                 Icon: <Activity className="h-4 w-4" />,
             },
             {
                 label: 'Rounds',
-                path: '/home/fund/rounds',
+                path: '/home/funds/rounds',
                 Icon: <TrendingUp className="h-4 w-4" />,
             },
             {
                 label: 'Investors',
-                path: '/home/fund/investors',
+                path: '/home/funds/investors',
                 Icon: <Building2 className="h-4 w-4" />,
             },
             {
                 label: 'Deals',
-                path: '/home/fund/pipeline',
+                path: '/home/funds/pipeline',
                 Icon: <Users2 className="h-4 w-4" />,
             },
             {
                 label: 'Activities',
-                path: '/home/fund/activities',
+                path: '/home/funds/activities',
                 Icon: <Activity className="h-4 w-4" />,
             },
             {
                 label: 'Settings',
-                path: '/home/fund/settings',
+                path: '/home/funds/settings',
                 Icon: <Settings className="h-4 w-4" />,
             },
         ],
