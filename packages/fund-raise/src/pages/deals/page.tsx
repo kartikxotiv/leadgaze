@@ -228,7 +228,7 @@ export function FundraisingDealsPage({ workspaceId }: { workspaceId: string }) {
 
   return (
     <div className="flex h-full w-full flex-col gap-5 p-6">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h1 className="text-3xl font-bold">Pipeline</h1><p className="text-muted-foreground">Track investor progress through fundraising stages.</p></div>{canCreateDeal && <DealFormDialog workspaceId={workspaceId} onDone={refresh} />}</div>
+      {canCreateDeal && <div className="flex justify-end"><DealFormDialog workspaceId={workspaceId} onDone={refresh} /></div>}
       <div className="grid min-h-[560px] auto-cols-[minmax(280px,1fr)] grid-flow-col gap-4 overflow-x-auto pb-4">
         {stages.map((stage) => {
           const stageDeals = deals.filter((deal) => deal.stage_id === stage.id);

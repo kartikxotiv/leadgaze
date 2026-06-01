@@ -33,10 +33,6 @@ export function FundraisingActivitiesPage({ workspaceId }: { workspaceId: string
 
   return (
     <div className="flex h-full w-full flex-col gap-5 p-6">
-      <div>
-        <h1 className="text-3xl font-bold">Activities</h1>
-        <p className="text-muted-foreground">Fundraising activity feed powered by the core Activities module.</p>
-      </div>
       <div className="grid gap-3 sm:grid-cols-4">
         <Input type="date" />
         <Select value={type} onValueChange={setType}>

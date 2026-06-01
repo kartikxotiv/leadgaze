@@ -34,11 +34,6 @@ export function FundraisingDashboardPage({ workspaceId }: { workspaceId: string 
 
   return (
     <div className="flex h-full w-full flex-col space-y-6 p-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Fundraising</h1>
-        <p className="text-muted-foreground">Quick view of rounds, investors, and pipeline health.</p>
-      </div>
-
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {canViewRounds && <Card><CardContent className="p-6"><div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Total Target</span><DollarSign className="h-4 w-4" /></div><div className="mt-2 text-2xl font-bold">{formatCurrency(totalTarget)}</div></CardContent></Card>}
         {canViewRounds && <Card><CardContent className="p-6"><div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Total Raised</span><TrendingUp className="h-4 w-4 text-green-500" /></div><div className="mt-2 text-2xl font-bold text-green-600">{formatCurrency(totalRaised)}</div></CardContent></Card>}
