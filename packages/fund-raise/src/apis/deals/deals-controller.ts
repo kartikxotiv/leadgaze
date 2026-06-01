@@ -2,6 +2,7 @@
 
 import { NextResponse } from 'next/server';
 import { catchAsync, successDataResponse } from '../../utils/response-handler';
+import { enrichFundraisingData } from '../_shared/enrichment';
 import { assertFundraisingPermission } from '../_shared/permissions';
 import { assertWorkspaceAccess } from '../_shared/workspace-access';
 
@@ -24,7 +25,8 @@ export const getDealsController = catchAsync(async ({ request }) => {
   }
   const { data, error: fetchError } = await query;
   if (fetchError) return NextResponse.json({ success: false, message: 'Failed to retrieve deals' }, { status: 500 });
-  return successDataResponse('Deals retrieved successfully', data ?? (id ? null : []));
+  const enriched = await enrichFundraisingData(supabase, workspaceId, data ?? (id ? null : []));
+  return successDataResponse('Deals retrieved successfully', enriched);
 });
 
 export const createDealController = catchAsync(async ({ request }) => {
@@ -37,7 +39,8 @@ export const createDealController = catchAsync(async ({ request }) => {
   await assertFundraisingPermission({ supabase, userId: user.id, workspaceId: workspace_id, moduleKey: 'fundraising_pipeline', featureKey: 'create_deal' });
   const { data, error: insertError } = await (supabase as any).schema('fundraising').from('deals').insert({ workspace_id, investor_id, round_id: round_id ?? null, stage_id, status, probability, expected_amount: expected_amount ?? null, currency, last_contact_date: last_contact_date ?? null, next_followup_date: next_followup_date ?? null, notes: notes ?? null, owner_id: owner_id ?? user.id, tags, custom_fields, created_by: user.id, updated_by: user.id }).select('*').single();
   if (insertError) return NextResponse.json({ success: false, message: 'Failed to create deal' }, { status: 500 });
-  return NextResponse.json({ success: true, message: 'Deal created successfully', data }, { status: 201 });
+  const enriched = await enrichFundraisingData(supabase, workspace_id, data);
+  return NextResponse.json({ success: true, message: 'Deal created successfully', data: enriched }, { status: 201 });
 });
 
 export const updateDealController = catchAsync(async ({ request }) => {
@@ -66,7 +69,8 @@ export const updateDealController = catchAsync(async ({ request }) => {
   Object.keys(payload).forEach((key) => (payload as Record<string, unknown>)[key] === undefined && delete (payload as Record<string, unknown>)[key]);
   const { data, error: updateError } = await (supabase as any).schema('fundraising').from('deals').update(payload).eq('workspace_id', workspaceId).eq('id', body.id).select('*').single();
   if (updateError) return NextResponse.json({ success: false, message: 'Failed to update deal' }, { status: 500 });
-  return successDataResponse('Deal updated successfully', data);
+  const enriched = await enrichFundraisingData(supabase, workspaceId, data);
+  return successDataResponse('Deal updated successfully', enriched);
 });
 
 export const deleteDealController = catchAsync(async ({ request }) => {
