@@ -2,6 +2,7 @@
 
 import { NextResponse } from 'next/server';
 import { catchAsync, successDataResponse } from '../../utils/response-handler';
+import { enrichFundraisingData } from '../_shared/enrichment';
 import { assertFundraisingPermission } from '../_shared/permissions';
 import { assertWorkspaceAccess } from '../_shared/workspace-access';
 
@@ -43,7 +44,8 @@ export const getRoundsController = catchAsync(async ({ request }) => {
     return NextResponse.json({ success: false, message: 'Failed to retrieve funding rounds' }, { status: 500 });
   }
 
-  return successDataResponse('Funding rounds retrieved successfully', rounds ?? (id ? null : []));
+  const enriched = await enrichFundraisingData(supabase, workspaceId, rounds ?? (id ? null : []));
+  return successDataResponse('Funding rounds retrieved successfully', enriched);
 });
 
 
@@ -123,7 +125,8 @@ export const createRoundController = catchAsync(async ({ request }) => {
     );
   }
 
-  return NextResponse.json({ success: true, message: 'Funding round created successfully', data: newRound }, { status: 201 });
+  const enriched = await enrichFundraisingData(supabase, workspace_id, newRound);
+  return NextResponse.json({ success: true, message: 'Funding round created successfully', data: enriched }, { status: 201 });
 });
 
 export const updateRoundController = catchAsync(async ({ request }) => {
@@ -155,7 +158,8 @@ export const updateRoundController = catchAsync(async ({ request }) => {
 
   const { data, error: updateError } = await (supabase as any).schema('fundraising').from('rounds').update(payload).eq('workspace_id', workspaceId).eq('id', body.id).select('*').single();
   if (updateError) return NextResponse.json({ success: false, message: 'Failed to update funding round' }, { status: 500 });
-  return successDataResponse('Funding round updated successfully', data);
+  const enriched = await enrichFundraisingData(supabase, workspaceId, data);
+  return successDataResponse('Funding round updated successfully', enriched);
 });
 
 export const deleteRoundController = catchAsync(async ({ request }) => {

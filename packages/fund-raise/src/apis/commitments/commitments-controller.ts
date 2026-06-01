@@ -2,6 +2,7 @@
 
 import { NextResponse } from 'next/server';
 import { catchAsync, successDataResponse } from '../../utils/response-handler';
+import { enrichFundraisingData } from '../_shared/enrichment';
 import { assertFundraisingPermission } from '../_shared/permissions';
 import { assertWorkspaceAccess } from '../_shared/workspace-access';
 
@@ -17,7 +18,8 @@ export const getCommitmentsController = catchAsync(async ({ request }) => {
   if (dealId) query = query.eq('deal_id', dealId);
   const { data, error: fetchError } = await query.order('created_at', { ascending: false });
   if (fetchError) return NextResponse.json({ success: false, message: 'Failed to retrieve commitments' }, { status: 500 });
-  return successDataResponse('Commitments retrieved successfully', data || []);
+  const enriched = await enrichFundraisingData(supabase, workspaceId, data || []);
+  return successDataResponse('Commitments retrieved successfully', enriched);
 });
 
 export const createCommitmentController = catchAsync(async ({ request }) => {
@@ -30,7 +32,8 @@ export const createCommitmentController = catchAsync(async ({ request }) => {
   await assertFundraisingPermission({ supabase, userId: user.id, workspaceId: workspace_id, moduleKey: 'fundraising_pipeline', featureKey: 'edit_deal' });
   const { data, error: insertError } = await (supabase as any).schema('fundraising').from('commitments').insert({ workspace_id, deal_id, promised_amount, received_amount, currency, status, commitment_date: commitment_date ?? null, expected_close_date: expected_close_date ?? null, received_date: received_date ?? null, notes: notes ?? null, created_by: user.id, updated_by: user.id }).select('*').single();
   if (insertError) return NextResponse.json({ success: false, message: 'Failed to create commitment' }, { status: 500 });
-  return NextResponse.json({ success: true, message: 'Commitment created successfully', data }, { status: 201 });
+  const enriched = await enrichFundraisingData(supabase, workspace_id, data);
+  return NextResponse.json({ success: true, message: 'Commitment created successfully', data: enriched }, { status: 201 });
 });
 
 export const updateCommitmentController = catchAsync(async ({ request }) => {
@@ -55,7 +58,8 @@ export const updateCommitmentController = catchAsync(async ({ request }) => {
   Object.keys(payload).forEach((key) => (payload as Record<string, unknown>)[key] === undefined && delete (payload as Record<string, unknown>)[key]);
   const { data, error: updateError } = await (supabase as any).schema('fundraising').from('commitments').update(payload).eq('workspace_id', workspaceId).eq('id', body.id).select('*').single();
   if (updateError) return NextResponse.json({ success: false, message: 'Failed to update commitment' }, { status: 500 });
-  return successDataResponse('Commitment updated successfully', data);
+  const enriched = await enrichFundraisingData(supabase, workspaceId, data);
+  return successDataResponse('Commitment updated successfully', enriched);
 });
 
 export const deleteCommitmentController = catchAsync(async ({ request }) => {

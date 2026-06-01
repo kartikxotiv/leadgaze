@@ -25,6 +25,9 @@ import {
 import {
   FUNDRAISING_FEATURE_KEYS,
   FUNDRAISING_MODULE_KEYS,
+  dateTimeDisplay,
+  dealDisplay,
+  ownerDisplay,
   useFundraisingPermissions,
 } from '../../utils';
 
@@ -43,7 +46,9 @@ type Investor = {
   geo_focus: string[];
   status: string;
   owner_id: string | null;
+  owner_name?: string | null;
   created_at: string;
+  created_at_display?: string | null;
 };
 
 type Contact = {
@@ -188,15 +193,14 @@ function InvestorDetails({ workspaceId, investor, canAddContact, canDeleteContac
           <Info label="Ticket Size" value={`${investor.ticket_size_min ?? '-'} - ${investor.ticket_size_max ?? '-'}`} />
           <Info label="Industry Focus" value={investor.industry_focus?.join(', ') || '-'} />
           <Info label="Geo Focus" value={investor.geo_focus?.join(', ') || '-'} />
-          <Info label="Owner" value={investor.owner_id ?? '-'} />
+          <Info label="Owner" value={ownerDisplay(investor)} />
         </section>
         <section className="grid gap-3">
           <h3 className="font-semibold">Contacts</h3>
           {canAddContact && <div className="grid gap-2 sm:grid-cols-3"><Input placeholder="Name" value={contactForm.name} onChange={(e) => setContactForm((p) => ({ ...p, name: e.target.value }))} /><Input placeholder="Designation" value={contactForm.designation} onChange={(e) => setContactForm((p) => ({ ...p, designation: e.target.value }))} /><Input placeholder="Email" value={contactForm.email} onChange={(e) => setContactForm((p) => ({ ...p, email: e.target.value }))} /><Input placeholder="Phone" value={contactForm.phone} onChange={(e) => setContactForm((p) => ({ ...p, phone: e.target.value }))} /><Input placeholder="LinkedIn" value={contactForm.linkedin_url} onChange={(e) => setContactForm((p) => ({ ...p, linkedin_url: e.target.value }))} /><Button disabled={!contactForm.name || createContact.isPending} onClick={() => createContact.mutate({ ...contactForm, workspace_id: workspaceId, investor_id: investor.id })}><UserPlus className="mr-2 h-4 w-4" /> Add Contact</Button></div>}
           <div className="rounded-md border">{contacts.length === 0 ? <div className="p-4 text-sm text-muted-foreground">No contacts added.</div> : contacts.map((contact) => <div key={contact.id} className="flex items-center justify-between border-b p-3 text-sm last:border-b-0"><div><div className="font-medium">{contact.name}</div><div className="text-muted-foreground">{contact.designation ?? '-'} · {contact.email ?? '-'}</div></div>{canDeleteContact && <Button variant="ghost" size="sm" onClick={() => deleteContact.mutate(contact.id)}><Trash2 className="h-4 w-4" /></Button>}</div>)}</div>
         </section>
-        <section className="grid gap-3"><h3 className="font-semibold">Related Deals</h3><div className="rounded-md border">{relatedDeals.length === 0 ? <div className="p-4 text-sm text-muted-foreground">No related deals.</div> : relatedDeals.map((deal) => <div key={deal.id} className="flex justify-between border-b p-3 text-sm last:border-b-0"><span>{deal.id}</span><span>{deal.status}</span></div>)}</div></section>
-        <section className="grid gap-2 text-sm text-muted-foreground"><h3 className="font-semibold text-foreground">Core Module Anchors</h3><div>Notes, Documents, and Activities should use entity_type <code>fundraising_investor</code> and entity_id <code>{investor.id}</code>.</div></section>
+        <section className="grid gap-3"><h3 className="font-semibold">Related Deals</h3><div className="rounded-md border">{relatedDeals.length === 0 ? <div className="p-4 text-sm text-muted-foreground">No related deals.</div> : relatedDeals.map((deal) => <div key={deal.id} className="flex justify-between border-b p-3 text-sm last:border-b-0"><span>{dealDisplay(deal)}</span><span>{deal.status}</span></div>)}</div></section>
       </div>
     </DialogContent>
   );
@@ -238,7 +242,7 @@ export function FundraisingInvestorsPage({ workspaceId }: { workspaceId: string 
     <div className="flex h-full w-full flex-col gap-5 p-6">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h1 className="text-3xl font-bold">Investors</h1><p className="text-muted-foreground">Manage investor organizations and contacts.</p></div>{canCreate && <InvestorFormDialog workspaceId={workspaceId} onDone={refresh} />}</div>
       <div className="flex flex-col gap-3 sm:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="pl-9" placeholder="Search investors..." value={search} onChange={(event) => setSearch(event.target.value)} /></div><Select value={status} onValueChange={setStatus}><SelectTrigger className="sm:w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Status</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem><SelectItem value="blacklisted">Blacklisted</SelectItem></SelectContent></Select><Select value={type} onValueChange={setType}><SelectTrigger className="sm:w-48"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Types</SelectItem>{types.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></div>
-      <Card><CardContent className="p-0"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="border-b bg-muted/40 text-left text-xs uppercase text-muted-foreground"><tr><th className="p-3">Name</th><th className="p-3">Investor Type</th><th className="p-3">Ticket Size</th><th className="p-3">Industry Focus</th><th className="p-3">Status</th><th className="p-3">Owner</th><th className="p-3">Created</th><th className="p-3 text-right">Actions</th></tr></thead><tbody>{isLoading ? [...Array(4)].map((_, i) => <tr key={i}><td className="p-3" colSpan={8}><Skeleton className="h-8 w-full" /></td></tr>) : filtered.map((investor) => <tr key={investor.id} className="border-b last:border-b-0"><td className="p-3 font-medium"><div className="flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground" />{investor.name}</div></td><td className="p-3">{investor.investor_type ?? '-'}</td><td className="p-3">{investor.ticket_size_min ?? '-'} - {investor.ticket_size_max ?? '-'}</td><td className="p-3">{investor.industry_focus?.join(', ') || '-'}</td><td className="p-3"><Badge variant="outline">{investor.status}</Badge></td><td className="p-3">{investor.owner_id ?? '-'}</td><td className="p-3">{new Date(investor.created_at).toLocaleDateString()}</td><td className="p-3 text-right"><div className="flex justify-end gap-1"><Dialog><DialogTrigger asChild><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></DialogTrigger><InvestorDetails workspaceId={workspaceId} investor={investor} canAddContact={canAddContact} canDeleteContact={canDelete} /></Dialog>{canEdit && <InvestorFormDialog workspaceId={workspaceId} investor={investor} onDone={refresh} />}{canDelete && <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(investor.id)}><Trash2 className="h-4 w-4" /></Button>}</div></td></tr>)}</tbody></table></div></CardContent></Card>
+      <Card><CardContent className="p-0"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="border-b bg-muted/40 text-left text-xs uppercase text-muted-foreground"><tr><th className="p-3">Name</th><th className="p-3">Investor Type</th><th className="p-3">Ticket Size</th><th className="p-3">Industry Focus</th><th className="p-3">Status</th><th className="p-3">Owner</th><th className="p-3">Created</th><th className="p-3 text-right">Actions</th></tr></thead><tbody>{isLoading ? [...Array(4)].map((_, i) => <tr key={i}><td className="p-3" colSpan={8}><Skeleton className="h-8 w-full" /></td></tr>) : filtered.map((investor) => <tr key={investor.id} className="border-b last:border-b-0"><td className="p-3 font-medium"><div className="flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground" />{investor.name}</div></td><td className="p-3">{investor.investor_type ?? '-'}</td><td className="p-3">{investor.ticket_size_min ?? '-'} - {investor.ticket_size_max ?? '-'}</td><td className="p-3">{investor.industry_focus?.join(', ') || '-'}</td><td className="p-3"><Badge variant="outline">{investor.status}</Badge></td><td className="p-3">{ownerDisplay(investor)}</td><td className="p-3">{dateTimeDisplay(investor.created_at_display, investor.created_at)}</td><td className="p-3 text-right"><div className="flex justify-end gap-1"><Dialog><DialogTrigger asChild><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></DialogTrigger><InvestorDetails workspaceId={workspaceId} investor={investor} canAddContact={canAddContact} canDeleteContact={canDelete} /></Dialog>{canEdit && <InvestorFormDialog workspaceId={workspaceId} investor={investor} onDone={refresh} />}{canDelete && <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(investor.id)}><Trash2 className="h-4 w-4" /></Button>}</div></td></tr>)}</tbody></table></div></CardContent></Card>
     </div>
   );
 }

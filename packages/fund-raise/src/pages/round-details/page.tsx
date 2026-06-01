@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@kit/ui/card';
 import { Badge } from '@kit/ui/badge';
 import { getDealsService, getInvestorsService, getPipelineStagesService, getRoundsService } from '../../services';
-import { FUNDRAISING_FEATURE_KEYS, FUNDRAISING_MODULE_KEYS, useFundraisingPermissions } from '../../utils';
+import { FUNDRAISING_FEATURE_KEYS, FUNDRAISING_MODULE_KEYS, dateDisplay, investorDisplay, useFundraisingPermissions } from '../../utils';
 
 export function FundraisingRoundDetailsPage({ workspaceId, roundId }: { workspaceId: string; roundId: string }) {
   const { canAccess, isLoading } = useFundraisingPermissions(workspaceId);
@@ -24,10 +24,9 @@ export function FundraisingRoundDetailsPage({ workspaceId, roundId }: { workspac
   return (
     <div className="flex h-full w-full flex-col gap-6 p-6">
       <div><h1 className="text-3xl font-bold">{round.round_name}</h1><p className="text-muted-foreground">Funding round details</p></div>
-      <Card><CardContent className="grid gap-4 p-6 sm:grid-cols-4"><Info label="Type" value={round.round_type} /><Info label="Target" value={round.target_amount} /><Info label="Raised" value={round.raised_amount} /><Info label="Valuation" value={round.valuation ?? '-'} /><Info label="Status" value={<Badge variant="outline">{round.status}</Badge>} /><Info label="Start" value={round.start_date ?? '-'} /><Info label="Close" value={round.close_date ?? '-'} /><Info label="Currency" value={round.currency} /></CardContent></Card>
-      <Card><CardContent className="p-6"><h2 className="mb-3 font-semibold">Associated Investors</h2>{roundDeals.length === 0 ? <p className="text-sm text-muted-foreground">No investors linked.</p> : roundDeals.map((deal) => <div key={deal.id} className="border-b py-2 text-sm last:border-b-0">{investors.find((item) => item.id === deal.investor_id)?.name ?? deal.investor_id}</div>)}</CardContent></Card>
+      <Card><CardContent className="grid gap-4 p-6 sm:grid-cols-4"><Info label="Type" value={round.round_type} /><Info label="Target" value={round.target_amount} /><Info label="Raised" value={round.raised_amount} /><Info label="Valuation" value={round.valuation ?? '-'} /><Info label="Status" value={<Badge variant="outline">{round.status}</Badge>} /><Info label="Start" value={dateDisplay(round.start_date_display, round.start_date)} /><Info label="Close" value={dateDisplay(round.close_date_display, round.close_date)} /><Info label="Currency" value={round.currency} /></CardContent></Card>
+      <Card><CardContent className="p-6"><h2 className="mb-3 font-semibold">Associated Investors</h2>{roundDeals.length === 0 ? <p className="text-sm text-muted-foreground">No investors linked.</p> : roundDeals.map((deal) => <div key={deal.id} className="border-b py-2 text-sm last:border-b-0">{investorDisplay({ ...deal, investor_name: deal.investor_name ?? investors.find((item) => item.id === deal.investor_id)?.name })}</div>)}</CardContent></Card>
       <Card><CardContent className="p-6"><h2 className="mb-3 font-semibold">Pipeline Summary</h2><div className="grid gap-3 sm:grid-cols-3">{stages.map((stage) => <div key={stage.id} className="rounded-md border p-3"><div className="text-xs text-muted-foreground">{stage.name}</div><div className="text-2xl font-bold">{roundDeals.filter((deal) => deal.stage_id === stage.id).length}</div></div>)}</div></CardContent></Card>
-      <Card><CardContent className="p-6 text-sm text-muted-foreground">Core modules use entity_type <code>fundraising_round</code> and entity_id <code>{roundId}</code>.</CardContent></Card>
     </div>
   );
 }
