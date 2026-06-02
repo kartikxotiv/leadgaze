@@ -4,7 +4,12 @@ import { useMemo } from 'react';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
-import { ChevronDown, Building2, LayoutDashboard, ShieldCheck } from 'lucide-react';
+import {
+  Building2,
+  ChevronDown,
+  LayoutDashboard,
+  ShieldCheck,
+} from 'lucide-react';
 
 import {
   Select,
@@ -13,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@kit/ui/select';
-
 import { cn } from '@kit/ui/utils';
 
 type ModuleKey = 'leadgaze' | 'hrms';
@@ -28,8 +32,12 @@ export function ModuleSwitcher(props: {
 
   const value = useMemo<ModuleKey>(() => {
     const selected = searchParams.get('module');
-    return selected === 'hrms' ? 'hrms' : props.value ?? 'leadgaze';
-  }, [props.value, searchParams]);
+    if (pathname.startsWith('/home/hrms')) {
+      return 'hrms';
+    }
+
+    return selected === 'hrms' ? 'hrms' : (props.value ?? 'leadgaze');
+  }, [pathname, props.value, searchParams]);
 
   return (
     <div className={cn('flex items-center gap-3', props.className)}>
@@ -41,9 +49,12 @@ export function ModuleSwitcher(props: {
       <Select
         value={value}
         onValueChange={(nextValue) => {
-          const params = new URLSearchParams(searchParams.toString());
-          params.set('module', nextValue);
-          router.replace(`${pathname}?${params.toString()}`);
+          if (nextValue === 'hrms') {
+            router.push('/home/hrms');
+            return;
+          }
+
+          router.push('/home');
         }}
       >
         <SelectTrigger className="w-[190px]">
@@ -68,4 +79,3 @@ export function ModuleSwitcher(props: {
     </div>
   );
 }
-

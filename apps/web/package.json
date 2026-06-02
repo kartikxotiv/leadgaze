@@ -37,6 +37,7 @@
     "@kit/accounts": "workspace:*",
     "@kit/auth": "workspace:*",
     "@kit/fund-raise": "workspace:*",
+    "@kit/hrms": "workspace:*",
     "@kit/i18n": "workspace:*",
     "@kit/next": "workspace:*",
     "@kit/supabase": "workspace:*",
