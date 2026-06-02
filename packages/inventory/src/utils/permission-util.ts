@@ -176,7 +176,7 @@ export function useInventoryPermissions(workspaceId?: string) {
   const canAccess = useMemo<InventoryCanAccess>(
     () => (moduleKey: string, featureKey = INVENTORY_FEATURE_KEYS.view) => {
       const hasInventoryPermissionsSeeded = permissions.some(
-        (p) => p.module && p.module.startsWith('inventory'),
+        (permission) => permission.module.startsWith('inventory'),
       );
 
       if (!hasInventoryPermissionsSeeded) {

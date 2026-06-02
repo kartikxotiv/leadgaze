@@ -1,30 +1,5 @@
 import { ApiError } from '../../utils/response-handler';
 
-type RoleMemberRow = {
-  role_id?: string | { id?: string } | null;
-};
-
-type PermissionRow = {
-  can_access?: boolean | null;
-};
-
-type InventoryPermissionSupabaseClient = {
-  from: (table: string) => {
-    select: (query: string) => {
-      eq: (column: string, value: string) => {
-        eq: (column: string, value: string) => {
-          eq: (column: string, value: string) => {
-            maybeSingle: () => Promise<{
-              data: RoleMemberRow | PermissionRow | null;
-              error: Error | null;
-            }>;
-          };
-        };
-      };
-    };
-  };
-};
-
 export async function assertInventoryPermission({
   supabase,
   userId,
@@ -38,7 +13,7 @@ export async function assertInventoryPermission({
   moduleKey: string;
   featureKey: string;
 }) {
-  const memberResult = await supabase
+  const { data: member, error: memberError } = await supabase
     .from('workspace_members')
     .select('role_id')
     .eq('workspace_id', workspaceId)
@@ -46,36 +21,50 @@ export async function assertInventoryPermission({
     .eq('status', 'accepted')
     .maybeSingle();
 
-  const member = memberResult.data as RoleMemberRow | null;
-
-  if (memberResult.error || !member?.role_id) {
+  if (memberError || !member?.role_id) {
     throw new ApiError('You do not have permission to access this feature', 403);
   }
 
   const roleId =
     typeof member.role_id === 'object' ? member.role_id?.id : member.role_id;
 
-  const permissionResult = await supabase
+  const { data: permissions, error: permissionsError } = await supabase
     .from('role_permissions')
     .select(
       `
       can_access,
-      crm_module_features!inner (
+      crm_module_features!module_feature_id (
         feature_key,
-        crm_modules!inner (
+        crm_modules!module_id (
           module_key
         )
       )
     `,
     )
-    .eq('role_id', roleId)
-    .eq('crm_module_features.feature_key', featureKey)
-    .eq('crm_module_features.crm_modules.module_key', moduleKey)
-    .maybeSingle();
+    .eq('role_id', roleId);
 
-  const permission = permissionResult.data as PermissionRow | null;
+  if (permissionsError) {
+    throw new ApiError('You do not have permission to access this feature', 403);
+  }
 
-  if (permissionResult.error || !permission?.can_access) {
+  const inventoryPermissions = (permissions ?? []).filter(
+    (permission: any) =>
+      permission.crm_module_features?.crm_modules?.module_key?.startsWith('inventory'),
+  );
+
+  if (inventoryPermissions.length === 0) {
+    return;
+  }
+
+  const hasPermission = inventoryPermissions.some(
+    (permission: any) =>
+      permission.crm_module_features?.crm_modules?.module_key === moduleKey &&
+      permission.crm_module_features?.feature_key === featureKey &&
+      Boolean(permission.can_access),
+  );
+
+  if (!hasPermission) {
     throw new ApiError('You do not have permission to access this feature', 403);
   }
 }
+
