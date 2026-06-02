@@ -19,9 +19,10 @@ VALUES
   ('inventory_warehouses', 'Inventory Warehouses', 'Manage warehouses and storage locations', 13, TRUE),
   ('inventory_stock', 'Inventory Stock', 'Manage stock levels, reservations, adjustments, transfers, and movements', 14, TRUE),
   ('inventory_purchases', 'Inventory Purchases', 'Manage vendors, purchase requisitions, purchase orders, and goods receipts', 15, TRUE),
-  ('inventory_sales', 'Inventory Sales', 'Manage sales-order driven stock reservations and fulfillment', 16, TRUE),
-  ('inventory_audits', 'Inventory Audits', 'Manage stock audits, variance reviews, and reconciliation', 17, TRUE),
-  ('inventory_reports', 'Inventory Reports', 'View inventory analytics, reports, and exports', 18, TRUE)
+  ('inventory_customers', 'Inventory Customers', 'Manage customer master data and customer contacts used in inventory sales flows', 16, TRUE),
+  ('inventory_sales', 'Inventory Sales', 'Manage sales-order driven stock reservations and fulfillment', 17, TRUE),
+  ('inventory_audits', 'Inventory Audits', 'Manage stock audits, variance reviews, and reconciliation', 18, TRUE),
+  ('inventory_reports', 'Inventory Reports', 'View inventory analytics, reports, and exports', 19, TRUE)
 ON CONFLICT (module_key) DO NOTHING;
 
 -- =====================================================
@@ -104,8 +105,22 @@ INSERT INTO public.crm_module_features (module_id, feature_key, feature_name, de
 SELECT m.id, f.feature_key, f.feature_name, f.description, f.feature_type::public.crm_feature_type, f.display_order
 FROM public.crm_modules m
 CROSS JOIN (
+  SELECT 'view' AS feature_key, 'View Customers' AS feature_name, 'View customer master records and customer contacts' AS description, 'view' AS feature_type, 1 AS display_order
+  UNION ALL SELECT 'create', 'Create Customers', 'Create customer master records', 'crud', 2
+  UNION ALL SELECT 'edit', 'Edit Customers', 'Edit customer master records', 'crud', 3
+  UNION ALL SELECT 'delete', 'Delete Customers', 'Delete customer records', 'crud', 4
+  UNION ALL SELECT 'export', 'Export Customers', 'Export customer records', 'export', 5
+  UNION ALL SELECT 'manage_contacts', 'Manage Customer Contacts', 'Create and maintain customer contacts', 'action', 6
+) f
+WHERE m.module_key = 'inventory_customers'
+ON CONFLICT (module_id, feature_key) DO NOTHING;
+
+INSERT INTO public.crm_module_features (module_id, feature_key, feature_name, description, feature_type, display_order)
+SELECT m.id, f.feature_key, f.feature_name, f.description, f.feature_type::public.crm_feature_type, f.display_order
+FROM public.crm_modules m
+CROSS JOIN (
   SELECT 'view' AS feature_key, 'View Sales Orders' AS feature_name, 'View sales orders and fulfillment status' AS description, 'view' AS feature_type, 1 AS display_order
-  UNION ALL SELECT 'create', 'Create Sales Orders', 'Create sales orders from CRM demand', 'crud', 2
+  UNION ALL SELECT 'create', 'Create Sales Orders', 'Create sales orders from customer demand or external sources', 'crud', 2
   UNION ALL SELECT 'reserve_stock', 'Reserve Stock For Sales', 'Reserve stock for sales order fulfillment', 'action', 3
   UNION ALL SELECT 'fulfill', 'Fulfill Sales Orders', 'Pick and fulfill sales order items', 'action', 4
   UNION ALL SELECT 'dispatch', 'Dispatch Sales Orders', 'Dispatch fulfilled sales orders to customers', 'action', 5
@@ -170,7 +185,6 @@ BEGIN
       WHERE workspace_id = v_workspace_id AND role_key = 'viewer'
       LIMIT 1;
 
-    -- Admin: full access to all inventory features
     INSERT INTO public.role_permissions (
       workspace_id,
       role_id,
@@ -197,6 +211,7 @@ BEGIN
         'inventory_warehouses',
         'inventory_stock',
         'inventory_purchases',
+        'inventory_customers',
         'inventory_sales',
         'inventory_audits',
         'inventory_reports'
@@ -208,7 +223,6 @@ BEGIN
           AND rp.module_feature_id = f.id
       );
 
-    -- Manager: team-wide access to all inventory features
     INSERT INTO public.role_permissions (
       workspace_id,
       role_id,
@@ -235,6 +249,7 @@ BEGIN
         'inventory_warehouses',
         'inventory_stock',
         'inventory_purchases',
+        'inventory_customers',
         'inventory_sales',
         'inventory_audits',
         'inventory_reports'
@@ -246,7 +261,6 @@ BEGIN
           AND rp.module_feature_id = f.id
       );
 
-    -- User: own-scope access with restricted administrative features
     INSERT INTO public.role_permissions (
       workspace_id,
       role_id,
@@ -297,6 +311,7 @@ BEGIN
         'inventory_warehouses',
         'inventory_stock',
         'inventory_purchases',
+        'inventory_customers',
         'inventory_sales',
         'inventory_audits',
         'inventory_reports'
@@ -308,7 +323,6 @@ BEGIN
           AND rp.module_feature_id = f.id
       );
 
-    -- Viewer: read-only visibility across inventory module
     INSERT INTO public.role_permissions (
       workspace_id,
       role_id,
@@ -341,6 +355,7 @@ BEGIN
         'inventory_warehouses',
         'inventory_stock',
         'inventory_purchases',
+        'inventory_customers',
         'inventory_sales',
         'inventory_audits',
         'inventory_reports'

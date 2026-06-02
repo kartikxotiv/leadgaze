@@ -10,12 +10,14 @@
  *                - inventory.warehouses
  *                - inventory.vendors
  *                - inventory.vendor_contacts
+ *                - inventory.customers
+ *                - inventory.customer_contacts
  *                - inventory.products
  *                - inventory.product_media
  *
- *              Cross-schema FK references to public.workspaces,
- *              public.accounts, and public CRM tables are intentional.
- *              Workspace, authentication, and shared CRM entities live
+ *              Cross-schema FK references to public.workspaces and
+ *              public.accounts are intentional. Workspace, authentication,
+ *              and shared platform entities live
  *              in the platform layer under the public schema.
  * -------------------------------------------------------
  */
@@ -41,6 +43,58 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+-- =====================================================
+-- 1a. Inventory Enum Types
+-- =====================================================
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'warehouse_status_enum'
+      AND n.nspname = 'inventory'
+  ) THEN
+    CREATE TYPE inventory.warehouse_status_enum AS ENUM (
+      'active',
+      'inactive',
+      'maintenance',
+      'closed'
+    );
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'partner_status_enum'
+      AND n.nspname = 'inventory'
+  ) THEN
+    CREATE TYPE inventory.partner_status_enum AS ENUM (
+      'active',
+      'inactive',
+      'on_hold',
+      'blocked'
+    );
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'product_status_enum'
+      AND n.nspname = 'inventory'
+  ) THEN
+    CREATE TYPE inventory.product_status_enum AS ENUM (
+      'active',
+      'inactive',
+      'archived',
+      'discontinued'
+    );
+  END IF;
+END $$;
 
 -- =====================================================
 -- 2. Product Categories
@@ -138,7 +192,7 @@ CREATE TABLE IF NOT EXISTS inventory.warehouses (
   warehouse_name VARCHAR(150) NOT NULL,
   warehouse_code VARCHAR(60) NOT NULL,
   warehouse_type VARCHAR(50) NOT NULL DEFAULT 'storage',
-  status VARCHAR(50) NOT NULL DEFAULT 'active',
+  status inventory.warehouse_status_enum NOT NULL DEFAULT 'active',
   description TEXT,
   warehouse_manager_id UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
   email VARCHAR(255),
@@ -179,12 +233,12 @@ CREATE TABLE IF NOT EXISTS inventory.vendors (
   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
   vendor_name VARCHAR(180) NOT NULL,
   vendor_code VARCHAR(80),
-  status VARCHAR(50) NOT NULL DEFAULT 'active',
+  status inventory.partner_status_enum NOT NULL DEFAULT 'active',
   email VARCHAR(255),
   phone_number VARCHAR(50),
   website VARCHAR(500),
-  gst_number VARCHAR(80),
-  tax_identifier VARCHAR(80),
+  tax_registration_number VARCHAR(120),
+  tax_registration_type VARCHAR(80),
   payment_terms VARCHAR(120),
   description TEXT,
   owner_id UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
@@ -246,7 +300,78 @@ CREATE INDEX IF NOT EXISTS idx_inv_vendor_contacts_vendor ON inventory.vendor_co
 CREATE INDEX IF NOT EXISTS idx_inv_vendor_contacts_email ON inventory.vendor_contacts(email) WHERE email IS NOT NULL;
 
 -- =====================================================
--- 8. Products
+-- 8. Customers
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS inventory.customers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
+  customer_name VARCHAR(180) NOT NULL,
+  customer_code VARCHAR(80),
+  status inventory.partner_status_enum NOT NULL DEFAULT 'active',
+  email VARCHAR(255),
+  phone_number VARCHAR(50),
+  website VARCHAR(500),
+  tax_registration_number VARCHAR(120),
+  tax_registration_type VARCHAR(80),
+  payment_terms VARCHAR(120),
+  description TEXT,
+  owner_id UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
+  billing_address_line_1 VARCHAR(255),
+  billing_address_line_2 VARCHAR(255),
+  billing_city VARCHAR(120),
+  billing_state VARCHAR(120),
+  billing_postal_code VARCHAR(40),
+  billing_country VARCHAR(120),
+  shipping_address_line_1 VARCHAR(255),
+  shipping_address_line_2 VARCHAR(255),
+  shipping_city VARCHAR(120),
+  shipping_state VARCHAR(120),
+  shipping_postal_code VARCHAR(40),
+  shipping_country VARCHAR(120),
+  tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+  custom_fields JSONB NOT NULL DEFAULT '{}'::jsonb,
+  is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  deleted_at TIMESTAMPTZ,
+  deleted_by UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
+  created_by UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
+  updated_by UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT inventory_customers_name_unique UNIQUE (workspace_id, customer_name)
+);
+
+COMMENT ON TABLE inventory.customers IS 'Customer master records used by inventory sales, dispatch, and reservation workflows.';
+
+CREATE INDEX IF NOT EXISTS idx_inv_customers_workspace ON inventory.customers(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_inv_customers_owner ON inventory.customers(owner_id) WHERE owner_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_inv_customers_status ON inventory.customers(workspace_id, status) WHERE is_deleted = FALSE;
+
+CREATE TABLE IF NOT EXISTS inventory.customer_contacts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
+  customer_id UUID NOT NULL REFERENCES inventory.customers(id) ON DELETE CASCADE,
+  first_name VARCHAR(120) NOT NULL,
+  last_name VARCHAR(120),
+  email VARCHAR(255),
+  phone_number VARCHAR(50),
+  designation VARCHAR(120),
+  is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+  notes TEXT,
+  created_by UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
+  updated_by UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+COMMENT ON TABLE inventory.customer_contacts IS 'Customer contact persons used for sales orders, fulfillment, and dispatch communications.';
+
+CREATE INDEX IF NOT EXISTS idx_inv_customer_contacts_workspace ON inventory.customer_contacts(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_inv_customer_contacts_customer ON inventory.customer_contacts(customer_id);
+CREATE INDEX IF NOT EXISTS idx_inv_customer_contacts_email ON inventory.customer_contacts(email) WHERE email IS NOT NULL;
+
+-- =====================================================
+-- 9. Products
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS inventory.products (
@@ -275,7 +400,7 @@ CREATE TABLE IF NOT EXISTS inventory.products (
   track_batches BOOLEAN NOT NULL DEFAULT FALSE,
   track_serial_numbers BOOLEAN NOT NULL DEFAULT FALSE,
   track_expiry BOOLEAN NOT NULL DEFAULT FALSE,
-  status VARCHAR(50) NOT NULL DEFAULT 'active',
+  status inventory.product_status_enum NOT NULL DEFAULT 'active',
   owner_id UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
   tags JSONB NOT NULL DEFAULT '[]'::jsonb,
   custom_fields JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -304,7 +429,7 @@ CREATE INDEX IF NOT EXISTS idx_inv_products_status ON inventory.products(workspa
 CREATE INDEX IF NOT EXISTS idx_inv_products_owner ON inventory.products(owner_id) WHERE owner_id IS NOT NULL;
 
 -- =====================================================
--- 9. Product Media
+-- 10. Product Media
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS inventory.product_media (
@@ -328,7 +453,7 @@ CREATE INDEX IF NOT EXISTS idx_inv_product_media_workspace ON inventory.product_
 CREATE INDEX IF NOT EXISTS idx_inv_product_media_product ON inventory.product_media(product_id);
 
 -- =====================================================
--- 10. Enable RLS and Grants
+-- 11. Enable RLS and Grants
 -- =====================================================
 
 DO $$
@@ -337,15 +462,17 @@ DECLARE
 BEGIN
   FOR v_table IN
     SELECT unnest(ARRAY[
-    'product_categories',
-    'brands',
-    'units',
-    'warehouses',
-    'vendors',
-    'vendor_contacts',
-    'products',
-    'product_media'
-  ]::TEXT[])
+      'product_categories',
+      'brands',
+      'units',
+      'warehouses',
+      'vendors',
+      'vendor_contacts',
+      'customers',
+      'customer_contacts',
+      'products',
+      'product_media'
+    ]::TEXT[])
   LOOP
     EXECUTE format('ALTER TABLE inventory.%I ENABLE ROW LEVEL SECURITY', v_table);
     EXECUTE format('DROP POLICY IF EXISTS %I ON inventory.%I', v_table || '_policy', v_table);
@@ -359,7 +486,7 @@ BEGIN
 END $$;
 
 -- =====================================================
--- 11. updated_at Triggers
+-- 12. updated_at Triggers
 -- =====================================================
 
 DO $$
@@ -368,14 +495,16 @@ DECLARE
 BEGIN
   FOR v_table IN
     SELECT unnest(ARRAY[
-    'product_categories',
-    'brands',
-    'units',
-    'warehouses',
-    'vendors',
-    'vendor_contacts',
-    'products'
-  ]::TEXT[])
+      'product_categories',
+      'brands',
+      'units',
+      'warehouses',
+      'vendors',
+      'vendor_contacts',
+      'customers',
+      'customer_contacts',
+      'products'
+    ]::TEXT[])
   LOOP
     EXECUTE format('DROP TRIGGER IF EXISTS %I ON inventory.%I', 'trg_inv_' || v_table || '_updated_at', v_table);
     EXECUTE format(

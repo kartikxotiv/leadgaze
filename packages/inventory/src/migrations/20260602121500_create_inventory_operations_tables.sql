@@ -25,6 +25,194 @@
  */
 
 -- =====================================================
+-- 0. Inventory Operations Enum Types
+-- =====================================================
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'batch_status_enum'
+      AND n.nspname = 'inventory'
+  ) THEN
+    CREATE TYPE inventory.batch_status_enum AS ENUM (
+      'available',
+      'reserved',
+      'consumed',
+      'expired',
+      'quarantined',
+      'damaged'
+    );
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'serial_status_enum'
+      AND n.nspname = 'inventory'
+  ) THEN
+    CREATE TYPE inventory.serial_status_enum AS ENUM (
+      'available',
+      'reserved',
+      'allocated',
+      'sold',
+      'returned',
+      'damaged',
+      'scrapped'
+    );
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'requisition_status_enum'
+      AND n.nspname = 'inventory'
+  ) THEN
+    CREATE TYPE inventory.requisition_status_enum AS ENUM (
+      'draft',
+      'submitted',
+      'approved',
+      'rejected',
+      'cancelled',
+      'converted'
+    );
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'purchase_order_status_enum'
+      AND n.nspname = 'inventory'
+  ) THEN
+    CREATE TYPE inventory.purchase_order_status_enum AS ENUM (
+      'draft',
+      'pending_approval',
+      'approved',
+      'partially_received',
+      'completed',
+      'cancelled'
+    );
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'quality_status_enum'
+      AND n.nspname = 'inventory'
+  ) THEN
+    CREATE TYPE inventory.quality_status_enum AS ENUM (
+      'pending',
+      'accepted',
+      'partially_accepted',
+      'rejected'
+    );
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'goods_receipt_status_enum'
+      AND n.nspname = 'inventory'
+  ) THEN
+    CREATE TYPE inventory.goods_receipt_status_enum AS ENUM (
+      'draft',
+      'submitted',
+      'completed',
+      'cancelled'
+    );
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'sales_order_status_enum'
+      AND n.nspname = 'inventory'
+  ) THEN
+    CREATE TYPE inventory.sales_order_status_enum AS ENUM (
+      'draft',
+      'confirmed',
+      'partially_fulfilled',
+      'fulfilled',
+      'cancelled'
+    );
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'dispatch_status_enum'
+      AND n.nspname = 'inventory'
+  ) THEN
+    CREATE TYPE inventory.dispatch_status_enum AS ENUM (
+      'pending',
+      'partially_dispatched',
+      'dispatched',
+      'delivered',
+      'returned',
+      'cancelled'
+    );
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'reservation_status_enum'
+      AND n.nspname = 'inventory'
+  ) THEN
+    CREATE TYPE inventory.reservation_status_enum AS ENUM (
+      'active',
+      'released',
+      'fulfilled',
+      'expired',
+      'cancelled'
+    );
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'transfer_status_enum'
+      AND n.nspname = 'inventory'
+  ) THEN
+    CREATE TYPE inventory.transfer_status_enum AS ENUM (
+      'draft',
+      'pending_approval',
+      'approved',
+      'in_transit',
+      'completed',
+      'cancelled'
+    );
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'audit_status_enum'
+      AND n.nspname = 'inventory'
+  ) THEN
+    CREATE TYPE inventory.audit_status_enum AS ENUM (
+      'draft',
+      'in_progress',
+      'completed',
+      'approved',
+      'cancelled'
+    );
+  END IF;
+END $$;
+
+-- =====================================================
 -- 1. Stock Batches
 -- =====================================================
 
@@ -41,7 +229,7 @@ CREATE TABLE IF NOT EXISTS inventory.stock_batches (
   quantity_received NUMERIC(18, 4) NOT NULL DEFAULT 0,
   quantity_available NUMERIC(18, 4) NOT NULL DEFAULT 0,
   unit_cost NUMERIC(18, 2),
-  status VARCHAR(50) NOT NULL DEFAULT 'available',
+  status inventory.batch_status_enum NOT NULL DEFAULT 'available',
   notes TEXT,
   created_by UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
   updated_by UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
@@ -70,7 +258,7 @@ CREATE TABLE IF NOT EXISTS inventory.serial_numbers (
   warehouse_id UUID REFERENCES inventory.warehouses(id) ON DELETE SET NULL,
   batch_id UUID REFERENCES inventory.stock_batches(id) ON DELETE SET NULL,
   serial_number VARCHAR(150) NOT NULL,
-  status VARCHAR(50) NOT NULL DEFAULT 'available',
+  status inventory.serial_status_enum NOT NULL DEFAULT 'available',
   warranty_start_date DATE,
   warranty_end_date DATE,
   notes TEXT,
@@ -99,7 +287,7 @@ CREATE TABLE IF NOT EXISTS inventory.purchase_requisitions (
   requested_by UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
   department_name VARCHAR(120),
   needed_by_date DATE,
-  status VARCHAR(50) NOT NULL DEFAULT 'draft',
+  status inventory.requisition_status_enum NOT NULL DEFAULT 'draft',
   notes TEXT,
   created_by UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
   updated_by UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
@@ -151,7 +339,7 @@ CREATE TABLE IF NOT EXISTS inventory.purchase_orders (
   discount_amount NUMERIC(18, 2) NOT NULL DEFAULT 0,
   total_amount NUMERIC(18, 2) NOT NULL DEFAULT 0,
   payment_terms VARCHAR(120),
-  status VARCHAR(50) NOT NULL DEFAULT 'draft',
+  status inventory.purchase_order_status_enum NOT NULL DEFAULT 'draft',
   approved_by UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
   approved_at TIMESTAMPTZ,
   notes TEXT,
@@ -204,8 +392,8 @@ CREATE TABLE IF NOT EXISTS inventory.goods_receipts (
   grn_number VARCHAR(80) NOT NULL,
   receipt_date DATE NOT NULL DEFAULT CURRENT_DATE,
   received_by UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
-  quality_status VARCHAR(50) NOT NULL DEFAULT 'pending',
-  status VARCHAR(50) NOT NULL DEFAULT 'draft',
+  quality_status inventory.quality_status_enum NOT NULL DEFAULT 'pending',
+  status inventory.goods_receipt_status_enum NOT NULL DEFAULT 'draft',
   notes TEXT,
   created_by UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
   updated_by UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
@@ -258,10 +446,11 @@ CREATE TABLE IF NOT EXISTS inventory.sales_orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
   sales_order_number VARCHAR(80) NOT NULL,
-  crm_account_id UUID REFERENCES public.crm_accounts(id) ON DELETE SET NULL,
-  crm_contact_id UUID REFERENCES public.crm_contacts(id) ON DELETE SET NULL,
-  crm_opportunity_id UUID REFERENCES public.crm_opportunities(id) ON DELETE SET NULL,
+  customer_id UUID NOT NULL REFERENCES inventory.customers(id) ON DELETE RESTRICT,
+  customer_contact_id UUID REFERENCES inventory.customer_contacts(id) ON DELETE SET NULL,
   warehouse_id UUID REFERENCES inventory.warehouses(id) ON DELETE SET NULL,
+  source_reference_type VARCHAR(80),
+  source_reference_id UUID,
   order_date DATE NOT NULL DEFAULT CURRENT_DATE,
   expected_dispatch_date DATE,
   dispatch_date DATE,
@@ -270,8 +459,8 @@ CREATE TABLE IF NOT EXISTS inventory.sales_orders (
   tax_amount NUMERIC(18, 2) NOT NULL DEFAULT 0,
   discount_amount NUMERIC(18, 2) NOT NULL DEFAULT 0,
   total_amount NUMERIC(18, 2) NOT NULL DEFAULT 0,
-  status VARCHAR(50) NOT NULL DEFAULT 'draft',
-  dispatch_status VARCHAR(50) NOT NULL DEFAULT 'pending',
+  status inventory.sales_order_status_enum NOT NULL DEFAULT 'draft',
+  dispatch_status inventory.dispatch_status_enum NOT NULL DEFAULT 'pending',
   tracking_number VARCHAR(120),
   shipping_partner VARCHAR(120),
   notes TEXT,
@@ -282,11 +471,12 @@ CREATE TABLE IF NOT EXISTS inventory.sales_orders (
   CONSTRAINT inventory_sales_orders_number_unique UNIQUE (workspace_id, sales_order_number)
 );
 
-COMMENT ON TABLE inventory.sales_orders IS 'Sales orders used to reserve stock, fulfill inventory, and dispatch goods against CRM demand.';
+COMMENT ON TABLE inventory.sales_orders IS 'Sales orders used to reserve stock, fulfill inventory, and dispatch goods against customer demand using the inventory customer master.';
 
 CREATE INDEX IF NOT EXISTS idx_inv_sales_orders_workspace ON inventory.sales_orders(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_inv_sales_orders_customer ON inventory.sales_orders(customer_id);
 CREATE INDEX IF NOT EXISTS idx_inv_sales_orders_status ON inventory.sales_orders(workspace_id, status);
-CREATE INDEX IF NOT EXISTS idx_inv_sales_orders_opportunity ON inventory.sales_orders(crm_opportunity_id) WHERE crm_opportunity_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_inv_sales_orders_source_reference ON inventory.sales_orders(source_reference_type, source_reference_id) WHERE source_reference_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS inventory.sales_order_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -389,7 +579,7 @@ CREATE TABLE IF NOT EXISTS inventory.stock_reservations (
   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
   sales_order_id UUID REFERENCES inventory.sales_orders(id) ON DELETE SET NULL,
   sales_order_item_id UUID REFERENCES inventory.sales_order_items(id) ON DELETE SET NULL,
-  customer_account_id UUID REFERENCES public.crm_accounts(id) ON DELETE SET NULL,
+  customer_id UUID REFERENCES inventory.customers(id) ON DELETE SET NULL,
   product_id UUID NOT NULL REFERENCES inventory.products(id) ON DELETE RESTRICT,
   warehouse_id UUID NOT NULL REFERENCES inventory.warehouses(id) ON DELETE RESTRICT,
   batch_id UUID REFERENCES inventory.stock_batches(id) ON DELETE SET NULL,
@@ -397,7 +587,7 @@ CREATE TABLE IF NOT EXISTS inventory.stock_reservations (
   quantity_released NUMERIC(18, 4) NOT NULL DEFAULT 0,
   reserved_for_type VARCHAR(60) NOT NULL DEFAULT 'sales_order',
   reserved_for_id UUID,
-  status VARCHAR(50) NOT NULL DEFAULT 'active',
+  status inventory.reservation_status_enum NOT NULL DEFAULT 'active',
   expires_at TIMESTAMPTZ,
   notes TEXT,
   created_by UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
@@ -414,6 +604,7 @@ CREATE TABLE IF NOT EXISTS inventory.stock_reservations (
 COMMENT ON TABLE inventory.stock_reservations IS 'Tracks reserved quantities held aside for sales orders, projects, or customer commitments.';
 
 CREATE INDEX IF NOT EXISTS idx_inv_stock_reservations_workspace ON inventory.stock_reservations(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_inv_stock_reservations_customer ON inventory.stock_reservations(customer_id) WHERE customer_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_inv_stock_reservations_product ON inventory.stock_reservations(product_id);
 CREATE INDEX IF NOT EXISTS idx_inv_stock_reservations_status ON inventory.stock_reservations(workspace_id, status);
 
@@ -435,7 +626,7 @@ CREATE TABLE IF NOT EXISTS inventory.stock_transfers (
   approved_at TIMESTAMPTZ,
   dispatched_at TIMESTAMPTZ,
   received_at TIMESTAMPTZ,
-  status VARCHAR(50) NOT NULL DEFAULT 'draft',
+  status inventory.transfer_status_enum NOT NULL DEFAULT 'draft',
   notes TEXT,
   created_by UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
   updated_by UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
@@ -487,7 +678,7 @@ CREATE TABLE IF NOT EXISTS inventory.stock_audits (
   warehouse_id UUID REFERENCES inventory.warehouses(id) ON DELETE SET NULL,
   audit_number VARCHAR(80) NOT NULL,
   audit_type VARCHAR(50) NOT NULL DEFAULT 'physical_count',
-  status VARCHAR(50) NOT NULL DEFAULT 'draft',
+  status inventory.audit_status_enum NOT NULL DEFAULT 'draft',
   scheduled_at TIMESTAMPTZ,
   started_at TIMESTAMPTZ,
   completed_at TIMESTAMPTZ,
@@ -539,24 +730,24 @@ DECLARE
 BEGIN
   FOR v_table IN
     SELECT unnest(ARRAY[
-    'stock_batches',
-    'serial_numbers',
-    'purchase_requisitions',
-    'purchase_requisition_items',
-    'purchase_orders',
-    'purchase_order_items',
-    'goods_receipts',
-    'goods_receipt_items',
-    'sales_orders',
-    'sales_order_items',
-    'stock_levels',
-    'stock_movements',
-    'stock_reservations',
-    'stock_transfers',
-    'stock_transfer_items',
-    'stock_audits',
-    'stock_audit_items'
-  ]::TEXT[])
+      'stock_batches',
+      'serial_numbers',
+      'purchase_requisitions',
+      'purchase_requisition_items',
+      'purchase_orders',
+      'purchase_order_items',
+      'goods_receipts',
+      'goods_receipt_items',
+      'sales_orders',
+      'sales_order_items',
+      'stock_levels',
+      'stock_movements',
+      'stock_reservations',
+      'stock_transfers',
+      'stock_transfer_items',
+      'stock_audits',
+      'stock_audit_items'
+    ]::TEXT[])
   LOOP
     EXECUTE format('ALTER TABLE inventory.%I ENABLE ROW LEVEL SECURITY', v_table);
     EXECUTE format('DROP POLICY IF EXISTS %I ON inventory.%I', v_table || '_policy', v_table);
@@ -579,23 +770,23 @@ DECLARE
 BEGIN
   FOR v_table IN
     SELECT unnest(ARRAY[
-    'stock_batches',
-    'serial_numbers',
-    'purchase_requisitions',
-    'purchase_requisition_items',
-    'purchase_orders',
-    'purchase_order_items',
-    'goods_receipts',
-    'goods_receipt_items',
-    'sales_orders',
-    'sales_order_items',
-    'stock_levels',
-    'stock_reservations',
-    'stock_transfers',
-    'stock_transfer_items',
-    'stock_audits',
-    'stock_audit_items'
-  ]::TEXT[])
+      'stock_batches',
+      'serial_numbers',
+      'purchase_requisitions',
+      'purchase_requisition_items',
+      'purchase_orders',
+      'purchase_order_items',
+      'goods_receipts',
+      'goods_receipt_items',
+      'sales_orders',
+      'sales_order_items',
+      'stock_levels',
+      'stock_reservations',
+      'stock_transfers',
+      'stock_transfer_items',
+      'stock_audits',
+      'stock_audit_items'
+    ]::TEXT[])
   LOOP
     EXECUTE format('DROP TRIGGER IF EXISTS %I ON inventory.%I', 'trg_inv_' || v_table || '_updated_at', v_table);
     EXECUTE format(
