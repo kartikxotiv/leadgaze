@@ -2,6 +2,7 @@
 
 import { NextResponse } from 'next/server';
 import { catchAsync, successDataResponse } from '../../utils/response-handler';
+import { enrichFundraisingData } from '../_shared/enrichment';
 import { assertFundraisingPermission } from '../_shared/permissions';
 import { assertWorkspaceAccess } from '../_shared/workspace-access';
 
@@ -19,7 +20,8 @@ export const getInvestorContactsController = catchAsync(async ({ request }) => {
   if (investorId) query = query.eq('investor_id', investorId);
   const { data, error: fetchError } = await query.order('created_at', { ascending: false });
   if (fetchError) return NextResponse.json({ success: false, message: 'Failed to retrieve investor contacts' }, { status: 500 });
-  return successDataResponse('Investor contacts retrieved successfully', data || []);
+  const enriched = await enrichFundraisingData(supabase, workspaceId, data || []);
+  return successDataResponse('Investor contacts retrieved successfully', enriched);
 });
 
 export const createInvestorContactController = catchAsync(async ({ request }) => {
@@ -34,7 +36,8 @@ export const createInvestorContactController = catchAsync(async ({ request }) =>
 
   const { data, error: insertError } = await (supabase as any).schema('fundraising').from('investor_contacts').insert({ workspace_id, investor_id, name, email: email ?? null, phone: phone ?? null, designation: designation ?? null, linkedin_url: linkedin_url ?? null, is_primary, created_by: user.id, updated_by: user.id }).select('*').single();
   if (insertError) return NextResponse.json({ success: false, message: 'Failed to create investor contact' }, { status: 500 });
-  return NextResponse.json({ success: true, message: 'Investor contact created successfully', data }, { status: 201 });
+  const enriched = await enrichFundraisingData(supabase, workspace_id, data);
+  return NextResponse.json({ success: true, message: 'Investor contact created successfully', data: enriched }, { status: 201 });
 });
 
 export const updateInvestorContactController = catchAsync(async ({ request }) => {
@@ -57,7 +60,8 @@ export const updateInvestorContactController = catchAsync(async ({ request }) =>
   Object.keys(payload).forEach((key) => (payload as Record<string, unknown>)[key] === undefined && delete (payload as Record<string, unknown>)[key]);
   const { data, error: updateError } = await (supabase as any).schema('fundraising').from('investor_contacts').update(payload).eq('workspace_id', workspaceId).eq('id', body.id).select('*').single();
   if (updateError) return NextResponse.json({ success: false, message: 'Failed to update investor contact' }, { status: 500 });
-  return successDataResponse('Investor contact updated successfully', data);
+  const enriched = await enrichFundraisingData(supabase, workspaceId, data);
+  return successDataResponse('Investor contact updated successfully', enriched);
 });
 
 export const deleteInvestorContactController = catchAsync(async ({ request }) => {
