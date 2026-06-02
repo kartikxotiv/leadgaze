@@ -41,7 +41,7 @@ export function ModuleSwitcher(props: {
 
   return (
     <div className={cn('flex items-center gap-3', props.className)}>
-      <div className="flex items-center gap-2 text-sm font-medium">
+      {/* <div className="flex items-center gap-2 text-sm font-medium">
         <ShieldCheck className="text-muted-foreground h-4 w-4" />
         Module
       </div>
@@ -75,7 +75,7 @@ export function ModuleSwitcher(props: {
           </SelectItem>
         </SelectContent>
       </Select>
-      <ChevronDown className="text-muted-foreground h-4 w-4" />
+      <ChevronDown className="text-muted-foreground h-4 w-4" /> */}
     </div>
   );
 }
