@@ -62,6 +62,9 @@ importers:
       '@kit/fund-raise':
         specifier: workspace:*
         version: link:../../packages/fund-raise
+      '@kit/hrms':
+        specifier: workspace:*
+        version: link:../../packages/hrms
       '@kit/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
@@ -455,6 +458,34 @@ importers:
       zod:
         specifier: ^3.25.32
         version: 3.25.76
+    devDependencies:
+      '@kit/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@kit/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+
+  packages/hrms:
+    dependencies:
+      '@kit/supabase':
+        specifier: workspace:*
+        version: link:../supabase
+      '@kit/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@kit/ui':
+        specifier: workspace:*
+        version: link:../ui
+      lucide-react:
+        specifier: ^0.545.0
+        version: 0.545.0(react@19.2.1)
+      next:
+        specifier: 15.5.9
+        version: 15.5.9(@playwright/test@1.56.0)(babel-plugin-react-compiler@19.1.0-rc.3)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      react:
+        specifier: 19.2.1
+        version: 19.2.1
     devDependencies:
       '@kit/eslint-config':
         specifier: workspace:*
@@ -3309,7 +3340,7 @@ packages:
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+    deprecated: Glob versions prior to v9 are no longer supported
 
   globals@14.0.0:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
