@@ -1,6 +1,38 @@
-'use client';
+"use client";
+
+import {
+  INVENTORY_FEATURE_KEYS,
+  INVENTORY_MODULE_KEYS,
+  useInventoryPermissions,
+} from "../../utils";
+
+function AccessDenied() {
+  return (
+    <div className="p-6 text-sm text-muted-foreground">
+      You do not have permission to view stock.
+    </div>
+  );
+}
 
 export function InventoryStockPage({ workspaceId }: { workspaceId: string }) {
+  const { canAccess, isLoading } = useInventoryPermissions(workspaceId);
+  const canView = canAccess(
+    INVENTORY_MODULE_KEYS.stock,
+    INVENTORY_FEATURE_KEYS.view,
+  );
+
+  if (isLoading) {
+    return (
+      <div className="p-6 text-sm text-muted-foreground">
+        Checking permissions...
+      </div>
+    );
+  }
+
+  if (!canView) {
+    return <AccessDenied />;
+  }
+
   return (
     <section className="flex flex-col gap-2">
       <h1 className="text-xl font-semibold">Stock</h1>

@@ -9,24 +9,23 @@ import type { JwtPayload } from '@supabase/supabase-js';
 import {
   Activity,
   Bell,
-  Building2,
   Calendar,
-  CalendarCheck,
-  ClipboardList,
   FileText,
   NotebookPen,
   Settings,
   ShieldCheck,
   UserPen,
-  Users,
-  WalletCards,
 } from 'lucide-react';
 
 import {
   getFundraiseRoutesForPermissions,
   useFundraisingPermissions,
 } from '@kit/fund-raise';
-import { hrmsRoutes } from '@kit/hrms';
+import {
+  getInventoryRoutesForPermissions,
+  useInventoryPermissions,
+} from '@kit/inventory';
+import {hrmsRoutes} from '@kit/hrms'
 import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
 import { SidebarNavigation } from '@kit/ui/shadcn-sidebar';
 
@@ -41,12 +40,16 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
   const { canAccess: canAccessFundraising } = useFundraisingPermissions(
     currentWorkspace?.id,
   );
+  const { canAccess: canAccessInventory } = useInventoryPermissions(
+    currentWorkspace?.id,
+  );
 
   // Use permission-based navigation
   const permissionNavConfig = usePermissionBasedNavigationConfig();
 
   const isFundraiseModule = pathname.startsWith('/home/fund');
   const isHrmsModule = pathname.startsWith('/home/hrms');
+  const isInventoryModule = pathname.startsWith('/home/inventory');
 
   const navConfig = useMemo(() => {
     // 1. If we are in the Fundraising Module (/home/fund*), render fundraising features.
@@ -108,6 +111,39 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
               label: 'Roles',
               path: pathsConfig.app.roles,
               Icon: <ShieldCheck className="h-4 w-4" />,
+            },
+            ...teamItems.map((item) => {
+              const IconComponent = item.Icon;
+              return {
+                ...item,
+                Icon: <IconComponent className="h-4 w-4" />,
+              };
+            }),
+          ],
+        },
+      ];
+    }
+
+    // 3. Inventory Module
+    if (isInventoryModule) {
+      const teamItems =
+        permissionNavConfig?.teamItems ||
+        getNavigationConfig(canAccess).teamItems;
+
+      return [
+        ...getInventoryRoutesForPermissions(canAccessInventory),
+        {
+          label: 'common:routes.settings',
+          children: [
+            {
+              label: 'common:routes.profile',
+              path: pathsConfig.app.profileSettings,
+              Icon: <UserPen className="h-4 w-4" />,
+            },
+            {
+              label: 'common:routes.workspace-settings',
+              path: pathsConfig.app.workspaceSettings,
+              Icon: <Settings className="h-4 w-4" />,
             },
             ...teamItems.map((item) => {
               const IconComponent = item.Icon;
@@ -268,7 +304,9 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
     canAccess,
     isFundraiseModule,
     isHrmsModule,
+    isInventoryModule,
     canAccessFundraising,
+    canAccessInventory,
   ]);
 
   // Parse the dynamic config to match NavigationConfigSchema
