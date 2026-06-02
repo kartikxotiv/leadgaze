@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarClock, Eye, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Badge } from '@kit/ui/badge';
@@ -199,6 +200,7 @@ function AccessDenied() {
 }
 
 export function FundraisingDealsPage({ workspaceId }: { workspaceId: string }) {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { canAccess, isLoading: isPermissionsLoading } = useFundraisingPermissions(workspaceId);
   const canView = canAccess(FUNDRAISING_MODULE_KEYS.pipeline, FUNDRAISING_FEATURE_KEYS.view);
@@ -217,6 +219,7 @@ export function FundraisingDealsPage({ workspaceId }: { workspaceId: string }) {
   const investorName = (deal: Deal) => investorDisplay({ ...deal, investor_name: deal.investor_name ?? investors.find((item) => item.id === deal.investor_id)?.name });
   const roundName = (deal: Deal) => roundDisplay({ ...deal, round_name: deal.round_name ?? rounds.find((item) => item.id === deal.round_id)?.round_name });
   const committedAmount = (dealId: string) => commitments.filter((item) => item.deal_id === dealId).reduce((sum, item) => sum + (Number(item.promised_amount) || 0), 0);
+  const openDeal = (dealId: string) => router.push(`/home/funds/deals/${dealId}`);
 
   if (isPermissionsLoading) {
     return <div className="p-6 text-sm text-muted-foreground">Checking permissions...</div>;
@@ -237,12 +240,12 @@ export function FundraisingDealsPage({ workspaceId }: { workspaceId: string }) {
               <div className="flex items-center justify-between border-b p-3"><div className="font-semibold">{stage.name}</div><Badge variant="outline">{stageDeals.length}</Badge></div>
               <div className="grid gap-3 p-3">
                 {stageDeals.map((deal) => (
-                  <Card key={deal.id} className="rounded-md">
+                  <Card key={deal.id} className="cursor-pointer rounded-md transition-colors hover:bg-muted/40" onClick={() => openDeal(deal.id)}>
                     <CardContent className="grid gap-3 p-4">
                       <div><div className="font-medium">{dealDisplay(deal)}</div><div className="text-xs text-muted-foreground">{roundName(deal)}</div></div>
                       <div className="grid grid-cols-2 gap-2 text-xs"><Info label="Expected" value={deal.expected_amount ?? '-'} /><Info label="Committed" value={committedAmount(deal.id)} /><Info label="Follow-Up" value={dateDisplay(deal.next_followup_date_display, deal.next_followup_date)} /><Info label="Owner" value={ownerDisplay(deal)} /></div>
-                      {(canMoveStage || canEditDeal) && <div className="grid gap-2">{canMoveStage && <Select value={deal.stage_id} onValueChange={(stage_id) => updateMutation.mutate({ id: deal.id, workspace_id: workspaceId, stage_id })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{stages.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select>}{canEditDeal && <Input type="date" value={deal.next_followup_date?.slice(0, 10) ?? ''} onChange={(e) => updateMutation.mutate({ id: deal.id, workspace_id: workspaceId, next_followup_date: e.target.value || null })} />}</div>}
-                      <div className="flex justify-end gap-1"><Dialog><DialogTrigger asChild><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></DialogTrigger><DealDetails workspaceId={workspaceId} deal={deal} investors={investors} rounds={rounds} stages={stages} canEditDeal={canEditDeal} /></Dialog>{canEditDeal && <DealFormDialog workspaceId={workspaceId} deal={deal} onDone={refresh} />}{canDeleteDeal && <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(deal.id)}><Trash2 className="h-4 w-4" /></Button>}</div>
+                      {(canMoveStage || canEditDeal) && <div className="grid gap-2" onClick={(event) => event.stopPropagation()}>{canMoveStage && <Select value={deal.stage_id} onValueChange={(stage_id) => updateMutation.mutate({ id: deal.id, workspace_id: workspaceId, stage_id })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{stages.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select>}{canEditDeal && <Input type="date" value={deal.next_followup_date?.slice(0, 10) ?? ''} onChange={(e) => updateMutation.mutate({ id: deal.id, workspace_id: workspaceId, next_followup_date: e.target.value || null })} />}</div>}
+                      <div className="flex justify-end gap-1" onClick={(event) => event.stopPropagation()}><Button variant="ghost" size="sm" onClick={() => openDeal(deal.id)}><Eye className="h-4 w-4" /></Button>{canEditDeal && <DealFormDialog workspaceId={workspaceId} deal={deal} onDone={refresh} />}{canDeleteDeal && <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(deal.id)}><Trash2 className="h-4 w-4" /></Button>}</div>
                     </CardContent>
                   </Card>
                 ))}
