@@ -1,0 +1,2 @@
+export { CoreEntityPanel } from '../pages';
+
