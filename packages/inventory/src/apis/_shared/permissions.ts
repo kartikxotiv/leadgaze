@@ -32,7 +32,7 @@ export async function assertInventoryPermission({
   moduleKey,
   featureKey,
 }: {
-  supabase: InventoryPermissionSupabaseClient;
+  supabase: any;
   userId: string;
   workspaceId: string;
   moduleKey: string;

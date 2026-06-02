@@ -8,6 +8,10 @@ import {
   getFundraiseRoutesForPermissions,
   useFundraisingPermissions,
 } from '@kit/fund-raise';
+import {
+  getInventoryRoutesForPermissions,
+  useInventoryPermissions,
+} from '@kit/inventory';
 
 import {
   Activity,
@@ -34,14 +38,19 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
   const { canAccess: canAccessFundraising } = useFundraisingPermissions(
     currentWorkspace?.id,
   );
+  const { canAccess: canAccessInventory } = useInventoryPermissions(
+    currentWorkspace?.id,
+  );
 
   // Use permission-based navigation
   const permissionNavConfig = usePermissionBasedNavigationConfig();
 
   const isFundraiseModule = pathname.startsWith('/home/fund');
+  const isInventoryModule = pathname.startsWith('/home/inventory');
 
   const navConfig = useMemo(() => {
     // Basic routes that always exist
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const baseRoutes: any[] = [];
 
     // 1. If we are in the Fundraising Module (/home/fund*), render fundraising features.
@@ -51,6 +60,37 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
 
       return [
         ...getFundraiseRoutesForPermissions(canAccessFundraising),
+        {
+          label: 'common:routes.settings',
+          children: [
+            {
+              label: 'common:routes.profile',
+              path: pathsConfig.app.profileSettings,
+              Icon: <UserPen className="h-4 w-4" />,
+            },
+            {
+              label: 'common:routes.workspace-settings',
+              path: pathsConfig.app.workspaceSettings,
+              Icon: <Settings className="h-4 w-4" />,
+            },
+            ...teamItems.map((item) => {
+              const IconComponent = item.Icon;
+              return {
+                ...item,
+                Icon: <IconComponent className="h-4 w-4" />,
+              };
+            }),
+          ],
+        },
+      ];
+    }
+
+    // If we are in the Inventory Module (/home/inventory*), render inventory features.
+    if (isInventoryModule) {
+      const teamItems = permissionNavConfig?.teamItems || getNavigationConfig(canAccess).teamItems;
+
+      return [
+        ...getInventoryRoutesForPermissions(canAccessInventory),
         {
           label: 'common:routes.settings',
           children: [
@@ -220,7 +260,7 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
         ],
       },
     ];
-  }, [permissionNavConfig, canAccess, isFundraiseModule, canAccessFundraising]);
+  }, [permissionNavConfig, canAccess, isFundraiseModule, canAccessFundraising, isInventoryModule, canAccessInventory]);
 
   // Parse the dynamic config to match NavigationConfigSchema
   const parsedConfig = useMemo(() => {

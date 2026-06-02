@@ -39,6 +39,7 @@
     "@kit/core": "workspace:*",
     "@kit/fund-raise": "workspace:*",
     "@kit/i18n": "workspace:*",
+    "@kit/inventory": "workspace:*",
     "@kit/next": "workspace:*",
     "@kit/supabase": "workspace:*",
     "@kit/ui": "workspace:*",
