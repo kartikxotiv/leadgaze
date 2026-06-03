@@ -1,82 +1,105 @@
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import type { Database } from '~/lib/database.types';
 import {
   ApiError,
   catchAsync,
   successDataResponse,
-} from '~/utils/response-handler';
-
+} from '../../../utils/response-handler';
 import {
   buildEmployeeOptions,
-  getRequiredOrganizationId,
+  getHrmsClient,
+  getRequiredWorkspaceId,
+  getRouteUserId,
+  requireEmployeePermission,
 } from './controller.helpers';
 
 const getEmployeeOptionsController = catchAsync(async ({ user }) => {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-  const organizationId = await getRequiredOrganizationId(user?.id);
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const hrms = getHrmsClient(supabaseAdmin);
+  const userId = getRouteUserId(user);
+  const workspaceId = await getRequiredWorkspaceId({
+    supabaseAdmin,
+    userId,
+  });
+
+  await requireEmployeePermission({
+    featureKey: 'view',
+    supabaseAdmin,
+    userId,
+    workspaceId,
+  });
 
   const [
     { data: departments, error: departmentsError },
     { data: employees, error: employeesError },
-    { data: accounts, error: accountsError },
+    { data: workspaceMembers, error: workspaceMembersError },
     { data: roles, error: rolesError },
     { data: employeeRoles, error: employeeRolesError },
     { data: shifts, error: shiftsError },
   ] = await Promise.all([
-    supabaseAdmin
+    hrms
       .from('departments')
-      .select('id, name')
-      .eq('organization_id', organizationId)
+      .select('id, name, code')
+      .eq('workspace_id', workspaceId)
+      .eq('is_active', true)
       .order('name', { ascending: true }),
-    supabaseAdmin
+    hrms
       .from('employees')
       .select('id, first_name, last_name, employee_code, account_id, status')
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', workspaceId)
+      .eq('is_deleted', false)
       .neq('status', 'exited')
       .order('first_name', { ascending: true }),
     supabaseAdmin
-      .from('accounts')
-      .select('id, name, email')
-      .order('name', { ascending: true }),
+      .from('workspace_members')
+      .select('user_id')
+      .eq('workspace_id', workspaceId)
+      .eq('status', 'accepted'),
     supabaseAdmin
-      .from('roles')
+      .from('workspace_roles')
       .select('id, role_name, role_key')
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', workspaceId)
+      .eq('is_active', true)
       .order('hierarchy_level', { ascending: false }),
-    supabaseAdmin
+    hrms
       .from('employee_roles')
       .select('employee_id, role_id')
-      .eq('organization_id', organizationId),
-    supabaseAdmin
+      .eq('workspace_id', workspaceId),
+    hrms
       .from('shifts')
       .select('id, name, is_active')
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', workspaceId)
       .order('name', { ascending: true }),
   ]);
 
-  if (departmentsError) {
-    throw new ApiError(departmentsError.message, 400);
+  for (const result of [
+    { error: departmentsError },
+    { error: employeesError },
+    { error: workspaceMembersError },
+    { error: rolesError },
+    { error: employeeRolesError },
+    { error: shiftsError },
+  ]) {
+    if (result.error) {
+      throw new ApiError(result.error.message, 400);
+    }
   }
 
-  if (employeesError) {
-    throw new ApiError(employeesError.message, 400);
-  }
+  const accountIds = (workspaceMembers ?? [])
+    .map((member: { user_id: string | null }) => member.user_id)
+    .filter((value: string | null): value is string => Boolean(value));
+
+  const { data: accounts, error: accountsError } =
+    accountIds.length > 0
+      ? await supabaseAdmin
+          .from('accounts')
+          .select('id, name, email')
+          .in('id', accountIds)
+          .order('name', { ascending: true })
+      : { data: [], error: null };
 
   if (accountsError) {
     throw new ApiError(accountsError.message, 400);
-  }
-
-  if (rolesError) {
-    throw new ApiError(rolesError.message, 400);
-  }
-
-  if (employeeRolesError) {
-    throw new ApiError(employeeRolesError.message, 400);
-  }
-
-  if (shiftsError) {
-    throw new ApiError(shiftsError.message, 400);
   }
 
   return successDataResponse('Employee options fetched successfully', {

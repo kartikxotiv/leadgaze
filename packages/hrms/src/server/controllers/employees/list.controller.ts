@@ -1,17 +1,17 @@
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import type { Database } from '~/lib/database.types';
 import {
   ApiError,
   catchAsync,
   successDataResponse,
-} from '~/utils/response-handler';
-
+} from '../../../utils/response-handler';
 import {
-  attachEmployeeManagers,
-  employeeSelect,
-  formatEmployeesWithRoleId,
-  getRequiredOrganizationId,
+  type EmployeeRow,
+  enrichEmployees,
+  getHrmsClient,
+  getRequiredWorkspaceId,
+  getRouteUserId,
+  requireEmployeePermission,
 } from './controller.helpers';
 
 const DEFAULT_EMPLOYEE_PAGE_SIZE = 10;
@@ -26,18 +26,22 @@ const employeeStatuses = [
 ] as const;
 type EmployeeStatus = (typeof employeeStatuses)[number];
 
-type EmployeeListScope = {
-  excludedEmployeeIds: string[];
-  includeInvited: boolean;
-  organizationId: string;
-  searchFilter: string;
-  statuses: EmployeeStatus[];
-  supabaseAdmin: ReturnType<typeof getSupabaseServerAdminClient<Database>>;
-};
-
 const listEmployeesController = catchAsync(async ({ request, user }) => {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-  const organizationId = await getRequiredOrganizationId(user?.id);
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const hrms = getHrmsClient(supabaseAdmin);
+  const userId = getRouteUserId(user);
+  const workspaceId = await getRequiredWorkspaceId({
+    supabaseAdmin,
+    userId,
+  });
+
+  await requireEmployeePermission({
+    featureKey: 'view',
+    supabaseAdmin,
+    userId,
+    workspaceId,
+  });
+
   const searchParams = new URL(request.url).searchParams;
   const status = searchParams.get('status');
   const search = searchParams.get('search')?.trim() ?? '';
@@ -68,29 +72,28 @@ const listEmployeesController = catchAsync(async ({ request, user }) => {
     .filter(Boolean);
   const excludedEmployeeIds = await getExcludedEmployeeIdsByRoleKeys({
     excludeRoleKeys,
-    organizationId,
+    hrms,
     supabaseAdmin,
+    workspaceId,
   });
 
   const searchFilter = await buildEmployeeSearchFilter({
-    organizationId,
+    hrms,
     search,
-    supabaseAdmin,
+    workspaceId,
   });
-  const employeeListScope = {
+  const scope = {
     excludedEmployeeIds,
+    hrms,
     includeInvited,
-    organizationId,
     searchFilter,
     statuses,
-    supabaseAdmin,
+    workspaceId,
   };
 
-  let query = createScopedEmployeesQuery(
-    employeeListScope,
-    employeeSelect,
-    isPaginated ? { count: 'exact' } : undefined,
-  ).order('created_at', { ascending: false });
+  let query = createScopedEmployeesQuery(scope, '*', {
+    count: isPaginated ? 'exact' : undefined,
+  }).order('created_at', { ascending: false });
 
   if (isPaginated) {
     query = query.range(from, to);
@@ -102,24 +105,22 @@ const listEmployeesController = catchAsync(async ({ request, user }) => {
     throw new ApiError(error.message, 400);
   }
 
-  const employees = data ?? [];
-
-  const employeesWithManagers = await attachEmployeeManagers({
-    employees: formatEmployeesWithRoleId(employees),
-    organizationId,
+  const employees = await enrichEmployees({
+    employees: data as EmployeeRow[],
     supabaseAdmin,
+    workspaceId,
   });
 
   if (isPaginated) {
     const total = count ?? 0;
     const totalPages = Math.ceil(total / pageSize);
     const summary = await getEmployeeListSummary({
-      ...employeeListScope,
+      ...scope,
       totalCount: total,
     });
 
     return successDataResponse('Employees fetched successfully', {
-      employees: employeesWithManagers,
+      employees,
       pagination: {
         hasNextPage: page < totalPages,
         hasPreviousPage: page > 1,
@@ -132,10 +133,7 @@ const listEmployeesController = catchAsync(async ({ request, user }) => {
     });
   }
 
-  return successDataResponse(
-    'Employees fetched successfully',
-    employeesWithManagers,
-  );
+  return successDataResponse('Employees fetched successfully', employees);
 });
 
 function parsePositiveInteger(value: string | null, fallback: number) {
@@ -175,9 +173,9 @@ function normalizeSearchTerm(value: string) {
 }
 
 async function buildEmployeeSearchFilter(params: {
-  organizationId: string;
+  hrms: ReturnType<typeof getHrmsClient>;
   search: string;
-  supabaseAdmin: ReturnType<typeof getSupabaseServerAdminClient<Database>>;
+  workspaceId: string;
 }) {
   const normalizedSearch = normalizeSearchTerm(params.search);
 
@@ -210,15 +208,15 @@ async function buildEmployeeSearchFilter(params: {
   }
 
   const [departmentsResult, managersResult] = await Promise.all([
-    params.supabaseAdmin
+    params.hrms
       .from('departments')
       .select('id')
-      .eq('organization_id', params.organizationId)
+      .eq('workspace_id', params.workspaceId)
       .or(`name.ilike.${pattern},code.ilike.${pattern}`),
-    params.supabaseAdmin
+    params.hrms
       .from('employees')
       .select('id')
-      .eq('organization_id', params.organizationId)
+      .eq('workspace_id', params.workspaceId)
       .neq('status', 'exited')
       .or(
         [
@@ -239,9 +237,11 @@ async function buildEmployeeSearchFilter(params: {
   }
 
   const departmentIds = (departmentsResult.data ?? []).map(
-    (department) => department.id,
+    (department: { id: string }) => department.id,
   );
-  const managerIds = (managersResult.data ?? []).map((manager) => manager.id);
+  const managerIds = (managersResult.data ?? []).map(
+    (manager: { id: string }) => manager.id,
+  );
 
   if (departmentIds.length > 0) {
     filters.push(`department_id.in.(${departmentIds.join(',')})`);
@@ -256,53 +256,59 @@ async function buildEmployeeSearchFilter(params: {
 
 async function getExcludedEmployeeIdsByRoleKeys(params: {
   excludeRoleKeys: string[];
-  organizationId: string;
-  supabaseAdmin: ReturnType<typeof getSupabaseServerAdminClient<Database>>;
-}) {
+  hrms: ReturnType<typeof getHrmsClient>;
+  supabaseAdmin: any;
+  workspaceId: string;
+}): Promise<string[]> {
   if (params.excludeRoleKeys.length === 0) {
     return [];
   }
 
   const { data: roles, error: rolesError } = await params.supabaseAdmin
-    .from('roles')
+    .from('workspace_roles')
     .select('id')
-    .eq('organization_id', params.organizationId)
+    .eq('workspace_id', params.workspaceId)
     .in('role_key', params.excludeRoleKeys);
 
   if (rolesError) {
     throw new ApiError(rolesError.message, 400);
   }
 
-  const roleIds = (roles ?? []).map((role) => role.id);
+  const roleIds = ((roles ?? []) as Array<{ id: string }>).map(
+    (role) => role.id,
+  );
 
   if (roleIds.length === 0) {
     return [];
   }
 
-  const { data: assignments, error: assignmentsError } =
-    await params.supabaseAdmin
-      .from('employee_roles')
-      .select('employee_id')
-      .eq('organization_id', params.organizationId)
-      .in('role_id', roleIds);
+  const { data: assignments, error: assignmentsError } = await params.hrms
+    .from('employee_roles')
+    .select('employee_id')
+    .eq('workspace_id', params.workspaceId)
+    .in('role_id', roleIds);
 
   if (assignmentsError) {
     throw new ApiError(assignmentsError.message, 400);
   }
 
   return Array.from(
-    new Set((assignments ?? []).map((assignment) => assignment.employee_id)),
-  );
+    new Set(
+      (assignments ?? []).map(
+        (assignment: { employee_id: string }) => assignment.employee_id,
+      ),
+    ),
+  ) as string[];
 }
 
 async function getEmployeeListSummary(params: {
   excludedEmployeeIds: string[];
+  hrms: ReturnType<typeof getHrmsClient>;
   includeInvited: boolean;
-  organizationId: string;
   searchFilter: string;
   statuses: EmployeeStatus[];
-  supabaseAdmin: ReturnType<typeof getSupabaseServerAdminClient<Database>>;
   totalCount: number;
+  workspaceId: string;
 }) {
   const [activeResult, invitedResult, departmentCoverageResult] =
     await Promise.all([
@@ -321,22 +327,22 @@ async function getEmployeeListSummary(params: {
       ),
     ]);
 
-  if (activeResult.error) {
-    throw new ApiError(activeResult.error.message, 400);
-  }
-
-  if (invitedResult.error) {
-    throw new ApiError(invitedResult.error.message, 400);
-  }
-
-  if (departmentCoverageResult.error) {
-    throw new ApiError(departmentCoverageResult.error.message, 400);
+  for (const result of [
+    activeResult,
+    invitedResult,
+    departmentCoverageResult,
+  ]) {
+    if (result.error) {
+      throw new ApiError(result.error.message, 400);
+    }
   }
 
   const departmentIds = new Set(
     (departmentCoverageResult.data ?? [])
-      .map((employee) => employee.department_id)
-      .filter((value): value is string => Boolean(value)),
+      .map(
+        (employee: { department_id: string | null }) => employee.department_id,
+      )
+      .filter((value: string | null): value is string => Boolean(value)),
   );
 
   return {
@@ -347,18 +353,26 @@ async function getEmployeeListSummary(params: {
   };
 }
 
-function createScopedEmployeesQuery<SelectQuery extends string>(
-  params: EmployeeListScope,
-  select: SelectQuery,
+function createScopedEmployeesQuery(
+  params: {
+    excludedEmployeeIds: string[];
+    hrms: ReturnType<typeof getHrmsClient>;
+    includeInvited: boolean;
+    searchFilter: string;
+    statuses: EmployeeStatus[];
+    workspaceId: string;
+  },
+  select: string,
   options?: {
     count?: 'exact';
     head?: boolean;
   },
 ) {
-  let query = params.supabaseAdmin
+  let query = params.hrms
     .from('employees')
     .select(select, options)
-    .eq('organization_id', params.organizationId)
+    .eq('workspace_id', params.workspaceId)
+    .eq('is_deleted', false)
     .neq('status', 'exited');
 
   if (!params.includeInvited) {
