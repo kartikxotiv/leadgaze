@@ -7,10 +7,13 @@
     "./server/departments": "./src/server/controllers/departments/route.ts",
     "./server/departments/[departmentId]": "./src/server/controllers/departments/[departmentId]/route.ts",
     "./server/departments/options": "./src/server/controllers/departments/options/route.ts",
+    "./server/documents": "./src/server/controllers/documents/route.ts",
+    "./server/documents/[id]": "./src/server/controllers/documents/[id]/route.ts",
     "./server/employees": "./src/server/controllers/employees/route.ts",
     "./server/employees/[employeeId]": "./src/server/controllers/employees/[employeeId]/route.ts",
     "./server/employees/invite": "./src/server/controllers/employees/invite/route.ts",
-    "./server/employees/options": "./src/server/controllers/employees/options/route.ts"
+    "./server/employees/options": "./src/server/controllers/employees/options/route.ts",
+    "./server/upload": "./src/server/controllers/upload/route.ts"
   },
   "typesVersions": {
     "*": {
