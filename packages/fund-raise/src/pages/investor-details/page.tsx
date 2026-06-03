@@ -4,6 +4,7 @@ import React from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 
+import { CoreEntityPanel } from '@kit/core/pages';
 import { Badge } from '@kit/ui/badge';
 import { Card, CardContent } from '@kit/ui/card';
 
@@ -92,10 +93,7 @@ export function FundraisingInvestorDetailsPage({
             label="Geo Focus"
             value={investor.geo_focus?.join(', ') || '-'}
           />
-          <Info
-            label="Owner"
-            value={ownerDisplay(investor)}
-          />
+          <Info label="Owner" value={ownerDisplay(investor)} />
         </CardContent>
       </Card>
       <Section
@@ -114,6 +112,11 @@ export function FundraisingInvestorDetailsPage({
           .filter((item) => item.investor_id === investorId)
           .map((item) => `${dealDisplay(item)} · ${item.status}`)}
         empty="No related deals."
+      />
+      <CoreSections
+        workspaceId={workspaceId}
+        entityType="fundraising_investor"
+        entityId={investorId}
       />
     </div>
   );
@@ -152,6 +155,35 @@ function Section({
             ))}
           </div>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function CoreSections({
+  workspaceId,
+  entityType,
+  entityId,
+}: {
+  workspaceId: string;
+  entityType: string;
+  entityId: string;
+}) {
+  return (
+    <Card>
+      <CardContent className="grid gap-4 p-6">
+        <div>
+          <h2 className="font-semibold">Notes, Emails & Documents</h2>
+          <p className="text-muted-foreground text-sm">
+            Track reusable core records linked to this investor.
+          </p>
+        </div>
+        <CoreEntityPanel
+          workspaceId={workspaceId}
+          entityType={entityType}
+          entityId={entityId}
+          capabilities={['notes', 'documents']}
+        />
       </CardContent>
     </Card>
   );

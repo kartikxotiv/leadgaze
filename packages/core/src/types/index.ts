@@ -69,6 +69,7 @@ export type CoreDocument = {
   relations: Array<CoreRelation & { document_id?: string }>;
   name: string;
   description: string | null;
+  file_path: string | null;
   file_url: string | null;
   file_type: string | null;
   file_size: number | null;
