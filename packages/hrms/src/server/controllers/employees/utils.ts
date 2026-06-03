@@ -113,6 +113,7 @@ async function validateEmployeeReferences(params: {
       .eq('workspace_id', params.workspaceId)
       .eq('user_id', params.accountId)
       .eq('status', 'accepted')
+      .limit(1)
       .maybeSingle();
 
     if (memberError || !member) {
@@ -161,6 +162,7 @@ async function findWorkspaceAccountByEmail(params: {
     .eq('workspace_id', params.workspaceId)
     .eq('user_id', account.id)
     .eq('status', 'accepted')
+    .limit(1)
     .maybeSingle();
 
   if (memberError) {

@@ -13,11 +13,12 @@ import {
   requireEmployeePermission,
 } from './controller.helpers';
 
-const getEmployeeOptionsController = catchAsync(async ({ user }) => {
+const getEmployeeOptionsController = catchAsync(async ({ request, user }) => {
   const supabaseAdmin = getSupabaseServerAdminClient();
   const hrms = getHrmsClient(supabaseAdmin);
   const userId = getRouteUserId(user);
   const workspaceId = await getRequiredWorkspaceId({
+    request,
     supabaseAdmin,
     userId,
   });

@@ -26,11 +26,12 @@ import {
   validateEmployeeReferences,
 } from './utils';
 
-const createEmployeeController = catchAsync(async ({ body, user }) => {
+const createEmployeeController = catchAsync(async ({ body, request, user }) => {
   const supabaseAdmin = getSupabaseServerAdminClient();
   const hrms = getHrmsClient(supabaseAdmin);
   const userId = getRouteUserId(user);
   const workspaceId = await getRequiredWorkspaceId({
+    request,
     supabaseAdmin,
     userId,
   });
@@ -43,6 +44,16 @@ const createEmployeeController = catchAsync(async ({ body, user }) => {
     userId,
     workspaceId,
   });
+
+  if (employeeBody.role_id) {
+    await requireEmployeePermission({
+      featureKey: 'assign_roles',
+      minAccessLevel: 'team',
+      supabaseAdmin,
+      userId,
+      workspaceId,
+    });
+  }
 
   const workEmail = employeeBody.work_email?.trim().toLowerCase();
 
@@ -161,170 +172,186 @@ const createEmployeeController = catchAsync(async ({ body, user }) => {
   return successDataResponse('Employee created successfully', employee);
 });
 
-const updateEmployeeController = catchAsync(async ({ body, params, user }) => {
-  const supabaseAdmin = getSupabaseServerAdminClient();
-  const hrms = getHrmsClient(supabaseAdmin);
-  const userId = getRouteUserId(user);
-  const workspaceId = await getRequiredWorkspaceId({
-    supabaseAdmin,
-    userId,
-  });
-  const employeeId = getEmployeeId(params);
-  const employeeBody = body as EmployeeBody;
+const updateEmployeeController = catchAsync(
+  async ({ body, params, request, user }) => {
+    const supabaseAdmin = getSupabaseServerAdminClient();
+    const hrms = getHrmsClient(supabaseAdmin);
+    const userId = getRouteUserId(user);
+    const workspaceId = await getRequiredWorkspaceId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
+    const employeeId = getEmployeeId(params);
+    const employeeBody = body as EmployeeBody;
 
-  await requireEmployeePermission({
-    featureKey: 'edit',
-    minAccessLevel: 'team',
-    supabaseAdmin,
-    userId,
-    workspaceId,
-  });
-
-  const { data: existingEmployee, error: existingEmployeeError } = await hrms
-    .from('employees')
-    .select('id, account_id, work_email')
-    .eq('workspace_id', workspaceId)
-    .eq('id', employeeId)
-    .eq('is_deleted', false)
-    .single();
-
-  if (existingEmployeeError || !existingEmployee) {
-    throw new ApiError('Employee not found', 404);
-  }
-
-  const nextAccountId =
-    employeeBody.account_id === undefined
-      ? existingEmployee.account_id
-      : employeeBody.account_id;
-  const nextWorkEmail =
-    employeeBody.work_email === undefined
-      ? existingEmployee.work_email
-      : (employeeBody.work_email ?? '').trim().toLowerCase();
-
-  await validateEmployeeReferences({
-    accountId: nextAccountId,
-    departmentId:
-      employeeBody.department_id === undefined
-        ? undefined
-        : normalizeNullable(employeeBody.department_id),
-    employeeId,
-    managerEmployeeId:
-      employeeBody.manager_employee_id === undefined
-        ? undefined
-        : normalizeNullable(employeeBody.manager_employee_id),
-    shiftId:
-      employeeBody.shift_id === undefined
-        ? undefined
-        : normalizeNullable(employeeBody.shift_id),
-    workspaceId,
-  });
-
-  if (nextAccountId) {
-    await ensureUniqueEmployeeForAccount({
-      accountId: nextAccountId,
-      employeeId,
+    await requireEmployeePermission({
+      featureKey: 'edit',
+      minAccessLevel: 'team',
+      supabaseAdmin,
+      userId,
       workspaceId,
     });
-  }
 
-  await ensureUniqueEmployeeEmail({
-    employeeId,
-    workspaceId,
-    workEmail: nextWorkEmail,
-  });
+    if (employeeBody.role_id !== undefined) {
+      await requireEmployeePermission({
+        featureKey: 'assign_roles',
+        minAccessLevel: 'team',
+        supabaseAdmin,
+        userId,
+        workspaceId,
+      });
+    }
 
-  const payload = buildEmployeeUpdatePayload({
-    employeeBody,
-    nextWorkEmail,
-    userId,
-  });
+    const { data: existingEmployee, error: existingEmployeeError } = await hrms
+      .from('employees')
+      .select('id, account_id, work_email')
+      .eq('workspace_id', workspaceId)
+      .eq('id', employeeId)
+      .eq('is_deleted', false)
+      .single();
 
-  const { data, error } = await hrms
-    .from('employees')
-    .update(payload)
-    .eq('workspace_id', workspaceId)
-    .eq('id', employeeId)
-    .eq('is_deleted', false)
-    .select('*')
-    .single();
+    if (existingEmployeeError || !existingEmployee) {
+      throw new ApiError('Employee not found', 404);
+    }
 
-  if (error) {
-    throw new ApiError(error.message, 400);
-  }
+    const nextAccountId =
+      employeeBody.account_id === undefined
+        ? existingEmployee.account_id
+        : employeeBody.account_id;
+    const nextWorkEmail =
+      employeeBody.work_email === undefined
+        ? existingEmployee.work_email
+        : (employeeBody.work_email ?? '').trim().toLowerCase();
 
-  await syncEmployeeRole({
-    employeeId,
-    roleId: employeeBody.role_id,
-    supabaseAdmin,
-    userId,
-    workspaceId,
-  });
+    await validateEmployeeReferences({
+      accountId: nextAccountId,
+      departmentId:
+        employeeBody.department_id === undefined
+          ? undefined
+          : normalizeNullable(employeeBody.department_id),
+      employeeId,
+      managerEmployeeId:
+        employeeBody.manager_employee_id === undefined
+          ? undefined
+          : normalizeNullable(employeeBody.manager_employee_id),
+      shiftId:
+        employeeBody.shift_id === undefined
+          ? undefined
+          : normalizeNullable(employeeBody.shift_id),
+      workspaceId,
+    });
 
-  const [employee] = await enrichEmployees({
-    employees: [data as EmployeeRow],
-    supabaseAdmin,
-    workspaceId,
-  });
+    if (nextAccountId) {
+      await ensureUniqueEmployeeForAccount({
+        accountId: nextAccountId,
+        employeeId,
+        workspaceId,
+      });
+    }
 
-  return successDataResponse('Employee updated successfully', employee);
-});
+    await ensureUniqueEmployeeEmail({
+      employeeId,
+      workspaceId,
+      workEmail: nextWorkEmail,
+    });
 
-const deleteEmployeeController = catchAsync(async ({ params, user }) => {
-  const supabaseAdmin = getSupabaseServerAdminClient();
-  const hrms = getHrmsClient(supabaseAdmin);
-  const userId = getRouteUserId(user);
-  const workspaceId = await getRequiredWorkspaceId({
-    supabaseAdmin,
-    userId,
-  });
-  const employeeId = getEmployeeId(params);
+    const payload = buildEmployeeUpdatePayload({
+      employeeBody,
+      nextWorkEmail,
+      userId,
+    });
 
-  await requireEmployeePermission({
-    featureKey: 'delete',
-    minAccessLevel: 'team',
-    supabaseAdmin,
-    userId,
-    workspaceId,
-  });
+    const { data, error } = await hrms
+      .from('employees')
+      .update(payload)
+      .eq('workspace_id', workspaceId)
+      .eq('id', employeeId)
+      .eq('is_deleted', false)
+      .select('*')
+      .single();
 
-  const { data: employee, error: employeeError } = await hrms
-    .from('employees')
-    .select('id, status')
-    .eq('workspace_id', workspaceId)
-    .eq('id', employeeId)
-    .eq('is_deleted', false)
-    .single();
+    if (error) {
+      throw new ApiError(error.message, 400);
+    }
 
-  if (employeeError || !employee) {
-    throw new ApiError('Employee not found', 404);
-  }
+    await syncEmployeeRole({
+      employeeId,
+      roleId: employeeBody.role_id,
+      supabaseAdmin,
+      userId,
+      workspaceId,
+    });
 
-  if (employee.status !== 'invited') {
-    throw new ApiError('Only invited employees can be deleted', 400);
-  }
+    const [employee] = await enrichEmployees({
+      employees: [data as EmployeeRow],
+      supabaseAdmin,
+      workspaceId,
+    });
 
-  const { error: deleteInviteError } = await hrms
-    .from('invited_employees')
-    .delete()
-    .eq('workspace_id', workspaceId)
-    .eq('employee_id', employeeId);
+    return successDataResponse('Employee updated successfully', employee);
+  },
+);
 
-  if (deleteInviteError) {
-    throw new ApiError(deleteInviteError.message, 400);
-  }
+const deleteEmployeeController = catchAsync(
+  async ({ params, request, user }) => {
+    const supabaseAdmin = getSupabaseServerAdminClient();
+    const hrms = getHrmsClient(supabaseAdmin);
+    const userId = getRouteUserId(user);
+    const workspaceId = await getRequiredWorkspaceId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
+    const employeeId = getEmployeeId(params);
 
-  const { error } = await hrms
-    .from('employees')
-    .delete()
-    .eq('workspace_id', workspaceId)
-    .eq('id', employeeId);
+    await requireEmployeePermission({
+      featureKey: 'delete',
+      minAccessLevel: 'team',
+      supabaseAdmin,
+      userId,
+      workspaceId,
+    });
 
-  if (error) {
-    throw new ApiError(error.message, 400);
-  }
+    const { data: employee, error: employeeError } = await hrms
+      .from('employees')
+      .select('id, status')
+      .eq('workspace_id', workspaceId)
+      .eq('id', employeeId)
+      .eq('is_deleted', false)
+      .single();
 
-  return successDataResponse('Employee deleted successfully');
-});
+    if (employeeError || !employee) {
+      throw new ApiError('Employee not found', 404);
+    }
+
+    if (employee.status !== 'invited') {
+      throw new ApiError('Only invited employees can be deleted', 400);
+    }
+
+    const { error: deleteInviteError } = await hrms
+      .from('invited_employees')
+      .delete()
+      .eq('workspace_id', workspaceId)
+      .eq('employee_id', employeeId);
+
+    if (deleteInviteError) {
+      throw new ApiError(deleteInviteError.message, 400);
+    }
+
+    const { error } = await hrms
+      .from('employees')
+      .delete()
+      .eq('workspace_id', workspaceId)
+      .eq('id', employeeId);
+
+    if (error) {
+      throw new ApiError(error.message, 400);
+    }
+
+    return successDataResponse('Employee deleted successfully');
+  },
+);
 
 function getAppUrl() {
   return (

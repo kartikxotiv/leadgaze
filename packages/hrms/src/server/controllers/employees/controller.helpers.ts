@@ -69,11 +69,41 @@ function getRouteUserId(user: unknown) {
 }
 
 async function getRequiredWorkspaceId(params: {
+  request?: {
+    cookies?: {
+      get: (name: string) => { value?: string } | undefined;
+    };
+  };
   supabaseAdmin: SupabaseAdminClient;
   userId?: string;
 }) {
   if (!params.userId) {
     throw new ApiError('Unauthorized', 401);
+  }
+
+  const activeWorkspaceId =
+    params.request?.cookies?.get('organization_id')?.value;
+
+  if (activeWorkspaceId) {
+    const { data: activeMember, error: activeMemberError } =
+      await params.supabaseAdmin
+        .from('workspace_members')
+        .select('workspace_id')
+        .eq('workspace_id', activeWorkspaceId)
+        .eq('user_id', params.userId)
+        .eq('status', 'accepted')
+        .limit(1)
+        .maybeSingle();
+
+    if (activeMemberError) {
+      throw new ApiError(activeMemberError.message, 400);
+    }
+
+    if (!activeMember) {
+      throw new ApiError('Workspace not found for user', 404);
+    }
+
+    return activeWorkspaceId;
   }
 
   const { data, error } = await params.supabaseAdmin
@@ -113,6 +143,7 @@ async function requireEmployeePermission(params: {
     .eq('workspace_id', params.workspaceId)
     .eq('user_id', params.userId)
     .eq('status', 'accepted')
+    .limit(1)
     .maybeSingle();
 
   if (memberError) {
@@ -125,33 +156,49 @@ async function requireEmployeePermission(params: {
     throw new ApiError('Forbidden', 403);
   }
 
-  const { data: permission, error: permissionError } =
+  const { data: permissions, error: permissionError } =
     await params.supabaseAdmin
       .from('role_permissions')
       .select(
         `
-        can_access,
-        access_level,
-        crm_module_features!module_feature_id(
-          feature_key,
-          crm_modules!module_id(module_key)
-        )
-      `,
+          can_access,
+          access_level,
+          crm_module_features!module_feature_id(
+            feature_key,
+            crm_modules!module_id(module_key)
+          )
+        `,
       )
       .eq('workspace_id', params.workspaceId)
-      .eq('role_id', workspaceMember.role_id)
-      .eq('crm_module_features.feature_key', params.featureKey)
-      .eq('crm_module_features.crm_modules.module_key', 'hrms_employees')
-      .maybeSingle();
+      .eq('role_id', workspaceMember.role_id);
 
   if (permissionError) {
     throw new ApiError(permissionError.message, 400);
   }
 
-  const rolePermission = permission as {
-    access_level?: AccessLevel | null;
-    can_access?: boolean | null;
-  } | null;
+  const featureKeys = getEmployeeFeatureAliases(params.featureKey);
+  const rolePermission =
+    (
+      permissions as Array<{
+        access_level?: AccessLevel | null;
+        can_access?: boolean | null;
+        crm_module_features?: {
+          feature_key?: string | null;
+          crm_modules?: {
+            module_key?: string | null;
+          } | null;
+        } | null;
+      }> | null
+    )?.find((permission) => {
+      const feature = permission.crm_module_features;
+      const moduleKey = feature?.crm_modules?.module_key;
+
+      return (
+        moduleKey === 'hrms_employees' &&
+        featureKeys.includes(feature?.feature_key ?? '')
+      );
+    }) ?? null;
+
   const accessLevel = (rolePermission?.access_level ?? 'none') as AccessLevel;
   const minAccessLevel = params.minAccessLevel ?? 'own';
 
@@ -369,17 +416,17 @@ async function syncEmployeeRole(params: {
 
   const hrms = getHrmsClient(params.supabaseAdmin);
 
+  const { error: deleteExistingRolesError } = await hrms
+    .from('employee_roles')
+    .delete()
+    .eq('workspace_id', params.workspaceId)
+    .eq('employee_id', params.employeeId);
+
+  if (deleteExistingRolesError) {
+    throw new ApiError(deleteExistingRolesError.message, 400);
+  }
+
   if (!params.roleId) {
-    const { error } = await hrms
-      .from('employee_roles')
-      .delete()
-      .eq('workspace_id', params.workspaceId)
-      .eq('employee_id', params.employeeId);
-
-    if (error) {
-      throw new ApiError(error.message, 400);
-    }
-
     return;
   }
 
@@ -392,34 +439,6 @@ async function syncEmployeeRole(params: {
 
   if (roleError || !role) {
     throw new ApiError('Role is invalid', 400);
-  }
-
-  const { data: existingEmployeeRole, error: employeeRoleFetchError } =
-    await hrms
-      .from('employee_roles')
-      .select('id')
-      .eq('workspace_id', params.workspaceId)
-      .eq('employee_id', params.employeeId)
-      .maybeSingle();
-
-  if (employeeRoleFetchError) {
-    throw new ApiError(employeeRoleFetchError.message, 400);
-  }
-
-  if (existingEmployeeRole) {
-    const { error: employeeRoleUpdateError } = await hrms
-      .from('employee_roles')
-      .update({
-        role_id: params.roleId,
-        updated_by: params.userId,
-      })
-      .eq('id', existingEmployeeRole.id);
-
-    if (employeeRoleUpdateError) {
-      throw new ApiError(employeeRoleUpdateError.message, 400);
-    }
-
-    return;
   }
 
   const { error: employeeRoleInsertError } = await hrms
@@ -500,6 +519,18 @@ function getEmployeeName(
   employee: Pick<EmployeeOptionEmployee, 'first_name' | 'last_name'>,
 ) {
   return `${employee.first_name}${employee.last_name ? ` ${employee.last_name}` : ''}`;
+}
+
+function getEmployeeFeatureAliases(featureKey: string) {
+  if (featureKey === 'edit') {
+    return ['edit', 'update'];
+  }
+
+  if (featureKey === 'update') {
+    return ['update', 'edit'];
+  }
+
+  return [featureKey];
 }
 
 export {

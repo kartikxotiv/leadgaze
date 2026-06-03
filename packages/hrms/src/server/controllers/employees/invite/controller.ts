@@ -13,11 +13,12 @@ import {
 } from '../controller.helpers';
 import { createEmployeeController } from '../mutations.controller';
 
-const getEmployeeInvitedController = catchAsync(async ({ user }) => {
+const getEmployeeInvitedController = catchAsync(async ({ request, user }) => {
   const supabaseAdmin = getSupabaseServerAdminClient();
   const hrms = getHrmsClient(supabaseAdmin);
   const userId = getRouteUserId(user);
   const workspaceId = await getRequiredWorkspaceId({
+    request,
     supabaseAdmin,
     userId,
   });

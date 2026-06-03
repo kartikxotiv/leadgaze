@@ -31,6 +31,7 @@ const listEmployeesController = catchAsync(async ({ request, user }) => {
   const hrms = getHrmsClient(supabaseAdmin);
   const userId = getRouteUserId(user);
   const workspaceId = await getRequiredWorkspaceId({
+    request,
     supabaseAdmin,
     userId,
   });
