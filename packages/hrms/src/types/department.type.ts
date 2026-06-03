@@ -12,7 +12,8 @@ export type DepartmentParent = {
 
 export type Department = {
   id: string;
-  organization_id: string;
+  organization_id?: string;
+  workspace_id: string;
   name: string;
   code: string;
   cost_center_code: string | null;

@@ -11,7 +11,7 @@ import {
   AlertDialogTitle,
 } from '@kit/ui/alert-dialog';
 
-import type { Department } from '~/types/department.type';
+import type { Department } from '../../types/department.type';
 
 type DeleteDepartmentDialogProps = {
   department: Department | null;

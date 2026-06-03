@@ -1,22 +1,25 @@
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import type { Database } from '~/lib/database.types';
-import { getCurrentUserOrganizationId } from '~/lib/server/organizations';
 import {
   ApiError,
   catchAsync,
   successDataResponse,
-} from '~/utils/response-handler';
-
+} from '../../../utils/response-handler';
 import {
+  getHrmsClient,
+  getRequiredWorkspaceId,
+  getRouteUserId,
+  requireEmployeePermission,
+} from '../employees/controller.helpers';
+import {
+  type DepartmentRow,
   departmentSelect,
   getDepartmentHeadAccounts,
   normalizeNullable,
   validateDepartmentReferences,
-  withParentDepartments,
+  withDepartmentRelations,
 } from './utils';
 
-type DepartmentInsert = Database['public']['Tables']['departments']['Insert'];
 type DepartmentWriteBody = {
   code?: string | null;
   cost_center_code?: string | null;
@@ -26,98 +29,136 @@ type DepartmentWriteBody = {
   parent_department_id?: string | null;
 };
 
-const createDepartmentController = catchAsync(async ({ body, user }) => {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-  const organizationId = await getCurrentUserOrganizationId(user?.id);
-  const departmentBody = body as DepartmentWriteBody;
+const departmentModuleKey = 'hrms_departments';
 
-  if (!organizationId) {
-    throw new ApiError('Organization not found for user', 404);
-  }
+const createDepartmentController = catchAsync(
+  async ({ body, request, user }) => {
+    const supabaseAdmin = getSupabaseServerAdminClient();
+    const hrms = getHrmsClient(supabaseAdmin);
+    const userId = getRouteUserId(user);
+    const workspaceId = await getRequiredWorkspaceId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
+    const departmentBody = body as DepartmentWriteBody;
 
-  await validateDepartmentReferences({
-    headAccountId: normalizeNullable(departmentBody.head_account_id),
-    organizationId,
-    parentDepartmentId: departmentBody.parent_department_id ?? null,
+    await requireEmployeePermission({
+      featureKey: 'create',
+      minAccessLevel: 'team',
+      moduleKey: departmentModuleKey,
+      supabaseAdmin,
+      userId,
+      workspaceId,
+    });
+
+    await validateDepartmentReferences({
+      headAccountId: normalizeNullable(departmentBody.head_account_id),
+      parentDepartmentId: normalizeNullable(
+        departmentBody.parent_department_id,
+      ),
+      supabaseAdmin,
+      workspaceId,
+    });
+
+    const payload = {
+      code: departmentBody.code?.trim().toUpperCase() ?? '',
+      cost_center_code: normalizeNullable(departmentBody.cost_center_code),
+      created_by: userId,
+      head_account_id: normalizeNullable(departmentBody.head_account_id),
+      is_active: departmentBody.is_active ?? true,
+      name: departmentBody.name?.trim() ?? '',
+      parent_department_id: normalizeNullable(
+        departmentBody.parent_department_id,
+      ),
+      updated_by: userId,
+      workspace_id: workspaceId,
+    };
+
+    const { data, error } = await hrms
+      .from('departments')
+      .insert(payload)
+      .select(departmentSelect)
+      .single();
+
+    if (error) {
+      throw new ApiError(error.message, 400);
+    }
+
+    const [department] = await withDepartmentRelations({
+      departments: data ? [data as DepartmentRow] : [],
+      supabaseAdmin,
+      workspaceId,
+    });
+
+    return successDataResponse('Department created successfully', department);
+  },
+);
+
+const listDepartmentsController = catchAsync(async ({ request, user }) => {
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const hrms = getHrmsClient(supabaseAdmin);
+  const userId = getRouteUserId(user);
+  const workspaceId = await getRequiredWorkspaceId({
+    request,
+    supabaseAdmin,
+    userId,
   });
 
-  const payload: DepartmentInsert = {
-    name: departmentBody.name?.trim() ?? '',
-    code: departmentBody.code?.trim().toUpperCase() ?? '',
-    cost_center_code: normalizeNullable(departmentBody.cost_center_code),
-    head_account_id: normalizeNullable(departmentBody.head_account_id),
-    is_active: departmentBody.is_active ?? true,
-    organization_id: organizationId,
-    parent_department_id: normalizeNullable(
-      departmentBody.parent_department_id,
-    ),
-    created_by: user?.id,
-    updated_by: user?.id,
-  };
-
-  const { data, error } = await supabaseAdmin
-    .from('departments')
-    .insert(payload)
-    .select(departmentSelect)
-    .single();
-
-  if (error) {
-    throw new ApiError(error.message, 400);
-  }
-
-  const [department] = await withParentDepartments({
-    departments: data ? [data] : [],
-    organizationId,
+  await requireEmployeePermission({
+    featureKey: 'view',
+    moduleKey: departmentModuleKey,
+    supabaseAdmin,
+    userId,
+    workspaceId,
   });
 
-  return successDataResponse('Department created successfully', department);
-});
-
-const listDepartmentsController = catchAsync(async ({ user }) => {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-  const organizationId = await getCurrentUserOrganizationId(user?.id);
-
-  if (!organizationId) {
-    throw new ApiError('Organization not found for user', 404);
-  }
-
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await hrms
     .from('departments')
     .select(departmentSelect)
-    .eq('organization_id', organizationId)
+    .eq('workspace_id', workspaceId)
     .order('name', { ascending: true });
 
   if (error) {
     throw new ApiError(error.message, 400);
   }
 
-  const departments = await withParentDepartments({
-    departments: data ?? [],
-    organizationId,
+  const departments = await withDepartmentRelations({
+    departments: (data ?? []) as DepartmentRow[],
+    supabaseAdmin,
+    workspaceId,
   });
 
   return successDataResponse('Departments fetched successfully', departments);
 });
 
-const getDepartmentOptionsController = catchAsync(async ({ user }) => {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-  const organizationId = await getCurrentUserOrganizationId(user?.id);
+const getDepartmentOptionsController = catchAsync(async ({ request, user }) => {
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const hrms = getHrmsClient(supabaseAdmin);
+  const userId = getRouteUserId(user);
+  const workspaceId = await getRequiredWorkspaceId({
+    request,
+    supabaseAdmin,
+    userId,
+  });
 
-  if (!organizationId) {
-    throw new ApiError('Organization not found for user', 404);
-  }
+  await requireEmployeePermission({
+    featureKey: 'view',
+    moduleKey: departmentModuleKey,
+    supabaseAdmin,
+    userId,
+    workspaceId,
+  });
 
-  const [
-    { data: departments, error: departmentsError },
-    headAccounts,
-  ] = await Promise.all([
-    supabaseAdmin
-      .from('departments')
-      .select('id, name, code')
-      .eq('organization_id', organizationId)
-      .order('name', { ascending: true }),
-    getDepartmentHeadAccounts(organizationId),
-  ]);
+  const [{ data: departments, error: departmentsError }, headAccounts] =
+    await Promise.all([
+      hrms
+        .from('departments')
+        .select('id, name, code')
+        .eq('workspace_id', workspaceId)
+        .order('name', { ascending: true }),
+      getDepartmentHeadAccounts(workspaceId, supabaseAdmin),
+    ]);
 
   if (departmentsError) {
     throw new ApiError(departmentsError.message, 400);

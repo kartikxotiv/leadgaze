@@ -26,7 +26,7 @@ import type {
   Department,
   DepartmentFormPayload,
   DepartmentOptions,
-} from '~/types/department.type';
+} from '../../types/department.type';
 
 const EMPTY_FORM: DepartmentFormPayload = {
   name: '',
@@ -200,7 +200,11 @@ export function DepartmentFormDialog(props: DepartmentFormDialogProps) {
               />
             </div>
 
-            <div className={'flex items-center justify-between rounded-lg border px-4 py-3 sm:col-span-2'}>
+            <div
+              className={
+                'flex items-center justify-between rounded-lg border px-4 py-3 sm:col-span-2'
+              }
+            >
               <div>
                 <p className={'font-medium'}>Active Department</p>
                 <p className={'text-muted-foreground text-sm'}>

@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "exports": {
     ".": "./index.ts",
+    "./server/departments": "./src/server/controllers/departments/route.ts",
+    "./server/departments/[departmentId]": "./src/server/controllers/departments/[departmentId]/route.ts",
+    "./server/departments/options": "./src/server/controllers/departments/options/route.ts",
     "./server/employees": "./src/server/controllers/employees/route.ts",
     "./server/employees/[employeeId]": "./src/server/controllers/employees/[employeeId]/route.ts",
     "./server/employees/invite": "./src/server/controllers/employees/invite/route.ts",

@@ -1,11 +1,14 @@
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import { Database } from '~/lib/database.types';
-import { ApiError } from '~/utils/response-handler';
+import { ApiError } from '../../../utils/response-handler';
+import {
+  type SupabaseAdminClient,
+  getHrmsClient,
+} from '../employees/controller.helpers';
 
 const departmentSelect = `
   id,
-  organization_id,
+  workspace_id,
   name,
   code,
   cost_center_code,
@@ -14,29 +17,29 @@ const departmentSelect = `
   parent_department_id,
   created_at,
   updated_at,
-  head_account:accounts!departments_head_account_id_fkey (
-    id,
-    name,
-    email
-  )
+  created_by,
+  updated_by
 `;
 
 type DepartmentRow = {
   code: string;
   cost_center_code: string | null;
   created_at: string;
-  head_account: {
-    email: string | null;
-    id: string;
-    name: string;
-  } | null;
+  created_by: string | null;
   head_account_id: string | null;
   id: string;
   is_active: boolean;
   name: string;
-  organization_id: string;
   parent_department_id: string | null;
   updated_at: string;
+  updated_by: string | null;
+  workspace_id: string;
+};
+
+type DepartmentHeadAccount = {
+  email: string | null;
+  id: string;
+  name: string;
 };
 
 function normalizeNullable(value: string | null | undefined) {
@@ -59,134 +62,144 @@ function getDepartmentId(params?: Record<string, string>) {
   return departmentId;
 }
 
-async function getDepartmentHeadAccounts(organizationId: string) {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-
+async function getDepartmentHeadAccounts(
+  workspaceId: string,
+  supabaseAdmin = getSupabaseServerAdminClient() as SupabaseAdminClient,
+) {
+  const hrms = getHrmsClient(supabaseAdmin);
   const [
-    { data: organization, error: organizationError },
+    { data: workspace, error: workspaceError },
     { data: employees, error: employeesError },
   ] = await Promise.all([
     supabaseAdmin
-      .from('organizations')
-      .select('owner:accounts!organizations_owner_id_fkey(id, name, email)')
-      .eq('id', organizationId)
+      .from('workspaces')
+      .select('owner_id')
+      .eq('id', workspaceId)
       .maybeSingle(),
-    supabaseAdmin
+    hrms
       .from('employees')
-      .select(
-        'status, account:accounts!employees_account_id_fkey(id, name, email)',
-      )
-      .eq('organization_id', organizationId)
+      .select('account_id, status')
+      .eq('workspace_id', workspaceId)
+      .eq('is_deleted', false)
       .not('account_id', 'is', null),
   ]);
 
-  if (organizationError) {
-    throw new ApiError(organizationError.message, 400);
+  if (workspaceError) {
+    throw new ApiError(workspaceError.message, 400);
   }
 
   if (employeesError) {
     throw new ApiError(employeesError.message, 400);
   }
 
-  const headAccounts = new Map<
-    string,
-    { id: string; name: string; email: string | null }
-  >();
+  const accountIds = uniqueIds([
+    (workspace as { owner_id?: string | null } | null)?.owner_id,
+    ...(
+      (employees ?? []) as Array<{
+        account_id: string | null;
+        status: string;
+      }>
+    )
+      .filter((employee) => employee.status !== 'invited')
+      .map((employee) => employee.account_id),
+  ]);
 
-  const ownerAccount = organization?.owner;
-  const invitedAccountIds = new Set(
-    (employees ?? [])
-      .filter((employee) => employee.status === 'invited')
-      .map((employee) => {
-        const account = employee.account;
-
-        return account && !Array.isArray(account) ? account.id : null;
-      })
-      .filter((value): value is string => Boolean(value)),
-  );
-
-  if (
-    ownerAccount &&
-    !Array.isArray(ownerAccount) &&
-    !invitedAccountIds.has(ownerAccount.id)
-  ) {
-    headAccounts.set(ownerAccount.id, ownerAccount);
+  if (accountIds.length === 0) {
+    return [];
   }
 
-  for (const employee of employees ?? []) {
-    if (employee.status === 'invited') {
-      continue;
-    }
+  const { data: accounts, error: accountsError } = await supabaseAdmin
+    .from('accounts')
+    .select('id, name, email')
+    .in('id', accountIds);
 
-    const account = employee.account;
-
-    if (!account || Array.isArray(account)) {
-      continue;
-    }
-
-    headAccounts.set(account.id, account);
+  if (accountsError) {
+    throw new ApiError(accountsError.message, 400);
   }
 
-  return Array.from(headAccounts.values()).sort((left, right) =>
+  return ((accounts ?? []) as DepartmentHeadAccount[]).sort((left, right) =>
     left.name.localeCompare(right.name),
   );
 }
 
-async function withParentDepartments(params: {
+async function withDepartmentRelations(params: {
   departments: DepartmentRow[];
-  organizationId: string;
+  supabaseAdmin: SupabaseAdminClient;
+  workspaceId: string;
 }) {
-  const parentDepartmentIds = Array.from(
-    new Set(
-      params.departments
-        .map((department) => department.parent_department_id)
-        .filter((value): value is string => Boolean(value)),
-    ),
+  const parentDepartmentIds = uniqueIds(
+    params.departments.map((department) => department.parent_department_id),
   );
+  const headAccountIds = uniqueIds(
+    params.departments.map((department) => department.head_account_id),
+  );
+  const hrms = getHrmsClient(params.supabaseAdmin);
 
-  if (parentDepartmentIds.length === 0) {
-    return params.departments.map((department) => ({
-      ...department,
-      parent_department: null,
-    }));
+  const [parentDepartmentsResult, accountsResult] = await Promise.all([
+    parentDepartmentIds.length > 0
+      ? hrms
+          .from('departments')
+          .select('id, name, code')
+          .eq('workspace_id', params.workspaceId)
+          .in('id', parentDepartmentIds)
+      : Promise.resolve({ data: [], error: null }),
+    headAccountIds.length > 0
+      ? params.supabaseAdmin
+          .from('accounts')
+          .select('id, name, email')
+          .in('id', headAccountIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  if (parentDepartmentsResult.error) {
+    throw new ApiError(parentDepartmentsResult.error.message, 400);
   }
 
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-  const { data: parentDepartments, error } = await supabaseAdmin
-    .from('departments')
-    .select('id, name, code')
-    .eq('organization_id', params.organizationId)
-    .in('id', parentDepartmentIds);
-
-  if (error) {
-    throw new ApiError(error.message, 400);
+  if (accountsResult.error) {
+    throw new ApiError(accountsResult.error.message, 400);
   }
 
-  const parentDepartmentMap = new Map(
-    (parentDepartments ?? []).map((department) => [department.id, department]),
+  const parentDepartmentMap = mapById(
+    (parentDepartmentsResult.data ?? []) as Array<{ id: string }>,
+  );
+  const accountsMap = mapById(
+    (accountsResult.data ?? []) as DepartmentHeadAccount[],
   );
 
   return params.departments.map((department) => ({
     ...department,
+    organization_id: department.workspace_id,
+    head_account: department.head_account_id
+      ? (accountsMap.get(department.head_account_id) ?? null)
+      : null,
     parent_department: department.parent_department_id
-      ? parentDepartmentMap.get(department.parent_department_id) ?? null
+      ? (parentDepartmentMap.get(department.parent_department_id) ?? null)
       : null,
   }));
 }
 
 async function validateDepartmentReferences(params: {
+  departmentId?: string;
   headAccountId?: string | null;
-  organizationId: string;
-  parentDepartmentId: string | null;
+  parentDepartmentId?: string | null;
+  supabaseAdmin: SupabaseAdminClient;
+  workspaceId: string;
 }) {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
+  const hrms = getHrmsClient(params.supabaseAdmin);
 
   if (params.parentDepartmentId) {
-    const { data, error } = await supabaseAdmin
+    if (
+      params.departmentId &&
+      params.departmentId === params.parentDepartmentId
+    ) {
+      throw new ApiError('Department cannot be its own parent', 400);
+    }
+
+    const { data, error } = await hrms
       .from('departments')
       .select('id')
       .eq('id', params.parentDepartmentId)
-      .eq('organization_id', params.organizationId)
+      .eq('workspace_id', params.workspaceId)
       .maybeSingle();
 
     if (error || !data) {
@@ -196,45 +209,72 @@ async function validateDepartmentReferences(params: {
 
   if (params.headAccountId) {
     const [
-      { data: organizationOwner, error: organizationOwnerError },
+      { data: workspaceOwner, error: workspaceOwnerError },
+      { data: workspaceMember, error: workspaceMemberError },
       { data: employee, error: employeeError },
     ] = await Promise.all([
-      supabaseAdmin
-        .from('organizations')
+      params.supabaseAdmin
+        .from('workspaces')
         .select('id')
-        .eq('id', params.organizationId)
+        .eq('id', params.workspaceId)
         .eq('owner_id', params.headAccountId)
         .maybeSingle(),
-      supabaseAdmin
+      params.supabaseAdmin
+        .from('workspace_members')
+        .select('id')
+        .eq('workspace_id', params.workspaceId)
+        .eq('user_id', params.headAccountId)
+        .eq('status', 'accepted')
+        .limit(1)
+        .maybeSingle(),
+      hrms
         .from('employees')
         .select('id, status')
-        .eq('organization_id', params.organizationId)
+        .eq('workspace_id', params.workspaceId)
         .eq('account_id', params.headAccountId)
+        .eq('is_deleted', false)
+        .limit(1)
         .maybeSingle(),
     ]);
 
-    if (organizationOwnerError) {
-      throw new ApiError(organizationOwnerError.message, 400);
+    if (workspaceOwnerError) {
+      throw new ApiError(workspaceOwnerError.message, 400);
+    }
+
+    if (workspaceMemberError) {
+      throw new ApiError(workspaceMemberError.message, 400);
     }
 
     if (employeeError) {
       throw new ApiError(employeeError.message, 400);
     }
 
-    if (employee?.status === 'invited') {
+    if (!workspaceOwner && !workspaceMember) {
       throw new ApiError('Department head is invalid', 400);
     }
 
-    if (!organizationOwner && !employee) {
+    if (employee && (employee as { status: string }).status === 'invited') {
       throw new ApiError('Department head is invalid', 400);
     }
   }
 }
+
+function uniqueIds(values: Array<string | null | undefined>) {
+  return Array.from(
+    new Set(values.filter((value): value is string => Boolean(value))),
+  );
+}
+
+function mapById<T extends { id: string }>(values: T[]) {
+  return new Map(values.map((value) => [value.id, value]));
+}
+
 export {
   departmentSelect,
   getDepartmentHeadAccounts,
-  normalizeNullable,
   getDepartmentId,
+  normalizeNullable,
   validateDepartmentReferences,
-  withParentDepartments,
+  withDepartmentRelations,
 };
+export type { DepartmentRow };
