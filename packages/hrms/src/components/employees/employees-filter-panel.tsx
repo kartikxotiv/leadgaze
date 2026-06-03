@@ -9,7 +9,10 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 
-import { type EmployeeStatusFilter, employeeStatusOptions } from '../page.data';
+import {
+  type EmployeeStatusFilter,
+  employeeStatusOptions,
+} from '../../pages/employees/page.data';
 
 export function EmployeesFilterPanel(props: {
   hasEmployeeFilters: boolean;

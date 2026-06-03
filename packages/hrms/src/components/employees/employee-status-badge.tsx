@@ -2,7 +2,7 @@
 
 import { Badge } from '@kit/ui/badge';
 
-import type { EmployeeStatus } from '~/types/employee.type';
+import type { EmployeeStatus } from '../../types/employee.type';
 
 const statusLabelMap: Record<EmployeeStatus, string> = {
   active: 'Active',

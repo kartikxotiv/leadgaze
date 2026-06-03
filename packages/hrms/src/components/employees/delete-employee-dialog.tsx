@@ -11,7 +11,7 @@ import {
   AlertDialogTitle,
 } from '@kit/ui/alert-dialog';
 
-import type { Employee } from '~/types/employee.type';
+import type { Employee } from '../../types/employee.type';
 
 export function DeleteEmployeeDialog(props: {
   employee: Employee | null;
