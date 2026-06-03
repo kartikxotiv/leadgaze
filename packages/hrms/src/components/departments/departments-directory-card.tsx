@@ -20,8 +20,8 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
-import { useRbac } from '~/components/rbac/rbac-context';
-import type { Department } from '~/types/department.type';
+import type { Department } from '../../types/department.type';
+import { useRbac } from '../rbac/rbac-context';
 
 export function DepartmentsDirectoryCard(props: {
   departments: Array<Department>;

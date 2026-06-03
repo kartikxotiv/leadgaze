@@ -1,19 +1,23 @@
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import { Database } from '~/lib/database.types';
-import { getCurrentUserOrganizationId } from '~/lib/server/organizations';
 import {
   ApiError,
   catchAsync,
   successDataResponse,
-} from '~/utils/response-handler';
-
+} from '../../../../utils/response-handler';
 import {
+  getHrmsClient,
+  getRequiredWorkspaceId,
+  getRouteUserId,
+  requireEmployeePermission,
+} from '../../employees/controller.helpers';
+import {
+  type DepartmentRow,
   departmentSelect,
   getDepartmentId,
   normalizeNullable,
   validateDepartmentReferences,
-  withParentDepartments,
+  withDepartmentRelations,
 } from '../utils';
 
 type DepartmentWriteBody = {
@@ -24,78 +28,101 @@ type DepartmentWriteBody = {
   name?: string | null;
   parent_department_id?: string | null;
 };
-type DepartmentUpdate = Database['public']['Tables']['departments']['Update'];
 
-const getDepartmentController = catchAsync(async ({ params, user }) => {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-  const organizationId = await getCurrentUserOrganizationId(user?.id);
-  const departmentId = getDepartmentId(params);
+const departmentModuleKey = 'hrms_departments';
 
-  if (!organizationId) {
-    throw new ApiError('Organization not found for user', 404);
-  }
+const getDepartmentController = catchAsync(
+  async ({ params, request, user }) => {
+    const supabaseAdmin = getSupabaseServerAdminClient();
+    const hrms = getHrmsClient(supabaseAdmin);
+    const userId = getRouteUserId(user);
+    const workspaceId = await getRequiredWorkspaceId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
+    const departmentId = getDepartmentId(params);
 
-  const { data, error } = await supabaseAdmin
-    .from('departments')
-    .select(departmentSelect)
-    .eq('id', departmentId)
-    .eq('organization_id', organizationId)
-    .single();
+    await requireEmployeePermission({
+      featureKey: 'view',
+      moduleKey: departmentModuleKey,
+      supabaseAdmin,
+      userId,
+      workspaceId,
+    });
 
-  if (error) {
-    throw new ApiError(error.message, error.code === 'PGRST116' ? 404 : 400);
-  }
+    const { data, error } = await hrms
+      .from('departments')
+      .select(departmentSelect)
+      .eq('id', departmentId)
+      .eq('workspace_id', workspaceId)
+      .single();
 
-  const [department] = await withParentDepartments({
-    departments: data ? [data] : [],
-    organizationId,
-  });
+    if (error) {
+      throw new ApiError(error.message, error.code === 'PGRST116' ? 404 : 400);
+    }
 
-  return successDataResponse('Department fetched successfully', department);
-});
+    const [department] = await withDepartmentRelations({
+      departments: data ? [data as DepartmentRow] : [],
+      supabaseAdmin,
+      workspaceId,
+    });
+
+    return successDataResponse('Department fetched successfully', department);
+  },
+);
 
 const updateDepartmentController = catchAsync(
-  async ({ body, params, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
+  async ({ body, params, request, user }) => {
+    const supabaseAdmin = getSupabaseServerAdminClient();
+    const hrms = getHrmsClient(supabaseAdmin);
+    const userId = getRouteUserId(user);
+    const workspaceId = await getRequiredWorkspaceId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
     const departmentBody = body as DepartmentWriteBody;
     const departmentId = getDepartmentId(params);
 
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
+    await requireEmployeePermission({
+      featureKey: 'edit',
+      minAccessLevel: 'team',
+      moduleKey: departmentModuleKey,
+      supabaseAdmin,
+      userId,
+      workspaceId,
+    });
 
     const { data: existingDepartment, error: existingDepartmentError } =
-      await supabaseAdmin
+      await hrms
         .from('departments')
         .select('id')
         .eq('id', departmentId)
-        .eq('organization_id', organizationId)
+        .eq('workspace_id', workspaceId)
         .single();
 
     if (existingDepartmentError || !existingDepartment) {
       throw new ApiError('Department not found', 404);
     }
 
-    const parentDepartmentId = normalizeNullable(
-      departmentBody.parent_department_id,
-    );
-
-    if (parentDepartmentId === departmentId) {
-      throw new ApiError('Department cannot be its own parent', 400);
-    }
+    const parentDepartmentId =
+      departmentBody.parent_department_id === undefined
+        ? undefined
+        : normalizeNullable(departmentBody.parent_department_id);
 
     await validateDepartmentReferences({
+      departmentId,
       headAccountId:
         departmentBody.head_account_id === undefined
           ? undefined
           : normalizeNullable(departmentBody.head_account_id),
-      organizationId,
       parentDepartmentId,
+      supabaseAdmin,
+      workspaceId,
     });
 
-    const payload: DepartmentUpdate = {
-      name: departmentBody.name?.trim(),
+    const payload = {
       code: departmentBody.code?.trim().toUpperCase(),
       cost_center_code:
         departmentBody.cost_center_code === undefined
@@ -106,18 +133,19 @@ const updateDepartmentController = catchAsync(
           ? undefined
           : normalizeNullable(departmentBody.head_account_id),
       is_active: departmentBody.is_active,
+      name: departmentBody.name?.trim(),
       parent_department_id:
         departmentBody.parent_department_id === undefined
           ? undefined
           : parentDepartmentId,
-      updated_by: user?.id,
+      updated_by: userId,
     };
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await hrms
       .from('departments')
       .update(payload)
       .eq('id', departmentId)
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', workspaceId)
       .select(departmentSelect)
       .single();
 
@@ -125,39 +153,53 @@ const updateDepartmentController = catchAsync(
       throw new ApiError(error.message, 400);
     }
 
-    const [department] = await withParentDepartments({
-      departments: data ? [data] : [],
-      organizationId,
+    const [department] = await withDepartmentRelations({
+      departments: data ? [data as DepartmentRow] : [],
+      supabaseAdmin,
+      workspaceId,
     });
 
     return successDataResponse('Department updated successfully', department);
   },
 );
 
-const deleteDepartmentController = catchAsync(async ({ params, user }) => {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-  const organizationId = await getCurrentUserOrganizationId(user?.id);
-  const departmentId = getDepartmentId(params);
+const deleteDepartmentController = catchAsync(
+  async ({ params, request, user }) => {
+    const supabaseAdmin = getSupabaseServerAdminClient();
+    const hrms = getHrmsClient(supabaseAdmin);
+    const userId = getRouteUserId(user);
+    const workspaceId = await getRequiredWorkspaceId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
+    const departmentId = getDepartmentId(params);
 
-  if (!organizationId) {
-    throw new ApiError('Organization not found for user', 404);
-  }
+    await requireEmployeePermission({
+      featureKey: 'delete',
+      minAccessLevel: 'team',
+      moduleKey: departmentModuleKey,
+      supabaseAdmin,
+      userId,
+      workspaceId,
+    });
 
-  const { error } = await supabaseAdmin
-    .from('departments')
-    .delete()
-    .eq('id', departmentId)
-    .eq('organization_id', organizationId);
+    const { error } = await hrms
+      .from('departments')
+      .delete()
+      .eq('id', departmentId)
+      .eq('workspace_id', workspaceId);
 
-  if (error) {
-    throw new ApiError(error.message, 400);
-  }
+    if (error) {
+      throw new ApiError(error.message, 400);
+    }
 
-  return successDataResponse('Department deleted successfully');
-});
+    return successDataResponse('Department deleted successfully');
+  },
+);
 
 export {
+  deleteDepartmentController,
   getDepartmentController,
   updateDepartmentController,
-  deleteDepartmentController,
 };
