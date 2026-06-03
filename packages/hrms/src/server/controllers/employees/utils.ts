@@ -1,7 +1,20 @@
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import type { Database } from '~/lib/database.types';
-import { ApiError } from '~/utils/response-handler';
+import { ApiError } from '../../../utils/response-handler';
+
+export type EmployeeEmploymentType =
+  | 'full_time'
+  | 'part_time'
+  | 'contract'
+  | 'intern';
+
+export type EmployeeStatus =
+  | 'invited'
+  | 'active'
+  | 'probation'
+  | 'notice_period'
+  | 'inactive'
+  | 'exited';
 
 export type EmployeeBody = {
   account_id?: string | null;
@@ -9,7 +22,7 @@ export type EmployeeBody = {
   shift_id?: string | null;
   designation?: string | null;
   employee_code?: string | null;
-  employment_type?: Database['public']['Enums']['employee_employment_type'];
+  employment_type?: EmployeeEmploymentType;
   first_name?: string | null;
   invite_if_missing?: boolean;
   joining_date?: string | null;
@@ -17,7 +30,7 @@ export type EmployeeBody = {
   manager_employee_id?: string | null;
   phone?: string | null;
   role_id?: string | null;
-  status?: Database['public']['Enums']['employee_status'];
+  status?: EmployeeStatus;
   work_email?: string | null;
 };
 
@@ -46,17 +59,18 @@ async function validateEmployeeReferences(params: {
   departmentId?: string | null;
   employeeId?: string;
   managerEmployeeId?: string | null;
-  organizationId: string;
   shiftId?: string | null;
+  workspaceId: string;
 }) {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const hrms = (supabaseAdmin as any).schema('hrms') as any;
 
   if (params.departmentId) {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await hrms
       .from('departments')
       .select('id')
       .eq('id', params.departmentId)
-      .eq('organization_id', params.organizationId)
+      .eq('workspace_id', params.workspaceId)
       .maybeSingle();
 
     if (error || !data) {
@@ -69,14 +83,14 @@ async function validateEmployeeReferences(params: {
       throw new ApiError('Employee cannot report to themselves', 400);
     }
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await hrms
       .from('employees')
       .select('id, status')
       .eq('id', params.managerEmployeeId)
-      .eq('organization_id', params.organizationId)
+      .eq('workspace_id', params.workspaceId)
       .maybeSingle();
 
-    if (error || !data || data.status === 'invited') {
+    if (error || !data || (data as { status: string }).status === 'invited') {
       throw new ApiError('Manager is invalid', 400);
     }
   }
@@ -92,14 +106,27 @@ async function validateEmployeeReferences(params: {
     if (error || !data) {
       throw new ApiError('Account not found', 400);
     }
+
+    const { data: member, error: memberError } = await supabaseAdmin
+      .from('workspace_members')
+      .select('id')
+      .eq('workspace_id', params.workspaceId)
+      .eq('user_id', params.accountId)
+      .eq('status', 'accepted')
+      .limit(1)
+      .maybeSingle();
+
+    if (memberError || !member) {
+      throw new ApiError('Account is not part of this workspace', 400);
+    }
   }
 
   if (params.shiftId) {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await hrms
       .from('shifts')
       .select('id')
       .eq('id', params.shiftId)
-      .eq('organization_id', params.organizationId)
+      .eq('workspace_id', params.workspaceId)
       .maybeSingle();
 
     if (error || !data) {
@@ -108,42 +135,55 @@ async function validateEmployeeReferences(params: {
   }
 }
 
-async function findOrganizationAccountByEmail(params: {
+async function findWorkspaceAccountByEmail(params: {
   email: string;
-  organizationId: string;
+  workspaceId: string;
 }) {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
+  const supabaseAdmin = getSupabaseServerAdminClient();
   const normalizedEmail = params.email.trim().toLowerCase();
 
-  const { data, error } = await supabaseAdmin
-    .from('employees')
-    .select(
-      'account_id, account:accounts!employees_account_id_fkey(id, name, email)',
-    )
-    .eq('organization_id', params.organizationId);
+  const { data: account, error } = await supabaseAdmin
+    .from('accounts')
+    .select('id, name, email')
+    .eq('email', normalizedEmail)
+    .maybeSingle();
 
   if (error) {
     throw new ApiError(error.message, 400);
   }
 
-  return (
-    data?.find(
-      (entry) => entry.account?.email?.toLowerCase() === normalizedEmail,
-    )?.account ?? null
-  );
+  if (!account) {
+    return null;
+  }
+
+  const { data: member, error: memberError } = await supabaseAdmin
+    .from('workspace_members')
+    .select('id')
+    .eq('workspace_id', params.workspaceId)
+    .eq('user_id', account.id)
+    .eq('status', 'accepted')
+    .limit(1)
+    .maybeSingle();
+
+  if (memberError) {
+    throw new ApiError(memberError.message, 400);
+  }
+
+  return member ? account : null;
 }
 
 async function ensureUniqueEmployeeForAccount(params: {
   accountId: string;
   employeeId?: string;
-  organizationId: string;
+  workspaceId: string;
 }) {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const hrms = (supabaseAdmin as any).schema('hrms') as any;
 
-  let query = supabaseAdmin
+  let query = hrms
     .from('employees')
     .select('id')
-    .eq('organization_id', params.organizationId)
+    .eq('workspace_id', params.workspaceId)
     .eq('account_id', params.accountId)
     .limit(1);
 
@@ -164,22 +204,25 @@ async function ensureUniqueEmployeeForAccount(params: {
 
 async function ensureUniqueEmployeeEmail(params: {
   employeeId?: string;
-  organizationId: string;
   workEmail: string;
+  workspaceId: string;
 }) {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const hrms = (supabaseAdmin as any).schema('hrms') as any;
   const normalizedEmail = params.workEmail.trim().toLowerCase();
 
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await hrms
     .from('employees')
     .select('id, work_email')
-    .eq('organization_id', params.organizationId);
+    .eq('workspace_id', params.workspaceId);
 
   if (error) {
     throw new ApiError(error.message, 400);
   }
 
-  const duplicate = data?.find((employee) => {
+  const duplicate = (
+    data as Array<{ id: string; work_email: string }> | null
+  )?.find((employee) => {
     const sameRecord = params.employeeId && employee.id === params.employeeId;
 
     return !sameRecord && employee.work_email.toLowerCase() === normalizedEmail;
@@ -190,45 +233,11 @@ async function ensureUniqueEmployeeEmail(params: {
   }
 }
 
-async function removeEmployeeRoleFromAccount(params: {
-  accountId: string;
-  organizationId: string;
-}) {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-
-  const { data: employeeRole, error: employeeRoleError } = await supabaseAdmin
-    .from('roles')
-    .select('id')
-    .eq('organization_id', params.organizationId)
-    .eq('role_key', 'employee')
-    .maybeSingle();
-
-  if (employeeRoleError) {
-    throw new ApiError(employeeRoleError.message, 400);
-  }
-
-  if (!employeeRole) {
-    return;
-  }
-
-  const { error } = await supabaseAdmin
-    .from('employee_roles')
-    .delete()
-    .eq('organization_id', params.organizationId)
-    .eq('role_id', employeeRole.id)
-    .eq('employee_id', params.accountId);
-
-  if (error) {
-    throw new ApiError(error.message, 400);
-  }
-}
-
 export {
   ensureUniqueEmployeeEmail,
   ensureUniqueEmployeeForAccount,
-  findOrganizationAccountByEmail,
+  findWorkspaceAccountByEmail,
   getEmployeeId,
   normalizeNullable,
-  removeEmployeeRoleFromAccount,
   validateEmployeeReferences,
 };

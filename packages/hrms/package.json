@@ -3,7 +3,11 @@
   "private": true,
   "version": "0.1.0",
   "exports": {
-    ".": "./index.ts"
+    ".": "./index.ts",
+    "./server/employees": "./src/server/controllers/employees/route.ts",
+    "./server/employees/[employeeId]": "./src/server/controllers/employees/[employeeId]/route.ts",
+    "./server/employees/invite": "./src/server/controllers/employees/invite/route.ts",
+    "./server/employees/options": "./src/server/controllers/employees/options/route.ts"
   },
   "typesVersions": {
     "*": {
@@ -20,16 +24,23 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@kit/next": "workspace:*",
     "@kit/supabase": "workspace:*",
     "@kit/tsconfig": "workspace:*",
     "@kit/ui": "workspace:*",
+    "@tanstack/react-query": "5.90.2",
+    "axios": "^1.16.1",
     "lucide-react": "^0.545.0",
     "next": "15.5.9",
-    "react": "19.2.1"
+    "react": "19.2.1",
+    "sonner": "^2.0.7",
+    "zod": "^3.25.32"
   },
   "devDependencies": {
     "@kit/eslint-config": "workspace:*",
-    "@kit/prettier-config": "workspace:*"
+    "@kit/prettier-config": "workspace:*",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3"
   },
   "eslintConfig": {
     "extends": [

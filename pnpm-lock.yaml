@@ -468,6 +468,9 @@ importers:
 
   packages/hrms:
     dependencies:
+      '@kit/next':
+        specifier: workspace:*
+        version: link:../next
       '@kit/supabase':
         specifier: workspace:*
         version: link:../supabase
@@ -477,6 +480,12 @@ importers:
       '@kit/ui':
         specifier: workspace:*
         version: link:../ui
+      '@tanstack/react-query':
+        specifier: 5.90.2
+        version: 5.90.2(react@19.2.1)
+      axios:
+        specifier: ^1.16.1
+        version: 1.16.1
       lucide-react:
         specifier: ^0.545.0
         version: 0.545.0(react@19.2.1)
@@ -486,6 +495,12 @@ importers:
       react:
         specifier: 19.2.1
         version: 19.2.1
+      sonner:
+        specifier: ^2.0.7
+        version: 2.0.7(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      zod:
+        specifier: ^3.25.32
+        version: 3.25.76
     devDependencies:
       '@kit/eslint-config':
         specifier: workspace:*
@@ -493,6 +508,12 @@ importers:
       '@kit/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
+      '@types/react':
+        specifier: 19.2.7
+        version: 19.2.7
+      '@types/react-dom':
+        specifier: 19.2.3
+        version: 19.2.3(@types/react@19.2.7)
 
   packages/i18n:
     dependencies:
