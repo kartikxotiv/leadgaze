@@ -1,40 +1,54 @@
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import type { Database } from '~/lib/database.types';
 import {
   ApiError,
   catchAsync,
   successDataResponse,
-} from '~/utils/response-handler';
-
+} from '../../../utils/response-handler';
 import {
-  attachEmployeeManagers,
-  employeeSelect,
-  formatEmployeesWithRoleId,
-  getRequiredOrganizationId,
+  type EmployeeRow,
+  enrichEmployees,
+  getHrmsClient,
+  getRequiredWorkspaceId,
+  getRouteUserId,
+  requireEmployeePermission,
 } from './controller.helpers';
 import { getEmployeeId } from './utils';
 
-const getEmployeeController = catchAsync(async ({ params, user }) => {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-  const organizationId = await getRequiredOrganizationId(user?.id);
+const getEmployeeController = catchAsync(async ({ params, request, user }) => {
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const hrms = getHrmsClient(supabaseAdmin);
+  const userId = getRouteUserId(user);
+  const workspaceId = await getRequiredWorkspaceId({
+    request,
+    supabaseAdmin,
+    userId,
+  });
   const employeeId = getEmployeeId(params);
 
-  const { data, error } = await supabaseAdmin
+  await requireEmployeePermission({
+    featureKey: 'view',
+    supabaseAdmin,
+    userId,
+    workspaceId,
+  });
+
+  const { data, error } = await hrms
     .from('employees')
-    .select(employeeSelect)
-    .eq('organization_id', organizationId)
+    .select('*')
+    .eq('workspace_id', workspaceId)
     .eq('id', employeeId)
+    .eq('is_deleted', false)
     .single();
 
   if (error) {
     throw new ApiError(error.message, error.code === 'PGRST116' ? 404 : 400);
   }
 
-  const [employee] = await attachEmployeeManagers({
-    employees: formatEmployeesWithRoleId([data]),
-    organizationId,
+  const [employee] = await enrichEmployees({
+    employees: [data as EmployeeRow],
     supabaseAdmin,
+    workspaceId,
   });
 
   return successDataResponse('Employee fetched successfully', employee);

@@ -29,8 +29,7 @@ import type {
   EmployeeFormPayload,
   EmployeeOptions,
   EmployeeStatus,
-} from '~/types/employee.type';
-
+} from '../../types/employee.type';
 import {
   EMPTY_FORM,
   buildEmployeePayload,
