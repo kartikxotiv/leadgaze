@@ -9,6 +9,9 @@ const RecruitmentCandidateNoteSchema = z.object({
   note: z.string().min(2).max(4000),
 });
 
-export const POST = enhanceRouteHandler(createRecruitmentCandidateNoteController, {
-  schema: RecruitmentCandidateNoteSchema,
-});
+export const POST = enhanceRouteHandler(
+  createRecruitmentCandidateNoteController,
+  {
+    schema: RecruitmentCandidateNoteSchema,
+  },
+);

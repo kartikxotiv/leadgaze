@@ -19,11 +19,10 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
-import type { RecruitmentInterviewSummary } from '~/types/recruitment.type';
-
-import { formatLabel } from '../page.data';
-import { RecruitmentStatusBadge } from '../page.components';
-import { formatDateTime } from '../_lib/recruitment-formatters';
+import { formatDateTime } from '../../hooks/recruitment-formatters';
+import { RecruitmentStatusBadge } from '../../pages/recruitment/page.components';
+import { formatLabel } from '../../pages/recruitment/page.data';
+import type { RecruitmentInterviewSummary } from '../../types/recruitment.type';
 
 export function RecruitmentInterviewsTab(props: {
   canRecordFeedback: boolean;
@@ -38,7 +37,8 @@ export function RecruitmentInterviewsTab(props: {
       <CardHeader>
         <CardTitle>Interviews</CardTitle>
         <CardDescription>
-          Schedule interview rounds, assign interviewers, and monitor pending feedback.
+          Schedule interview rounds, assign interviewers, and monitor pending
+          feedback.
         </CardDescription>
       </CardHeader>
       <CardContent className="p-0">
@@ -61,15 +61,22 @@ export function RecruitmentInterviewsTab(props: {
                     <div className="flex flex-col">
                       <span className="font-medium">{interview.title}</span>
                       <span className="text-muted-foreground text-xs">
-                        {formatLabel(interview.round_type)} - {interview.feedback_count} feedback
+                        {formatLabel(interview.round_type)} -{' '}
+                        {interview.feedback_count} feedback
                       </span>
                     </div>
                   </TableCell>
                   <TableCell>{interview.candidate_name}</TableCell>
-                  <TableCell>{formatDateTime(interview.scheduled_at)}</TableCell>
-                  <TableCell>{interview.interviewer_employee?.name ?? '-'}</TableCell>
                   <TableCell>
-                    <RecruitmentStatusBadge label={formatLabel(interview.status)} />
+                    {formatDateTime(interview.scheduled_at)}
+                  </TableCell>
+                  <TableCell>
+                    {interview.interviewer_employee?.name ?? '-'}
+                  </TableCell>
+                  <TableCell>
+                    <RecruitmentStatusBadge
+                      label={formatLabel(interview.status)}
+                    />
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">

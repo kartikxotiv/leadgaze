@@ -8,14 +8,13 @@ import {
   CardTitle,
 } from '@kit/ui/card';
 
+import { formatDateTime } from '../../hooks/recruitment-formatters';
+import { RecruitmentStatusBadge } from '../../pages/recruitment/page.components';
+import { formatLabel } from '../../pages/recruitment/page.data';
 import type {
   RecruitmentCandidateNoteSummary,
   RecruitmentFeedbackSummary,
-} from '~/types/recruitment.type';
-
-import { formatLabel } from '../page.data';
-import { RecruitmentStatusBadge } from '../page.components';
-import { formatDateTime } from '../_lib/recruitment-formatters';
+} from '../../types/recruitment.type';
 
 export function RecruitmentActivityTab(props: {
   feedback: RecruitmentFeedbackSummary[];
@@ -36,18 +35,23 @@ export function RecruitmentActivityTab(props: {
               <div key={item.id} className="rounded-xl border p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-medium">{item.candidate_name}</p>
-                  <RecruitmentStatusBadge label={formatLabel(item.recommendation)} />
+                  <RecruitmentStatusBadge
+                    label={formatLabel(item.recommendation)}
+                  />
                 </div>
                 <p className="text-muted-foreground mt-2 text-sm">
                   {item.summary || 'No summary provided.'}
                 </p>
                 <p className="text-muted-foreground mt-2 text-xs">
-                  {item.interviewer_employee?.name ?? 'Unknown interviewer'} - {formatDateTime(item.submitted_at)}
+                  {item.interviewer_employee?.name ?? 'Unknown interviewer'} -{' '}
+                  {formatDateTime(item.submitted_at)}
                 </p>
               </div>
             ))
           ) : (
-            <p className="text-muted-foreground text-sm">No feedback recorded yet.</p>
+            <p className="text-muted-foreground text-sm">
+              No feedback recorded yet.
+            </p>
           )}
         </CardContent>
       </Card>
@@ -65,16 +69,23 @@ export function RecruitmentActivityTab(props: {
               <div key={item.id} className="rounded-xl border p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-medium">{item.candidate_name}</p>
-                  {item.is_pinned ? <RecruitmentStatusBadge label="Pinned" /> : null}
+                  {item.is_pinned ? (
+                    <RecruitmentStatusBadge label="Pinned" />
+                  ) : null}
                 </div>
-                <p className="text-muted-foreground mt-2 text-sm">{item.note}</p>
+                <p className="text-muted-foreground mt-2 text-sm">
+                  {item.note}
+                </p>
                 <p className="text-muted-foreground mt-2 text-xs">
-                  {item.author_employee?.name ?? 'Unknown author'} - {formatDateTime(item.created_at)}
+                  {item.author_employee?.name ?? 'Unknown author'} -{' '}
+                  {formatDateTime(item.created_at)}
                 </p>
               </div>
             ))
           ) : (
-            <p className="text-muted-foreground text-sm">No internal notes yet.</p>
+            <p className="text-muted-foreground text-sm">
+              No internal notes yet.
+            </p>
           )}
         </CardContent>
       </Card>

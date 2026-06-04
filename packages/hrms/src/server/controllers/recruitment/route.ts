@@ -3,14 +3,14 @@ import { z } from 'zod';
 import { enhanceRouteHandler } from '@kit/next/routes';
 
 import {
-  createRecruitmentRequisitionController,
-  getRecruitmentDashboardController,
-} from './controller';
-import {
   recruitmentEmploymentTypes,
   recruitmentPriorities,
   recruitmentRequisitionStatuses,
-} from '~/types/recruitment.type';
+} from '../../../types/recruitment.type';
+import {
+  createRecruitmentRequisitionController,
+  getRecruitmentDashboardController,
+} from './controller';
 
 const RecruitmentRequisitionSchema = z.object({
   compensation_max: z.number().min(0).optional().nullable(),
@@ -32,6 +32,9 @@ const RecruitmentRequisitionSchema = z.object({
 
 export const GET = enhanceRouteHandler(getRecruitmentDashboardController);
 
-export const POST = enhanceRouteHandler(createRecruitmentRequisitionController, {
-  schema: RecruitmentRequisitionSchema,
-});
+export const POST = enhanceRouteHandler(
+  createRecruitmentRequisitionController,
+  {
+    schema: RecruitmentRequisitionSchema,
+  },
+);

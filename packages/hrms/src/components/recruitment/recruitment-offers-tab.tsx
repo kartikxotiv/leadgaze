@@ -19,11 +19,10 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
-import type { RecruitmentOfferSummary } from '~/types/recruitment.type';
-
-import { formatLabel } from '../page.data';
-import { RecruitmentStatusBadge } from '../page.components';
-import { formatCurrency, formatDate } from '../_lib/recruitment-formatters';
+import { formatCurrency, formatDate } from '../../hooks/recruitment-formatters';
+import { RecruitmentStatusBadge } from '../../pages/recruitment/page.components';
+import { formatLabel } from '../../pages/recruitment/page.data';
+import type { RecruitmentOfferSummary } from '../../types/recruitment.type';
 
 export function RecruitmentOffersTab(props: {
   canManageOffers: boolean;
@@ -38,7 +37,8 @@ export function RecruitmentOffersTab(props: {
       <CardHeader>
         <CardTitle>Offers</CardTitle>
         <CardDescription>
-          Manage offer preparation, approvals, release, response, and joining plans.
+          Manage offer preparation, approvals, release, response, and joining
+          plans.
         </CardDescription>
       </CardHeader>
       <CardContent className="p-0">
@@ -59,7 +59,9 @@ export function RecruitmentOffersTab(props: {
                 <TableRow key={offer.id}>
                   <TableCell>{offer.candidate_name}</TableCell>
                   <TableCell>{offer.offered_designation}</TableCell>
-                  <TableCell>{formatCurrency(offer.salary_amount, offer.currency_code)}</TableCell>
+                  <TableCell>
+                    {formatCurrency(offer.salary_amount, offer.currency_code)}
+                  </TableCell>
                   <TableCell>{formatDate(offer.joining_date)}</TableCell>
                   <TableCell>
                     <RecruitmentStatusBadge label={formatLabel(offer.status)} />
@@ -89,7 +91,9 @@ export function RecruitmentOffersTab(props: {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => props.onCreateChecklist(offer.candidate_id)}
+                          onClick={() =>
+                            props.onCreateChecklist(offer.candidate_id)
+                          }
                         >
                           Checklist
                         </Button>
