@@ -7,12 +7,12 @@ export const getDocumentsService = asyncHandlerClient(async (workspaceId: string
   return res?.data?.data ?? [];
 });
 
-export const uploadDocumentService = asyncHandlerClient(async (payload: Record<string, unknown>) => {
+export const uploadDocumentService = asyncHandlerClient(async (payload: FormData | Record<string, unknown>) => {
   const res = await CoreApiClient.post('/documents', payload);
   return res?.data?.data;
 });
 
-export const updateDocumentService = asyncHandlerClient(async (payload: Record<string, unknown>) => {
+export const updateDocumentService = asyncHandlerClient(async (payload: FormData | Record<string, unknown>) => {
   const res = await CoreApiClient.patch('/documents', payload);
   return res?.data?.data;
 });
@@ -21,4 +21,3 @@ export const deleteDocumentService = asyncHandlerClient(async (workspaceId: stri
   const res = await CoreApiClient.delete(`/documents?workspaceId=${workspaceId}&id=${id}`);
   return res?.data?.data;
 });
-

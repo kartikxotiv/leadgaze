@@ -1,7 +1,9 @@
 export * from './notes.service';
 export * from './meetings.service';
 export * from './emails.service';
+export * from './email-accounts.service';
+export * from './email-activity.service';
+export * from './email-templates.service';
 export * from './documents.service';
 export * from './activities.service';
 export * from './reminders.service';
-

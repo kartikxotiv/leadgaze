@@ -34,6 +34,70 @@ import { usePermissionBasedNavigationConfig } from '~/lib/permissions/use-naviga
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getNavigationConfig } from '~/lib/rbac/use-dynamic-navigation';
 
+function getModuleCommonPaths(moduleBasePath: string) {
+  return {
+    profileSettings: `${moduleBasePath}/profile-settings`,
+    workspaceSettings: `${moduleBasePath}/workspace-settings`,
+    teamMembers: `${moduleBasePath}/team-members`,
+    teams: `${moduleBasePath}/teams`,
+    roles: `${moduleBasePath}/roles`,
+    auditLogs: `${moduleBasePath}/audit-logs`,
+  };
+}
+
+function scopeCommonItems<T extends { path?: string }>(
+  items: T[],
+  moduleBasePath: string,
+) {
+  const paths = getModuleCommonPaths(moduleBasePath);
+
+  return items.map((item) => {
+    if (item.path === pathsConfig.app.profileSettings) {
+      return {
+        ...item,
+        path: paths.profileSettings,
+      };
+    }
+
+    if (item.path === pathsConfig.app.teamMembers) {
+      return {
+        ...item,
+        path: paths.teamMembers,
+      };
+    }
+
+    if (item.path === pathsConfig.app.teams) {
+      return {
+        ...item,
+        path: paths.teams,
+      };
+    }
+
+    if (item.path === pathsConfig.app.roles) {
+      return {
+        ...item,
+        path: paths.roles,
+      };
+    }
+
+    if (item.path === pathsConfig.app.auditLogs) {
+      return {
+        ...item,
+        path: paths.auditLogs,
+      };
+    }
+
+    if (item.path === pathsConfig.app.workspaceSettings) {
+      return {
+        ...item,
+        path: paths.workspaceSettings,
+      };
+    }
+
+    return item;
+  });
+}
+
 export function HomeSidebarClient(_props: { user: JwtPayload }) {
   const { canAccess, currentWorkspace } = useRBAC();
   const pathname = usePathname() || '';
@@ -54,10 +118,12 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
   const navConfig = useMemo(() => {
     // 1. If we are in the Fundraising Module (/home/fund*), render fundraising features.
     if (isFundraiseModule) {
+      const commonPaths = getModuleCommonPaths('/home/funds');
       // Team / settings items should remain in all modules
       const teamItems =
         permissionNavConfig?.teamItems ||
         getNavigationConfig(canAccess).teamItems;
+      const scopedTeamItems = scopeCommonItems(teamItems, '/home/funds');
 
       return [
         ...getFundraiseRoutesForPermissions(canAccessFundraising),
@@ -66,15 +132,15 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
           children: [
             {
               label: 'common:routes.profile',
-              path: pathsConfig.app.profileSettings,
+              path: commonPaths.profileSettings,
               Icon: <UserPen className="h-4 w-4" />,
             },
             {
               label: 'common:routes.workspace-settings',
-              path: pathsConfig.app.workspaceSettings,
+              path: commonPaths.workspaceSettings,
               Icon: <Settings className="h-4 w-4" />,
             },
-            ...teamItems.map((item) => {
+            ...scopedTeamItems.map((item) => {
               const IconComponent = item.Icon;
               return {
                 ...item,
@@ -88,9 +154,11 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
 
     // 2. HRMS Module
     if (isHrmsModule) {
+      const commonPaths = getModuleCommonPaths('/home/hrms');
       const teamItems =
         permissionNavConfig?.teamItems ||
         getNavigationConfig(canAccess).teamItems;
+      const scopedTeamItems = scopeCommonItems(teamItems, '/home/hrms');
 
       return [
         hrmsRoutes,
@@ -99,20 +167,20 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
           children: [
             {
               label: 'common:routes.profile',
-              path: pathsConfig.app.profileSettings,
+              path: commonPaths.profileSettings,
               Icon: <UserPen className="h-4 w-4" />,
             },
             {
               label: 'common:routes.workspace-settings',
-              path: pathsConfig.app.workspaceSettings,
+              path: commonPaths.workspaceSettings,
               Icon: <Settings className="h-4 w-4" />,
             },
             {
               label: 'Roles',
-              path: pathsConfig.app.roles,
+              path: commonPaths.roles,
               Icon: <ShieldCheck className="h-4 w-4" />,
             },
-            ...teamItems.map((item) => {
+            ...scopedTeamItems.map((item) => {
               const IconComponent = item.Icon;
               return {
                 ...item,
@@ -129,6 +197,8 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
       const teamItems =
         permissionNavConfig?.teamItems ||
         getNavigationConfig(canAccess).teamItems;
+      const scopedTeamItems = scopeCommonItems(teamItems, '/home/inventory');
+      const commonPaths = getModuleCommonPaths('/home/inventory');
 
       return [
         ...getInventoryRoutesForPermissions(canAccessInventory),
@@ -137,15 +207,15 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
           children: [
             {
               label: 'common:routes.profile',
-              path: pathsConfig.app.profileSettings,
+              path: commonPaths.profileSettings,
               Icon: <UserPen className="h-4 w-4" />,
             },
             {
               label: 'common:routes.workspace-settings',
-              path: pathsConfig.app.workspaceSettings,
+              path: commonPaths.workspaceSettings,
               Icon: <Settings className="h-4 w-4" />,
             },
-            ...teamItems.map((item) => {
+            ...scopedTeamItems.map((item) => {
               const IconComponent = item.Icon;
               return {
                 ...item,
