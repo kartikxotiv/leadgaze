@@ -95,7 +95,7 @@ const DialogDescription: React.FC<
   React.ComponentPropsWithRef<typeof DialogPrimitive.Description>
 > = ({ className, ...props }) => (
   <DialogPrimitive.Description
-    className={cn('text-sm text-leadgaze-muted', className)}
+    className={cn('text-sm text-leadgaze-muted dark:text-white', className)}
     {...props}
   />
 );
