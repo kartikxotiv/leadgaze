@@ -5,6 +5,7 @@ import {
   CalendarCheck,
   ClipboardList,
   FileText,
+  LogOut,
   UserSearch,
   Users,
   WalletCards,
@@ -56,6 +57,12 @@ const modules = [
       'Requisitions, candidates, interviews, offers, and onboarding.',
     href: '/home/hrms/recruitment',
     icon: UserSearch,
+  },
+  {
+    title: 'Separation',
+    description: 'Resignations, exit clearances, settlements, and letters.',
+    href: '/home/hrms/separation',
+    icon: LogOut,
   },
   {
     title: 'Payroll',
