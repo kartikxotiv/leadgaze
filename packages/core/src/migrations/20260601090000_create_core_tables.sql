@@ -99,6 +99,7 @@ CREATE TABLE IF NOT EXISTS core.documents (
   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
+  file_path TEXT,
   file_url TEXT,
   file_type TEXT,
   file_size BIGINT,
@@ -246,3 +247,13 @@ DROP POLICY IF EXISTS reminder_relations_policy ON core.reminder_relations;
 CREATE POLICY reminder_relations_policy ON core.reminder_relations FOR ALL USING (true) WITH CHECK (true);
 
 GRANT ALL ON ALL TABLES IN SCHEMA core TO authenticated, service_role, anon;
+
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('core_documents', 'core_documents', true)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS core_documents_public_policy ON storage.objects;
+CREATE POLICY core_documents_public_policy ON storage.objects
+  FOR ALL TO anon, authenticated, service_role
+  USING (bucket_id = 'core_documents')
+  WITH CHECK (bucket_id = 'core_documents');
