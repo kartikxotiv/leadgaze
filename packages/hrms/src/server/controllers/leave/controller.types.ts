@@ -1,16 +1,10 @@
-import type { Database } from '~/lib/database.types';
-
-type LeaveRequestInsert =
-  Database['public']['Tables']['leave_requests']['Insert'];
-type LeaveRequestUpdate =
-  Database['public']['Tables']['leave_requests']['Update'];
-type LeaveTypeInsert = Database['public']['Tables']['leave_types']['Insert'];
-type LeaveTypeUpdate = Database['public']['Tables']['leave_types']['Update'];
-type LeaveHolidayInsert =
-  Database['public']['Tables']['leave_holidays']['Insert'];
-type LeaveHolidayUpdate =
-  Database['public']['Tables']['leave_holidays']['Update'];
-type LeaveRequestStatus = Database['public']['Enums']['leave_request_status'];
+type LeaveRequestInsert = Record<string, unknown>;
+type LeaveRequestUpdate = Record<string, unknown>;
+type LeaveTypeInsert = Record<string, unknown>;
+type LeaveTypeUpdate = Record<string, unknown>;
+type LeaveHolidayInsert = Record<string, unknown>;
+type LeaveHolidayUpdate = Record<string, unknown>;
+type LeaveRequestStatus = 'approved' | 'cancelled' | 'pending' | 'rejected';
 
 type LeaveRequestBody = {
   from_date: string;
@@ -41,7 +35,22 @@ type LeaveHolidayBody = {
   name?: string;
 };
 
-type LeaveTypeRow = Database['public']['Tables']['leave_types']['Row'];
+type LeaveTypeRow = {
+  annual_allocation: number;
+  can_carry_forward: boolean;
+  code: string;
+  created_at: string;
+  created_by: string | null;
+  description: string | null;
+  id: string;
+  is_active: boolean;
+  name: string;
+  organization_id?: string;
+  requires_hr_approval: boolean;
+  updated_at: string;
+  updated_by: string | null;
+  workspace_id: string;
+};
 
 type LeaveRequestRelationRow = {
   approver: {
@@ -80,11 +89,12 @@ type LeaveRequestRelationRow = {
     requires_hr_approval: boolean;
   } | null;
   leave_type_id: string;
-  organization_id: string;
+  organization_id?: string;
   reason: string | null;
   status: LeaveRequestStatus;
   to_date: string;
   updated_at: string;
+  workspace_id: string;
 };
 
 type EmployeeReportRow = {
@@ -101,7 +111,7 @@ type EmployeeReportRow = {
 
 const leaveRequestSelect = `
   id,
-  organization_id,
+  workspace_id,
   employee_id,
   leave_type_id,
   from_date,

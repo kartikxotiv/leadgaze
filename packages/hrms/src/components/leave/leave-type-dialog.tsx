@@ -21,7 +21,7 @@ import {
 } from '@kit/ui/select';
 import { Textarea } from '@kit/ui/textarea';
 
-import type { LeaveType, LeaveTypePayload } from '~/types/leave.type';
+import type { LeaveType, LeaveTypePayload } from '../../types/leave.type';
 
 type LeaveTypeDialogState = LeaveTypePayload;
 

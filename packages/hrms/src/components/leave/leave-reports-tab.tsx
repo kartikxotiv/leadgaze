@@ -17,12 +17,8 @@ import {
 } from '@kit/ui/table';
 import { TabsContent } from '@kit/ui/tabs';
 
-import type { LeaveReports } from '~/types/leave.type';
-
-import {
-  formatMonthLabel,
-  formatNumber,
-} from '../leave-page.utils';
+import type { LeaveReports } from '../../types/leave.type';
+import { formatMonthLabel, formatNumber } from '../leave-page.utils';
 
 export function LeaveReportsTab(props: { reports: LeaveReports | null }) {
   return (
@@ -72,7 +68,7 @@ export function LeaveReportsTab(props: { reports: LeaveReports | null }) {
         </div>
 
         <Card className={'shadow-sm'}>
-          <CardHeader className='p-3'>
+          <CardHeader className="p-3">
             <CardTitle>Leave Balance Report</CardTitle>
             <CardDescription>
               Employee-wise allocated, approved, pending, and available leave.

@@ -21,7 +21,7 @@ import {
 } from '@kit/ui/select';
 import { Textarea } from '@kit/ui/textarea';
 
-import type { LeaveHoliday, LeaveHolidayPayload } from '~/types/leave.type';
+import type { LeaveHoliday, LeaveHolidayPayload } from '../../types/leave.type';
 
 type HolidayDialogState = LeaveHolidayPayload;
 
@@ -69,7 +69,8 @@ export function HolidayDialog(props: {
               {props.holiday ? 'Edit Holiday' : 'Add Holiday'}
             </DialogTitle>
             <DialogDescription className={'text-base'}>
-              Keep the holiday calendar in sync so leave calculations stay accurate.
+              Keep the holiday calendar in sync so leave calculations stay
+              accurate.
             </DialogDescription>
           </DialogHeader>
 
@@ -151,7 +152,9 @@ export function HolidayDialog(props: {
             </Button>
 
             <Button
-              disabled={props.isPending || !form.holiday_date || !form.name.trim()}
+              disabled={
+                props.isPending || !form.holiday_date || !form.name.trim()
+              }
               onClick={() => props.onSubmit(form)}
             >
               {props.isPending ? 'Saving...' : 'Save Holiday'}

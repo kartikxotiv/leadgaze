@@ -4,8 +4,13 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { showToast } from '~/components/global/ToastAlert';
-import { useRbac } from '~/components/rbac/rbac-context';
+import {
+  type AttendanceView,
+  formatHeaderDate,
+  toISODateString,
+} from '../attendance-page.utils';
+import { showToast } from '../components/global/ToastAlert';
+import { useRbac } from '../components/rbac/rbac-context';
 import {
   checkInService,
   checkOutService,
@@ -15,13 +20,13 @@ import {
   updateAttendanceRecordService,
   updateWorkingDaysService,
   upsertAttendanceRecordService,
-} from '~/services/attendance.service';
+} from '../server/services/attendance.service';
 import {
   createShiftService,
   deleteShiftService,
   listShiftsService,
   updateShiftService,
-} from '~/services/shift.service';
+} from '../server/services/shift.service';
 import type {
   AdminAttendanceFilters,
   AdminAttendanceResponse,
@@ -29,15 +34,9 @@ import type {
   AttendanceDisplayStatus,
   MyAttendanceResponse,
   WorkingDay,
-} from '~/types/attendance.type';
-import type { Shift, ShiftFormPayload } from '~/types/shift.type';
-import { handleApiResponse } from '~/utils/api-response-handler';
-
-import {
-  type AttendanceView,
-  formatHeaderDate,
-  toISODateString,
-} from '../attendance-page.utils';
+} from '../types/attendance.type';
+import type { Shift, ShiftFormPayload } from '../types/shift.type';
+import { handleApiResponse } from '../utils/api-response-handler';
 
 const shiftsKey = ['shifts'];
 const attendanceSettingsKey = ['attendance-settings'];

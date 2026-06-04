@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 
-import type { AdminAttendanceRow } from '~/types/attendance.type';
+import type { AdminAttendanceRow } from '../../types/attendance.type';
 
 type ShiftOption = {
   id: string;
@@ -70,8 +70,12 @@ export function AttendanceRecordDialog(props: {
     }
 
     setForm({
-      check_in: props.row.record.check_in ? toLocalDateTimeInput(props.row.record.check_in) : '',
-      check_out: props.row.record.check_out ? toLocalDateTimeInput(props.row.record.check_out) : '',
+      check_in: props.row.record.check_in
+        ? toLocalDateTimeInput(props.row.record.check_in)
+        : '',
+      check_out: props.row.record.check_out
+        ? toLocalDateTimeInput(props.row.record.check_out)
+        : '',
       shift_id: props.row.record.shift_id ?? props.row.employee.shift_id,
       status: props.row.record.status,
     });
@@ -111,7 +115,10 @@ export function AttendanceRecordDialog(props: {
               <Select
                 value={form.status}
                 onValueChange={(value) =>
-                  setForm((prev) => ({ ...prev, status: value as 'present' | 'absent' }))
+                  setForm((prev) => ({
+                    ...prev,
+                    status: value as 'present' | 'absent',
+                  }))
                 }
               >
                 <SelectTrigger>
@@ -129,7 +136,10 @@ export function AttendanceRecordDialog(props: {
               <Select
                 value={form.shift_id ?? '__none__'}
                 onValueChange={(value) =>
-                  setForm((prev) => ({ ...prev, shift_id: value === '__none__' ? null : value }))
+                  setForm((prev) => ({
+                    ...prev,
+                    shift_id: value === '__none__' ? null : value,
+                  }))
                 }
               >
                 <SelectTrigger>
@@ -153,7 +163,9 @@ export function AttendanceRecordDialog(props: {
                 type={'datetime-local'}
                 step={1}
                 value={form.check_in}
-                onChange={(event) => setForm((prev) => ({ ...prev, check_in: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, check_in: event.target.value }))
+                }
               />
             </div>
 
@@ -164,7 +176,12 @@ export function AttendanceRecordDialog(props: {
                 type={'datetime-local'}
                 step={1}
                 value={form.check_out}
-                onChange={(event) => setForm((prev) => ({ ...prev, check_out: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    check_out: event.target.value,
+                  }))
+                }
               />
             </div>
           </div>
