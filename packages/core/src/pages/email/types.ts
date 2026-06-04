@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 export type CoreEmailWorkspace = {
   id: string;
   name?: string | null;
@@ -20,4 +22,5 @@ export type CoreEmailPageProps = {
   googleAuthPath?: string;
   googleReturnUrl?: string;
   embedded?: boolean;
+  renderEmailActions?: (email: any) => ReactNode;
 };

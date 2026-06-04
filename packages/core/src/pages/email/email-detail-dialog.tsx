@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 import { Calendar, Mail, Reply, User } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
@@ -18,21 +20,51 @@ function displayDate(value?: string | null) {
   return new Date(value).toLocaleString();
 }
 
+function normalizeRecipients(value: unknown): string[] {
+  if (Array.isArray(value)) return value.filter(Boolean).map(String);
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function RecipientLine({ label, recipients }: { label: string; recipients: string[] }) {
+  if (recipients.length === 0) return null;
+
+  return (
+    <div className="text-muted-foreground flex gap-2 text-xs">
+      <span className="w-10 shrink-0 font-medium text-foreground">{label}</span>
+      <span className="min-w-0 break-words">{recipients.join(', ')}</span>
+    </div>
+  );
+}
+
 export function CoreEmailDetailDialog({
   open,
   onOpenChange,
   email,
   onReply,
+  canReply = true,
+  actions,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   email: any;
   onReply: (email: any) => void;
+  canReply?: boolean;
+  actions?: ReactNode;
 }) {
   if (!email) return null;
 
   const recipient = email.to_email ?? email.to_emails?.[0] ?? email.to_emails;
   const sender = email.from_email;
+  const toRecipients = normalizeRecipients(email.to_emails ?? email.to_email);
+  const ccRecipients = normalizeRecipients(email.cc_emails ?? email.cc);
+  const bccRecipients = normalizeRecipients(email.bcc_emails ?? email.bcc);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -65,6 +97,12 @@ export function CoreEmailDetailDialog({
                       ? `to ${recipient || 'me'}`
                       : `from ${sender || '-'}`}
                   </div>
+                  <div className="mt-2 space-y-1">
+                    <RecipientLine label="From" recipients={normalizeRecipients(sender)} />
+                    <RecipientLine label="To" recipients={toRecipients} />
+                    <RecipientLine label="Cc" recipients={ccRecipients} />
+                    <RecipientLine label="Bcc" recipients={bccRecipients} />
+                  </div>
                 </div>
               </div>
               <div className="text-muted-foreground flex shrink-0 items-center gap-1 text-xs font-medium">
@@ -92,15 +130,24 @@ export function CoreEmailDetailDialog({
           </ScrollArea>
 
           <div className="flex shrink-0 items-center justify-between border-t bg-white px-6 py-4 dark:bg-zinc-950">
-            <Button
-              variant="default"
-              size="sm"
-              className="gap-2"
-              onClick={() => onReply(email)}
-            >
-              <Reply className="h-4 w-4" />
-              Reply
-            </Button>
+            <div className="flex items-center gap-2">
+              {canReply ? (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => onReply(email)}
+                >
+                  <Reply className="h-4 w-4" />
+                  Reply
+                </Button>
+              ) : (
+                <span className="text-muted-foreground text-sm">
+                  You do not have permission to reply.
+                </span>
+              )}
+              {actions}
+            </div>
             <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
               Close
             </Button>

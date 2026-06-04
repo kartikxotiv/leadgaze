@@ -1,9 +1,11 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Inbox, Loader2, RefreshCw, Search, Send } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
@@ -22,7 +24,10 @@ import type { CoreEmailAccount } from '../../services/email-accounts.service';
 import {
   getCoreEmailAccountsService,
 } from '../../services/email-accounts.service';
-import { getCoreWorkspaceEmailActivityService } from '../../services/email-activity.service';
+import {
+  getCoreWorkspaceEmailActivityService,
+  syncCoreEmailAccountsService,
+} from '../../services/email-activity.service';
 import { CoreEmailDetailDialog } from './email-detail-dialog';
 import { CoreEmailReplyDialog } from './reply-dialog';
 
@@ -38,7 +43,15 @@ function emailTimestamp(email: any) {
   return email.received_at || email.sent_at || email.created_at;
 }
 
-export function CoreInboxTab({ workspaceId }: { workspaceId: string }) {
+export function CoreInboxTab({
+  workspaceId,
+  canReply = true,
+  renderEmailActions,
+}: {
+  workspaceId: string;
+  canReply?: boolean;
+  renderEmailActions?: (email: any) => ReactNode;
+}) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'inbound' | 'outbound'>('all');
   const [selectedInboxEmail, setSelectedInboxEmail] = useState('all');
@@ -68,6 +81,23 @@ export function CoreInboxTab({ workspaceId }: { workspaceId: string }) {
   });
 
   const emails = data?.data ?? [];
+
+  const syncMutation = useMutation({
+    mutationFn: () =>
+      syncCoreEmailAccountsService({
+        workspaceId,
+        emailAccountId: selectedInboxEmail !== 'all'
+          ? inboxAccounts.find((account: CoreEmailAccount) => account.email === selectedInboxEmail)?.id
+          : undefined,
+      }),
+    onSuccess: async (result: any) => {
+      await refetch();
+      toast.success(
+        `Synced ${result?.syncedCount ?? 0} email${result?.syncedCount === 1 ? '' : 's'}`,
+      );
+    },
+    onError: (error: any) => toast.error(error.message || 'Failed to sync inbox'),
+  });
 
   const filteredEmails = useMemo(() => {
     const normalizedSearch = searchTerm.toLowerCase();
@@ -127,8 +157,18 @@ export function CoreInboxTab({ workspaceId }: { workspaceId: string }) {
               onChange={(event) => setSearchTerm(event.target.value)}
             />
           </div>
-          <Button variant="outline" size="icon" disabled={isFetching} onClick={() => refetch()}>
-            <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={isFetching || syncMutation.isPending}
+            onClick={() => syncMutation.mutate()}
+          >
+            <RefreshCw
+              className={cn(
+                'h-4 w-4',
+                (isFetching || syncMutation.isPending) && 'animate-spin',
+              )}
+            />
           </Button>
         </div>
       </div>
@@ -199,6 +239,8 @@ export function CoreInboxTab({ workspaceId }: { workspaceId: string }) {
         open={isDetailOpen}
         onOpenChange={setIsDetailOpen}
         email={selectedEmail}
+        canReply={canReply}
+        actions={selectedEmail ? renderEmailActions?.(selectedEmail) : null}
         onReply={(email) => {
           setSelectedEmail(email);
           setIsDetailOpen(false);
@@ -206,13 +248,15 @@ export function CoreInboxTab({ workspaceId }: { workspaceId: string }) {
         }}
       />
 
-      <CoreEmailReplyDialog
-        open={isReplyOpen}
-        onOpenChange={setIsReplyOpen}
-        workspaceId={workspaceId}
-        email={selectedEmail}
-        accounts={accounts}
-      />
+      {canReply ? (
+        <CoreEmailReplyDialog
+          open={isReplyOpen}
+          onOpenChange={setIsReplyOpen}
+          workspaceId={workspaceId}
+          email={selectedEmail}
+          accounts={accounts}
+        />
+      ) : null}
     </div>
   );
 }

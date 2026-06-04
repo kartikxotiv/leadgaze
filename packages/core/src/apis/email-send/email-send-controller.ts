@@ -20,11 +20,16 @@ export const sendCoreEmailController = catchAsync(async ({ request }) => {
   const body = await request.json().catch(() => null);
 
   if (!body) {
-    return NextResponse.json({ success: false, message: 'Invalid JSON body' }, { status: 400 });
+    return NextResponse.json(
+      { success: false, message: 'Invalid JSON body' },
+      { status: 400 },
+    );
   }
 
   const workspaceId = body.workspaceId ?? body.workspace_id;
-  const toEmails = normalizeRecipients(body.toEmails ?? body.to_emails ?? body.to_email);
+  const toEmails = normalizeRecipients(
+    body.toEmails ?? body.to_emails ?? body.to_email,
+  );
   const ccEmails = normalizeRecipients(body.cc ?? body.cc_emails);
   const bccEmails = normalizeRecipients(body.bcc ?? body.bcc_emails);
   const subject = body.subject;
@@ -35,10 +40,17 @@ export const sendCoreEmailController = catchAsync(async ({ request }) => {
   const emailAccountId = body.emailAccountId ?? body.email_account_id;
 
   if (!workspaceId || toEmails.length === 0 || !subject || !htmlBody) {
-    return NextResponse.json({ success: false, message: 'workspaceId, recipient, subject, and body are required' }, { status: 400 });
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'workspaceId, recipient, subject, and body are required',
+      },
+      { status: 400 },
+    );
   }
 
-  const { supabase, user, error } = await assertCoreWorkspaceAccess(workspaceId);
+  const { supabase, user, error } =
+    await assertCoreWorkspaceAccess(workspaceId);
   if (error || !user) return error!;
 
   const account = await getSendableEmailAccountById(
@@ -48,7 +60,10 @@ export const sendCoreEmailController = catchAsync(async ({ request }) => {
   );
 
   if (!account) {
-    return NextResponse.json({ success: false, message: 'No sendable email account available' }, { status: 403 });
+    return NextResponse.json(
+      { success: false, message: 'No sendable email account available' },
+      { status: 403 },
+    );
   }
 
   const isScheduled = scheduledAt && new Date(scheduledAt) > new Date();
@@ -93,6 +108,7 @@ export const sendCoreEmailController = catchAsync(async ({ request }) => {
     sent_at: isScheduled ? null : new Date().toISOString(),
     provider_message_id: sendInfo?.messageId ?? null,
     gmail_message_id: sendInfo?.messageId ?? null,
+    internet_message_id: sendInfo?.messageId ?? null,
     thread_id: body.threadId ?? body.thread_id ?? null,
     thread_key: body.threadKey ?? body.thread_key ?? body.inReplyTo ?? null,
     in_reply_to: body.inReplyTo ?? body.in_reply_to ?? null,
@@ -111,30 +127,36 @@ export const sendCoreEmailController = catchAsync(async ({ request }) => {
   if (emailError) throw emailError;
 
   if (entityType && entityId) {
-    await (supabase as any).schema('core').from('email_relations').upsert({
-      workspace_id: workspaceId,
-      email_id: email.id,
-      entity_type: entityType,
-      entity_id: entityId,
-      relation_type: body.relationType ?? body.relation_type ?? 'related',
-    });
+    await (supabase as any)
+      .schema('core')
+      .from('email_relations')
+      .upsert({
+        workspace_id: workspaceId,
+        email_id: email.id,
+        entity_type: entityType,
+        entity_id: entityId,
+        relation_type: body.relationType ?? body.relation_type ?? 'related',
+      });
   }
 
-  await (supabase as any).schema('core').from('email_sends').insert({
-    workspace_id: workspaceId,
-    email_id: email.id,
-    email_account_id: account.id,
-    template_id: body.templateId ?? body.template_id ?? null,
-    to_email: toEmails[0],
-    from_email: account.email,
-    subject,
-    rendered_html: htmlBody,
-    rendered_text: body.text_body ?? null,
-    provider_message_id: sendInfo?.messageId ?? null,
-    thread_key: emailPayload.thread_key,
-    status: isScheduled ? 'queued' : 'sent',
-    created_by: user.id,
-  });
+  await (supabase as any)
+    .schema('core')
+    .from('email_sends')
+    .insert({
+      workspace_id: workspaceId,
+      email_id: email.id,
+      email_account_id: account.id,
+      template_id: body.templateId ?? body.template_id ?? null,
+      to_email: toEmails[0],
+      from_email: account.email,
+      subject,
+      rendered_html: htmlBody,
+      rendered_text: body.text_body ?? null,
+      provider_message_id: sendInfo?.messageId ?? null,
+      thread_key: emailPayload.thread_key,
+      status: isScheduled ? 'queued' : 'sent',
+      created_by: user.id,
+    });
 
   return successDataResponse('Email sent successfully', {
     messageId: sendInfo?.messageId ?? null,
