@@ -22,15 +22,14 @@ import {
 } from '@kit/ui/select';
 import { Textarea } from '@kit/ui/textarea';
 
-import type {
-  RecruitmentInterviewPayload,
-  RecruitmentInterviewSummary,
-} from '~/types/recruitment.type';
-
 import {
   interviewRoundTypeOptions,
   interviewStatusOptions,
-} from '../page.data';
+} from '../../pages/recruitment/page.data';
+import type {
+  RecruitmentInterviewPayload,
+  RecruitmentInterviewSummary,
+} from '../../types/recruitment.type';
 import { BaseDialogProps, toDateTimeInputValue } from './shared';
 
 const emptyInterviewForm: RecruitmentInterviewPayload = {
@@ -53,7 +52,8 @@ export function RecruitmentInterviewDialog(
     onSubmit: (payload: RecruitmentInterviewPayload) => void;
   },
 ) {
-  const [form, setForm] = useState<RecruitmentInterviewPayload>(emptyInterviewForm);
+  const [form, setForm] =
+    useState<RecruitmentInterviewPayload>(emptyInterviewForm);
 
   useEffect(() => {
     if (!props.open) {
@@ -92,7 +92,8 @@ export function RecruitmentInterviewDialog(
               {props.initialData ? 'Edit Interview' : 'Schedule Interview'}
             </DialogTitle>
             <DialogDescription className="text-base">
-              Define the round, assign an interviewer, and capture timing details.
+              Define the round, assign an interviewer, and capture timing
+              details.
             </DialogDescription>
           </DialogHeader>
 
@@ -128,7 +129,10 @@ export function RecruitmentInterviewDialog(
                 id="interview-title"
                 value={form.title}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, title: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    title: event.target.value,
+                  }))
                 }
                 placeholder="Technical Round"
               />
@@ -141,7 +145,8 @@ export function RecruitmentInterviewDialog(
                 onValueChange={(value) =>
                   setForm((current) => ({
                     ...current,
-                    round_type: value as RecruitmentInterviewPayload['round_type'],
+                    round_type:
+                      value as RecruitmentInterviewPayload['round_type'],
                   }))
                 }
               >
@@ -220,7 +225,8 @@ export function RecruitmentInterviewDialog(
                 onValueChange={(value) =>
                   setForm((current) => ({
                     ...current,
-                    interviewer_employee_id: value === '__none__' ? null : value,
+                    interviewer_employee_id:
+                      value === '__none__' ? null : value,
                   }))
                 }
               >
@@ -259,7 +265,10 @@ export function RecruitmentInterviewDialog(
                 id="interview-location"
                 value={form.location ?? ''}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, location: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    location: event.target.value,
+                  }))
                 }
                 placeholder="Conference Room A"
               />
@@ -272,7 +281,10 @@ export function RecruitmentInterviewDialog(
                 rows={3}
                 value={form.outcome ?? ''}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, outcome: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    outcome: event.target.value,
+                  }))
                 }
                 placeholder="Optional decision summary or next-step note"
               />

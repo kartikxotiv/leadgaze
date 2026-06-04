@@ -22,12 +22,11 @@ import {
 } from '@kit/ui/select';
 import { Textarea } from '@kit/ui/textarea';
 
+import { onboardingStatusOptions } from '../../pages/recruitment/page.data';
 import type {
   RecruitmentOnboardingTaskPayload,
   RecruitmentOnboardingTaskSummary,
-} from '~/types/recruitment.type';
-
-import { onboardingStatusOptions } from '../page.data';
+} from '../../types/recruitment.type';
 import { BaseDialogProps, toDateInputValue } from './shared';
 
 const emptyOnboardingTaskForm: RecruitmentOnboardingTaskPayload = {
@@ -81,7 +80,9 @@ export function RecruitmentOnboardingTaskDialog(
       return props.options.offers;
     }
 
-    return props.options.offers.filter((offer) => offer.candidate_id === form.candidate_id);
+    return props.options.offers.filter(
+      (offer) => offer.candidate_id === form.candidate_id,
+    );
   }, [form.candidate_id, props.options.offers]);
 
   return (
@@ -90,10 +91,13 @@ export function RecruitmentOnboardingTaskDialog(
         <div className="space-y-6">
           <DialogHeader>
             <DialogTitle className="text-2xl">
-              {props.initialData ? 'Edit Onboarding Task' : 'Add Onboarding Task'}
+              {props.initialData
+                ? 'Edit Onboarding Task'
+                : 'Add Onboarding Task'}
             </DialogTitle>
             <DialogDescription className="text-base">
-              Create checklist items that HR and hiring teams must close before joining.
+              Create checklist items that HR and hiring teams must close before
+              joining.
             </DialogDescription>
           </DialogHeader>
 
@@ -130,7 +134,10 @@ export function RecruitmentOnboardingTaskDialog(
                 id="onboarding-task-title"
                 value={form.title}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, title: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    title: event.target.value,
+                  }))
                 }
                 placeholder="Collect signed offer letter"
               />
@@ -252,7 +259,9 @@ export function RecruitmentOnboardingTaskDialog(
               Cancel
             </Button>
             <Button
-              disabled={props.isPending || !form.candidate_id || !form.title.trim()}
+              disabled={
+                props.isPending || !form.candidate_id || !form.title.trim()
+              }
               onClick={() =>
                 props.onSubmit({
                   ...form,

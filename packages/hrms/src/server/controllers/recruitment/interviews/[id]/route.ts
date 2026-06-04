@@ -3,13 +3,13 @@ import { z } from 'zod';
 import { enhanceRouteHandler } from '@kit/next/routes';
 
 import {
+  recruitmentInterviewRoundTypes,
+  recruitmentInterviewStatuses,
+} from '../../../../../types/recruitment.type';
+import {
   deleteRecruitmentInterviewController,
   updateRecruitmentInterviewController,
 } from '../../controller';
-import {
-  recruitmentInterviewRoundTypes,
-  recruitmentInterviewStatuses,
-} from '~/types/recruitment.type';
 
 const RecruitmentInterviewUpdateSchema = z.object({
   candidate_id: z.string().uuid().optional(),

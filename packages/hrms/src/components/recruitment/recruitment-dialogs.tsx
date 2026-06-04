@@ -1,15 +1,13 @@
 'use client';
 
-import type { RecruitmentPageController } from '../_lib/use-recruitment-page-controller';
-import {
-  RecruitmentCandidateDialog,
-  RecruitmentFeedbackDialog,
-  RecruitmentInterviewDialog,
-  RecruitmentNoteDialog,
-  RecruitmentOfferDialog,
-  RecruitmentOnboardingTaskDialog,
-  RecruitmentRequisitionDialog,
-} from '../page.forms';
+import type { RecruitmentPageController } from '../../hooks/use-recruitment-page-controller';
+import { RecruitmentCandidateDialog } from './recruitment-candidate-dialog';
+import { RecruitmentFeedbackDialog } from './recruitment-feedback-dialog';
+import { RecruitmentInterviewDialog } from './recruitment-interview-dialog';
+import { RecruitmentNoteDialog } from './recruitment-note-dialog';
+import { RecruitmentOfferDialog } from './recruitment-offer-dialog';
+import { RecruitmentOnboardingTaskDialog } from './recruitment-onboarding-task-dialog';
+import { RecruitmentRequisitionDialog } from './recruitment-requisition-dialog';
 
 export function RecruitmentDialogs(props: {
   controller: RecruitmentPageController;
@@ -100,7 +98,9 @@ export function RecruitmentDialogs(props: {
         initialInterviewId={controller.feedbackInterviewId}
         isPending={controller.createFeedbackMutation.isPending}
         options={controller.options}
-        onSubmit={(payload) => controller.createFeedbackMutation.mutate(payload)}
+        onSubmit={(payload) =>
+          controller.createFeedbackMutation.mutate(payload)
+        }
       />
 
       <RecruitmentNoteDialog

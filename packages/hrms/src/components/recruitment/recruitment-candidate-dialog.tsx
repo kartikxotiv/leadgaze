@@ -21,12 +21,11 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 
+import { candidateStatusOptions } from '../../pages/recruitment/page.data';
 import type {
   RecruitmentCandidatePayload,
   RecruitmentCandidateSummary,
-} from '~/types/recruitment.type';
-
-import { candidateStatusOptions } from '../page.data';
+} from '../../types/recruitment.type';
 import { BaseDialogProps, toDateInputValue } from './shared';
 
 const emptyCandidateForm: RecruitmentCandidatePayload = {
@@ -53,7 +52,8 @@ export function RecruitmentCandidateDialog(
     onSubmit: (payload: RecruitmentCandidatePayload) => void;
   },
 ) {
-  const [form, setForm] = useState<RecruitmentCandidatePayload>(emptyCandidateForm);
+  const [form, setForm] =
+    useState<RecruitmentCandidatePayload>(emptyCandidateForm);
 
   useEffect(() => {
     if (!props.open || !props.initialData) {
@@ -89,7 +89,8 @@ export function RecruitmentCandidateDialog(
               {props.initialData ? 'Edit Candidate' : 'Add Candidate'}
             </DialogTitle>
             <DialogDescription className="text-base">
-              Track pipeline status, ownership, compensation expectations, and source details.
+              Track pipeline status, ownership, compensation expectations, and
+              source details.
             </DialogDescription>
           </DialogHeader>
 
@@ -125,9 +126,12 @@ export function RecruitmentCandidateDialog(
                 id="candidate-name"
                 value={form.full_name}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, full_name: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    full_name: event.target.value,
+                  }))
                 }
-                placeholder="Aarti Sharma"
+                placeholder="John Doe"
               />
             </div>
 
@@ -138,7 +142,10 @@ export function RecruitmentCandidateDialog(
                 type="email"
                 value={form.email}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, email: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    email: event.target.value,
+                  }))
                 }
                 placeholder="candidate@example.com"
               />
@@ -150,7 +157,10 @@ export function RecruitmentCandidateDialog(
                 id="candidate-phone"
                 value={form.phone ?? ''}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, phone: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    phone: event.target.value,
+                  }))
                 }
                 placeholder="+91 98765 43210"
               />
@@ -211,7 +221,10 @@ export function RecruitmentCandidateDialog(
                 id="candidate-source"
                 value={form.source ?? ''}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, source: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    source: event.target.value,
+                  }))
                 }
                 placeholder="Referral / LinkedIn / Agency"
               />
@@ -258,7 +271,9 @@ export function RecruitmentCandidateDialog(
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
-                    experience_years: event.target.value ? Number(event.target.value) : null,
+                    experience_years: event.target.value
+                      ? Number(event.target.value)
+                      : null,
                   }))
                 }
               />
@@ -274,7 +289,9 @@ export function RecruitmentCandidateDialog(
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
-                    notice_period_days: event.target.value ? Number(event.target.value) : null,
+                    notice_period_days: event.target.value
+                      ? Number(event.target.value)
+                      : null,
                   }))
                 }
               />
@@ -290,7 +307,9 @@ export function RecruitmentCandidateDialog(
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
-                    current_ctc: event.target.value ? Number(event.target.value) : null,
+                    current_ctc: event.target.value
+                      ? Number(event.target.value)
+                      : null,
                   }))
                 }
               />
@@ -306,7 +325,9 @@ export function RecruitmentCandidateDialog(
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
-                    expected_ctc: event.target.value ? Number(event.target.value) : null,
+                    expected_ctc: event.target.value
+                      ? Number(event.target.value)
+                      : null,
                   }))
                 }
               />

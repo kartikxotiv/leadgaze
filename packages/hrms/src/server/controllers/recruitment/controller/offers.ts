@@ -1,24 +1,44 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import { ApiError, catchAsync, successDataResponse } from '~/utils/response-handler';
-import type { RecruitmentOfferStatus } from '~/types/recruitment.type';
-
+import type { RecruitmentOfferStatus } from '../../../../types/recruitment.type';
+import {
+  ApiError,
+  catchAsync,
+  successDataResponse,
+} from '../../../../utils/response-handler';
 import {
   ensureOrganizationRecord,
   getOfferCandidateStatus,
+  getRecruitmentHrmsClient,
+  getRecruitmentUserId,
   getRequiredOrganizationId,
   normalizeNullable,
   offerSelect,
+  requireRecruitmentPermission,
   touchCandidate,
   updateCandidateStatus,
 } from './shared';
 
 export const createRecruitmentOfferController = catchAsync(
-  async ({ body, user }) => {
+  async ({ body, request, user }) => {
     const supabaseAdmin = getSupabaseServerAdminClient<any>();
-    const organizationId = await getRequiredOrganizationId(user?.id);
+    const hrms = getRecruitmentHrmsClient(supabaseAdmin);
+    const userId = getRecruitmentUserId(user);
+    const organizationId = await getRequiredOrganizationId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
     const data = body as Record<string, any>;
+
+    await requireRecruitmentPermission({
+      featureKey: 'manage_offers',
+      minAccessLevel: 'team',
+      supabaseAdmin,
+      userId,
+      workspaceId: organizationId,
+    });
 
     const candidate = await ensureOrganizationRecord({
       entityLabel: 'Candidate',
@@ -40,23 +60,28 @@ export const createRecruitmentOfferController = catchAsync(
     const status = data.status as RecruitmentOfferStatus;
     const now = new Date().toISOString();
 
-    const { data: created, error } = await supabaseAdmin
+    const { data: created, error } = await hrms
       .from('recruitment_offers')
       .insert({
-        approved_by_employee_id: normalizeNullable(data.approved_by_employee_id),
+        approved_by_employee_id: normalizeNullable(
+          data.approved_by_employee_id,
+        ),
         candidate_id: data.candidate_id,
-        created_by: user?.id ?? null,
-        currency_code: String(data.currency_code ?? 'INR').trim().toUpperCase(),
+        created_by: userId ?? null,
+        currency_code: String(data.currency_code ?? 'INR')
+          .trim()
+          .toUpperCase(),
         joining_date: normalizeNullable(data.joining_date),
         notes: normalizeNullable(data.notes),
         offered_designation: String(data.offered_designation).trim(),
-        organization_id: organizationId,
+        workspace_id: organizationId,
         requisition_id: candidate.requisition_id,
         salary_amount: Number(data.salary_amount),
         sent_at: status === 'sent' ? now : null,
-        responded_at: status === 'accepted' || status === 'declined' ? now : null,
+        responded_at:
+          status === 'accepted' || status === 'declined' ? now : null,
         status,
-        updated_by: user?.id ?? null,
+        updated_by: userId ?? null,
       })
       .select(offerSelect)
       .single();
@@ -72,13 +97,13 @@ export const createRecruitmentOfferController = catchAsync(
         candidateId: data.candidate_id,
         status: candidateStatus,
         supabaseAdmin,
-        userId: user?.id,
+        userId,
       });
     } else {
       await touchCandidate({
         candidateId: data.candidate_id,
         supabaseAdmin,
-        userId: user?.id,
+        userId,
       });
     }
 
@@ -87,15 +112,29 @@ export const createRecruitmentOfferController = catchAsync(
 );
 
 export const updateRecruitmentOfferController = catchAsync(
-  async ({ body, params, user }) => {
+  async ({ body, params, request, user }) => {
     const supabaseAdmin = getSupabaseServerAdminClient<any>();
-    const organizationId = await getRequiredOrganizationId(user?.id);
+    const hrms = getRecruitmentHrmsClient(supabaseAdmin);
+    const userId = getRecruitmentUserId(user);
+    const organizationId = await getRequiredOrganizationId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
     const offerId = params?.id;
     const data = body as Record<string, any>;
 
     if (!offerId) {
       throw new ApiError('Offer id is required', 400);
     }
+
+    await requireRecruitmentPermission({
+      featureKey: 'manage_offers',
+      minAccessLevel: 'team',
+      supabaseAdmin,
+      userId,
+      workspaceId: organizationId,
+    });
 
     const existingOffer = await ensureOrganizationRecord({
       entityLabel: 'Offer',
@@ -134,7 +173,7 @@ export const updateRecruitmentOfferController = catchAsync(
 
     const payload: Record<string, any> = {
       updated_at: new Date().toISOString(),
-      updated_by: user?.id ?? null,
+      updated_by: userId ?? null,
     };
 
     if (data.candidate_id !== undefined) {
@@ -142,7 +181,9 @@ export const updateRecruitmentOfferController = catchAsync(
       payload.requisition_id = requisitionId;
     }
     if (data.approved_by_employee_id !== undefined) {
-      payload.approved_by_employee_id = normalizeNullable(data.approved_by_employee_id);
+      payload.approved_by_employee_id = normalizeNullable(
+        data.approved_by_employee_id,
+      );
     }
     if (data.offered_designation !== undefined) {
       payload.offered_designation = String(data.offered_designation).trim();
@@ -167,15 +208,18 @@ export const updateRecruitmentOfferController = catchAsync(
         payload.sent_at = new Date().toISOString();
       }
 
-      if ((status === 'accepted' || status === 'declined') && !existingOffer.responded_at) {
+      if (
+        (status === 'accepted' || status === 'declined') &&
+        !existingOffer.responded_at
+      ) {
         payload.responded_at = new Date().toISOString();
       }
     }
 
-    const { data: updated, error } = await supabaseAdmin
+    const { data: updated, error } = await hrms
       .from('recruitment_offers')
       .update(payload)
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', organizationId)
       .eq('id', offerId)
       .select(offerSelect)
       .single();
@@ -184,7 +228,8 @@ export const updateRecruitmentOfferController = catchAsync(
       throw new ApiError(error.message, 400);
     }
 
-    const nextStatus = (payload.status ?? updated.status) as RecruitmentOfferStatus;
+    const nextStatus = (payload.status ??
+      updated.status) as RecruitmentOfferStatus;
     const candidateStatus = getOfferCandidateStatus(nextStatus);
 
     if (candidateStatus) {
@@ -192,13 +237,13 @@ export const updateRecruitmentOfferController = catchAsync(
         candidateId,
         status: candidateStatus,
         supabaseAdmin,
-        userId: user?.id,
+        userId,
       });
     } else {
       await touchCandidate({
         candidateId,
         supabaseAdmin,
-        userId: user?.id,
+        userId,
       });
     }
 
@@ -207,14 +252,28 @@ export const updateRecruitmentOfferController = catchAsync(
 );
 
 export const deleteRecruitmentOfferController = catchAsync(
-  async ({ params, user }) => {
+  async ({ params, request, user }) => {
     const supabaseAdmin = getSupabaseServerAdminClient<any>();
-    const organizationId = await getRequiredOrganizationId(user?.id);
+    const hrms = getRecruitmentHrmsClient(supabaseAdmin);
+    const userId = getRecruitmentUserId(user);
+    const organizationId = await getRequiredOrganizationId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
     const offerId = params?.id;
 
     if (!offerId) {
       throw new ApiError('Offer id is required', 400);
     }
+
+    await requireRecruitmentPermission({
+      featureKey: 'delete',
+      minAccessLevel: 'team',
+      supabaseAdmin,
+      userId,
+      workspaceId: organizationId,
+    });
 
     await ensureOrganizationRecord({
       entityLabel: 'Offer',
@@ -224,10 +283,10 @@ export const deleteRecruitmentOfferController = catchAsync(
       table: 'recruitment_offers',
     });
 
-    const { error } = await supabaseAdmin
+    const { error } = await hrms
       .from('recruitment_offers')
       .delete()
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', organizationId)
       .eq('id', offerId);
 
     if (error) {

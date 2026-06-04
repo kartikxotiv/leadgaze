@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from '@kit/ui/card';
 
-import { RecruitmentSummaryCards } from '../page.components';
+import { RecruitmentSummaryCards } from '../../pages/recruitment/page.components';
 
 type OverviewItem = {
   hint: string;

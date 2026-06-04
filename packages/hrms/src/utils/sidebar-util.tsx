@@ -7,6 +7,7 @@ import {
   Building2,
   CalendarCheck,
   ClipboardList,
+  UserPlus,
   Users,
   WalletCards,
 } from 'lucide-react';
@@ -44,6 +45,11 @@ const hrmsRoutes = {
       label: 'Leave',
       path: '/home/hrms/leave',
       Icon: <ClipboardList className="h-4 w-4" />,
+    },
+    {
+      label: 'Recruitment',
+      path: '/home/hrms/recruitment',
+      Icon: <UserPlus className="h-4 w-4" />,
     },
     {
       label: 'Payroll',

@@ -19,11 +19,10 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
-import type { RecruitmentOnboardingTaskSummary } from '~/types/recruitment.type';
-
-import { formatLabel } from '../page.data';
-import { RecruitmentStatusBadge } from '../page.components';
-import { formatDate } from '../_lib/recruitment-formatters';
+import { formatDate } from '../../hooks/recruitment-formatters';
+import { RecruitmentStatusBadge } from '../../pages/recruitment/page.components';
+import { formatLabel } from '../../pages/recruitment/page.data';
+import type { RecruitmentOnboardingTaskSummary } from '../../types/recruitment.type';
 
 export function RecruitmentOnboardingTab(props: {
   canManageOnboarding: boolean;
