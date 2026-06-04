@@ -1,14 +1,12 @@
-import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
+import { ApiError } from '../../../../utils/response-handler';
+import {
+  type SupabaseAdminClient,
+  getHrmsClient,
+} from '../../employees/controller.helpers';
 
-import type { Database } from '~/lib/database.types';
-import { ApiError } from '~/utils/response-handler';
-
-type AttendanceLogInsert =
-  Database['public']['Tables']['attendance_logs']['Insert'];
-type AttendanceRecordInsert =
-  Database['public']['Tables']['attendance_records']['Insert'];
-type AttendanceRecordUpdate =
-  Database['public']['Tables']['attendance_records']['Update'];
+type AttendanceLogInsert = Record<string, unknown>;
+type AttendanceRecordInsert = Record<string, unknown>;
+type AttendanceRecordUpdate = Record<string, unknown>;
 
 type AttendanceAdminUpdateBody = {
   check_in?: string | null;
@@ -16,26 +14,22 @@ type AttendanceAdminUpdateBody = {
   date?: string | null;
   employee_id?: string | null;
   shift_id?: string | null;
-  status?: Database['public']['Enums']['attendance_record_status'];
+  status?: 'absent' | 'present';
 };
 
-type SupabaseAdminClient = ReturnType<
-  typeof getSupabaseServerAdminClient<Database>
->;
-
 async function getShiftForAttendanceStatus(params: {
-  supabaseAdmin: SupabaseAdminClient;
   organizationId: string;
   shiftId: string | null;
+  supabaseAdmin: SupabaseAdminClient;
 }) {
   if (!params.shiftId) {
     return null;
   }
 
-  const { data, error } = await params.supabaseAdmin
+  const { data, error } = await getHrmsClient(params.supabaseAdmin)
     .from('shifts')
     .select('start_time, end_time, grace_minutes')
-    .eq('organization_id', params.organizationId)
+    .eq('workspace_id', params.organizationId)
     .eq('id', params.shiftId)
     .maybeSingle();
 
@@ -47,15 +41,15 @@ async function getShiftForAttendanceStatus(params: {
 }
 
 async function assertEmployeeCanHaveAttendanceOnDate(params: {
-  supabaseAdmin: SupabaseAdminClient;
-  organizationId: string;
-  employeeId: string;
   date: string;
+  employeeId: string;
+  organizationId: string;
+  supabaseAdmin: SupabaseAdminClient;
 }) {
-  const { data, error } = await params.supabaseAdmin
+  const { data, error } = await getHrmsClient(params.supabaseAdmin)
     .from('employees')
     .select('id, joining_date')
-    .eq('organization_id', params.organizationId)
+    .eq('workspace_id', params.organizationId)
     .eq('id', params.employeeId)
     .maybeSingle();
 

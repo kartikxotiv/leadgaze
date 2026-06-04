@@ -1,54 +1,65 @@
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import type { Database } from '~/lib/database.types';
-import { getCurrentUserOrganizationId } from '~/lib/server/organizations';
 import {
   ApiError,
   catchAsync,
   successDataResponse,
-} from '~/utils/response-handler';
-
+} from '../../../../utils/response-handler';
+import {
+  getHrmsClient,
+  getRequiredWorkspaceId,
+  getRouteUserId,
+} from '../../employees/controller.helpers';
 import {
   computeWorkHours,
   deriveAttendanceStatus,
   getAttendanceSettings,
   getEmployeeForAccount,
   isWorkingDay,
+  requireAttendanceLog,
   toISODateString,
 } from '../utils';
 import type { AttendanceLogInsert, AttendanceRecordInsert } from './shared';
 
-const myAttendanceController = catchAsync(async ({ request, user }) => {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-  const organizationId = await getCurrentUserOrganizationId(user?.id);
+const attendanceRecordSelect =
+  'id, employee_id, date, check_in, check_out, status, work_hours, shift_id, shift:shifts!attendance_records_shift_id_fkey(id, name, start_time, end_time, grace_minutes)';
 
-  if (!organizationId) {
-    throw new ApiError('Organization not found for user', 404);
-  }
+const myAttendanceController = catchAsync(async ({ request, user }) => {
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const hrms = getHrmsClient(supabaseAdmin);
+  const userId = getRouteUserId(user);
+  const organizationId = await getRequiredWorkspaceId({
+    request,
+    supabaseAdmin,
+    userId,
+  });
+
+  await requireAttendanceLog({
+    accountId: userId!,
+    organizationId,
+  });
 
   const employee = await getEmployeeForAccount({
-    accountId: user!.id,
+    accountId: userId!,
     organizationId,
   });
   const searchParams = new URL(request.url).searchParams;
   const date = searchParams.get('date') ?? toISODateString(new Date());
 
-  const { data: todayRecord } = await supabaseAdmin
+  const { data: todayRecord } = await hrms
     .from('attendance_records')
-    .select(
-      'id, date, check_in, check_out, status, work_hours, shift_id, shift:shifts!attendance_records_shift_id_fkey(id, name, start_time, end_time, grace_minutes)',
-    )
-    .eq('organization_id', organizationId)
+    .select(attendanceRecordSelect)
+    .eq('workspace_id', organizationId)
     .eq('employee_id', employee.id)
     .eq('date', date)
     .maybeSingle();
 
-  const { data: recentRecords, error } = await supabaseAdmin
+  const { data: recentRecords, error } = await hrms
     .from('attendance_records')
     .select(
-      'id, date, check_in, check_out, status, work_hours, shift_id, shift:shifts!attendance_records_shift_id_fkey(id, name)',
+      'id, employee_id, date, check_in, check_out, status, work_hours, shift_id, shift:shifts!attendance_records_shift_id_fkey(id, name)',
     )
-    .eq('organization_id', organizationId)
+    .eq('workspace_id', organizationId)
     .eq('employee_id', employee.id)
     .order('date', { ascending: false })
     .limit(14);
@@ -57,10 +68,10 @@ const myAttendanceController = catchAsync(async ({ request, user }) => {
     throw new ApiError(error.message, 400);
   }
 
-  const { data: todayLogs } = await supabaseAdmin
+  const { data: todayLogs } = await hrms
     .from('attendance_logs')
     .select('id, punch_type, punch_time, source')
-    .eq('organization_id', organizationId)
+    .eq('workspace_id', organizationId)
     .eq('employee_id', employee.id)
     .gte('punch_time', `${date}T00:00:00.000Z`)
     .lt('punch_time', `${date}T23:59:59.999Z`)
@@ -77,16 +88,23 @@ const myAttendanceController = catchAsync(async ({ request, user }) => {
   });
 });
 
-const checkInController = catchAsync(async ({ user }) => {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-  const organizationId = await getCurrentUserOrganizationId(user?.id);
+const checkInController = catchAsync(async ({ request, user }) => {
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const hrms = getHrmsClient(supabaseAdmin);
+  const userId = getRouteUserId(user);
+  const organizationId = await getRequiredWorkspaceId({
+    request,
+    supabaseAdmin,
+    userId,
+  });
 
-  if (!organizationId) {
-    throw new ApiError('Organization not found for user', 404);
-  }
+  await requireAttendanceLog({
+    accountId: userId!,
+    organizationId,
+  });
 
   const employee = await getEmployeeForAccount({
-    accountId: user!.id,
+    accountId: userId!,
     organizationId,
   });
   const date = toISODateString(new Date());
@@ -96,10 +114,10 @@ const checkInController = catchAsync(async ({ user }) => {
     throw new ApiError('Check-in is not available on a non-working day', 400);
   }
 
-  const { data: existingRecord } = await supabaseAdmin
+  const { data: existingRecord } = await hrms
     .from('attendance_records')
     .select('id, check_in, check_out')
-    .eq('organization_id', organizationId)
+    .eq('workspace_id', organizationId)
     .eq('employee_id', employee.id)
     .eq('date', date)
     .maybeSingle();
@@ -110,15 +128,15 @@ const checkInController = catchAsync(async ({ user }) => {
 
   const now = new Date().toISOString();
   const logPayload: AttendanceLogInsert = {
-    organization_id: organizationId,
+    workspace_id: organizationId,
     employee_id: employee.id,
     punch_type: 'in',
     punch_time: now,
     source: 'web',
-    created_by: user?.id,
+    created_by: userId,
   };
 
-  const { error: logError } = await supabaseAdmin
+  const { error: logError } = await hrms
     .from('attendance_logs')
     .insert(logPayload);
 
@@ -127,14 +145,14 @@ const checkInController = catchAsync(async ({ user }) => {
   }
 
   if (existingRecord?.id) {
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError } = await hrms
       .from('attendance_records')
       .update({
         check_in: now,
         status: 'present',
-        updated_by: user?.id,
+        updated_by: userId,
       })
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', organizationId)
       .eq('id', existingRecord.id);
 
     if (updateError) {
@@ -142,16 +160,16 @@ const checkInController = catchAsync(async ({ user }) => {
     }
   } else {
     const recordPayload: AttendanceRecordInsert = {
-      organization_id: organizationId,
+      workspace_id: organizationId,
       employee_id: employee.id,
       date,
       check_in: now,
       status: 'present',
-      created_by: user?.id,
-      updated_by: user?.id,
+      created_by: userId,
+      updated_by: userId,
     };
 
-    const { error: recordError } = await supabaseAdmin
+    const { error: recordError } = await hrms
       .from('attendance_records')
       .insert(recordPayload);
 
@@ -166,26 +184,33 @@ const checkInController = catchAsync(async ({ user }) => {
   });
 });
 
-const checkOutController = catchAsync(async ({ user }) => {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-  const organizationId = await getCurrentUserOrganizationId(user?.id);
+const checkOutController = catchAsync(async ({ request, user }) => {
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const hrms = getHrmsClient(supabaseAdmin);
+  const userId = getRouteUserId(user);
+  const organizationId = await getRequiredWorkspaceId({
+    request,
+    supabaseAdmin,
+    userId,
+  });
 
-  if (!organizationId) {
-    throw new ApiError('Organization not found for user', 404);
-  }
+  await requireAttendanceLog({
+    accountId: userId!,
+    organizationId,
+  });
 
   const employee = await getEmployeeForAccount({
-    accountId: user!.id,
+    accountId: userId!,
     organizationId,
   });
   const date = toISODateString(new Date());
 
-  const { data: record, error: recordError } = await supabaseAdmin
+  const { data: record, error: recordError } = await hrms
     .from('attendance_records')
     .select(
       'id, check_in, check_out, shift_id, status, shift:shifts!attendance_records_shift_id_fkey(start_time, end_time, grace_minutes)',
     )
-    .eq('organization_id', organizationId)
+    .eq('workspace_id', organizationId)
     .eq('employee_id', employee.id)
     .eq('date', date)
     .maybeSingle();
@@ -204,15 +229,15 @@ const checkOutController = catchAsync(async ({ user }) => {
 
   const now = new Date().toISOString();
   const logPayload: AttendanceLogInsert = {
-    organization_id: organizationId,
+    workspace_id: organizationId,
     employee_id: employee.id,
     punch_type: 'out',
     punch_time: now,
     source: 'web',
-    created_by: user?.id,
+    created_by: userId,
   };
 
-  const { error: logError } = await supabaseAdmin
+  const { error: logError } = await hrms
     .from('attendance_logs')
     .insert(logPayload);
 
@@ -227,15 +252,15 @@ const checkOutController = catchAsync(async ({ user }) => {
     shift: record.shift,
   });
 
-  const { error: updateError } = await supabaseAdmin
+  const { error: updateError } = await hrms
     .from('attendance_records')
     .update({
       check_out: now,
       work_hours: workHours,
       status,
-      updated_by: user?.id,
+      updated_by: userId,
     })
-    .eq('organization_id', organizationId)
+    .eq('workspace_id', organizationId)
     .eq('id', record.id);
 
   if (updateError) {

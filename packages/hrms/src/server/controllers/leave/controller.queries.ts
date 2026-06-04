@@ -1,22 +1,36 @@
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import type { Database } from '~/lib/database.types';
-import { getCurrentUserOrganizationId } from '~/lib/server/organizations';
-import { ApiError } from '~/utils/response-handler';
-
+import { ApiError } from '../../../utils/response-handler';
+import {
+  getHrmsClient,
+  getRequiredWorkspaceId,
+} from '../employees/controller.helpers';
+import {
+  type LeaveRequestRelationRow,
+  type LeaveTypeRow,
+  leaveRequestSelect,
+} from './controller.types';
 import { getLeaveContext } from './utils';
-import { leaveRequestSelect, type LeaveRequestRelationRow } from './controller.types';
 
-async function getRequiredLeaveContext(userId?: string) {
-  const organizationId = await getCurrentUserOrganizationId(userId);
-
-  if (!organizationId || !userId) {
-    throw new ApiError('Organization not found for user', 404);
-  }
+async function getRequiredLeaveContext(params: {
+  request?: {
+    cookies?: {
+      get: (name: string) => { value?: string } | undefined;
+    };
+  };
+  userId?: string;
+}) {
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const workspaceId = await getRequiredWorkspaceId({
+    request: params.request,
+    supabaseAdmin,
+    userId: params.userId,
+  });
 
   return getLeaveContext({
-    accountId: userId,
-    organizationId,
+    accountId: params.userId!,
+    supabaseAdmin,
+    workspaceId,
   });
 }
 
@@ -24,12 +38,11 @@ async function getLeaveTypeOrThrow(params: {
   leaveTypeId: string;
   organizationId: string;
 }) {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-
-  const { data, error } = await supabaseAdmin
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const { data, error } = await getHrmsClient(supabaseAdmin)
     .from('leave_types')
     .select('*')
-    .eq('organization_id', params.organizationId)
+    .eq('workspace_id', params.organizationId)
     .eq('id', params.leaveTypeId)
     .maybeSingle();
 
@@ -41,19 +54,18 @@ async function getLeaveTypeOrThrow(params: {
     throw new ApiError('Leave type not found', 404);
   }
 
-  return data;
+  return data as LeaveTypeRow;
 }
 
 async function getLeaveRequestOrThrow(params: {
   organizationId: string;
   requestId: string;
 }) {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-
-  const { data, error } = await supabaseAdmin
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const { data, error } = await getHrmsClient(supabaseAdmin)
     .from('leave_requests')
     .select(leaveRequestSelect)
-    .eq('organization_id', params.organizationId)
+    .eq('workspace_id', params.organizationId)
     .eq('id', params.requestId)
     .maybeSingle();
 

@@ -12,7 +12,7 @@ import type {
   AttendanceLog,
   AttendanceRecord,
   Shift,
-} from '~/types/attendance.type';
+} from '../../types/attendance.type';
 
 type AttendanceCardStatus =
   | 'not_checked_in'

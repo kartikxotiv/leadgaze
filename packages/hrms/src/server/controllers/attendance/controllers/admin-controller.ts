@@ -1,13 +1,15 @@
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import type { Database } from '~/lib/database.types';
-import { getCurrentUserOrganizationId } from '~/lib/server/organizations';
 import {
   ApiError,
   catchAsync,
   successDataResponse,
-} from '~/utils/response-handler';
-
+} from '../../../../utils/response-handler';
+import {
+  getHrmsClient,
+  getRequiredWorkspaceId,
+  getRouteUserId,
+} from '../../employees/controller.helpers';
 import {
   computeWorkHours,
   deriveAttendanceDisplayStatus,
@@ -26,15 +28,20 @@ import {
   getShiftForAttendanceStatus,
 } from './shared';
 
+const attendanceRecordSelect =
+  'id, employee_id, date, check_in, check_out, status, work_hours, shift_id, shift:shifts!attendance_records_shift_id_fkey(id, name, start_time, end_time, grace_minutes)';
+
 const adminAttendanceController = catchAsync(async ({ request, user }) => {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-  const organizationId = await getCurrentUserOrganizationId(user?.id);
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const hrms = getHrmsClient(supabaseAdmin);
+  const userId = getRouteUserId(user);
+  const organizationId = await getRequiredWorkspaceId({
+    request,
+    supabaseAdmin,
+    userId,
+  });
 
-  if (!organizationId) {
-    throw new ApiError('Organization not found for user', 404);
-  }
-
-  await requireAttendanceAdmin({ accountId: user!.id, organizationId });
+  await requireAttendanceAdmin({ accountId: userId!, organizationId });
 
   const searchParams = new URL(request.url).searchParams;
   const date = parseDateFilter(searchParams.get('date'));
@@ -47,26 +54,24 @@ const adminAttendanceController = catchAsync(async ({ request, user }) => {
     { data: records, error: recordsError },
     { data: shifts, error: shiftsError },
   ] = await Promise.all([
-    supabaseAdmin
+    hrms
       .from('employees')
       .select(
         'id, employee_code, first_name, last_name, work_email, shift_id, department:departments!employees_department_id_fkey(id, name, code), shift:shifts!employees_shift_id_fkey(id, name, start_time, end_time, grace_minutes)',
       )
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', organizationId)
       .neq('status', 'exited')
       .or(`joining_date.is.null,joining_date.lte.${date}`)
       .order('first_name', { ascending: true }),
-    supabaseAdmin
+    hrms
       .from('attendance_records')
-      .select(
-        'id, employee_id, date, check_in, check_out, status, work_hours, shift_id, shift:shifts!attendance_records_shift_id_fkey(id, name, start_time, end_time, grace_minutes)',
-      )
-      .eq('organization_id', organizationId)
+      .select(attendanceRecordSelect)
+      .eq('workspace_id', organizationId)
       .eq('date', date),
-    supabaseAdmin
+    hrms
       .from('shifts')
       .select('id, name, start_time, end_time, grace_minutes, is_active')
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', organizationId)
       .order('name', { ascending: true }),
   ]);
   const attendanceSettings = await getAttendanceSettings({ organizationId });
@@ -88,11 +93,14 @@ const adminAttendanceController = catchAsync(async ({ request, user }) => {
   }
 
   const recordByEmployeeId = new Map(
-    (records ?? []).map((record) => [record.employee_id, record]),
+    ((records ?? []) as Array<{ employee_id: string }>).map((record) => [
+      record.employee_id,
+      record,
+    ]),
   );
 
-  const rows = (employees ?? []).map((employee) => {
-    const record = recordByEmployeeId.get(employee.id);
+  const rows = ((employees ?? []) as Array<any>).map((employee) => {
+    const record = recordByEmployeeId.get(employee.id) as any;
     const effectiveShift = record?.shift ?? employee.shift ?? null;
     const normalizedRecord = record
       ? {
@@ -179,7 +187,7 @@ const adminAttendanceController = catchAsync(async ({ request, user }) => {
     date,
     isWorkingDay: selectedDateIsWorkingDay,
     rows: filteredRows,
-    shifts: shifts ?? [],
+    shifts: (shifts ?? []).map(addOrganizationAlias),
     summary,
     workingDays: attendanceSettings.working_days,
   });
@@ -220,29 +228,30 @@ function parseDisplayStatusFilter(value: string | null) {
 }
 
 const adminUpdateRecordController = catchAsync(
-  async ({ body, params, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
+  async ({ body, params, request, user }) => {
+    const supabaseAdmin = getSupabaseServerAdminClient();
+    const hrms = getHrmsClient(supabaseAdmin);
+    const userId = getRouteUserId(user);
+    const organizationId = await getRequiredWorkspaceId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
     const updateBody = body as AttendanceAdminUpdateBody;
     const recordId = params?.recordId;
 
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
-
-    await requireAttendanceAdmin({ accountId: user!.id, organizationId });
+    await requireAttendanceAdmin({ accountId: userId!, organizationId });
 
     if (!recordId) {
       throw new ApiError('Record id is required', 400);
     }
 
-    const { data: existingRecord, error: existingRecordError } =
-      await supabaseAdmin
-        .from('attendance_records')
-        .select('id, employee_id, date, check_in, check_out, shift_id, status')
-        .eq('organization_id', organizationId)
-        .eq('id', recordId)
-        .maybeSingle();
+    const { data: existingRecord, error: existingRecordError } = await hrms
+      .from('attendance_records')
+      .select('id, employee_id, date, check_in, check_out, shift_id, status')
+      .eq('workspace_id', organizationId)
+      .eq('id', recordId)
+      .maybeSingle();
 
     if (existingRecordError) {
       throw new ApiError(existingRecordError.message, 400);
@@ -298,17 +307,15 @@ const adminUpdateRecordController = catchAsync(
       shift_id: 'shift_id' in updateBody ? nextShiftId : undefined,
       status: nextStatus,
       work_hours: nextWorkHours,
-      updated_by: user?.id,
+      updated_by: userId,
     };
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await hrms
       .from('attendance_records')
       .update(payload)
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', organizationId)
       .eq('id', recordId)
-      .select(
-        'id, employee_id, date, check_in, check_out, status, work_hours, shift_id, shift:shifts!attendance_records_shift_id_fkey(id, name, start_time, end_time, grace_minutes)',
-      )
+      .select(attendanceRecordSelect)
       .single();
 
     if (error) {
@@ -319,148 +326,150 @@ const adminUpdateRecordController = catchAsync(
   },
 );
 
-const adminUpsertRecordController = catchAsync(async ({ body, user }) => {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-  const organizationId = await getCurrentUserOrganizationId(user?.id);
-  const upsertBody = body as AttendanceAdminUpdateBody;
+const adminUpsertRecordController = catchAsync(
+  async ({ body, request, user }) => {
+    const supabaseAdmin = getSupabaseServerAdminClient();
+    const hrms = getHrmsClient(supabaseAdmin);
+    const userId = getRouteUserId(user);
+    const organizationId = await getRequiredWorkspaceId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
+    const upsertBody = body as AttendanceAdminUpdateBody;
+    const employeeId = upsertBody.employee_id;
+    const date = upsertBody.date ?? toISODateString(new Date());
 
-  if (!organizationId) {
-    throw new ApiError('Organization not found for user', 404);
-  }
+    if (!employeeId) {
+      throw new ApiError('Employee id is required', 400);
+    }
 
-  const employeeId = upsertBody.employee_id;
-  const date = upsertBody.date ?? toISODateString(new Date());
+    await requireAttendanceAdmin({ accountId: userId!, organizationId });
 
-  if (!employeeId) {
-    throw new ApiError('Employee id is required', 400);
-  }
+    await assertEmployeeCanHaveAttendanceOnDate({
+      supabaseAdmin,
+      organizationId,
+      employeeId,
+      date,
+    });
+    const attendanceSettings = await getAttendanceSettings({ organizationId });
 
-  await requireAttendanceAdmin({ accountId: user!.id, organizationId });
+    if (!isWorkingDay(date, attendanceSettings.working_days)) {
+      throw new ApiError(
+        'Attendance cannot be recorded on a non-working day',
+        400,
+      );
+    }
 
-  const { data: employee, error: employeeError } = await supabaseAdmin
-    .from('employees')
-    .select('id, joining_date')
-    .eq('organization_id', organizationId)
-    .eq('id', employeeId)
-    .maybeSingle();
+    const checkIn = upsertBody.check_in ?? null;
+    const checkOut = upsertBody.check_out ?? null;
+    const shiftId = upsertBody.shift_id ?? null;
+    const shift = await getShiftForAttendanceStatus({
+      supabaseAdmin,
+      organizationId,
+      shiftId,
+    });
+    const workHours = computeWorkHours(checkIn, checkOut);
+    const status = deriveAttendanceStatus({
+      checkIn,
+      checkOut,
+      shift,
+      manualStatus: upsertBody.status,
+    });
 
-  if (employeeError) {
-    throw new ApiError(employeeError.message, 400);
-  }
+    const payload: AttendanceRecordInsert = {
+      workspace_id: organizationId,
+      employee_id: employeeId,
+      date,
+      check_in: checkIn,
+      check_out: checkOut,
+      status,
+      shift_id: shiftId,
+      work_hours: workHours,
+      created_by: userId,
+      updated_by: userId,
+    };
 
-  if (!employee) {
-    throw new ApiError('Employee not found', 404);
-  }
+    const { data, error } = await hrms
+      .from('attendance_records')
+      .upsert(payload, {
+        onConflict: 'workspace_id,employee_id,date',
+      })
+      .select(attendanceRecordSelect)
+      .single();
 
-  if (employee.joining_date && employee.joining_date > date) {
-    throw new ApiError(
-      'Attendance cannot be recorded before employee joining date',
-      400,
-    );
-  }
-  const attendanceSettings = await getAttendanceSettings({ organizationId });
+    if (error) {
+      throw new ApiError(error.message, 400);
+    }
 
-  if (!isWorkingDay(date, attendanceSettings.working_days)) {
-    throw new ApiError(
-      'Attendance cannot be recorded on a non-working day',
-      400,
-    );
-  }
+    return successDataResponse('Attendance record saved successfully', data);
+  },
+);
 
-  const checkIn = upsertBody.check_in ?? null;
-  const checkOut = upsertBody.check_out ?? null;
-  const shiftId = upsertBody.shift_id ?? null;
-  const shift = await getShiftForAttendanceStatus({
+const getWorkingDaysController = catchAsync(async ({ request, user }) => {
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const userId = getRouteUserId(user);
+  const organizationId = await getRequiredWorkspaceId({
+    request,
     supabaseAdmin,
-    organizationId,
-    shiftId,
-  });
-  const workHours = computeWorkHours(checkIn, checkOut);
-  const status = deriveAttendanceStatus({
-    checkIn,
-    checkOut,
-    shift,
-    manualStatus: upsertBody.status,
+    userId,
   });
 
-  const payload: AttendanceRecordInsert = {
-    organization_id: organizationId,
-    employee_id: employeeId,
-    date,
-    check_in: checkIn,
-    check_out: checkOut,
-    status,
-    shift_id: shiftId,
-    work_hours: workHours,
-    created_by: user?.id,
-    updated_by: user?.id,
-  };
-
-  const { data, error } = await supabaseAdmin
-    .from('attendance_records')
-    .upsert(payload, {
-      onConflict: 'organization_id,employee_id,date',
-    })
-    .select(
-      'id, employee_id, date, check_in, check_out, status, work_hours, shift_id, shift:shifts!attendance_records_shift_id_fkey(id, name, start_time, end_time, grace_minutes)',
-    )
-    .single();
-
-  if (error) {
-    throw new ApiError(error.message, 400);
-  }
-
-  return successDataResponse('Attendance record saved successfully', data);
-});
-
-const getWorkingDaysController = catchAsync(async ({ user }) => {
-  const organizationId = await getCurrentUserOrganizationId(user?.id);
-
-  if (!organizationId) {
-    throw new ApiError('Organization not found for user', 404);
-  }
-
-  await requireAttendanceAdmin({ accountId: user!.id, organizationId });
+  await requireAttendanceAdmin({ accountId: userId!, organizationId });
 
   const settings = await getAttendanceSettings({ organizationId });
 
   return successDataResponse('Working days fetched successfully', settings);
 });
 
-const updateWorkingDaysController = catchAsync(async ({ body, user }) => {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-  const organizationId = await getCurrentUserOrganizationId(user?.id);
+const updateWorkingDaysController = catchAsync(
+  async ({ body, request, user }) => {
+    const supabaseAdmin = getSupabaseServerAdminClient();
+    const hrms = getHrmsClient(supabaseAdmin);
+    const userId = getRouteUserId(user);
+    const organizationId = await getRequiredWorkspaceId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
 
-  if (!organizationId) {
-    throw new ApiError('Organization not found for user', 404);
-  }
+    await requireAttendanceAdmin({ accountId: userId!, organizationId });
 
-  await requireAttendanceAdmin({ accountId: user!.id, organizationId });
+    const workingDays = normalizeWorkingDays(
+      (body as { working_days?: unknown }).working_days,
+    );
 
-  const workingDays = normalizeWorkingDays(
-    (body as { working_days?: unknown }).working_days,
-  );
+    const { data, error } = await hrms
+      .from('attendance_settings')
+      .upsert(
+        {
+          workspace_id: organizationId,
+          working_days: workingDays,
+          created_by: userId,
+          updated_by: userId,
+        },
+        { onConflict: 'workspace_id' },
+      )
+      .select('*')
+      .single();
 
-  const { data, error } = await supabaseAdmin
-    .from('attendance_settings')
-    .upsert(
-      {
-        organization_id: organizationId,
-        working_days: workingDays,
-        created_by: user?.id,
-        updated_by: user?.id,
-      },
-      { onConflict: 'organization_id' },
-    )
-    .select('*')
-    .single();
+    if (error) {
+      throw new ApiError(error.message, 400);
+    }
 
-  if (error) {
-    throw new ApiError(error.message, 400);
-  }
+    return successDataResponse(
+      'Working days updated successfully',
+      addOrganizationAlias(data as { workspace_id: string }),
+    );
+  },
+);
 
-  return successDataResponse('Working days updated successfully', data);
-});
+function addOrganizationAlias<T extends { workspace_id: string }>(item: T) {
+  return {
+    ...item,
+    organization_id: item.workspace_id,
+  };
+}
 
 export {
   adminAttendanceController,

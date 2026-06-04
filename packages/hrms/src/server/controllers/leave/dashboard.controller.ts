@@ -1,12 +1,11 @@
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import type { Database } from '~/lib/database.types';
 import {
   ApiError,
   catchAsync,
   successDataResponse,
-} from '~/utils/response-handler';
-
+} from '../../../utils/response-handler';
+import { getHrmsClient, getRouteUserId } from '../employees/controller.helpers';
 import {
   buildBalances,
   buildReports,
@@ -22,8 +21,13 @@ import {
 } from './controller.types';
 
 const leaveDashboardController = catchAsync(async ({ request, user }) => {
-  const context = await getRequiredLeaveContext(user?.id);
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
+  const userId = getRouteUserId(user);
+  const context = await getRequiredLeaveContext({
+    request,
+    userId,
+  });
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const hrms = getHrmsClient(supabaseAdmin);
   const searchParams = new URL(request.url).searchParams;
   const requestedYear = Number(searchParams.get('year'));
   const year =
@@ -54,46 +58,46 @@ const leaveDashboardController = catchAsync(async ({ request, user }) => {
 
   const myRequestsQuery =
     context.employee && canReadOwnLeave
-      ? supabaseAdmin
+      ? hrms
           .from('leave_requests')
           .select(leaveRequestSelect)
-          .eq('organization_id', context.organizationId)
+          .eq('workspace_id', context.organizationId)
           .eq('employee_id', context.employee.id)
           .order('created_at', { ascending: false })
       : Promise.resolve({ data: [], error: null });
 
   const orgRequestsQuery =
     context.permissions.canViewApprovals || context.permissions.canViewReports
-      ? supabaseAdmin
+      ? hrms
           .from('leave_requests')
           .select(leaveRequestSelect)
-          .eq('organization_id', context.organizationId)
+          .eq('workspace_id', context.organizationId)
           .order('created_at', { ascending: false })
       : Promise.resolve({ data: [], error: null });
 
   const employeesQuery = context.permissions.canViewReports
-    ? supabaseAdmin
+    ? hrms
         .from('employees')
         .select(
           'id, first_name, last_name, employee_code, department:departments!employees_department_id_fkey(id, name, code)',
         )
-        .eq('organization_id', context.organizationId)
+        .eq('workspace_id', context.organizationId)
         .order('first_name', { ascending: true })
     : Promise.resolve({ data: [], error: null });
 
   const leaveTypesQuery = canReadLeaveTypes
-    ? supabaseAdmin
+    ? hrms
         .from('leave_types')
         .select('*')
-        .eq('organization_id', context.organizationId)
+        .eq('workspace_id', context.organizationId)
         .order('name', { ascending: true })
     : Promise.resolve({ data: [], error: null });
 
   const holidaysQuery = canReadHolidays
-    ? supabaseAdmin
+    ? hrms
         .from('leave_holidays')
         .select('*')
-        .eq('organization_id', context.organizationId)
+        .eq('workspace_id', context.organizationId)
         .order('holiday_date', { ascending: true })
     : Promise.resolve({ data: [], error: null });
 
@@ -131,7 +135,9 @@ const leaveDashboardController = catchAsync(async ({ request, user }) => {
     throw new ApiError(employeesError.message, 400);
   }
 
-  const typedLeaveTypes = (leaveTypes ?? []) as LeaveTypeRow[];
+  const typedLeaveTypes = ((leaveTypes ?? []) as LeaveTypeRow[]).map(
+    addOrganizationAlias,
+  );
   const typedMyRequests = ((myRequests ?? []) as LeaveRequestRelationRow[]).map(
     (item) => decorateRequest(context, item),
   );
@@ -163,7 +169,9 @@ const leaveDashboardController = catchAsync(async ({ request, user }) => {
     approvalRequests,
     balances,
     employeeId: context.employee?.id ?? null,
-    holidays: holidays ?? [],
+    holidays: ((holidays ?? []) as Array<{ workspace_id: string }>).map(
+      addOrganizationAlias,
+    ),
     leaveTypes: typedLeaveTypes,
     myRequests: typedMyRequests,
     organizationId: context.organizationId,
@@ -173,5 +181,12 @@ const leaveDashboardController = catchAsync(async ({ request, user }) => {
     year,
   });
 });
+
+function addOrganizationAlias<T extends { workspace_id: string }>(item: T) {
+  return {
+    ...item,
+    organization_id: item.workspace_id,
+  };
+}
 
 export { leaveDashboardController };

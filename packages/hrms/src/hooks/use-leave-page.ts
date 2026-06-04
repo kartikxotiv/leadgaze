@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { showToast } from '~/components/global/ToastAlert';
-import { useRbac } from '~/components/rbac/rbac-context';
+import { showToast } from '../components/global/ToastAlert';
+import { useRbac } from '../components/rbac/rbac-context';
 import {
   createLeaveHolidayService,
   createLeaveRequestService,
@@ -16,7 +16,7 @@ import {
   updateLeaveHolidayService,
   updateLeaveRequestService,
   updateLeaveTypeService,
-} from '~/services/leave.service';
+} from '../server/services/leave.service';
 import type {
   LeaveDashboardResponse,
   LeaveHoliday,
@@ -26,8 +26,8 @@ import type {
   LeaveRequestCreatePayload,
   LeaveType,
   LeaveTypePayload,
-} from '~/types/leave.type';
-import { handleApiResponse } from '~/utils/api-response-handler';
+} from '../types/leave.type';
+import { handleApiResponse } from '../utils/api-response-handler';
 
 export type LeaveTab =
   | 'approvals'

@@ -3,8 +3,7 @@
 import { Badge } from '@kit/ui/badge';
 import { Card, CardContent } from '@kit/ui/card';
 
-import type { LeaveBalance } from '~/types/leave.type';
-
+import type { LeaveBalance } from '../../types/leave.type';
 import { formatNumber } from '../leave-page.utils';
 
 export function LeaveBalancesGrid(props: { balances: LeaveBalance[] }) {
