@@ -337,6 +337,10 @@ export const getServiceCloudDashboardController = catchAsync(
       organizations,
       timeEntries,
       recentTickets,
+      reportTickets,
+      statuses,
+      priorities,
+      teams,
     ] = await Promise.all([
       client
         .from('tickets')
@@ -361,7 +365,7 @@ export const getServiceCloudDashboardController = catchAsync(
         .eq('is_deleted', false),
       client
         .from('time_entries')
-        .select('duration_seconds')
+        .select('id, ticket_id, account_id, duration_seconds, logged_date')
         .eq('workspace_id', workspaceId),
       client
         .from('tickets')
@@ -370,6 +374,37 @@ export const getServiceCloudDashboardController = catchAsync(
         .eq('is_deleted', false)
         .order('created_at', { ascending: false })
         .limit(8),
+      client
+        .from('tickets')
+        .select(
+          `
+          *,
+          status:ticket_statuses(id, name, lifecycle, color),
+          priority:ticket_priorities(id, name, color, severity_order),
+          category:ticket_categories(id, name),
+          customer:customers(id, name, email),
+          organization:organizations(id, name),
+          assigned_team:teams(id, name)
+        `,
+        )
+        .eq('workspace_id', workspaceId)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false }),
+      client
+        .from('ticket_statuses')
+        .select('id, name, lifecycle, color, display_order')
+        .eq('workspace_id', workspaceId)
+        .order('display_order', { ascending: true }),
+      client
+        .from('ticket_priorities')
+        .select('id, name, color, severity_order')
+        .eq('workspace_id', workspaceId)
+        .order('severity_order', { ascending: true }),
+      client
+        .from('teams')
+        .select('id, name')
+        .eq('workspace_id', workspaceId)
+        .order('name', { ascending: true }),
     ]);
 
     const totalLoggedSeconds = (timeEntries.data ?? []).reduce(
@@ -377,6 +412,266 @@ export const getServiceCloudDashboardController = catchAsync(
         sum + Number(entry.duration_seconds ?? 0),
       0,
     );
+    const reportRows: any[] = reportTickets.data ?? [];
+    const statusRows: any[] = statuses.data ?? [];
+    const priorityRows: any[] = priorities.data ?? [];
+    const teamRows: any[] = teams.data ?? [];
+    const timeRows: any[] = timeEntries.data ?? [];
+    const ticketById = new Map<string, any>(
+      reportRows.map((ticket: any) => [ticket.id, ticket]),
+    );
+    const accountIds = Array.from(
+      new Set(
+        [
+          ...reportRows.map((ticket: any) => ticket.assigned_agent_id),
+          ...timeRows.map((entry: any) => entry.account_id),
+        ].filter(Boolean),
+      ),
+    );
+    const { data: accounts, error: accountsError } =
+      accountIds.length > 0
+        ? await supabase
+            .from('accounts')
+            .select('id, name, email')
+            .in('id', accountIds)
+        : { data: [], error: null };
+
+    if (accountsError) throw accountsError;
+
+    const accountById = new Map(
+      (accounts ?? []).map((account: any) => [account.id, account]),
+    );
+    const isOpenTicket = (ticket: any) =>
+      !ticket.closed_at &&
+      ticket.status?.lifecycle !== 'resolved' &&
+      ticket.status?.lifecycle !== 'closed';
+    const dateValue = (value?: string | null) =>
+      value ? new Date(value).getTime() : 0;
+    const labelAccount = (accountId?: string | null) => {
+      const account = accountId ? accountById.get(accountId) : null;
+      return account?.name || account?.email || 'Unassigned';
+    };
+
+    const statusBreakdown = statusRows.map((status: any) => {
+      const matching = reportRows.filter(
+        (ticket: any) => ticket.status_id === status.id,
+      );
+      return {
+        id: status.id,
+        name: status.name,
+        lifecycle: status.lifecycle,
+        color: status.color,
+        count: matching.length,
+        loggedSeconds: matching.reduce(
+          (sum: number, ticket: any) =>
+            sum + Number(ticket.total_logged_seconds ?? 0),
+          0,
+        ),
+      };
+    });
+
+    const statusIds = new Set(statusRows.map((status: any) => status.id));
+    const unknownStatusCount = reportRows.filter(
+      (ticket: any) => !statusIds.has(ticket.status_id),
+    ).length;
+    if (unknownStatusCount > 0) {
+      statusBreakdown.push({
+        id: 'unknown',
+        name: 'Unknown',
+        lifecycle: 'open',
+        color: null,
+        count: unknownStatusCount,
+        loggedSeconds: 0,
+      });
+    }
+
+    const priorityBreakdown = [
+      ...priorityRows.map((priority: any) => {
+        const matching = reportRows.filter(
+          (ticket: any) => ticket.priority_id === priority.id,
+        );
+        return {
+          id: priority.id,
+          name: priority.name,
+          color: priority.color,
+          count: matching.length,
+          openCount: matching.filter(isOpenTicket).length,
+        };
+      }),
+      {
+        id: 'none',
+        name: 'No Priority',
+        color: null,
+        count: reportRows.filter((ticket: any) => !ticket.priority_id).length,
+        openCount: reportRows.filter(
+          (ticket: any) => !ticket.priority_id && isOpenTicket(ticket),
+        ).length,
+      },
+    ].filter((item) => item.count > 0);
+
+    const customerMap = new Map<string, any>();
+    reportRows.forEach((ticket: any) => {
+      const key = ticket.customer_id ?? 'unassigned';
+      const existing = customerMap.get(key) ?? {
+        id: key,
+        name: ticket.customer?.name ?? 'Unlinked customer',
+        email: ticket.customer?.email ?? null,
+        organization: ticket.organization?.name ?? null,
+        totalTickets: 0,
+        openTickets: 0,
+        closedTickets: 0,
+        loggedSeconds: 0,
+        latestTicketAt: null,
+      };
+
+      existing.totalTickets += 1;
+      existing.openTickets += isOpenTicket(ticket) ? 1 : 0;
+      existing.closedTickets += isOpenTicket(ticket) ? 0 : 1;
+      existing.loggedSeconds += Number(ticket.total_logged_seconds ?? 0);
+      existing.latestTicketAt =
+        dateValue(ticket.created_at) > dateValue(existing.latestTicketAt)
+          ? ticket.created_at
+          : existing.latestTicketAt;
+      customerMap.set(key, existing);
+    });
+
+    const customerBreakdown = Array.from(customerMap.values()).sort(
+      (left: any, right: any) =>
+        right.openTickets - left.openTickets ||
+        right.totalTickets - left.totalTickets,
+    );
+
+    const ticketTimeBreakdown = reportRows
+      .map((ticket: any) => ({
+        id: ticket.id,
+        ticketNumber: ticket.ticket_number,
+        subject: ticket.subject,
+        status: ticket.status?.name ?? 'Unknown',
+        priority: ticket.priority?.name ?? 'None',
+        customer: ticket.customer?.name ?? 'Unlinked customer',
+        assignee: labelAccount(ticket.assigned_agent_id),
+        loggedSeconds: Number(ticket.total_logged_seconds ?? 0),
+        emailCount: Number(ticket.email_count ?? 0),
+        createdAt: ticket.created_at,
+      }))
+      .sort((left, right) => right.loggedSeconds - left.loggedSeconds)
+      .slice(0, 12);
+
+    const assigneeMap = new Map<string, any>();
+    reportRows.forEach((ticket: any) => {
+      const key = ticket.assigned_agent_id ?? 'unassigned';
+      const existing = assigneeMap.get(key) ?? {
+        id: key,
+        name: labelAccount(ticket.assigned_agent_id),
+        totalTickets: 0,
+        openTickets: 0,
+        ticketLoggedSeconds: 0,
+        actualLoggedSeconds: 0,
+      };
+      existing.totalTickets += 1;
+      existing.openTickets += isOpenTicket(ticket) ? 1 : 0;
+      existing.ticketLoggedSeconds += Number(ticket.total_logged_seconds ?? 0);
+      assigneeMap.set(key, existing);
+    });
+    timeRows.forEach((entry: any) => {
+      const key = entry.account_id ?? 'unassigned';
+      const existing = assigneeMap.get(key) ?? {
+        id: key,
+        name: labelAccount(entry.account_id),
+        totalTickets: 0,
+        openTickets: 0,
+        ticketLoggedSeconds: 0,
+        actualLoggedSeconds: 0,
+      };
+      existing.actualLoggedSeconds += Number(entry.duration_seconds ?? 0);
+      assigneeMap.set(key, existing);
+    });
+
+    const assigneeWorkload = Array.from(assigneeMap.values()).sort(
+      (left: any, right: any) =>
+        right.openTickets - left.openTickets ||
+        right.actualLoggedSeconds - left.actualLoggedSeconds,
+    );
+
+    const teamBreakdown = [
+      ...teamRows.map((team: any) => {
+        const matching = reportRows.filter(
+          (ticket: any) => ticket.assigned_team_id === team.id,
+        );
+        return {
+          id: team.id,
+          name: team.name,
+          totalTickets: matching.length,
+          openTickets: matching.filter(isOpenTicket).length,
+          loggedSeconds: matching.reduce(
+            (sum: number, ticket: any) =>
+              sum + Number(ticket.total_logged_seconds ?? 0),
+            0,
+          ),
+        };
+      }),
+      {
+        id: 'unassigned',
+        name: 'No team',
+        totalTickets: reportRows.filter(
+          (ticket: any) => !ticket.assigned_team_id,
+        ).length,
+        openTickets: reportRows.filter(
+          (ticket: any) => !ticket.assigned_team_id && isOpenTicket(ticket),
+        ).length,
+        loggedSeconds: reportRows
+          .filter((ticket: any) => !ticket.assigned_team_id)
+          .reduce(
+            (sum: number, ticket: any) =>
+              sum + Number(ticket.total_logged_seconds ?? 0),
+            0,
+          ),
+      },
+    ].filter((item) => item.totalTickets > 0);
+
+    const openTicketAging = reportRows
+      .filter(isOpenTicket)
+      .map((ticket: any) => ({
+        id: ticket.id,
+        ticketNumber: ticket.ticket_number,
+        subject: ticket.subject,
+        status: ticket.status?.name ?? 'Unknown',
+        customer: ticket.customer?.name ?? 'Unlinked customer',
+        assignee: labelAccount(ticket.assigned_agent_id),
+        daysOpen: Math.max(
+          0,
+          Math.floor((Date.now() - dateValue(ticket.created_at)) / 86_400_000),
+        ),
+        dueDate: ticket.due_date ?? ticket.due_at ?? null,
+        loggedSeconds: Number(ticket.total_logged_seconds ?? 0),
+      }))
+      .sort((left, right) => right.daysOpen - left.daysOpen)
+      .slice(0, 12);
+
+    const timeByTicketId = new Map<string, any>();
+    timeRows.forEach((entry: any) => {
+      const ticket = ticketById.get(entry.ticket_id);
+      const existing = timeByTicketId.get(entry.ticket_id) ?? {
+        id: entry.ticket_id,
+        ticketNumber: ticket?.ticket_number ?? '-',
+        subject: ticket?.subject ?? 'Unknown ticket',
+        customer: ticket?.customer?.name ?? 'Unlinked customer',
+        entries: 0,
+        loggedSeconds: 0,
+        latestLoggedDate: null,
+      };
+      existing.entries += 1;
+      existing.loggedSeconds += Number(entry.duration_seconds ?? 0);
+      existing.latestLoggedDate =
+        dateValue(entry.logged_date) > dateValue(existing.latestLoggedDate)
+          ? entry.logged_date
+          : existing.latestLoggedDate;
+      timeByTicketId.set(entry.ticket_id, existing);
+    });
+
+    const timeByTicket = Array.from(timeByTicketId.values())
+      .sort((left, right) => right.loggedSeconds - left.loggedSeconds)
+      .slice(0, 12);
 
     return successDataResponse(
       'Service Cloud dashboard retrieved successfully',
@@ -387,6 +682,16 @@ export const getServiceCloudDashboardController = catchAsync(
         organizations: organizations.count ?? 0,
         totalLoggedSeconds,
         recentTickets: recentTickets.data ?? [],
+        reports: {
+          statusBreakdown,
+          priorityBreakdown,
+          customerBreakdown,
+          ticketTimeBreakdown,
+          assigneeWorkload,
+          teamBreakdown,
+          openTicketAging,
+          timeByTicket,
+        },
       },
     );
   },
