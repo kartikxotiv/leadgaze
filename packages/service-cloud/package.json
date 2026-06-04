@@ -3,7 +3,11 @@
   "private": true,
   "version": "0.1.0",
   "exports": {
-    ".": "./index.ts"
+    ".": "./index.ts",
+    "./apis": "./src/apis/index.ts",
+    "./pages": "./src/pages/index.ts",
+    "./services": "./src/services/index.ts",
+    "./utils": "./src/utils/index.ts"
   },
   "typesVersions": {
     "*": {
@@ -20,6 +24,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@kit/core": "workspace:*",
     "@kit/next": "workspace:*",
     "@kit/supabase": "workspace:*",
     "@kit/tsconfig": "workspace:*",
@@ -38,7 +43,9 @@
   },
   "devDependencies": {
     "@kit/eslint-config": "workspace:*",
-    "@kit/prettier-config": "workspace:*"
+    "@kit/prettier-config": "workspace:*",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3"
   },
   "eslintConfig": {
     "extends": [
