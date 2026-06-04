@@ -19,10 +19,9 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
-import type { RecruitmentRequisitionSummary } from '~/types/recruitment.type';
-
-import { formatLabel } from '../page.data';
-import { RecruitmentStatusBadge } from '../page.components';
+import { RecruitmentStatusBadge } from '../../pages/recruitment/page.components';
+import { formatLabel } from '../../pages/recruitment/page.data';
+import type { RecruitmentRequisitionSummary } from '../../types/recruitment.type';
 
 export function RecruitmentRequisitionsTab(props: {
   canEditRequisition: boolean;
@@ -58,17 +57,23 @@ export function RecruitmentRequisitionsTab(props: {
                     <div className="flex flex-col">
                       <span className="font-medium">{requisition.title}</span>
                       <span className="text-muted-foreground text-xs">
-                        {requisition.requisition_code} - {requisition.openings} opening(s)
+                        {requisition.requisition_code} - {requisition.openings}{' '}
+                        opening(s)
                       </span>
                     </div>
                   </TableCell>
                   <TableCell>{requisition.department?.name ?? '-'}</TableCell>
-                  <TableCell>{requisition.owner_employee?.name ?? '-'}</TableCell>
                   <TableCell>
-                    {requisition.candidate_count} candidates - {requisition.interviews_count} interviews
+                    {requisition.owner_employee?.name ?? '-'}
                   </TableCell>
                   <TableCell>
-                    <RecruitmentStatusBadge label={formatLabel(requisition.status)} />
+                    {requisition.candidate_count} candidates -{' '}
+                    {requisition.interviews_count} interviews
+                  </TableCell>
+                  <TableCell>
+                    <RecruitmentStatusBadge
+                      label={formatLabel(requisition.status)}
+                    />
                   </TableCell>
                   <TableCell className="text-right">
                     {props.canEditRequisition ? (

@@ -1,24 +1,44 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import { ApiError, catchAsync, successDataResponse } from '~/utils/response-handler';
-
+import {
+  ApiError,
+  catchAsync,
+  successDataResponse,
+} from '../../../../utils/response-handler';
 import {
   ensureOrganizationRecord,
   feedbackSelect,
   getCurrentEmployeeId,
+  getRecruitmentHrmsClient,
+  getRecruitmentUserId,
   getRequiredOrganizationId,
   interviewSelect,
   normalizeNullable,
+  requireRecruitmentPermission,
   touchCandidate,
   updateCandidateStatus,
 } from './shared';
 
 export const createRecruitmentInterviewController = catchAsync(
-  async ({ body, user }) => {
+  async ({ body, request, user }) => {
     const supabaseAdmin = getSupabaseServerAdminClient<any>();
-    const organizationId = await getRequiredOrganizationId(user?.id);
+    const hrms = getRecruitmentHrmsClient(supabaseAdmin);
+    const userId = getRecruitmentUserId(user);
+    const organizationId = await getRequiredOrganizationId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
     const data = body as Record<string, any>;
+
+    await requireRecruitmentPermission({
+      featureKey: 'schedule_interviews',
+      minAccessLevel: 'team',
+      supabaseAdmin,
+      userId,
+      workspaceId: organizationId,
+    });
 
     const candidate = await ensureOrganizationRecord({
       entityLabel: 'Candidate',
@@ -37,23 +57,25 @@ export const createRecruitmentInterviewController = catchAsync(
       table: 'employees',
     });
 
-    const { data: created, error } = await supabaseAdmin
+    const { data: created, error } = await hrms
       .from('recruitment_interviews')
       .insert({
         candidate_id: data.candidate_id,
-        created_by: user?.id ?? null,
+        created_by: userId ?? null,
         duration_minutes: Number(data.duration_minutes),
-        interviewer_employee_id: normalizeNullable(data.interviewer_employee_id),
+        interviewer_employee_id: normalizeNullable(
+          data.interviewer_employee_id,
+        ),
         location: normalizeNullable(data.location),
         meeting_link: normalizeNullable(data.meeting_link),
-        organization_id: organizationId,
+        workspace_id: organizationId,
         outcome: normalizeNullable(data.outcome),
         requisition_id: candidate.requisition_id,
         round_type: data.round_type,
         scheduled_at: data.scheduled_at,
         status: data.status,
         title: String(data.title).trim(),
-        updated_by: user?.id ?? null,
+        updated_by: userId ?? null,
       })
       .select(interviewSelect)
       .single();
@@ -67,13 +89,13 @@ export const createRecruitmentInterviewController = catchAsync(
         candidateId: data.candidate_id,
         status: 'interview',
         supabaseAdmin,
-        userId: user?.id,
+        userId,
       });
     } else {
       await touchCandidate({
         candidateId: data.candidate_id,
         supabaseAdmin,
-        userId: user?.id,
+        userId,
       });
     }
 
@@ -82,15 +104,29 @@ export const createRecruitmentInterviewController = catchAsync(
 );
 
 export const updateRecruitmentInterviewController = catchAsync(
-  async ({ body, params, user }) => {
+  async ({ body, params, request, user }) => {
     const supabaseAdmin = getSupabaseServerAdminClient<any>();
-    const organizationId = await getRequiredOrganizationId(user?.id);
+    const hrms = getRecruitmentHrmsClient(supabaseAdmin);
+    const userId = getRecruitmentUserId(user);
+    const organizationId = await getRequiredOrganizationId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
     const interviewId = params?.id;
     const data = body as Record<string, any>;
 
     if (!interviewId) {
       throw new ApiError('Interview id is required', 400);
     }
+
+    await requireRecruitmentPermission({
+      featureKey: 'schedule_interviews',
+      minAccessLevel: 'team',
+      supabaseAdmin,
+      userId,
+      workspaceId: organizationId,
+    });
 
     const existingInterview = await ensureOrganizationRecord({
       entityLabel: 'Interview',
@@ -129,7 +165,7 @@ export const updateRecruitmentInterviewController = catchAsync(
 
     const payload: Record<string, any> = {
       updated_at: new Date().toISOString(),
-      updated_by: user?.id ?? null,
+      updated_by: userId ?? null,
     };
 
     if (data.candidate_id !== undefined) {
@@ -137,7 +173,9 @@ export const updateRecruitmentInterviewController = catchAsync(
       payload.requisition_id = requisitionId;
     }
     if (data.interviewer_employee_id !== undefined) {
-      payload.interviewer_employee_id = normalizeNullable(data.interviewer_employee_id);
+      payload.interviewer_employee_id = normalizeNullable(
+        data.interviewer_employee_id,
+      );
     }
     if (data.title !== undefined) {
       payload.title = String(data.title).trim();
@@ -164,10 +202,10 @@ export const updateRecruitmentInterviewController = catchAsync(
       payload.outcome = normalizeNullable(data.outcome);
     }
 
-    const { data: updated, error } = await supabaseAdmin
+    const { data: updated, error } = await hrms
       .from('recruitment_interviews')
       .update(payload)
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', organizationId)
       .eq('id', interviewId)
       .select(interviewSelect)
       .single();
@@ -176,18 +214,22 @@ export const updateRecruitmentInterviewController = catchAsync(
       throw new ApiError(error.message, 400);
     }
 
-    if (payload.status && payload.status !== 'cancelled' && payload.status !== 'no_show') {
+    if (
+      payload.status &&
+      payload.status !== 'cancelled' &&
+      payload.status !== 'no_show'
+    ) {
       await updateCandidateStatus({
         candidateId,
         status: 'interview',
         supabaseAdmin,
-        userId: user?.id,
+        userId,
       });
     } else {
       await touchCandidate({
         candidateId,
         supabaseAdmin,
-        userId: user?.id,
+        userId,
       });
     }
 
@@ -196,14 +238,28 @@ export const updateRecruitmentInterviewController = catchAsync(
 );
 
 export const deleteRecruitmentInterviewController = catchAsync(
-  async ({ params, user }) => {
+  async ({ params, request, user }) => {
     const supabaseAdmin = getSupabaseServerAdminClient<any>();
-    const organizationId = await getRequiredOrganizationId(user?.id);
+    const hrms = getRecruitmentHrmsClient(supabaseAdmin);
+    const userId = getRecruitmentUserId(user);
+    const organizationId = await getRequiredOrganizationId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
     const interviewId = params?.id;
 
     if (!interviewId) {
       throw new ApiError('Interview id is required', 400);
     }
+
+    await requireRecruitmentPermission({
+      featureKey: 'delete',
+      minAccessLevel: 'team',
+      supabaseAdmin,
+      userId,
+      workspaceId: organizationId,
+    });
 
     await ensureOrganizationRecord({
       entityLabel: 'Interview',
@@ -213,10 +269,10 @@ export const deleteRecruitmentInterviewController = catchAsync(
       table: 'recruitment_interviews',
     });
 
-    const { error } = await supabaseAdmin
+    const { error } = await hrms
       .from('recruitment_interviews')
       .delete()
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', organizationId)
       .eq('id', interviewId);
 
     if (error) {
@@ -228,10 +284,24 @@ export const deleteRecruitmentInterviewController = catchAsync(
 );
 
 export const createRecruitmentFeedbackController = catchAsync(
-  async ({ body, user }) => {
+  async ({ body, request, user }) => {
     const supabaseAdmin = getSupabaseServerAdminClient<any>();
-    const organizationId = await getRequiredOrganizationId(user?.id);
+    const hrms = getRecruitmentHrmsClient(supabaseAdmin);
+    const userId = getRecruitmentUserId(user);
+    const organizationId = await getRequiredOrganizationId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
     const data = body as Record<string, any>;
+
+    await requireRecruitmentPermission({
+      featureKey: 'record_feedback',
+      minAccessLevel: 'team',
+      supabaseAdmin,
+      userId,
+      workspaceId: organizationId,
+    });
 
     const interview = await ensureOrganizationRecord({
       entityLabel: 'Interview',
@@ -247,7 +317,7 @@ export const createRecruitmentFeedbackController = catchAsync(
       (await getCurrentEmployeeId({
         organizationId,
         supabaseAdmin,
-        userId: user?.id,
+        userId,
       }));
 
     if (interviewerEmployeeId) {
@@ -260,15 +330,15 @@ export const createRecruitmentFeedbackController = catchAsync(
       });
     }
 
-    const { data: created, error } = await supabaseAdmin
+    const { data: created, error } = await hrms
       .from('recruitment_interview_feedback')
       .insert({
         candidate_id: interview.candidate_id,
         concerns: normalizeNullable(data.concerns),
-        created_by: user?.id ?? null,
+        created_by: userId ?? null,
         interviewer_employee_id: interviewerEmployeeId,
         interview_id: data.interview_id,
-        organization_id: organizationId,
+        workspace_id: organizationId,
         rating:
           data.rating === null || data.rating === undefined
             ? null
@@ -276,7 +346,7 @@ export const createRecruitmentFeedbackController = catchAsync(
         recommendation: data.recommendation,
         strengths: normalizeNullable(data.strengths),
         summary: normalizeNullable(data.summary),
-        updated_by: user?.id ?? null,
+        updated_by: userId ?? null,
       })
       .select(feedbackSelect)
       .single();
@@ -288,9 +358,12 @@ export const createRecruitmentFeedbackController = catchAsync(
     await touchCandidate({
       candidateId: interview.candidate_id,
       supabaseAdmin,
-      userId: user?.id,
+      userId,
     });
 
-    return successDataResponse('Interview feedback recorded successfully', created);
+    return successDataResponse(
+      'Interview feedback recorded successfully',
+      created,
+    );
   },
 );

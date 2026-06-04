@@ -10,7 +10,12 @@ import {
   UsersRound,
 } from 'lucide-react';
 
-import { useRbac } from '~/components/rbac/rbac-context';
+import { useRbac } from '../components/rbac/rbac-context';
+import {
+  formatLabel,
+  recruitmentCandidateStatusOrder,
+  recruitmentTabDefinitions,
+} from '../pages/recruitment/page.data';
 import {
   createRecruitmentCandidateNoteService,
   createRecruitmentCandidateService,
@@ -31,7 +36,7 @@ import {
   updateRecruitmentOfferService,
   updateRecruitmentOnboardingTaskService,
   updateRecruitmentRequisitionService,
-} from '~/services/recruitment.service';
+} from '../server/services/recruitment.service';
 import type {
   RecruitmentCandidateNotePayload,
   RecruitmentCandidatePayload,
@@ -47,16 +52,11 @@ import type {
   RecruitmentOptionsResponse,
   RecruitmentRequisitionPayload,
   RecruitmentRequisitionSummary,
-} from '~/types/recruitment.type';
-
-import {
-  formatLabel,
-  recruitmentCandidateStatusOrder,
-  recruitmentTabDefinitions,
-} from '../page.data';
+} from '../types/recruitment.type';
 import { useRecruitmentMutation } from './use-recruitment-mutation';
 
-export type RecruitmentTab = (typeof recruitmentTabDefinitions)[number]['value'];
+export type RecruitmentTab =
+  (typeof recruitmentTabDefinitions)[number]['value'];
 
 export function useRecruitmentPageController() {
   const queryClient = useQueryClient();
@@ -72,18 +72,25 @@ export function useRecruitmentPageController() {
   const [isInterviewDialogOpen, setIsInterviewDialogOpen] = useState(false);
   const [editingInterview, setEditingInterview] =
     useState<RecruitmentInterviewSummary | null>(null);
-  const [interviewCandidateId, setInterviewCandidateId] = useState<string | null>(null);
+  const [interviewCandidateId, setInterviewCandidateId] = useState<
+    string | null
+  >(null);
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
-  const [feedbackInterviewId, setFeedbackInterviewId] = useState<string | null>(null);
+  const [feedbackInterviewId, setFeedbackInterviewId] = useState<string | null>(
+    null,
+  );
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
   const [noteCandidateId, setNoteCandidateId] = useState<string | null>(null);
   const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false);
-  const [editingOffer, setEditingOffer] = useState<RecruitmentOfferSummary | null>(null);
+  const [editingOffer, setEditingOffer] =
+    useState<RecruitmentOfferSummary | null>(null);
   const [offerCandidateId, setOfferCandidateId] = useState<string | null>(null);
   const [isOnboardingDialogOpen, setIsOnboardingDialogOpen] = useState(false);
   const [editingOnboardingTask, setEditingOnboardingTask] =
     useState<RecruitmentOnboardingTaskSummary | null>(null);
-  const [onboardingCandidateId, setOnboardingCandidateId] = useState<string | null>(null);
+  const [onboardingCandidateId, setOnboardingCandidateId] = useState<
+    string | null
+  >(null);
 
   const dashboardQuery = useQuery({
     queryFn: getRecruitmentDashboardService,
@@ -133,19 +140,21 @@ export function useRecruitmentPageController() {
     setIsOnboardingDialogOpen(false);
   };
 
-  const createRequisitionMutation = useRecruitmentMutation<RecruitmentRequisitionPayload>({
-    errorMessage: 'Unable to create requisition',
-    invalidate: invalidateRecruitment,
-    mutationFn: createRecruitmentRequisitionService,
-    onSuccess: closeRequisitionDialog,
-  });
+  const createRequisitionMutation =
+    useRecruitmentMutation<RecruitmentRequisitionPayload>({
+      errorMessage: 'Unable to create requisition',
+      invalidate: invalidateRecruitment,
+      mutationFn: createRecruitmentRequisitionService,
+      onSuccess: closeRequisitionDialog,
+    });
   const updateRequisitionMutation = useRecruitmentMutation<{
     id: string;
     payload: Partial<RecruitmentRequisitionPayload>;
   }>({
     errorMessage: 'Unable to update requisition',
     invalidate: invalidateRecruitment,
-    mutationFn: ({ id, payload }) => updateRecruitmentRequisitionService(id, payload),
+    mutationFn: ({ id, payload }) =>
+      updateRecruitmentRequisitionService(id, payload),
     onSuccess: closeRequisitionDialog,
   });
   const deleteRequisitionMutation = useRecruitmentMutation<string>({
@@ -154,19 +163,21 @@ export function useRecruitmentPageController() {
     mutationFn: deleteRecruitmentRequisitionService,
   });
 
-  const createCandidateMutation = useRecruitmentMutation<RecruitmentCandidatePayload>({
-    errorMessage: 'Unable to add candidate',
-    invalidate: invalidateRecruitment,
-    mutationFn: createRecruitmentCandidateService,
-    onSuccess: closeCandidateDialog,
-  });
+  const createCandidateMutation =
+    useRecruitmentMutation<RecruitmentCandidatePayload>({
+      errorMessage: 'Unable to add candidate',
+      invalidate: invalidateRecruitment,
+      mutationFn: createRecruitmentCandidateService,
+      onSuccess: closeCandidateDialog,
+    });
   const updateCandidateMutation = useRecruitmentMutation<{
     id: string;
     payload: Partial<RecruitmentCandidatePayload>;
   }>({
     errorMessage: 'Unable to update candidate',
     invalidate: invalidateRecruitment,
-    mutationFn: ({ id, payload }) => updateRecruitmentCandidateService(id, payload),
+    mutationFn: ({ id, payload }) =>
+      updateRecruitmentCandidateService(id, payload),
     onSuccess: closeCandidateDialog,
   });
   const deleteCandidateMutation = useRecruitmentMutation<string>({
@@ -175,19 +186,21 @@ export function useRecruitmentPageController() {
     mutationFn: deleteRecruitmentCandidateService,
   });
 
-  const createInterviewMutation = useRecruitmentMutation<RecruitmentInterviewPayload>({
-    errorMessage: 'Unable to schedule interview',
-    invalidate: invalidateRecruitment,
-    mutationFn: createRecruitmentInterviewService,
-    onSuccess: closeInterviewDialog,
-  });
+  const createInterviewMutation =
+    useRecruitmentMutation<RecruitmentInterviewPayload>({
+      errorMessage: 'Unable to schedule interview',
+      invalidate: invalidateRecruitment,
+      mutationFn: createRecruitmentInterviewService,
+      onSuccess: closeInterviewDialog,
+    });
   const updateInterviewMutation = useRecruitmentMutation<{
     id: string;
     payload: Partial<RecruitmentInterviewPayload>;
   }>({
     errorMessage: 'Unable to update interview',
     invalidate: invalidateRecruitment,
-    mutationFn: ({ id, payload }) => updateRecruitmentInterviewService(id, payload),
+    mutationFn: ({ id, payload }) =>
+      updateRecruitmentInterviewService(id, payload),
     onSuccess: closeInterviewDialog,
   });
   const deleteInterviewMutation = useRecruitmentMutation<string>({
@@ -196,12 +209,13 @@ export function useRecruitmentPageController() {
     mutationFn: deleteRecruitmentInterviewService,
   });
 
-  const createFeedbackMutation = useRecruitmentMutation<RecruitmentFeedbackPayload>({
-    errorMessage: 'Unable to record feedback',
-    invalidate: invalidateRecruitment,
-    mutationFn: createRecruitmentFeedbackService,
-    onSuccess: closeFeedbackDialog,
-  });
+  const createFeedbackMutation =
+    useRecruitmentMutation<RecruitmentFeedbackPayload>({
+      errorMessage: 'Unable to record feedback',
+      invalidate: invalidateRecruitment,
+      mutationFn: createRecruitmentFeedbackService,
+      onSuccess: closeFeedbackDialog,
+    });
   const createNoteMutation = useRecruitmentMutation<{
     candidateId: string;
     payload: RecruitmentCandidateNotePayload;
@@ -234,12 +248,13 @@ export function useRecruitmentPageController() {
     mutationFn: deleteRecruitmentOfferService,
   });
 
-  const createOnboardingMutation = useRecruitmentMutation<RecruitmentOnboardingTaskPayload>({
-    errorMessage: 'Unable to create onboarding task',
-    invalidate: invalidateRecruitment,
-    mutationFn: createRecruitmentOnboardingTaskService,
-    onSuccess: closeOnboardingDialog,
-  });
+  const createOnboardingMutation =
+    useRecruitmentMutation<RecruitmentOnboardingTaskPayload>({
+      errorMessage: 'Unable to create onboarding task',
+      invalidate: invalidateRecruitment,
+      mutationFn: createRecruitmentOnboardingTaskService,
+      onSuccess: closeOnboardingDialog,
+    });
   const updateOnboardingMutation = useRecruitmentMutation<{
     id: string;
     payload: Partial<RecruitmentOnboardingTaskPayload>;
@@ -256,7 +271,9 @@ export function useRecruitmentPageController() {
     mutationFn: deleteRecruitmentOnboardingTaskService,
   });
 
-  const dashboard = dashboardQuery.data?.data as RecruitmentDashboardResponse | undefined;
+  const dashboard = dashboardQuery.data?.data as
+    | RecruitmentDashboardResponse
+    | undefined;
   const options = (optionsQuery.data?.data ?? {
     candidates: [],
     departments: [],
@@ -268,11 +285,27 @@ export function useRecruitmentPageController() {
 
   const canCreateRequisition = hasPermission('recruitment', 'create', 'team');
   const canEditRequisition = hasPermission('recruitment', 'edit', 'team');
-  const canManageCandidates = hasPermission('recruitment', 'manage_candidates', 'team');
-  const canScheduleInterviews = hasPermission('recruitment', 'schedule_interviews', 'team');
+  const canManageCandidates = hasPermission(
+    'recruitment',
+    'manage_candidates',
+    'team',
+  );
+  const canScheduleInterviews = hasPermission(
+    'recruitment',
+    'schedule_interviews',
+    'team',
+  );
   const canManageOffers = hasPermission('recruitment', 'manage_offers', 'team');
-  const canManageOnboarding = hasPermission('recruitment', 'manage_onboarding', 'team');
-  const canRecordFeedback = hasPermission('recruitment', 'record_feedback', 'team');
+  const canManageOnboarding = hasPermission(
+    'recruitment',
+    'manage_onboarding',
+    'team',
+  );
+  const canRecordFeedback = hasPermission(
+    'recruitment',
+    'record_feedback',
+    'team',
+  );
   const canAddNotes = hasPermission('recruitment', 'add_notes', 'team');
 
   const metricsItems = useMemo(() => {
@@ -320,18 +353,27 @@ export function useRecruitmentPageController() {
     offers: 'Create Offer',
     requisitions: 'New Requisition',
     onboarding: 'Add Task',
-  }[activeTab as 'requisitions' | 'candidates' | 'interviews' | 'offers' | 'onboarding'];
+  }[
+    activeTab as
+      | 'requisitions'
+      | 'candidates'
+      | 'interviews'
+      | 'offers'
+      | 'onboarding'
+  ];
 
   const canShowPrimaryAction =
-    (activeTab === 'requisitions' && (canCreateRequisition || canEditRequisition)) ||
+    (activeTab === 'requisitions' &&
+      (canCreateRequisition || canEditRequisition)) ||
     (activeTab === 'candidates' && canManageCandidates) ||
     (activeTab === 'interviews' && canScheduleInterviews) ||
     (activeTab === 'offers' && canManageOffers) ||
     (activeTab === 'onboarding' && canManageOnboarding);
 
   const latestInterviewIdForCandidate = (candidateId: string) =>
-    dashboard?.interviews.find((interview) => interview.candidate_id === candidateId)?.id ??
-    null;
+    dashboard?.interviews.find(
+      (interview) => interview.candidate_id === candidateId,
+    )?.id ?? null;
 
   return {
     activeTab,

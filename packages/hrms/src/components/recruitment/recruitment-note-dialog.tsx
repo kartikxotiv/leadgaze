@@ -22,8 +22,7 @@ import {
 import { Switch } from '@kit/ui/switch';
 import { Textarea } from '@kit/ui/textarea';
 
-import type { RecruitmentCandidateNotePayload } from '~/types/recruitment.type';
-
+import type { RecruitmentCandidateNotePayload } from '../../types/recruitment.type';
 import { BaseDialogProps } from './shared';
 
 type NoteFormState = RecruitmentCandidateNotePayload & { candidate_id: string };
@@ -37,7 +36,10 @@ const emptyNoteForm: NoteFormState = {
 export function RecruitmentNoteDialog(
   props: BaseDialogProps & {
     initialCandidateId?: string | null;
-    onSubmit: (candidateId: string, payload: RecruitmentCandidateNotePayload) => void;
+    onSubmit: (
+      candidateId: string,
+      payload: RecruitmentCandidateNotePayload,
+    ) => void;
   },
 ) {
   const [form, setForm] = useState<NoteFormState>(emptyNoteForm);
@@ -61,7 +63,8 @@ export function RecruitmentNoteDialog(
           <DialogHeader>
             <DialogTitle className="text-2xl">Add Internal Note</DialogTitle>
             <DialogDescription className="text-base">
-              Capture internal context that should stay with the candidate profile.
+              Capture internal context that should stay with the candidate
+              profile.
             </DialogDescription>
           </DialogHeader>
 
@@ -98,7 +101,10 @@ export function RecruitmentNoteDialog(
                 rows={5}
                 value={form.note}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, note: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    note: event.target.value,
+                  }))
                 }
                 placeholder="Interview panel context, hiring manager preference, risk flag, or follow-up reminder."
               />
@@ -108,7 +114,8 @@ export function RecruitmentNoteDialog(
               <div>
                 <p className="font-medium">Pin this note</p>
                 <p className="text-muted-foreground text-sm">
-                  Use for notes that should stay visible at the top of the activity feed.
+                  Use for notes that should stay visible at the top of the
+                  activity feed.
                 </p>
               </div>
               <Switch
@@ -130,7 +137,9 @@ export function RecruitmentNoteDialog(
               Cancel
             </Button>
             <Button
-              disabled={props.isPending || !form.candidate_id || !form.note.trim()}
+              disabled={
+                props.isPending || !form.candidate_id || !form.note.trim()
+              }
               onClick={() =>
                 props.onSubmit(form.candidate_id, {
                   is_pinned: Boolean(form.is_pinned),

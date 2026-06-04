@@ -19,10 +19,9 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
-import type { RecruitmentCandidateSummary } from '~/types/recruitment.type';
-
-import { formatLabel } from '../page.data';
-import { RecruitmentStatusBadge } from '../page.components';
+import { RecruitmentStatusBadge } from '../../pages/recruitment/page.components';
+import { formatLabel } from '../../pages/recruitment/page.data';
+import type { RecruitmentCandidateSummary } from '../../types/recruitment.type';
 
 export function RecruitmentCandidatesTab(props: {
   canAddNotes: boolean;
@@ -40,7 +39,8 @@ export function RecruitmentCandidatesTab(props: {
       <CardHeader>
         <CardTitle>Candidates</CardTitle>
         <CardDescription>
-          Track status-wise candidate progress, ownership, notes, and feedback context.
+          Track status-wise candidate progress, ownership, notes, and feedback
+          context.
         </CardDescription>
       </CardHeader>
       <CardContent className="p-0">
@@ -63,16 +63,20 @@ export function RecruitmentCandidatesTab(props: {
                     <div className="flex flex-col">
                       <span className="font-medium">{candidate.full_name}</span>
                       <span className="text-muted-foreground text-xs">
-                        {candidate.email} - {candidate.source ?? 'Unknown source'}
+                        {candidate.email} -{' '}
+                        {candidate.source ?? 'Unknown source'}
                       </span>
                     </div>
                   </TableCell>
                   <TableCell>{candidate.requisition_title}</TableCell>
                   <TableCell>
-                    <RecruitmentStatusBadge label={formatLabel(candidate.status)} />
+                    <RecruitmentStatusBadge
+                      label={formatLabel(candidate.status)}
+                    />
                   </TableCell>
                   <TableCell>
-                    {candidate.notes_count} notes - {candidate.feedback_count} feedback
+                    {candidate.notes_count} notes - {candidate.feedback_count}{' '}
+                    feedback
                   </TableCell>
                   <TableCell>{candidate.owner_employee?.name ?? '-'}</TableCell>
                   <TableCell className="text-right">
