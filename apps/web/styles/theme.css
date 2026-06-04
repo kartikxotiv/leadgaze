@@ -138,7 +138,7 @@
 
 
   /* --- 4. LAYOUT & ACTIONS ---
-     Specific universal UI areas. */
+     Specific universal UI areas. of HEADER*/
   --color-header-primary: #283BA4;
   --color-header-secondary: #344CD2;
   --color-action-delete: #FF2626;
@@ -203,4 +203,45 @@
 
 .dark .bg-sidebar {
   background-color: var(--sidebar-background);
+}
+
+:root {
+  /* Ensure these variables are always available on the root for dynamic inline styles */
+  --color-activity-1: #2B7FFF;
+  --color-activity-2: #00C950;
+  --color-activity-3: #AD46FF;
+  --color-activity-4: #FF6900;
+  --color-activity-5: #00A63E;
+  --color-activity-6: #6A7282;
+  /* --- 1. STATUS BADGES (Intent-Based Pairs) --- 
+     Always use these in pairs (e.g., bg-status-success-bg text-status-success-text).
+     These universally apply to Tasks, Leads, Leave Requests, Inventory Status, etc. */
+  
+  /* Success (Green) - e.g., Qualified Lead, Approved Leave, In Stock */
+  --color-status-success-bg: #D1FAE5;
+  --color-status-success-text: #065F46;
+
+  /* Info / Primary (Blue) - e.g., New Lead, System Alert */
+  --color-status-info-bg: #C2CAF8;
+  --color-status-info-text: #3953E7;
+
+  /* Warning (Yellow) - e.g., Medium Task, Pending Leave */
+  --color-status-warning-bg: #FEF9C2;
+  --color-status-warning-text: #A65F00;
+
+  /* Pending / Notice (Amber) - e.g., Proposal Stage, Needs Review */
+  --color-status-pending-bg: #FEF3C7;
+  --color-status-pending-text: #92400E;
+
+  /* Alert / Attention (Orange) - e.g., Negotiation, Low Stock */
+  --color-status-alert-bg: #FED7AA;
+  --color-status-alert-text: #9A3412;
+
+  /* Danger / Critical (Red) - e.g., High Priority Task, Rejected, Out of Stock */
+  --color-status-danger-bg: #FFE2E2;
+  --color-status-danger-text: #C10007;
+
+  /* Neutral (Gray) - e.g., Low Priority Task, Draft */
+  --color-status-neutral-bg: #F3F4F6;
+  --color-status-neutral-text: #364153;
 }

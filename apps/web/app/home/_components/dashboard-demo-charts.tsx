@@ -20,6 +20,7 @@ import {
   User,
   Users,
   Video,
+  Calendar,
 } from 'lucide-react';
 import {
   Area,
@@ -307,18 +308,27 @@ export default function DashboardDemo() {
 
       {/* Section 3: Pipeline & Upcoming Tasks */}
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2 xl:mt-4 xl:gap-4 2xl:mt-8 2xl:gap-8">
-        <div className="space-y-4">
-          <h2 className="primary-heading text-leadgaze-dark dark:text-zinc-100">
-            Pipeline Overview
-          </h2>
-          <PipelineOverview metrics={metrics} />
+        <div className="card-container bg-white flex flex-col rounded-xl overflow-hidden dark:bg-zinc-900">
+          <div className="p-6 xl:p-4 2xl:p-6 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center">
+            <h2 className="primary-heading text-leadgaze-dark dark:text-zinc-100">
+              Lead Pipeline
+            </h2>
+          </div>
+          <div className="flex-1">
+            <PipelineOverview metrics={metrics} />
+          </div>
         </div>
 
-        <div className="space-y-4">
-          <h2 className="primary-heading text-leadgaze-dark dark:text-zinc-100">
-            Upcoming Tasks
-          </h2>
-          <UpcomingTasks tasks={metrics.upcomingTasks} />
+        <div className="card-container bg-white flex flex-col rounded-xl overflow-hidden dark:bg-zinc-900">
+          <div className="p-6 xl:p-4 2xl:p-6 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center">
+            <h2 className="primary-heading text-leadgaze-dark dark:text-zinc-100">
+              Upcoming Tasks
+            </h2>
+            <Calendar className="w-5 h-5 text-leadgaze-muted" />
+          </div>
+          <div className="flex-1">
+            <UpcomingTasks tasks={metrics.upcomingTasks} />
+          </div>
         </div>
       </div>
     </div>
@@ -345,30 +355,26 @@ function PipelineOverview({ metrics }: { metrics: DashboardMetrics }) {
   const maxValue = Math.max(...stages.map((s) => s.value), 1);
 
   return (
-    <Card className="border-none bg-transparent shadow-none">
-      <CardContent className="space-y-4 p-0">
-        <div className="max-h-[400px] space-y-6 card-container bg-white p-6 xl:max-h-[300px] xl:space-y-3 xl:p-4 2xl:max-h-[400px] 2xl:space-y-6 2xl:p-6 dark:border-zinc-800 dark:bg-zinc-900">
-          {stages.map((stage, index) => (
-            <div key={stage.label} className="flex flex-col gap-1.5">
-              <div className="flex justify-between items-center">
-                <span className="primary-text-medium text-leadgaze-dark dark:text-zinc-400">
-                  {stage.label}
-                </span>
-                <span className="primary-text-regular text-leadgaze-muted dark:text-zinc-400">
-                  {stage.value}
-                </span>
-              </div>
-              <div className="h-2 w-full overflow-hidden bar-bg rounded-full">
-                <div
-                  className="h-full transition-all duration-500"
-                  style={{ width: `${(stage.value / maxValue) * 100}%`, backgroundColor: `var(--color-activity-${index + 1})` }}
-                />
-              </div>
-            </div>
-          ))}
+    <div className="max-h-[400px] space-y-6 p-6 xl:max-h-[300px] xl:space-y-4 xl:p-4 2xl:max-h-[400px] 2xl:space-y-6 2xl:p-6">
+      {stages.map((stage, index) => (
+        <div key={stage.label} className="flex flex-col gap-1.5">
+          <div className="flex justify-between items-center">
+            <span className="primary-text-medium text-leadgaze-dark">
+              {stage.label}
+            </span>
+            <span className="primary-text-regular text-leadgaze-muted">
+              {stage.value}
+            </span>
+          </div>
+          <div className="h-2 w-full overflow-hidden bar-bg rounded-full">
+            <div
+              className="h-full transition-all duration-500"
+              style={{ width: `${(stage.value / maxValue) * 100}%`, backgroundColor: `var(--color-activity-${index + 1})` }}
+            />
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      ))}
+    </div>
   );
 }
 
@@ -406,10 +412,8 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
   const latestTasks = useMemo(() => tasks.slice(0, 3), [tasks]);
 
   return (
-    <Card className="border-none bg-transparent shadow-none">
-      <CardContent className="p-0">
-        <div className="max-h-[500px] overflow-y-auto card-container bg-white xl:max-h-[350px] 2xl:max-h-[500px] dark:border-zinc-800 dark:bg-zinc-900">
-          {latestTasks.length === 0 ? (
+    <div className="max-h-[500px] overflow-y-auto xl:max-h-[350px] 2xl:max-h-[500px]">
+      {latestTasks.length === 0 ? (
             <div className="flex h-40 flex-col items-center justify-center text-slate-400">
               <FileText className="mb-2 h-8 w-8 opacity-20" />
               <p className="text-sm">No upcoming tasks</p>
@@ -454,9 +458,7 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
               })}
             </div>
           )}
-        </div>
-      </CardContent>
-    </Card>
+    </div>
   );
 }
 
