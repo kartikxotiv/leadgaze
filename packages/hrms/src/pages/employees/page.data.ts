@@ -2,7 +2,7 @@ import type {
   EmployeeListSummary,
   EmployeeOptions,
   EmployeeStatus,
-} from '~/types/employee.type';
+} from '../../types/employee.type';
 
 export const employeesQueryKey = ['employees'] as const;
 export const employeeOptionsQueryKey = ['employee-options'] as const;

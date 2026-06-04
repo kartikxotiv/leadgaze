@@ -1,5 +1,3 @@
-import { asyncHandlerClient } from '~/utils/async-handler';
-
 import type {
   ApiSuccessResponse,
   Employee,
@@ -7,9 +5,9 @@ import type {
   EmployeeListData,
   EmployeeOptions,
   ListEmployeesParams,
-} from '~/types/employee.type';
-
-import ApiClient from '../utils/axios-client';
+} from '../../types/employee.type';
+import { asyncHandlerClient } from '../../utils/async-handler';
+import ApiClient from '../../utils/axios-client';
 
 const listEmployeesService = asyncHandlerClient(async () => {
   const response =
@@ -33,7 +31,9 @@ const listPaginatedEmployeesService = asyncHandlerClient(
 
 const getEmployeeOptionsService = asyncHandlerClient(async () => {
   const response =
-    await ApiClient.get<ApiSuccessResponse<EmployeeOptions>>('/employees/options');
+    await ApiClient.get<ApiSuccessResponse<EmployeeOptions>>(
+      '/employees/options',
+    );
 
   return response.data;
 });

@@ -1,13 +1,11 @@
-import { asyncHandlerClient } from '~/utils/async-handler';
-
+import { asyncHandlerClient } from '../../utils/async-handler';
 import type {
   ApiSuccessResponse,
   Department,
   DepartmentFormPayload,
   DepartmentOptions,
-} from '~/types/department.type';
-
-import ApiClient from '../utils/axios-client';
+} from '../../types/department.type';
+import ApiClient from '../../utils/axios-client';
 
 const listDepartmentsService = asyncHandlerClient(async () => {
   const response =
@@ -47,13 +45,15 @@ const updateDepartmentService = asyncHandlerClient(
   },
 );
 
-const deleteDepartmentService = asyncHandlerClient(async (departmentId: string) => {
-  const response = await ApiClient.delete<ApiSuccessResponse<null>>(
-    `/departments/${departmentId}`,
-  );
+const deleteDepartmentService = asyncHandlerClient(
+  async (departmentId: string) => {
+    const response = await ApiClient.delete<ApiSuccessResponse<null>>(
+      `/departments/${departmentId}`,
+    );
 
-  return response.data;
-});
+    return response.data;
+  },
+);
 
 export {
   createDepartmentService,

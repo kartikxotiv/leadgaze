@@ -1,7 +1,9 @@
 'use client';
 
 import type { ComponentType } from 'react';
+
 import { FileText } from 'lucide-react';
+
 import { Card, CardContent } from '@kit/ui/card';
 
 export function DocumentsSummaryCards(props: {
@@ -30,7 +32,11 @@ function SummaryCard(props: {
   return (
     <Card>
       <CardContent className={'flex items-center gap-4 p-2'}>
-        <div className={'bg-muted flex p-2.5 items-center justify-center rounded-xl'}>
+        <div
+          className={
+            'bg-muted flex items-center justify-center rounded-xl p-2.5'
+          }
+        >
           <Icon className={'h-4 w-4'} />
         </div>
         <div>

@@ -4,6 +4,7 @@ import {
   Building2,
   CalendarCheck,
   ClipboardList,
+  FileText,
   Users,
   WalletCards,
 } from 'lucide-react';
@@ -29,6 +30,12 @@ const modules = [
     description: 'Teams aligned to the active Leadgaze workspace.',
     href: '/home/hrms/departments',
     icon: Building2,
+  },
+  {
+    title: 'Documents',
+    description: 'Employee files, certificates, and HR records.',
+    href: '/home/hrms/documents',
+    icon: FileText,
   },
   {
     title: 'Attendance',

@@ -20,9 +20,11 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
-import { useRbac } from '~/components/rbac/rbac-context';
-import type { Employee, EmployeeListPagination } from '~/types/employee.type';
-
+import type {
+  Employee,
+  EmployeeListPagination,
+} from '../../types/employee.type';
+import { useRbac } from '../rbac/rbac-context';
 import { EmployeeStatusBadge } from './employee-status-badge';
 
 export function EmployeesDirectoryCard(props: {
@@ -179,7 +181,7 @@ export function EmployeesDirectoryCard(props: {
 
         <div
           className={
-            'flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between p-3'
+            'flex flex-col gap-3 p-3 text-sm sm:flex-row sm:items-center sm:justify-between'
           }
         >
           <p className={'text-muted-foreground'}>
@@ -199,8 +201,9 @@ export function EmployeesDirectoryCard(props: {
             </Button>
 
             <span className={'text-muted-foreground min-w-24 text-center'}>
-              Page {props.pagination.totalPages === 0 ? 0 : props.pagination.page}{' '}
-              of {props.pagination.totalPages}
+              Page{' '}
+              {props.pagination.totalPages === 0 ? 0 : props.pagination.page} of{' '}
+              {props.pagination.totalPages}
             </span>
 
             <Button

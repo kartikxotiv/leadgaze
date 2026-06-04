@@ -31,6 +31,11 @@ const hrmsRoutes = {
       Icon: <Building2 className="h-4 w-4" />,
     },
     {
+      label: 'Documents',
+      path: '/home/hrms/documents',
+      Icon: <ClipboardList className="h-4 w-4" />,
+    },
+    {
       label: 'Attendance',
       path: '/home/hrms/attendance',
       Icon: <CalendarCheck className="h-4 w-4" />,

@@ -1,24 +1,29 @@
-import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
+import { ApiError } from '../../../utils/response-handler';
+import { type EmployeeBody, normalizeNullable } from './utils';
 
-import type { Database } from '~/lib/database.types';
-import { getCurrentUserOrganizationId } from '~/lib/server/organizations';
-import { ApiError } from '~/utils/response-handler';
+type SupabaseAdminClient = any;
+type HrmsClient = any;
+type AccessLevel = 'none' | 'own' | 'team' | 'all';
 
-import { EmployeeBody, normalizeNullable } from './utils';
-
-type EmployeeInsert = Database['public']['Tables']['employees']['Insert'];
-type EmployeeUpdate = Database['public']['Tables']['employees']['Update'];
-type EmployeeStatus = Database['public']['Enums']['employee_status'];
-type SupabaseAdminClient = ReturnType<
-  typeof getSupabaseServerAdminClient<Database>
->;
-
-type EmployeeWithRoles = {
-  employee_roles?: Array<{ role_id: string | null }> | null;
-};
-
-type EmployeeWithManagerId = {
-  manager_employee_id?: string | null;
+type EmployeeRow = {
+  id: string;
+  workspace_id: string;
+  account_id: string | null;
+  department_id: string | null;
+  shift_id: string | null;
+  manager_employee_id: string | null;
+  employee_code: string;
+  first_name: string;
+  last_name: string | null;
+  work_email: string;
+  phone: string | null;
+  designation: string | null;
+  joining_date: string | null;
+  employment_type: string;
+  status: string;
+  invited_at: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 type EmployeeManager = {
@@ -28,24 +33,13 @@ type EmployeeManager = {
   last_name: string | null;
 };
 
-type EmployeeOptionDepartment = {
-  id: string;
-  name: string;
-};
-
 type EmployeeOptionEmployee = {
   account_id: string | null;
   employee_code: string;
   first_name: string;
   id: string;
   last_name: string | null;
-  status: EmployeeStatus;
-};
-
-type EmployeeOptionAccount = {
-  email: string | null;
-  id: string;
-  name: string;
+  status: string;
 };
 
 type EmployeeOptionRole = {
@@ -54,115 +48,279 @@ type EmployeeOptionRole = {
   role_name: string;
 };
 
-type EmployeeOptionShift = {
-  id: string;
-  is_active: boolean;
-  name: string;
-};
-
 type EmployeeRoleAssignment = {
   employee_id: string;
   role_id: string;
 };
 
-const employeeSelect = `
-  id,
-  organization_id,
-  account_id,
-  department_id,
-  shift_id,
-  employee_code,
-  first_name,
-  last_name,
-  work_email,
-  phone,
-  designation,
-  joining_date,
-  employment_type,
-  status,
-  invited_at,
-  manager_employee_id,
-  created_at,
-  updated_at,
-  account:accounts!employees_account_id_fkey (
-    id,
-    name,
-    email
-  ),
-  department:departments!employees_department_id_fkey (
-    id,
-    name,
-    code
-  ),
-  shift:shifts!employees_shift_id_fkey (
-    id,
-    name,
-    start_time,
-    end_time,
-    grace_minutes,
-    is_active
-  ),
-  employee_roles:employee_roles(role_id)
-`;
+const accessRank: Record<AccessLevel, number> = {
+  none: 0,
+  own: 1,
+  team: 2,
+  all: 3,
+};
 
-async function getRequiredOrganizationId(userId?: string) {
-  const organizationId = await getCurrentUserOrganizationId(userId);
+function getHrmsClient(supabaseAdmin: SupabaseAdminClient) {
+  return supabaseAdmin.schema('hrms') as HrmsClient;
+}
 
-  if (!organizationId) {
-    throw new ApiError('Organization not found for user', 404);
+function getRouteUserId(user: unknown) {
+  return (user as { id?: string } | undefined)?.id;
+}
+
+async function getRequiredWorkspaceId(params: {
+  request?: {
+    cookies?: {
+      get: (name: string) => { value?: string } | undefined;
+    };
+  };
+  supabaseAdmin: SupabaseAdminClient;
+  userId?: string;
+}) {
+  if (!params.userId) {
+    throw new ApiError('Unauthorized', 401);
   }
 
-  return organizationId;
-}
+  const activeWorkspaceId =
+    params.request?.cookies?.get('organization_id')?.value;
 
-function formatEmployeesWithRoleId<T extends EmployeeWithRoles>(
-  data: T[] | null,
-) {
-  return (data ?? []).map((employee) => ({
-    ...employee,
-    role_id: employee.employee_roles?.[0]?.role_id ?? null,
-  }));
-}
+  if (activeWorkspaceId) {
+    const { data: activeMember, error: activeMemberError } =
+      await params.supabaseAdmin
+        .from('workspace_members')
+        .select('workspace_id')
+        .eq('workspace_id', activeWorkspaceId)
+        .eq('user_id', params.userId)
+        .eq('status', 'accepted')
+        .limit(1)
+        .maybeSingle();
 
-async function attachEmployeeManagers<T extends EmployeeWithManagerId>(params: {
-  employees: T[] | null;
-  organizationId: string;
-  supabaseAdmin: SupabaseAdminClient;
-}): Promise<Array<T & { manager: EmployeeManager | null }>> {
-  const employees = params.employees ?? [];
-  const managerIds = Array.from(
-    new Set(
-      employees
-        .map((employee) => employee.manager_employee_id)
-        .filter((value): value is string => Boolean(value)),
-    ),
-  );
+    if (activeMemberError) {
+      throw new ApiError(activeMemberError.message, 400);
+    }
 
-  if (managerIds.length === 0) {
-    return employees.map((employee) => ({
-      ...employee,
-      manager: null,
-    }));
+    if (!activeMember) {
+      throw new ApiError('Workspace not found for user', 404);
+    }
+
+    return activeWorkspaceId;
   }
 
   const { data, error } = await params.supabaseAdmin
-    .from('employees')
-    .select('id, first_name, last_name, employee_code')
-    .eq('organization_id', params.organizationId)
-    .in('id', managerIds);
+    .from('workspace_members')
+    .select('workspace_id')
+    .eq('user_id', params.userId)
+    .eq('status', 'accepted')
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
 
   if (error) {
     throw new ApiError(error.message, 400);
   }
 
-  const managersById = new Map(
-    ((data ?? []) as EmployeeManager[]).map((manager) => [manager.id, manager]),
+  if (!data?.workspace_id) {
+    throw new ApiError('Workspace not found for user', 404);
+  }
+
+  return (data as { workspace_id: string }).workspace_id;
+}
+
+async function requireEmployeePermission(params: {
+  featureKey: string;
+  minAccessLevel?: AccessLevel;
+  moduleKey?: string;
+  supabaseAdmin: SupabaseAdminClient;
+  userId?: string;
+  workspaceId: string;
+}) {
+  if (!params.userId) {
+    throw new ApiError('Unauthorized', 401);
+  }
+
+  const { data: member, error: memberError } = await params.supabaseAdmin
+    .from('workspace_members')
+    .select('role_id')
+    .eq('workspace_id', params.workspaceId)
+    .eq('user_id', params.userId)
+    .eq('status', 'accepted')
+    .limit(1)
+    .maybeSingle();
+
+  if (memberError) {
+    throw new ApiError(memberError.message, 400);
+  }
+
+  const workspaceMember = member as { role_id?: string } | null;
+
+  if (!workspaceMember?.role_id) {
+    throw new ApiError('Forbidden', 403);
+  }
+
+  const { data: permissions, error: permissionError } =
+    await params.supabaseAdmin
+      .from('role_permissions')
+      .select(
+        `
+          can_access,
+          access_level,
+          crm_module_features!module_feature_id(
+            feature_key,
+            crm_modules!module_id(module_key)
+          )
+        `,
+      )
+      .eq('workspace_id', params.workspaceId)
+      .eq('role_id', workspaceMember.role_id);
+
+  if (permissionError) {
+    throw new ApiError(permissionError.message, 400);
+  }
+
+  const moduleKey = params.moduleKey ?? 'hrms_employees';
+  const featureKeys = getFeatureAliases(moduleKey, params.featureKey);
+  const rolePermission =
+    (
+      permissions as Array<{
+        access_level?: AccessLevel | null;
+        can_access?: boolean | null;
+        crm_module_features?: {
+          feature_key?: string | null;
+          crm_modules?: {
+            module_key?: string | null;
+          } | null;
+        } | null;
+      }> | null
+    )?.find((permission) => {
+      const feature = permission.crm_module_features;
+      const permissionModuleKey = feature?.crm_modules?.module_key;
+
+      return (
+        permissionModuleKey === moduleKey &&
+        featureKeys.includes(feature?.feature_key ?? '')
+      );
+    }) ?? null;
+
+  const accessLevel = (rolePermission?.access_level ?? 'none') as AccessLevel;
+  const minAccessLevel = params.minAccessLevel ?? 'own';
+
+  if (
+    !rolePermission?.can_access ||
+    accessRank[accessLevel] < accessRank[minAccessLevel]
+  ) {
+    throw new ApiError('Forbidden', 403);
+  }
+}
+
+async function enrichEmployees(params: {
+  employees: EmployeeRow[] | null;
+  supabaseAdmin: SupabaseAdminClient;
+  workspaceId: string;
+}) {
+  const employees = params.employees ?? [];
+  const hrms = getHrmsClient(params.supabaseAdmin);
+
+  const accountIds = uniqueIds(
+    employees.map((employee) => employee.account_id),
+  );
+  const departmentIds = uniqueIds(
+    employees.map((employee) => employee.department_id),
+  );
+  const shiftIds = uniqueIds(employees.map((employee) => employee.shift_id));
+  const managerIds = uniqueIds(
+    employees.map((employee) => employee.manager_employee_id),
+  );
+  const employeeIds = uniqueIds(employees.map((employee) => employee.id));
+
+  const [
+    accountsResult,
+    departmentsResult,
+    shiftsResult,
+    managersResult,
+    rolesResult,
+  ] = await Promise.all([
+    accountIds.length > 0
+      ? params.supabaseAdmin
+          .from('accounts')
+          .select('id, name, email')
+          .in('id', accountIds)
+      : Promise.resolve({ data: [], error: null }),
+    departmentIds.length > 0
+      ? hrms
+          .from('departments')
+          .select('id, name, code')
+          .eq('workspace_id', params.workspaceId)
+          .in('id', departmentIds)
+      : Promise.resolve({ data: [], error: null }),
+    shiftIds.length > 0
+      ? hrms
+          .from('shifts')
+          .select('id, name, start_time, end_time, grace_minutes, is_active')
+          .eq('workspace_id', params.workspaceId)
+          .in('id', shiftIds)
+      : Promise.resolve({ data: [], error: null }),
+    managerIds.length > 0
+      ? hrms
+          .from('employees')
+          .select('id, first_name, last_name, employee_code')
+          .eq('workspace_id', params.workspaceId)
+          .in('id', managerIds)
+      : Promise.resolve({ data: [], error: null }),
+    employeeIds.length > 0
+      ? hrms
+          .from('employee_roles')
+          .select('employee_id, role_id')
+          .eq('workspace_id', params.workspaceId)
+          .in('employee_id', employeeIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  for (const result of [
+    accountsResult,
+    departmentsResult,
+    shiftsResult,
+    managersResult,
+    rolesResult,
+  ]) {
+    if (result.error) {
+      throw new ApiError(result.error.message, 400);
+    }
+  }
+
+  const accountsById = mapById(
+    (accountsResult.data ?? []) as Array<{ id: string }>,
+  );
+  const departmentsById = mapById(
+    (departmentsResult.data ?? []) as Array<{ id: string }>,
+  );
+  const shiftsById = mapById(
+    (shiftsResult.data ?? []) as Array<{ id: string }>,
+  );
+  const managersById = mapById(
+    (managersResult.data ?? []) as EmployeeManager[],
+  );
+  const roleByEmployeeId = new Map(
+    ((rolesResult.data ?? []) as EmployeeRoleAssignment[]).map((role) => [
+      role.employee_id,
+      role.role_id,
+    ]),
   );
 
   return employees.map((employee) => ({
     ...employee,
+    organization_id: employee.workspace_id,
+    account: employee.account_id
+      ? (accountsById.get(employee.account_id) ?? null)
+      : null,
+    department: employee.department_id
+      ? (departmentsById.get(employee.department_id) ?? null)
+      : null,
     manager: employee.manager_employee_id
       ? (managersById.get(employee.manager_employee_id) ?? null)
+      : null,
+    role_id: roleByEmployeeId.get(employee.id) ?? null,
+    shift: employee.shift_id
+      ? (shiftsById.get(employee.shift_id) ?? null)
       : null,
   }));
 }
@@ -171,11 +329,11 @@ function buildEmployeeInsertPayload(params: {
   accountId: string | null;
   employeeBody: EmployeeBody;
   invitedAt: string | null;
-  organizationId: string;
-  status: EmployeeStatus;
+  status: string;
   userId?: string;
-}): EmployeeInsert {
-  const { accountId, employeeBody, invitedAt, organizationId, status, userId } =
+  workspaceId: string;
+}) {
+  const { accountId, employeeBody, invitedAt, status, userId, workspaceId } =
     params;
 
   return {
@@ -191,10 +349,10 @@ function buildEmployeeInsertPayload(params: {
     joining_date: employeeBody.joining_date ?? null,
     last_name: normalizeNullable(employeeBody.last_name),
     manager_employee_id: normalizeNullable(employeeBody.manager_employee_id),
-    organization_id: organizationId,
     phone: normalizeNullable(employeeBody.phone),
     status,
     work_email: employeeBody.work_email?.trim().toLowerCase() ?? '',
+    workspace_id: workspaceId,
     created_by: userId,
     updated_by: userId,
   };
@@ -204,7 +362,7 @@ function buildEmployeeUpdatePayload(params: {
   employeeBody: EmployeeBody;
   nextWorkEmail: string;
   userId?: string;
-}): EmployeeUpdate {
+}) {
   const { employeeBody, nextWorkEmail, userId } = params;
 
   return {
@@ -249,47 +407,46 @@ function buildEmployeeUpdatePayload(params: {
 
 async function syncEmployeeRole(params: {
   employeeId: string;
-  organizationId: string;
   roleId?: string | null;
   supabaseAdmin: SupabaseAdminClient;
   userId?: string;
+  workspaceId: string;
 }) {
+  if (params.roleId === undefined) {
+    return;
+  }
+
+  const hrms = getHrmsClient(params.supabaseAdmin);
+
+  const { error: deleteExistingRolesError } = await hrms
+    .from('employee_roles')
+    .delete()
+    .eq('workspace_id', params.workspaceId)
+    .eq('employee_id', params.employeeId);
+
+  if (deleteExistingRolesError) {
+    throw new ApiError(deleteExistingRolesError.message, 400);
+  }
+
   if (!params.roleId) {
     return;
   }
 
-  const { data: existingEmployeeRole, error: employeeRoleFetchError } =
-    await params.supabaseAdmin
-      .from('employee_roles')
-      .select('id')
-      .eq('organization_id', params.organizationId)
-      .eq('employee_id', params.employeeId)
-      .maybeSingle();
+  const { data: role, error: roleError } = await params.supabaseAdmin
+    .from('workspace_roles')
+    .select('id')
+    .eq('workspace_id', params.workspaceId)
+    .eq('id', params.roleId)
+    .maybeSingle();
 
-  if (employeeRoleFetchError) {
-    throw new ApiError(employeeRoleFetchError.message, 400);
+  if (roleError || !role) {
+    throw new ApiError('Role is invalid', 400);
   }
 
-  if (existingEmployeeRole) {
-    const { error: employeeRoleUpdateError } = await params.supabaseAdmin
-      .from('employee_roles')
-      .update({
-        role_id: params.roleId,
-        updated_by: params.userId,
-      })
-      .eq('id', existingEmployeeRole.id);
-
-    if (employeeRoleUpdateError) {
-      throw new ApiError(employeeRoleUpdateError.message, 400);
-    }
-
-    return;
-  }
-
-  const { error: employeeRoleInsertError } = await params.supabaseAdmin
+  const { error: employeeRoleInsertError } = await hrms
     .from('employee_roles')
     .insert({
-      organization_id: params.organizationId,
+      workspace_id: params.workspaceId,
       employee_id: params.employeeId,
       role_id: params.roleId,
       created_by: params.userId,
@@ -302,12 +459,12 @@ async function syncEmployeeRole(params: {
 }
 
 function buildEmployeeOptions(params: {
-  accounts: EmployeeOptionAccount[] | null;
-  departments: EmployeeOptionDepartment[] | null;
+  accounts: Array<{ email: string | null; id: string; name: string }> | null;
+  departments: Array<{ id: string; name: string }> | null;
   employeeRoles: EmployeeRoleAssignment[] | null;
   employees: EmployeeOptionEmployee[] | null;
   roles: EmployeeOptionRole[] | null;
-  shifts: EmployeeOptionShift[] | null;
+  shifts: Array<{ id: string; is_active: boolean; name: string }> | null;
 }) {
   const assignedAccountIds = new Set(
     (params.employees ?? [])
@@ -315,52 +472,49 @@ function buildEmployeeOptions(params: {
       .filter((value): value is string => Boolean(value)),
   );
 
-  const eligibleAccounts = (params.accounts ?? []).reduce<
-    EmployeeOptionAccount[]
-  >((result, account) => {
-    if (assignedAccountIds.has(account.id)) {
-      return result;
-    }
-
-    if (result.some((item) => item.id === account.id)) {
-      return result;
-    }
-
-    result.push(account);
-    return result;
-  }, []);
-
-  const managerEligibleRoleKeys = new Set(['admin', 'manager']);
-  const managerRoleIds = new Set(
-    (params.roles ?? [])
-      .filter((role) => managerEligibleRoleKeys.has(role.role_key))
-      .map((role) => role.id),
+  const eligibleAccounts = (params.accounts ?? []).filter(
+    (account, index, accounts) =>
+      !assignedAccountIds.has(account.id) &&
+      accounts.findIndex((item) => item.id === account.id) === index,
   );
 
+  const managerRoleIds = new Set(
+    (params.roles ?? [])
+      .filter((role) => ['admin', 'manager'].includes(role.role_key))
+      .map((role) => role.id),
+  );
   const managerEmployeeIds = new Set(
     (params.employeeRoles ?? [])
       .filter((assignment) => managerRoleIds.has(assignment.role_id))
       .map((assignment) => assignment.employee_id),
   );
 
-  const managers = (params.employees ?? [])
-    .filter(
-      (employee) =>
-        employee.status !== 'invited' && managerEmployeeIds.has(employee.id),
-    )
-    .map((employee) => ({
-      id: employee.id,
-      name: getEmployeeName(employee),
-      employee_code: employee.employee_code,
-    }));
-
   return {
     departments: params.departments ?? [],
     eligibleAccounts,
     roles: params.roles ?? [],
     shifts: params.shifts ?? [],
-    managers,
+    managers: (params.employees ?? [])
+      .filter(
+        (employee) =>
+          employee.status !== 'invited' && managerEmployeeIds.has(employee.id),
+      )
+      .map((employee) => ({
+        id: employee.id,
+        name: getEmployeeName(employee),
+        employee_code: employee.employee_code,
+      })),
   };
+}
+
+function uniqueIds(values: Array<string | null | undefined>) {
+  return Array.from(
+    new Set(values.filter((value): value is string => Boolean(value))),
+  );
+}
+
+function mapById<T extends { id: string }>(values: T[]) {
+  return new Map(values.map((value) => [value.id, value]));
 }
 
 function getEmployeeName(
@@ -369,13 +523,59 @@ function getEmployeeName(
   return `${employee.first_name}${employee.last_name ? ` ${employee.last_name}` : ''}`;
 }
 
+function getFeatureAliases(moduleKey: string, featureKey: string) {
+  if (moduleKey === 'hrms_departments') {
+    if (featureKey === 'create') {
+      return ['create', 'manage'];
+    }
+
+    if (featureKey === 'edit' || featureKey === 'update') {
+      return ['edit', 'update', 'manage'];
+    }
+
+    if (featureKey === 'delete') {
+      return ['delete', 'manage'];
+    }
+  }
+
+  if (moduleKey === 'hrms_documents') {
+    if (featureKey === 'create') {
+      return ['create', 'upload', 'manage'];
+    }
+
+    if (featureKey === 'edit' || featureKey === 'update') {
+      return ['edit', 'update', 'manage'];
+    }
+
+    if (featureKey === 'delete') {
+      return ['delete', 'manage'];
+    }
+
+    if (featureKey === 'upload') {
+      return ['upload', 'create', 'manage'];
+    }
+  }
+
+  if (featureKey === 'edit') {
+    return ['edit', 'update'];
+  }
+
+  if (featureKey === 'update') {
+    return ['update', 'edit'];
+  }
+
+  return [featureKey];
+}
+
 export {
-  attachEmployeeManagers,
   buildEmployeeInsertPayload,
   buildEmployeeOptions,
   buildEmployeeUpdatePayload,
-  employeeSelect,
-  formatEmployeesWithRoleId,
-  getRequiredOrganizationId,
+  enrichEmployees,
+  getHrmsClient,
+  getRequiredWorkspaceId,
+  getRouteUserId,
+  requireEmployeePermission,
   syncEmployeeRole,
 };
+export type { EmployeeRow, SupabaseAdminClient };

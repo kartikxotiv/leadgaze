@@ -4,19 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { showToast } from '~/components/global/ToastAlert';
-import { useRbac } from '~/components/rbac/rbac-context';
-import {
-  createEmployeeService,
-  deleteEmployeeService,
-  getEmployeeOptionsService,
-  inviteEmployeeService,
-  listPaginatedEmployeesService,
-  updateEmployeeService,
-} from '~/services/employee.service';
-import type { Employee, EmployeeFormPayload } from '~/types/employee.type';
-import { handleApiResponse } from '~/utils/api-response-handler';
-
+import { showToast } from '../components/global/ToastAlert';
+import { useRbac } from '../components/rbac/rbac-context';
 import {
   type EmployeeStatusFilter,
   allEmployeeStatuses,
@@ -25,7 +14,17 @@ import {
   employeesQueryKey,
   emptyEmployeeOptions,
   emptySummary,
-} from '../page.data';
+} from '../pages/employees/page.data';
+import {
+  createEmployeeService,
+  deleteEmployeeService,
+  getEmployeeOptionsService,
+  inviteEmployeeService,
+  listPaginatedEmployeesService,
+  updateEmployeeService,
+} from '../server/services/employee.service';
+import type { Employee, EmployeeFormPayload } from '../types/employee.type';
+import { handleApiResponse } from '../utils/api-response-handler';
 
 export function useEmployeesPage() {
   const queryClient = useQueryClient();

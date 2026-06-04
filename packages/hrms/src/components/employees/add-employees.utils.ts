@@ -3,7 +3,7 @@ import type {
   EmployeeEmploymentType,
   EmployeeFormPayload,
   EmployeeStatus,
-} from '~/types/employee.type';
+} from '../../types/employee.type';
 
 type EmployeeAssignmentMode = 'existing' | 'invite';
 
@@ -46,7 +46,9 @@ const statusLabels: Record<EmployeeStatus, string> = {
   probation: 'Probation',
 };
 
-function createEmployeeFormState(employee?: Employee | null): EmployeeFormState {
+function createEmployeeFormState(
+  employee?: Employee | null,
+): EmployeeFormState {
   if (!employee) {
     return EMPTY_FORM;
   }
