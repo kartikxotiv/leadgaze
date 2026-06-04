@@ -131,7 +131,7 @@ export function CreateContactDialog({
 
           <form onSubmit={handleSubmit} className="space-y-6 py-4">
             <div className="space-y-4">
-              <h3 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase">
                 Personal Details
               </h3>
               <Separator />
@@ -189,7 +189,7 @@ export function CreateContactDialog({
             </div>
 
             <div className="space-y-4 pt-4">
-              <h3 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase">
                 Professional & Status
               </h3>
               <Separator />
