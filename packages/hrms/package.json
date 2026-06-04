@@ -1,0 +1,57 @@
+{
+  "name": "@kit/hrms",
+  "private": true,
+  "version": "0.1.0",
+  "exports": {
+    ".": "./index.ts",
+    "./server/departments": "./src/server/controllers/departments/route.ts",
+    "./server/departments/[departmentId]": "./src/server/controllers/departments/[departmentId]/route.ts",
+    "./server/departments/options": "./src/server/controllers/departments/options/route.ts",
+    "./server/documents": "./src/server/controllers/documents/route.ts",
+    "./server/documents/[id]": "./src/server/controllers/documents/[id]/route.ts",
+    "./server/employees": "./src/server/controllers/employees/route.ts",
+    "./server/employees/[employeeId]": "./src/server/controllers/employees/[employeeId]/route.ts",
+    "./server/employees/invite": "./src/server/controllers/employees/invite/route.ts",
+    "./server/employees/options": "./src/server/controllers/employees/options/route.ts",
+    "./server/upload": "./src/server/controllers/upload/route.ts"
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "src/*"
+      ]
+    }
+  },
+  "license": "MIT",
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules",
+    "lint": "eslint .",
+    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kit/next": "workspace:*",
+    "@kit/supabase": "workspace:*",
+    "@kit/tsconfig": "workspace:*",
+    "@kit/ui": "workspace:*",
+    "@tanstack/react-query": "5.90.2",
+    "axios": "^1.16.1",
+    "lucide-react": "^0.545.0",
+    "next": "15.5.9",
+    "react": "19.2.1",
+    "sonner": "^2.0.7",
+    "zod": "^3.25.32"
+  },
+  "devDependencies": {
+    "@kit/eslint-config": "workspace:*",
+    "@kit/prettier-config": "workspace:*",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@kit/eslint-config/base"
+    ]
+  },
+  "prettier": "@kit/prettier-config"
+}

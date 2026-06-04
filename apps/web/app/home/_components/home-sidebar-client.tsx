@@ -2,6 +2,8 @@
 
 import { useMemo } from 'react';
 
+import { usePathname } from 'next/navigation';
+
 import type { JwtPayload } from '@supabase/supabase-js';
 
 import {
@@ -11,10 +13,19 @@ import {
   FileText,
   NotebookPen,
   Settings,
+  ShieldCheck,
   UserPen,
 } from 'lucide-react';
-import { z } from 'zod';
 
+import {
+  getFundraiseRoutesForPermissions,
+  useFundraisingPermissions,
+} from '@kit/fund-raise';
+import {
+  getInventoryRoutesForPermissions,
+  useInventoryPermissions,
+} from '@kit/inventory';
+import {hrmsRoutes} from '@kit/hrms'
 import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
 import { SidebarNavigation } from '@kit/ui/shadcn-sidebar';
 
@@ -23,42 +34,135 @@ import { usePermissionBasedNavigationConfig } from '~/lib/permissions/use-naviga
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getNavigationConfig } from '~/lib/rbac/use-dynamic-navigation';
 
-import { WorkspaceSwitcher } from './workspace-switcher';
-
-export function HomeSidebarClient(props: { user: JwtPayload }) {
-  const { canAccess } = useRBAC();
+export function HomeSidebarClient(_props: { user: JwtPayload }) {
+  const { canAccess, currentWorkspace } = useRBAC();
+  const pathname = usePathname() || '';
+  const { canAccess: canAccessFundraising } = useFundraisingPermissions(
+    currentWorkspace?.id,
+  );
+  const { canAccess: canAccessInventory } = useInventoryPermissions(
+    currentWorkspace?.id,
+  );
 
   // Use permission-based navigation
   const permissionNavConfig = usePermissionBasedNavigationConfig();
 
+  const isFundraiseModule = pathname.startsWith('/home/fund');
+  const isHrmsModule = pathname.startsWith('/home/hrms');
+  const isInventoryModule = pathname.startsWith('/home/inventory');
+
   const navConfig = useMemo(() => {
-    // Basic routes that always exist
-    const baseRoutes: any[] = [];
+    // 1. If we are in the Fundraising Module (/home/fund*), render fundraising features.
+    if (isFundraiseModule) {
+      // Team / settings items should remain in all modules
+      const teamItems =
+        permissionNavConfig?.teamItems ||
+        getNavigationConfig(canAccess).teamItems;
 
-    const settingsRoutes = [
-      {
-        label: 'common:routes.settings',
-        children: [
-          {
-            label: 'common:routes.profile',
-            path: pathsConfig.app.profileSettings,
-            Icon: <UserPen className="h-4 w-4" />,
-          },
-          {
-            label: 'common:routes.workspace-settings',
-            path: pathsConfig.app.workspaceSettings,
-            Icon: <Settings className="h-4 w-4" />,
-          },
-        ],
-      },
-    ];
+      return [
+        ...getFundraiseRoutesForPermissions(canAccessFundraising),
+        {
+          label: 'common:routes.settings',
+          children: [
+            {
+              label: 'common:routes.profile',
+              path: pathsConfig.app.profileSettings,
+              Icon: <UserPen className="h-4 w-4" />,
+            },
+            {
+              label: 'common:routes.workspace-settings',
+              path: pathsConfig.app.workspaceSettings,
+              Icon: <Settings className="h-4 w-4" />,
+            },
+            ...teamItems.map((item) => {
+              const IconComponent = item.Icon;
+              return {
+                ...item,
+                Icon: <IconComponent className="h-4 w-4" />,
+              };
+            }),
+          ],
+        },
+      ];
+    }
 
+    // 2. HRMS Module
+    if (isHrmsModule) {
+      const teamItems =
+        permissionNavConfig?.teamItems ||
+        getNavigationConfig(canAccess).teamItems;
+
+      return [
+        hrmsRoutes,
+        {
+          label: 'common:routes.settings',
+          children: [
+            {
+              label: 'common:routes.profile',
+              path: pathsConfig.app.profileSettings,
+              Icon: <UserPen className="h-4 w-4" />,
+            },
+            {
+              label: 'common:routes.workspace-settings',
+              path: pathsConfig.app.workspaceSettings,
+              Icon: <Settings className="h-4 w-4" />,
+            },
+            {
+              label: 'Roles',
+              path: pathsConfig.app.roles,
+              Icon: <ShieldCheck className="h-4 w-4" />,
+            },
+            ...teamItems.map((item) => {
+              const IconComponent = item.Icon;
+              return {
+                ...item,
+                Icon: <IconComponent className="h-4 w-4" />,
+              };
+            }),
+          ],
+        },
+      ];
+    }
+
+    // 3. Inventory Module
+    if (isInventoryModule) {
+      const teamItems =
+        permissionNavConfig?.teamItems ||
+        getNavigationConfig(canAccess).teamItems;
+
+      return [
+        ...getInventoryRoutesForPermissions(canAccessInventory),
+        {
+          label: 'common:routes.settings',
+          children: [
+            {
+              label: 'common:routes.profile',
+              path: pathsConfig.app.profileSettings,
+              Icon: <UserPen className="h-4 w-4" />,
+            },
+            {
+              label: 'common:routes.workspace-settings',
+              path: pathsConfig.app.workspaceSettings,
+              Icon: <Settings className="h-4 w-4" />,
+            },
+            ...teamItems.map((item) => {
+              const IconComponent = item.Icon;
+              return {
+                ...item,
+                Icon: <IconComponent className="h-4 w-4" />,
+              };
+            }),
+          ],
+        },
+      ];
+    }
+
+    // 3. Default: Sales CRM Module
     // Use permission-based navigation if available
     if (permissionNavConfig) {
       const { salesItems, teamItems } = permissionNavConfig;
 
       return [
-        ...baseRoutes,
         {
           label: '',
           children: [
@@ -132,7 +236,6 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
     const { salesItems, teamItems } = getNavigationConfig(canAccess);
 
     return [
-      ...baseRoutes,
       {
         label: '', // Combined Sales and Communication
         children: [
@@ -196,7 +299,15 @@ export function HomeSidebarClient(props: { user: JwtPayload }) {
         ],
       },
     ];
-  }, [permissionNavConfig, canAccess]);
+  }, [
+    permissionNavConfig,
+    canAccess,
+    isFundraiseModule,
+    isHrmsModule,
+    isInventoryModule,
+    canAccessFundraising,
+    canAccessInventory,
+  ]);
 
   // Parse the dynamic config to match NavigationConfigSchema
   const parsedConfig = useMemo(() => {
