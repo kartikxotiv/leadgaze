@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Inbox, Loader2, RefreshCw, Search, Send } from 'lucide-react';
@@ -45,9 +46,11 @@ function emailTimestamp(email: any) {
 export function CoreInboxTab({
   workspaceId,
   canReply = true,
+  renderEmailActions,
 }: {
   workspaceId: string;
   canReply?: boolean;
+  renderEmailActions?: (email: any) => ReactNode;
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'inbound' | 'outbound'>('all');
@@ -237,6 +240,7 @@ export function CoreInboxTab({
         onOpenChange={setIsDetailOpen}
         email={selectedEmail}
         canReply={canReply}
+        actions={selectedEmail ? renderEmailActions?.(selectedEmail) : null}
         onReply={(email) => {
           setSelectedEmail(email);
           setIsDetailOpen(false);

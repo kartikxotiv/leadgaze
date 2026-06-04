@@ -3,6 +3,7 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 type SyncedEmailPayload = Record<string, any> & {
   workspace_id: string;
   provider_message_id: string;
+  internet_message_id?: string | null;
   relation?: {
     entity_type: string;
     entity_id: string;
@@ -22,44 +23,99 @@ export async function saveSyncedCoreEmails(messages: SyncedEmailPayload[]) {
     messages.map((message) => [message.provider_message_id, message]),
   );
   const providerMessageIds = Array.from(messagesByProviderId.keys());
+  const internetMessageIds = Array.from(
+    new Set(
+      messages.map((message) => message.internet_message_id).filter(Boolean),
+    ),
+  );
 
   if (!workspaceId) return 0;
 
-  const { data: existingEmails, error: lookupError } = await (supabase as any)
-    .schema('core')
-    .from('emails')
-    .select('id,provider_message_id')
-    .eq('workspace_id', workspaceId)
-    .in('provider_message_id', providerMessageIds);
+  const [existingByProviderResult, existingByInternetResult] =
+    await Promise.all([
+      providerMessageIds.length > 0
+        ? (supabase as any)
+            .schema('core')
+            .from('emails')
+            .select('id,provider_message_id,internet_message_id')
+            .eq('workspace_id', workspaceId)
+            .in('provider_message_id', providerMessageIds)
+        : Promise.resolve({ data: [], error: null }),
+      internetMessageIds.length > 0
+        ? (supabase as any)
+            .schema('core')
+            .from('emails')
+            .select('id,provider_message_id,internet_message_id')
+            .eq('workspace_id', workspaceId)
+            .in('internet_message_id', internetMessageIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
 
-  if (lookupError) {
-    console.error('[CoreEmailSync] Failed to check existing emails:', lookupError);
+  if (existingByProviderResult.error || existingByInternetResult.error) {
+    console.error(
+      '[CoreEmailSync] Failed to check existing emails:',
+      existingByProviderResult.error ?? existingByInternetResult.error,
+    );
     return 0;
   }
 
+  const existingEmails = [
+    ...(existingByProviderResult.data ?? []),
+    ...(existingByInternetResult.data ?? []),
+  ];
   const existingByProviderId = new Map(
-    ((existingEmails ?? []) as Array<{ id: string; provider_message_id: string }>)
+    (
+      existingEmails as Array<{
+        id: string;
+        provider_message_id?: string | null;
+      }>
+    )
+      .filter((email) => email.provider_message_id)
       .map((email) => [email.provider_message_id, email.id]),
+  );
+  const existingByInternetId = new Map(
+    (
+      existingEmails as Array<{
+        id: string;
+        internet_message_id?: string | null;
+      }>
+    )
+      .filter((email) => email.internet_message_id)
+      .map((email) => [email.internet_message_id, email.id]),
   );
 
   const toInsert = messages
-    .filter((message) => !existingByProviderId.has(message.provider_message_id))
+    .filter(
+      (message) =>
+        !existingByProviderId.has(message.provider_message_id) &&
+        !existingByInternetId.has(message.internet_message_id),
+    )
     .map(({ relation, ...emailPayload }) => emailPayload);
   const toUpdate = messages
-    .filter((message) => existingByProviderId.has(message.provider_message_id))
+    .filter(
+      (message) =>
+        existingByProviderId.has(message.provider_message_id) ||
+        existingByInternetId.has(message.internet_message_id),
+    )
     .map(({ relation, ...emailPayload }) => ({
       ...emailPayload,
-      id: existingByProviderId.get(emailPayload.provider_message_id),
+      id:
+        existingByProviderId.get(emailPayload.provider_message_id) ??
+        existingByInternetId.get(emailPayload.internet_message_id),
     }));
 
-  const savedEmails: Array<{ id: string; provider_message_id: string }> = [];
+  const savedEmails: Array<{
+    id: string;
+    provider_message_id: string;
+    internet_message_id?: string | null;
+  }> = [];
 
   if (toInsert.length > 0) {
     const { data, error } = await (supabase as any)
       .schema('core')
       .from('emails')
       .insert(toInsert)
-      .select('id,provider_message_id');
+      .select('id,provider_message_id,internet_message_id');
 
     if (error) {
       console.error('[CoreEmailSync] Failed to bulk insert emails:', error);
@@ -73,7 +129,7 @@ export async function saveSyncedCoreEmails(messages: SyncedEmailPayload[]) {
       .schema('core')
       .from('emails')
       .upsert(toUpdate)
-      .select('id,provider_message_id');
+      .select('id,provider_message_id,internet_message_id');
 
     if (error) {
       console.error('[CoreEmailSync] Failed to bulk update emails:', error);
@@ -84,10 +140,15 @@ export async function saveSyncedCoreEmails(messages: SyncedEmailPayload[]) {
 
   const relationPayloads = savedEmails
     .map((email) => {
-      const message = messagesByProviderId.get(email.provider_message_id);
+      const message =
+        messagesByProviderId.get(email.provider_message_id) ??
+        messages.find(
+          (item) => item.internet_message_id === email.internet_message_id,
+        );
       const relation = message?.relation;
 
-      if (!message || !relation?.entity_id || !relation.entity_type) return null;
+      if (!message || !relation?.entity_id || !relation.entity_type)
+        return null;
 
       return {
         workspace_id: message.workspace_id,
@@ -103,10 +164,15 @@ export async function saveSyncedCoreEmails(messages: SyncedEmailPayload[]) {
     const { error } = await (supabase as any)
       .schema('core')
       .from('email_relations')
-      .upsert(relationPayloads, { onConflict: 'email_id,entity_type,entity_id' });
+      .upsert(relationPayloads, {
+        onConflict: 'email_id,entity_type,entity_id',
+      });
 
     if (error) {
-      console.error('[CoreEmailSync] Failed to bulk upsert email relations:', error);
+      console.error(
+        '[CoreEmailSync] Failed to bulk upsert email relations:',
+        error,
+      );
     }
   }
 

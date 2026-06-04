@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 import { Calendar, Mail, Reply, User } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
@@ -47,12 +49,14 @@ export function CoreEmailDetailDialog({
   email,
   onReply,
   canReply = true,
+  actions,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   email: any;
   onReply: (email: any) => void;
   canReply?: boolean;
+  actions?: ReactNode;
 }) {
   if (!email) return null;
 
@@ -126,21 +130,24 @@ export function CoreEmailDetailDialog({
           </ScrollArea>
 
           <div className="flex shrink-0 items-center justify-between border-t bg-white px-6 py-4 dark:bg-zinc-950">
-            {canReply ? (
-              <Button
-                variant="default"
-                size="sm"
-                className="gap-2"
-                onClick={() => onReply(email)}
-              >
-                <Reply className="h-4 w-4" />
-                Reply
-              </Button>
-            ) : (
-              <span className="text-muted-foreground text-sm">
-                You do not have permission to reply.
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {canReply ? (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => onReply(email)}
+                >
+                  <Reply className="h-4 w-4" />
+                  Reply
+                </Button>
+              ) : (
+                <span className="text-muted-foreground text-sm">
+                  You do not have permission to reply.
+                </span>
+              )}
+              {actions}
+            </div>
             <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
               Close
             </Button>

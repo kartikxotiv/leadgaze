@@ -37,3 +37,27 @@ export const getServiceCloudDashboardService = asyncHandlerClient(
     return res.data?.data;
   },
 );
+
+export const convertCoreEmailToServiceCloudTicketService = asyncHandlerClient(
+  async (payload: ServiceCloudRecord) => {
+    const res = await ServiceCloudApiClient.post('/email-to-ticket', payload);
+    return res.data?.data;
+  },
+);
+
+export const getServiceCloudTicketDetailService = asyncHandlerClient(
+  async (workspaceId: string, ticketId: string) => {
+    const res = await ServiceCloudApiClient.get(`/tickets/${ticketId}?workspaceId=${workspaceId}`);
+    return res.data?.data;
+  },
+);
+
+export const logServiceCloudTicketTimeService = asyncHandlerClient(
+  async (workspaceId: string, ticketId: string, payload: ServiceCloudRecord) => {
+    const res = await ServiceCloudApiClient.post(`/tickets/${ticketId}/time`, {
+      ...payload,
+      workspaceId,
+    });
+    return res.data?.data;
+  },
+);

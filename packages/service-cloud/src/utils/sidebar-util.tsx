@@ -5,7 +5,6 @@ import type React from 'react';
 import {
   Activity,
   BarChart3,
-  Clock3,
   Inbox,
   Settings,
   Tags,
@@ -67,13 +66,6 @@ const serviceCloudRouteChildren: ServiceCloudRoute[] = [
     featureKey: SERVICE_CLOUD_FEATURE_KEYS.view,
   },
   {
-    label: 'Time',
-    path: '/home/services/time',
-    Icon: <Clock3 className="h-4 w-4" />,
-    moduleKey: SERVICE_CLOUD_MODULE_KEYS.timeTracking,
-    featureKey: SERVICE_CLOUD_FEATURE_KEYS.view,
-  },
-  {
     label: 'Reports',
     path: '/home/services/reports',
     Icon: <BarChart3 className="h-4 w-4" />,
@@ -89,7 +81,9 @@ const serviceCloudRouteChildren: ServiceCloudRoute[] = [
   },
 ];
 
-export function getServiceCloudRoutesForPermissions(canAccess?: ServiceCloudCanAccess) {
+export function getServiceCloudRoutesForPermissions(
+  canAccess?: ServiceCloudCanAccess,
+) {
   const children = serviceCloudRouteChildren
     .filter((item) =>
       canAccessServiceCloudFeature(canAccess, item.moduleKey, item.featureKey),
@@ -107,6 +101,8 @@ export function getServiceCloudRoutesForPermissions(canAccess?: ServiceCloudCanA
 export default [
   {
     label: 'Service Cloud',
-    children: serviceCloudRouteChildren.map(({ moduleKey, featureKey, ...item }) => item),
+    children: serviceCloudRouteChildren.map(
+      ({ moduleKey, featureKey, ...item }) => item,
+    ),
   },
 ];

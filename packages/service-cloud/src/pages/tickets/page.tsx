@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
 
 import {
   SERVICE_CLOUD_FEATURE_KEYS,
@@ -38,6 +39,7 @@ export function ServiceCloudTicketsPage({ workspaceId }: { workspaceId: string }
   if (!canView) return <ServiceCloudAccessDenied label="tickets" />;
 
   const statusOptions = statuses.map((status: any) => ({ label: status.name, value: status.id }));
+  const openStatus = statuses.find((status: any) => status.lifecycle === 'open') ?? statuses[0];
   const priorityOptions = priorities.map((priority: any) => ({ label: priority.name, value: priority.id }));
   const categoryOptions = categories.map((category: any) => ({ label: category.name, value: category.id }));
   const statusById = new Map(statuses.map((status: any) => [status.id, status.name]));
@@ -52,7 +54,7 @@ export function ServiceCloudTicketsPage({ workspaceId }: { workspaceId: string }
       canCreate={canCreate}
       canEdit={canEdit}
       canDelete={canDelete}
-      defaults={{ source: 'manual', status_id: statusOptions[0]?.value }}
+      defaults={{ source: 'manual', status_id: openStatus?.id }}
       fields={[
         { key: 'subject', label: 'Subject', required: true },
         { key: 'description', label: 'Description' },
@@ -62,7 +64,18 @@ export function ServiceCloudTicketsPage({ workspaceId }: { workspaceId: string }
       ]}
       columns={[
         { key: 'ticket_number', label: 'Ticket #' },
-        { key: 'subject', label: 'Subject' },
+        {
+          key: 'subject',
+          label: 'Subject',
+          render: (ticket) => (
+            <Link
+              href={`/home/services/tickets/${ticket.id}`}
+              className="font-medium text-primary hover:underline"
+            >
+              {ticket.subject}
+            </Link>
+          ),
+        },
         { key: 'status_id', label: 'Status', render: (ticket) => <StatusBadge value={statusById.get(ticket.status_id) as string} /> },
         { key: 'priority_id', label: 'Priority', render: (ticket) => <StatusBadge value={priorityById.get(ticket.priority_id) as string} /> },
         { key: 'created_at', label: 'Created', render: (ticket) => ticket.created_at ? new Date(ticket.created_at).toLocaleDateString() : '-' },

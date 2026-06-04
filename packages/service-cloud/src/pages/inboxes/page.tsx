@@ -8,6 +8,7 @@ import {
   useServiceCloudPermissions,
 } from '../../utils';
 import { ServiceCloudAccessDenied } from '../_components/access-denied';
+import { ServiceCloudEmailToTicketAction } from './email-to-ticket-action';
 
 export function ServiceCloudInboxesPage({ workspace }: { workspace: any }) {
   const { canAccess, isLoading } = useServiceCloudPermissions(workspace?.id);
@@ -20,6 +21,9 @@ export function ServiceCloudInboxesPage({ workspace }: { workspace: any }) {
     <CoreEmailInboxPage
       workspace={workspace}
       embedded
+      renderEmailActions={(email) => (
+        <ServiceCloudEmailToTicketAction workspaceId={workspace.id} email={email} />
+      )}
       permissions={{
         viewInbox: canView,
         sendEmails: canAccess(SERVICE_CLOUD_MODULE_KEYS.tickets, SERVICE_CLOUD_FEATURE_KEYS.reply),

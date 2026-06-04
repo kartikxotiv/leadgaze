@@ -9,6 +9,7 @@ export function CoreEmailInboxPage({
   workspace,
   permissions,
   embedded = false,
+  renderEmailActions,
 }: CoreEmailPageProps) {
   const workspaceId = workspace?.id;
   const canViewInbox = permissions?.viewInbox ?? true;
@@ -19,7 +20,11 @@ export function CoreEmailInboxPage({
       Select a workspace to view inboxes.
     </div>
   ) : canViewInbox ? (
-    <CoreInboxTab workspaceId={workspaceId} canReply={canReply} />
+    <CoreInboxTab
+      workspaceId={workspaceId}
+      canReply={canReply}
+      renderEmailActions={renderEmailActions}
+    />
   ) : (
     <div className="text-muted-foreground flex h-48 items-center justify-center rounded-lg border-2 border-dashed">
       You do not have permission to view inboxes.
