@@ -23,8 +23,7 @@ import { cn } from '@kit/ui/utils';
 import type {
   LeaveRequest,
   LeaveRequestActionPayload,
-} from '~/types/leave.type';
-
+} from '../../types/leave.type';
 import {
   formatDate,
   formatNumber,
@@ -40,9 +39,11 @@ export function LeaveRequestsTab(props: {
   return (
     <TabsContent value={'requests'} className={'mt-0'}>
       <Card className={'shadow-sm'}>
-        <CardHeader className='p-3'>
+        <CardHeader className="p-3">
           <CardTitle>My Leave Requests</CardTitle>
-          <CardDescription>Track submitted leave and decision history.</CardDescription>
+          <CardDescription>
+            Track submitted leave and decision history.
+          </CardDescription>
         </CardHeader>
         <CardContent className={'p-0'}>
           <Table>
@@ -81,7 +82,9 @@ export function LeaveRequestsTab(props: {
                         {request.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{request.approver_name ?? 'Awaiting decision'}</TableCell>
+                    <TableCell>
+                      {request.approver_name ?? 'Awaiting decision'}
+                    </TableCell>
                     <TableCell className={'text-right'}>
                       {request.can_cancel ? (
                         <Button
@@ -89,7 +92,9 @@ export function LeaveRequestsTab(props: {
                           size={'sm'}
                           disabled={props.updatePending}
                           onClick={() =>
-                            props.onUpdateRequest(request.id, { action: 'cancel' })
+                            props.onUpdateRequest(request.id, {
+                              action: 'cancel',
+                            })
                           }
                         >
                           Cancel
@@ -125,7 +130,7 @@ export function LeaveApprovalsTab(props: {
   return (
     <TabsContent value={'approvals'} className={'mt-0'}>
       <Card className={'shadow-sm'}>
-        <CardHeader className='p-3'>
+        <CardHeader className="p-3">
           <CardTitle>Approval Queue</CardTitle>
           <CardDescription>
             Review team or organization leave requests based on your role.
@@ -152,7 +157,9 @@ export function LeaveApprovalsTab(props: {
                     <TableCell className={'font-medium'}>
                       {request.employee_name}
                     </TableCell>
-                    <TableCell>{request.leave_type?.name ?? 'Unknown'}</TableCell>
+                    <TableCell>
+                      {request.leave_type?.name ?? 'Unknown'}
+                    </TableCell>
                     <TableCell>{formatDate(request.from_date)}</TableCell>
                     <TableCell>{formatDate(request.to_date)}</TableCell>
                     <TableCell>{formatNumber(request.day_count)}</TableCell>
@@ -176,7 +183,9 @@ export function LeaveApprovalsTab(props: {
                             size={'sm'}
                             disabled={props.updatePending}
                             onClick={() =>
-                              props.onUpdateRequest(request.id, { action: 'approve' })
+                              props.onUpdateRequest(request.id, {
+                                action: 'approve',
+                              })
                             }
                           >
                             Approve
@@ -186,7 +195,9 @@ export function LeaveApprovalsTab(props: {
                             size={'sm'}
                             disabled={props.updatePending}
                             onClick={() =>
-                              props.onUpdateRequest(request.id, { action: 'reject' })
+                              props.onUpdateRequest(request.id, {
+                                action: 'reject',
+                              })
                             }
                           >
                             Reject

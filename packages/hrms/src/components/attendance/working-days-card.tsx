@@ -4,7 +4,7 @@ import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { Checkbox } from '@kit/ui/checkbox';
 
-import type { WorkingDay } from '~/types/attendance.type';
+import type { WorkingDay } from '../../types/attendance.type';
 
 const weekdays: Array<{ label: string; value: WorkingDay }> = [
   { label: 'Sun', value: 0 },

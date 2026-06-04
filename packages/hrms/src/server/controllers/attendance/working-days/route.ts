@@ -1,5 +1,6 @@
-import { enhanceRouteHandler } from '@kit/next/routes';
 import { z } from 'zod';
+
+import { enhanceRouteHandler } from '@kit/next/routes';
 
 import {
   getWorkingDaysController,

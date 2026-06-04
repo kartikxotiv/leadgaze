@@ -16,6 +16,8 @@ type RbacPermission = {
 type RbacSnapshotResponse = {
   success: boolean;
   data?: {
+    employeeId?: string | null;
+    roleKeys?: string[];
     permissions?: RbacPermission[];
   };
 };
@@ -56,11 +58,12 @@ export function useRbac() {
           ? moduleKey.replace(/^hrms_/, '')
           : `hrms_${moduleKey}`,
       ];
+      const featureKeys = getFeatureAliases(moduleKey, featureKey);
 
       const permission = permissions.find(
         (item) =>
           moduleKeys.includes(item.module_key) &&
-          item.feature_key === featureKey &&
+          featureKeys.includes(item.feature_key) &&
           item.can_access,
       );
 
@@ -75,6 +78,32 @@ export function useRbac() {
 
   return {
     hasPermission,
+    isAdmin: Boolean(query.data?.data?.roleKeys?.includes('admin')),
     isLoading: query.isLoading,
+    snapshot: query.data?.data ?? null,
   };
+}
+
+function getFeatureAliases(moduleKey: string, featureKey: string) {
+  if (moduleKey === 'leave' || moduleKey === 'hrms_leave') {
+    if (featureKey === 'create') {
+      return ['create', 'request', 'apply'];
+    }
+
+    if (featureKey === 'approve') {
+      return ['approve', 'approve_requests'];
+    }
+  }
+
+  if (moduleKey === 'attendance' || moduleKey === 'hrms_attendance') {
+    if (featureKey === 'log') {
+      return ['log', 'check_in', 'check_out'];
+    }
+
+    if (featureKey === 'create') {
+      return ['create', 'manage', 'shifts'];
+    }
+  }
+
+  return [featureKey];
 }

@@ -19,7 +19,7 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
-import type { Shift } from '~/types/shift.type';
+import type { Shift } from '../../types/shift.type';
 
 export function ShiftsTableCard(props: {
   shifts: Array<Shift>;
@@ -31,7 +31,9 @@ export function ShiftsTableCard(props: {
 }) {
   return (
     <Card>
-      <CardHeader className={'flex flex-row items-center justify-between gap-3 p-4'}>
+      <CardHeader
+        className={'flex flex-row items-center justify-between gap-3 p-4'}
+      >
         <div>
           <CardTitle>Shifts</CardTitle>
           <p className={'text-muted-foreground text-sm'}>
@@ -40,7 +42,11 @@ export function ShiftsTableCard(props: {
         </div>
 
         {props.canManageShifts ? (
-          <Button variant={'outline'} size={'sm'} onClick={props.onCreateRequested}>
+          <Button
+            variant={'outline'}
+            size={'sm'}
+            onClick={props.onCreateRequested}
+          >
             <Plus className={'mr-2 h-4 w-4'} />
             New Shift
           </Button>
@@ -64,7 +70,10 @@ export function ShiftsTableCard(props: {
             <TableBody>
               {props.isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className={'text-muted-foreground py-8 text-center'}>
+                  <TableCell
+                    colSpan={6}
+                    className={'text-muted-foreground py-8 text-center'}
+                  >
                     Loading shifts...
                   </TableCell>
                 </TableRow>
@@ -72,7 +81,10 @@ export function ShiftsTableCard(props: {
 
               {!props.isLoading && props.shifts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className={'text-muted-foreground py-8 text-center'}>
+                  <TableCell
+                    colSpan={6}
+                    className={'text-muted-foreground py-8 text-center'}
+                  >
                     No shifts created yet.
                   </TableCell>
                 </TableRow>
@@ -85,7 +97,13 @@ export function ShiftsTableCard(props: {
                   <TableCell>{formatTime(shift.end_time)}</TableCell>
                   <TableCell>{shift.grace_minutes} min</TableCell>
                   <TableCell>
-                    <span className={shift.is_active ? 'text-foreground' : 'text-muted-foreground'}>
+                    <span
+                      className={
+                        shift.is_active
+                          ? 'text-foreground'
+                          : 'text-muted-foreground'
+                      }
+                    >
                       {shift.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </TableCell>
@@ -93,12 +111,18 @@ export function ShiftsTableCard(props: {
                     {props.canManageShifts ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button size={'icon'} variant={'ghost'} aria-label={'Shift actions'}>
+                          <Button
+                            size={'icon'}
+                            variant={'ghost'}
+                            aria-label={'Shift actions'}
+                          >
                             <MoreHorizontal className={'h-4 w-4'} />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align={'end'}>
-                          <DropdownMenuItem onClick={() => props.onEditRequested(shift)}>
+                          <DropdownMenuItem
+                            onClick={() => props.onEditRequested(shift)}
+                          >
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
