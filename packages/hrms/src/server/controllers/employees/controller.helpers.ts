@@ -556,6 +556,65 @@ function getFeatureAliases(moduleKey: string, featureKey: string) {
     }
   }
 
+  if (moduleKey === 'hrms_leave') {
+    if (featureKey === 'create') {
+      return ['create', 'request', 'apply', 'manage'];
+    }
+
+    if (featureKey === 'approve') {
+      return ['approve', 'approve_requests', 'manage'];
+    }
+
+    if (
+      featureKey === 'manage_holidays' ||
+      featureKey === 'manage_types' ||
+      featureKey === 'view_reports'
+    ) {
+      return [featureKey, 'manage'];
+    }
+  }
+
+  if (moduleKey === 'hrms_attendance') {
+    if (featureKey === 'log') {
+      return ['log', 'check_in', 'check_out'];
+    }
+
+    if (featureKey === 'create') {
+      return ['create', 'manage', 'shifts'];
+    }
+
+    if (featureKey === 'edit' || featureKey === 'update') {
+      return ['edit', 'update', 'manage'];
+    }
+
+    if (featureKey === 'approve') {
+      return ['approve', 'manage'];
+    }
+  }
+
+  if (moduleKey === 'hrms_recruitment') {
+    if (featureKey === 'create') {
+      return ['create', 'manage', 'manage_requisitions'];
+    }
+
+    if (featureKey === 'edit' || featureKey === 'update') {
+      return ['edit', 'update', 'manage', 'manage_requisitions'];
+    }
+
+    if (featureKey === 'delete') {
+      return ['delete', 'manage'];
+    }
+
+    if (
+      featureKey === 'manage_candidates' ||
+      featureKey === 'schedule_interviews' ||
+      featureKey === 'manage_offers' ||
+      featureKey === 'manage_onboarding'
+    ) {
+      return [featureKey, 'manage'];
+    }
+  }
+
   if (featureKey === 'edit') {
     return ['edit', 'update'];
   }

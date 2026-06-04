@@ -2,11 +2,11 @@ import { z } from 'zod';
 
 import { enhanceRouteHandler } from '@kit/next/routes';
 
+import { recruitmentOnboardingStatuses } from '../../../../../types/recruitment.type';
 import {
   deleteRecruitmentOnboardingTaskController,
   updateRecruitmentOnboardingTaskController,
 } from '../../controller';
-import { recruitmentOnboardingStatuses } from '~/types/recruitment.type';
 
 const RecruitmentOnboardingTaskUpdateSchema = z.object({
   candidate_id: z.string().uuid().optional(),
@@ -18,8 +18,13 @@ const RecruitmentOnboardingTaskUpdateSchema = z.object({
   title: z.string().min(2).max(200).optional(),
 });
 
-export const PATCH = enhanceRouteHandler(updateRecruitmentOnboardingTaskController, {
-  schema: RecruitmentOnboardingTaskUpdateSchema,
-});
+export const PATCH = enhanceRouteHandler(
+  updateRecruitmentOnboardingTaskController,
+  {
+    schema: RecruitmentOnboardingTaskUpdateSchema,
+  },
+);
 
-export const DELETE = enhanceRouteHandler(deleteRecruitmentOnboardingTaskController);
+export const DELETE = enhanceRouteHandler(
+  deleteRecruitmentOnboardingTaskController,
+);

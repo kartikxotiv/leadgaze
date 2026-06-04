@@ -1,5 +1,3 @@
-import { asyncHandlerClient } from '~/utils/async-handler';
-
 import type {
   ApiSuccessResponse,
   RecruitmentCandidateNotePayload,
@@ -11,9 +9,9 @@ import type {
   RecruitmentOnboardingTaskPayload,
   RecruitmentOptionsResponse,
   RecruitmentRequisitionPayload,
-} from '~/types/recruitment.type';
-
-import ApiClient from '../utils/axios-client';
+} from '../../types/recruitment.type';
+import { asyncHandlerClient } from '../../utils/async-handler';
+import ApiClient from '../../utils/axios-client';
 
 const getRecruitmentDashboardService = asyncHandlerClient(async () => {
   const response =
@@ -25,10 +23,9 @@ const getRecruitmentDashboardService = asyncHandlerClient(async () => {
 });
 
 const getRecruitmentOptionsService = asyncHandlerClient(async () => {
-  const response =
-    await ApiClient.get<ApiSuccessResponse<RecruitmentOptionsResponse>>(
-      '/recruitment/options',
-    );
+  const response = await ApiClient.get<
+    ApiSuccessResponse<RecruitmentOptionsResponse>
+  >('/recruitment/options');
 
   return response.data;
 });
@@ -55,13 +52,15 @@ const updateRecruitmentRequisitionService = asyncHandlerClient(
   },
 );
 
-const deleteRecruitmentRequisitionService = asyncHandlerClient(async (id: string) => {
-  const response = await ApiClient.delete<ApiSuccessResponse<null>>(
-    `/recruitment/requisitions/${id}`,
-  );
+const deleteRecruitmentRequisitionService = asyncHandlerClient(
+  async (id: string) => {
+    const response = await ApiClient.delete<ApiSuccessResponse<null>>(
+      `/recruitment/requisitions/${id}`,
+    );
 
-  return response.data;
-});
+    return response.data;
+  },
+);
 
 const createRecruitmentCandidateService = asyncHandlerClient(
   async (payload: RecruitmentCandidatePayload) => {
@@ -85,13 +84,15 @@ const updateRecruitmentCandidateService = asyncHandlerClient(
   },
 );
 
-const deleteRecruitmentCandidateService = asyncHandlerClient(async (id: string) => {
-  const response = await ApiClient.delete<ApiSuccessResponse<null>>(
-    `/recruitment/candidates/${id}`,
-  );
+const deleteRecruitmentCandidateService = asyncHandlerClient(
+  async (id: string) => {
+    const response = await ApiClient.delete<ApiSuccessResponse<null>>(
+      `/recruitment/candidates/${id}`,
+    );
 
-  return response.data;
-});
+    return response.data;
+  },
+);
 
 const createRecruitmentCandidateNoteService = asyncHandlerClient(
   async (candidateId: string, payload: RecruitmentCandidateNotePayload) => {
@@ -126,13 +127,15 @@ const updateRecruitmentInterviewService = asyncHandlerClient(
   },
 );
 
-const deleteRecruitmentInterviewService = asyncHandlerClient(async (id: string) => {
-  const response = await ApiClient.delete<ApiSuccessResponse<null>>(
-    `/recruitment/interviews/${id}`,
-  );
+const deleteRecruitmentInterviewService = asyncHandlerClient(
+  async (id: string) => {
+    const response = await ApiClient.delete<ApiSuccessResponse<null>>(
+      `/recruitment/interviews/${id}`,
+    );
 
-  return response.data;
-});
+    return response.data;
+  },
+);
 
 const createRecruitmentFeedbackService = asyncHandlerClient(
   async (payload: RecruitmentFeedbackPayload) => {

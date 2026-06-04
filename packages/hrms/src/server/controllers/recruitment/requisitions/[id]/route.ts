@@ -3,14 +3,14 @@ import { z } from 'zod';
 import { enhanceRouteHandler } from '@kit/next/routes';
 
 import {
-  deleteRecruitmentRequisitionController,
-  updateRecruitmentRequisitionController,
-} from '../../controller';
-import {
   recruitmentEmploymentTypes,
   recruitmentPriorities,
   recruitmentRequisitionStatuses,
-} from '~/types/recruitment.type';
+} from '../../../../../types/recruitment.type';
+import {
+  deleteRecruitmentRequisitionController,
+  updateRecruitmentRequisitionController,
+} from '../../controller';
 
 const RecruitmentRequisitionUpdateSchema = z.object({
   compensation_max: z.number().min(0).optional().nullable(),
@@ -30,8 +30,13 @@ const RecruitmentRequisitionUpdateSchema = z.object({
   title: z.string().min(2).max(200).optional(),
 });
 
-export const PATCH = enhanceRouteHandler(updateRecruitmentRequisitionController, {
-  schema: RecruitmentRequisitionUpdateSchema,
-});
+export const PATCH = enhanceRouteHandler(
+  updateRecruitmentRequisitionController,
+  {
+    schema: RecruitmentRequisitionUpdateSchema,
+  },
+);
 
-export const DELETE = enhanceRouteHandler(deleteRecruitmentRequisitionController);
+export const DELETE = enhanceRouteHandler(
+  deleteRecruitmentRequisitionController,
+);

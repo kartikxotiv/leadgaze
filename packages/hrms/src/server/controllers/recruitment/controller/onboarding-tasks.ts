@@ -1,23 +1,43 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import { ApiError, catchAsync, successDataResponse } from '~/utils/response-handler';
-import type { RecruitmentOnboardingStatus } from '~/types/recruitment.type';
-
+import type { RecruitmentOnboardingStatus } from '../../../../types/recruitment.type';
+import {
+  ApiError,
+  catchAsync,
+  successDataResponse,
+} from '../../../../utils/response-handler';
 import {
   ensureOrganizationRecord,
   getCompletedAt,
+  getRecruitmentHrmsClient,
+  getRecruitmentUserId,
   getRequiredOrganizationId,
   normalizeNullable,
   onboardingSelect,
+  requireRecruitmentPermission,
   touchCandidate,
 } from './shared';
 
 export const createRecruitmentOnboardingTaskController = catchAsync(
-  async ({ body, user }) => {
+  async ({ body, request, user }) => {
     const supabaseAdmin = getSupabaseServerAdminClient<any>();
-    const organizationId = await getRequiredOrganizationId(user?.id);
+    const hrms = getRecruitmentHrmsClient(supabaseAdmin);
+    const userId = getRecruitmentUserId(user);
+    const organizationId = await getRequiredOrganizationId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
     const data = body as Record<string, any>;
+
+    await requireRecruitmentPermission({
+      featureKey: 'manage_onboarding',
+      minAccessLevel: 'team',
+      supabaseAdmin,
+      userId,
+      workspaceId: organizationId,
+    });
 
     await ensureOrganizationRecord({
       entityLabel: 'Candidate',
@@ -45,26 +65,29 @@ export const createRecruitmentOnboardingTaskController = catchAsync(
       });
 
       if (offer.candidate_id !== data.candidate_id) {
-        throw new ApiError('Selected offer does not belong to this candidate', 400);
+        throw new ApiError(
+          'Selected offer does not belong to this candidate',
+          400,
+        );
       }
     }
 
     const status = data.status as RecruitmentOnboardingStatus;
 
-    const { data: created, error } = await supabaseAdmin
+    const { data: created, error } = await hrms
       .from('recruitment_onboarding_tasks')
       .insert({
         candidate_id: data.candidate_id,
         completed_at: getCompletedAt(status),
-        created_by: user?.id ?? null,
+        created_by: userId ?? null,
         description: normalizeNullable(data.description),
         due_date: normalizeNullable(data.due_date),
         offer_id: normalizeNullable(data.offer_id),
-        organization_id: organizationId,
+        workspace_id: organizationId,
         owner_employee_id: normalizeNullable(data.owner_employee_id),
         status,
         title: String(data.title).trim(),
-        updated_by: user?.id ?? null,
+        updated_by: userId ?? null,
       })
       .select(onboardingSelect)
       .single();
@@ -76,7 +99,7 @@ export const createRecruitmentOnboardingTaskController = catchAsync(
     await touchCandidate({
       candidateId: data.candidate_id,
       supabaseAdmin,
-      userId: user?.id,
+      userId,
     });
 
     return successDataResponse('Onboarding task saved successfully', created);
@@ -84,15 +107,29 @@ export const createRecruitmentOnboardingTaskController = catchAsync(
 );
 
 export const updateRecruitmentOnboardingTaskController = catchAsync(
-  async ({ body, params, user }) => {
+  async ({ body, params, request, user }) => {
     const supabaseAdmin = getSupabaseServerAdminClient<any>();
-    const organizationId = await getRequiredOrganizationId(user?.id);
+    const hrms = getRecruitmentHrmsClient(supabaseAdmin);
+    const userId = getRecruitmentUserId(user);
+    const organizationId = await getRequiredOrganizationId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
     const taskId = params?.id;
     const data = body as Record<string, any>;
 
     if (!taskId) {
       throw new ApiError('Onboarding task id is required', 400);
     }
+
+    await requireRecruitmentPermission({
+      featureKey: 'manage_onboarding',
+      minAccessLevel: 'team',
+      supabaseAdmin,
+      userId,
+      workspaceId: organizationId,
+    });
 
     const existingTask = await ensureOrganizationRecord({
       entityLabel: 'Onboarding task',
@@ -137,13 +174,16 @@ export const updateRecruitmentOnboardingTaskController = catchAsync(
       });
 
       if (offer.candidate_id !== candidateId) {
-        throw new ApiError('Selected offer does not belong to this candidate', 400);
+        throw new ApiError(
+          'Selected offer does not belong to this candidate',
+          400,
+        );
       }
     }
 
     const payload: Record<string, any> = {
       updated_at: new Date().toISOString(),
-      updated_by: user?.id ?? null,
+      updated_by: userId ?? null,
     };
 
     if (data.candidate_id !== undefined) {
@@ -169,10 +209,10 @@ export const updateRecruitmentOnboardingTaskController = catchAsync(
       payload.status = data.status;
     }
 
-    const { data: updated, error } = await supabaseAdmin
+    const { data: updated, error } = await hrms
       .from('recruitment_onboarding_tasks')
       .update(payload)
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', organizationId)
       .eq('id', taskId)
       .select(onboardingSelect)
       .single();
@@ -184,7 +224,7 @@ export const updateRecruitmentOnboardingTaskController = catchAsync(
     await touchCandidate({
       candidateId,
       supabaseAdmin,
-      userId: user?.id,
+      userId,
     });
 
     return successDataResponse('Onboarding task updated successfully', updated);
@@ -192,14 +232,28 @@ export const updateRecruitmentOnboardingTaskController = catchAsync(
 );
 
 export const deleteRecruitmentOnboardingTaskController = catchAsync(
-  async ({ params, user }) => {
+  async ({ params, request, user }) => {
     const supabaseAdmin = getSupabaseServerAdminClient<any>();
-    const organizationId = await getRequiredOrganizationId(user?.id);
+    const hrms = getRecruitmentHrmsClient(supabaseAdmin);
+    const userId = getRecruitmentUserId(user);
+    const organizationId = await getRequiredOrganizationId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
     const taskId = params?.id;
 
     if (!taskId) {
       throw new ApiError('Onboarding task id is required', 400);
     }
+
+    await requireRecruitmentPermission({
+      featureKey: 'delete',
+      minAccessLevel: 'team',
+      supabaseAdmin,
+      userId,
+      workspaceId: organizationId,
+    });
 
     await ensureOrganizationRecord({
       entityLabel: 'Onboarding task',
@@ -209,10 +263,10 @@ export const deleteRecruitmentOnboardingTaskController = catchAsync(
       table: 'recruitment_onboarding_tasks',
     });
 
-    const { error } = await supabaseAdmin
+    const { error } = await hrms
       .from('recruitment_onboarding_tasks')
       .delete()
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', organizationId)
       .eq('id', taskId);
 
     if (error) {

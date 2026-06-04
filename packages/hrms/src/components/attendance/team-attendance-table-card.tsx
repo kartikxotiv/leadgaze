@@ -21,7 +21,7 @@ import {
 } from '@kit/ui/table';
 import { cn } from '@kit/ui/utils';
 
-import type { AdminAttendanceRow } from '~/types/attendance.type';
+import type { AdminAttendanceRow } from '../../types/attendance.type';
 
 export function TeamAttendanceTableCard(props: {
   isLoading: boolean;
