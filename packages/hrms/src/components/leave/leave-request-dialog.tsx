@@ -21,7 +21,10 @@ import {
 } from '@kit/ui/select';
 import { Textarea } from '@kit/ui/textarea';
 
-import type { LeaveRequestCreatePayload, LeaveType } from '~/types/leave.type';
+import type {
+  LeaveRequestCreatePayload,
+  LeaveType,
+} from '../../types/leave.type';
 
 type LeaveRequestDialogState = LeaveRequestCreatePayload;
 
@@ -47,7 +50,9 @@ export function LeaveRequestDialog(props: {
       return;
     }
 
-    const firstActiveLeaveType = props.leaveTypes.find((leaveType) => leaveType.is_active);
+    const firstActiveLeaveType = props.leaveTypes.find(
+      (leaveType) => leaveType.is_active,
+    );
 
     setForm({
       ...DEFAULT_FORM,

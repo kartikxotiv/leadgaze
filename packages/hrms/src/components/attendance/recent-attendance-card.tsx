@@ -2,16 +2,15 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 
-import type { AttendanceRecord } from '~/types/attendance.type';
-
-import { formatHeaderDate, formatTime } from '../attendance-page.utils';
+import { formatHeaderDate, formatTime } from '../../attendance-page.utils';
+import type { AttendanceRecord } from '../../types/attendance.type';
 
 export function RecentAttendanceCard(props: {
   records: Array<AttendanceRecord>;
 }) {
   return (
     <Card className={'shadow-sm'}>
-      <CardHeader className='p-2'>
+      <CardHeader className="p-2">
         <CardTitle className={'text-lg font-semibold'}>Recent Days</CardTitle>
         <p className={'text-muted-foreground text-sm'}>
           Last 14 processed attendance records.
@@ -27,7 +26,9 @@ export function RecentAttendanceCard(props: {
           props.records.map((record) => (
             <div
               key={record.id}
-              className={'flex items-center justify-between rounded-lg border px-4 py-3'}
+              className={
+                'flex items-center justify-between rounded-lg border px-4 py-3'
+              }
             >
               <div>
                 <p className={'text-sm font-medium'}>

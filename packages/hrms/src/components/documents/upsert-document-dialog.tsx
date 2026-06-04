@@ -1,27 +1,18 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { FormEvent, useEffect, useState } from 'react';
 
+import { Button } from '@kit/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@kit/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@kit/ui/form';
 import { Input } from '@kit/ui/input';
-import { Button } from '@kit/ui/button';
+import { Label } from '@kit/ui/label';
 import {
   Select,
   SelectContent,
@@ -30,196 +21,179 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 
-import { createDocumentService, updateDocumentService } from '~/services/document.service';
-import { listEmployeesService } from '~/services/employee.service';
-import { uploadFileService } from '~/services/upload.service';
-import type { EmployeeDocument, DocumentFormPayload } from '~/types/document.type';
-import type { Employee } from '~/types/employee.type';
-import { useEffect, useState } from 'react';
+import { uploadFileService } from '../../server/services/upload.service';
+import type {
+  DocumentFormPayload,
+  EmployeeDocument,
+} from '../../types/document.type';
+import type { Employee } from '../../types/employee.type';
+import { showToast } from '../global/ToastAlert';
 
-const formSchema = z.object({
-  name: z.string().min(2, 'Document name must be at least 2 characters'),
-  employeeId: z.string().uuid('Please select an employee'),
-  uploadFile: z.string().min(1, 'Please select a file'),
-});
+const emptyForm: DocumentFormPayload = {
+  employeeId: '',
+  name: '',
+  uploadFile: '',
+};
 
-interface UpsertDocumentDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
+type UpsertDocumentDialogProps = {
   document?: EmployeeDocument | null;
-}
+  employees: Array<
+    Pick<Employee, 'employee_code' | 'first_name' | 'id' | 'last_name'>
+  >;
+  isPending: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (payload: DocumentFormPayload) => void;
+  open: boolean;
+};
 
-export function UpsertDocumentDialog({
-  isOpen,
-  onOpenChange,
-  document,
-}: UpsertDocumentDialogProps) {
-  const queryClient = useQueryClient();
+export function UpsertDocumentDialog(props: UpsertDocumentDialogProps) {
+  const [form, setForm] = useState<DocumentFormPayload>(emptyForm);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const isEdit = !!document;
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: document?.name ?? '',
-      employeeId: document?.employee_id ?? '',
-      uploadFile: document?.file_url ?? '',
-    },
-  });
+  const [isUploading, setIsUploading] = useState(false);
+  const isEdit = Boolean(props.document);
+  const isBusy = props.isPending || isUploading;
 
   useEffect(() => {
-    if (isOpen) {
-      form.reset({
-        name: document?.name ?? '',
-        employeeId: document?.employee_id ?? '',
-        uploadFile: document?.file_url ?? '',
-      });
-      setSelectedFile(null);
+    if (!props.open) {
+      return;
     }
-  }, [document, isOpen, form]);
 
-  const employeesQuery = useQuery({
-    queryKey: ['employees'],
-    queryFn: listEmployeesService,
-  });
+    setForm(
+      props.document
+        ? {
+            employeeId: props.document.employee_id ?? '',
+            name: props.document.name,
+            uploadFile: props.document.file_url,
+          }
+        : emptyForm,
+    );
+    setSelectedFile(null);
+  }, [props.document, props.open]);
 
-  const upsertMutation = useMutation({
-    mutationFn: async (values: z.infer<typeof formSchema>) => {
-      let fileUrl = values.uploadFile;
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    let fileUrl = form.uploadFile;
 
-      // If a new file is selected, upload it first
-      if (selectedFile) {
+    if (selectedFile) {
+      setIsUploading(true);
+
+      try {
         const uploadResult = await uploadFileService(selectedFile);
         fileUrl = uploadResult.data.url;
+      } catch (error) {
+        const uploadError = error as { message?: string };
+        showToast(uploadError.message ?? 'Unable to upload document', 'error');
+        return;
+      } finally {
+        setIsUploading(false);
       }
+    }
 
-      const payload: DocumentFormPayload = {
-        name: values.name,
-        employeeId: values.employeeId,
-        uploadFile: fileUrl,
-      };
-
-      if (isEdit && document) {
-        return updateDocumentService(document.id, payload);
-      }
-      return createDocumentService(payload);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['employee_documents'] });
-      toast.success(isEdit ? 'Document updated' : 'Document created');
-      onOpenChange(false);
-      form.reset();
-      setSelectedFile(null);
-    },
-    onError: (error: { message?: string }) => {
-      toast.error(error.message || 'Something went wrong');
-    },
-  });
-
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    upsertMutation.mutate(values);
-  }
+    props.onSubmit({
+      employeeId: form.employeeId,
+      name: form.name.trim(),
+      uploadFile: fileUrl,
+    });
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit Document' : 'Add New Document'}</DialogTitle>
-        </DialogHeader>
+    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
+      <DialogContent className="sm:max-w-[520px]">
+        <form className="space-y-5" onSubmit={onSubmit}>
+          <DialogHeader>
+            <DialogTitle>
+              {isEdit ? 'Edit Document' : 'Add Document'}
+            </DialogTitle>
+            <DialogDescription>
+              Attach employee documents to the active Leadgaze workspace.
+            </DialogDescription>
+          </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Document Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. Passport, ID Card" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="employeeId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Employee</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select an employee" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {employeesQuery.data?.data.map((employee: Employee) => (
-                        <SelectItem key={employee.id} value={employee.id}>
-                          {employee.first_name} {employee.last_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="uploadFile"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>File Upload</FormLabel>
-                  <FormControl>
-                    <Input
-                      name={field.name}
-                      ref={field.ref}
-                      onBlur={field.onBlur}
-                      type="file"
-                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          setSelectedFile(file);
-                          field.onChange(file.name);
-                        } else {
-                          setSelectedFile(null);
-                          field.onChange(document?.file_url ?? '');
-                        }
-                      }}
-                    />
-                  </FormControl>
-                  {isEdit && !selectedFile && document?.file_url && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Current file: <a href={document.file_url} target="_blank" rel="noreferrer" className="text-brand hover:underline">View</a>
-                    </p>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={upsertMutation.isPending}>
-                {upsertMutation.isPending ? 'Saving...' : 'Save Document'}
-              </Button>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="document-name">Document Name</Label>
+              <Input
+                id="document-name"
+                placeholder="Passport, ID Card, Certificate"
+                required
+                value={form.name}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    name: event.target.value,
+                  }))
+                }
+              />
             </div>
-          </form>
-        </Form>
+
+            <div className="space-y-2">
+              <Label>Employee</Label>
+              <Select
+                value={form.employeeId}
+                onValueChange={(value) =>
+                  setForm((current) => ({ ...current, employeeId: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an employee" />
+                </SelectTrigger>
+                <SelectContent>
+                  {props.employees.map((employee) => (
+                    <SelectItem key={employee.id} value={employee.id}>
+                      {employee.first_name} {employee.last_name ?? ''} (
+                      {employee.employee_code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="document-file">File</Label>
+              <Input
+                id="document-file"
+                type="file"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+                required={!isEdit}
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  setSelectedFile(file);
+
+                  if (file) {
+                    setForm((current) => ({
+                      ...current,
+                      uploadFile: file.name,
+                    }));
+                  }
+                }}
+              />
+              {isEdit && !selectedFile && props.document?.file_url ? (
+                <a
+                  className="text-muted-foreground hover:text-foreground text-xs underline"
+                  href={props.document.file_url}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  View current file
+                </a>
+              ) : null}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              disabled={isBusy}
+              type="button"
+              variant="outline"
+              onClick={() => props.onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button disabled={isBusy} type="submit">
+              {isBusy ? 'Saving...' : 'Save Document'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

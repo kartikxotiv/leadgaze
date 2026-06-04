@@ -5,10 +5,9 @@ import type {
   AttendanceContext,
   AttendanceSettings,
   MyAttendanceResponse,
-} from '~/types/attendance.type';
-import { asyncHandlerClient } from '~/utils/async-handler';
-
-import ApiClient from '../utils/axios-client';
+} from '../../types/attendance.type';
+import { asyncHandlerClient } from '../../utils/async-handler';
+import ApiClient from '../../utils/axios-client';
 
 const getAttendanceContextService = asyncHandlerClient(async () => {
   const response = await ApiClient.get<ApiSuccessResponse<AttendanceContext>>(

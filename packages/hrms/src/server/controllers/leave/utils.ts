@@ -1,9 +1,9 @@
-import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
-
-import type { Database } from '~/lib/database.types';
-import { getRbacSnapshot } from '~/lib/server/rbac';
-import type { PermissionAccessLevel, RbacSnapshot } from '~/types/rbac.type';
-import { ApiError } from '~/utils/response-handler';
+import { ApiError } from '../../../utils/response-handler';
+import {
+  type SupabaseAdminClient,
+  getHrmsClient,
+  requireEmployeePermission,
+} from '../employees/controller.helpers';
 
 type LeaveEmployee = {
   department_id: string | null;
@@ -35,215 +35,184 @@ type LeaveContext = {
   organizationId: string;
   permissions: LeavePermissions;
   roleKeys: string[];
+  userId: string;
+  workspaceId: string;
 };
 
-type SupabaseAdminClient = ReturnType<
-  typeof getSupabaseServerAdminClient<Database>
->;
-
-const ACCESS_LEVEL_RANK: Record<PermissionAccessLevel, number> = {
-  none: 0,
-  own: 1,
-  team: 2,
-};
-
-function hasPermission(params: {
+type PermissionProbe = {
   featureKey: string;
-  minAccessLevel?: PermissionAccessLevel;
-  moduleKey?: string;
-  snapshot: RbacSnapshot;
+  minAccessLevel?: 'all' | 'own' | 'team';
+};
+
+async function canAccess(params: {
+  featureKey: string;
+  minAccessLevel?: 'all' | 'own' | 'team';
+  supabaseAdmin: SupabaseAdminClient;
+  userId: string;
+  workspaceId: string;
 }) {
-  const roleKeys = params.snapshot.roleKeys ?? [];
+  try {
+    await requireEmployeePermission({
+      featureKey: params.featureKey,
+      minAccessLevel: params.minAccessLevel,
+      moduleKey: 'hrms_leave',
+      supabaseAdmin: params.supabaseAdmin,
+      userId: params.userId,
+      workspaceId: params.workspaceId,
+    });
 
-  if (roleKeys.includes('admin')) {
     return true;
+  } catch (error) {
+    if (error instanceof ApiError && error.statusCode === 403) {
+      return false;
+    }
+
+    throw error;
   }
-
-  const moduleKey = params.moduleKey ?? 'leave';
-  const entry = params.snapshot.permissions.find(
-    (permission) =>
-      permission.module_key === moduleKey &&
-      permission.feature_key === params.featureKey &&
-      permission.can_access,
-  );
-
-  if (!entry) {
-    return false;
-  }
-
-  const minLevel = params.minAccessLevel ?? 'own';
-
-  return ACCESS_LEVEL_RANK[entry.access_level] >= ACCESS_LEVEL_RANK[minLevel];
 }
 
-async function getRoleKeysForAccount(params: {
-  accountId: string;
-  organizationId: string;
+async function canAny(params: {
+  permissions: PermissionProbe[];
+  supabaseAdmin: SupabaseAdminClient;
+  userId: string;
+  workspaceId: string;
 }) {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-
-  const { data: ownedOrg, error: ownedOrgError } = await supabaseAdmin
-    .from('organizations')
-    .select('id')
-    .eq('id', params.organizationId)
-    .eq('owner_id', params.accountId)
-    .maybeSingle();
-
-  if (ownedOrgError) {
-    throw new ApiError(ownedOrgError.message, 400);
+  for (const permission of params.permissions) {
+    if (
+      await canAccess({
+        featureKey: permission.featureKey,
+        minAccessLevel: permission.minAccessLevel,
+        supabaseAdmin: params.supabaseAdmin,
+        userId: params.userId,
+        workspaceId: params.workspaceId,
+      })
+    ) {
+      return true;
+    }
   }
 
-  if (ownedOrg) {
-    return ['admin'];
-  }
+  return false;
+}
 
-  const { data: employee, error: employeeError } = await supabaseAdmin
-    .from('employees')
-    .select('id')
-    .eq('organization_id', params.organizationId)
-    .eq('account_id', params.accountId)
-    .maybeSingle();
+async function getLeaveContext(params: {
+  accountId: string;
+  supabaseAdmin: SupabaseAdminClient;
+  workspaceId: string;
+}) {
+  const hrms = getHrmsClient(params.supabaseAdmin);
+  const [{ data: employee, error: employeeError }, { data: member }] =
+    await Promise.all([
+      hrms
+        .from('employees')
+        .select(
+          'id, first_name, last_name, employee_code, department_id, manager_employee_id',
+        )
+        .eq('workspace_id', params.workspaceId)
+        .eq('account_id', params.accountId)
+        .eq('is_deleted', false)
+        .maybeSingle(),
+      params.supabaseAdmin
+        .from('workspace_members')
+        .select('role:workspace_roles!workspace_members_role_id_fkey(role_key)')
+        .eq('workspace_id', params.workspaceId)
+        .eq('user_id', params.accountId)
+        .eq('status', 'accepted')
+        .maybeSingle(),
+    ]);
 
   if (employeeError) {
     throw new ApiError(employeeError.message, 400);
   }
 
-  if (!employee) {
-    return [];
-  }
-
-  const { data, error } = await supabaseAdmin
-    .from('employee_roles')
-    .select('role:roles!employee_roles_role_id_fkey(role_key)')
-    .eq('organization_id', params.organizationId)
-    .eq('employee_id', employee.id);
-
-  if (error) {
-    throw new ApiError(error.message, 400);
-  }
-
-  return (data ?? [])
-    .map((entry) => entry.role?.role_key)
-    .filter((value): value is string => Boolean(value));
-}
-
-async function getEmployeeForAccount(params: {
-  accountId: string;
-  organizationId: string;
-}) {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-
-  const { data, error } = await supabaseAdmin
-    .from('employees')
-    .select(
-      'id, first_name, last_name, employee_code, department_id, manager_employee_id',
-    )
-    .eq('organization_id', params.organizationId)
-    .eq('account_id', params.accountId)
-    .maybeSingle();
-
-  if (error) {
-    throw new ApiError(error.message, 400);
-  }
-
-  return (data as LeaveEmployee | null) ?? null;
-}
-
-async function getLeaveContext(params: {
-  accountId: string;
-  organizationId: string;
-}) {
-  const [fallbackRoleKeys, employee, rbacSnapshot] = await Promise.all([
-    getRoleKeysForAccount(params),
-    getEmployeeForAccount(params),
-    getRbacSnapshot(params),
-  ]);
-
-  const roleKeys = Array.from(
-    new Set([...(fallbackRoleKeys ?? []), ...(rbacSnapshot.roleKeys ?? [])]),
-  );
+  const roleKey = (member as { role?: { role_key?: string } } | null)?.role
+    ?.role_key;
+  const roleKeys = roleKey ? [roleKey] : [];
   const isAdmin = roleKeys.includes('admin');
   const isHr = roleKeys.includes('hr');
   const isManager = roleKeys.includes('manager');
-  const isMember = roleKeys.includes('member');
-  const canApply =
-    Boolean(employee) &&
-    !isAdmin &&
-    hasPermission({
-      featureKey: 'create',
-      minAccessLevel: 'own',
-      snapshot: rbacSnapshot,
-    });
-  const canApprove =
-    hasPermission({
-      featureKey: 'approve_requests',
-      minAccessLevel: 'team',
-      snapshot: rbacSnapshot,
-    }) ||
-    hasPermission({
-      featureKey: 'approve',
-      minAccessLevel: 'team',
-      snapshot: rbacSnapshot,
-    });
-  const canViewApprovals =
-    canApprove ||
-    hasPermission({
-      featureKey: 'view_approvals',
-      minAccessLevel: 'team',
-      snapshot: rbacSnapshot,
-    });
-  const canManageHolidays = hasPermission({
-    featureKey: 'manage_holidays',
-    minAccessLevel: 'team',
-    snapshot: rbacSnapshot,
-  });
-  const canManageLeaveTypes = hasPermission({
-    featureKey: 'manage_types',
-    minAccessLevel: 'team',
-    snapshot: rbacSnapshot,
-  });
-  const canViewHolidays =
-    canManageHolidays ||
-    hasPermission({
-      featureKey: 'view_holidays',
-      minAccessLevel: 'own',
-      snapshot: rbacSnapshot,
-    }) ||
-    hasPermission({
-      featureKey: 'view',
-      minAccessLevel: 'own',
-      snapshot: rbacSnapshot,
-    });
-  const canViewRequests =
-    Boolean(employee) &&
-    (hasPermission({
-      featureKey: 'view_requests',
-      minAccessLevel: 'own',
-      snapshot: rbacSnapshot,
-    }) ||
-      hasPermission({
-        featureKey: 'view',
-        minAccessLevel: 'own',
-        snapshot: rbacSnapshot,
-      }));
-  const canViewReports = hasPermission({
-    featureKey: 'view_reports',
-    minAccessLevel: 'team',
-    snapshot: rbacSnapshot,
-  });
+  const isMember = roleKeys.includes('user') || roleKeys.includes('member');
+
+  const [
+    canApply,
+    canApprove,
+    canViewApprovals,
+    canManageHolidays,
+    canManageLeaveTypes,
+    canViewHolidays,
+    canViewRequests,
+    canViewReports,
+  ] = await Promise.all([
+    canAny({
+      permissions: [{ featureKey: 'create', minAccessLevel: 'own' }],
+      supabaseAdmin: params.supabaseAdmin,
+      userId: params.accountId,
+      workspaceId: params.workspaceId,
+    }),
+    canAny({
+      permissions: [{ featureKey: 'approve', minAccessLevel: 'team' }],
+      supabaseAdmin: params.supabaseAdmin,
+      userId: params.accountId,
+      workspaceId: params.workspaceId,
+    }),
+    canAny({
+      permissions: [
+        { featureKey: 'view_approvals', minAccessLevel: 'team' },
+        { featureKey: 'approve', minAccessLevel: 'team' },
+      ],
+      supabaseAdmin: params.supabaseAdmin,
+      userId: params.accountId,
+      workspaceId: params.workspaceId,
+    }),
+    canAny({
+      permissions: [{ featureKey: 'manage_holidays', minAccessLevel: 'team' }],
+      supabaseAdmin: params.supabaseAdmin,
+      userId: params.accountId,
+      workspaceId: params.workspaceId,
+    }),
+    canAny({
+      permissions: [{ featureKey: 'manage_types', minAccessLevel: 'team' }],
+      supabaseAdmin: params.supabaseAdmin,
+      userId: params.accountId,
+      workspaceId: params.workspaceId,
+    }),
+    canAny({
+      permissions: [
+        { featureKey: 'view_holidays', minAccessLevel: 'own' },
+        { featureKey: 'view', minAccessLevel: 'own' },
+      ],
+      supabaseAdmin: params.supabaseAdmin,
+      userId: params.accountId,
+      workspaceId: params.workspaceId,
+    }),
+    canAny({
+      permissions: [
+        { featureKey: 'view_requests', minAccessLevel: 'own' },
+        { featureKey: 'view', minAccessLevel: 'own' },
+      ],
+      supabaseAdmin: params.supabaseAdmin,
+      userId: params.accountId,
+      workspaceId: params.workspaceId,
+    }),
+    canAny({
+      permissions: [{ featureKey: 'view_reports', minAccessLevel: 'team' }],
+      supabaseAdmin: params.supabaseAdmin,
+      userId: params.accountId,
+      workspaceId: params.workspaceId,
+    }),
+  ]);
 
   return {
-    employee,
-    organizationId: params.organizationId,
+    employee: (employee as LeaveEmployee | null) ?? null,
+    organizationId: params.workspaceId,
     permissions: {
-      canApply,
+      canApply: Boolean(employee) && !isAdmin && canApply,
       canApprove,
       canManageHolidays,
       canManageLeaveTypes,
       canManageConfiguration: canManageHolidays || canManageLeaveTypes,
       canViewApprovals,
       canViewHolidays,
-      canViewRequests,
+      canViewRequests: Boolean(employee) && canViewRequests,
       canViewReports,
       isAdmin,
       isHr,
@@ -251,6 +220,8 @@ async function getLeaveContext(params: {
       isMember,
     },
     roleKeys,
+    userId: params.accountId,
+    workspaceId: params.workspaceId,
   } satisfies LeaveContext;
 }
 
@@ -302,10 +273,10 @@ async function getHolidayCountInRange(params: {
   supabaseAdmin: SupabaseAdminClient;
   toDate: string;
 }) {
-  const { count, error } = await params.supabaseAdmin
+  const { count, error } = await getHrmsClient(params.supabaseAdmin)
     .from('leave_holidays')
     .select('id', { count: 'exact', head: true })
-    .eq('organization_id', params.organizationId)
+    .eq('workspace_id', params.organizationId)
     .gte('holiday_date', params.fromDate)
     .lte('holiday_date', params.toDate);
 

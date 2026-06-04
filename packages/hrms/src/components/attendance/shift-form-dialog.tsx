@@ -15,7 +15,7 @@ import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import { Switch } from '@kit/ui/switch';
 
-import type { Shift, ShiftFormPayload } from '~/types/shift.type';
+import type { Shift, ShiftFormPayload } from '../../types/shift.type';
 
 const EMPTY_FORM: ShiftFormPayload = {
   name: '',
@@ -99,7 +99,10 @@ export function ShiftFormDialog(props: {
                   required
                   value={toTimeInput(form.start_time)}
                   onChange={(event) =>
-                    setForm((prev) => ({ ...prev, start_time: event.target.value }))
+                    setForm((prev) => ({
+                      ...prev,
+                      start_time: event.target.value,
+                    }))
                   }
                 />
               </div>
@@ -113,7 +116,10 @@ export function ShiftFormDialog(props: {
                   required
                   value={toTimeInput(form.end_time)}
                   onChange={(event) =>
-                    setForm((prev) => ({ ...prev, end_time: event.target.value }))
+                    setForm((prev) => ({
+                      ...prev,
+                      end_time: event.target.value,
+                    }))
                   }
                 />
               </div>
@@ -136,7 +142,11 @@ export function ShiftFormDialog(props: {
               />
             </div>
 
-            <div className={'flex items-center justify-between rounded-lg border px-4 py-3'}>
+            <div
+              className={
+                'flex items-center justify-between rounded-lg border px-4 py-3'
+              }
+            >
               <div>
                 <p className={'font-medium'}>Active Shift</p>
                 <p className={'text-muted-foreground text-sm'}>

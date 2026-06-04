@@ -3,3 +3,48 @@
 
   @apply xl:max-w-[80rem] px-8;
 }
+
+@utility primary-heading-number {
+  font-family: var(--font-sans) !important;
+  font-size: 24px !important;
+  font-weight: 600 !important;
+  line-height: 32px !important;
+}
+
+@utility primary-heading {
+  font-family: var(--font-sans) !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  line-height: 27px !important;
+}
+
+@utility primary-text-medium {
+  font-family: var(--font-sans) !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 20px !important;
+}
+
+@utility primary-text-regular {
+  font-family: var(--font-sans) !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 20px !important;
+}
+
+@utility secondary-text-small {
+  font-family: var(--font-sans) !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 16px !important;
+}
+
+@utility card-container {
+  border: 0.6px solid #B0B0B0;
+  border-radius: 0.7px !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); 
+}
+
+@utility bar-bg {
+  background-color: #E6E6E6;
+}

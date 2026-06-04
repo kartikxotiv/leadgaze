@@ -4,10 +4,32 @@
   "version": "0.1.0",
   "exports": {
     ".": "./index.ts",
+    "./server/attendance": "./src/server/controllers/attendance/route.ts",
+    "./server/attendance/check-in": "./src/server/controllers/attendance/check-in/route.ts",
+    "./server/attendance/check-out": "./src/server/controllers/attendance/check-out/route.ts",
+    "./server/attendance/context": "./src/server/controllers/attendance/context/route.ts",
+    "./server/attendance/me": "./src/server/controllers/attendance/me/route.ts",
+    "./server/attendance/records": "./src/server/controllers/attendance/records/route.ts",
+    "./server/attendance/records/[recordId]": "./src/server/controllers/attendance/records/[recordId]/route.ts",
+    "./server/attendance/working-days": "./src/server/controllers/attendance/working-days/route.ts",
+    "./server/departments": "./src/server/controllers/departments/route.ts",
+    "./server/departments/[departmentId]": "./src/server/controllers/departments/[departmentId]/route.ts",
+    "./server/departments/options": "./src/server/controllers/departments/options/route.ts",
+    "./server/documents": "./src/server/controllers/documents/route.ts",
+    "./server/documents/[id]": "./src/server/controllers/documents/[id]/route.ts",
     "./server/employees": "./src/server/controllers/employees/route.ts",
     "./server/employees/[employeeId]": "./src/server/controllers/employees/[employeeId]/route.ts",
     "./server/employees/invite": "./src/server/controllers/employees/invite/route.ts",
-    "./server/employees/options": "./src/server/controllers/employees/options/route.ts"
+    "./server/employees/options": "./src/server/controllers/employees/options/route.ts",
+    "./server/leave": "./src/server/controllers/leave/route.ts",
+    "./server/leave/[requestId]": "./src/server/controllers/leave/[requestId]/route.ts",
+    "./server/leave/holidays": "./src/server/controllers/leave/holidays/route.ts",
+    "./server/leave/holidays/[holidayId]": "./src/server/controllers/leave/holidays/[holidayId]/route.ts",
+    "./server/leave/types": "./src/server/controllers/leave/types/route.ts",
+    "./server/leave/types/[typeId]": "./src/server/controllers/leave/types/[typeId]/route.ts",
+    "./server/shifts": "./src/server/controllers/shifts/route.ts",
+    "./server/shifts/[shiftId]": "./src/server/controllers/shifts/[shiftId]/route.ts",
+    "./server/upload": "./src/server/controllers/upload/route.ts"
   },
   "typesVersions": {
     "*": {
