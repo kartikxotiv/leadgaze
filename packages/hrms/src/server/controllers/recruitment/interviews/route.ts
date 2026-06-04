@@ -2,11 +2,11 @@ import { z } from 'zod';
 
 import { enhanceRouteHandler } from '@kit/next/routes';
 
-import { createRecruitmentInterviewController } from '../controller';
 import {
   recruitmentInterviewRoundTypes,
   recruitmentInterviewStatuses,
-} from '~/types/recruitment.type';
+} from '../../../../types/recruitment.type';
+import { createRecruitmentInterviewController } from '../controller';
 
 const RecruitmentInterviewSchema = z.object({
   candidate_id: z.string().uuid(),

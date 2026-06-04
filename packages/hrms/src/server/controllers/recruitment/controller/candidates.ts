@@ -1,23 +1,43 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import { ApiError, catchAsync, successDataResponse } from '~/utils/response-handler';
-
+import {
+  ApiError,
+  catchAsync,
+  successDataResponse,
+} from '../../../../utils/response-handler';
 import {
   candidateSelect,
   ensureOrganizationRecord,
   getCurrentEmployeeId,
+  getRecruitmentHrmsClient,
+  getRecruitmentUserId,
   getRequiredOrganizationId,
   normalizeNullable,
   noteSelect,
+  requireRecruitmentPermission,
   touchCandidate,
 } from './shared';
 
 export const createRecruitmentCandidateController = catchAsync(
-  async ({ body, user }) => {
+  async ({ body, request, user }) => {
     const supabaseAdmin = getSupabaseServerAdminClient<any>();
-    const organizationId = await getRequiredOrganizationId(user?.id);
+    const hrms = getRecruitmentHrmsClient(supabaseAdmin);
+    const userId = getRecruitmentUserId(user);
+    const organizationId = await getRequiredOrganizationId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
     const data = body as Record<string, any>;
+
+    await requireRecruitmentPermission({
+      featureKey: 'manage_candidates',
+      minAccessLevel: 'team',
+      supabaseAdmin,
+      userId,
+      workspaceId: organizationId,
+    });
 
     await ensureOrganizationRecord({
       entityLabel: 'Requisition',
@@ -36,8 +56,9 @@ export const createRecruitmentCandidateController = catchAsync(
 
     const payload = {
       applied_at:
-        normalizeNullable(data.applied_at) ?? new Date().toISOString().slice(0, 10),
-      created_by: user?.id ?? null,
+        normalizeNullable(data.applied_at) ??
+        new Date().toISOString().slice(0, 10),
+      created_by: userId ?? null,
       current_company: normalizeNullable(data.current_company),
       current_ctc:
         data.current_ctc === null || data.current_ctc === undefined
@@ -56,20 +77,21 @@ export const createRecruitmentCandidateController = catchAsync(
       full_name: String(data.full_name).trim(),
       last_activity_at: new Date().toISOString(),
       notice_period_days:
-        data.notice_period_days === null || data.notice_period_days === undefined
+        data.notice_period_days === null ||
+        data.notice_period_days === undefined
           ? null
           : Number(data.notice_period_days),
-      organization_id: organizationId,
+      workspace_id: organizationId,
       owner_employee_id: normalizeNullable(data.owner_employee_id),
       phone: normalizeNullable(data.phone),
       requisition_id: data.requisition_id,
       resume_url: normalizeNullable(data.resume_url),
       source: normalizeNullable(data.source),
       status: data.status,
-      updated_by: user?.id ?? null,
+      updated_by: userId ?? null,
     };
 
-    const { data: created, error } = await supabaseAdmin
+    const { data: created, error } = await hrms
       .from('recruitment_candidates')
       .insert(payload)
       .select(candidateSelect)
@@ -84,15 +106,29 @@ export const createRecruitmentCandidateController = catchAsync(
 );
 
 export const updateRecruitmentCandidateController = catchAsync(
-  async ({ body, params, user }) => {
+  async ({ body, params, request, user }) => {
     const supabaseAdmin = getSupabaseServerAdminClient<any>();
-    const organizationId = await getRequiredOrganizationId(user?.id);
+    const hrms = getRecruitmentHrmsClient(supabaseAdmin);
+    const userId = getRecruitmentUserId(user);
+    const organizationId = await getRequiredOrganizationId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
     const candidateId = params?.id;
     const data = body as Record<string, any>;
 
     if (!candidateId) {
       throw new ApiError('Candidate id is required', 400);
     }
+
+    await requireRecruitmentPermission({
+      featureKey: 'manage_candidates',
+      minAccessLevel: 'team',
+      supabaseAdmin,
+      userId,
+      workspaceId: organizationId,
+    });
 
     await ensureOrganizationRecord({
       entityLabel: 'Candidate',
@@ -125,7 +161,7 @@ export const updateRecruitmentCandidateController = catchAsync(
     const payload: Record<string, any> = {
       last_activity_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      updated_by: user?.id ?? null,
+      updated_by: userId ?? null,
     };
 
     if (data.requisition_id !== undefined) {
@@ -158,10 +194,13 @@ export const updateRecruitmentCandidateController = catchAsync(
     }
     if (data.notice_period_days !== undefined) {
       payload.notice_period_days =
-        data.notice_period_days === null ? null : Number(data.notice_period_days);
+        data.notice_period_days === null
+          ? null
+          : Number(data.notice_period_days);
     }
     if (data.current_ctc !== undefined) {
-      payload.current_ctc = data.current_ctc === null ? null : Number(data.current_ctc);
+      payload.current_ctc =
+        data.current_ctc === null ? null : Number(data.current_ctc);
     }
     if (data.expected_ctc !== undefined) {
       payload.expected_ctc =
@@ -177,10 +216,10 @@ export const updateRecruitmentCandidateController = catchAsync(
       payload.applied_at = normalizeNullable(data.applied_at);
     }
 
-    const { data: updated, error } = await supabaseAdmin
+    const { data: updated, error } = await hrms
       .from('recruitment_candidates')
       .update(payload)
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', organizationId)
       .eq('id', candidateId)
       .select(candidateSelect)
       .single();
@@ -194,14 +233,28 @@ export const updateRecruitmentCandidateController = catchAsync(
 );
 
 export const deleteRecruitmentCandidateController = catchAsync(
-  async ({ params, user }) => {
+  async ({ params, request, user }) => {
     const supabaseAdmin = getSupabaseServerAdminClient<any>();
-    const organizationId = await getRequiredOrganizationId(user?.id);
+    const hrms = getRecruitmentHrmsClient(supabaseAdmin);
+    const userId = getRecruitmentUserId(user);
+    const organizationId = await getRequiredOrganizationId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
     const candidateId = params?.id;
 
     if (!candidateId) {
       throw new ApiError('Candidate id is required', 400);
     }
+
+    await requireRecruitmentPermission({
+      featureKey: 'delete',
+      minAccessLevel: 'team',
+      supabaseAdmin,
+      userId,
+      workspaceId: organizationId,
+    });
 
     await ensureOrganizationRecord({
       entityLabel: 'Candidate',
@@ -211,10 +264,10 @@ export const deleteRecruitmentCandidateController = catchAsync(
       table: 'recruitment_candidates',
     });
 
-    const { error } = await supabaseAdmin
+    const { error } = await hrms
       .from('recruitment_candidates')
       .delete()
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', organizationId)
       .eq('id', candidateId);
 
     if (error) {
@@ -226,15 +279,29 @@ export const deleteRecruitmentCandidateController = catchAsync(
 );
 
 export const createRecruitmentCandidateNoteController = catchAsync(
-  async ({ body, params, user }) => {
+  async ({ body, params, request, user }) => {
     const supabaseAdmin = getSupabaseServerAdminClient<any>();
-    const organizationId = await getRequiredOrganizationId(user?.id);
+    const hrms = getRecruitmentHrmsClient(supabaseAdmin);
+    const userId = getRecruitmentUserId(user);
+    const organizationId = await getRequiredOrganizationId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
     const candidateId = params?.id;
     const data = body as Record<string, any>;
 
     if (!candidateId) {
       throw new ApiError('Candidate id is required', 400);
     }
+
+    await requireRecruitmentPermission({
+      featureKey: 'add_notes',
+      minAccessLevel: 'team',
+      supabaseAdmin,
+      userId,
+      workspaceId: organizationId,
+    });
 
     await ensureOrganizationRecord({
       entityLabel: 'Candidate',
@@ -248,19 +315,19 @@ export const createRecruitmentCandidateNoteController = catchAsync(
     const authorEmployeeId = await getCurrentEmployeeId({
       organizationId,
       supabaseAdmin,
-      userId: user?.id,
+      userId,
     });
 
-    const { data: created, error } = await supabaseAdmin
+    const { data: created, error } = await hrms
       .from('recruitment_candidate_notes')
       .insert({
         author_employee_id: authorEmployeeId,
         candidate_id: candidateId,
-        created_by: user?.id ?? null,
+        created_by: userId ?? null,
         is_pinned: Boolean(data.is_pinned),
         note: String(data.note).trim(),
-        organization_id: organizationId,
-        updated_by: user?.id ?? null,
+        workspace_id: organizationId,
+        updated_by: userId ?? null,
       })
       .select(noteSelect)
       .single();
@@ -272,7 +339,7 @@ export const createRecruitmentCandidateNoteController = catchAsync(
     await touchCandidate({
       candidateId,
       supabaseAdmin,
-      userId: user?.id,
+      userId,
     });
 
     return successDataResponse('Candidate note added successfully', created);

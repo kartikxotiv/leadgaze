@@ -2,11 +2,11 @@ import { z } from 'zod';
 
 import { enhanceRouteHandler } from '@kit/next/routes';
 
+import { recruitmentOfferStatuses } from '../../../../../types/recruitment.type';
 import {
   deleteRecruitmentOfferController,
   updateRecruitmentOfferController,
 } from '../../controller';
-import { recruitmentOfferStatuses } from '~/types/recruitment.type';
 
 const RecruitmentOfferUpdateSchema = z.object({
   approved_by_employee_id: z.string().uuid().optional().nullable(),

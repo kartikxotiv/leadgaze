@@ -1,6 +1,6 @@
 'use client';
 
-import type { RecruitmentOptionsResponse } from '~/types/recruitment.type';
+import type { RecruitmentOptionsResponse } from '../../types/recruitment.type';
 
 export function toDateInputValue(value?: string | null) {
   return value ? value.slice(0, 10) : '';
