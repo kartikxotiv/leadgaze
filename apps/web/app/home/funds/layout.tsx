@@ -39,8 +39,22 @@ const routeHeaders = [
   },
 ];
 
+const routesWithOwnHeader = [
+  '/profile-settings',
+  '/workspace-settings',
+  '/audit-logs',
+  '/team-members',
+  '/teams',
+  '/roles',
+];
+
 export default function FundsLayout({ children }: React.PropsWithChildren) {
   const pathname = usePathname();
+
+  if (routesWithOwnHeader.some((segment) => pathname.includes(segment))) {
+    return <>{children}</>;
+  }
+
   const header =
     routeHeaders.find((item) => pathname.includes(item.segment)) ??
     {
