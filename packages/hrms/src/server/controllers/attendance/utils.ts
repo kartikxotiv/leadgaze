@@ -1,79 +1,88 @@
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import type { Database } from '~/lib/database.types';
-import { ApiError } from '~/utils/response-handler';
+import { ApiError } from '../../../utils/response-handler';
+import {
+  getHrmsClient,
+  requireEmployeePermission,
+} from '../employees/controller.helpers';
 
-type AttendanceStatusShift = Pick<
-  Database['public']['Tables']['shifts']['Row'],
-  'start_time' | 'end_time' | 'grace_minutes'
->;
+type AttendanceStatusShift = {
+  end_time: string;
+  grace_minutes: number | null;
+  start_time: string;
+};
+
+type SupabaseAdminClient = ReturnType<typeof getSupabaseServerAdminClient>;
+
 const DEFAULT_WORKING_DAYS = [1, 2, 3, 4, 5] as const;
 
 async function getRoleKeysForUser(params: {
   accountId: string;
   organizationId: string;
 }) {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-
-  const { data: ownedOrg, error: ownedOrgError } = await supabaseAdmin
-    .from('organizations')
-    .select('id')
-    .eq('id', params.organizationId)
-    .eq('owner_id', params.accountId)
-    .maybeSingle();
-
-  if (ownedOrgError) {
-    throw new ApiError(ownedOrgError.message, 400);
-  }
-
-  if (ownedOrg) {
-    // Treat organization owner as admin for access checks.
-    return ['admin'];
-  }
-
-  const { data: employee, error: employeeError } = await supabaseAdmin
-    .from('employees')
-    .select('id')
-    .eq('organization_id', params.organizationId)
-    .eq('account_id', params.accountId)
-    .maybeSingle();
-
-  if (employeeError) {
-    throw new ApiError(employeeError.message, 400);
-  }
-
-  if (!employee) {
-    return [];
-  }
-
+  const supabaseAdmin = getSupabaseServerAdminClient();
   const { data, error } = await supabaseAdmin
-    .from('employee_roles')
-    .select('role:roles!employee_roles_role_id_fkey(role_key)')
-    .eq('organization_id', params.organizationId)
-    .eq('employee_id', employee.id);
+    .from('workspace_members')
+    .select('role:workspace_roles!workspace_members_role_id_fkey(role_key)')
+    .eq('workspace_id', params.organizationId)
+    .eq('user_id', params.accountId)
+    .eq('status', 'accepted')
+    .maybeSingle();
 
   if (error) {
     throw new ApiError(error.message, 400);
   }
 
-  return (data ?? [])
-    .map((entry) => entry.role?.role_key)
-    .filter((value): value is string => Boolean(value));
+  const roleKey = (data as { role?: { role_key?: string } } | null)?.role
+    ?.role_key;
+
+  return roleKey ? [roleKey] : [];
 }
 
 async function requireAttendanceAdmin(params: {
   accountId: string;
   organizationId: string;
 }) {
-  const roleKeys = await getRoleKeysForUser(params);
-  const isAdmin =
-    roleKeys.includes('admin') ||
-    roleKeys.includes('hr_manager') ||
-    roleKeys.includes('hr');
+  const supabaseAdmin = getSupabaseServerAdminClient();
 
-  if (!isAdmin) {
-    throw new ApiError('Forbidden', 403);
+  try {
+    await requireEmployeePermission({
+      featureKey: 'approve',
+      minAccessLevel: 'team',
+      moduleKey: 'hrms_attendance',
+      supabaseAdmin,
+      userId: params.accountId,
+      workspaceId: params.organizationId,
+    });
+  } catch (error) {
+    if (error instanceof ApiError && error.statusCode === 403) {
+      await requireEmployeePermission({
+        featureKey: 'create',
+        minAccessLevel: 'team',
+        moduleKey: 'hrms_attendance',
+        supabaseAdmin,
+        userId: params.accountId,
+        workspaceId: params.organizationId,
+      });
+      return;
+    }
+
+    throw error;
   }
+}
+
+async function requireAttendanceLog(params: {
+  accountId: string;
+  organizationId: string;
+}) {
+  await requireEmployeePermission({
+    featureKey: 'log',
+    minAccessLevel: 'own',
+    moduleKey: 'hrms_attendance',
+    supabaseAdmin: getSupabaseServerAdminClient(),
+    userId: params.accountId,
+    workspaceId: params.organizationId,
+  });
 }
 
 function getDateParam(params?: Record<string, string | string[]>) {
@@ -99,13 +108,13 @@ async function getEmployeeForAccount(params: {
   accountId: string;
   organizationId: string;
 }) {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-
-  const { data, error } = await supabaseAdmin
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const { data, error } = await getHrmsClient(supabaseAdmin)
     .from('employees')
     .select('id, first_name, last_name, employee_code, department_id')
-    .eq('organization_id', params.organizationId)
+    .eq('workspace_id', params.organizationId)
     .eq('account_id', params.accountId)
+    .eq('is_deleted', false)
     .maybeSingle();
 
   if (error) {
@@ -152,8 +161,8 @@ function computeWorkedMinutes(checkIn: string | null, checkOut: string | null) {
 function deriveAttendanceStatus(params: {
   checkIn: string | null;
   checkOut: string | null;
+  manualStatus?: 'absent' | 'present';
   shift?: AttendanceStatusShift | null;
-  manualStatus?: Database['public']['Enums']['attendance_record_status'];
 }) {
   if (params.manualStatus === 'absent') {
     return 'absent' as const;
@@ -180,8 +189,8 @@ function deriveAttendanceStatus(params: {
 function deriveAttendanceDisplayStatus(params: {
   checkIn: string | null;
   checkOut: string | null;
-  status: Database['public']['Enums']['attendance_record_status'];
   shift?: AttendanceStatusShift | null;
+  status: 'absent' | 'present';
 }) {
   if (params.checkIn && !params.checkOut) {
     return 'in_progress' as const;
@@ -256,27 +265,27 @@ function normalizeWorkingDays(value: unknown) {
 }
 
 async function getAttendanceSettings(params: { organizationId: string }) {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-  const { data, error } = await supabaseAdmin
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const { data, error } = await getHrmsClient(supabaseAdmin)
     .from('attendance_settings')
     .select('*')
-    .eq('organization_id', params.organizationId)
+    .eq('workspace_id', params.organizationId)
     .maybeSingle();
 
   if (error) {
     throw new ApiError(error.message, 400);
   }
 
-  return (
+  return addOrganizationAlias(
     data ?? {
       id: '',
-      organization_id: params.organizationId,
+      workspace_id: params.organizationId,
       working_days: [...DEFAULT_WORKING_DAYS],
       created_at: '',
       updated_at: '',
       created_by: null,
       updated_by: null,
-    }
+    },
   );
 }
 
@@ -286,7 +295,15 @@ function isWorkingDay(date: string, workingDays: Array<number>) {
   return workingDays.includes(day);
 }
 
+function addOrganizationAlias<T extends { workspace_id: string }>(item: T) {
+  return {
+    ...item,
+    organization_id: item.workspace_id,
+  };
+}
+
 export {
+  addOrganizationAlias,
   computeWorkHours,
   deriveAttendanceDisplayStatus,
   deriveAttendanceStatus,
@@ -297,5 +314,6 @@ export {
   isWorkingDay,
   normalizeWorkingDays,
   requireAttendanceAdmin,
+  requireAttendanceLog,
   toISODateString,
 };

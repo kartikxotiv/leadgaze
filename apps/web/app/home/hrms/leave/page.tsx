@@ -1,22 +1,32 @@
 'use client';
 
+import { LeavePage } from '@kit/hrms';
 import { PageBody, PageHeader, PageHeaderActions } from '@kit/ui/page';
 
 import { ModuleSwitcher } from '~/home/_components/module-switcher';
+import { WorkspaceCheckWrapper } from '~/home/_components/workspace-check-wrapper';
+import { useRBAC } from '~/lib/rbac/rbac-provider';
 
 export default function HrmsLeavePage() {
+  const { currentWorkspace } = useRBAC();
+
   return (
-    <>
-      <PageHeader title="Leave" description="Workspace leave operations.">
+    <WorkspaceCheckWrapper>
+      <PageHeader
+        title="Leave"
+        description={
+          currentWorkspace
+            ? `${currentWorkspace.name} leave operations`
+            : 'Leave operations'
+        }
+      >
         <PageHeaderActions>
           <ModuleSwitcher value="hrms" />
         </PageHeaderActions>
       </PageHeader>
-      <PageBody>
-        <div className="text-muted-foreground rounded-lg border p-6 text-sm">
-          Leave requests will share the Leadgaze session and workspace context.
-        </div>
+      <PageBody className="flex min-h-0 flex-1 flex-col">
+        <LeavePage />
       </PageBody>
-    </>
+    </WorkspaceCheckWrapper>
   );
 }

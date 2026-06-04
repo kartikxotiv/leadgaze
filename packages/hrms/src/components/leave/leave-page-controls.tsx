@@ -4,7 +4,7 @@ import { Card, CardContent } from '@kit/ui/card';
 import { Input } from '@kit/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@kit/ui/tabs';
 
-import type { LeaveTab } from '../hooks/use-leave-page';
+import type { LeaveTab } from '../../hooks/use-leave-page';
 
 export function LeavePageControls(props: {
   activeTab: LeaveTab;
@@ -15,7 +15,11 @@ export function LeavePageControls(props: {
 }) {
   return (
     <Card className={'shadow-sm'}>
-      <CardContent className={'flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between'}>
+      <CardContent
+        className={
+          'flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between'
+        }
+      >
         <div>
           <p className={'text-sm font-medium'}>Leave Year</p>
           <p className={'text-muted-foreground text-sm'}>
@@ -30,7 +34,9 @@ export function LeavePageControls(props: {
             type={'number'}
             value={props.selectedYear}
             onChange={(event) =>
-              props.onYearChange(Number(event.target.value || new Date().getFullYear()))
+              props.onYearChange(
+                Number(event.target.value || new Date().getFullYear()),
+              )
             }
           />
 

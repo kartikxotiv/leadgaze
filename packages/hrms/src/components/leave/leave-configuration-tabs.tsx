@@ -19,8 +19,7 @@ import {
 } from '@kit/ui/table';
 import { TabsContent } from '@kit/ui/tabs';
 
-import type { LeaveHoliday, LeaveType } from '~/types/leave.type';
-
+import type { LeaveHoliday, LeaveType } from '../../types/leave.type';
 import { formatDate, formatNumber } from '../leave-page.utils';
 
 export function LeaveHolidaysTab(props: {

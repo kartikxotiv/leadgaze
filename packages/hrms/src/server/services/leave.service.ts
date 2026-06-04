@@ -1,5 +1,3 @@
-import { asyncHandlerClient } from '~/utils/async-handler';
-
 import type {
   ApiSuccessResponse,
   LeaveDashboardResponse,
@@ -10,15 +8,16 @@ import type {
   LeaveRequestCreatePayload,
   LeaveType,
   LeaveTypePayload,
-} from '~/types/leave.type';
-
-import ApiClient from '../utils/axios-client';
+} from '../../types/leave.type';
+import { asyncHandlerClient } from '../../utils/async-handler';
+import ApiClient from '../../utils/axios-client';
 
 const getLeaveDashboardService = asyncHandlerClient(async (year?: number) => {
-  const response =
-    await ApiClient.get<ApiSuccessResponse<LeaveDashboardResponse>>('/leave', {
-      params: year ? { year } : undefined,
-    });
+  const response = await ApiClient.get<
+    ApiSuccessResponse<LeaveDashboardResponse>
+  >('/leave', {
+    params: year ? { year } : undefined,
+  });
 
   return response.data;
 });
@@ -97,13 +96,15 @@ const updateLeaveHolidayService = asyncHandlerClient(
   },
 );
 
-const deleteLeaveHolidayService = asyncHandlerClient(async (holidayId: string) => {
-  const response = await ApiClient.delete<ApiSuccessResponse<null>>(
-    `/leave/holidays/${holidayId}`,
-  );
+const deleteLeaveHolidayService = asyncHandlerClient(
+  async (holidayId: string) => {
+    const response = await ApiClient.delete<ApiSuccessResponse<null>>(
+      `/leave/holidays/${holidayId}`,
+    );
 
-  return response.data;
-});
+    return response.data;
+  },
+);
 
 export {
   createLeaveHolidayService,

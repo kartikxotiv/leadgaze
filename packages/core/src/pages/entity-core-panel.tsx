@@ -153,22 +153,35 @@ function EmailsPanel(props: CoreEntityPanelProps) {
 
 function DocumentsPanel(props: CoreEntityPanelProps) {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState({ name: '', file_url: '', category: '', description: '' });
+  const [form, setForm] = useState({ name: '', file: null as File | null, file_url: '', category: '', description: '' });
   const queryKey = ['core', 'documents', props.workspaceId, props.entityType, props.entityId];
   const { data: documents = [] } = useQuery<any[]>({ queryKey, queryFn: () => getDocumentsService(props.workspaceId, props.entityType, props.entityId), enabled: !!props.workspaceId && !!props.entityId });
-  const uploadMutation = useMutation({ mutationFn: uploadDocumentService, onSuccess: () => { setForm({ name: '', file_url: '', category: '', description: '' }); queryClient.invalidateQueries({ queryKey }); } });
+  const uploadMutation = useMutation({ mutationFn: uploadDocumentService, onSuccess: () => { setForm({ name: '', file: null, file_url: '', category: '', description: '' }); queryClient.invalidateQueries({ queryKey }); } });
   const deleteMutation = useMutation({ mutationFn: (id: string) => deleteDocumentService(props.workspaceId, id), onSuccess: () => queryClient.invalidateQueries({ queryKey }) });
+  const canUpload = form.name.trim() && (form.file || form.file_url.trim());
 
   return (
     <section className="grid gap-4">
       <div className="grid gap-3 rounded-md border p-4 sm:grid-cols-2">
         <Field label="Document Name"><Input value={form.name} onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))} placeholder="Pitch deck" /></Field>
         <Field label="Category"><Input value={form.category} onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))} placeholder="Pitch Deck / Term Sheet" /></Field>
-        <div className="sm:col-span-2"><Field label="File URL"><Input value={form.file_url} onChange={(event) => setForm((prev) => ({ ...prev, file_url: event.target.value }))} placeholder="https://..." /></Field></div>
+        <div className="sm:col-span-2"><Field label="File"><Input type="file" onChange={(event) => setForm((prev) => ({ ...prev, file: event.target.files?.[0] ?? null, name: prev.name || event.target.files?.[0]?.name || '' }))} /></Field></div>
+        <div className="sm:col-span-2"><Field label="External URL"><Input value={form.file_url} onChange={(event) => setForm((prev) => ({ ...prev, file_url: event.target.value }))} placeholder="https://..." /></Field></div>
         <div className="sm:col-span-2"><Field label="Description"><Textarea value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} /></Field></div>
-        <div className="flex justify-end sm:col-span-2"><Button disabled={!form.name || uploadMutation.isPending} onClick={() => uploadMutation.mutate({ ...entityPayload(props), ...form, file_url: form.file_url || null, category: form.category || null, description: form.description || null })}><Plus className="mr-2 h-4 w-4" /> Add Document</Button></div>
+        <div className="flex justify-end sm:col-span-2"><Button disabled={!canUpload || uploadMutation.isPending} onClick={() => {
+          const payload = new FormData();
+          payload.set('workspace_id', props.workspaceId);
+          payload.set('entity_type', props.entityType);
+          payload.set('entity_id', props.entityId);
+          payload.set('name', form.name);
+          if (form.category) payload.set('category', form.category);
+          if (form.description) payload.set('description', form.description);
+          if (form.file_url) payload.set('file_url', form.file_url);
+          if (form.file) payload.set('file', form.file);
+          uploadMutation.mutate(payload);
+        }}><Plus className="mr-2 h-4 w-4" /> Add Document</Button></div>
       </div>
-      <List empty="No documents added.">{documents.map((item) => <Row key={item.id} title={item.name} meta={item.category ?? 'Document'} description={item.description} href={item.file_url} onDelete={() => deleteMutation.mutate(item.id)} />)}</List>
+      <List empty="No documents added.">{documents.map((item) => <Row key={item.id} title={item.name} meta={item.category ?? 'Document'} description={item.description} href={item.file_url ?? item.file_path} onDelete={() => deleteMutation.mutate(item.id)} />)}</List>
     </section>
   );
 }

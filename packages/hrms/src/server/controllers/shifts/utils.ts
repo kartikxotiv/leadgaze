@@ -1,7 +1,8 @@
-import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
-
-import type { Database } from '~/lib/database.types';
-import { ApiError } from '~/utils/response-handler';
+import { ApiError } from '../../../utils/response-handler';
+import {
+  type SupabaseAdminClient,
+  requireEmployeePermission,
+} from '../employees/controller.helpers';
 
 function normalizeNullable(value: string | null | undefined) {
   if (value === undefined || value === null) {
@@ -25,62 +26,17 @@ function getShiftId(params?: Record<string, string>) {
 
 async function requireAdminRole(params: {
   accountId: string;
-  organizationId: string;
+  supabaseAdmin: SupabaseAdminClient;
+  workspaceId: string;
 }) {
-  const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-
-  const { data: ownedOrg, error: ownedOrgError } = await supabaseAdmin
-    .from('organizations')
-    .select('id')
-    .eq('id', params.organizationId)
-    .eq('owner_id', params.accountId)
-    .maybeSingle();
-
-  if (ownedOrgError) {
-    throw new ApiError(ownedOrgError.message, 400);
-  }
-
-  if (ownedOrg) {
-    return;
-  }
-
-  const { data: employee, error: employeeError } = await supabaseAdmin
-    .from('employees')
-    .select('id')
-    .eq('organization_id', params.organizationId)
-    .eq('account_id', params.accountId)
-    .maybeSingle();
-
-  if (employeeError) {
-    throw new ApiError(employeeError.message, 400);
-  }
-
-  if (!employee) {
-    throw new ApiError('Forbidden', 403);
-  }
-
-  const { data, error } = await supabaseAdmin
-    .from('employee_roles')
-    .select('role:roles!employee_roles_role_id_fkey(role_key)')
-    .eq('organization_id', params.organizationId)
-    .eq('employee_id', employee.id);
-
-  if (error) {
-    throw new ApiError(error.message, 400);
-  }
-
-  const roleKeys = (data ?? [])
-    .map((entry) => entry.role?.role_key)
-    .filter((value): value is string => Boolean(value));
-
-  const isAdmin =
-    roleKeys.includes('admin') ||
-    roleKeys.includes('hr_manager') ||
-    roleKeys.includes('hr');
-
-  if (!isAdmin) {
-    throw new ApiError('Forbidden', 403);
-  }
+  await requireEmployeePermission({
+    featureKey: 'create',
+    minAccessLevel: 'team',
+    moduleKey: 'hrms_attendance',
+    supabaseAdmin: params.supabaseAdmin,
+    userId: params.accountId,
+    workspaceId: params.workspaceId,
+  });
 }
 
 export { getShiftId, normalizeNullable, requireAdminRole };

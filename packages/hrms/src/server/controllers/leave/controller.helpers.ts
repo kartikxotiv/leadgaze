@@ -160,6 +160,7 @@ function decorateRequest(
 ) {
   return {
     ...request,
+    organization_id: request.workspace_id,
     approver_name: request.approver ? getEmployeeName(request.approver) : null,
     can_approve: canApproveRequest(context, request),
     can_cancel:
