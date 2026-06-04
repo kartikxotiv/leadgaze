@@ -8,7 +8,7 @@ import { type VariantProps, cva } from 'class-variance-authority';
 import { cn } from '../lib/utils';
 
 const labelVariants = cva(
-  'primary-text-medium text-leadgaze-dark peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
+  'primary-text-medium text-leadgaze-dark peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-white',
 );
 
 const Label: React.FC<

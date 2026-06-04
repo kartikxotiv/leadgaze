@@ -59,6 +59,8 @@ import { LeadAssignees } from '../components/lead-assignees';
 import { LogCallDialog } from '../components/log-call-dialog';
 
 import { getWorkspaceEmailAccountService } from '~/services/email.service';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CustomInputForView } from '@kit/ui/custom-input-for-view';
 
 export default function LeadDetailsPage() {
   const router = useRouter();
@@ -423,268 +425,165 @@ export default function LeadDetailsPage() {
                 </div>
               </CardContent>
             </Card>
+{/* $$$$$$$$$$$$$*/}
 
-            {/* About Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">About</CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {/* Comapny */}
+            <CardWidgetContainer title="Company" icon={<User className="w-5 h-5 text-leadgaze-muted dark:text-white" />}>
+            <div className="flex-1">
+              <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2 pt-4">
                 {lead.company_name && (
-                  <EditableField
+                  <CustomInputForView
                     label="Company"
-                    value={lead.company_name}
-                    fieldName="company_name"
-                  />
+                    value={lead.company_name}                    
+                  />                  
                 )}
+                
                 {lead.job_title && (
-                  <EditableField
+                  <CustomInputForView
                     label="Job Title"
-                    value={lead.job_title}
-                    fieldName="job_title"
-                  />
+                    value={lead.job_title}                    
+                  />                                    
                 )}
                 {lead.industry && (
-                  <EditableField
+                  <CustomInputForView
                     label="Industry"
-                    value={lead.industry.industry_name}
-                    fieldName="industry_id"
+                    value={lead.industry.industry_name}                    
                   />
                 )}
                 {lead.company_size && (
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                        Company Size
-                      </p>
-                      <p className="mt-1 text-sm text-gray-900 capitalize dark:text-white">
-                        {lead.company_size}
-                      </p>
-                    </div>
-                  </div>
+                  <CustomInputForView
+                    label="Company Size"
+                    value={lead.company_size}                    
+                  />
                 )}
                 {lead.company_website ? (
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                        Website
-                      </p>
-                      <a
+                  <CustomInputForView
+                    label="Website"
+                    value={<a
                         href={lead.company_website}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-1 block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
-                      >
-                        {lead.company_website}
-                      </a>
-                    </div>
-                  </div>
+                        className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                      >{lead.company_website}</a>}
+                  />
+                  
                 ) : null}
                 {lead.company_linkedin_url ? (
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                        Company LinkedIn
-                      </p>
-                      <a
+                  <CustomInputForView
+                    label="Company LinkedIn"
+                    value={<a
                         href={lead.company_linkedin_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-1 block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
-                      >
-                        {lead.company_linkedin_url}
-                      </a>
-                    </div>
-                  </div>
+                        className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                      >{lead.company_linkedin_url}</a>}
+                  />                  
                 ) : null}
                 {lead.department && (
-                  <EditableField
+                  <CustomInputForView
                     label="Department"
-                    value={lead.department}
-                    fieldName="department"
+                    value={lead.department}                    
                   />
                 )}
                 {lead.notes && (
-                  <div className="md:col-span-2">
-                    <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                      Notes
-                    </p>
-                    <p className="mt-1 text-sm whitespace-pre-wrap text-gray-900 dark:text-white">
-                      {lead.notes}
-                    </p>
-                  </div>
+                  <CustomInputForView
+                    label="Notes"
+                    value={lead.notes}                    
+                    as="textarea"
+                  />                  
                 )}
               </CardContent>
-            </Card>
+              
+            </div>
+            </CardWidgetContainer>
+            
 
             {/* Contact Information Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Contact Information</CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {lead.email && (
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                        Primary Email
-                      </p>
-                      <a
-                        href={`mailto:${lead.email}`}
-                        className="mt-1 block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
-                      >
-                        {lead.email}
-                      </a>
-                    </div>
-                  </div>
-                )}
-
-                {lead.alt_email && (
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                        Alternative Email
-                      </p>
-                      <a
-                        href={`mailto:${lead.alt_email}`}
-                        className="mt-1 block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
-                      >
-                        {lead.alt_email}
-                      </a>
-                    </div>
-                  </div>
-                )}
-
-                {lead.phone_number && (
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                        Phone
-                      </p>
-                      <a
-                        href={`tel:${lead.phone_number}`}
-                        className="mt-1 block text-sm text-gray-700 dark:text-gray-300"
-                      >
-                        {lead.phone_number}
-                      </a>
-                    </div>
-                  </div>
-                )}
-
-                {lead.mobile_number && (
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                        Mobile
-                      </p>
-                      <a
-                        href={`tel:${lead.mobile_number}`}
-                        className="mt-1 block text-sm text-gray-700 dark:text-gray-300"
-                      >
-                        {lead.mobile_number}
-                      </a>
-                    </div>
-                  </div>
-                )}
-
-                {lead.location && (
-                  <EditableField
-                    label="Location"
-                    value={lead.location}
-                    fieldName="location"
-                  />
-                )}
-
-                {lead.timezone && (
-                  <div>
-                    <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                      Timezone
-                    </p>
-                    <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                      {lead.timezone}
-                    </p>
-                  </div>
-                )}
-
-                {lead.linkedin_url && (
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                        LinkedIn
-                      </p>
-                      <a
-                        href={lead.linkedin_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1 block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
-                      >
-                        {lead.linkedin_url}
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Lead Assignees Section */}
-            {workspace?.id && (
-              <LeadAssignees leadId={leadId} workspaceId={workspace.id} />
-            )}
-
-            {/* Notes Section */}
-            <EntityNotes entityType="lead" entityId={leadId} />
-
-            {/* Call Logs Section */}
-            <EntityCalls entityType="lead" entityId={leadId} />
-            {/* Email Activity (Drafts, Scheduled, Sent) */}
-            <EntityEmails
-              entityId={leadId}
-              entityType="lead"
-              entityName={fullName}
-              entityEmail={lead.email || undefined}
-              onOpenDraft={(draft) => {
-                setSelectedDraft(draft);
-                setIsEmailDialogOpen(true);
-              }}
-            />
-
-            {/* Activity Section */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-gray-400" />
-                  <CardTitle className="text-lg">Activity</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                    <div className="h-2 w-2 rounded-full bg-green-500" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        Lead Created
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(lead.created_at).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  {lead.updated_at && lead.updated_at !== lead.created_at && (
-                    <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                      <div className="h-2 w-2 rounded-full bg-blue-500" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          Lead Updated
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(lead.updated_at).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
+            <CardWidgetContainer title="Contact" icon={<User className="w-5 h-5 text-leadgaze-muted dark:text-white" />}>
+              <div className="flex-1">
+                <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2 pt-4">
+                  {lead.email && (
+                    <CustomInputForView
+                      label="Primary Email"
+                      value={<a
+                          href={`mailto:${lead.email}`}
+                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {lead.email}
+                        </a>}
+                    />                  
                   )}
-                </div>
-              </CardContent>
-            </Card>
+
+                  {lead.alt_email && (
+                    <CustomInputForView
+                      label="Alternative Email"
+                      value={<a
+                          href={`mailto:${lead.alt_email}`}
+                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {lead.alt_email}
+                        </a>}
+                    />
+                  )}
+
+                  {lead.phone_number && (
+                    <CustomInputForView
+                      label="Phone"
+                      value={<a
+                          href={`tel:${lead.phone_number}`}
+                          className="block text-sm text-gray-700 dark:text-gray-300"
+                        >
+                          {lead.phone_number}
+                        </a>}
+                    />                  
+                  )}
+
+                  {lead.mobile_number && (
+                    <CustomInputForView
+                      label="Mobile"
+                      value={<a
+                          href={`tel:${lead.mobile_number}`}
+                          className="block text-sm text-gray-700 dark:text-gray-300"
+                        >
+                          {lead.mobile_number}
+                        </a>}
+                    />
+                  )}
+
+                  {lead.location && (
+                    <CustomInputForView
+                      label="Location"
+                      value={lead.location}
+                    />                  
+                  )}
+
+                  {lead.timezone && (
+                    <CustomInputForView
+                      label="Timezone"
+                      value={lead.timezone}
+                    />
+                  )}
+
+                  {lead.linkedin_url && (
+                    <CustomInputForView
+                      label="LinkedIn"
+                      value={<a
+                          href={lead.linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {lead.linkedin_url}
+                        </a>}
+                    />                  
+                  )}
+
+                </CardContent>
+              </div>
+            </CardWidgetContainer>
+            
+            {/* Notes Section */}
+            <EntityNotes entityType="lead" entityId={leadId} />            
 
             {/* Danger Zone */}
             {canAccess('leads', 'delete') && (
@@ -879,6 +778,67 @@ export default function LeadDetailsPage() {
               </Card>
             )}
 
+            {/* Lead Assignees Section */}
+            {workspace?.id && (
+              <LeadAssignees leadId={leadId} workspaceId={workspace.id} />
+            )}
+
+            {/* Meetings */}
+            <EntityMeetings entityType="lead" entityId={leadId} />
+
+            {/* Email Activity (Drafts, Scheduled, Sent) */}
+            <EntityEmails
+              entityId={leadId}
+              entityType="lead"
+              entityName={fullName}
+              entityEmail={lead.email || undefined}
+              onOpenDraft={(draft) => {
+                setSelectedDraft(draft);
+                setIsEmailDialogOpen(true);
+              }}
+            />
+            
+            {/* Call Logs Section */}
+            <EntityCalls entityType="lead" entityId={leadId} />
+
+            {/* Activity Section */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-gray-400" />
+                  <CardTitle className="text-lg">Activity</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
+                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        Lead Created
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(lead.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  {lead.updated_at && lead.updated_at !== lead.created_at && (
+                    <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
+                      <div className="h-2 w-2 rounded-full bg-blue-500" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          Lead Updated
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(lead.updated_at).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Owner Information */}
             {lead.owner && (
               <Card>
@@ -906,8 +866,9 @@ export default function LeadDetailsPage() {
             {/* Reminders */}
             <EntityReminders entityType="lead" entityId={leadId} />
 
-            {/* Meetings */}
-            <EntityMeetings entityType="lead" entityId={leadId} />
+            
+
+            
 
             {/* Documents */}
             <EntityDocuments entityType="lead" entityId={leadId} />
