@@ -2,11 +2,11 @@ import { z } from 'zod';
 
 import { enhanceRouteHandler } from '@kit/next/routes';
 
+import { recruitmentCandidateStatuses } from '../../../../../types/recruitment.type';
 import {
   deleteRecruitmentCandidateController,
   updateRecruitmentCandidateController,
 } from '../../controller';
-import { recruitmentCandidateStatuses } from '~/types/recruitment.type';
 
 const RecruitmentCandidateUpdateSchema = z.object({
   applied_at: z.string().date().optional().nullable(),

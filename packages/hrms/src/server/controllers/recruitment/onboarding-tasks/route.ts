@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 import { enhanceRouteHandler } from '@kit/next/routes';
 
+import { recruitmentOnboardingStatuses } from '../../../../types/recruitment.type';
 import { createRecruitmentOnboardingTaskController } from '../controller';
-import { recruitmentOnboardingStatuses } from '~/types/recruitment.type';
 
 const RecruitmentOnboardingTaskSchema = z.object({
   candidate_id: z.string().uuid(),
@@ -15,6 +15,9 @@ const RecruitmentOnboardingTaskSchema = z.object({
   title: z.string().min(2).max(200),
 });
 
-export const POST = enhanceRouteHandler(createRecruitmentOnboardingTaskController, {
-  schema: RecruitmentOnboardingTaskSchema,
-});
+export const POST = enhanceRouteHandler(
+  createRecruitmentOnboardingTaskController,
+  {
+    schema: RecruitmentOnboardingTaskSchema,
+  },
+);

@@ -22,12 +22,11 @@ import {
 } from '@kit/ui/select';
 import { Textarea } from '@kit/ui/textarea';
 
+import { offerStatusOptions } from '../../pages/recruitment/page.data';
 import type {
   RecruitmentOfferPayload,
   RecruitmentOfferSummary,
-} from '~/types/recruitment.type';
-
-import { offerStatusOptions } from '../page.data';
+} from '../../types/recruitment.type';
 import { BaseDialogProps, toDateInputValue } from './shared';
 
 const emptyOfferForm: RecruitmentOfferPayload = {
@@ -85,7 +84,8 @@ export function RecruitmentOfferDialog(
               {props.initialData ? 'Edit Offer' : 'Create Offer'}
             </DialogTitle>
             <DialogDescription className="text-base">
-              Track approvals, offered designation, salary, joining date, and candidate response.
+              Track approvals, offered designation, salary, joining date, and
+              candidate response.
             </DialogDescription>
           </DialogHeader>
 
@@ -208,7 +208,8 @@ export function RecruitmentOfferDialog(
                 onValueChange={(value) =>
                   setForm((current) => ({
                     ...current,
-                    approved_by_employee_id: value === '__none__' ? null : value,
+                    approved_by_employee_id:
+                      value === '__none__' ? null : value,
                   }))
                 }
               >
@@ -233,7 +234,10 @@ export function RecruitmentOfferDialog(
                 rows={4}
                 value={form.notes ?? ''}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, notes: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    notes: event.target.value,
+                  }))
                 }
                 placeholder="Approval comments, offer conditions, or follow-up notes."
               />
@@ -259,7 +263,9 @@ export function RecruitmentOfferDialog(
               onClick={() =>
                 props.onSubmit({
                   ...form,
-                  currency_code: (form.currency_code || 'INR').trim().toUpperCase(),
+                  currency_code: (form.currency_code || 'INR')
+                    .trim()
+                    .toUpperCase(),
                   notes: form.notes?.trim() || null,
                   offered_designation: form.offered_designation.trim(),
                 })

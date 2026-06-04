@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 import { enhanceRouteHandler } from '@kit/next/routes';
 
+import { recruitmentFeedbackRecommendations } from '../../../../types/recruitment.type';
 import { createRecruitmentFeedbackController } from '../controller';
-import { recruitmentFeedbackRecommendations } from '~/types/recruitment.type';
 
 const RecruitmentFeedbackSchema = z.object({
   concerns: z.string().max(4000).optional().nullable(),

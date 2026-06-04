@@ -592,6 +592,29 @@ function getFeatureAliases(moduleKey: string, featureKey: string) {
     }
   }
 
+  if (moduleKey === 'hrms_recruitment') {
+    if (featureKey === 'create') {
+      return ['create', 'manage', 'manage_requisitions'];
+    }
+
+    if (featureKey === 'edit' || featureKey === 'update') {
+      return ['edit', 'update', 'manage', 'manage_requisitions'];
+    }
+
+    if (featureKey === 'delete') {
+      return ['delete', 'manage'];
+    }
+
+    if (
+      featureKey === 'manage_candidates' ||
+      featureKey === 'schedule_interviews' ||
+      featureKey === 'manage_offers' ||
+      featureKey === 'manage_onboarding'
+    ) {
+      return [featureKey, 'manage'];
+    }
+  }
+
   if (featureKey === 'edit') {
     return ['edit', 'update'];
   }

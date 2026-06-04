@@ -22,16 +22,15 @@ import {
 } from '@kit/ui/select';
 import { Textarea } from '@kit/ui/textarea';
 
-import type {
-  RecruitmentRequisitionPayload,
-  RecruitmentRequisitionSummary,
-} from '~/types/recruitment.type';
-
 import {
   employmentTypeOptions,
   priorityOptions,
   requisitionStatusOptions,
-} from '../page.data';
+} from '../../pages/recruitment/page.data';
+import type {
+  RecruitmentRequisitionPayload,
+  RecruitmentRequisitionSummary,
+} from '../../types/recruitment.type';
 import { BaseDialogProps, toDateInputValue } from './shared';
 
 const emptyRequisitionForm: RecruitmentRequisitionPayload = {
@@ -58,7 +57,8 @@ export function RecruitmentRequisitionDialog(
     onSubmit: (payload: RecruitmentRequisitionPayload) => void;
   },
 ) {
-  const [form, setForm] = useState<RecruitmentRequisitionPayload>(emptyRequisitionForm);
+  const [form, setForm] =
+    useState<RecruitmentRequisitionPayload>(emptyRequisitionForm);
 
   useEffect(() => {
     if (!props.open || !props.initialData) {
@@ -94,7 +94,8 @@ export function RecruitmentRequisitionDialog(
               {props.initialData ? 'Edit Requisition' : 'Create Requisition'}
             </DialogTitle>
             <DialogDescription className="text-base">
-              Capture role demand, ownership, hiring priority, and compensation range.
+              Capture role demand, ownership, hiring priority, and compensation
+              range.
             </DialogDescription>
           </DialogHeader>
 
@@ -120,7 +121,10 @@ export function RecruitmentRequisitionDialog(
                 id="requisition-title"
                 value={form.title}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, title: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    title: event.target.value,
+                  }))
                 }
                 placeholder="Senior Frontend Engineer"
               />
@@ -158,7 +162,8 @@ export function RecruitmentRequisitionDialog(
                 onValueChange={(value) =>
                   setForm((current) => ({
                     ...current,
-                    employment_type: value as RecruitmentRequisitionPayload['employment_type'],
+                    employment_type:
+                      value as RecruitmentRequisitionPayload['employment_type'],
                   }))
                 }
               >
@@ -182,7 +187,8 @@ export function RecruitmentRequisitionDialog(
                 onValueChange={(value) =>
                   setForm((current) => ({
                     ...current,
-                    priority: value as RecruitmentRequisitionPayload['priority'],
+                    priority:
+                      value as RecruitmentRequisitionPayload['priority'],
                   }))
                 }
               >
@@ -244,7 +250,10 @@ export function RecruitmentRequisitionDialog(
                 id="requisition-location"
                 value={form.location ?? ''}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, location: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    location: event.target.value,
+                  }))
                 }
                 placeholder="Bengaluru / Hybrid"
               />
@@ -298,7 +307,8 @@ export function RecruitmentRequisitionDialog(
                 onValueChange={(value) =>
                   setForm((current) => ({
                     ...current,
-                    requested_by_employee_id: value === '__none__' ? null : value,
+                    requested_by_employee_id:
+                      value === '__none__' ? null : value,
                   }))
                 }
               >
@@ -323,7 +333,8 @@ export function RecruitmentRequisitionDialog(
                 onValueChange={(value) =>
                   setForm((current) => ({
                     ...current,
-                    hiring_manager_employee_id: value === '__none__' ? null : value,
+                    hiring_manager_employee_id:
+                      value === '__none__' ? null : value,
                   }))
                 }
               >
@@ -351,7 +362,9 @@ export function RecruitmentRequisitionDialog(
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
-                    compensation_min: event.target.value ? Number(event.target.value) : null,
+                    compensation_min: event.target.value
+                      ? Number(event.target.value)
+                      : null,
                   }))
                 }
               />
@@ -367,7 +380,9 @@ export function RecruitmentRequisitionDialog(
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
-                    compensation_max: event.target.value ? Number(event.target.value) : null,
+                    compensation_max: event.target.value
+                      ? Number(event.target.value)
+                      : null,
                   }))
                 }
               />

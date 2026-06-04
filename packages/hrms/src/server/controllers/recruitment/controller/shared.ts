@@ -1,16 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { getCurrentUserOrganizationId } from '~/lib/server/organizations';
-import { ApiError } from '~/utils/response-handler';
 import type {
   RecruitmentCandidateStatus,
   RecruitmentDashboardResponse,
   RecruitmentOfferStatus,
   RecruitmentOnboardingStatus,
-} from '~/types/recruitment.type';
+} from '../../../../types/recruitment.type';
+import { ApiError } from '../../../../utils/response-handler';
+import {
+  getHrmsClient,
+  getRequiredWorkspaceId,
+  getRouteUserId,
+  requireEmployeePermission,
+} from '../../employees/controller.helpers';
 
 export const requisitionSelect = `
   id,
-  organization_id,
+  workspace_id,
   department_id,
   requested_by_employee_id,
   owner_employee_id,
@@ -37,7 +42,7 @@ export const requisitionSelect = `
 
 export const candidateSelect = `
   id,
-  organization_id,
+  workspace_id,
   requisition_id,
   owner_employee_id,
   full_name,
@@ -62,7 +67,7 @@ export const candidateSelect = `
 
 export const noteSelect = `
   id,
-  organization_id,
+  workspace_id,
   candidate_id,
   author_employee_id,
   note,
@@ -75,7 +80,7 @@ export const noteSelect = `
 
 export const interviewSelect = `
   id,
-  organization_id,
+  workspace_id,
   candidate_id,
   requisition_id,
   interviewer_employee_id,
@@ -96,7 +101,7 @@ export const interviewSelect = `
 
 export const feedbackSelect = `
   id,
-  organization_id,
+  workspace_id,
   interview_id,
   candidate_id,
   interviewer_employee_id,
@@ -115,7 +120,7 @@ export const feedbackSelect = `
 
 export const offerSelect = `
   id,
-  organization_id,
+  workspace_id,
   candidate_id,
   requisition_id,
   approved_by_employee_id,
@@ -136,7 +141,7 @@ export const offerSelect = `
 
 export const onboardingSelect = `
   id,
-  organization_id,
+  workspace_id,
   candidate_id,
   offer_id,
   owner_employee_id,
@@ -210,14 +215,45 @@ export function getDepartmentReference(department: any) {
   };
 }
 
-export async function getRequiredOrganizationId(userId?: string) {
-  const organizationId = await getCurrentUserOrganizationId(userId);
+export function getRecruitmentHrmsClient(supabaseAdmin: any) {
+  return getHrmsClient(supabaseAdmin);
+}
 
-  if (!organizationId) {
-    throw new ApiError('Organization not found', 404);
-  }
+export function getRecruitmentUserId(user: unknown) {
+  return getRouteUserId(user);
+}
 
-  return organizationId;
+export async function getRequiredOrganizationId(params: {
+  request?: {
+    cookies?: {
+      get: (name: string) => { value?: string } | undefined;
+    };
+  };
+  supabaseAdmin: any;
+  userId?: string;
+}) {
+  return getRequiredWorkspaceId({
+    request: params.request,
+    supabaseAdmin: params.supabaseAdmin,
+    userId: params.userId,
+  });
+}
+
+export async function requireRecruitmentPermission(params: {
+  featureKey: string;
+  minAccessLevel?: 'none' | 'own' | 'team' | 'all';
+  supabaseAdmin: any;
+  userId?: string;
+  workspaceId: string;
+}) {
+  await requireEmployeePermission({
+    featureKey: params.featureKey,
+    minAccessLevel: params.minAccessLevel,
+    moduleKey: 'hrms_recruitment',
+    supabaseAdmin: params.supabaseAdmin,
+    userId: params.userId,
+    workspaceId: params.workspaceId,
+  });
 }
 
 export async function getCurrentEmployeeId(params: {
@@ -229,10 +265,10 @@ export async function getCurrentEmployeeId(params: {
     return null;
   }
 
-  const { data, error } = await params.supabaseAdmin
+  const { data, error } = await getRecruitmentHrmsClient(params.supabaseAdmin)
     .from('employees')
     .select('id')
-    .eq('organization_id', params.organizationId)
+    .eq('workspace_id', params.organizationId)
     .eq('account_id', params.userId)
     .maybeSingle();
 
@@ -255,10 +291,10 @@ export async function ensureOrganizationRecord(params: {
     return null;
   }
 
-  const { data, error } = await params.supabaseAdmin
+  const { data, error } = await getRecruitmentHrmsClient(params.supabaseAdmin)
     .from(params.table)
     .select(params.select ?? 'id')
-    .eq('organization_id', params.organizationId)
+    .eq('workspace_id', params.organizationId)
     .eq('id', params.id)
     .maybeSingle();
 
@@ -278,7 +314,7 @@ export async function touchCandidate(params: {
   supabaseAdmin: any;
   userId?: string;
 }) {
-  const { error } = await params.supabaseAdmin
+  const { error } = await getRecruitmentHrmsClient(params.supabaseAdmin)
     .from('recruitment_candidates')
     .update({
       last_activity_at: new Date().toISOString(),
@@ -298,7 +334,7 @@ export async function updateCandidateStatus(params: {
   supabaseAdmin: any;
   userId?: string;
 }) {
-  const { error } = await params.supabaseAdmin
+  const { error } = await getRecruitmentHrmsClient(params.supabaseAdmin)
     .from('recruitment_candidates')
     .update({
       last_activity_at: new Date().toISOString(),

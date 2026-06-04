@@ -5,6 +5,7 @@ import {
   CalendarCheck,
   ClipboardList,
   FileText,
+  UserSearch,
   Users,
   WalletCards,
 } from 'lucide-react';
@@ -48,6 +49,13 @@ const modules = [
     description: 'Requests, approvals, balances, and holidays.',
     href: '/home/hrms/leave',
     icon: ClipboardList,
+  },
+  {
+    title: 'Recruitment',
+    description:
+      'Requisitions, candidates, interviews, offers, and onboarding.',
+    href: '/home/hrms/recruitment',
+    icon: UserSearch,
   },
   {
     title: 'Payroll',
