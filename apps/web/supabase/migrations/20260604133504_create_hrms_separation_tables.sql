@@ -1,5 +1,13 @@
 CREATE SCHEMA IF NOT EXISTS hrms;
 
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace WHERE t.typname = 'resignation_status' AND n.nspname = 'hrms') THEN
@@ -212,21 +220,20 @@ DROP TRIGGER IF EXISTS set_updated_at ON hrms.asset_clearances;
 DROP TRIGGER IF EXISTS set_updated_at ON hrms.fnf_settlements;
 DROP TRIGGER IF EXISTS set_updated_at ON hrms.employee_exit_letters;
 
-CREATE TRIGGER set_updated_at BEFORE UPDATE ON hrms.resignation_requests FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-CREATE TRIGGER set_updated_at BEFORE UPDATE ON hrms.exit_checklist_items FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-CREATE TRIGGER set_updated_at BEFORE UPDATE ON hrms.exit_checklists FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-CREATE TRIGGER set_updated_at BEFORE UPDATE ON hrms.asset_clearances FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-CREATE TRIGGER set_updated_at BEFORE UPDATE ON hrms.fnf_settlements FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-CREATE TRIGGER set_updated_at BEFORE UPDATE ON hrms.employee_exit_letters FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON hrms.resignation_requests FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON hrms.exit_checklist_items FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON hrms.exit_checklists FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON hrms.asset_clearances FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON hrms.fnf_settlements FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON hrms.employee_exit_letters FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
-INSERT INTO public.crm_modules (module_key, module_name, description, display_order, is_active, is_core)
+INSERT INTO public.crm_modules (module_key, module_name, description, display_order, is_system, is_active)
 VALUES ('hrms_separation', 'HRMS Separation', 'Manage resignations, exit checklist, asset clearance, FNF settlement, and exit letters', 57, TRUE, TRUE)
 ON CONFLICT (module_key) DO UPDATE SET
   module_name = EXCLUDED.module_name,
   description = EXCLUDED.description,
   display_order = EXCLUDED.display_order,
-  is_active = EXCLUDED.is_active,
-  is_core = EXCLUDED.is_core,
+  is_active = TRUE,
   updated_at = NOW();
 
 INSERT INTO public.crm_module_features (
