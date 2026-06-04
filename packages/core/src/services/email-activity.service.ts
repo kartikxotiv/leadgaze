@@ -54,3 +54,11 @@ export const sendCoreEmailService = asyncHandlerClient(async (payload: Record<st
   const response = await CoreApiClient.post('/email-send', payload);
   return response.data?.data ?? null;
 });
+
+export const syncCoreEmailAccountsService = asyncHandlerClient(async (payload: {
+  workspaceId: string;
+  emailAccountId?: number | string;
+}) => {
+  const response = await CoreApiClient.post('/email-sync', payload);
+  return response.data?.data ?? null;
+});
