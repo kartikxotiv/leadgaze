@@ -1,11 +1,11 @@
-import ApiClient from '../utils/axios-client';
-import { asyncHandlerClient } from '~/utils/async-handler';
-import type { ApiSuccessResponse } from '~/types/document.type';
+import { asyncHandlerClient } from '../../utils/async-handler';
+import type { ApiSuccessResponse } from '../../types/document.type';
+import ApiClient from '../../utils/axios-client';
 
 export type UploadResponse = {
-  url: string;
   name: string;
   type: string;
+  url: string;
 };
 
 const uploadFileService = asyncHandlerClient(async (file: File) => {

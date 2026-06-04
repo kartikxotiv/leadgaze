@@ -538,6 +538,24 @@ function getFeatureAliases(moduleKey: string, featureKey: string) {
     }
   }
 
+  if (moduleKey === 'hrms_documents') {
+    if (featureKey === 'create') {
+      return ['create', 'upload', 'manage'];
+    }
+
+    if (featureKey === 'edit' || featureKey === 'update') {
+      return ['edit', 'update', 'manage'];
+    }
+
+    if (featureKey === 'delete') {
+      return ['delete', 'manage'];
+    }
+
+    if (featureKey === 'upload') {
+      return ['upload', 'create', 'manage'];
+    }
+  }
+
   if (featureKey === 'edit') {
     return ['edit', 'update'];
   }
