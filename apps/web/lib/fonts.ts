@@ -1,4 +1,4 @@
-import { Inter as SansFont } from 'next/font/google';
+import { Roboto as SansFont } from 'next/font/google';
 
 /**
  * @sans
@@ -10,7 +10,7 @@ const sans = SansFont({
   variable: '--font-sans',
   fallback: ['system-ui', 'Helvetica Neue', 'Helvetica', 'Arial'],
   preload: true,
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['300', '400', '500', '700'],
 });
 
 /**

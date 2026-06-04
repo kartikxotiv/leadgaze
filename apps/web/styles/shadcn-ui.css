@@ -22,7 +22,7 @@
     --popover: var(--color-white);
     --popover-foreground: var(--color-neutral-950);
 
-    --primary: #4eacff;
+    --primary: #3953E7;
     --primary-foreground: var(--color-white);
 
     --secondary: oklch(96.76% 0.0013 286.38);
@@ -34,7 +34,7 @@
     --accent: oklch(96.76% 0.0013 286.38);
     --accent-foreground: oklch(21.03% 0.0318 264.65);
 
-    --destructive: var(--color-red-500);
+    --destructive: #DC3545;
     --destructive-foreground: var(--color-white);
 
     --border: var(--color-gray-100);
@@ -43,11 +43,11 @@
 
     --radius: 0.5rem;
 
-    --chart-1: var(--color-orange-400);
-    --chart-2: var(--color-teal-600);
-    --chart-3: var(--color-green-800);
-    --chart-4: var(--color-yellow-200);
-    --chart-5: var(--color-orange-200);
+    --chart-1: #3953E7;
+    --chart-2: #F0B100;
+    --chart-3: #00C950;
+    --chart-4: #6175EC;
+    --chart-5: #FF6900;
 
     --sidebar-background: #F2F2F2;
     --sidebar-foreground: oklch(37.05% 0.012 285.8);

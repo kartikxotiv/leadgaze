@@ -233,10 +233,10 @@ export function OpportunityDialog({
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
             <FormField
               control={form.control}
-              name="opportunity_name"
+              name="opportunity_name"              
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Opportunity Name</FormLabel>
