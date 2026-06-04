@@ -3,12 +3,13 @@
 
 import { useEffect, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 import { Building2, Check, ChevronDown, Mail, Settings2 } from 'lucide-react';
 
 import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
 import { useUser } from '@kit/supabase/hooks/use-user';
+import { CoreEmailSettingsPage } from '@kit/core/pages';
 import { Button } from '@kit/ui/button';
 import {
   Card,
@@ -27,7 +28,6 @@ import { PageBody, PageHeader } from '@kit/ui/page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
-
 import { EmailAccountsSettings } from './_components/email-accounts-settings';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -140,7 +140,9 @@ function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
 }
 
 export default function WorkspaceSettingsPage() {
-  const { currentWorkspace: workspace } = useRBAC();
+  const { currentWorkspace: workspace, canAccess } = useRBAC();
+  const pathname = usePathname();
+  const shouldUseWebEmailSettings = pathname === '/home/workspace-settings';
 
   return (
     <>
@@ -173,7 +175,19 @@ export default function WorkspaceSettingsPage() {
           </TabsContent>
 
           <TabsContent value="emails">
-            <EmailAccountsSettings workspace={workspace} />
+            {shouldUseWebEmailSettings ? (
+              <EmailAccountsSettings workspace={workspace} />
+            ) : (
+              <CoreEmailSettingsPage
+                workspace={workspace}
+                embedded
+                googleAuthPath="/api/email/google/auth"
+                googleReturnUrl={pathname || '/home/workspace-settings'}
+                permissions={{
+                  manageAccounts: canAccess('emails', 'manage_templates'),
+                }}
+              />
+            )}
           </TabsContent>
         </Tabs>
       </PageBody>

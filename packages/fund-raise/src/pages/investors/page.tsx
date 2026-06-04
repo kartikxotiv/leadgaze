@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Eye, Pencil, Plus, Search, Trash2, UserPlus } from 'lucide-react';
 import { Badge } from '@kit/ui/badge';
@@ -211,6 +212,7 @@ function Info({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 export function FundraisingInvestorsPage({ workspaceId }: { workspaceId: string }) {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { canAccess, isLoading: isPermissionsLoading } = useFundraisingPermissions(workspaceId);
   const canView = canAccess(FUNDRAISING_MODULE_KEYS.investors, FUNDRAISING_FEATURE_KEYS.view);
@@ -229,6 +231,7 @@ export function FundraisingInvestorsPage({ workspaceId }: { workspaceId: string 
   });
   const types = Array.from(new Set(investors.map((investor) => investor.investor_type).filter(Boolean))) as string[];
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['fundraising', 'investors', workspaceId] });
+  const openInvestor = (investorId: string) => router.push(`/home/funds/investors/${investorId}`);
 
   if (isPermissionsLoading) {
     return <div className="p-6"><Skeleton className="h-10 w-full" /></div>;
@@ -242,7 +245,7 @@ export function FundraisingInvestorsPage({ workspaceId }: { workspaceId: string 
     <div className="flex h-full w-full flex-col gap-5 p-6">
       {canCreate && <div className="flex justify-end"><InvestorFormDialog workspaceId={workspaceId} onDone={refresh} /></div>}
       <div className="flex flex-col gap-3 sm:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="pl-9" placeholder="Search investors..." value={search} onChange={(event) => setSearch(event.target.value)} /></div><Select value={status} onValueChange={setStatus}><SelectTrigger className="sm:w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Status</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem><SelectItem value="blacklisted">Blacklisted</SelectItem></SelectContent></Select><Select value={type} onValueChange={setType}><SelectTrigger className="sm:w-48"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Types</SelectItem>{types.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></div>
-      <Card><CardContent className="p-0"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="border-b bg-muted/40 text-left text-xs uppercase text-muted-foreground"><tr><th className="p-3">Name</th><th className="p-3">Investor Type</th><th className="p-3">Ticket Size</th><th className="p-3">Industry Focus</th><th className="p-3">Status</th><th className="p-3">Owner</th><th className="p-3">Created</th><th className="p-3 text-right">Actions</th></tr></thead><tbody>{isLoading ? [...Array(4)].map((_, i) => <tr key={i}><td className="p-3" colSpan={8}><Skeleton className="h-8 w-full" /></td></tr>) : filtered.map((investor) => <tr key={investor.id} className="border-b last:border-b-0"><td className="p-3 font-medium"><div className="flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground" />{investor.name}</div></td><td className="p-3">{investor.investor_type ?? '-'}</td><td className="p-3">{investor.ticket_size_min ?? '-'} - {investor.ticket_size_max ?? '-'}</td><td className="p-3">{investor.industry_focus?.join(', ') || '-'}</td><td className="p-3"><Badge variant="outline">{investor.status}</Badge></td><td className="p-3">{ownerDisplay(investor)}</td><td className="p-3">{dateTimeDisplay(investor.created_at_display, investor.created_at)}</td><td className="p-3 text-right"><div className="flex justify-end gap-1"><Dialog><DialogTrigger asChild><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></DialogTrigger><InvestorDetails workspaceId={workspaceId} investor={investor} canAddContact={canAddContact} canDeleteContact={canDelete} /></Dialog>{canEdit && <InvestorFormDialog workspaceId={workspaceId} investor={investor} onDone={refresh} />}{canDelete && <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(investor.id)}><Trash2 className="h-4 w-4" /></Button>}</div></td></tr>)}</tbody></table></div></CardContent></Card>
+      <Card><CardContent className="p-0"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="border-b bg-muted/40 text-left text-xs uppercase text-muted-foreground"><tr><th className="p-3">Name</th><th className="p-3">Investor Type</th><th className="p-3">Ticket Size</th><th className="p-3">Industry Focus</th><th className="p-3">Status</th><th className="p-3">Owner</th><th className="p-3">Created</th><th className="p-3 text-right">Actions</th></tr></thead><tbody>{isLoading ? [...Array(4)].map((_, i) => <tr key={i}><td className="p-3" colSpan={8}><Skeleton className="h-8 w-full" /></td></tr>) : filtered.map((investor) => <tr key={investor.id} className="cursor-pointer border-b transition-colors last:border-b-0 hover:bg-muted/40" onClick={() => openInvestor(investor.id)}><td className="p-3 font-medium"><div className="flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground" />{investor.name}</div></td><td className="p-3">{investor.investor_type ?? '-'}</td><td className="p-3">{investor.ticket_size_min ?? '-'} - {investor.ticket_size_max ?? '-'}</td><td className="p-3">{investor.industry_focus?.join(', ') || '-'}</td><td className="p-3"><Badge variant="outline">{investor.status}</Badge></td><td className="p-3">{ownerDisplay(investor)}</td><td className="p-3">{dateTimeDisplay(investor.created_at_display, investor.created_at)}</td><td className="p-3 text-right" onClick={(event) => event.stopPropagation()}><div className="flex justify-end gap-1"><Button variant="ghost" size="sm" onClick={() => openInvestor(investor.id)}><Eye className="h-4 w-4" /></Button>{canEdit && <InvestorFormDialog workspaceId={workspaceId} investor={investor} onDone={refresh} />}{canDelete && <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(investor.id)}><Trash2 className="h-4 w-4" /></Button>}</div></td></tr>)}</tbody></table></div></CardContent></Card>
     </div>
   );
 }
