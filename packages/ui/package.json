@@ -101,6 +101,8 @@
     "./pagination": "./src/shadcn/pagination.tsx",
     "./shadcn-sidebar": "./src/shadcn/sidebar.tsx",
     "./collapsible": "./src/shadcn/collapsible.tsx",
+    "./card-widget-container": "./src/shadcn/card-widget-container.tsx",
+    "./custom-input-for-view": "./src/shadcn/custom-input-for-view.tsx",
     "./utils": "./src/lib/utils/index.ts",
     "./use-column-visibility": "./src/hooks/use-column-visibility.ts",
     "./column-visibility-selector": "./src/makerkit/column-visibility-selector.tsx",
