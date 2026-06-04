@@ -129,6 +129,7 @@ async function getRequiredWorkspaceId(params: {
 async function requireEmployeePermission(params: {
   featureKey: string;
   minAccessLevel?: AccessLevel;
+  moduleKey?: string;
   supabaseAdmin: SupabaseAdminClient;
   userId?: string;
   workspaceId: string;
@@ -176,7 +177,8 @@ async function requireEmployeePermission(params: {
     throw new ApiError(permissionError.message, 400);
   }
 
-  const featureKeys = getEmployeeFeatureAliases(params.featureKey);
+  const moduleKey = params.moduleKey ?? 'hrms_employees';
+  const featureKeys = getFeatureAliases(moduleKey, params.featureKey);
   const rolePermission =
     (
       permissions as Array<{
@@ -191,10 +193,10 @@ async function requireEmployeePermission(params: {
       }> | null
     )?.find((permission) => {
       const feature = permission.crm_module_features;
-      const moduleKey = feature?.crm_modules?.module_key;
+      const permissionModuleKey = feature?.crm_modules?.module_key;
 
       return (
-        moduleKey === 'hrms_employees' &&
+        permissionModuleKey === moduleKey &&
         featureKeys.includes(feature?.feature_key ?? '')
       );
     }) ?? null;
@@ -521,7 +523,39 @@ function getEmployeeName(
   return `${employee.first_name}${employee.last_name ? ` ${employee.last_name}` : ''}`;
 }
 
-function getEmployeeFeatureAliases(featureKey: string) {
+function getFeatureAliases(moduleKey: string, featureKey: string) {
+  if (moduleKey === 'hrms_departments') {
+    if (featureKey === 'create') {
+      return ['create', 'manage'];
+    }
+
+    if (featureKey === 'edit' || featureKey === 'update') {
+      return ['edit', 'update', 'manage'];
+    }
+
+    if (featureKey === 'delete') {
+      return ['delete', 'manage'];
+    }
+  }
+
+  if (moduleKey === 'hrms_documents') {
+    if (featureKey === 'create') {
+      return ['create', 'upload', 'manage'];
+    }
+
+    if (featureKey === 'edit' || featureKey === 'update') {
+      return ['edit', 'update', 'manage'];
+    }
+
+    if (featureKey === 'delete') {
+      return ['delete', 'manage'];
+    }
+
+    if (featureKey === 'upload') {
+      return ['upload', 'create', 'manage'];
+    }
+  }
+
   if (featureKey === 'edit') {
     return ['edit', 'update'];
   }

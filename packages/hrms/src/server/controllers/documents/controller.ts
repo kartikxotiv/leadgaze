@@ -1,146 +1,333 @@
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import type { Database } from '~/lib/database.types';
-import { getCurrentUserOrganizationId } from '~/lib/server/organizations';
 import {
-    ApiError,
-    catchAsync,
-    successDataResponse,
-} from '~/utils/response-handler';
+  ApiError,
+  catchAsync,
+  successDataResponse,
+} from '../../../utils/response-handler';
+import {
+  type SupabaseAdminClient,
+  getHrmsClient,
+  getRequiredWorkspaceId,
+  getRouteUserId,
+  requireEmployeePermission,
+} from '../employees/controller.helpers';
 
-type DocumentInsert = Database['public']['Tables']['employee_documents']['Insert'];
 type DocumentWriteBody = {
-    employeeId: string;
-    organizationId: string;
-    uploadFile: string;
-    name?: string | null;
+  employeeId?: string | null;
+  name?: string | null;
+  uploadFile?: string | null;
 };
 
+type DocumentRow = {
+  created_at: string;
+  employee_id: string | null;
+  expiry_at: string | null;
+  file_url: string;
+  id: string;
+  name: string;
+  status: string;
+  updated_at: string;
+  uploaded_at: string;
+  workspace_id: string;
+};
+
+type EmployeeSummary = {
+  employee_code: string;
+  first_name: string;
+  id: string;
+  last_name: string | null;
+  work_email: string;
+};
+
+const documentModuleKey = 'hrms_documents';
 const documentSelect = `
   id,
-  organization_id,
+  workspace_id,
   employee_id,
   name,
   file_url,
   uploaded_at,
+  expiry_at,
+  status,
   created_at,
-  updated_at,
-  employee:employees (
-    first_name,
-    last_name
-  )
+  updated_at
 `;
 
-const createDocumentController = catchAsync(async ({ body, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
-    const documentBody = body as DocumentWriteBody;
+const createDocumentController = catchAsync(async ({ body, request, user }) => {
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const hrms = getHrmsClient(supabaseAdmin);
+  const userId = getRouteUserId(user);
+  const workspaceId = await getRequiredWorkspaceId({
+    request,
+    supabaseAdmin,
+    userId,
+  });
+  const documentBody = body as DocumentWriteBody;
 
-    if (!organizationId) {
-        throw new ApiError('Organization not found for user', 404);
-    }
+  await requireEmployeePermission({
+    featureKey: 'create',
+    minAccessLevel: 'team',
+    moduleKey: documentModuleKey,
+    supabaseAdmin,
+    userId,
+    workspaceId,
+  });
 
-    const payload: DocumentInsert = {
-        name: documentBody.name?.trim() ?? '',
-        file_url: documentBody.uploadFile?.trim() ?? '',
-        employee_id: documentBody.employeeId?.trim() ?? '',
-        organization_id: organizationId,
-        created_by: user?.id,
-        updated_by: user?.id,
-    };
+  const employeeId = normalizeRequired(documentBody.employeeId);
+  const fileUrl = normalizeRequired(documentBody.uploadFile);
 
-    const { data, error } = await supabaseAdmin
-        .from('employee_documents')
-        .insert(payload)
-        .select(documentSelect)
-        .single();
+  await validateDocumentEmployee({
+    employeeId,
+    supabaseAdmin,
+    workspaceId,
+  });
 
-    if (error) {
-        throw new ApiError(error.message, 400);
-    }
+  const { data, error } = await hrms
+    .from('employee_documents')
+    .insert({
+      created_by: userId,
+      employee_id: employeeId,
+      file_url: fileUrl,
+      name: documentBody.name?.trim() ?? '',
+      updated_by: userId,
+      workspace_id: workspaceId,
+    })
+    .select(documentSelect)
+    .single();
 
-    return successDataResponse('Document created successfully', data);
+  if (error) {
+    throw new ApiError(error.message, 400);
+  }
+
+  const [document] = await enrichDocuments({
+    documents: data ? [data as DocumentRow] : [],
+    supabaseAdmin,
+    workspaceId,
+  });
+
+  return successDataResponse('Document created successfully', document);
 });
 
-const listDocumentsController = catchAsync(async ({ user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
+const listDocumentsController = catchAsync(async ({ request, user }) => {
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const hrms = getHrmsClient(supabaseAdmin);
+  const userId = getRouteUserId(user);
+  const workspaceId = await getRequiredWorkspaceId({
+    request,
+    supabaseAdmin,
+    userId,
+  });
 
-    if (!organizationId) {
-        throw new ApiError('Organization not found for user', 404);
-    }
+  await requireEmployeePermission({
+    featureKey: 'view',
+    moduleKey: documentModuleKey,
+    supabaseAdmin,
+    userId,
+    workspaceId,
+  });
 
-    const { data, error } = await supabaseAdmin
-        .from('employee_documents')
-        .select(documentSelect)
-        .eq('organization_id', organizationId)
-        .order('name', { ascending: true });
+  const { data, error } = await hrms
+    .from('employee_documents')
+    .select(documentSelect)
+    .eq('workspace_id', workspaceId)
+    .order('uploaded_at', { ascending: false });
 
-    if (error) {
-        throw new ApiError(error.message, 400);
-    }
+  if (error) {
+    throw new ApiError(error.message, 400);
+  }
 
-    return successDataResponse('Documents fetched successfully', data ?? []);
+  const documents = await enrichDocuments({
+    documents: (data ?? []) as DocumentRow[],
+    supabaseAdmin,
+    workspaceId,
+  });
+
+  return successDataResponse('Documents fetched successfully', documents);
 });
 
-const updateDocumentController = catchAsync(async ({ body, user, params = {} }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
-    const documentId = params.id as string;
+const updateDocumentController = catchAsync(
+  async ({ body, params = {}, request, user }) => {
+    const supabaseAdmin = getSupabaseServerAdminClient();
+    const hrms = getHrmsClient(supabaseAdmin);
+    const userId = getRouteUserId(user);
+    const workspaceId = await getRequiredWorkspaceId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
+    const documentId = getDocumentId(params);
     const documentBody = body as Partial<DocumentWriteBody>;
 
-    if (!organizationId) {
-        throw new ApiError('Organization not found for user', 404);
+    await requireEmployeePermission({
+      featureKey: 'edit',
+      minAccessLevel: 'team',
+      moduleKey: documentModuleKey,
+      supabaseAdmin,
+      userId,
+      workspaceId,
+    });
+
+    if (documentBody.employeeId) {
+      await validateDocumentEmployee({
+        employeeId: documentBody.employeeId,
+        supabaseAdmin,
+        workspaceId,
+      });
     }
 
-    const payload: Partial<DocumentInsert> = {
-        name: documentBody.name?.trim(),
-        file_url: documentBody.uploadFile?.trim(),
-        employee_id: documentBody.employeeId?.trim(),
-        updated_by: user?.id,
-        updated_at: new Date().toISOString(),
+    const payload = {
+      employee_id: documentBody.employeeId?.trim(),
+      file_url: documentBody.uploadFile?.trim(),
+      name: documentBody.name?.trim(),
+      updated_by: userId,
     };
 
-    const { data, error } = await supabaseAdmin
-        .from('employee_documents')
-        .update(payload)
-        .eq('id', documentId)
-        .eq('organization_id', organizationId)
-        .select(documentSelect)
-        .single();
+    const { data, error } = await hrms
+      .from('employee_documents')
+      .update(payload)
+      .eq('id', documentId)
+      .eq('workspace_id', workspaceId)
+      .select(documentSelect)
+      .single();
 
     if (error) {
-        throw new ApiError(error.message, 400);
+      throw new ApiError(error.message, 400);
     }
 
-    return successDataResponse('Document updated successfully', data);
-});
+    const [document] = await enrichDocuments({
+      documents: data ? [data as DocumentRow] : [],
+      supabaseAdmin,
+      workspaceId,
+    });
 
-const deleteDocumentController = catchAsync(async ({ user, params = {} }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient<Database>();
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
-    const documentId = params.id as string;
+    return successDataResponse('Document updated successfully', document);
+  },
+);
 
-    if (!organizationId) {
-        throw new ApiError('Organization not found for user', 404);
-    }
+const deleteDocumentController = catchAsync(
+  async ({ params = {}, request, user }) => {
+    const supabaseAdmin = getSupabaseServerAdminClient();
+    const hrms = getHrmsClient(supabaseAdmin);
+    const userId = getRouteUserId(user);
+    const workspaceId = await getRequiredWorkspaceId({
+      request,
+      supabaseAdmin,
+      userId,
+    });
+    const documentId = getDocumentId(params);
 
-    const { error } = await supabaseAdmin
-        .from('employee_documents')
-        .delete()
-        .eq('id', documentId)
-        .eq('organization_id', organizationId);
+    await requireEmployeePermission({
+      featureKey: 'delete',
+      minAccessLevel: 'team',
+      moduleKey: documentModuleKey,
+      supabaseAdmin,
+      userId,
+      workspaceId,
+    });
+
+    const { error } = await hrms
+      .from('employee_documents')
+      .delete()
+      .eq('id', documentId)
+      .eq('workspace_id', workspaceId);
 
     if (error) {
-        throw new ApiError(error.message, 400);
+      throw new ApiError(error.message, 400);
     }
 
     return successDataResponse('Document deleted successfully', null);
-});
+  },
+);
+
+async function validateDocumentEmployee(params: {
+  employeeId: string;
+  supabaseAdmin: SupabaseAdminClient;
+  workspaceId: string;
+}) {
+  const hrms = getHrmsClient(params.supabaseAdmin);
+  const { data, error } = await hrms
+    .from('employees')
+    .select('id')
+    .eq('id', params.employeeId)
+    .eq('workspace_id', params.workspaceId)
+    .eq('is_deleted', false)
+    .neq('status', 'exited')
+    .maybeSingle();
+
+  if (error || !data) {
+    throw new ApiError('Employee is invalid', 400);
+  }
+}
+
+async function enrichDocuments(params: {
+  documents: DocumentRow[];
+  supabaseAdmin: SupabaseAdminClient;
+  workspaceId: string;
+}) {
+  const employeeIds = uniqueIds(
+    params.documents.map((document) => document.employee_id),
+  );
+  const hrms = getHrmsClient(params.supabaseAdmin);
+
+  const { data: employees, error } =
+    employeeIds.length > 0
+      ? await hrms
+          .from('employees')
+          .select('id, employee_code, first_name, last_name, work_email')
+          .eq('workspace_id', params.workspaceId)
+          .in('id', employeeIds)
+      : { data: [], error: null };
+
+  if (error) {
+    throw new ApiError(error.message, 400);
+  }
+
+  const employeesById = new Map(
+    ((employees ?? []) as EmployeeSummary[]).map((employee) => [
+      employee.id,
+      employee,
+    ]),
+  );
+
+  return params.documents.map((document) => ({
+    ...document,
+    organization_id: document.workspace_id,
+    employee: document.employee_id
+      ? (employeesById.get(document.employee_id) ?? null)
+      : null,
+  }));
+}
+
+function getDocumentId(params?: Record<string, string>) {
+  const documentId = params?.id;
+
+  if (!documentId) {
+    throw new ApiError('Document id is required', 400);
+  }
+
+  return documentId;
+}
+
+function normalizeRequired(value: string | null | undefined) {
+  const normalizedValue = value?.trim();
+
+  if (!normalizedValue) {
+    throw new ApiError('Document payload is invalid', 400);
+  }
+
+  return normalizedValue;
+}
+
+function uniqueIds(values: Array<string | null | undefined>) {
+  return Array.from(
+    new Set(values.filter((value): value is string => Boolean(value))),
+  );
+}
 
 export {
-    createDocumentController,
-    deleteDocumentController,
-    listDocumentsController,
-    updateDocumentController,
+  createDocumentController,
+  deleteDocumentController,
+  listDocumentsController,
+  updateDocumentController,
 };

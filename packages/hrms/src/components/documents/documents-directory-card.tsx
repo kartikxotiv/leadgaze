@@ -21,7 +21,8 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
-import type { EmployeeDocument } from '~/types/document.type';
+import type { EmployeeDocument } from '../../types/document.type';
+import { useRbac } from '../rbac/rbac-context';
 
 export function DocumentsDirectoryCard(props: {
   documents: Array<EmployeeDocument>;
@@ -29,6 +30,10 @@ export function DocumentsDirectoryCard(props: {
   onDeleteRequested?: (document: EmployeeDocument) => void;
   onEditRequested?: (document: EmployeeDocument) => void;
 }) {
+  const { hasPermission } = useRbac();
+  const canEdit = hasPermission('documents', 'edit', 'team');
+  const canDelete = hasPermission('documents', 'delete', 'team');
+
   return (
     <Card>
       <CardContent className={'p-0'}>
@@ -95,10 +100,7 @@ export function DocumentsDirectoryCard(props: {
                       {formatDate(document.uploaded_at)}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        asChild
-                        aria-label={`View ${document.name}`}
-                      >
+                      <Button asChild aria-label={`View ${document.name}`}>
                         <Link
                           href={document.file_url}
                           target={'_blank'}
@@ -109,31 +111,41 @@ export function DocumentsDirectoryCard(props: {
                       </Button>
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            size={'icon'}
-                            variant={'ghost'}
-                            aria-label={'Document actions'}
-                          >
-                            <MoreHorizontal className={'h-4 w-4'} />
-                          </Button>
-                        </DropdownMenuTrigger>
+                      {canEdit || canDelete ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              size={'icon'}
+                              variant={'ghost'}
+                              aria-label={'Document actions'}
+                            >
+                              <MoreHorizontal className={'h-4 w-4'} />
+                            </Button>
+                          </DropdownMenuTrigger>
 
-                        <DropdownMenuContent align={'end'}>
-                          <DropdownMenuItem
-                            onClick={() => props.onEditRequested?.(document)}
-                          >
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className={'text-destructive'}
-                            onClick={() => props.onDeleteRequested?.(document)}
-                          >
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                          <DropdownMenuContent align={'end'}>
+                            {canEdit ? (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  props.onEditRequested?.(document)
+                                }
+                              >
+                                Edit
+                              </DropdownMenuItem>
+                            ) : null}
+                            {canDelete ? (
+                              <DropdownMenuItem
+                                className={'text-destructive'}
+                                onClick={() =>
+                                  props.onDeleteRequested?.(document)
+                                }
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            ) : null}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 ))}
