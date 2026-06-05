@@ -3,10 +3,9 @@ import type {
   SupportSystemDashboardResponse,
   SupportSystemRequest,
   SupportSystemRequestUpdatePayload,
-} from '~/types/support-system.type';
-import { asyncHandlerClient } from '~/utils/async-handler';
-
-import ApiClient from '../utils/axios-client';
+} from '../../types/support-system.type';
+import { asyncHandlerClient } from '../../utils/async-handler';
+import ApiClient from '../../utils/axios-client';
 
 const getSupportSystemDashboardService = asyncHandlerClient(async () => {
   const response =

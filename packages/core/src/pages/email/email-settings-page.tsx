@@ -229,6 +229,27 @@ export function CoreEmailSettingsPage({
     }
   };
 
+  const handleSyncEnabledChange = async (
+    account: CoreEmailAccount,
+    isSyncEnabled: boolean,
+  ) => {
+    if (!workspaceId) return;
+    setUpdatingAccountId(account.id);
+    try {
+      await updateCoreEmailAccountService({
+        id: account.id,
+        workspace_id: workspaceId,
+        is_sync_enabled: isSyncEnabled,
+      });
+      toast.success(`Email sync ${isSyncEnabled ? 'enabled' : 'disabled'}`);
+      await refetch();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update sync status');
+    } finally {
+      setUpdatingAccountId(null);
+    }
+  };
+
   const handleDelete = async (account: CoreEmailAccount) => {
     if (!workspaceId) return;
     try {
@@ -454,6 +475,7 @@ export function CoreEmailSettingsPage({
                           <TableHead>From Name</TableHead>
                           <TableHead>Access</TableHead>
                           <TableHead>Status</TableHead>
+                          <TableHead>Sync</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -461,7 +483,7 @@ export function CoreEmailSettingsPage({
                         {isLoading ? (
                           <TableRow>
                             <TableCell
-                              colSpan={7}
+                              colSpan={8}
                               className="text-muted-foreground py-8 text-center"
                             >
                               Loading accounts...
@@ -470,7 +492,7 @@ export function CoreEmailSettingsPage({
                         ) : accounts.length === 0 ? (
                           <TableRow>
                             <TableCell
-                              colSpan={7}
+                              colSpan={8}
                               className="text-muted-foreground py-8 text-center"
                             >
                               No email accounts connected.
@@ -566,6 +588,31 @@ export function CoreEmailSettingsPage({
                                     : account.is_active
                                       ? 'Active'
                                       : 'Inactive'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={
+                                    account.is_sync_enabled
+                                      ? 'default'
+                                      : 'secondary'
+                                  }
+                                  className={
+                                    account.can_manage ? 'cursor-pointer' : ''
+                                  }
+                                  onClick={() =>
+                                    account.can_manage &&
+                                    handleSyncEnabledChange(
+                                      account,
+                                      !account.is_sync_enabled,
+                                    )
+                                  }
+                                >
+                                  {updatingAccountId === account.id
+                                    ? 'Updating...'
+                                    : account.is_sync_enabled
+                                      ? 'Enabled'
+                                      : 'Disabled'}
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right">
