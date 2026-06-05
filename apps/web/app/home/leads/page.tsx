@@ -62,6 +62,7 @@ import { getMembersService } from '~/services/team-members.service';
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import CreateLeadDialog from './components/create-lead-dialog';
+import {CustomTableContainer} from '@kit/ui/custom-table-container';
 
 export default function LeadsPage() {
   const router = useRouter();
@@ -579,13 +580,68 @@ export default function LeadsPage() {
         </div>
         <PageBody className="bg-sidebar sticky -mt-3 flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-6">
           <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
-            <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col space-y-6">
-              {/* Table */}
-              <Card className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col border-none shadow-none">
-                <CardContent className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col p-0">
-                  <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
-                    <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
-                      <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+            <CustomTableContainer pagination={totalCount > 0 && (
+                <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
+                  <div>
+                    Showing{' '}
+                    <span className="primary-text-regular text-leadgaze-muted">
+                      {(currentPage - 1) * itemsPerPage + 1}
+                    </span>{' '}
+                    to{' '}
+                    <span className="primary-text-regular text-leadgaze-muted">
+                      {Math.min(currentPage * itemsPerPage, totalCount)}
+                    </span>{' '}
+                    of{' '}
+                    <span className="primary-text-regular text-leadgaze-muted">
+                      {totalCount}
+                    </span>{' '}
+                    enteries
+                  </div>
+                  <Pagination className="w-auto">
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          className={
+                            currentPage === 1
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
+                          }
+                          onClick={() =>
+                            setCurrentPage((prev) => Math.max(prev - 1, 1))
+                          }
+                        />
+                      </PaginationItem>
+                      {Array.from({ length: totalPages }).map((_, i) => (
+                        <PaginationItem key={i}>
+                          <PaginationLink
+                            isActive={currentPage === i + 1}
+                            onClick={() => setCurrentPage(i + 1)}
+                            className="cursor-pointer"
+                          >
+                            {i + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          className={
+                            currentPage === totalPages
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
+                          }
+                          onClick={() =>
+                            setCurrentPage((prev) =>
+                              Math.min(prev + 1, totalPages),
+                            )
+                          }
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}>
+                    <Table>
+                      <TableHeader>
                         <TableRow>
                           {isVisible('sno') && (
                             <TableHead className="w-12 whitespace-nowrap">
@@ -651,7 +707,7 @@ export default function LeadsPage() {
                           {isVisible('updated_by') && (
                             <TableHead>Last Updated By</TableHead>
                           )}
-                          <TableHead className="bg-card sticky right-0 text-right">
+                          <TableHead className="sticky-right-header">
                             Actions
                           </TableHead>
                         </TableRow>
@@ -925,72 +981,10 @@ export default function LeadsPage() {
                           ))
                         )}
                       </TableBody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
+                    </Table>               
 
-              {totalCount > 0 && (
-                <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
-                  <div>
-                    Showing{' '}
-                    <span className="text-foreground font-medium">
-                      {(currentPage - 1) * itemsPerPage + 1}
-                    </span>{' '}
-                    to{' '}
-                    <span className="text-foreground font-medium">
-                      {Math.min(currentPage * itemsPerPage, totalCount)}
-                    </span>{' '}
-                    of{' '}
-                    <span className="text-foreground font-medium">
-                      {totalCount}
-                    </span>{' '}
-                    leads
-                  </div>
-                  <Pagination className="w-auto">
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious
-                          className={
-                            currentPage === 1
-                              ? 'pointer-events-none opacity-50'
-                              : 'cursor-pointer'
-                          }
-                          onClick={() =>
-                            setCurrentPage((prev) => Math.max(prev - 1, 1))
-                          }
-                        />
-                      </PaginationItem>
-                      {Array.from({ length: totalPages }).map((_, i) => (
-                        <PaginationItem key={i}>
-                          <PaginationLink
-                            isActive={currentPage === i + 1}
-                            onClick={() => setCurrentPage(i + 1)}
-                            className="cursor-pointer"
-                          >
-                            {i + 1}
-                          </PaginationLink>
-                        </PaginationItem>
-                      ))}
-                      <PaginationItem>
-                        <PaginationNext
-                          className={
-                            currentPage === totalPages
-                              ? 'pointer-events-none opacity-50'
-                              : 'cursor-pointer'
-                          }
-                          onClick={() =>
-                            setCurrentPage((prev) =>
-                              Math.min(prev + 1, totalPages),
-                            )
-                          }
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                </div>
-              )}
-            </div>
+              
+            </CustomTableContainer>
             {/* closes table area div */}
           </div>
           {/* closes filter panel + table flex row */}
