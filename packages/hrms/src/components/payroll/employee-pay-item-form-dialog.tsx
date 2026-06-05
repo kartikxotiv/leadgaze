@@ -24,13 +24,17 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 
-import { listEmployeesService } from '~/services/employee.service';
+import { listEmployeesService } from '../../server/services/employee.service';
 import {
   createEmployeePayItemService,
   listSalaryComponentsService,
   updateEmployeePayItemService,
-} from '~/services/payroll.service';
-import { handleApiResponse } from '~/utils/api-response-handler';
+} from '../../server/services/payroll.service';
+import { handleApiResponse } from '../../utils/api-response-handler';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

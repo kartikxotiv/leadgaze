@@ -1,7 +1,12 @@
-export function formatPayrollEmployeeName(employee: {
-  first_name?: string | null;
-  last_name?: string | null;
-} | null | undefined) {
+export function formatPayrollEmployeeName(
+  employee:
+    | {
+        first_name?: string | null;
+        last_name?: string | null;
+      }
+    | null
+    | undefined,
+) {
   if (!employee) {
     return 'Unknown';
   }
@@ -9,10 +14,15 @@ export function formatPayrollEmployeeName(employee: {
   return [employee.first_name, employee.last_name].filter(Boolean).join(' ');
 }
 
-export function formatPayrollRunPeriod(run: {
-  period_start?: string | null;
-  period_end?: string | null;
-} | null | undefined) {
+export function formatPayrollRunPeriod(
+  run:
+    | {
+        period_start?: string | null;
+        period_end?: string | null;
+      }
+    | null
+    | undefined,
+) {
   if (!run?.period_start || !run?.period_end) {
     return '';
   }
@@ -58,5 +68,7 @@ export function isAssignmentEligibleForPayrollRun(
   const runStart = new Date(run.period_start);
   const runEnd = new Date(run.period_end);
 
-  return assignmentStart <= runEnd && (!assignmentEnd || assignmentEnd >= runStart);
+  return (
+    assignmentStart <= runEnd && (!assignmentEnd || assignmentEnd >= runStart)
+  );
 }

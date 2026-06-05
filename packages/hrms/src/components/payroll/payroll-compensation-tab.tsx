@@ -20,10 +20,9 @@ import {
 } from '@kit/ui/table';
 import { TabsContent } from '@kit/ui/tabs';
 
-import type { PayrollDashboardResponse } from '~/types/payroll.type';
-
-import { dataModelNotes } from '../page.data';
+import type { PayrollDashboardResponse } from '../../types/payroll.type';
 import { PayrollStatusBadge } from '../page.components';
+import { dataModelNotes } from '../page.data';
 
 export function PayrollCompensationTab(props: {
   employeeAssignments: PayrollDashboardResponse['employeeAssignments'];
@@ -42,7 +41,8 @@ export function PayrollCompensationTab(props: {
             <div>
               <CardTitle>Employee Compensation</CardTitle>
               <CardDescription>
-                One row represents one employee compensation assignment for a date range.
+                One row represents one employee compensation assignment for a
+                date range.
               </CardDescription>
             </div>
             {props.canEdit && (
@@ -67,7 +67,9 @@ export function PayrollCompensationTab(props: {
                 {props.employeeAssignments.length > 0 ? (
                   props.employeeAssignments.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.employee}</TableCell>
+                      <TableCell className="font-medium">
+                        {item.employee}
+                      </TableCell>
                       <TableCell>{item.assignment}</TableCell>
                       <TableCell>{item.period}</TableCell>
                       <TableCell>
@@ -98,7 +100,10 @@ export function PayrollCompensationTab(props: {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
+                    <TableCell
+                      colSpan={4}
+                      className="text-muted-foreground py-6 text-center"
+                    >
                       No assignments found. Setup a salary structure first.
                     </TableCell>
                   </TableRow>
@@ -120,7 +125,9 @@ export function PayrollCompensationTab(props: {
               <div key={item.label} className="rounded-lg border p-4">
                 <p className="text-sm font-medium">{item.label}</p>
                 <p className="mt-1 text-sm">{item.value}</p>
-                <p className="text-muted-foreground mt-1 text-sm">{item.hint}</p>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  {item.hint}
+                </p>
               </div>
             ))}
           </CardContent>

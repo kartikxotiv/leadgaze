@@ -1,29 +1,26 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
-
-import type { Database } from '~/lib/database.types';
-import { getCurrentUserOrganizationId } from '~/lib/server/organizations';
 import {
   ApiError,
   catchAsync,
   successDataResponse,
-} from '~/utils/response-handler';
+} from '../../../utils/response-handler';
+import { getPayrollContext } from './payroll-context';
 
 export const approvePayrollRunController = catchAsync(
-  async ({ params, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient<Database>();
+  async ({ params, request, user }) => {
     const runId = params?.id as string;
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
+    const { hrms, userId, workspaceId } = await getPayrollContext({
+      featureKey: 'approve',
+      minAccessLevel: 'team',
+      request,
+      user,
+    });
 
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
-
-    const { data: run, error: runError } = await (supabaseAdmin as any)
+    const { data: run, error: runError } = await hrms
       .from('payroll_runs')
       .select('*')
       .eq('id', runId)
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', workspaceId)
       .single();
 
     if (runError || !run) {
@@ -34,7 +31,7 @@ export const approvePayrollRunController = catchAsync(
       throw new ApiError('Payroll run is already finalized', 400);
     }
 
-    const { data: entries, error: entriesError } = await (supabaseAdmin as any)
+    const { data: entries, error: entriesError } = await hrms
       .from('payroll_entries')
       .select('*, payroll_entry_items(*)')
       .eq('payroll_run_id', runId);
@@ -44,12 +41,10 @@ export const approvePayrollRunController = catchAsync(
     }
 
     for (const entry of entries) {
-      const { data: payslip, error: payslipError } = await (
-        supabaseAdmin as any
-      )
+      const { data: payslip, error: payslipError } = await hrms
         .from('payslips')
         .insert({
-          organization_id: organizationId,
+          workspace_id: workspaceId,
           payroll_run_id: runId,
           payroll_entry_id: entry.id,
           employee_id: entry.employee_id,
@@ -59,8 +54,8 @@ export const approvePayrollRunController = catchAsync(
           employer_contributions: entry.employer_contributions,
           net_salary: entry.net_pay,
           generated_at: new Date().toISOString(),
-          created_by: user?.id,
-          updated_by: user?.id,
+          created_by: userId,
+          updated_by: userId,
         })
         .select()
         .single();
@@ -74,7 +69,7 @@ export const approvePayrollRunController = catchAsync(
 
       if (entryItems.length > 0) {
         const payslipComponents = entryItems.map((item: any) => ({
-          organization_id: organizationId,
+          workspace_id: workspaceId,
           payslip_id: payslip.id,
           salary_component_id: item.salary_component_id,
           payroll_entry_item_id: item.id,
@@ -86,11 +81,11 @@ export const approvePayrollRunController = catchAsync(
           is_employer_side: item.is_employer_side,
           display_order: item.display_order,
           metadata: item.metadata,
-          created_by: user?.id,
-          updated_by: user?.id,
+          created_by: userId,
+          updated_by: userId,
         }));
 
-        const { error: componentsError } = await (supabaseAdmin as any)
+        const { error: componentsError } = await hrms
           .from('payslip_components')
           .insert(payslipComponents);
 
@@ -99,21 +94,19 @@ export const approvePayrollRunController = catchAsync(
         }
       }
 
-      await (supabaseAdmin as any)
+      await hrms
         .from('payroll_entries')
         .update({ status: 'approved' })
         .eq('id', entry.id);
     }
 
-    const { data: updatedRun, error: updateRunError } = await (
-      supabaseAdmin as any
-    )
+    const { data: updatedRun, error: updateRunError } = await hrms
       .from('payroll_runs')
       .update({
         status: 'approved',
         approved_at: new Date().toISOString(),
-        approved_by: user?.id,
-        updated_by: user?.id,
+        approved_by: userId,
+        updated_by: userId,
       })
       .eq('id', runId)
       .select()
