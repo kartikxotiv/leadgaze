@@ -58,6 +58,8 @@ import {
 } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
+import { Skeleton } from '@kit/ui/skeleton';
+
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAuditLogsService } from '~/services/audit-logs.service';
@@ -400,25 +402,24 @@ export default function AuditLogsPage() {
                     </TableHeader>
                     <TableBody>
                       {isLoading ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={
-                              visibility
-                                ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
-                                : 6
-                            }
-                            className="h-32 text-center"
-                          >
-                            <div className="flex flex-col items-center justify-center gap-2">
-                              <div className="border-primary h-6 w-6 animate-spin rounded-full border-2 border-t-transparent" />
-                              <p className="text-muted-foreground text-sm">
-                                Loading logs...
-                              </p>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                        <>
+                          {[...Array(12)].map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell
+                                className="h-[52px] px-4 py-2"
+                                colSpan={
+                                  visibility
+                                    ? Object.values(visibility).filter(
+                                      (v) => v !== false,
+                                    ).length + 1
+                                    : 6
+                                }
+                              >
+                                <Skeleton className="h-7 w-full" />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </>
                       ) : logs.length === 0 ? (
                         <TableRow>
                           <TableCell

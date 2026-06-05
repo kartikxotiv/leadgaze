@@ -12,6 +12,14 @@ import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@kit/ui/select';
 import { Skeleton } from '@kit/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@kit/ui/table';
 import { Textarea } from '@kit/ui/textarea';
 import {
   createInvestorContactService,
@@ -175,6 +183,50 @@ function AccessDenied() {
   return <div className="p-6 text-sm text-muted-foreground">You do not have permission to view investors.</div>;
 }
 
+function FundraisingInvestorsPageSkeleton() {
+  return (
+    <div className="flex h-full w-full flex-col gap-5 p-6">
+      <div className="flex justify-end">
+        <Skeleton className="h-8 w-32" />
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Skeleton className="h-9 flex-1" />
+        <Skeleton className="h-9 w-40" />
+        <Skeleton className="h-9 w-48" />
+      </div>
+      <Card>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Investor Type</TableHead>
+                  <TableHead>Ticket Size</TableHead>
+                  <TableHead>Industry Focus</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Owner</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...Array(6)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="h-[52px] px-4 py-2" colSpan={8}>
+                      <Skeleton className="h-7 w-full" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function InvestorDetails({ workspaceId, investor, canAddContact, canDeleteContact }: { workspaceId: string; investor: Investor; canAddContact: boolean; canDeleteContact: boolean }) {
   const [contactForm, setContactForm] = useState({ name: '', designation: '', email: '', phone: '', linkedin_url: '', is_primary: false });
   const { data: contacts = [] } = useQuery<Contact[]>({ queryKey: ['fundraising', 'contacts', workspaceId, investor.id], queryFn: () => getInvestorContactsService(workspaceId), select: (rows) => rows.filter((row: Contact) => row.investor_id === investor.id), enabled: !!investor.id });
@@ -234,7 +286,7 @@ export function FundraisingInvestorsPage({ workspaceId }: { workspaceId: string 
   const openInvestor = (investorId: string) => router.push(`/home/funds/investors/${investorId}`);
 
   if (isPermissionsLoading) {
-    return <div className="p-6"><Skeleton className="h-10 w-full" /></div>;
+    return <FundraisingInvestorsPageSkeleton />;
   }
 
   if (!canView) {
@@ -245,7 +297,7 @@ export function FundraisingInvestorsPage({ workspaceId }: { workspaceId: string 
     <div className="flex h-full w-full flex-col gap-5 p-6">
       {canCreate && <div className="flex justify-end"><InvestorFormDialog workspaceId={workspaceId} onDone={refresh} /></div>}
       <div className="flex flex-col gap-3 sm:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="pl-9" placeholder="Search investors..." value={search} onChange={(event) => setSearch(event.target.value)} /></div><Select value={status} onValueChange={setStatus}><SelectTrigger className="sm:w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Status</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem><SelectItem value="blacklisted">Blacklisted</SelectItem></SelectContent></Select><Select value={type} onValueChange={setType}><SelectTrigger className="sm:w-48"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Types</SelectItem>{types.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></div>
-      <Card><CardContent className="p-0"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="border-b bg-muted/40 text-left text-xs uppercase text-muted-foreground"><tr><th className="p-3">Name</th><th className="p-3">Investor Type</th><th className="p-3">Ticket Size</th><th className="p-3">Industry Focus</th><th className="p-3">Status</th><th className="p-3">Owner</th><th className="p-3">Created</th><th className="p-3 text-right">Actions</th></tr></thead><tbody>{isLoading ? [...Array(4)].map((_, i) => <tr key={i}><td className="p-3" colSpan={8}><Skeleton className="h-8 w-full" /></td></tr>) : filtered.map((investor) => <tr key={investor.id} className="cursor-pointer border-b transition-colors last:border-b-0 hover:bg-muted/40" onClick={() => openInvestor(investor.id)}><td className="p-3 font-medium"><div className="flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground" />{investor.name}</div></td><td className="p-3">{investor.investor_type ?? '-'}</td><td className="p-3">{investor.ticket_size_min ?? '-'} - {investor.ticket_size_max ?? '-'}</td><td className="p-3">{investor.industry_focus?.join(', ') || '-'}</td><td className="p-3"><Badge variant="outline">{investor.status}</Badge></td><td className="p-3">{ownerDisplay(investor)}</td><td className="p-3">{dateTimeDisplay(investor.created_at_display, investor.created_at)}</td><td className="p-3 text-right" onClick={(event) => event.stopPropagation()}><div className="flex justify-end gap-1"><Button variant="ghost" size="sm" onClick={() => openInvestor(investor.id)}><Eye className="h-4 w-4" /></Button>{canEdit && <InvestorFormDialog workspaceId={workspaceId} investor={investor} onDone={refresh} />}{canDelete && <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(investor.id)}><Trash2 className="h-4 w-4" /></Button>}</div></td></tr>)}</tbody></table></div></CardContent></Card>
+      <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Investor Type</TableHead><TableHead>Ticket Size</TableHead><TableHead>Industry Focus</TableHead><TableHead>Status</TableHead><TableHead>Owner</TableHead><TableHead>Created</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{isLoading ? [...Array(6)].map((_, i) => (<TableRow key={i}><TableCell className="h-[52px] px-4 py-2" colSpan={8}><Skeleton className="h-7 w-full" /></TableCell></TableRow>)) : filtered.map((investor) => <TableRow key={investor.id} className="cursor-pointer transition-colors hover:bg-muted/40" onClick={() => openInvestor(investor.id)}><TableCell className="font-medium"><div className="flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground" />{investor.name}</div></TableCell><TableCell>{investor.investor_type ?? '-'}</TableCell><TableCell>{investor.ticket_size_min ?? '-'} - {investor.ticket_size_max ?? '-'}</TableCell><TableCell>{investor.industry_focus?.join(', ') || '-'}</TableCell><TableCell><Badge variant="outline">{investor.status}</Badge></TableCell><TableCell>{ownerDisplay(investor)}</TableCell><TableCell>{dateTimeDisplay(investor.created_at_display, investor.created_at)}</TableCell><TableCell className="text-right" onClick={(event: React.MouseEvent) => event.stopPropagation()}><div className="flex justify-end gap-1"><Button variant="ghost" size="sm" onClick={() => openInvestor(investor.id)}><Eye className="h-4 w-4" /></Button>{canEdit && <InvestorFormDialog workspaceId={workspaceId} investor={investor} onDone={refresh} />}{canDelete && <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(investor.id)}><Trash2 className="h-4 w-4" /></Button>}</div></TableCell></TableRow>)}</TableBody></Table></div></CardContent></Card>
     </div>
   );
 }

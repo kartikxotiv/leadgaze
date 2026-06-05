@@ -59,6 +59,7 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import {
+  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -73,6 +74,8 @@ import {
   TooltipTrigger,
 } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+
+import { Skeleton } from '@kit/ui/skeleton';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
@@ -328,11 +331,7 @@ export default function NotesPage() {
   };
 
   if (!workspace) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -591,21 +590,24 @@ export default function NotesPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
+                    <TableBody>
                       {isLoading ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={
-                              visibility
-                                ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
-                                : 6
-                            }
-                            className="h-24 text-center"
-                          >
-                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
-                          </TableCell>
-                        </TableRow>
+                        <>
+                          {[...Array(10)].map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell
+                                className="h-[52px] px-4 py-2"
+                                colSpan={
+                                  visibility
+                                    ? Object.values(visibility).filter((v) => v !== false).length + 1
+                                    : 6
+                                }
+                              >
+                                <Skeleton className="h-7 w-full" />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </>
                       ) : paginatedNotes.length > 0 ? (
                         paginatedNotes.map((note: Note, index: number) => (
                           <TableRow key={note.id} className="hover:bg-muted/50">

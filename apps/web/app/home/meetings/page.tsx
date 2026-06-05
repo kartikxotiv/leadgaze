@@ -77,6 +77,7 @@ import {
   TooltipTrigger,
 } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { Skeleton } from '@kit/ui/skeleton';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
@@ -90,6 +91,54 @@ import {
 import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
+
+function MeetingsPageSkeleton() {
+  return (
+    <div className="flex h-[100dvh] flex-col overflow-hidden">
+      <div className="bg-sidebar flex shrink-0 flex-col gap-2">
+        <div className="bg-sidebar flex items-center justify-between px-6 py-4">
+          <div className="space-y-1">
+            <Skeleton className="h-6 w-36" />
+            <Skeleton className="h-4 w-56" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+          </div>
+        </div>
+      </div>
+      <div className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
+        <div className="flex min-h-0 flex-1 flex-col px-4 lg:px-8">
+          <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
+            <Table className="w-max min-w-full border-separate border-spacing-0 caption-bottom text-sm">
+              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                <TableRow>
+                  <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
+                  <TableHead>Meeting Title</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Host</TableHead>
+                  <TableHead>Date & Time</TableHead>
+                  <TableHead>Entity</TableHead>
+                  <TableHead className="sticky right-0 text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...Array(10)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="h-[52px] px-4 py-2" colSpan={7}>
+                      <Skeleton className="h-7 w-full" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function MeetingsPage() {
   const { currentWorkspace: workspace } = useRBAC();
@@ -425,11 +474,7 @@ export default function MeetingsPage() {
   };
 
   if (!workspace) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    );
+    return <MeetingsPageSkeleton />;
   }
 
   return (
@@ -752,20 +797,22 @@ export default function MeetingsPage() {
                     </TableHeader>
                     <TableBody>
                       {isLoading ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={
-                              visibility
-                                ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
-                                : 6
-                            }
-                            className="h-24 text-center"
-                          >
-                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
-                          </TableCell>
-                        </TableRow>
+                        <>
+                          {[...Array(10)].map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell
+                                className="h-[52px] px-4 py-2"
+                                colSpan={
+                                  visibility
+                                    ? Object.values(visibility).filter((v) => v !== false).length + 1
+                                    : 7
+                                }
+                              >
+                                <Skeleton className="h-7 w-full" />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </>
                       ) : paginatedMeetings.length > 0 ? (
                         paginatedMeetings.map(
                           (meeting: Meeting, index: number) => (

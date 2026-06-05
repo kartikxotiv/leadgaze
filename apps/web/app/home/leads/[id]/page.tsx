@@ -5,15 +5,7 @@ import React, { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Clock,
-  Edit2,
-  Mail,
-  MapPin,
-  Phone,
-  Trash2,
-  User,
-} from 'lucide-react';
+import { Clock, Edit2, Mail, MapPin, Phone, Trash2, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useUser } from '@kit/supabase/hooks/use-user';
@@ -21,6 +13,7 @@ import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { PageBody, PageHeader } from '@kit/ui/page';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   Tooltip,
   TooltipContent,
@@ -36,6 +29,7 @@ import {
 } from '~/lib/permissions/use-permissions';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { getWorkspaceEmailAccountService } from '~/services/email.service';
 import {
   getLeadByIdService,
   getLeadStatusesService,
@@ -58,7 +52,51 @@ import { EmailLeadDialog } from '../components/email-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
 import { LogCallDialog } from '../components/log-call-dialog';
 
-import { getWorkspaceEmailAccountService } from '~/services/email.service';
+// Loading skeleton for the lower detail sections only.
+function LeadDetailsSkeleton() {
+  return (
+    <>
+      <PageHeader title="Lead Details" />
+
+      <PageBody>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
+            {[...Array(4)].map((_, cardIndex) => (
+              <Card key={cardIndex}>
+                <CardHeader>
+                  <Skeleton className="h-5 w-36 rounded-md" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {[...Array(3)].map((_, rowIndex) => (
+                    <Skeleton
+                      key={rowIndex}
+                      className="h-8 w-full rounded-md"
+                    />
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="space-y-6">
+            {[...Array(2)].map((_, cardIndex) => (
+              <Card key={cardIndex}>
+                <CardHeader>
+                  <Skeleton className="h-4 w-28 rounded-md" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Skeleton className="h-8 w-full rounded-md" />
+                  <Skeleton className="h-8 w-full rounded-md" />
+                  <Skeleton className="h-8 w-4/5 rounded-md" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </PageBody>
+    </>
+  );
+}
 
 export default function LeadDetailsPage() {
   const router = useRouter();
@@ -90,9 +128,7 @@ export default function LeadDetailsPage() {
     },
     enabled: !!leadId && !!workspace,
   });
-  const {
-    data: workspaceEmailAccount,
-  } = useQuery({
+  const { data: workspaceEmailAccount } = useQuery({
     queryKey: ['workspace_id', workspace?.id],
     queryFn: () => {
       if (!workspace?.id) throw new Error('Workspace ID is required');
@@ -140,10 +176,11 @@ export default function LeadDetailsPage() {
   }, [lead]);
 
   if (!workspace) {
+    // Workspace context still hydrating; show skeleton, same as isLoading.
     return (
-      <div className="flex h-96 items-center justify-center">
-        <p className="text-gray-500">Loading workspace...</p>
-      </div>
+      <ModuleGuard module="leads">
+        <LeadDetailsSkeleton />
+      </ModuleGuard>
     );
   }
 
@@ -174,12 +211,7 @@ export default function LeadDetailsPage() {
   if (isLoading) {
     return (
       <ModuleGuard module="leads">
-        <PageHeader title="Lead Details" />
-        <PageBody>
-          <div className="flex h-96 items-center justify-center">
-            <p className="text-gray-500">Loading lead details...</p>
-          </div>
-        </PageBody>
+        <LeadDetailsSkeleton />
       </ModuleGuard>
     );
   }
@@ -813,65 +845,65 @@ export default function LeadDetailsPage() {
                         {/* Engagement Score Breakdown */}
                         {Object.keys(scoringResult.breakdown.engagement)
                           .length > 0 && (
-                            <div className="space-y-1 pt-2">
-                              <p className="text-xs font-semibold text-gray-400">
-                                Engagement
-                              </p>
-                              {Object.entries(
-                                scoringResult.breakdown.engagement,
-                              ).map(([label, score]) => (
-                                <div
-                                  key={label}
-                                  className="flex justify-between text-xs"
-                                >
-                                  <span className="text-gray-600 dark:text-gray-400">
-                                    {label}
-                                  </span>
-                                  <span className="font-medium text-blue-600">
-                                    +{score}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                          <div className="space-y-1 pt-2">
+                            <p className="text-xs font-semibold text-gray-400">
+                              Engagement
+                            </p>
+                            {Object.entries(
+                              scoringResult.breakdown.engagement,
+                            ).map(([label, score]) => (
+                              <div
+                                key={label}
+                                className="flex justify-between text-xs"
+                              >
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  {label}
+                                </span>
+                                <span className="font-medium text-blue-600">
+                                  +{score}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
 
                         {/* Adjustments (Status) */}
                         {Object.keys(scoringResult.breakdown.adjustments)
                           .length > 0 && (
-                            <div className="space-y-1 pt-2">
-                              <p className="text-xs font-semibold text-gray-400">
-                                Status Adjustments
-                              </p>
-                              {Object.entries(
-                                scoringResult.breakdown.adjustments,
-                              ).map(([label, score]) => (
-                                <div
-                                  key={label}
-                                  className="flex justify-between text-xs"
-                                >
-                                  <span className="text-gray-600 dark:text-gray-400">
-                                    {label}
-                                  </span>
-                                  <span
-                                    className={cn(
-                                      'font-medium',
-                                      score > 0
-                                        ? 'text-green-600'
-                                        : score === -100
-                                          ? 'text-red-600'
-                                          : 'text-amber-600',
-                                    )}
-                                  >
-                                    {score > 0
-                                      ? `+${score}`
+                          <div className="space-y-1 pt-2">
+                            <p className="text-xs font-semibold text-gray-400">
+                              Status Adjustments
+                            </p>
+                            {Object.entries(
+                              scoringResult.breakdown.adjustments,
+                            ).map(([label, score]) => (
+                              <div
+                                key={label}
+                                className="flex justify-between text-xs"
+                              >
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  {label}
+                                </span>
+                                <span
+                                  className={cn(
+                                    'font-medium',
+                                    score > 0
+                                      ? 'text-green-600'
                                       : score === -100
-                                        ? 'Reset'
-                                        : score}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                                        ? 'text-red-600'
+                                        : 'text-amber-600',
+                                  )}
+                                >
+                                  {score > 0
+                                    ? `+${score}`
+                                    : score === -100
+                                      ? 'Reset'
+                                      : score}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
