@@ -590,7 +590,6 @@ export default function NotesPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                    <TableBody>
                       {isLoading ? (
                         <>
                           {[...Array(10)].map((_, i) => (
