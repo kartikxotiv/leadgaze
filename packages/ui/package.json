@@ -102,6 +102,7 @@
     "./shadcn-sidebar": "./src/shadcn/sidebar.tsx",
     "./collapsible": "./src/shadcn/collapsible.tsx",
     "./card-widget-container": "./src/shadcn/card-widget-container.tsx",
+    "./card-widget-list": "./src/shadcn/card-widget-list.tsx",
     "./custom-input-for-view": "./src/shadcn/custom-input-for-view.tsx",
     "./utils": "./src/lib/utils/index.ts",
     "./use-column-visibility": "./src/hooks/use-column-visibility.ts",

@@ -8,19 +8,49 @@ import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 
 import {
   assignContactToUser,
   getContactAssignees,
   unassignContactFromUser,
 } from '~/services/contact-assignees.service';
+import type { LeadAssigneeWithDetails } from '~/services/lead-assignees.service';
 
 import { AssignUserModal } from '../../leads/components/assign-user-modal';
 
 interface ContactAssigneesProps {
   contactId: string;
   workspaceId: string;
+}
+
+interface ContactAssignee {
+  id: string;
+  assigned_to_user_id: string;
+  assignee_name?: string;
+  assignee_email?: string;
+  assignee_picture?: string | null;
+  is_primary_assignee: boolean;
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  const response = (error as { response?: { data?: { message?: unknown } } })
+    ?.response;
+
+  return typeof response?.data?.message === 'string'
+    ? response.data.message
+    : fallback;
+}
+
+function getAssigneeInitials(assignee: ContactAssignee) {
+  const source =
+    assignee.assignee_name?.trim() || assignee.assignee_email?.trim() || '?';
+  const parts = source.split(/\s+/);
+  const firstInitial = parts[0]?.charAt(0) || '?';
+  const secondInitial = parts[1]?.charAt(0) || '';
+
+  return `${firstInitial}${secondInitial}`.toUpperCase();
 }
 
 export function ContactAssignees({
@@ -30,18 +60,11 @@ export function ContactAssignees({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: assignees = [], isLoading } = useQuery({
+  const { data: assignees = [], isLoading } = useQuery<ContactAssignee[]>({
     queryKey: ['contact-assignees', contactId],
     queryFn: async () => {
       const res = await getContactAssignees(contactId);
-      return (res?.data || res || []) as Array<{
-        id: string;
-        assigned_to_user_id: string;
-        assignee_name?: string;
-        assignee_email?: string;
-        assignee_picture?: string;
-        is_primary_assignee: boolean;
-      }>;
+      return (res?.data || res || []) as ContactAssignee[];
     },
   });
 
@@ -49,13 +72,14 @@ export function ContactAssignees({
     mutationFn: (userId: string) =>
       assignContactToUser(contactId, { assigned_to_user_id: userId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contact-assignees', contactId] });
+      queryClient.invalidateQueries({
+        queryKey: ['contact-assignees', contactId],
+      });
       toast.success('User assigned to contact');
       setIsModalOpen(false);
     },
-    onError: (error: any) => {
-      const message = error?.response?.data?.message || 'Failed to assign user';
-      toast.error(message);
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'Failed to assign user'));
     },
   });
 
@@ -63,23 +87,22 @@ export function ContactAssignees({
     mutationFn: (assigneeId: string) =>
       unassignContactFromUser(contactId, assigneeId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contact-assignees', contactId] });
+      queryClient.invalidateQueries({
+        queryKey: ['contact-assignees', contactId],
+      });
       toast.success('User unassigned from contact');
     },
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message || 'Failed to unassign user';
-      toast.error(message);
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'Failed to unassign user'));
     },
   });
 
   return (
-    <Card className="mt-6">
-      <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <div className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          <CardTitle>Assigned Team Members</CardTitle>
-        </div>
+    <CardWidgetContainer
+      className="mt-6"
+      title="Assigned Team Members"
+      icon={<Users className="h-5 w-5" />}
+      icon2={
         <Button
           size="sm"
           onClick={() => setIsModalOpen(true)}
@@ -89,9 +112,9 @@ export function ContactAssignees({
           <Plus className="h-4 w-4" />
           Assign Member
         </Button>
-      </CardHeader>
-
-      <CardContent>
+      }
+    >
+      <div className="p-6">
         {isLoading ? (
           <div className="text-muted-foreground py-8 text-center text-sm">
             Loading assignees...
@@ -112,58 +135,56 @@ export function ContactAssignees({
             </Button>
           </div>
         ) : (
-          <div className="space-y-2">
+          <CardWidgetList>
             {assignees?.map((assignee) => (
-              <div
+              <CardWidgetListItem
                 key={assignee.id}
-                className="hover:bg-muted/50 flex items-center justify-between rounded-lg border p-3 transition-colors"
-              >
-                <div className="flex flex-1 items-center gap-3">
-                  {assignee.assignee_picture && (
+                icon={
+                  assignee.assignee_picture ? (
                     <img
                       src={assignee.assignee_picture}
                       alt={assignee.assignee_name || 'User'}
                       className="h-8 w-8 rounded-full object-cover"
                     />
-                  )}
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">
-                      {assignee.assignee_name || 'Unknown'}
-                    </p>
-                    <p className="text-muted-foreground text-xs">
-                      {assignee.assignee_email}
-                    </p>
-                  </div>
-                  {assignee.is_primary_assignee && (
-                    <Badge variant="default" className="ml-2">
-                      Primary
-                    </Badge>
-                  )}
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => unassignMutation.mutate(assignee.id)}
-                  disabled={unassignMutation.isPending}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+                  ) : (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#4053F5] text-sm font-semibold text-white">
+                      {getAssigneeInitials(assignee)}
+                    </div>
+                  )
+                }
+                title={assignee.assignee_name || 'Unknown'}
+                subtitle={assignee.assignee_email}
+                badge={
+                  assignee.is_primary_assignee ? (
+                    <Badge variant="default">Primary</Badge>
+                  ) : null
+                }
+                actions={
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => unassignMutation.mutate(assignee.id)}
+                    disabled={unassignMutation.isPending}
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                }
+              />
             ))}
-          </div>
+          </CardWidgetList>
         )}
-      </CardContent>
+      </div>
 
       <AssignUserModal
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
         leadId={contactId}
         workspaceId={workspaceId}
-        currentAssignees={assignees as any}
+        currentAssignees={assignees as LeadAssigneeWithDetails[]}
         onAssign={(userId) => assignMutation.mutate(userId)}
         isLoading={assignMutation.isPending}
       />
-    </Card>
+    </CardWidgetContainer>
   );
 }
