@@ -1,26 +1,24 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
-
-import { getCurrentUserOrganizationId } from '~/lib/server/organizations';
 import {
   ApiError,
   catchAsync,
   successDataResponse,
-} from '~/utils/response-handler';
+} from '../../../../utils/response-handler';
+import { getPayrollContext } from '../payroll-context';
 
 export const salaryStructureController = {
-  list: catchAsync(async ({ user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
+  list: catchAsync(async ({ request, user }) => {
+    const { hrms, userId, workspaceId } = await getPayrollContext({
+      featureKey: 'view',
+      minAccessLevel: 'own',
+      request,
+      user,
+    });
 
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
-
-    const { data, error } = await (supabaseAdmin as any)
+    const { data, error } = await hrms
       .from('salary_structures')
       .select('*')
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', workspaceId)
       .order('name', { ascending: true });
 
     if (error) {
@@ -30,13 +28,13 @@ export const salaryStructureController = {
     return successDataResponse(data ?? []);
   }),
 
-  create: catchAsync(async ({ body, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
-
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
+  create: catchAsync(async ({ body, request, user }) => {
+    const { hrms, userId, workspaceId } = await getPayrollContext({
+      featureKey: 'view',
+      minAccessLevel: 'own',
+      request,
+      user,
+    });
 
     const data = body as {
       name: string;
@@ -45,16 +43,16 @@ export const salaryStructureController = {
       is_active: boolean;
     };
 
-    const { data: created, error } = await (supabaseAdmin as any)
+    const { data: created, error } = await hrms
       .from('salary_structures')
       .insert({
-        organization_id: organizationId,
+        workspace_id: workspaceId,
         name: data.name,
         description: data.description ?? null,
         currency_code: data.currency_code,
         is_active: data.is_active,
-        created_by: user?.id,
-        updated_by: user?.id,
+        created_by: userId,
+        updated_by: userId,
       })
       .select('*')
       .single();
@@ -66,14 +64,12 @@ export const salaryStructureController = {
     return successDataResponse(created);
   }),
 
-  update: catchAsync(async ({ params, body, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
+  update: catchAsync(async ({ params, body, request, user }) => {
     const id = params?.id as string;
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
-
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
+    const { hrms, userId, workspaceId } = await getPayrollContext({
+      request,
+      user,
+    });
 
     const data = body as {
       name?: string;
@@ -82,15 +78,15 @@ export const salaryStructureController = {
       is_active?: boolean;
     };
 
-    const { data: updated, error } = await (supabaseAdmin as any)
+    const { data: updated, error } = await hrms
       .from('salary_structures')
       .update({
         ...data,
-        updated_by: user?.id,
+        updated_by: userId,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', workspaceId)
       .select('*')
       .single();
 
@@ -101,20 +97,18 @@ export const salaryStructureController = {
     return successDataResponse(updated);
   }),
 
-  delete: catchAsync(async ({ params, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
+  delete: catchAsync(async ({ params, request, user }) => {
     const id = params?.id as string;
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
+    const { hrms, userId, workspaceId } = await getPayrollContext({
+      request,
+      user,
+    });
 
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
-
-    const { error } = await (supabaseAdmin as any)
+    const { error } = await hrms
       .from('salary_structures')
       .delete()
       .eq('id', id)
-      .eq('organization_id', organizationId);
+      .eq('workspace_id', workspaceId);
 
     if (error) {
       throw new ApiError(error.message, 400);
@@ -123,20 +117,18 @@ export const salaryStructureController = {
     return successDataResponse({ success: true });
   }),
 
-  listComponents: catchAsync(async ({ params, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
+  listComponents: catchAsync(async ({ params, request, user }) => {
     const structureId = params?.id as string;
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
+    const { hrms, userId, workspaceId } = await getPayrollContext({
+      request,
+      user,
+    });
 
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
-
-    const { data, error } = await (supabaseAdmin as any)
+    const { data, error } = await hrms
       .from('salary_structure_components')
       .select('*, salary_component:salary_components(*)')
       .eq('salary_structure_id', structureId)
-      .eq('organization_id', organizationId);
+      .eq('workspace_id', workspaceId);
 
     if (error) {
       throw new ApiError(error.message, 400);
@@ -145,14 +137,12 @@ export const salaryStructureController = {
     return successDataResponse(data ?? []);
   }),
 
-  addComponent: catchAsync(async ({ params, body, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
+  addComponent: catchAsync(async ({ params, body, request, user }) => {
     const structureId = params?.id as string;
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
-
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
+    const { hrms, userId, workspaceId } = await getPayrollContext({
+      request,
+      user,
+    });
 
     const data = body as {
       salary_component_id: string;
@@ -163,10 +153,10 @@ export const salaryStructureController = {
       display_order?: number;
     };
 
-    const { data: created, error } = await (supabaseAdmin as any)
+    const { data: created, error } = await hrms
       .from('salary_structure_components')
       .insert({
-        organization_id: organizationId,
+        workspace_id: workspaceId,
         salary_structure_id: structureId,
         salary_component_id: data.salary_component_id,
         calculation_type: data.calculation_type,
@@ -174,8 +164,8 @@ export const salaryStructureController = {
         is_recurring: data.is_recurring ?? true,
         is_pro_ratable: data.is_pro_ratable ?? true,
         display_order: data.display_order ?? 100,
-        created_by: user?.id,
-        updated_by: user?.id,
+        created_by: userId,
+        updated_by: userId,
       })
       .select('*')
       .single();
@@ -187,14 +177,12 @@ export const salaryStructureController = {
     return successDataResponse(created);
   }),
 
-  updateComponent: catchAsync(async ({ params, body, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
+  updateComponent: catchAsync(async ({ params, body, request, user }) => {
     const id = params?.componentId as string;
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
-
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
+    const { hrms, userId, workspaceId } = await getPayrollContext({
+      request,
+      user,
+    });
 
     const data = body as {
       calculation_type?: string;
@@ -204,15 +192,15 @@ export const salaryStructureController = {
       display_order?: number;
     };
 
-    const { data: updated, error } = await (supabaseAdmin as any)
+    const { data: updated, error } = await hrms
       .from('salary_structure_components')
       .update({
         ...data,
-        updated_by: user?.id,
+        updated_by: userId,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', workspaceId)
       .select('*')
       .single();
 
@@ -223,20 +211,18 @@ export const salaryStructureController = {
     return successDataResponse(updated);
   }),
 
-  removeComponent: catchAsync(async ({ params, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
+  removeComponent: catchAsync(async ({ params, request, user }) => {
     const id = params?.componentId as string;
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
+    const { hrms, userId, workspaceId } = await getPayrollContext({
+      request,
+      user,
+    });
 
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
-
-    const { error } = await (supabaseAdmin as any)
+    const { error } = await hrms
       .from('salary_structure_components')
       .delete()
       .eq('id', id)
-      .eq('organization_id', organizationId);
+      .eq('workspace_id', workspaceId);
 
     if (error) {
       throw new ApiError(error.message, 400);
