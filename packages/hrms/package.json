@@ -55,6 +55,8 @@
     "./server/separation/resignations/employee/[employee_id]": "./src/server/controllers/separation/resignations/employee/[employee_id]/route.ts",
     "./server/shifts": "./src/server/controllers/shifts/route.ts",
     "./server/shifts/[shiftId]": "./src/server/controllers/shifts/[shiftId]/route.ts",
+    "./server/support-system": "./src/server/controllers/support-system/route.ts",
+    "./server/support-system/[requestId]": "./src/server/controllers/support-system/[requestId]/route.ts",
     "./server/upload": "./src/server/controllers/upload/route.ts"
   },
   "typesVersions": {
