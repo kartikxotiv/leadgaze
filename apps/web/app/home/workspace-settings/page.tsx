@@ -7,9 +7,9 @@ import { usePathname, useRouter } from 'next/navigation';
 
 import { Building2, Check, ChevronDown, Mail, Settings2 } from 'lucide-react';
 
+import { CoreEmailSettingsPage } from '@kit/core/pages';
 import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
 import { useUser } from '@kit/supabase/hooks/use-user';
-import { CoreEmailSettingsPage } from '@kit/core/pages';
 import { Button } from '@kit/ui/button';
 import {
   Card,
@@ -28,15 +28,8 @@ import { PageBody, PageHeader } from '@kit/ui/page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+
 import { EmailAccountsSettings } from './_components/email-accounts-settings';
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -147,7 +140,7 @@ export default function WorkspaceSettingsPage() {
   return (
     <>
       <PageHeader
-        className='bg-sidebar'
+        className="bg-sidebar"
         title="Workspace"
         description="Manage your workspace configuration, email accounts, and templates."
       />
@@ -184,7 +177,11 @@ export default function WorkspaceSettingsPage() {
                 googleAuthPath="/api/email/google/auth"
                 googleReturnUrl={pathname || '/home/workspace-settings'}
                 permissions={{
-                  manageAccounts: canAccess('emails', 'manage_templates'),
+                  manageAccounts:
+                    canAccess('emails', 'manage_accounts') ||
+                    canAccess('emails', 'manage_templates'),
+                  manageTemplates: canAccess('emails', 'manage_templates'),
+                  manageVariables: canAccess('emails', 'manage_variables'),
                 }}
               />
             )}
