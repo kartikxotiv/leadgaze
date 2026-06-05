@@ -28,12 +28,12 @@ import {
   EmployeeOption,
   FnfSettlementOption,
   PayrollRunOption,
-} from '../types';
+} from '../../types/separation.type';
 import {
   NONE,
   formatNumberInput,
   toDateInput,
-} from '../utils/separation-utils';
+} from '../../utils/separation-utils';
 
 interface FnFSettlementDialogProps {
   isOpen: boolean;
@@ -110,8 +110,8 @@ export function FnFSettlementDialog({
     setIsSubmitting(true);
 
     const path = editingFnf
-      ? `/api/fnf-settlements/${editingFnf.id}`
-      : '/api/fnf-settlements';
+      ? `/api/hrms/separation/fnf-settlements/${editingFnf.id}`
+      : '/api/hrms/separation/fnf-settlements';
 
     const payload = {
       employee_id: form.employee_id,

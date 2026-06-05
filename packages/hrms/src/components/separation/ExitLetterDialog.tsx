@@ -15,13 +15,17 @@ import { Label } from '@kit/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@kit/ui/select';
 import { Textarea } from '@kit/ui/textarea';
 
-import { EmployeeOption, ExitLetterOption, ApiResponse } from '../types';
+import type {
+  ApiResponse,
+  EmployeeOption,
+  ExitLetterOption,
+} from '../../types/separation.type';
 import {
   NONE,
   toDateTimeLocalInput,
   toIsoDateTime,
-} from '../utils/separation-utils';
-import { uploadFileService } from '~/services/upload.service';
+} from '../../utils/separation-utils';
+import { uploadFileService } from '../../server/services/upload.service';
 
 interface ExitLetterDialogProps {
   isOpen: boolean;
@@ -108,8 +112,8 @@ export function ExitLetterDialog({
     }
 
     const path = editingLetter
-      ? `/api/exit-letters/${editingLetter.id}`
-      : '/api/exit-letters';
+      ? `/api/hrms/separation/exit-letters/${editingLetter.id}`
+      : '/api/hrms/separation/exit-letters';
 
     const payload = {
       employee_id: form.employee_id,
