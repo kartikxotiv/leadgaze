@@ -11,6 +11,38 @@ type SyncedEmailPayload = Record<string, any> & {
   } | null;
 };
 
+const DEFAULT_EMAIL_SAVE_BATCH_SIZE = 100;
+
+function positiveInteger(value: string | undefined, fallback: number) {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+}
+
+function chunkArray<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
+}
+
+async function runInBatches<T, R>(
+  items: T[],
+  batchSize: number,
+  handler: (batch: T[]) => Promise<R>,
+) {
+  const results: R[] = [];
+
+  for (const batch of chunkArray(items, batchSize)) {
+    results.push(await handler(batch));
+  }
+
+  return results;
+}
+
 export async function saveSyncedCoreEmails(messages: SyncedEmailPayload[]) {
   if (messages.length === 0) {
     console.log('[CoreEmailSync] No prepared messages to save');
@@ -18,6 +50,10 @@ export async function saveSyncedCoreEmails(messages: SyncedEmailPayload[]) {
   }
 
   const supabase = getSupabaseServerAdminClient();
+  const saveBatchSize = positiveInteger(
+    process.env.CORE_EMAIL_SAVE_BATCH_SIZE,
+    DEFAULT_EMAIL_SAVE_BATCH_SIZE,
+  );
   const workspaceId = messages[0]?.workspace_id;
   const messagesByProviderId = new Map(
     messages.map((message) => [message.provider_message_id, message]),
@@ -31,37 +67,41 @@ export async function saveSyncedCoreEmails(messages: SyncedEmailPayload[]) {
 
   if (!workspaceId) return 0;
 
-  const [existingByProviderResult, existingByInternetResult] =
+  const [existingByProviderResults, existingByInternetResults] =
     await Promise.all([
-      providerMessageIds.length > 0
-        ? (supabase as any)
-            .schema('core')
-            .from('emails')
-            .select('id,provider_message_id,internet_message_id')
-            .eq('workspace_id', workspaceId)
-            .in('provider_message_id', providerMessageIds)
-        : Promise.resolve({ data: [], error: null }),
-      internetMessageIds.length > 0
-        ? (supabase as any)
-            .schema('core')
-            .from('emails')
-            .select('id,provider_message_id,internet_message_id')
-            .eq('workspace_id', workspaceId)
-            .in('internet_message_id', internetMessageIds)
-        : Promise.resolve({ data: [], error: null }),
+      runInBatches(providerMessageIds, saveBatchSize, async (ids) =>
+        (supabase as any)
+          .schema('core')
+          .from('emails')
+          .select('id,provider_message_id,internet_message_id')
+          .eq('workspace_id', workspaceId)
+          .in('provider_message_id', ids),
+      ),
+      runInBatches(internetMessageIds, saveBatchSize, async (ids) =>
+        (supabase as any)
+          .schema('core')
+          .from('emails')
+          .select('id,provider_message_id,internet_message_id')
+          .eq('workspace_id', workspaceId)
+          .in('internet_message_id', ids),
+      ),
     ]);
 
-  if (existingByProviderResult.error || existingByInternetResult.error) {
+  const existingLookupError =
+    existingByProviderResults.find((result) => result.error)?.error ??
+    existingByInternetResults.find((result) => result.error)?.error;
+
+  if (existingLookupError) {
     console.error(
       '[CoreEmailSync] Failed to check existing emails:',
-      existingByProviderResult.error ?? existingByInternetResult.error,
+      existingLookupError,
     );
     return 0;
   }
 
   const existingEmails = [
-    ...(existingByProviderResult.data ?? []),
-    ...(existingByInternetResult.data ?? []),
+    ...existingByProviderResults.flatMap((result) => result.data ?? []),
+    ...existingByInternetResults.flatMap((result) => result.data ?? []),
   ];
   const existingByProviderId = new Map(
     (
@@ -111,31 +151,45 @@ export async function saveSyncedCoreEmails(messages: SyncedEmailPayload[]) {
   }> = [];
 
   if (toInsert.length > 0) {
-    const { data, error } = await (supabase as any)
-      .schema('core')
-      .from('emails')
-      .insert(toInsert)
-      .select('id,provider_message_id,internet_message_id');
+    const insertResults = await runInBatches(
+      toInsert,
+      saveBatchSize,
+      async (batch) =>
+        (supabase as any)
+          .schema('core')
+          .from('emails')
+          .insert(batch)
+          .select('id,provider_message_id,internet_message_id'),
+    );
 
-    if (error) {
-      console.error('[CoreEmailSync] Failed to bulk insert emails:', error);
-    } else {
-      savedEmails.push(...(data ?? []));
-    }
+    insertResults.forEach(({ data, error }) => {
+      if (error) {
+        console.error('[CoreEmailSync] Failed to bulk insert emails:', error);
+      } else {
+        savedEmails.push(...(data ?? []));
+      }
+    });
   }
 
   if (toUpdate.length > 0) {
-    const { data, error } = await (supabase as any)
-      .schema('core')
-      .from('emails')
-      .upsert(toUpdate)
-      .select('id,provider_message_id,internet_message_id');
+    const updateResults = await runInBatches(
+      toUpdate,
+      saveBatchSize,
+      async (batch) =>
+        (supabase as any)
+          .schema('core')
+          .from('emails')
+          .upsert(batch)
+          .select('id,provider_message_id,internet_message_id'),
+    );
 
-    if (error) {
-      console.error('[CoreEmailSync] Failed to bulk update emails:', error);
-    } else {
-      savedEmails.push(...(data ?? []));
-    }
+    updateResults.forEach(({ data, error }) => {
+      if (error) {
+        console.error('[CoreEmailSync] Failed to bulk update emails:', error);
+      } else {
+        savedEmails.push(...(data ?? []));
+      }
+    });
   }
 
   const relationPayloads = savedEmails
@@ -161,19 +215,23 @@ export async function saveSyncedCoreEmails(messages: SyncedEmailPayload[]) {
     .filter(Boolean);
 
   if (relationPayloads.length > 0) {
-    const { error } = await (supabase as any)
-      .schema('core')
-      .from('email_relations')
-      .upsert(relationPayloads, {
-        onConflict: 'email_id,entity_type,entity_id',
-      });
+    const relationResults = await runInBatches(
+      relationPayloads,
+      saveBatchSize,
+      async (batch) =>
+        (supabase as any).schema('core').from('email_relations').upsert(batch, {
+          onConflict: 'email_id,entity_type,entity_id',
+        }),
+    );
 
-    if (error) {
-      console.error(
-        '[CoreEmailSync] Failed to bulk upsert email relations:',
-        error,
-      );
-    }
+    relationResults.forEach(({ error }) => {
+      if (error) {
+        console.error(
+          '[CoreEmailSync] Failed to bulk upsert email relations:',
+          error,
+        );
+      }
+    });
   }
 
   const savedCount = savedEmails.length;
@@ -184,6 +242,7 @@ export async function saveSyncedCoreEmails(messages: SyncedEmailPayload[]) {
     insertCount: toInsert.length,
     updateCount: toUpdate.length,
     relationCount: relationPayloads.length,
+    saveBatchSize,
     savedCount,
     savedMessages: savedEmails.slice(0, 20).map((email) => {
       const message = messagesByProviderId.get(email.provider_message_id);
