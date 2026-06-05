@@ -38,6 +38,7 @@ export const sendCoreEmailController = catchAsync(async ({ request }) => {
   const entityType = body.entityType ?? body.entity_type;
   const entityId = body.entityId ?? body.entity_id;
   const emailAccountId = body.emailAccountId ?? body.email_account_id;
+  const templateId = body.templateId ?? body.template_id ?? null;
 
   if (!workspaceId || toEmails.length === 0 || !subject || !htmlBody) {
     return NextResponse.json(
@@ -90,6 +91,7 @@ export const sendCoreEmailController = catchAsync(async ({ request }) => {
   const emailPayload = {
     workspace_id: workspaceId,
     email_account_id: account.id,
+    template_id: templateId,
     direction: 'outbound',
     from_email: account.email,
     from_name: account.from_name,
@@ -146,7 +148,7 @@ export const sendCoreEmailController = catchAsync(async ({ request }) => {
       workspace_id: workspaceId,
       email_id: email.id,
       email_account_id: account.id,
-      template_id: body.templateId ?? body.template_id ?? null,
+      template_id: templateId,
       to_email: toEmails[0],
       from_email: account.email,
       subject,

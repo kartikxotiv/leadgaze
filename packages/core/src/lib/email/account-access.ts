@@ -45,7 +45,10 @@ export async function getWorkspaceMemberContext(
   };
 }
 
-export async function listWorkspaceEmailAccounts(supabase: any, workspaceId: string) {
+export async function listWorkspaceEmailAccounts(
+  supabase: any,
+  workspaceId: string,
+) {
   const memberContext = await getWorkspaceMemberContext(supabase, workspaceId);
 
   if (!memberContext) {
@@ -55,17 +58,26 @@ export async function listWorkspaceEmailAccounts(supabase: any, workspaceId: str
   const { data: accounts, error } = await (supabase as any)
     .schema('core')
     .from('email_accounts')
-    .select('id,email,created_at,from_name,is_active,provider,workspace_id,owner_user_id,access_scope,is_sync_enabled,inbound_enabled,outbound_enabled')
+    .select(
+      'id,email,created_at,from_name,is_active,provider,workspace_id,owner_user_id,access_scope,is_sync_enabled,inbound_enabled,outbound_enabled',
+    )
     .eq('workspace_id', workspaceId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
 
   const ownerIds = Array.from(
-    new Set((accounts ?? []).map((account: any) => account.owner_user_id).filter(Boolean)),
+    new Set(
+      (accounts ?? [])
+        .map((account: any) => account.owner_user_id)
+        .filter(Boolean),
+    ),
   );
 
-  let ownerMap = new Map<string, { id: string; name: string | null; email: string | null }>();
+  let ownerMap = new Map<
+    string,
+    { id: string; name: string | null; email: string | null }
+  >();
 
   if (ownerIds.length > 0) {
     const { data: owners, error: ownersError } = await supabase
@@ -86,7 +98,12 @@ export async function listWorkspaceEmailAccounts(supabase: any, workspaceId: str
     .eq('grantee_user_id', memberContext.userId);
 
   const grantedSendAccountIds = new Set(
-    ((grants as Array<{ email_account_id: number; can_send: boolean }> | null) ?? [])
+    (
+      (grants as Array<{
+        email_account_id: number;
+        can_send: boolean;
+      }> | null) ?? []
+    )
       .filter((grant) => grant.can_send)
       .map((grant) => grant.email_account_id),
   );
@@ -101,7 +118,9 @@ export async function listWorkspaceEmailAccounts(supabase: any, workspaceId: str
 
     return {
       ...account,
-      owner: account.owner_user_id ? ownerMap.get(account.owner_user_id) ?? null : null,
+      owner: account.owner_user_id
+        ? (ownerMap.get(account.owner_user_id) ?? null)
+        : null,
       is_owner: isOwner,
       can_manage: memberContext.isAdmin || isOwner,
       can_change_access: memberContext.isAdmin,
@@ -111,7 +130,10 @@ export async function listWorkspaceEmailAccounts(supabase: any, workspaceId: str
   });
 }
 
-export async function getAccessibleInboxEmails(supabase: any, workspaceId: string) {
+export async function getAccessibleInboxEmails(
+  supabase: any,
+  workspaceId: string,
+) {
   const accounts = await listWorkspaceEmailAccounts(supabase, workspaceId);
 
   return accounts
@@ -119,14 +141,34 @@ export async function getAccessibleInboxEmails(supabase: any, workspaceId: strin
     .map((account: any) => account.email.toLowerCase());
 }
 
+export async function getAccessibleInboxAccounts(
+  supabase: any,
+  workspaceId: string,
+) {
+  const accounts = await listWorkspaceEmailAccounts(supabase, workspaceId);
+
+  return accounts
+    .filter((account: any) => account.can_view_inbox)
+    .map((account: any) => ({
+      id: account.id,
+      email: account.email.toLowerCase(),
+    }));
+}
+
 export async function getSendableEmailAccountById(
   supabase: any,
   workspaceId: string,
   emailAccountId?: number,
 ) {
-  const accountSummaries = await listWorkspaceEmailAccounts(supabase, workspaceId);
+  const accountSummaries = await listWorkspaceEmailAccounts(
+    supabase,
+    workspaceId,
+  );
   const sendableAccounts = accountSummaries.filter(
-    (account: any) => account.can_send && account.is_active !== false && account.outbound_enabled !== false,
+    (account: any) =>
+      account.can_send &&
+      account.is_active !== false &&
+      account.outbound_enabled !== false,
   );
   const targetAccountId = emailAccountId || sendableAccounts[0]?.id;
 
@@ -134,7 +176,9 @@ export async function getSendableEmailAccountById(
     return null;
   }
 
-  const allowedAccount = sendableAccounts.find((account: any) => account.id === targetAccountId);
+  const allowedAccount = sendableAccounts.find(
+    (account: any) => account.id === targetAccountId,
+  );
 
   if (!allowedAccount) {
     return null;

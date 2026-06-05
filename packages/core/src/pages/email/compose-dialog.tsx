@@ -14,8 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@kit/ui/dialog';
+import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
-import { RadioGroup, RadioGroupItem } from '@kit/ui/radio-group';
 import {
   Select,
   SelectContent,
@@ -33,51 +33,23 @@ import {
 } from '../../services/email-templates.service';
 import { renderEmailContent, renderEmailTemplate } from './template-helpers';
 
-function normalizeRecipients(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value
-      .filter(Boolean)
-      .map((item) => String(item).trim())
-      .filter(Boolean);
-  }
-
-  if (typeof value === 'string') {
-    return value
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
-
-  return [];
+function splitEmails(value: string) {
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
-function uniqueEmails(emails: string[]) {
-  const seen = new Set<string>();
-
-  return emails.filter((email) => {
-    const normalized = email.toLowerCase();
-    if (!normalized || seen.has(normalized)) return false;
-    seen.add(normalized);
-    return true;
-  });
-}
-
-function replySubject(subject?: string | null) {
-  return subject?.startsWith('Re:') ? subject : `Re: ${subject || ''}`;
-}
-
-export function CoreEmailReplyDialog({
+export function CoreEmailComposeDialog({
   open,
   onOpenChange,
   workspaceId,
-  email,
   accounts,
   templateContext = {},
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   workspaceId: string;
-  email: any;
   accounts: CoreEmailAccount[];
   templateContext?: Record<string, unknown>;
 }) {
@@ -89,8 +61,10 @@ export function CoreEmailReplyDialog({
       ),
     [accounts],
   );
-  const [emailAccountId, setEmailAccountId] = useState<string>('');
-  const [replyMode, setReplyMode] = useState<'reply' | 'reply_all'>('reply');
+  const [emailAccountId, setEmailAccountId] = useState('');
+  const [to, setTo] = useState('');
+  const [cc, setCc] = useState('');
+  const [bcc, setBcc] = useState('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [templateId, setTemplateId] = useState('');
@@ -110,61 +84,29 @@ export function CoreEmailReplyDialog({
   useEffect(() => {
     if (open) {
       setEmailAccountId(String(sendableAccounts[0]?.id ?? ''));
-      setReplyMode('reply');
-      setSubject(replySubject(email?.subject));
+      setTo('');
+      setCc('');
+      setBcc('');
+      setSubject('');
       setBody('');
       setTemplateId('');
     }
-  }, [email, open, sendableAccounts]);
+  }, [open, sendableAccounts]);
 
   const mutation = useMutation({
     mutationFn: sendCoreEmailService,
     onSuccess: async () => {
-      toast.success('Reply sent');
+      toast.success('Email sent');
       await queryClient.invalidateQueries({
         queryKey: ['core-email-activity', workspaceId],
       });
       onOpenChange(false);
     },
     onError: (error: any) =>
-      toast.error(error.message || 'Failed to send reply'),
+      toast.error(error.message || 'Failed to send email'),
   });
 
-  if (!email) return null;
-
-  const selectedAccountEmail = sendableAccounts.find(
-    (account) => String(account.id) === emailAccountId,
-  )?.email;
-  const sender = normalizeRecipients(email.from_email);
-  const toRecipients = normalizeRecipients(email.to_emails ?? email.to_email);
-  const ccRecipients = normalizeRecipients(email.cc_emails ?? email.cc);
-  const bccRecipients = normalizeRecipients(email.bcc_emails ?? email.bcc);
-  const ownEmails = new Set(
-    [selectedAccountEmail, ...sendableAccounts.map((account) => account.email)]
-      .filter(Boolean)
-      .map((value) => String(value).toLowerCase()),
-  );
-  const replyRecipients =
-    email.direction === 'inbound'
-      ? sender
-      : toRecipients.length > 0
-        ? toRecipients
-        : sender;
-  const replyAllRecipients = uniqueEmails([
-    ...sender,
-    ...toRecipients,
-    ...ccRecipients,
-  ]).filter((recipient) => !ownEmails.has(recipient.toLowerCase()));
-  const recipients =
-    replyMode === 'reply_all' ? replyAllRecipients : replyRecipients;
-  const replyAllCcRecipients =
-    replyMode === 'reply_all'
-      ? uniqueEmails(ccRecipients).filter(
-          (recipient) => !ownEmails.has(recipient.toLowerCase()),
-        )
-      : [];
-  const bccDisplay =
-    bccRecipients.length > 0 ? bccRecipients.join(', ') : 'None';
+  const toEmails = splitEmails(to);
 
   const applyTemplate = (selectedTemplateId: string) => {
     setTemplateId(selectedTemplateId);
@@ -174,15 +116,8 @@ export function CoreEmailReplyDialog({
 
     if (!template) return;
 
-    const rendered = renderEmailTemplate(template, variables, {
-      ...templateContext,
-      original_subject: email.subject ?? '',
-    });
-
-    if (rendered.subject) {
-      setSubject(replySubject(rendered.subject));
-    }
-
+    const rendered = renderEmailTemplate(template, variables, templateContext);
+    setSubject(rendered.subject);
     setBody(rendered.body);
     toast.success(`Applied template: ${template.name}`);
   };
@@ -195,7 +130,7 @@ export function CoreEmailReplyDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Reply to Email</DialogTitle>
+          <DialogTitle>New Email</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4">
@@ -270,44 +205,38 @@ export function CoreEmailReplyDialog({
             </Select>
           </div>
 
-          <div className="text-muted-foreground rounded-md border p-3 text-sm">
-            Replying to{' '}
-            <span className="font-medium">
-              {recipients.join(', ') || 'No recipient'}
-            </span>
-            <br />
-            {replyAllCcRecipients.length > 0 ? (
-              <>
-                Cc{' '}
-                <span className="font-medium">
-                  {replyAllCcRecipients.join(', ')}
-                </span>
-                <br />
-              </>
-            ) : null}
-            Original Bcc: <span className="font-medium">{bccDisplay}</span>
-            <br />
-            Subject: {subject}
+          <div className="grid gap-2">
+            <Label>To</Label>
+            <Input
+              value={to}
+              onChange={(event) => setTo(event.target.value)}
+              placeholder="customer@example.com, another@example.com"
+            />
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label>Cc</Label>
+              <Input
+                value={cc}
+                onChange={(event) => setCc(event.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Bcc</Label>
+              <Input
+                value={bcc}
+                onChange={(event) => setBcc(event.target.value)}
+              />
+            </div>
           </div>
 
           <div className="grid gap-2">
-            <Label>Reply mode</Label>
-            <RadioGroup
-              value={replyMode}
-              onValueChange={(value) =>
-                setReplyMode(value as 'reply' | 'reply_all')
-              }
-              className="grid gap-2 sm:grid-cols-2"
-            >
-              <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
-                <RadioGroupItem value="reply" />
-                <span>Reply to sender</span>
-              </Label>
-              <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
-                <RadioGroupItem value="reply_all" />
-                <span>Reply all</span>
-              </Label>
-            </RadioGroup>
+            <Label>Subject</Label>
+            <Input
+              value={subject}
+              onChange={(event) => setSubject(event.target.value)}
+            />
           </div>
 
           <div className="grid gap-2">
@@ -315,8 +244,8 @@ export function CoreEmailReplyDialog({
             <Textarea
               value={body}
               onChange={(event) => setBody(event.target.value)}
-              className="min-h-48"
-              placeholder="Write your reply..."
+              className="min-h-52"
+              placeholder="Write your email..."
             />
           </div>
         </div>
@@ -327,8 +256,8 @@ export function CoreEmailReplyDialog({
           </Button>
           <Button
             disabled={
-              recipients.length === 0 ||
               !emailAccountId ||
+              toEmails.length === 0 ||
               !subject.trim() ||
               !body.trim() ||
               mutation.isPending
@@ -337,8 +266,9 @@ export function CoreEmailReplyDialog({
               mutation.mutate({
                 workspaceId,
                 emailAccountId: Number(emailAccountId),
-                toEmails: recipients,
-                cc: replyAllCcRecipients,
+                toEmails,
+                cc: splitEmails(cc),
+                bcc: splitEmails(bcc),
                 subject: renderEmailContent(
                   subject,
                   variables,
@@ -346,17 +276,6 @@ export function CoreEmailReplyDialog({
                 ),
                 body: renderEmailContent(body, variables, templateContext),
                 templateId: templateId ? Number(templateId) : undefined,
-                threadId: email.thread_id,
-                threadKey:
-                  email.thread_key ||
-                  email.internet_message_id ||
-                  email.provider_message_id,
-                inReplyTo:
-                  email.internet_message_id || email.provider_message_id,
-                references:
-                  email.email_references ||
-                  email.internet_message_id ||
-                  email.provider_message_id,
               })
             }
           >
@@ -365,7 +284,7 @@ export function CoreEmailReplyDialog({
             ) : (
               <Send className="mr-2 h-4 w-4" />
             )}
-            Send Reply
+            Send Email
           </Button>
         </DialogFooter>
       </DialogContent>
