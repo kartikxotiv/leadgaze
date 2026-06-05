@@ -74,6 +74,9 @@ importers:
       '@kit/next':
         specifier: workspace:*
         version: link:../../packages/next
+      '@kit/service-cloud':
+        specifier: workspace:*
+        version: link:../../packages/service-cloud
       '@kit/supabase':
         specifier: workspace:*
         version: link:../../packages/supabase
@@ -243,9 +246,15 @@ importers:
       googleapis:
         specifier: ^171.1.0
         version: 171.1.0
+      imapflow:
+        specifier: ^1.2.18
+        version: 1.2.18
       lucide-react:
         specifier: ^0.545.0
         version: 0.545.0(react@19.2.1)
+      mailparser:
+        specifier: ^3.9.6
+        version: 3.9.6
       next:
         specifier: 15.5.9
         version: 15.5.9(@playwright/test@1.56.0)(babel-plugin-react-compiler@19.1.0-rc.3)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
@@ -280,6 +289,9 @@ importers:
       '@kit/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
+      '@types/mailparser':
+        specifier: ^3.4.6
+        version: 3.4.6
       '@types/react':
         specifier: 19.2.7
         version: 19.2.7
@@ -654,6 +666,9 @@ importers:
 
   packages/service-cloud:
     dependencies:
+      '@kit/core':
+        specifier: workspace:*
+        version: link:../core
       '@kit/next':
         specifier: workspace:*
         version: link:../next
@@ -706,6 +721,12 @@ importers:
       '@kit/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
+      '@types/react':
+        specifier: 19.2.7
+        version: 19.2.7
+      '@types/react-dom':
+        specifier: 19.2.3
+        version: 19.2.3(@types/react@19.2.7)
 
   packages/shared:
     dependencies:
