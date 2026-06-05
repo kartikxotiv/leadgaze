@@ -1,13 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { enhanceRouteHandler } from '@kit/next/routes';
-import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import { getCurrentUserOrganizationId } from '~/lib/server/organizations';
 import {
   ApiError,
   catchAsync,
   successDataResponse,
-} from '~/utils/response-handler';
+} from '../../../../utils/response-handler';
+import { getPayrollContext } from '../payroll-context';
 
 function formatRunPeriod(run: { period_start: string; period_end: string }) {
   const start = new Date(`${run.period_start}T00:00:00`);
@@ -28,18 +27,18 @@ function formatRunPeriod(run: { period_start: string; period_end: string }) {
   })}`;
 }
 
-const listPayrollRunsController = catchAsync(async ({ user }) => {
-  const supabaseAdmin = getSupabaseServerAdminClient();
-  const organizationId = await getCurrentUserOrganizationId(user?.id);
+const listPayrollRunsController = catchAsync(async ({ request, user }) => {
+  const { hrms, userId, workspaceId } = await getPayrollContext({
+    featureKey: 'view',
+    minAccessLevel: 'own',
+    request,
+    user,
+  });
 
-  if (!organizationId) {
-    throw new ApiError('Organization not found for user', 404);
-  }
-
-  const { data, error } = await (supabaseAdmin as any)
+  const { data, error } = await hrms
     .from('payroll_runs')
     .select('id, name, period_start, period_end, payment_date, status')
-    .eq('organization_id', organizationId)
+    .eq('workspace_id', workspaceId)
     .order('period_start', { ascending: false });
 
   if (error) {
