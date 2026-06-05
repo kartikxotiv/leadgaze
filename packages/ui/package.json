@@ -103,6 +103,7 @@
     "./collapsible": "./src/shadcn/collapsible.tsx",
     "./card-widget-container": "./src/shadcn/card-widget-container.tsx",
     "./custom-input-for-view": "./src/shadcn/custom-input-for-view.tsx",
+    "./custom-table-container": "./src/shadcn/custom-table-container.tsx",
     "./utils": "./src/lib/utils/index.ts",
     "./use-column-visibility": "./src/hooks/use-column-visibility.ts",
     "./column-visibility-selector": "./src/makerkit/column-visibility-selector.tsx",
