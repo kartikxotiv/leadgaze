@@ -17,7 +17,7 @@ import type {
   ResignationOption,
   SeparationDialogKey,
   SeparationItem,
-} from '../types';
+} from '../../types/separation.type';
 import type { ConfirmDialogProps } from './ConfirmRemarkDialog';
 
 export type SeparationActionsPermissions = {
@@ -167,7 +167,7 @@ function ResignationStatusActions({
               actionLabel: 'Approve',
               onConfirm: (remark) =>
                 onUpdateStatus(
-                  `/api/resignations/${item.id}`,
+                  `/api/hrms/separation/resignations/${item.id}`,
                   'ACCEPTED',
                   remark,
                 ),
@@ -189,7 +189,7 @@ function ResignationStatusActions({
               isDestructive: true,
               onConfirm: (remark) =>
                 onUpdateStatus(
-                  `/api/resignations/${item.id}`,
+                  `/api/hrms/separation/resignations/${item.id}`,
                   'RETRACTED',
                   remark,
                 ),
@@ -224,7 +224,7 @@ function AssetClearanceStatusActions({
               actionLabel: 'Returned',
               onConfirm: (remark) =>
                 onUpdateStatus(
-                  `/api/asset-clearances/${item.id}`,
+                  `/api/hrms/separation/asset-clearances/${item.id}`,
                   'RETURNED',
                   remark,
                 ),
@@ -244,7 +244,7 @@ function AssetClearanceStatusActions({
               actionLabel: 'Waive',
               onConfirm: (remark) =>
                 onUpdateStatus(
-                  `/api/asset-clearances/${item.id}`,
+                  `/api/hrms/separation/asset-clearances/${item.id}`,
                   'WAIVED',
                   remark,
                 ),
@@ -279,7 +279,7 @@ function FnFSettlementStatusActions({
                 actionLabel: 'Approve',
                 onConfirm: (remark) =>
                   onUpdateStatus(
-                    `/api/fnf-settlements/${item.id}`,
+                    `/api/hrms/separation/fnf-settlements/${item.id}`,
                     'APPROVED',
                     remark,
                   ),
@@ -298,7 +298,7 @@ function FnFSettlementStatusActions({
                 isDestructive: true,
                 onConfirm: (remark) =>
                   onUpdateStatus(
-                    `/api/fnf-settlements/${item.id}`,
+                    `/api/hrms/separation/fnf-settlements/${item.id}`,
                     'REJECTED',
                     remark,
                   ),
@@ -318,7 +318,7 @@ function FnFSettlementStatusActions({
               actionLabel: 'Paid',
               onConfirm: (remark) =>
                 onUpdateStatus(
-                  `/api/fnf-settlements/${item.id}`,
+                  `/api/hrms/separation/fnf-settlements/${item.id}`,
                   'PAID',
                   remark,
                 ),
@@ -354,7 +354,11 @@ function ExitLetterStatusActions({
             description: 'Mark letter as issued?',
             actionLabel: 'Issued',
             onConfirm: (remark) =>
-              onUpdateStatus(`/api/exit-letters/${item.id}`, 'ISSUED', remark),
+              onUpdateStatus(
+                `/api/hrms/separation/exit-letters/${item.id}`,
+                'ISSUED',
+                remark,
+              ),
           })
         }
       >
@@ -370,7 +374,7 @@ function ExitLetterStatusActions({
             isDestructive: true,
             onConfirm: (remark) =>
               onUpdateStatus(
-                `/api/exit-letters/${item.id}`,
+                `/api/hrms/separation/exit-letters/${item.id}`,
                 'CANCELLED',
                 remark,
               ),
