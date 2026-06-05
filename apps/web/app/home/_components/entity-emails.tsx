@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Clock, FileText, Loader2, Mail, Trash2 } from 'lucide-react';
+import { Clock, FileText, Loader2, Mail, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
@@ -138,8 +138,8 @@ export function EntityEmails({
         icon2={
           <Button
             size="sm"
-            variant="outline"
-            className="gap-2"
+            variant="ghost"
+            className="gap-2 text-blue-500 hover:text-blue-600 text-sm"
             onClick={() => {
               setSelectedDraft(null);
               setSelectedEmail(null);
@@ -147,37 +147,12 @@ export function EntityEmails({
               setIsComposeOpen(true);
             }}
           >
-            <Mail className="h-4 w-4" />
-            Send Email
+            <Plus className="h-4 w-4" />
+            Send Mail
           </Button>
         }
       >
         <div className="px-6 py-3">
-          {uniqueRecipientOptions.length > 0 && (
-            <div className="mb-4 flex flex-wrap gap-2">
-              {uniqueRecipientOptions.map((recipient) => (
-                <button
-                  key={recipient.email}
-                  type="button"
-                  className="rounded-md border border-emerald-100 bg-emerald-50 px-2.5 py-1.5 text-left text-xs text-emerald-700 transition-colors hover:border-emerald-200 hover:bg-emerald-100"
-                  onClick={() => {
-                    setSelectedDraft(null);
-                    setSelectedEmail(null);
-                    setComposeRecipientEmail(recipient.email);
-                    setIsComposeOpen(true);
-                  }}
-                  title={`Send email to ${recipient.email}`}
-                >
-                  <span className="font-medium">
-                    {recipient.name || recipient.label || 'Contact'}
-                  </span>
-                  <span className="ml-1 text-emerald-600">
-                    &lt;{recipient.email}&gt;
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
 
           {combinedItems.length === 0 ? (
             <div className="py-8 text-center">
@@ -190,14 +165,37 @@ export function EntityEmails({
                 <CardWidgetListItem
                   key={item.id}
                   className={cn(
-                    'items-start',
                     item.status !== 'sent'
                       ? 'cursor-pointer'
                       : 'cursor-default',
                   )}
-                  content={
+                  icon={
                     <div
-                      className="flex items-start gap-3 w-full"
+                      className={cn(
+                        'rounded-md p-2',
+                        item.direction === 'inbound'
+                          ? 'bg-purple-100 text-purple-600'
+                          : item.status === 'sent'
+                            ? 'bg-green-100 text-green-600'
+                            : item.status === 'scheduled'
+                              ? 'bg-blue-100 text-blue-600'
+                              : 'bg-amber-100 text-amber-600',
+                      )}
+                    >
+                      {item.direction === 'inbound' ? (
+                        <Mail className="h-4 w-4" />
+                      ) : item.status === 'sent' ? (
+                        <Mail className="h-4 w-4" />
+                      ) : item.status === 'scheduled' ? (
+                        <Clock className="h-4 w-4" />
+                      ) : (
+                        <FileText className="h-4 w-4" />
+                      )}
+                    </div>
+                  }
+                  iconAlignTop={true}
+                  title={
+                    <span
                       onClick={() => {
                         if (
                           item.direction !== 'inbound' &&
@@ -217,64 +215,79 @@ export function EntityEmails({
                         setIsDetailOpen(true);
                       }}
                     >
-                      <div
+                      {item.subject || '(No Subject)'}
+                    </span>
+                  }
+                  badge={
+                    <span
+                      onClick={() => {
+                        if (
+                          item.direction !== 'inbound' &&
+                          item.status !== 'sent'
+                        ) {
+                          if (onOpenDraft) {
+                            onOpenDraft(item);
+                            return;
+                          }
+
+                          setSelectedDraft(item);
+                          setIsComposeOpen(true);
+                          return;
+                        }
+
+                        setSelectedEmail(item);
+                        setIsDetailOpen(true);
+                      }}
+                    >
+                      <Badge
+                        variant="outline"
                         className={cn(
-                          'mt-0.5 rounded-full p-2',
+                          'h-4 px-3 py-2.5 text-[10px]',
                           item.direction === 'inbound'
-                            ? 'bg-purple-100 text-purple-600'
+                            ? 'border-purple-200 bg-purple-50 text-purple-600'
                             : item.status === 'sent'
-                              ? 'bg-green-100 text-green-600'
+                              ? 'border-green-200 bg-green-50 text-green-600'
                               : item.status === 'scheduled'
-                                ? 'bg-blue-100 text-blue-600'
-                                : 'bg-amber-100 text-amber-600',
+                                ? 'border-blue-200 bg-blue-50 text-blue-600'
+                                : 'border-amber-200 bg-amber-50 text-amber-600',
                         )}
                       >
-                        {item.direction === 'inbound' ? (
-                          <Mail className="h-4 w-4" />
-                        ) : item.status === 'sent' ? (
-                          <Mail className="h-4 w-4" />
-                        ) : item.status === 'scheduled' ? (
-                          <Clock className="h-4 w-4" />
-                        ) : (
-                          <FileText className="h-4 w-4" />
+                        {item.direction === 'inbound'
+                          ? 'Inbound'
+                          : item.status.charAt(0).toUpperCase() +
+                            item.status.slice(1)}
+                      </Badge>
+                      {item.direction !== 'inbound' &&
+                        item.status !== 'sent' && (
+                          <span className="text-[10px] text-blue-500 italic opacity-0 transition-opacity group-hover:opacity-100 ml-1">
+                            • Click to Edit
+                          </span>
                         )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {item.subject || '(No Subject)'}
-                          </p>
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              'h-4 px-1 text-[10px]',
-                              item.direction === 'inbound'
-                                ? 'border-purple-200 bg-purple-50 text-purple-600'
-                                : item.status === 'sent'
-                                  ? 'border-green-200 bg-green-50 text-green-600'
-                                  : item.status === 'scheduled'
-                                    ? 'border-blue-200 bg-blue-50 text-blue-600'
-                                    : 'border-amber-200 bg-amber-50 text-amber-600',
-                            )}
-                          >
-                            {item.direction === 'inbound'
-                              ? 'Inbound'
-                              : item.status.charAt(0).toUpperCase() +
-                                item.status.slice(1)}
-                          </Badge>
-                          {item.direction !== 'inbound' &&
-                            item.status !== 'sent' && (
-                              <span className="text-[10px] text-blue-500 italic opacity-0 transition-opacity group-hover:opacity-100">
-                                • Click to Edit
-                              </span>
-                            )}
-                        </div>
-                        <p
-                          className="mt-1 line-clamp-2 text-xs text-gray-600 dark:text-gray-400"
-                          dangerouslySetInnerHTML={{ __html: item.html_body }}
-                        />
-                      </div>
-                    </div>
+                    </span>
+                  }
+                  content={
+                    <span
+                      onClick={() => {
+                        if (
+                          item.direction !== 'inbound' &&
+                          item.status !== 'sent'
+                        ) {
+                          if (onOpenDraft) {
+                            onOpenDraft(item);
+                            return;
+                          }
+
+                          setSelectedDraft(item);
+                          setIsComposeOpen(true);
+                          return;
+                        }
+
+                        setSelectedEmail(item);
+                        setIsDetailOpen(true);
+                      }}
+                      className="line-clamp-2 text-xs text-gray-600 dark:text-gray-400"
+                      dangerouslySetInnerHTML={{ __html: item.html_body }}
+                    />
                   }
                   metadata={
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-gray-400">

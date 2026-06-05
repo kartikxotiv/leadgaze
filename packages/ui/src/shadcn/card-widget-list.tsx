@@ -23,6 +23,8 @@ export interface CardWidgetListItemProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title' | 'content'> {
   /** Optional icon or avatar on the left */
   icon?: React.ReactNode;
+  /** Whether to align the icon to the top instead of center (default: false) */
+  iconAlignTop?: boolean;
   /** Primary title of the item */
   title?: React.ReactNode;
   /** Secondary subtitle below the title */
@@ -39,6 +41,7 @@ export interface CardWidgetListItemProps
 
 export function CardWidgetListItem({
   icon,
+  iconAlignTop = false,
   title,
   subtitle,
   badge,
@@ -56,9 +59,9 @@ export function CardWidgetListItem({
       )}
       {...props}
     >
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        {icon && <div className="flex-shrink-0">{icon}</div>}
-        <div className="flex min-h-[36px] min-w-0 flex-1 flex-col justify-center px-3">
+      <div className={cn("flex min-w-0 flex-1 gap-3", iconAlignTop ? "items-start" : "items-center")}>
+        {icon && <div className={cn("flex-shrink-0", iconAlignTop ? "pt-[2px]" : "")}>{icon}</div>}
+        <div className="flex min-h-[36px] min-w-0 flex-1 flex-col justify-center">
           {(title || badge) && (
             <div className="flex items-center justify-between gap-2">
               {title && (

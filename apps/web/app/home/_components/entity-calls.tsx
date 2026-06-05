@@ -140,6 +140,7 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
                             <CardWidgetListItem
                                 key={call.id}
                                 icon={<Phone className="h-4 w-4 text-blue-600" />}
+                                iconAlignTop={true}
                                 title={call.call_type === 'inbound' ? 'Inbound Call' : 'Outbound Call'}
                                 badge={getCallStatusBadge(call.status)}
                                 content={
@@ -159,12 +160,6 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
                                 metadata={
                                     <div className="flex flex-wrap gap-2">
                                         <span>{new Date(call.date_time).toLocaleString()}</span>
-                                        {call.created_by_user && (
-                                            <span>by {call.created_by_user.name}</span>
-                                        )}
-                                        {call.contact_name && (
-                                            <span>Contact: {call.contact_name}</span>
-                                        )}
                                     </div>
                                 }
                                 actions={
