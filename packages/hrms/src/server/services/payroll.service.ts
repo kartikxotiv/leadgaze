@@ -3,10 +3,9 @@ import type {
   ApiSuccessResponse,
   PayrollDashboardResponse,
   PayrollRunCreatePayload,
-} from '~/types/payroll.type';
-import { asyncHandlerClient } from '~/utils/async-handler';
-
-import ApiClient from '../utils/axios-client';
+} from '../../types/payroll.type';
+import { asyncHandlerClient } from '../../utils/async-handler';
+import ApiClient from '../../utils/axios-client';
 
 // Dashboard
 const getPayrollDashboardService = asyncHandlerClient(async () => {

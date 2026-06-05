@@ -1,27 +1,25 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
-
-import { getCurrentUserOrganizationId } from '~/lib/server/organizations';
 import {
   ApiError,
   catchAsync,
   successDataResponse,
-} from '~/utils/response-handler';
+} from '../../../../utils/response-handler';
+import { getPayrollContext } from '../payroll-context';
 
 export const employeeCompensationController = {
-  list: catchAsync(async ({ user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
+  list: catchAsync(async ({ request, user }) => {
+    const { hrms, userId, workspaceId } = await getPayrollContext({
+      featureKey: 'view',
+      minAccessLevel: 'own',
+      request,
+      user,
+    });
 
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
-
-    const { data, error } = await (supabaseAdmin as any)
+    const { data, error } = await hrms
       .from('employee_compensation_assignments')
       .select(`*, employee:employees(first_name, last_name)`)
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', workspaceId)
       .order('effective_from', { ascending: false });
 
     if (error) {
@@ -31,13 +29,11 @@ export const employeeCompensationController = {
     return successDataResponse(data ?? []);
   }),
 
-  create: catchAsync(async ({ body, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
-
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
+  create: catchAsync(async ({ body, request, user }) => {
+    const { hrms, userId, workspaceId } = await getPayrollContext({
+      request,
+      user,
+    });
 
     const data = body as {
       employee_id: string;
@@ -62,12 +58,10 @@ export const employeeCompensationController = {
         .toISOString()
         .split('T')[0];
 
-      const { data: overlaps, error: overlapsError } = await (
-        supabaseAdmin as any
-      )
+      const { data: overlaps, error: overlapsError } = await hrms
         .from('employee_compensation_assignments')
         .select('*')
-        .eq('organization_id', organizationId)
+        .eq('workspace_id', workspaceId)
         .eq('employee_id', data.employee_id)
         .eq('is_primary', true)
         .in('status', ['active', 'draft'])
@@ -83,18 +77,18 @@ export const employeeCompensationController = {
           // If the old assignment starts on or after the new start date,
           // archived it because it completely conflicts with the new timeline.
           if (overlapFrom >= newFromDate) {
-            await (supabaseAdmin as any)
+            await hrms
               .from('employee_compensation_assignments')
-              .update({ status: 'cancelled', updated_by: user?.id })
+              .update({ status: 'cancelled', updated_by: userId })
               .eq('id', overlap.id);
           } else {
             // Otherwise, set the old assignment's end date to one day before the new one starts.
-            await (supabaseAdmin as any)
+            await hrms
               .from('employee_compensation_assignments')
               .update({
                 effective_to: dayBeforeStart,
                 status: 'closed',
-                updated_by: user?.id,
+                updated_by: userId,
               })
               .eq('id', overlap.id);
           }
@@ -103,12 +97,10 @@ export const employeeCompensationController = {
     }
 
     // 1b. Create the assignment
-    const { data: createdAssignment, error: assignmentError } = await (
-      supabaseAdmin as any
-    )
+    const { data: createdAssignment, error: assignmentError } = await hrms
       .from('employee_compensation_assignments')
       .insert({
-        organization_id: organizationId,
+        workspace_id: workspaceId,
         employee_id: data.employee_id,
         salary_structure_id: data.salary_structure_id ?? null,
         assignment_type: data.assignment_type,
@@ -121,8 +113,8 @@ export const employeeCompensationController = {
         notes: data.notes ?? null,
         is_primary: isPrimary,
         status: 'active',
-        created_by: user?.id,
-        updated_by: user?.id,
+        created_by: userId,
+        updated_by: userId,
       })
       .select(`*, employee:employees(first_name, last_name)`)
       .single();
@@ -133,9 +125,7 @@ export const employeeCompensationController = {
 
     // 2. If a salary structure is assigned, copy its components
     if (data.salary_structure_id) {
-      const { data: structureComponents, error: structureError } = await (
-        supabaseAdmin as any
-      )
+      const { data: structureComponents, error: structureError } = await hrms
         .from('salary_structure_components')
         .select(
           `
@@ -152,7 +142,7 @@ export const employeeCompensationController = {
           `Copying ${structureComponents.length} components from structure ${data.salary_structure_id} to assignment ${createdAssignment.id}`,
         );
         const componentPayloads = structureComponents.map((sc: any) => ({
-          organization_id: organizationId,
+          workspace_id: workspaceId,
           compensation_assignment_id: createdAssignment.id,
           salary_component_id: sc.salary_component_id,
           calculation_type: sc.calculation_type,
@@ -164,11 +154,11 @@ export const employeeCompensationController = {
           effective_from: createdAssignment.effective_from,
           effective_to: createdAssignment.effective_to,
           display_order: sc.display_order,
-          created_by: user?.id,
-          updated_by: user?.id,
+          created_by: userId,
+          updated_by: userId,
         }));
 
-        const { error: insertCompError } = await (supabaseAdmin as any)
+        const { error: insertCompError } = await hrms
           .from('employee_compensation_components')
           .insert(componentPayloads);
 
@@ -184,14 +174,12 @@ export const employeeCompensationController = {
     return successDataResponse(createdAssignment);
   }),
 
-  update: catchAsync(async ({ params, body, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
+  update: catchAsync(async ({ params, body, request, user }) => {
     const id = params?.id as string;
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
-
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
+    const { hrms, userId, workspaceId } = await getPayrollContext({
+      request,
+      user,
+    });
 
     const data = body as {
       assignment_type?: string;
@@ -204,15 +192,15 @@ export const employeeCompensationController = {
       status?: string;
     };
 
-    const { data: updated, error } = await (supabaseAdmin as any)
+    const { data: updated, error } = await hrms
       .from('employee_compensation_assignments')
       .update({
         ...data,
-        updated_by: user?.id,
+        updated_by: userId,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', workspaceId)
       .select(`*, employee:employees(first_name, last_name)`)
       .single();
 
@@ -223,20 +211,18 @@ export const employeeCompensationController = {
     return successDataResponse(updated);
   }),
 
-  delete: catchAsync(async ({ params, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
+  delete: catchAsync(async ({ params, request, user }) => {
     const id = params?.id as string;
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
+    const { hrms, userId, workspaceId } = await getPayrollContext({
+      request,
+      user,
+    });
 
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
-
-    const { error } = await (supabaseAdmin as any)
+    const { error } = await hrms
       .from('employee_compensation_assignments')
       .delete()
       .eq('id', id)
-      .eq('organization_id', organizationId);
+      .eq('workspace_id', workspaceId);
 
     if (error) {
       throw new ApiError(error.message, 400);

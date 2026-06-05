@@ -20,8 +20,7 @@ import {
 } from '@kit/ui/table';
 import { TabsContent } from '@kit/ui/tabs';
 
-import type { PayrollDashboardResponse } from '~/types/payroll.type';
-
+import type { PayrollDashboardResponse } from '../../types/payroll.type';
 import { PayrollStatusBadge } from '../page.components';
 import { formatCurrency } from '../utils';
 
@@ -39,7 +38,8 @@ export function PayrollPayItemsTab(props: {
           <div>
             <CardTitle>One-Time Pay Items</CardTitle>
             <CardDescription>
-              Use this for bonus, arrears, reimbursements, and recoveries. Do not mix these into recurring salary breakup.
+              Use this for bonus, arrears, reimbursements, and recoveries. Do
+              not mix these into recurring salary breakup.
             </CardDescription>
           </div>
           {props.canEdit && (
@@ -65,7 +65,9 @@ export function PayrollPayItemsTab(props: {
               {props.payItems.length > 0 ? (
                 props.payItems.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.employee}</TableCell>
+                    <TableCell className="font-medium">
+                      {item.employee}
+                    </TableCell>
                     <TableCell>{item.item}</TableCell>
                     <TableCell>{formatCurrency(item.amount)}</TableCell>
                     <TableCell>{item.payable}</TableCell>
@@ -97,7 +99,10 @@ export function PayrollPayItemsTab(props: {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-6 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={5}
+                    className="text-muted-foreground py-6 text-center"
+                  >
                     No one-time pay items found.
                   </TableCell>
                 </TableRow>
