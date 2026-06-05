@@ -49,4 +49,7 @@ The font sizes are defined in the following files:
 - **Custom Card Widget Container** – `packages/ui/src/shadcn/card-widget-container.tsx`
 - **Custom Table Container (with pagination)** – `packages/ui/src/shadcn/custom-table-container.tsx`
 
+- **Custom Tab for Metrics** – `packages/ui/src/shadcn/table-status-metric-tab.tsx`
+
+
 *All paths are relative to the repository root.*
