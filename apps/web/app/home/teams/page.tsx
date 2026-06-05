@@ -30,6 +30,8 @@ import {
 } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
+import { Skeleton } from '@kit/ui/skeleton';
+
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
@@ -41,6 +43,58 @@ import {
 import { CreateTeamDialog } from './components/create-team-dialog';
 import { EditTeamDialog } from './components/edit-team-dialog';
 import { ManageTeamMembersDialog } from './components/manage-team-members-dialog';
+
+function TeamsPageSkeleton() {
+  return (
+    <ModuleGuard module="team_members">
+      <div className="flex h-[100dvh] flex-col overflow-hidden">
+        <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
+          <div className="bg-sidebar flex items-center justify-between px-6 py-4">
+            <div className="space-y-1">
+              <Skeleton className="h-6 w-28" />
+              <Skeleton className="h-4 w-60" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-8 w-8 rounded-md" />
+              <Skeleton className="h-8 w-8 rounded-md" />
+            </div>
+          </div>
+          <div className="bg-sidebar -mt-1 w-full overflow-x-auto px-6 pb-7">
+            <div className="-mb-3 flex items-center gap-3">
+              <Skeleton className="h-10 w-52 rounded-lg" />
+              <Skeleton className="h-10 w-52 rounded-lg" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
+          <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6 mx-4 lg:mx-8">
+            <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
+              <thead className="bg-muted sticky top-0 z-10">
+                <tr>
+                  {[160, 240, 80, 80].map((w, i) => (
+                    <th key={i} className="h-11 px-4 border-b border-border">
+                      <Skeleton className="h-3" style={{ width: w }} />
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[...Array(8)].map((_, row) => (
+                  <tr key={row} className="bg-card border-b border-border">
+                    <td className="h-11 px-4"><Skeleton className="h-3.5 w-32" /></td>
+                    <td className="h-11 px-4"><Skeleton className="h-3.5 w-48" /></td>
+                    <td className="h-11 px-4"><Skeleton className="h-3.5 w-20" /></td>
+                    <td className="h-11 px-4"><Skeleton className="h-6 w-6 rounded ml-auto" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </ModuleGuard>
+  );
+}
 
 export default function TeamsPage() {
   const queryClient = useQueryClient();
@@ -190,8 +244,28 @@ export default function TeamsPage() {
               </CardHeader>
               <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
                 {isLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+                  <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
+                    <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
+                      <thead className="bg-muted sticky top-0 z-10">
+                        <tr>
+                          {[160, 240, 80, 80].map((w, i) => (
+                            <th key={i} className="h-11 px-4 border-b border-border">
+                              <Skeleton className="h-3" style={{ width: w }} />
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...Array(8)].map((_, row) => (
+                          <tr key={row} className="bg-card border-b border-border">
+                            <td className="h-11 px-4"><Skeleton className="h-3.5 w-32" /></td>
+                            <td className="h-11 px-4"><Skeleton className="h-3.5 w-48" /></td>
+                            <td className="h-11 px-4"><Skeleton className="h-3.5 w-20" /></td>
+                            <td className="h-11 px-4"><Skeleton className="h-6 w-6 rounded ml-auto" /></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 ) : error ? (
                   <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border p-4">
