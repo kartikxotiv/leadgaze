@@ -10,6 +10,7 @@ export function CoreEmailInboxPage({
   permissions,
   embedded = false,
   renderEmailActions,
+  templateContext,
 }: CoreEmailPageProps) {
   const workspaceId = workspace?.id;
   const canViewInbox = permissions?.viewInbox ?? true;
@@ -24,6 +25,7 @@ export function CoreEmailInboxPage({
       workspaceId={workspaceId}
       canReply={canReply}
       renderEmailActions={renderEmailActions}
+      templateContext={templateContext}
     />
   ) : (
     <div className="text-muted-foreground flex h-48 items-center justify-center rounded-lg border-2 border-dashed">
