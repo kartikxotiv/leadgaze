@@ -5,6 +5,7 @@ import {
   CalendarCheck,
   ClipboardList,
   FileText,
+  LifeBuoy,
   LogOut,
   UserSearch,
   Users,
@@ -63,6 +64,12 @@ const modules = [
     description: 'Resignations, exit clearances, settlements, and letters.',
     href: '/home/hrms/separation',
     icon: LogOut,
+  },
+  {
+    title: 'Support System',
+    description: 'Employee HR requests, ticket responses, and follow-up.',
+    href: '/home/hrms/support-system',
+    icon: LifeBuoy,
   },
   {
     title: 'Payroll',
