@@ -21,9 +21,12 @@ import {
 } from '@kit/ui/table';
 import { TabsContent } from '@kit/ui/tabs';
 
-import { listPayslipsService } from '~/services/payroll.service';
-
+import { listPayslipsService } from '../../server/services/payroll.service';
 import { formatCurrency } from '../utils';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

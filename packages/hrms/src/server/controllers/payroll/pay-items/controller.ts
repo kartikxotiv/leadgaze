@@ -1,21 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
-
-import { getCurrentUserOrganizationId } from '~/lib/server/organizations';
 import {
   ApiError,
   catchAsync,
   successDataResponse,
-} from '~/utils/response-handler';
+} from '../../../../utils/response-handler';
+import { getPayrollContext } from '../payroll-context';
 
 export const employeePayItemController = {
-  create: catchAsync(async ({ body, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
-
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
+  create: catchAsync(async ({ body, request, user }) => {
+    const { hrms, userId, workspaceId } = await getPayrollContext({
+      request,
+      user,
+    });
 
     const data = body as {
       employee_id: string;
@@ -25,18 +21,18 @@ export const employeePayItemController = {
       notes?: string;
     };
 
-    const { data: created, error } = await (supabaseAdmin as any)
+    const { data: created, error } = await hrms
       .from('employee_pay_items')
       .insert({
-        organization_id: organizationId,
+        workspace_id: workspaceId,
         employee_id: data.employee_id,
         salary_component_id: data.salary_component_id,
         amount: data.amount,
         effective_date: data.effective_date,
         notes: data.notes ?? null,
         status: 'approved',
-        created_by: user?.id,
-        updated_by: user?.id,
+        created_by: userId,
+        updated_by: userId,
       })
       .select(
         `*, salary_component:salary_components(name), employee:employees(first_name, last_name)`,
@@ -50,14 +46,12 @@ export const employeePayItemController = {
     return successDataResponse(created);
   }),
 
-  update: catchAsync(async ({ params, body, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
+  update: catchAsync(async ({ params, body, request, user }) => {
     const id = params?.id as string;
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
-
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
+    const { hrms, userId, workspaceId } = await getPayrollContext({
+      request,
+      user,
+    });
 
     const data = body as {
       amount?: number;
@@ -65,15 +59,15 @@ export const employeePayItemController = {
       notes?: string;
     };
 
-    const { data: updated, error } = await (supabaseAdmin as any)
+    const { data: updated, error } = await hrms
       .from('employee_pay_items')
       .update({
         ...data,
-        updated_by: user?.id,
+        updated_by: userId,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', workspaceId)
       .select(
         `*, salary_component:salary_components(name), employee:employees(first_name, last_name)`,
       )
@@ -86,20 +80,18 @@ export const employeePayItemController = {
     return successDataResponse(updated);
   }),
 
-  delete: catchAsync(async ({ params, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
+  delete: catchAsync(async ({ params, request, user }) => {
     const id = params?.id as string;
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
+    const { hrms, userId, workspaceId } = await getPayrollContext({
+      request,
+      user,
+    });
 
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
-
-    const { error } = await (supabaseAdmin as any)
+    const { error } = await hrms
       .from('employee_pay_items')
       .delete()
       .eq('id', id)
-      .eq('organization_id', organizationId);
+      .eq('workspace_id', workspaceId);
 
     if (error) {
       throw new ApiError(error.message, 400);

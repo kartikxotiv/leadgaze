@@ -236,6 +236,25 @@ export function ServiceCloudTicketDetailPage({
   const assignedAgent = members.find(
     (member: LookupOption) => member.id === ticket.assigned_agent_id,
   );
+  const ticketTemplateContext = {
+    module_name: 'Service Cloud',
+    ticket_id: ticket.id,
+    ticket_number: ticket.ticket_number
+      ? `#${ticket.ticket_number}`
+      : ticket.id,
+    ticket_subject: ticket.subject ?? '',
+    ticket_description: ticket.description ?? '',
+    ticket_status: ticket.status?.name ?? '',
+    ticket_priority: ticket.priority?.name ?? '',
+    ticket_category: ticket.category?.name ?? '',
+    ticket_due_date: ticket.due_date ?? ticket.due_at ?? '',
+    customer_name: ticket.customer?.name ?? '',
+    customer_email: ticket.customer?.email ?? '',
+    customer_phone: ticket.customer?.phone ?? '',
+    organization_name: ticket.organization?.name ?? '',
+    assigned_agent_name: assignedAgent?.name ?? '',
+    assigned_agent_email: assignedAgent?.email ?? '',
+  };
   const latestThreadEmail = [...emails]
     .reverse()
     .map((item: any) => item.email)
@@ -788,6 +807,7 @@ export function ServiceCloudTicketDetailPage({
         workspaceId={workspaceId}
         email={replyEmail}
         accounts={emailAccounts}
+        templateContext={ticketTemplateContext}
       />
     </div>
   );

@@ -1,26 +1,24 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
-
-import { getCurrentUserOrganizationId } from '~/lib/server/organizations';
 import {
   ApiError,
   catchAsync,
   successDataResponse,
-} from '~/utils/response-handler';
+} from '../../../../utils/response-handler';
+import { getPayrollContext } from '../payroll-context';
 
 export const payslipController = {
-  list: catchAsync(async ({ user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
+  list: catchAsync(async ({ request, user }) => {
+    const { hrms, userId, workspaceId } = await getPayrollContext({
+      featureKey: 'view',
+      minAccessLevel: 'own',
+      request,
+      user,
+    });
 
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
-
-    const { data, error } = await (supabaseAdmin as any)
+    const { data, error } = await hrms
       .from('payslips')
       .select('*, employee:employees(*), payroll_run:payroll_runs(*)')
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', workspaceId)
       .order('generated_at', { ascending: false });
 
     if (error) {
@@ -30,20 +28,20 @@ export const payslipController = {
     return successDataResponse(data ?? []);
   }),
 
-  listComponents: catchAsync(async ({ params, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
+  listComponents: catchAsync(async ({ params, request, user }) => {
     const payslipId = params?.id as string;
-    const organizationId = await getCurrentUserOrganizationId(user?.id);
+    const { hrms, userId, workspaceId } = await getPayrollContext({
+      featureKey: 'view',
+      minAccessLevel: 'own',
+      request,
+      user,
+    });
 
-    if (!organizationId) {
-      throw new ApiError('Organization not found for user', 404);
-    }
-
-    const { data, error } = await (supabaseAdmin as any)
+    const { data, error } = await hrms
       .from('payslip_components')
       .select('*, salary_component:salary_components(*)')
       .eq('payslip_id', payslipId)
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', workspaceId)
       .order('display_order', { ascending: true });
 
     if (error) {

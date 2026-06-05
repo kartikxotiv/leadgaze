@@ -143,6 +143,9 @@
   --color-header-secondary: #344CD2;
   --color-action-delete: #FF2626;
 
+  /* --- 5. table header color and gray color --*/
+  --color-graylight: #F5F6F8;
+
   --animate-fade-up: fade-up 0.5s;
   --animate-fade-down: fade-down 0.5s;
   --animate-accordion-down: accordion-down 0.2s ease-out;

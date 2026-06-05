@@ -20,8 +20,7 @@ import {
 } from '@kit/ui/table';
 import { TabsContent } from '@kit/ui/tabs';
 
-import type { PayrollDashboardResponse } from '~/types/payroll.type';
-
+import type { PayrollDashboardResponse } from '../../types/payroll.type';
 import { PayrollStatusBadge } from '../page.components';
 import { formatCurrency } from '../utils';
 
@@ -33,7 +32,9 @@ export function PayrollRunsTab(props: {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
 
   const selectedRun =
-    props.payrollRuns.find((run) => run.id === selectedRunId) ?? props.payrollRuns[0] ?? null;
+    props.payrollRuns.find((run) => run.id === selectedRunId) ??
+    props.payrollRuns[0] ??
+    null;
 
   return (
     <TabsContent value="runs" className="mt-0">
@@ -42,7 +43,8 @@ export function PayrollRunsTab(props: {
           <CardHeader>
             <CardTitle>Payroll Runs</CardTitle>
             <CardDescription>
-              A payroll run processes one period and creates employee-level entries before payslips are published.
+              A payroll run processes one period and creates employee-level
+              entries before payslips are published.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
@@ -63,10 +65,16 @@ export function PayrollRunsTab(props: {
                   props.payrollRuns.map((item) => (
                     <TableRow
                       key={item.id}
-                      className={selectedRun?.id === item.id ? 'bg-muted/40' : 'cursor-pointer'}
+                      className={
+                        selectedRun?.id === item.id
+                          ? 'bg-muted/40'
+                          : 'cursor-pointer'
+                      }
                       onClick={() => setSelectedRunId(item.id)}
                     >
-                      <TableCell className="font-medium">{item.period}</TableCell>
+                      <TableCell className="font-medium">
+                        {item.period}
+                      </TableCell>
                       <TableCell>{item.dates}</TableCell>
                       <TableCell>{item.assignments}</TableCell>
                       <TableCell>{item.entries}</TableCell>
@@ -93,7 +101,9 @@ export function PayrollRunsTab(props: {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={7} className="py-10 text-center">
-                      <p className="text-muted-foreground">No payroll runs found yet.</p>
+                      <p className="text-muted-foreground">
+                        No payroll runs found yet.
+                      </p>
                     </TableCell>
                   </TableRow>
                 )}
@@ -107,7 +117,8 @@ export function PayrollRunsTab(props: {
             <CardHeader>
               <CardTitle>Selected Run Summary</CardTitle>
               <CardDescription>
-                Click a payroll run above to review its totals and employee-level calculations.
+                Click a payroll run above to review its totals and
+                employee-level calculations.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -125,22 +136,34 @@ export function PayrollRunsTab(props: {
                       </div>
                     </div>
                     <div className="rounded-lg border p-4">
-                      <p className="text-muted-foreground text-sm">Eligible Assignments</p>
-                      <p className="mt-1 text-2xl font-semibold">{selectedRun.assignments}</p>
+                      <p className="text-muted-foreground text-sm">
+                        Eligible Assignments
+                      </p>
+                      <p className="mt-1 text-2xl font-semibold">
+                        {selectedRun.assignments}
+                      </p>
                     </div>
                     <div className="rounded-lg border p-4">
-                      <p className="text-muted-foreground text-sm">Generated Entries</p>
-                      <p className="mt-1 text-2xl font-semibold">{selectedRun.entries}</p>
+                      <p className="text-muted-foreground text-sm">
+                        Generated Entries
+                      </p>
+                      <p className="mt-1 text-2xl font-semibold">
+                        {selectedRun.entries}
+                      </p>
                     </div>
                     <div className="rounded-lg border p-4">
-                      <p className="text-muted-foreground text-sm">Gross Earnings</p>
+                      <p className="text-muted-foreground text-sm">
+                        Gross Earnings
+                      </p>
                       <p className="mt-1 text-2xl font-semibold">
                         {formatCurrency(selectedRun.grossEarnings)}
                       </p>
                     </div>
                     <div className="rounded-lg border p-4">
-                      <p className="text-muted-foreground text-sm">Net Payout</p>
-                      <p className="mt-1 text-2xl font-semibold text-primary">
+                      <p className="text-muted-foreground text-sm">
+                        Net Payout
+                      </p>
+                      <p className="text-primary mt-1 text-2xl font-semibold">
                         {formatCurrency(selectedRun.payout)}
                       </p>
                     </div>
@@ -149,12 +172,17 @@ export function PayrollRunsTab(props: {
                   <div className="rounded-lg border p-4">
                     <p className="text-sm font-medium">How to read this</p>
                     <p className="text-muted-foreground mt-1 text-sm">
-                      Assignments shows how many active primary compensation assignments matched the run period. Entries shows how many payroll calculation rows were created. Net payout is the sum of all entry net pay values for this run.
+                      Assignments shows how many active primary compensation
+                      assignments matched the run period. Entries shows how many
+                      payroll calculation rows were created. Net payout is the
+                      sum of all entry net pay values for this run.
                     </p>
                   </div>
                 </>
               ) : (
-                <p className="text-muted-foreground text-sm">No payroll run selected.</p>
+                <p className="text-muted-foreground text-sm">
+                  No payroll run selected.
+                </p>
               )}
             </CardContent>
           </Card>
@@ -181,7 +209,9 @@ export function PayrollRunsTab(props: {
                   {selectedRun && selectedRun.breakdown.length > 0 ? (
                     selectedRun.breakdown.map((item) => (
                       <TableRow key={item.id}>
-                        <TableCell className="font-medium">{item.employee}</TableCell>
+                        <TableCell className="font-medium">
+                          {item.employee}
+                        </TableCell>
                         <TableCell>{formatCurrency(item.earnings)}</TableCell>
                         <TableCell>{formatCurrency(item.deductions)}</TableCell>
                         <TableCell>{formatCurrency(item.net)}</TableCell>
@@ -192,7 +222,10 @@ export function PayrollRunsTab(props: {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="py-6 text-center text-muted-foreground">
+                      <TableCell
+                        colSpan={5}
+                        className="text-muted-foreground py-6 text-center"
+                      >
                         No payroll entries found for this run yet.
                       </TableCell>
                     </TableRow>
@@ -208,7 +241,8 @@ export function PayrollRunsTab(props: {
             <CardHeader>
               <CardTitle>Line Item Breakdown</CardTitle>
               <CardDescription>
-                Recurring assignment items and one-time pay items that make up the selected run.
+                Recurring assignment items and one-time pay items that make up
+                the selected run.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -218,7 +252,9 @@ export function PayrollRunsTab(props: {
                     <div>
                       <p className="font-medium">{entry.employee}</p>
                       <p className="text-muted-foreground text-sm">
-                        Earnings {formatCurrency(entry.earnings)} • Deductions {formatCurrency(entry.deductions)} • Net {formatCurrency(entry.net)}
+                        Earnings {formatCurrency(entry.earnings)} • Deductions{' '}
+                        {formatCurrency(entry.deductions)} • Net{' '}
+                        {formatCurrency(entry.net)}
                       </p>
                     </div>
                     <PayrollStatusBadge label={entry.status} />
@@ -236,7 +272,9 @@ export function PayrollRunsTab(props: {
                       {entry.items.length > 0 ? (
                         entry.items.map((line) => (
                           <TableRow key={line.id}>
-                            <TableCell className="font-medium">{line.component}</TableCell>
+                            <TableCell className="font-medium">
+                              {line.component}
+                            </TableCell>
                             <TableCell className="capitalize">
                               {line.source.replace('_', ' ')}
                             </TableCell>
@@ -251,7 +289,10 @@ export function PayrollRunsTab(props: {
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={4} className="py-4 text-center text-muted-foreground">
+                          <TableCell
+                            colSpan={4}
+                            className="text-muted-foreground py-4 text-center"
+                          >
                             No line items were generated for this employee.
                           </TableCell>
                         </TableRow>

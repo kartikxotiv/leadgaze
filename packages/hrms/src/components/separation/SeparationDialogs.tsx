@@ -10,7 +10,7 @@ import type {
   PayrollRunOption,
   ResignationOption,
   SeparationDialogKey,
-} from '../types';
+} from '../../types/separation.type';
 import { AssetClearanceDialog } from './AssetClearanceDialog';
 import { ChecklistItemDialog } from './ChecklistItemDialog';
 import { ConfirmDialogProps, ConfirmRemarkDialog } from './ConfirmRemarkDialog';

@@ -11,11 +11,14 @@ import {
 } from '@kit/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 
-import type { SeparationDialogKey, SeparationItem } from '../types';
+import type {
+  SeparationDialogKey,
+  SeparationItem,
+} from '../../types/separation.type';
 import {
   type SeparationTableData,
   getSeparationTableRows,
-} from '../utils/separation-table-rows';
+} from '../../utils/separation-table-rows';
 import type { ConfirmDialogProps } from './ConfirmRemarkDialog';
 import {
   SeparationActionMenu,

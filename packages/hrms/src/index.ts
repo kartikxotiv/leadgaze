@@ -7,6 +7,9 @@ export * from './pages/departments/page';
 export * from './pages/documents/page';
 export * from './pages/employees/page';
 export * from './pages/leave/page';
+export * from './pages/payroll/page';
 export * from './pages/recruitment/page';
+export * from './pages/separation/page';
+export * from './pages/support-system/page';
 
 export * from './utils/index';
