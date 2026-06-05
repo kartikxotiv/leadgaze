@@ -32,6 +32,7 @@ import {
   PaginationPrevious,
 } from '@kit/ui/pagination';
 import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -63,6 +64,7 @@ import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import CreateLeadDialog from './components/create-lead-dialog';
 import {CustomTableContainer} from '@kit/ui/custom-table-container';
+import {TableStatusMetricTab} from '@kit/ui/table-status-metric-tab';
 
 export default function LeadsPage() {
   const router = useRouter();
@@ -209,19 +211,12 @@ export default function LeadsPage() {
 
   const paginatedLeads = filteredLeads;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
+  const showTableSkeleton = !workspace || isLoading;
 
   const handleCreateSuccess = () => {
     setIsCreateDialogOpen(false);
     refetch();
   };
-
-  if (!workspace) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <p className="text-gray-500">Loading workspace...</p>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -526,26 +521,19 @@ export default function LeadsPage() {
 
           {/* Status Distribution Cards */}
           <div className="bg-sidebar -mt-1 w-full max-w-full min-w-0 overflow-x-auto px-6 pb-7">
-            <div className="-mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-              <Card
-                className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStatus === 'all' ? 'border-primary ring-primary ring-1' : ''}`}
-                onClick={() => setSelectedStatus('all')}
-              >
-                <CardContent className="p-3">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-muted-foreground text-[12px] font-medium tracking-wider uppercase">
-                      All Leads ({totalCount})
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-
+            <div className="-mb-3 flex flex-wrap items-center gap-2">
+              <TableStatusMetricTab
+                   key={0}
+                   id={0}
+                   statusName='All Leads'
+                   isSelected={selectedStatus === 'all'}
+                   count={totalCount}
+                   onClick={() => setSelectedStatus('all')} />
               {statuses.map((status: any) => {
                 const stats = leadsData.statusBreakdown[status.id] || {
                   count: 0,
                 };
                 const isSelected = selectedStatus === status.id;
-                // Default (all): show real count. Specific status selected: only show count for that card, others 0
                 const displayCount =
                   selectedStatus === 'all'
                     ? stats.count
@@ -554,25 +542,14 @@ export default function LeadsPage() {
                       : 0;
 
                 return (
-                  <Card
-                    key={status.id}
-                    className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${isSelected ? 'border-primary ring-primary ring-1' : ''}`}
-                    onClick={() => setSelectedStatus(status.id)}
-                  >
-                    <CardContent className="h-8 p-3">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="h-2 w-2 rounded-full"
-                            style={{ backgroundColor: status.color }}
-                          />
-                          <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
-                            {status.status_name} ({displayCount})
-                          </span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <TableStatusMetricTab
+                   key={status.id}
+                   id={status.id}
+                   color={status.color}
+                   statusName={status.status_name}
+                   count={displayCount}
+                   isSelected={isSelected}
+                   onClick={() => setSelectedStatus(status.id)} />                  
                 );
               })}
             </div>
@@ -713,25 +690,25 @@ export default function LeadsPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {isLoading ? (
-                          <TableRow>
-                            <TableCell
-                              colSpan={
-                                visibility
-                                  ? Object.values(visibility).filter(
-                                      (v) => v !== false,
-                                    ).length + 1
-                                  : 7
-                              }
-                              className="h-24 text-center"
-                            >
-                              <div className="flex items-center justify-center">
-                                <div className="text-gray-500">
-                                  Loading leads...
-                                </div>
-                              </div>
-                            </TableCell>
-                          </TableRow>
+                        {showTableSkeleton ? (
+                          <>
+                            {[...Array(10)].map((_, i) => (
+                              <TableRow key={i}>
+                                <TableCell
+                                  className="h-[52px] px-4 py-2"
+                                  colSpan={
+                                    visibility
+                                      ? Object.values(visibility).filter(
+                                          (v) => v !== false,
+                                        ).length + 1
+                                      : 7
+                                  }
+                                >
+                                  <Skeleton className="h-7 w-full rounded-md" />
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </>
                         ) : paginatedLeads.length === 0 ? (
                           <TableRow>
                             <TableCell

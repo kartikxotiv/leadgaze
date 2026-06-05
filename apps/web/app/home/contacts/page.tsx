@@ -39,6 +39,8 @@ import {
 } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
+import { Skeleton } from '@kit/ui/skeleton';
+
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
@@ -47,6 +49,60 @@ import { Contact, getContactsService } from '~/services/contacts.service';
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { CreateContactDialog } from './components/create-contact-dialog';
+
+function ContactsPageSkeleton() {
+  return (
+    <ModuleGuard module="contacts">
+      <div className="flex h-[100dvh] flex-col overflow-hidden">
+        <div className="bg-sidebar flex shrink-0 flex-col gap-2">
+          <div className="bg-sidebar flex items-center justify-between px-6 py-4">
+            <div className="space-y-1">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-8 w-8 rounded-md" />
+              <Skeleton className="h-8 w-8 rounded-md" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden pt-6">
+          <div className="flex min-h-0 flex-1 flex-col px-4 lg:px-8">
+            <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
+              <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
+                <thead className="bg-muted sticky top-0 z-10">
+                  <tr>
+                    {[40, 120, 120, 100, 160, 120, 120, 120, 120, 80].map((w, i) => (
+                      <th key={i} className="h-11 px-4 border-b border-border">
+                        <Skeleton className="h-3" style={{ width: w }} />
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...Array(12)].map((_, row) => (
+                    <tr key={row} className="bg-card border-b border-border">
+                      <td className="h-11 px-4"><Skeleton className="h-3.5 w-6" /></td>
+                      <td className="h-11 px-4"><Skeleton className="h-3.5 w-32" /></td>
+                      <td className="h-11 px-4"><Skeleton className="h-3.5 w-24" /></td>
+                      <td className="h-11 px-4"><Skeleton className="h-3.5 w-24" /></td>
+                      <td className="h-11 px-4"><Skeleton className="h-3.5 w-40" /></td>
+                      <td className="h-11 px-4"><Skeleton className="h-3.5 w-28" /></td>
+                      <td className="h-11 px-4"><Skeleton className="h-3.5 w-28" /></td>
+                      <td className="h-11 px-4"><Skeleton className="h-3.5 w-24" /></td>
+                      <td className="h-11 px-4"><Skeleton className="h-3.5 w-20" /></td>
+                      <td className="h-11 px-4"><Skeleton className="h-6 w-6 rounded ml-auto" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ModuleGuard>
+  );
+}
 
 export default function ContactsPage() {
   const router = useRouter();
@@ -127,11 +183,7 @@ export default function ContactsPage() {
   const paginatedContacts = contacts; // Data is already paginated from server
 
   if (!workspace) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <p className="text-gray-500">Loading workspace...</p>
-      </div>
-    );
+    return null;
   }
 
   if (error) {
@@ -274,24 +326,22 @@ export default function ContactsPage() {
                     </TableHeader>
                     <TableBody>
                       {isLoading ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={
-                              visibility
-                                ? Object.values(visibility).filter(
-                                    (v) => v !== false,
-                                  ).length + 1
-                                : 7
-                            }
-                            className="h-24 text-center"
-                          >
-                            <div className="flex items-center justify-center">
-                              <div className="text-gray-500">
-                                Loading contacts...
-                              </div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                        <>
+                          {[...Array(12)].map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell
+                                className="h-[52px] px-4 py-2"
+                                colSpan={
+                                  visibility
+                                    ? Object.values(visibility).filter((v) => v !== false).length + 1
+                                    : 7
+                                }
+                              >
+                                <Skeleton className="h-7 w-full" />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </>
                       ) : paginatedContacts.length === 0 ? (
                         <TableRow>
                           <TableCell
