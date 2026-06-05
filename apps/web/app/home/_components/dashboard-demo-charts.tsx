@@ -69,6 +69,7 @@ import { CreateAccountDialog } from '../accounts/components/create-account-dialo
 import { CreateContactDialog } from '../contacts/components/create-contact-dialog';
 import CreateLeadDialog from '../leads/components/create-lead-dialog';
 import { OpportunityDialog } from '../opportunities/components/opportunity-dialog';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 
 export default function DashboardDemo() {
   const { currentWorkspace } = useRBAC();
@@ -122,15 +123,15 @@ export default function DashboardDemo() {
           'grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-3 xl:pb-4 2xl:grid-cols-4 2xl:gap-4 2xl:pb-6'
         }
       >
-        <Card className="h-32 xl:h-28 2xl:h-32 card-container flex flex-col justify-between">
+        <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
           <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
             <div className="space-y-1">
-              <CardTitle className="secondary-text-small text-leadgaze-muted">
+              <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
                 Total Leads
               </CardTitle>
               <Figure>{metrics.leads.total}</Figure>
             </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded bg-primary">
+            <div className="flex h-8 w-8 items-center justify-center rounded bg-primary dark:bg-primary">
               <File className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
@@ -141,10 +142,10 @@ export default function DashboardDemo() {
           </CardContent>
         </Card>
 
-        <Card className="h-32 xl:h-28 2xl:h-32 card-container flex flex-col justify-between">
+        <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
           <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
             <div className="space-y-1">
-              <CardTitle className="secondary-text-small text-leadgaze-muted">
+              <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
                 Contacts
               </CardTitle>
               <Figure>{metrics.contacts.total}</Figure>
@@ -160,10 +161,10 @@ export default function DashboardDemo() {
           </CardContent>
         </Card>
 
-        <Card className="h-32 xl:h-28 2xl:h-32 card-container flex flex-col justify-between">
+        <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
           <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
             <div className="space-y-1">
-              <CardTitle className="secondary-text-small text-leadgaze-muted">
+              <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
                 Accounts
               </CardTitle>
               <Figure>{metrics.accounts.total}</Figure>
@@ -179,10 +180,10 @@ export default function DashboardDemo() {
           </CardContent>
         </Card>
 
-        <Card className="h-32 xl:h-28 2xl:h-32 card-container flex flex-col justify-between">
+        <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
           <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
             <div className="space-y-1">
-              <CardTitle className="secondary-text-small text-leadgaze-muted">
+              <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
                 Pipeline Value
               </CardTitle>
               <Figure>
@@ -308,28 +309,18 @@ export default function DashboardDemo() {
 
       {/* Section 3: Pipeline & Upcoming Tasks */}
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2 xl:mt-4 xl:gap-4 2xl:mt-8 2xl:gap-8">
-        <div className="card-container bg-white flex flex-col rounded-xl overflow-hidden dark:bg-zinc-900">
-          <div className="p-6 xl:p-4 2xl:p-6 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center">
-            <h2 className="primary-heading text-leadgaze-dark dark:text-zinc-100">
-              Lead Pipeline
-            </h2>
-          </div>
+        <CardWidgetContainer title="Lead Pipeline">
           <div className="flex-1">
             <PipelineOverview metrics={metrics} />
           </div>
-        </div>
+        </CardWidgetContainer>
 
-        <div className="card-container bg-white flex flex-col rounded-xl overflow-hidden dark:bg-zinc-900">
-          <div className="p-6 xl:p-4 2xl:p-6 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center">
-            <h2 className="primary-heading text-leadgaze-dark dark:text-zinc-100">
-              Upcoming Tasks
-            </h2>
-            <Calendar className="w-5 h-5 text-leadgaze-muted" />
-          </div>
+        <CardWidgetContainer title="Upcoming Tasks" icon2={<Calendar className="w-5 h-5 text-leadgaze-muted dark:text-white" />}>
           <div className="flex-1">
             <UpcomingTasks tasks={metrics.upcomingTasks} />
           </div>
-        </div>
+        </CardWidgetContainer>
+        
       </div>
     </div>
   );
@@ -359,10 +350,10 @@ function PipelineOverview({ metrics }: { metrics: DashboardMetrics }) {
       {stages.map((stage, index) => (
         <div key={stage.label} className="flex flex-col gap-1.5">
           <div className="flex justify-between items-center">
-            <span className="primary-text-medium text-leadgaze-dark">
+            <span className="primary-text-medium text-leadgaze-dark dark:text-white">
               {stage.label}
             </span>
-            <span className="primary-text-regular text-leadgaze-muted">
+            <span className="primary-text-regular text-leadgaze-muted dark:text-white">
               {stage.value}
             </span>
           </div>
@@ -436,13 +427,13 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
                         <span className="primary-text-medium text-leadgaze-dark dark:text-zinc-200">
                           {task.title}
                           {task.entityName && (
-                            <span className="font-normal text-leadgaze-muted">
+                            <span className="font-normal text-leadgaze-muted dark:text-white">
                               {' '}
                               - {task.entityName}
                             </span>
                           )}
                         </span>
-                        <span className="secondary-text-small text-leadgaze-muted">
+                        <span className="secondary-text-small text-leadgaze-muted dark:text-white">
                           {relativeDate}
                         </span>
                       </div>

@@ -16,7 +16,10 @@ import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import { Textarea } from '@kit/ui/textarea';
 
-import { ApiResponse, ExitChecklistItemOption } from '../types';
+import type {
+  ApiResponse,
+  ExitChecklistItemOption,
+} from '../../types/separation.type';
 
 type ChecklistItemDialogProps = {
   isOpen: boolean;
@@ -56,7 +59,7 @@ export function ChecklistItemDialog({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/exit-checklist-items', {
+      const response = await fetch('/api/hrms/separation/exit-checklist-items', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({

@@ -15,7 +15,11 @@ import { Label } from '@kit/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@kit/ui/select';
 import { Textarea } from '@kit/ui/textarea';
 
-import { EmployeeOption, ResignationOption, ApiResponse } from '../types';
+import type {
+  ApiResponse,
+  EmployeeOption,
+  ResignationOption,
+} from '../../types/separation.type';
 import {
   NONE,
   toDateInput,
@@ -23,7 +27,7 @@ import {
   toIsoDateTime,
   formatNumberInput,
   parseNullableNumber,
-} from '../utils/separation-utils';
+} from '../../utils/separation-utils';
 
 interface ResignationDialogProps {
   isOpen: boolean;
@@ -104,8 +108,8 @@ export function ResignationDialog({
     setIsSubmitting(true);
 
     const path = editingResignation
-      ? `/api/resignations/${editingResignation.id}`
-      : '/api/resignations';
+      ? `/api/hrms/separation/resignations/${editingResignation.id}`
+      : '/api/hrms/separation/resignations';
 
     const payload = canManageResignations
       ? {

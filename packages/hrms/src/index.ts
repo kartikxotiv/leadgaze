@@ -8,5 +8,6 @@ export * from './pages/documents/page';
 export * from './pages/employees/page';
 export * from './pages/leave/page';
 export * from './pages/recruitment/page';
+export * from './pages/separation/page';
 
 export * from './utils/index';

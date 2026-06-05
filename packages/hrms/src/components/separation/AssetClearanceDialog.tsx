@@ -15,13 +15,17 @@ import { Label } from '@kit/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@kit/ui/select';
 import { Textarea } from '@kit/ui/textarea';
 
-import { EmployeeOption, AssetClearanceOption, ApiResponse } from '../types';
+import type {
+  ApiResponse,
+  AssetClearanceOption,
+  EmployeeOption,
+} from '../../types/separation.type';
 import {
   NONE,
   toDateInput,
   toDateTimeLocalInput,
   toIsoDateTime,
-} from '../utils/separation-utils';
+} from '../../utils/separation-utils';
 
 interface AssetClearanceDialogProps {
   isOpen: boolean;
@@ -101,8 +105,8 @@ export function AssetClearanceDialog({
     setIsSubmitting(true);
 
     const path = editingAsset
-      ? `/api/asset-clearances/${editingAsset.id}`
-      : '/api/asset-clearances';
+      ? `/api/hrms/separation/asset-clearances/${editingAsset.id}`
+      : '/api/hrms/separation/asset-clearances';
 
     const payload = {
       employee_id: form.employee_id,
