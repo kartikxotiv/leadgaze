@@ -3,7 +3,16 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Edit2, Info, LayoutTemplate, Loader2, Plus, Save, Search, Trash2 } from 'lucide-react';
+import {
+  Edit2,
+  Info,
+  LayoutTemplate,
+  Loader2,
+  Plus,
+  Save,
+  Search,
+  Trash2,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
@@ -32,7 +41,6 @@ import {
   TooltipTrigger,
 } from '@kit/ui/tooltip';
 
-import { getAvailableVariables } from '../../lib/email/template-utils';
 import {
   deleteCoreEmailTemplateService,
   getCoreEmailTemplatesService,
@@ -40,7 +48,11 @@ import {
   saveCoreEmailTemplateService,
 } from '../../services/email-templates.service';
 
-export function CoreEmailTemplatesTab({ workspaceId }: { workspaceId: string }) {
+export function CoreEmailTemplatesTab({
+  workspaceId,
+}: {
+  workspaceId: string;
+}) {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -64,7 +76,9 @@ export function CoreEmailTemplatesTab({ workspaceId }: { workspaceId: string }) 
     try {
       await deleteCoreEmailTemplateService(id, workspaceId);
       toast.success('Template deleted');
-      await queryClient.invalidateQueries({ queryKey: ['core-email-templates', workspaceId] });
+      await queryClient.invalidateQueries({
+        queryKey: ['core-email-templates', workspaceId],
+      });
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete template');
     }
@@ -108,7 +122,10 @@ export function CoreEmailTemplatesTab({ workspaceId }: { workspaceId: string }) 
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-muted-foreground h-24 text-center">
+                  <TableCell
+                    colSpan={4}
+                    className="text-muted-foreground h-24 text-center"
+                  >
                     Loading templates...
                   </TableCell>
                 </TableRow>
@@ -124,8 +141,12 @@ export function CoreEmailTemplatesTab({ workspaceId }: { workspaceId: string }) 
               ) : (
                 filteredTemplates.map((template: any) => (
                   <TableRow key={template.id}>
-                    <TableCell className="font-medium">{template.name}</TableCell>
-                    <TableCell className="text-muted-foreground max-w-md truncate">{template.subject}</TableCell>
+                    <TableCell className="font-medium">
+                      {template.name}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground max-w-md truncate">
+                      {template.subject}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {new Date(template.updated_at).toLocaleDateString()}
                     </TableCell>
@@ -183,8 +204,6 @@ function CoreTemplateDialog({
   const [subject, setSubject] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
-  const systemVariables = getAvailableVariables();
-
   const { data: customVariables = [] } = useQuery({
     queryKey: ['core-email-variables', workspaceId],
     queryFn: () => getCoreEmailVariablesService(workspaceId),
@@ -224,13 +243,14 @@ function CoreTemplateDialog({
         name,
         subject,
         html_body: htmlBody,
-        variables: [
-          ...systemVariables.map((variable) => variable.value),
-          ...customVariables.map((variable: any) => `{{${variable.key}}}`),
-        ],
+        variables: customVariables.map(
+          (variable: any) => `{{${variable.key}}}`,
+        ),
       });
       toast.success(template ? 'Template updated' : 'Template created');
-      await queryClient.invalidateQueries({ queryKey: ['core-email-templates', workspaceId] });
+      await queryClient.invalidateQueries({
+        queryKey: ['core-email-templates', workspaceId],
+      });
       onOpenChange(false);
     } catch (error: any) {
       toast.error(error.message || 'Failed to save template');
@@ -243,51 +263,93 @@ function CoreTemplateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[95vh] max-w-3xl flex-col overflow-hidden p-0">
         <DialogHeader className="border-b px-6 py-4">
-          <DialogTitle>{template ? 'Edit Template' : 'Create Template'}</DialogTitle>
+          <DialogTitle>
+            {template ? 'Edit Template' : 'Create Template'}
+          </DialogTitle>
         </DialogHeader>
         <div className="flex-1 space-y-4 overflow-y-auto p-6">
           <div className="space-y-2">
             <Label>Template Name</Label>
-            <Input value={name} onChange={(event) => setName(event.target.value)} />
+            <Input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label>Subject</Label>
-            <Input value={subject} onChange={(event) => setSubject(event.target.value)} />
+            <Input
+              value={subject}
+              onChange={(event) => setSubject(event.target.value)}
+            />
           </div>
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              {[...systemVariables, ...customVariables.map((variable: any) => ({ label: variable.key, value: `{{${variable.key}}}` }))].map((variable) => (
-                <Button key={variable.value} variant="outline" size="sm" onClick={() => insertVariable(variable.value)}>
-                  {variable.label}
-                </Button>
-              ))}
+              {customVariables.length > 0 ? (
+                customVariables.map((variable: any) => {
+                  const value = `{{${variable.key}}}`;
+
+                  return (
+                    <Button
+                      key={value}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => insertVariable(value)}
+                    >
+                      {variable.key}
+                    </Button>
+                  );
+                })
+              ) : (
+                <span className="text-muted-foreground text-xs">
+                  Add workspace variables to insert them here.
+                </span>
+              )}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger>
                     <Info className="text-muted-foreground h-4 w-4" />
                   </TooltipTrigger>
-                  <TooltipContent>Variables are replaced before sending.</TooltipContent>
+                  <TooltipContent>
+                    Variables are replaced before sending.
+                  </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
             <div className="overflow-hidden rounded-md border">
               <div className="border-b bg-zinc-50 p-1 dark:bg-zinc-800/50">
                 {['bold', 'italic', 'underline'].map((command) => (
-                  <Button key={command} variant="ghost" size="sm" onClick={() => document.execCommand(command, false)}>
+                  <Button
+                    key={command}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => document.execCommand(command, false)}
+                  >
                     {command[0]!.toUpperCase()}
                   </Button>
                 ))}
               </div>
-              <div ref={editorRef} contentEditable className="min-h-[280px] bg-white p-4 text-sm outline-none dark:bg-zinc-950" />
+              <div
+                ref={editorRef}
+                contentEditable
+                className="min-h-[280px] bg-white p-4 text-sm outline-none dark:bg-zinc-950"
+              />
             </div>
           </div>
         </div>
         <DialogFooter className="border-t bg-zinc-50 px-6 py-4 dark:bg-zinc-900/50">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSaving}
+          >
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            {isSaving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
             Save
           </Button>
         </DialogFooter>

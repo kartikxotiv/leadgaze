@@ -9,19 +9,44 @@ import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@kit/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@kit/ui/dialog';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@kit/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@kit/ui/dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@kit/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@kit/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@kit/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@kit/ui/table';
 
 import {
+  type ServiceCloudRecord,
   createServiceCloudResourceService,
   deleteServiceCloudResourceService,
   getServiceCloudResourceService,
   updateServiceCloudResourceService,
-  type ServiceCloudRecord,
 } from '../../services';
 
 export type ResourceField = {
@@ -50,9 +75,14 @@ type ResourcePageProps = {
   canEdit?: boolean;
   canDelete?: boolean;
   emptyLabel?: string;
+  queryParams?: Record<string, string>;
+  toolbar?: React.ReactNode;
 };
 
-function getInitialForm(fields: ResourceField[], defaults: ServiceCloudRecord = {}) {
+function getInitialForm(
+  fields: ResourceField[],
+  defaults: ServiceCloudRecord = {},
+) {
   return fields.reduce<ServiceCloudRecord>((acc, field) => {
     acc[field.key] = defaults[field.key] ?? '';
     return acc;
@@ -71,15 +101,24 @@ export function ServiceCloudResourcePage({
   canEdit = true,
   canDelete = true,
   emptyLabel = 'No records found.',
+  queryParams = {},
+  toolbar,
 }: ResourcePageProps) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ServiceCloudRecord | null>(null);
-  const [form, setForm] = useState<ServiceCloudRecord>(() => getInitialForm(fields, defaults));
+  const [form, setForm] = useState<ServiceCloudRecord>(() =>
+    getInitialForm(fields, defaults),
+  );
   const [saving, setSaving] = useState(false);
 
-  const { data = [], isLoading, refetch } = useQuery<ServiceCloudRecord[]>({
-    queryKey: ['service-cloud', resource, workspaceId],
-    queryFn: () => getServiceCloudResourceService(resource, workspaceId),
+  const {
+    data = [],
+    isLoading,
+    refetch,
+  } = useQuery<ServiceCloudRecord[]>({
+    queryKey: ['service-cloud', resource, workspaceId, queryParams],
+    queryFn: () =>
+      getServiceCloudResourceService(resource, workspaceId, queryParams),
     enabled: Boolean(workspaceId),
   });
 
@@ -107,7 +146,10 @@ export function ServiceCloudResourcePage({
     try {
       const payload = { ...form, workspace_id: workspaceId };
       if (editing?.id) {
-        await updateServiceCloudResourceService(resource, { ...payload, id: editing.id });
+        await updateServiceCloudResourceService(resource, {
+          ...payload,
+          id: editing.id,
+        });
       } else {
         await createServiceCloudResourceService(resource, payload);
       }
@@ -139,78 +181,147 @@ export function ServiceCloudResourcePage({
           <CardTitle>{title}</CardTitle>
           <CardDescription>{description}</CardDescription>
         </div>
-        {canCreate ? (
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openCreate} size="sm">
-                <Plus className="mr-2 h-4 w-4" />
-                New
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[560px]">
-              <DialogHeader>
-                <DialogTitle>{editing ? `Edit ${title}` : `New ${title}`}</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4">
-                {fields.map((field) => (
-                  <div key={field.key} className="space-y-2">
-                    <Label>{field.label}</Label>
-                    {field.type === 'select' ? (
-                      <Select
-                        value={String(form[field.key] ?? '')}
-                        onValueChange={(value) => setForm((prev: ServiceCloudRecord) => ({ ...prev, [field.key]: value }))}
-                      >
-                        <SelectTrigger><SelectValue placeholder={`Select ${field.label}`} /></SelectTrigger>
-                        <SelectContent>
-                          {(field.options ?? []).map((option) => (
-                            <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Input
-                        type={field.type === 'number' ? 'number' : field.type === 'email' ? 'email' : 'text'}
-                        value={String(form[field.key] ?? '')}
-                        onChange={(event) => setForm((prev: ServiceCloudRecord) => ({ ...prev, [field.key]: field.type === 'number' ? Number(event.target.value) : event.target.value }))}
-                      />
-                    )}
-                  </div>
-                ))}
-                <Button onClick={save} disabled={saving}>
-                  {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Save
+        <div className="flex items-center gap-2">
+          {toolbar}
+          {canCreate ? (
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={openCreate} size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New
                 </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        ) : null}
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[560px]">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editing ? `Edit ${title}` : `New ${title}`}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4">
+                  {fields.map((field) => (
+                    <div key={field.key} className="space-y-2">
+                      <Label>{field.label}</Label>
+                      {field.type === 'select' ? (
+                        <Select
+                          value={String(form[field.key] ?? '')}
+                          onValueChange={(value) =>
+                            setForm((prev: ServiceCloudRecord) => ({
+                              ...prev,
+                              [field.key]: value,
+                            }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={`Select ${field.label}`}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(field.options ?? []).map((option) => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          type={
+                            field.type === 'number'
+                              ? 'number'
+                              : field.type === 'email'
+                                ? 'email'
+                                : 'text'
+                          }
+                          value={String(form[field.key] ?? '')}
+                          onChange={(event) =>
+                            setForm((prev: ServiceCloudRecord) => ({
+                              ...prev,
+                              [field.key]:
+                                field.type === 'number'
+                                  ? Number(event.target.value)
+                                  : event.target.value,
+                            }))
+                          }
+                        />
+                      )}
+                    </div>
+                  ))}
+                  <Button onClick={save} disabled={saving}>
+                    {saving ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Save
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          ) : null}
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              {columns.map((column) => <TableHead key={column.key}>{column.label}</TableHead>)}
-              {(canEdit || canDelete) ? <TableHead className="text-right">Actions</TableHead> : null}
+              {columns.map((column) => (
+                <TableHead key={column.key}>{column.label}</TableHead>
+              ))}
+              {canEdit || canDelete ? (
+                <TableHead className="text-right">Actions</TableHead>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={columns.length + 1} className="text-muted-foreground py-8 text-center">Loading...</TableCell></TableRow>
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length + 1}
+                  className="text-muted-foreground py-8 text-center"
+                >
+                  Loading...
+                </TableCell>
+              </TableRow>
             ) : data.length === 0 ? (
-              <TableRow><TableCell colSpan={columns.length + 1} className="text-muted-foreground py-8 text-center">{emptyLabel}</TableCell></TableRow>
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length + 1}
+                  className="text-muted-foreground py-8 text-center"
+                >
+                  {emptyLabel}
+                </TableCell>
+              </TableRow>
             ) : (
               data.map((record) => (
                 <TableRow key={record.id}>
                   {columns.map((column) => (
-                    <TableCell key={column.key}>{column.render ? column.render(record) : String(record[column.key] ?? '-')}</TableCell>
+                    <TableCell key={column.key}>
+                      {column.render
+                        ? column.render(record)
+                        : String(record[column.key] ?? '-')}
+                    </TableCell>
                   ))}
-                  {(canEdit || canDelete) ? (
+                  {canEdit || canDelete ? (
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        {canEdit ? <Button variant="outline" size="sm" onClick={() => openEdit(record)}>Edit</Button> : null}
+                        {canEdit ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEdit(record)}
+                          >
+                            Edit
+                          </Button>
+                        ) : null}
                         {canDelete ? (
-                          <Button variant="ghost" size="icon" onClick={() => remove(record)}>
-                            <Trash2 className="h-4 w-4 text-muted-foreground" />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => remove(record)}
+                          >
+                            <Trash2 className="text-muted-foreground h-4 w-4" />
                           </Button>
                         ) : null}
                       </div>

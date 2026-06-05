@@ -1,4 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
+
+import { syncAllCoreEmailAccounts } from '@kit/core';
 
 import { EmailScheduler } from '~/lib/cron/email-scheduler';
 import { EmailSyncChecker } from '~/lib/cron/email-sync-checker';
@@ -35,14 +38,20 @@ const notificationReminderController = async (_request: NextRequest) => {
     console.log('[Cron] Starting notification check...');
     const startTime = Date.now();
 
-    // Check reminders, meetings, and emails in parallel
-    const [reminderCount, meetingCount, emailCount, syncedCount] =
-      await Promise.all([
-        ReminderChecker.checkAndNotify(),
-        MeetingChecker.checkAndNotify(),
-        EmailScheduler.checkAndSend(),
-        EmailSyncChecker.syncAll(),
-      ]);
+    // Check reminders, meetings, legacy emails, and Core emails in parallel
+    const [
+      reminderCount,
+      meetingCount,
+      emailCount,
+      syncedCount,
+      coreEmailSyncResult,
+    ] = await Promise.all([
+      ReminderChecker.checkAndNotify(),
+      MeetingChecker.checkAndNotify(),
+      EmailScheduler.checkAndSend(),
+      EmailSyncChecker.syncAll(),
+      syncAllCoreEmailAccounts(),
+    ]);
 
     const duration = Date.now() - startTime;
 
@@ -55,7 +64,15 @@ const notificationReminderController = async (_request: NextRequest) => {
         meetings: meetingCount,
         emails: emailCount,
         synced: syncedCount,
-        total: reminderCount + meetingCount + emailCount + (syncedCount || 0),
+        coreEmailSynced: coreEmailSyncResult.syncedCount,
+        coreEmailAccountsProcessed: coreEmailSyncResult.processedAccounts,
+        coreEmailWorkspacesProcessed: coreEmailSyncResult.workspaceCount,
+        total:
+          reminderCount +
+          meetingCount +
+          emailCount +
+          (syncedCount || 0) +
+          coreEmailSyncResult.syncedCount,
       },
     };
 

@@ -5,6 +5,8 @@ import {
   CalendarCheck,
   ClipboardList,
   FileText,
+  LifeBuoy,
+  LogOut,
   UserSearch,
   Users,
   WalletCards,
@@ -56,6 +58,18 @@ const modules = [
       'Requisitions, candidates, interviews, offers, and onboarding.',
     href: '/home/hrms/recruitment',
     icon: UserSearch,
+  },
+  {
+    title: 'Separation',
+    description: 'Resignations, exit clearances, settlements, and letters.',
+    href: '/home/hrms/separation',
+    icon: LogOut,
+  },
+  {
+    title: 'Support System',
+    description: 'Employee HR requests, ticket responses, and follow-up.',
+    href: '/home/hrms/support-system',
+    icon: LifeBuoy,
   },
   {
     title: 'Payroll',

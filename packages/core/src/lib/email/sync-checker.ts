@@ -3,6 +3,155 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 import { CoreGmailSyncService } from './gmail-sync.service';
 import { CoreImapSyncService } from './imap-sync.service';
 
+const DEFAULT_ACCOUNT_SYNC_BATCH_SIZE = 5;
+const DEFAULT_WORKSPACE_SYNC_BATCH_SIZE = 3;
+
+function positiveInteger(value: string | undefined, fallback: number) {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+}
+
+function chunkArray<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
+}
+
+async function runInBatches<T, R>(
+  items: T[],
+  batchSize: number,
+  handler: (item: T) => Promise<R>,
+) {
+  const results: R[] = [];
+
+  for (const batch of chunkArray(items, batchSize)) {
+    results.push(...(await Promise.all(batch.map(handler))));
+  }
+
+  return results;
+}
+
+async function prepareAccountForSync(supabase: any, account: any) {
+  const { count, error } = await (supabase as any)
+    .schema('core')
+    .from('emails')
+    .select('id', { count: 'exact', head: true })
+    .eq('workspace_id', account.workspace_id)
+    .eq('email_account_id', account.id)
+    .eq('is_deleted', false);
+
+  if (error) throw error;
+
+  if ((count ?? 0) === 0 && account.last_synced_at) {
+    console.log(
+      '[CoreEmailSync] No stored emails found; running bootstrap sync',
+      {
+        workspaceId: account.workspace_id,
+        accountId: account.id,
+        email: account.email,
+        previousLastSyncedAt: account.last_synced_at,
+      },
+    );
+
+    return {
+      ...account,
+      last_synced_at: null,
+    };
+  }
+
+  return account;
+}
+
+async function syncCoreEmailAccount(
+  supabase: any,
+  workspaceId: string,
+  account: any,
+) {
+  try {
+    const syncAccount = await prepareAccountForSync(supabase, account);
+
+    if (syncAccount.provider === 'google') {
+      if (!syncAccount.refresh_token) {
+        console.warn(
+          '[CoreEmailSync] Skipping Google account without refresh token',
+          {
+            workspaceId,
+            accountId: syncAccount.id,
+            email: syncAccount.email,
+          },
+        );
+
+        return { processedAccounts: 0, syncedCount: 0 };
+      }
+
+      const accountSyncedCount = await new CoreGmailSyncService(
+        syncAccount,
+      ).sync();
+
+      console.log('[CoreEmailSync] Google account sync finished', {
+        workspaceId,
+        accountId: syncAccount.id,
+        email: syncAccount.email,
+        syncedCount: accountSyncedCount,
+      });
+
+      return { processedAccounts: 1, syncedCount: accountSyncedCount };
+    }
+
+    if (syncAccount.provider === 'smtp' || syncAccount.provider === 'imap') {
+      if (
+        !(syncAccount.imap_host || syncAccount.smtp_host) ||
+        !(syncAccount.imap_password || syncAccount.smtp_password)
+      ) {
+        console.warn(
+          '[CoreEmailSync] Skipping IMAP account with incomplete config',
+          {
+            workspaceId,
+            accountId: syncAccount.id,
+            email: syncAccount.email,
+            hasHost: Boolean(syncAccount.imap_host || syncAccount.smtp_host),
+            hasPassword: Boolean(
+              syncAccount.imap_password || syncAccount.smtp_password,
+            ),
+          },
+        );
+
+        return { processedAccounts: 0, syncedCount: 0 };
+      }
+
+      const accountSyncedCount = await new CoreImapSyncService(
+        syncAccount,
+      ).sync();
+
+      console.log('[CoreEmailSync] IMAP account sync finished', {
+        workspaceId,
+        accountId: syncAccount.id,
+        email: syncAccount.email,
+        syncedCount: accountSyncedCount,
+      });
+
+      return { processedAccounts: 1, syncedCount: accountSyncedCount };
+    }
+
+    console.warn('[CoreEmailSync] Skipping unsupported provider', {
+      workspaceId,
+      accountId: syncAccount.id,
+      email: syncAccount.email,
+      provider: syncAccount.provider,
+    });
+
+    return { processedAccounts: 0, syncedCount: 0 };
+  } catch (error) {
+    console.error(`[CoreEmailSync] Failed syncing ${account.email}:`, error);
+    return { processedAccounts: 0, syncedCount: 0 };
+  }
+}
+
 export async function syncCoreEmailAccounts({
   workspaceId,
   accountIds,
@@ -47,56 +196,23 @@ export async function syncCoreEmailAccounts({
     })),
   });
 
-  let syncedCount = 0;
-  let processedAccounts = 0;
-
-  for (const account of accounts ?? []) {
-    try {
-      if (account.provider === 'google') {
-        if (!account.refresh_token) {
-          console.warn('[CoreEmailSync] Skipping Google account without refresh token', {
-            workspaceId,
-            accountId: account.id,
-            email: account.email,
-          });
-          continue;
-        }
-
-        processedAccounts += 1;
-        const accountSyncedCount = await new CoreGmailSyncService(account).sync();
-        syncedCount += accountSyncedCount;
-        console.log('[CoreEmailSync] Google account sync finished', {
-          workspaceId,
-          accountId: account.id,
-          email: account.email,
-          syncedCount: accountSyncedCount,
-        });
-      } else if (account.provider === 'smtp' || account.provider === 'imap') {
-        if (!(account.imap_host || account.smtp_host) || !(account.imap_password || account.smtp_password)) {
-          console.warn('[CoreEmailSync] Skipping IMAP account with incomplete config', {
-            workspaceId,
-            accountId: account.id,
-            email: account.email,
-            hasHost: Boolean(account.imap_host || account.smtp_host),
-            hasPassword: Boolean(account.imap_password || account.smtp_password),
-          });
-          continue;
-        }
-
-        processedAccounts += 1;
-        const accountSyncedCount = await new CoreImapSyncService(account).sync();
-        syncedCount += accountSyncedCount;
-        console.log('[CoreEmailSync] IMAP account sync finished', {
-          workspaceId,
-          accountId: account.id,
-          email: account.email,
-          syncedCount: accountSyncedCount,
-        });
-      }
-    } catch (error) {
-      console.error(`[CoreEmailSync] Failed syncing ${account.email}:`, error);
-    }
-  }
+  const accountBatchSize = positiveInteger(
+    process.env.CORE_EMAIL_SYNC_ACCOUNT_BATCH_SIZE,
+    DEFAULT_ACCOUNT_SYNC_BATCH_SIZE,
+  );
+  const results = await runInBatches(
+    accounts ?? [],
+    accountBatchSize,
+    (account: any) => syncCoreEmailAccount(supabase, workspaceId, account),
+  );
+  const processedAccounts = results.reduce(
+    (sum, result) => sum + result.processedAccounts,
+    0,
+  );
+  const syncedCount = results.reduce(
+    (sum, result) => sum + result.syncedCount,
+    0,
+  );
 
   return {
     processedAccounts,
@@ -120,7 +236,10 @@ export async function syncAllCoreEmailAccounts() {
     new Set<string>(
       (accounts ?? [])
         .map((account: any) => account.workspace_id)
-        .filter((workspaceId: unknown): workspaceId is string => typeof workspaceId === 'string'),
+        .filter(
+          (workspaceId: unknown): workspaceId is string =>
+            typeof workspaceId === 'string',
+        ),
     ),
   );
 
@@ -132,11 +251,21 @@ export async function syncAllCoreEmailAccounts() {
     workspaceIds,
   });
 
-  for (const workspaceId of workspaceIds) {
-    const result = await syncCoreEmailAccounts({ workspaceId });
-    processedAccounts += result.processedAccounts;
-    syncedCount += result.syncedCount;
-  }
+  const workspaceBatchSize = positiveInteger(
+    process.env.CORE_EMAIL_SYNC_WORKSPACE_BATCH_SIZE,
+    DEFAULT_WORKSPACE_SYNC_BATCH_SIZE,
+  );
+  const results = await runInBatches(
+    workspaceIds,
+    workspaceBatchSize,
+    (workspaceId) => syncCoreEmailAccounts({ workspaceId }),
+  );
+
+  processedAccounts = results.reduce(
+    (sum, result) => sum + result.processedAccounts,
+    0,
+  );
+  syncedCount = results.reduce((sum, result) => sum + result.syncedCount, 0);
 
   return {
     processedAccounts,

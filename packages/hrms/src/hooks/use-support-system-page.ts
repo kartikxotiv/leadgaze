@@ -4,21 +4,20 @@ import { useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { showToast } from '~/components/global/ToastAlert';
-import {
-  getSupportSystemDashboardService,
-  updateSupportSystemRequestService,
-} from '~/services/support-system.service';
-import type {
-  SupportSystemRequest,
-  SupportSystemRequestUpdatePayload,
-} from '~/types/support-system.type';
-import { handleApiResponse } from '~/utils/api-response-handler';
-
+import { showToast } from '../components/global/ToastAlert';
 import {
   type SupportSystemTabValue,
   getSupportTabRequests,
-} from '../page.data';
+} from '../pages/support-system/page.data';
+import {
+  getSupportSystemDashboardService,
+  updateSupportSystemRequestService,
+} from '../server/services/support-system.service';
+import type {
+  SupportSystemRequest,
+  SupportSystemRequestUpdatePayload,
+} from '../types/support-system.type';
+import { handleApiResponse } from '../utils/api-response-handler';
 
 export function useSupportSystemPage(options?: { enabled?: boolean }) {
   const queryClient = useQueryClient();

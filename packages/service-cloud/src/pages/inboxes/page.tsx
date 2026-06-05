@@ -12,21 +12,39 @@ import { ServiceCloudEmailToTicketAction } from './email-to-ticket-action';
 
 export function ServiceCloudInboxesPage({ workspace }: { workspace: any }) {
   const { canAccess, isLoading } = useServiceCloudPermissions(workspace?.id);
-  const canView = canAccess(SERVICE_CLOUD_MODULE_KEYS.inboxes, SERVICE_CLOUD_FEATURE_KEYS.view);
+  const canView = canAccess(
+    SERVICE_CLOUD_MODULE_KEYS.inboxes,
+    SERVICE_CLOUD_FEATURE_KEYS.view,
+  );
 
-  if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Checking permissions...</div>;
+  if (isLoading)
+    return (
+      <div className="text-muted-foreground p-6 text-sm">
+        Checking permissions...
+      </div>
+    );
   if (!canView) return <ServiceCloudAccessDenied label="support inboxes" />;
 
   return (
     <CoreEmailInboxPage
       workspace={workspace}
       embedded
+      templateContext={{
+        module_name: 'Service Cloud',
+        workspace_name: workspace?.name ?? '',
+      }}
       renderEmailActions={(email) => (
-        <ServiceCloudEmailToTicketAction workspaceId={workspace.id} email={email} />
+        <ServiceCloudEmailToTicketAction
+          workspaceId={workspace.id}
+          email={email}
+        />
       )}
       permissions={{
         viewInbox: canView,
-        sendEmails: canAccess(SERVICE_CLOUD_MODULE_KEYS.tickets, SERVICE_CLOUD_FEATURE_KEYS.reply),
+        sendEmails: canAccess(
+          SERVICE_CLOUD_MODULE_KEYS.tickets,
+          SERVICE_CLOUD_FEATURE_KEYS.reply,
+        ),
       }}
     />
   );
