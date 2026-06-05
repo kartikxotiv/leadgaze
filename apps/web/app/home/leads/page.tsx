@@ -32,6 +32,7 @@ import {
   PaginationPrevious,
 } from '@kit/ui/pagination';
 import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -209,19 +210,12 @@ export default function LeadsPage() {
 
   const paginatedLeads = filteredLeads;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
+  const showTableSkeleton = !workspace || isLoading;
 
   const handleCreateSuccess = () => {
     setIsCreateDialogOpen(false);
     refetch();
   };
-
-  if (!workspace) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <p className="text-gray-500">Loading workspace...</p>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -545,7 +539,6 @@ export default function LeadsPage() {
                   count: 0,
                 };
                 const isSelected = selectedStatus === status.id;
-                // Default (all): show real count. Specific status selected: only show count for that card, others 0
                 const displayCount =
                   selectedStatus === 'all'
                     ? stats.count
@@ -713,25 +706,25 @@ export default function LeadsPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {isLoading ? (
-                          <TableRow>
-                            <TableCell
-                              colSpan={
-                                visibility
-                                  ? Object.values(visibility).filter(
-                                      (v) => v !== false,
-                                    ).length + 1
-                                  : 7
-                              }
-                              className="h-24 text-center"
-                            >
-                              <div className="flex items-center justify-center">
-                                <div className="text-gray-500">
-                                  Loading leads...
-                                </div>
-                              </div>
-                            </TableCell>
-                          </TableRow>
+                        {showTableSkeleton ? (
+                          <>
+                            {[...Array(10)].map((_, i) => (
+                              <TableRow key={i}>
+                                <TableCell
+                                  className="h-[52px] px-4 py-2"
+                                  colSpan={
+                                    visibility
+                                      ? Object.values(visibility).filter(
+                                          (v) => v !== false,
+                                        ).length + 1
+                                      : 7
+                                  }
+                                >
+                                  <Skeleton className="h-7 w-full rounded-md" />
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </>
                         ) : paginatedLeads.length === 0 ? (
                           <TableRow>
                             <TableCell

@@ -41,6 +41,8 @@ import {
 } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
+import { Skeleton } from '@kit/ui/skeleton';
+
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getRolesService } from '~/services/roles.service';
@@ -53,6 +55,57 @@ import {
 
 import { InviteMemberDialog } from './components/invite-member-dialog';
 import { UpdateMemberDialog } from './components/update-member-dialog';
+
+function TeamMembersPageSkeleton() {
+  return (
+    <div className="flex h-[100dvh] flex-col overflow-hidden">
+      <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
+        <div className="bg-sidebar flex items-center justify-between px-6 py-4">
+          <div className="space-y-1">
+            <Skeleton className="h-6 w-36" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+          </div>
+        </div>
+        <div className="bg-sidebar -mt-1 w-full overflow-x-auto px-6 pb-7">
+          <div className="-mb-3 flex items-center gap-3">
+            <Skeleton className="h-10 w-52 rounded-lg" />
+            <Skeleton className="h-10 w-32 rounded-lg" />
+            <Skeleton className="h-10 w-52 rounded-lg" />
+          </div>
+        </div>
+      </div>
+      <div className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden pt-4 pb-6 px-4 lg:px-8">
+        <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
+          <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
+            <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+              <TableRow>
+                <TableHead>Member</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Primary Contact</TableHead>
+                <TableHead className="sticky right-0 px-4 text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[...Array(10)].map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell className="h-[52px] px-4 py-2" colSpan={6}>
+                    <Skeleton className="h-7 w-full" />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function TeamMembersPage() {
   const queryClient = useQueryClient();
@@ -188,6 +241,14 @@ export default function TeamMembersPage() {
     return role?.color || '#6b7280';
   };
 
+  if (!currentWorkspace) {
+    return (
+      <ModuleGuard module="team_members">
+        <TeamMembersPageSkeleton />
+      </ModuleGuard>
+    );
+  }
+
   return (
     <ModuleGuard module="team_members">
       <div className="flex h-[100dvh] flex-col overflow-hidden">
@@ -298,8 +359,35 @@ export default function TeamMembersPage() {
               </CardHeader>
               <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
                 {isLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+                  <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
+                    <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
+                      <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                        <TableRow>
+                          {isVisible('member') && <TableHead>Member</TableHead>}
+                          {isVisible('email') && <TableHead>Email</TableHead>}
+                          {isVisible('role') && <TableHead>Role</TableHead>}
+                          {isVisible('status') && <TableHead>Status</TableHead>}
+                          {isVisible('primary_contact') && <TableHead>Primary Contact</TableHead>}
+                          <TableHead className="sticky right-0 px-4 text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {[...Array(10)].map((_, i) => (
+                          <TableRow key={i}>
+                            <TableCell
+                              className="h-[52px] px-4 py-2"
+                              colSpan={
+                                visibility
+                                  ? Object.values(visibility).filter((v) => v !== false).length + 1
+                                  : 6
+                              }
+                            >
+                              <Skeleton className="h-7 w-full" />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </table>
                   </div>
                 ) : error ? (
                   <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border p-4">

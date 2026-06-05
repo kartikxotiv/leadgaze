@@ -5,15 +5,7 @@ import React, { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Clock,
-  Edit2,
-  Mail,
-  MapPin,
-  Phone,
-  Trash2,
-  User,
-} from 'lucide-react';
+import { Clock, Edit2, Mail, MapPin, Phone, Trash2, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useUser } from '@kit/supabase/hooks/use-user';
@@ -21,6 +13,7 @@ import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { PageBody, PageHeader } from '@kit/ui/page';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   Tooltip,
   TooltipContent,
@@ -36,6 +29,7 @@ import {
 } from '~/lib/permissions/use-permissions';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { getWorkspaceEmailAccountService } from '~/services/email.service';
 import {
   getLeadByIdService,
   getLeadStatusesService,
@@ -58,9 +52,73 @@ import { EmailLeadDialog } from '../components/email-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
 import { LogCallDialog } from '../components/log-call-dialog';
 
-import { getWorkspaceEmailAccountService } from '~/services/email.service';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { CustomInputForView } from '@kit/ui/custom-input-for-view';
+
+function LeadDetailsSkeleton() {
+  return (
+    <div className="flex h-full flex-col">
+      <div className="bg-background border-b px-6 py-4">
+        <div className="mb-4 flex items-center justify-between">
+          <Skeleton className="h-8 w-20 rounded-md" />
+          <div className="flex gap-2">
+            <Skeleton className="h-8 w-8 rounded-md" />
+            <Skeleton className="h-8 w-8 rounded-md" />
+            <Skeleton className="h-8 w-28 rounded-md" />
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-16 w-16 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-48" />
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-36" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <PageBody>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
+            <Card>
+              <CardHeader><Skeleton className="h-5 w-24" /></CardHeader>
+              <CardContent className="grid gap-6 sm:grid-cols-2">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="space-y-1">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
+              <CardContent className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-8 w-full rounded-md" />
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader><Skeleton className="h-4 w-24" /></CardHeader>
+              <CardContent className="space-y-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="space-y-1">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-28" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </PageBody>
+    </div>
+  );
+}
 
 export default function LeadDetailsPage() {
   const router = useRouter();
@@ -92,9 +150,7 @@ export default function LeadDetailsPage() {
     },
     enabled: !!leadId && !!workspace,
   });
-  const {
-    data: workspaceEmailAccount,
-  } = useQuery({
+  const { data: workspaceEmailAccount } = useQuery({
     queryKey: ['workspace_id', workspace?.id],
     queryFn: () => {
       if (!workspace?.id) throw new Error('Workspace ID is required');
@@ -142,10 +198,11 @@ export default function LeadDetailsPage() {
   }, [lead]);
 
   if (!workspace) {
+    // Workspace context still hydrating; show skeleton, same as isLoading.
     return (
-      <div className="flex h-96 items-center justify-center">
-        <p className="text-gray-500">Loading workspace...</p>
-      </div>
+      <ModuleGuard module="leads">
+        <LeadDetailsSkeleton />
+      </ModuleGuard>
     );
   }
 
@@ -176,12 +233,7 @@ export default function LeadDetailsPage() {
   if (isLoading) {
     return (
       <ModuleGuard module="leads">
-        <PageHeader title="Lead Details" />
-        <PageBody>
-          <div className="flex h-96 items-center justify-center">
-            <p className="text-gray-500">Loading lead details...</p>
-          </div>
-        </PageBody>
+        <LeadDetailsSkeleton />
       </ModuleGuard>
     );
   }
@@ -712,65 +764,65 @@ export default function LeadDetailsPage() {
                         {/* Engagement Score Breakdown */}
                         {Object.keys(scoringResult.breakdown.engagement)
                           .length > 0 && (
-                            <div className="space-y-1 pt-2">
-                              <p className="text-xs font-semibold text-gray-400">
-                                Engagement
-                              </p>
-                              {Object.entries(
-                                scoringResult.breakdown.engagement,
-                              ).map(([label, score]) => (
-                                <div
-                                  key={label}
-                                  className="flex justify-between text-xs"
-                                >
-                                  <span className="text-gray-600 dark:text-gray-400">
-                                    {label}
-                                  </span>
-                                  <span className="font-medium text-blue-600">
-                                    +{score}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                          <div className="space-y-1 pt-2">
+                            <p className="text-xs font-semibold text-gray-400">
+                              Engagement
+                            </p>
+                            {Object.entries(
+                              scoringResult.breakdown.engagement,
+                            ).map(([label, score]) => (
+                              <div
+                                key={label}
+                                className="flex justify-between text-xs"
+                              >
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  {label}
+                                </span>
+                                <span className="font-medium text-blue-600">
+                                  +{score}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
 
                         {/* Adjustments (Status) */}
                         {Object.keys(scoringResult.breakdown.adjustments)
                           .length > 0 && (
-                            <div className="space-y-1 pt-2">
-                              <p className="text-xs font-semibold text-gray-400">
-                                Status Adjustments
-                              </p>
-                              {Object.entries(
-                                scoringResult.breakdown.adjustments,
-                              ).map(([label, score]) => (
-                                <div
-                                  key={label}
-                                  className="flex justify-between text-xs"
-                                >
-                                  <span className="text-gray-600 dark:text-gray-400">
-                                    {label}
-                                  </span>
-                                  <span
-                                    className={cn(
-                                      'font-medium',
-                                      score > 0
-                                        ? 'text-green-600'
-                                        : score === -100
-                                          ? 'text-red-600'
-                                          : 'text-amber-600',
-                                    )}
-                                  >
-                                    {score > 0
-                                      ? `+${score}`
+                          <div className="space-y-1 pt-2">
+                            <p className="text-xs font-semibold text-gray-400">
+                              Status Adjustments
+                            </p>
+                            {Object.entries(
+                              scoringResult.breakdown.adjustments,
+                            ).map(([label, score]) => (
+                              <div
+                                key={label}
+                                className="flex justify-between text-xs"
+                              >
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  {label}
+                                </span>
+                                <span
+                                  className={cn(
+                                    'font-medium',
+                                    score > 0
+                                      ? 'text-green-600'
                                       : score === -100
-                                        ? 'Reset'
-                                        : score}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                                        ? 'text-red-600'
+                                        : 'text-amber-600',
+                                  )}
+                                >
+                                  {score > 0
+                                    ? `+${score}`
+                                    : score === -100
+                                      ? 'Reset'
+                                      : score}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
