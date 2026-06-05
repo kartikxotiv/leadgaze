@@ -93,6 +93,7 @@ export const getServiceCloudResourceController = catchAsync(
       url.searchParams.get('workspace_id');
     const id = url.searchParams.get('id');
     const search = url.searchParams.get('search');
+    const assignedToMe = url.searchParams.get('assignedToMe') === 'true';
 
     if (!workspaceId)
       return NextResponse.json(
@@ -130,11 +131,106 @@ export const getServiceCloudResourceController = catchAsync(
       );
     }
 
+    if (resource === 'tickets' && assignedToMe) {
+      const { data: assignedTickets, error: assignedTicketsError } = await (
+        supabase as any
+      )
+        .schema('service_cloud')
+        .from('ticket_assignees')
+        .select('ticket_id')
+        .eq('workspace_id', workspaceId)
+        .eq('account_id', user.id);
+
+      if (assignedTicketsError) throw assignedTicketsError;
+
+      const assignedTicketIds = Array.from(
+        new Set(
+          (assignedTickets ?? [])
+            .map((assignment: any) => assignment.ticket_id)
+            .filter(Boolean),
+        ),
+      );
+
+      if (assignedTicketIds.length === 0) {
+        return successDataResponse(`${resource} retrieved successfully`, []);
+      }
+
+      query = query.in('id', assignedTicketIds);
+    }
+
     const { data, error: fetchError } = await query.order(config.orderBy, {
       ascending: resource === 'ticket-priorities',
     });
 
     if (fetchError) throw fetchError;
+
+    if (resource === 'tickets') {
+      const tickets = data ?? [];
+      const ticketIds = tickets
+        .map((ticket: any) => ticket.id)
+        .filter(
+          (ticketId: unknown): ticketId is string =>
+            typeof ticketId === 'string',
+        );
+
+      if (ticketIds.length === 0) {
+        return successDataResponse(`${resource} retrieved successfully`, []);
+      }
+
+      const { data: assignees, error: assigneesError } = await (supabase as any)
+        .schema('service_cloud')
+        .from('ticket_assignees')
+        .select('*')
+        .eq('workspace_id', workspaceId)
+        .in('ticket_id', ticketIds)
+        .order('is_primary', { ascending: false })
+        .order('created_at', { ascending: true });
+
+      if (assigneesError) throw assigneesError;
+
+      const accountIds = Array.from<string>(
+        new Set(
+          (assignees ?? [])
+            .map((assignee: any) => assignee.account_id)
+            .filter(
+              (accountId: unknown): accountId is string =>
+                typeof accountId === 'string',
+            ),
+        ),
+      );
+      const { data: accounts, error: accountsError } =
+        accountIds.length > 0
+          ? await supabase
+              .from('accounts')
+              .select('id,name,email,picture_url')
+              .in('id', accountIds)
+          : { data: [], error: null };
+
+      if (accountsError) throw accountsError;
+
+      const accountById = new Map(
+        (accounts ?? []).map((account: any) => [account.id, account]),
+      );
+      const assigneesByTicketId = new Map<string, any[]>();
+
+      (assignees ?? []).forEach((assignee: any) => {
+        const ticketAssignees =
+          assigneesByTicketId.get(assignee.ticket_id) ?? [];
+        ticketAssignees.push({
+          ...assignee,
+          account: accountById.get(assignee.account_id) ?? null,
+        });
+        assigneesByTicketId.set(assignee.ticket_id, ticketAssignees);
+      });
+
+      return successDataResponse(
+        `${resource} retrieved successfully`,
+        tickets.map((ticket: any) => ({
+          ...ticket,
+          assignees: assigneesByTicketId.get(ticket.id) ?? [],
+        })),
+      );
+    }
 
     return successDataResponse(
       `${resource} retrieved successfully`,
