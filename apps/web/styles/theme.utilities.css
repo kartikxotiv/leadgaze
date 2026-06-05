@@ -43,10 +43,32 @@
   border: 0.6px solid #B0B0B0;
   border-radius: 0.7px !important;  
 }
+@utility no-raidus {
+    border-radius: 0x !important;  
+}
 
 @utility bar-bg {
   background-color: #E6E6E6;
 }
 @utility card-seperator-border {
   border-color: #B0B0B0;
+}
+
+@utility table-row-border {
+  border-bottom-width: 0.6px;
+  border-bottom-style: solid;
+  border-bottom-color: #B0B0B0;
+}
+
+@utility table-header-border{
+  border-left-width: 0.6px;
+  border-style: solid;
+  border-color: #B0B0B0;
+}
+
+@utility sticky-right-header{
+  position: sticky;
+  right: 0;
+  text-align: right;
+  background-color: #F5F6F8;
 }

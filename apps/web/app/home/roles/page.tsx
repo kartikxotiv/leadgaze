@@ -31,6 +31,8 @@ import {
 } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
+import { Skeleton } from '@kit/ui/skeleton';
+
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
@@ -304,8 +306,35 @@ export default function RolesPage() {
               </CardHeader>
               <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                 {isLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+                  <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
+                    <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
+                      <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                        <TableRow>
+                          {isVisible('role_name') && <TableHead>Role Name</TableHead>}
+                          {isVisible('role_key') && <TableHead>Role Key</TableHead>}
+                          {isVisible('hierarchy') && <TableHead>Access Level</TableHead>}
+                          {isVisible('type') && <TableHead>Type</TableHead>}
+                          {isVisible('status') && <TableHead>Status</TableHead>}
+                          <TableHead className="sticky right-0 px-4 text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {[...Array(8)].map((_, i) => (
+                          <TableRow key={i}>
+                            <TableCell
+                              className="h-[52px] px-4 py-2"
+                              colSpan={
+                                visibility
+                                  ? Object.values(visibility).filter((v) => v !== false).length + 1
+                                  : 6
+                              }
+                            >
+                              <Skeleton className="h-7 w-full" />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </table>
                   </div>
                 ) : error ? (
                   <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border p-4">

@@ -65,6 +65,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@kit/ui/select';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   TableBody,
   TableCell,
@@ -351,11 +352,7 @@ export default function DocumentPage() {
   };
 
   if (!workspace) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    );
+    return null;
   }
 
   return (

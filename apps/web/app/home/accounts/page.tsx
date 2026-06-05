@@ -39,6 +39,8 @@ import {
 } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
+import { Skeleton } from '@kit/ui/skeleton';
+
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
@@ -47,6 +49,55 @@ import { Account, getAccountsService } from '~/services/accounts.service';
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { CreateAccountDialog } from './components/create-account-dialog';
+
+function AccountsPageSkeleton() {
+  return (
+    <div className="flex h-[100dvh] flex-col overflow-hidden">
+      <div className="bg-sidebar flex shrink-0 flex-col gap-2">
+        <div className="bg-sidebar flex items-center justify-between px-6 py-4">
+          <div className="space-y-1">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-4 w-52" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+          </div>
+        </div>
+      </div>
+      <div className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden px-4 pt-6 pb-0">
+        <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
+          <CardContent className="flex min-h-0 flex-1 flex-col p-0">
+            <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
+              <Table className="w-max min-w-full border-separate border-spacing-0 text-sm">
+                <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                  <TableRow>
+                    <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
+                    <TableHead>Account Name</TableHead>
+                    <TableHead>Industry</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Owner</TableHead>
+                    <TableHead className="sticky right-0 text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[...Array(12)].map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="h-[52px] px-4 py-2" colSpan={6}>
+                        <Skeleton className="h-7 w-full" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
 
 export default function AccountsPage() {
   const router = useRouter();
@@ -134,11 +185,7 @@ export default function AccountsPage() {
   const paginatedAccounts = accounts; // Data is already paginated from server
 
   if (!workspace) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <p className="text-gray-500">Loading workspace...</p>
-      </div>
-    );
+    return <AccountsPageSkeleton />;
   }
 
   if (error) {
@@ -308,24 +355,24 @@ export default function AccountsPage() {
                     </TableHeader>
                     <TableBody>
                       {isLoading ? (
-                        <TableRow className="m-5">
-                          <TableCell
-                            colSpan={
-                              visibility
-                                ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
-                                : 6
-                            }
-                            className="h-24 text-center"
-                          >
-                            <div className="flex items-center justify-center">
-                              <div className="text-gray-500">
-                                Loading accounts...
-                              </div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                        <>
+                          {[...Array(12)].map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell
+                                className="h-[52px] px-4 py-2"
+                                colSpan={
+                                  visibility
+                                    ? Object.values(visibility).filter(
+                                      (v) => v !== false,
+                                    ).length + 1
+                                    : 6
+                                }
+                              >
+                                <Skeleton className="h-7 w-full" />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </>
                       ) : paginatedAccounts.length === 0 ? (
                         <TableRow>
                           <TableCell
