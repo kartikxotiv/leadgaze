@@ -21,9 +21,12 @@ import {
 } from '@kit/ui/table';
 import { TabsContent } from '@kit/ui/tabs';
 
-import type { PayrollDashboardResponse } from '~/types/payroll.type';
-
+import type { PayrollDashboardResponse } from '../../types/payroll.type';
 import { PayrollStatusBadge } from '../page.components';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
