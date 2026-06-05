@@ -23,4 +23,5 @@ export type CoreEmailPageProps = {
   googleReturnUrl?: string;
   embedded?: boolean;
   renderEmailActions?: (email: any) => ReactNode;
+  templateContext?: Record<string, unknown>;
 };
