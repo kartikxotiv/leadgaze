@@ -8,7 +8,8 @@ import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import { cn } from '@kit/ui/utils';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
@@ -98,48 +99,43 @@ export function EntityEmails({
 
   if (!mounted) {
     return (
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <div className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-gray-400" />
-            <CardTitle className="text-lg">Emails</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
+      <CardWidgetContainer
+        title="Emails"
+        hideHeaderBorder={true}
+        icon={<Mail className="text-leadgaze-dark h-5 w-5" />}
+      >
+        <div className="px-6 py-3">
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </CardWidgetContainer>
     );
   }
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <div className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-gray-400" />
-            <CardTitle className="text-lg">Emails</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
+      <CardWidgetContainer
+        title="Emails"
+        hideHeaderBorder={true}
+        icon={<Mail className="text-leadgaze-dark h-5 w-5" />}
+      >
+        <div className="px-6 py-3">
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </CardWidgetContainer>
     );
   }
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <div className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-gray-400" />
-            <CardTitle className="text-lg">Emails</CardTitle>
-          </div>
+      <CardWidgetContainer
+        title="Emails"
+        hideHeaderBorder={true}
+        icon={<Mail className="text-leadgaze-dark h-5 w-5" />}
+        icon2={
           <Button
             size="sm"
             variant="outline"
@@ -154,8 +150,9 @@ export function EntityEmails({
             <Mail className="h-4 w-4" />
             Send Email
           </Button>
-        </CardHeader>
-        <CardContent>
+        }
+      >
+        <div className="px-6 py-3">
           {uniqueRecipientOptions.length > 0 && (
             <div className="mb-4 flex flex-wrap gap-2">
               {uniqueRecipientOptions.map((recipient) => (
@@ -188,141 +185,150 @@ export function EntityEmails({
               <p className="text-sm text-gray-500">No email activity yet</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <CardWidgetList>
               {combinedItems.map((item: any) => (
-                <div
+                <CardWidgetListItem
                   key={item.id}
                   className={cn(
-                    'group relative rounded-lg border border-gray-100 bg-gray-50 p-3 transition-all dark:border-gray-800 dark:bg-slate-900',
+                    'items-start',
                     item.status !== 'sent'
-                      ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800'
+                      ? 'cursor-pointer'
                       : 'cursor-default',
                   )}
-                  onClick={() => {
-                    if (
-                      item.direction !== 'inbound' &&
-                      item.status !== 'sent'
-                    ) {
-                      if (onOpenDraft) {
-                        onOpenDraft(item);
-                        return;
-                      }
-
-                      setSelectedDraft(item);
-                      setIsComposeOpen(true);
-                      return;
-                    }
-
-                    setSelectedEmail(item);
-                    setIsDetailOpen(true);
-                  }}
-                >
-                  <div className="flex items-start gap-3">
+                  content={
                     <div
-                      className={cn(
-                        'mt-0.5 rounded-full p-2',
-                        item.direction === 'inbound'
-                          ? 'bg-purple-100 text-purple-600'
-                          : item.status === 'sent'
-                            ? 'bg-green-100 text-green-600'
-                            : item.status === 'scheduled'
-                              ? 'bg-blue-100 text-blue-600'
-                              : 'bg-amber-100 text-amber-600',
-                      )}
+                      className="flex items-start gap-3 w-full"
+                      onClick={() => {
+                        if (
+                          item.direction !== 'inbound' &&
+                          item.status !== 'sent'
+                        ) {
+                          if (onOpenDraft) {
+                            onOpenDraft(item);
+                            return;
+                          }
+
+                          setSelectedDraft(item);
+                          setIsComposeOpen(true);
+                          return;
+                        }
+
+                        setSelectedEmail(item);
+                        setIsDetailOpen(true);
+                      }}
                     >
-                      {item.direction === 'inbound' ? (
-                        <Mail className="h-4 w-4" />
-                      ) : item.status === 'sent' ? (
-                        <Mail className="h-4 w-4" />
-                      ) : item.status === 'scheduled' ? (
-                        <Clock className="h-4 w-4" />
-                      ) : (
-                        <FileText className="h-4 w-4" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {item.subject || '(No Subject)'}
-                        </p>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            'h-4 px-1 text-[10px]',
-                            item.direction === 'inbound'
-                              ? 'border-purple-200 bg-purple-50 text-purple-600'
-                              : item.status === 'sent'
-                                ? 'border-green-200 bg-green-50 text-green-600'
-                                : item.status === 'scheduled'
-                                  ? 'border-blue-200 bg-blue-50 text-blue-600'
-                                  : 'border-amber-200 bg-amber-50 text-amber-600',
-                          )}
-                        >
-                          {item.direction === 'inbound'
-                            ? 'Inbound'
-                            : item.status.charAt(0).toUpperCase() +
-                              item.status.slice(1)}
-                        </Badge>
-                        {item.direction !== 'inbound' &&
-                          item.status !== 'sent' && (
-                            <span className="text-[10px] text-blue-500 italic opacity-0 transition-opacity group-hover:opacity-100">
-                              • Click to Edit
-                            </span>
-                          )}
-                      </div>
-                      <p
-                        className="mt-1 line-clamp-2 text-xs text-gray-600 dark:text-gray-400"
-                        dangerouslySetInnerHTML={{ __html: item.html_body }}
-                      />
-                      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-gray-400">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>
-                            {new Date(
-                              item.received_at ||
-                                item.sent_at ||
-                                item.updated_at ||
-                                item.created_at ||
-                                new Date(),
-                            ).toLocaleString()}
-                          </span>
-                        </div>
+                      <div
+                        className={cn(
+                          'mt-0.5 rounded-full p-2',
+                          item.direction === 'inbound'
+                            ? 'bg-purple-100 text-purple-600'
+                            : item.status === 'sent'
+                              ? 'bg-green-100 text-green-600'
+                              : item.status === 'scheduled'
+                                ? 'bg-blue-100 text-blue-600'
+                                : 'bg-amber-100 text-amber-600',
+                        )}
+                      >
                         {item.direction === 'inbound' ? (
-                          <span className="max-w-[150px] truncate">
-                            From: {item.from_email}
-                          </span>
+                          <Mail className="h-4 w-4" />
+                        ) : item.status === 'sent' ? (
+                          <Mail className="h-4 w-4" />
+                        ) : item.status === 'scheduled' ? (
+                          <Clock className="h-4 w-4" />
                         ) : (
-                          <span className="max-w-[150px] truncate">
-                            To: {item.to_emails}
-                          </span>
-                        )}
-                        {item.cc_emails && (
-                          <span className="max-w-[100px] truncate">
-                            CC: {item.cc_emails}
-                          </span>
-                        )}
-                        {item.status === 'scheduled' && item.scheduled_at && (
-                          <span className="font-semibold text-blue-600">
-                            Due: {new Date(item.scheduled_at).toLocaleString()}
-                          </span>
+                          <FileText className="h-4 w-4" />
                         )}
                       </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {item.subject || '(No Subject)'}
+                          </p>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              'h-4 px-1 text-[10px]',
+                              item.direction === 'inbound'
+                                ? 'border-purple-200 bg-purple-50 text-purple-600'
+                                : item.status === 'sent'
+                                  ? 'border-green-200 bg-green-50 text-green-600'
+                                  : item.status === 'scheduled'
+                                    ? 'border-blue-200 bg-blue-50 text-blue-600'
+                                    : 'border-amber-200 bg-amber-50 text-amber-600',
+                            )}
+                          >
+                            {item.direction === 'inbound'
+                              ? 'Inbound'
+                              : item.status.charAt(0).toUpperCase() +
+                                item.status.slice(1)}
+                          </Badge>
+                          {item.direction !== 'inbound' &&
+                            item.status !== 'sent' && (
+                              <span className="text-[10px] text-blue-500 italic opacity-0 transition-opacity group-hover:opacity-100">
+                                • Click to Edit
+                              </span>
+                            )}
+                        </div>
+                        <p
+                          className="mt-1 line-clamp-2 text-xs text-gray-600 dark:text-gray-400"
+                          dangerouslySetInnerHTML={{ __html: item.html_body }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                  {item.status !== 'sent' && item.direction !== 'inbound' && (
-                    <button
-                      onClick={(e) => handleDelete(e, item.id)}
-                      className="absolute top-3 right-3 p-1 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
+                  }
+                  metadata={
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-gray-400">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          {new Date(
+                            item.received_at ||
+                              item.sent_at ||
+                              item.updated_at ||
+                              item.created_at ||
+                              new Date(),
+                          ).toLocaleString()}
+                        </span>
+                      </div>
+                      {item.direction === 'inbound' ? (
+                        <span className="max-w-[150px] truncate">
+                          From: {item.from_email}
+                        </span>
+                      ) : (
+                        <span className="max-w-[150px] truncate">
+                          To: {item.to_emails}
+                        </span>
+                      )}
+                      {item.cc_emails && (
+                        <span className="max-w-[100px] truncate">
+                          CC: {item.cc_emails}
+                        </span>
+                      )}
+                      {item.status === 'scheduled' && item.scheduled_at && (
+                        <span className="font-semibold text-blue-600">
+                          Due: {new Date(item.scheduled_at).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  }
+                  actions={
+                    item.status !== 'sent' && item.direction !== 'inbound' && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={(e) => handleDelete(e, item.id)}
+                        className="h-7 w-7 text-gray-400 hover:text-red-500"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )
+                  }
+                />
               ))}
-            </div>
+            </CardWidgetList>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </CardWidgetContainer>
 
       <EmailDetailDialog
         open={isDetailOpen}
