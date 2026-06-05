@@ -28,27 +28,43 @@ export interface CoreEmailAccount {
   can_view_inbox: boolean;
 }
 
-export const getCoreEmailAccountsService = asyncHandlerClient(async (workspaceId: string) => {
-  const response = await CoreApiClient.get(`/email-accounts?workspace_id=${workspaceId}`);
-  return (response.data || []) as CoreEmailAccount[];
-});
+export const getCoreEmailAccountsService = asyncHandlerClient(
+  async (workspaceId: string) => {
+    const response = await CoreApiClient.get(
+      `/email-accounts?workspace_id=${workspaceId}`,
+    );
+    return (response.data || []) as CoreEmailAccount[];
+  },
+);
 
-export const createCoreSmtpAccountService = asyncHandlerClient(async (workspaceId: string, payload: Record<string, unknown>) => {
-  const response = await CoreApiClient.post(`/email-accounts?workspace_id=${workspaceId}`, payload);
-  return response.data?.data ?? response.data;
-});
+export const createCoreSmtpAccountService = asyncHandlerClient(
+  async (workspaceId: string, payload: Record<string, unknown>) => {
+    const response = await CoreApiClient.post(
+      `/email-accounts?workspace_id=${workspaceId}`,
+      payload,
+    );
+    return response.data?.data ?? response.data;
+  },
+);
 
-export const updateCoreEmailAccountService = asyncHandlerClient(async (payload: {
-  id: number;
-  workspace_id: string;
-  is_active?: boolean;
-  access_scope?: CoreEmailAccountAccessScope;
-}) => {
-  const response = await CoreApiClient.patch('/email-accounts', payload);
-  return response.data?.data ?? response.data;
-});
+export const updateCoreEmailAccountService = asyncHandlerClient(
+  async (payload: {
+    id: number;
+    workspace_id: string;
+    is_active?: boolean;
+    is_sync_enabled?: boolean;
+    access_scope?: CoreEmailAccountAccessScope;
+  }) => {
+    const response = await CoreApiClient.patch('/email-accounts', payload);
+    return response.data?.data ?? response.data;
+  },
+);
 
-export const deleteCoreEmailAccountService = asyncHandlerClient(async (id: number | string, workspaceId: string) => {
-  const response = await CoreApiClient.delete(`/email-accounts?id=${id}&workspace_id=${workspaceId}`);
-  return response.data?.data ?? response.data;
-});
+export const deleteCoreEmailAccountService = asyncHandlerClient(
+  async (id: number | string, workspaceId: string) => {
+    const response = await CoreApiClient.delete(
+      `/email-accounts?id=${id}&workspace_id=${workspaceId}`,
+    );
+    return response.data?.data ?? response.data;
+  },
+);

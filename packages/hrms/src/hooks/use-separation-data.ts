@@ -3,8 +3,6 @@ import { useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import ApiClient from '~/utils/axios-client';
-
 import type {
   ApiResponse,
   AssetClearanceOption,
@@ -15,7 +13,8 @@ import type {
   FnfSettlementOption,
   PayrollRunOption,
   ResignationOption,
-} from '../types';
+} from '../types/separation.type';
+import ApiClient from '../utils/axios-client';
 
 type UseSeparationDataOptions = {
   canLoadAssetClearances: boolean;
@@ -80,28 +79,34 @@ async function getSeparationData(
       options.canLoadEmployees,
     ),
     getApiData<EmployeeOption>(
-      '/employees?excludeRole=admin&status=notice',
+      '/employees?excludeRole=admin&status=notice_period',
       options.canLoadEmployees,
     ),
-    getApiData<ResignationOption>('/resignations'),
+    getApiData<ResignationOption>('/separation/resignations'),
     getApiData<ExitChecklistOption>(
-      '/exit-checklists',
+      '/separation/exit-checklists',
       options.canLoadChecklists,
     ),
     getApiData<ExitChecklistItemOption>(
-      '/exit-checklist-items',
+      '/separation/exit-checklist-items',
       options.canLoadChecklists,
     ),
     getApiData<AssetClearanceOption>(
-      '/asset-clearances',
+      '/separation/asset-clearances',
       options.canLoadAssetClearances,
     ),
     getApiData<FnfSettlementOption>(
-      '/fnf-settlements',
+      '/separation/fnf-settlements',
       options.canLoadFnfSettlements,
     ),
-    getApiData<PayrollRunOption>('/payroll/runs', options.canLoadPayrollRuns),
-    getApiData<ExitLetterOption>('/exit-letters', options.canLoadExitLetters),
+    getApiData<PayrollRunOption>(
+      '/separation/payroll-runs',
+      options.canLoadPayrollRuns,
+    ),
+    getApiData<ExitLetterOption>(
+      '/separation/exit-letters',
+      options.canLoadExitLetters,
+    ),
   ]);
 
   return {

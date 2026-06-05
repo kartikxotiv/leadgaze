@@ -7,6 +7,8 @@ import {
   Building2,
   CalendarCheck,
   ClipboardList,
+  LifeBuoy,
+  LogOut,
   UserPlus,
   Users,
   WalletCards,
@@ -50,6 +52,16 @@ const hrmsRoutes = {
       label: 'Recruitment',
       path: '/home/hrms/recruitment',
       Icon: <UserPlus className="h-4 w-4" />,
+    },
+    {
+      label: 'Separation',
+      path: '/home/hrms/separation',
+      Icon: <LogOut className="h-4 w-4" />,
+    },
+    {
+      label: 'Support System',
+      path: '/home/hrms/support-system',
+      Icon: <LifeBuoy className="h-4 w-4" />,
     },
     {
       label: 'Payroll',

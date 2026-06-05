@@ -1,10 +1,12 @@
+import { google } from 'googleapis';
 import { Buffer } from 'node:buffer';
 
-import { google } from 'googleapis';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import { findCoreEmailEntityByEmail } from './entity-linking';
 import { saveSyncedCoreEmails } from './email-sync-store';
+import { findCoreEmailEntityByEmail } from './entity-linking';
+
+const DEFAULT_GMAIL_MESSAGE_BATCH_SIZE = 10;
 
 export interface CoreGmailSyncOptions {
   id: number;
@@ -17,7 +19,10 @@ export interface CoreGmailSyncOptions {
 }
 
 function headerValue(headers: any[], name: string) {
-  return headers.find((header) => header.name?.toLowerCase() === name.toLowerCase())?.value ?? '';
+  return (
+    headers.find((header) => header.name?.toLowerCase() === name.toLowerCase())
+      ?.value ?? ''
+  );
 }
 
 function extractEmail(header: string) {
@@ -31,7 +36,10 @@ function extractEmail(header: string) {
 function decodeGmailBody(data?: string) {
   if (!data) return '';
 
-  return Buffer.from(data.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf-8');
+  return Buffer.from(
+    data.replace(/-/g, '+').replace(/_/g, '/'),
+    'base64',
+  ).toString('utf-8');
 }
 
 function extractBody(payload: any): { html?: string; text?: string } {
@@ -55,6 +63,26 @@ function extractBody(payload: any): { html?: string; text?: string } {
   return result;
 }
 
+function positiveInteger(value: string | undefined, fallback: number) {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+}
+
+function chunkArray<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
+}
+
+function isPreparedPayload<T>(payload: T | null): payload is T {
+  return payload !== null;
+}
+
 export class CoreGmailSyncService {
   private oauth2Client;
   private gmail;
@@ -68,7 +96,9 @@ export class CoreGmailSyncService {
     this.oauth2Client.setCredentials({
       access_token: options.access_token ?? undefined,
       refresh_token: options.refresh_token,
-      expiry_date: options.expires_at ? new Date(options.expires_at).getTime() : undefined,
+      expiry_date: options.expires_at
+        ? new Date(options.expires_at).getTime()
+        : undefined,
     });
 
     this.gmail = google.gmail({ version: 'v1', auth: this.oauth2Client });
@@ -97,40 +127,19 @@ export class CoreGmailSyncService {
       accountId: this.options.id,
       email: this.options.email,
       count: messages.length,
-      ids: messages.map((message) => message.id).filter(Boolean).slice(0, 10),
+      ids: messages
+        .map((message) => message.id)
+        .filter(Boolean)
+        .slice(0, 10),
     });
 
-    const payloads = [];
-
-    for (const message of messages) {
-      if (!message.id) continue;
-
-      const details = await this.getMessage(message.id);
-      const payload = await this.toCoreEmailPayload(details);
-      if (payload) {
-        console.log('[CoreEmailSync:Gmail] Prepared message', {
-          accountId: this.options.id,
-          email: this.options.email,
-          providerMessageId: payload.provider_message_id,
-          direction: payload.direction,
-          from: payload.from_email,
-          to: payload.to_emails,
-          subject: payload.subject,
-          receivedAt: payload.received_at,
-          sentAt: payload.sent_at,
-        });
-        payloads.push(payload);
-      } else {
-        console.warn('[CoreEmailSync:Gmail] Skipped message without usable payload', {
-          accountId: this.options.id,
-          email: this.options.email,
-          providerMessageId: message.id,
-        });
-      }
-    }
+    const payloads = await this.prepareMessages(messages);
 
     const savedCount = await saveSyncedCoreEmails(payloads);
-    await this.updateSyncState(null, messages.length > 0 || payloads.length > 0);
+    await this.updateSyncState(
+      null,
+      messages.length > 0 || payloads.length > 0,
+    );
 
     console.log('[CoreEmailSync:Gmail] Sync complete', {
       accountId: this.options.id,
@@ -147,7 +156,9 @@ export class CoreGmailSyncService {
     let query = '(in:inbox OR in:sent)';
 
     if (this.options.last_synced_at) {
-      const timestamp = Math.floor(new Date(this.options.last_synced_at).getTime() / 1000);
+      const timestamp = Math.floor(
+        new Date(this.options.last_synced_at).getTime() / 1000,
+      );
       query += ` after:${timestamp}`;
     }
 
@@ -165,6 +176,56 @@ export class CoreGmailSyncService {
     });
 
     return response.data.messages ?? [];
+  }
+
+  private async prepareMessages(messages: any[]) {
+    const messageBatchSize = positiveInteger(
+      process.env.CORE_EMAIL_GMAIL_MESSAGE_BATCH_SIZE,
+      DEFAULT_GMAIL_MESSAGE_BATCH_SIZE,
+    );
+    const payloads = [];
+
+    for (const batch of chunkArray(messages, messageBatchSize)) {
+      const batchPayloads = await Promise.all(
+        batch.map(async (message) => {
+          if (!message.id) return null;
+
+          const details = await this.getMessage(message.id);
+          const payload = await this.toCoreEmailPayload(details);
+
+          if (payload) {
+            console.log('[CoreEmailSync:Gmail] Prepared message', {
+              accountId: this.options.id,
+              email: this.options.email,
+              providerMessageId: payload.provider_message_id,
+              direction: payload.direction,
+              from: payload.from_email,
+              to: payload.to_emails,
+              subject: payload.subject,
+              receivedAt: payload.received_at,
+              sentAt: payload.sent_at,
+            });
+
+            return payload;
+          }
+
+          console.warn(
+            '[CoreEmailSync:Gmail] Skipped message without usable payload',
+            {
+              accountId: this.options.id,
+              email: this.options.email,
+              providerMessageId: message.id,
+            },
+          );
+
+          return null;
+        }),
+      );
+
+      payloads.push(...batchPayloads.filter(isPreparedPayload));
+    }
+
+    return payloads;
   }
 
   private async getMessage(id: string) {
@@ -199,7 +260,8 @@ export class CoreGmailSyncService {
       ? new Date(headerValue(headers, 'Date')).toISOString()
       : new Date(Number(gmailMessage.internalDate ?? Date.now())).toISOString();
     const body = extractBody(payload);
-    const direction = fromEmail === this.options.email.toLowerCase() ? 'outbound' : 'inbound';
+    const direction =
+      fromEmail === this.options.email.toLowerCase() ? 'outbound' : 'inbound';
     const targetEmail = direction === 'inbound' ? fromEmail : toEmails[0];
     const entity = targetEmail
       ? await findCoreEmailEntityByEmail(this.options.workspace_id, targetEmail)
@@ -225,12 +287,18 @@ export class CoreGmailSyncService {
       html_body: body.html || null,
       text_body: body.text || null,
       snippet: gmailMessage.snippet ?? body.text?.slice(0, 200) ?? '',
-      raw_headers: Object.fromEntries(headers.map((header: any) => [header.name, header.value])),
+      raw_headers: Object.fromEntries(
+        headers.map((header: any) => [header.name, header.value]),
+      ),
       status: direction === 'inbound' ? 'received' : 'sent',
       sent_at: direction === 'outbound' ? receivedAt : null,
       received_at: direction === 'inbound' ? receivedAt : null,
       relation: entity
-        ? { entity_type: entity.type, entity_id: entity.id, relation_type: 'participant' }
+        ? {
+            entity_type: entity.type,
+            entity_id: entity.id,
+            relation_type: 'participant',
+          }
         : null,
     };
   }
@@ -246,7 +314,10 @@ export class CoreGmailSyncService {
       .eq('workspace_id', this.options.workspace_id);
   }
 
-  private async updateSyncState(error: string | null, shouldAdvanceLastSyncedAt = true) {
+  private async updateSyncState(
+    error: string | null,
+    shouldAdvanceLastSyncedAt = true,
+  ) {
     const supabase = getSupabaseServerAdminClient();
     const updatePayload: Record<string, unknown> = { last_error: error };
 

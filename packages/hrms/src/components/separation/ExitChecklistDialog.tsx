@@ -30,13 +30,13 @@ import {
   EmployeeOption,
   ExitChecklistItemOption,
   ExitChecklistOption,
-} from '../types';
+} from '../../types/separation.type';
 import {
   NONE,
   toDateInput,
   toDateTimeLocalInput,
   toIsoDateTime,
-} from '../utils/separation-utils';
+} from '../../utils/separation-utils';
 
 interface ExitChecklistDialogProps {
   isOpen: boolean;
@@ -113,8 +113,8 @@ export function ExitChecklistDialog({
     setIsSubmitting(true);
 
     const path = editingChecklist
-      ? `/api/exit-checklists/${editingChecklist.id}`
-      : '/api/exit-checklists';
+      ? `/api/hrms/separation/exit-checklists/${editingChecklist.id}`
+      : '/api/hrms/separation/exit-checklists';
 
     const payload = {
       employee_id: form.employee_id,
