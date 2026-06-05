@@ -28,8 +28,12 @@ import { Switch } from '@kit/ui/switch';
 import {
   createSalaryComponentService,
   updateSalaryComponentService,
-} from '~/services/payroll.service';
-import { handleApiResponse } from '~/utils/api-response-handler';
+} from '../../server/services/payroll.service';
+import { handleApiResponse } from '../../utils/api-response-handler';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

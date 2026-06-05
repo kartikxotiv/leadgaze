@@ -19,7 +19,11 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
-import { listPayslipComponentsService } from '~/services/payroll.service';
+import { listPayslipComponentsService } from '../../server/services/payroll.service';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

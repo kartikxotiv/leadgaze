@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { showToast } from '~/components/global/ToastAlert';
+import { showToast } from '../components/global/ToastAlert';
 import {
   approvePayrollRunService,
   createPayrollRunService,
@@ -15,8 +15,12 @@ import {
   deleteSalaryStructureService,
   getPayrollDashboardService,
   listSalaryComponentsService,
-} from '~/services/payroll.service';
-import { handleApiResponse } from '~/utils/api-response-handler';
+} from '../server/services/payroll.service';
+import { handleApiResponse } from '../utils/api-response-handler';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
