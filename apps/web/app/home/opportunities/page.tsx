@@ -36,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@kit/ui/select';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   TableBody,
   TableCell,
@@ -235,11 +236,7 @@ export default function OpportunitiesPage() {
   const paginatedOpportunities = filteredOpportunities;
 
   if (!workspace) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <p className="text-gray-500">Loading workspace...</p>
-      </div>
-    );
+    return null;
   }
 
   if (error) {
@@ -722,24 +719,24 @@ export default function OpportunitiesPage() {
                     </TableHeader>
                     <TableBody>
                       {isLoading ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={
-                              visibility
-                                ? Object.values(visibility).filter(
-                                    (v) => v !== false,
-                                  ).length + 1
-                                : 7
-                            }
-                            className="h-24 text-center"
-                          >
-                            <div className="flex items-center justify-center">
-                              <div className="text-gray-500">
-                                Loading opportunities...
-                              </div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                        <>
+                          {[...Array(10)].map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell
+                                className="h-[52px] px-4 py-2"
+                                colSpan={
+                                  visibility
+                                    ? Object.values(visibility).filter(
+                                        (v) => v !== false,
+                                      ).length + 1
+                                    : 7
+                                }
+                              >
+                                <Skeleton className="h-7 w-full" />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </>
                       ) : paginatedOpportunities.length === 0 ? (
                         <TableRow>
                           <TableCell
