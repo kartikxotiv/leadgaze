@@ -63,6 +63,7 @@ import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import CreateLeadDialog from './components/create-lead-dialog';
 import {CustomTableContainer} from '@kit/ui/custom-table-container';
+import {TableStatusMetricTab} from '@kit/ui/table-status-metric-tab';
 
 export default function LeadsPage() {
   const router = useRouter();
@@ -526,20 +527,14 @@ export default function LeadsPage() {
 
           {/* Status Distribution Cards */}
           <div className="bg-sidebar -mt-1 w-full max-w-full min-w-0 overflow-x-auto px-6 pb-7">
-            <div className="-mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-              <Card
-                className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStatus === 'all' ? 'border-primary ring-primary ring-1' : ''}`}
-                onClick={() => setSelectedStatus('all')}
-              >
-                <CardContent className="p-3">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-muted-foreground text-[12px] font-medium tracking-wider uppercase">
-                      All Leads ({totalCount})
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-
+            <div className="-mb-3 flex flex-wrap items-center gap-2">
+              <TableStatusMetricTab
+                   key={0}
+                   id={0}
+                   statusName='All Leads'
+                   isSelected={selectedStatus === 'all'}
+                   count={totalCount}
+                   onClick={() => setSelectedStatus('all')} />
               {statuses.map((status: any) => {
                 const stats = leadsData.statusBreakdown[status.id] || {
                   count: 0,
@@ -554,25 +549,14 @@ export default function LeadsPage() {
                       : 0;
 
                 return (
-                  <Card
-                    key={status.id}
-                    className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${isSelected ? 'border-primary ring-primary ring-1' : ''}`}
-                    onClick={() => setSelectedStatus(status.id)}
-                  >
-                    <CardContent className="h-8 p-3">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="h-2 w-2 rounded-full"
-                            style={{ backgroundColor: status.color }}
-                          />
-                          <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
-                            {status.status_name} ({displayCount})
-                          </span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <TableStatusMetricTab
+                   key={status.id}
+                   id={status.id}
+                   color={status.color}
+                   statusName={status.status_name}
+                   count={displayCount}
+                   isSelected={isSelected}
+                   onClick={() => setSelectedStatus(status.id)} />                  
                 );
               })}
             </div>
