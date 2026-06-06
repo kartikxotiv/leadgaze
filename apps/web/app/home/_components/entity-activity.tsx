@@ -194,8 +194,8 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
           }}
         >
           <DialogTrigger asChild>
-            <Button size="sm" variant="ghost" className="gap-1 text-xs">
-              <Plus className="h-3 w-3" />
+            <Button size="sm" variant="ghost" className="gap-1 text-sm text-blue-500 hover:text-blue-600">
+              <Plus className="h-4 w-4" />
               Set
             </Button>
           </DialogTrigger>
@@ -256,27 +256,23 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
             {reminders.map((reminder: any) => (
               <CardWidgetListItem
                 key={reminder.id}
-                className="items-start"
-                content={
+                icon={
                   <div
-                    className="flex cursor-pointer items-center gap-3 w-full"
+                    className={`h-2 w-2 cursor-pointer rounded-full ${reminder.is_completed ? 'bg-green-500' : 'bg-amber-500'}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleCompletion(reminder);
+                    }}
+                  />
+                }
+                iconAlignTop={true}
+                title={
+                  <span
                     onClick={() => openEditDialog(reminder)}
+                    className={`text-sm font-medium ${reminder.is_completed ? 'text-gray-500 line-through' : 'text-gray-900 dark:text-gray-100'}`}
                   >
-                    <div
-                      className={`h-2 w-2 cursor-pointer rounded-full ${reminder.is_completed ? 'bg-green-500' : 'bg-amber-500'}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleCompletion(reminder);
-                      }}
-                    />
-                    <div>
-                      <p
-                        className={`text-sm font-medium ${reminder.is_completed ? 'text-gray-500 line-through' : 'text-gray-900 dark:text-gray-100'}`}
-                      >
-                        {reminder.title}
-                      </p>
-                    </div>
-                  </div>
+                    {reminder.title}
+                  </span>
                 }
                 metadata={
                   <div className="flex flex-wrap gap-2">
@@ -495,8 +491,8 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
             }}
           >
             <DialogTrigger asChild>
-              <Button size="sm" variant="ghost" className="gap-1 text-xs">
-                <Plus className="h-3 w-3" />
+              <Button size="sm" variant="ghost" className="gap-1 text-sm text-blue-500 hover:text-blue-600">
+                <Plus className="h-4 w-4" />
                 Schedule
               </Button>
             </DialogTrigger>
@@ -581,24 +577,23 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
             {meetings.map((meeting: any) => (
               <CardWidgetListItem
                 key={meeting.id}
-                className="items-start"
-                content={
-                  <div
-                    className="cursor-pointer w-full"
+                title={
+                  <span
+                    className="text-sm font-medium text-gray-900 dark:text-gray-100"
                     onClick={() => openEditDialog(meeting)}
                   >
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {meeting.title}
-                    </p>
-                    {meeting.location && (
-                      <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
-                        <MapPin className="h-3 w-3" />
-                        <span className="max-w-[200px] truncate">
-                          {meeting.location}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                    {meeting.title}
+                  </span>
+                }
+                content={
+                  meeting.location ? (
+                    <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
+                      <MapPin className="h-3 w-3" />
+                      <span className="max-w-[200px] truncate">
+                        {meeting.location}
+                      </span>
+                    </div>
+                  ) : undefined
                 }
                 metadata={
                   <div className="flex flex-wrap gap-2">
@@ -761,8 +756,8 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
           }}
         >
           <DialogTrigger asChild>
-            <Button size="sm" variant="outline" className="gap-2 text-xs">
-              <Plus className="h-3 w-3" />
+            <Button size="sm" variant="ghost" className="gap-1 text-sm text-blue-500 hover:text-blue-600">
+              <Plus className="h-4 w-4" />
               Upload
             </Button>
           </DialogTrigger>
@@ -821,21 +816,19 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
             {documents.map((doc: any) => (
               <CardWidgetListItem
                 key={doc.id}
-                className="items-start"
-                content={
-                  <div
-                    className="flex cursor-pointer items-center gap-3 w-full"
+                icon={
+                  <div className="rounded border bg-white p-2 dark:bg-slate-800">
+                    <File className="h-4 w-4 text-blue-500" />
+                  </div>
+                }
+                iconAlignTop={true}
+                title={
+                  <span
+                    className="text-sm font-medium text-gray-900 dark:text-gray-100"
                     onClick={() => openEditDialog(doc)}
                   >
-                    <div className="rounded border bg-white p-2 dark:bg-slate-800">
-                      <File className="h-4 w-4 text-blue-500" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {doc.name}
-                      </p>
-                    </div>
-                  </div>
+                    {doc.name}
+                  </span>
                 }
                 metadata={
                   <div className="flex flex-wrap gap-2">

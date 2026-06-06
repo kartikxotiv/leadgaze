@@ -54,14 +54,21 @@ export function CardWidgetListItem({
   return (
     <div
       className={cn(
-        'group relative flex min-h-[53.205px] items-center justify-between gap-3 rounded-[4px] border-[0.6px] border-[#B0B0B0] bg-white p-2 opacity-100 transition-colors hover:bg-gray-50/50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800/50',
+        'group relative flex items-start justify-between gap-3 rounded-[4px] border-[0.6px] border-[#B0B0B0] bg-white p-2 opacity-100 transition-colors hover:bg-gray-50/50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800/50',
         className,
       )}
       {...props}
     >
       <div className={cn("flex min-w-0 flex-1 gap-3", iconAlignTop ? "items-start" : "items-center")}>
-        {icon && <div className={cn("flex-shrink-0", iconAlignTop ? "pt-[2px]" : "")}>{icon}</div>}
-        <div className="flex min-h-[36px] min-w-0 flex-1 flex-col justify-center">
+        {icon && (
+          <div className={cn(
+            "flex-shrink-0",
+            iconAlignTop ? "pt-[5px]" : "flex items-center justify-center"
+          )}>
+            {icon}
+          </div>
+        )}
+        <div className="flex min-w-0 flex-1 flex-col">
           {(title || badge) && (
             <div className="flex items-center justify-between gap-2">
               {title && (
@@ -83,7 +90,7 @@ export function CardWidgetListItem({
             </div>
           )}
           {metadata && (
-            <div className="text-muted-foreground mt-1.5 flex items-center gap-1 text-xs">
+            <div className={cn("text-muted-foreground flex items-center gap-1 text-xs", content || subtitle ? "mt-1.5" : "")}>
               {metadata}
             </div>
           )}

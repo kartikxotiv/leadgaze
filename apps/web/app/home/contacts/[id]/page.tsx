@@ -81,7 +81,7 @@ function ContactDetailsSkeleton() {
           </div>
         </div>
       </div>
-      <PageBody>
+      <PageBody className="pb-6">
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
             <Card>
@@ -296,7 +296,7 @@ export default function ContactDetailsPage() {
         </div>
       </div>
 
-      <PageBody>
+      <PageBody className="pb-6">
         <DeleteEntityDialog
           isOpen={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
