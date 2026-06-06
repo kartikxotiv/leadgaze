@@ -459,45 +459,8 @@ export default function ContactDetailsPage() {
               </div>
             </CardWidgetContainer>
 
-            {/* Contact Assignees Section */}
-            {workspace?.id && (
-              <ContactAssignees contactId={id} workspaceId={workspace.id} />
-            )}
-
             {/* Notes Section */}
             <EntityNotes entityType="contact" entityId={id} />
-
-            {/* Activity Sections */}
-            <EntityCalls entityType="contact" entityId={id} />
-            <EntityEmails
-              entityId={id}
-              entityType="contact"
-              entityName={`${contact.first_name} ${contact.last_name || ''}`.trim()}
-              entityEmail={contact.email || undefined}
-              recipientOptions={[
-                ...(contact.email
-                  ? [
-                      {
-                        email: contact.email,
-                        name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
-                        label: 'Primary Email',
-                      },
-                    ]
-                  : []),
-                ...(contact.alt_email
-                  ? [
-                      {
-                        email: contact.alt_email,
-                        name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
-                        label: 'Alt Email',
-                      },
-                    ]
-                  : []),
-              ]}
-            />
-            <EntityReminders entityType="contact" entityId={id} />
-            <EntityMeetings entityType="contact" entityId={id} />
-            <EntityDocuments entityType="contact" entityId={id} />
 
             {/* Danger Zone */}
             {canAccess('contacts', 'delete') && (
@@ -607,6 +570,43 @@ export default function ContactDetailsPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Contact Assignees Section */}
+            {workspace?.id && (
+              <ContactAssignees contactId={id} workspaceId={workspace.id} />
+            )}
+
+            {/* Activity Sections */}
+            <EntityCalls entityType="contact" entityId={id} />
+            <EntityEmails
+              entityId={id}
+              entityType="contact"
+              entityName={`${contact.first_name} ${contact.last_name || ''}`.trim()}
+              entityEmail={contact.email || undefined}
+              recipientOptions={[
+                ...(contact.email
+                  ? [
+                      {
+                        email: contact.email,
+                        name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
+                        label: 'Primary Email',
+                      },
+                    ]
+                  : []),
+                ...(contact.alt_email
+                  ? [
+                      {
+                        email: contact.alt_email,
+                        name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
+                        label: 'Alt Email',
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+            <EntityReminders entityType="contact" entityId={id} />
+            <EntityMeetings entityType="contact" entityId={id} />
+            <EntityDocuments entityType="contact" entityId={id} />
           </div>
         </div>
       </PageBody>
