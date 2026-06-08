@@ -18,13 +18,14 @@ The font sizes are defined in the following files:
 --color-activity-6: #6A7282; /* Gray – e.g., Task Created */
 ```
 
-## Global Text Colors
+## Global Theme & Text Colors
 
 ```css
 --color-leadgaze-primary: #3953E7;
 --color-leadgaze-dark: #333333;
 --color-leadgaze-muted: #8A8A8A;
 --color-leadgaze-success: #00A63E;
+--color-leadgaze-border: #B0B0B0;
 ```
 
 ## Leadgaze Design System Tokens
@@ -47,8 +48,10 @@ The font sizes are defined in the following files:
 
 - **Custom Input for View** – `packages/ui/src/shadcn/custom-input-for-view.tsx`
 - **Custom Card Widget Container** – `packages/ui/src/shadcn/card-widget-container.tsx`
+- **Custom Card Widget List** – `packages/ui/src/shadcn/card-widget-list.tsx`
+- **List Toolbar** – `packages/ui/src/shadcn/list-toolbar.tsx`
+- **Detail Header** – `packages/ui/src/shadcn/detail-header.tsx`
 - **Custom Table Container (with pagination)** – `packages/ui/src/shadcn/custom-table-container.tsx`
-
 - **Custom Tab for Metrics** – `packages/ui/src/shadcn/table-status-metric-tab.tsx`
 
 
