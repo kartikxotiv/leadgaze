@@ -1,33 +1,51 @@
 import * as React from 'react';
 
-interface CardWidgetContainerProps extends React.HTMLAttributes<HTMLDivElement> {
+import { cn } from '../lib/utils';
+
+interface CardWidgetContainerProps
+  extends React.HTMLAttributes<HTMLDivElement> {
   title: string;
   icon?: React.ReactNode;
   icon2?: React.ReactNode;
+  hideHeaderBorder?: boolean;
+  headerClassName?: string;
+  contentClassName?: string;
 }
 
 export function CardWidgetContainer({
   title,
   icon,
   icon2,
+  hideHeaderBorder = false,
+  headerClassName,
+  contentClassName,
   children,
   className,
   ...props
 }: CardWidgetContainerProps) {
   return (
     <div
-      className={`card-container bg-white flex flex-col rounded-xl overflow-hidden dark:bg-zinc-900 ${className || ''}`}
+      className={cn(
+        'card-container flex flex-col overflow-hidden rounded-xl bg-white dark:bg-zinc-900',
+        className,
+      )}
       {...props}
     >
-      <div className="p-6 xl:p-4 2xl:p-6 border-b card-seperator-border dark:card-seperator-border flex justify-between items-center">
-        <h2 className="flex items-center gap-1.5 primary-heading text-leadgaze-dark dark:text-zinc-100">
+      <div
+        className={cn(
+          'flex items-center justify-between',
+          hideHeaderBorder
+            ? 'px-6 pt-4 pb-2 xl:px-4 xl:pt-3 xl:pb-1.5 2xl:px-6 2xl:pt-4 2xl:pb-2'
+            : 'card-seperator-border dark:card-seperator-border border-b px-6 py-4 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4',
+          headerClassName,
+        )}
+      >
+        <h2 className="primary-heading text-leadgaze-dark flex items-center gap-1.5 dark:text-zinc-100">
           {icon} {title}
-        </h2>        
+        </h2>
         {icon2}
       </div>
-      <div className="flex-1">
-        {children}
-      </div>
+      <div className={cn('flex-1', contentClassName)}>{children}</div>
     </div>
   );
 }

@@ -18,7 +18,8 @@ import {
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import {
   Dialog,
   DialogContent,
@@ -177,12 +178,11 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <div className="flex items-center gap-2">
-          <AlertCircle className="h-5 w-5 text-gray-400" />
-          <CardTitle className="text-base">Reminders</CardTitle>
-        </div>
+    <CardWidgetContainer
+      title="Reminders"
+      hideHeaderBorder={true}
+      icon={<AlertCircle className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+      icon2={
         <Dialog
           open={isOpen}
           onOpenChange={(open) => {
@@ -194,8 +194,8 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
           }}
         >
           <DialogTrigger asChild>
-            <Button size="sm" variant="ghost" className="gap-1 text-xs">
-              <Plus className="h-3 w-3" />
+            <Button size="sm" variant="ghost" className="gap-1 text-sm text-blue-500 hover:text-blue-600">
+              <Plus className="h-4 w-4" />
               Set
             </Button>
           </DialogTrigger>
@@ -244,23 +244,19 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
             </div>
           </DialogContent>
         </Dialog>
-      </CardHeader>
-      <CardContent>
+      }
+    >
+      <div className="px-6 py-3">
         {isLoading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
         ) : reminders.length > 0 ? (
-          <div className="space-y-3">
+          <CardWidgetList>
             {reminders.map((reminder: any) => (
-              <div
+              <CardWidgetListItem
                 key={reminder.id}
-                className="group flex items-center justify-between rounded-lg bg-gray-50 p-3 dark:bg-slate-900"
-              >
-                <div
-                  className="flex cursor-pointer items-center gap-3"
-                  onClick={() => openEditDialog(reminder)}
-                >
+                icon={
                   <div
                     className={`h-2 w-2 cursor-pointer rounded-full ${reminder.is_completed ? 'bg-green-500' : 'bg-amber-500'}`}
                     onClick={(e) => {
@@ -268,63 +264,73 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                       toggleCompletion(reminder);
                     }}
                   />
-                  <div>
-                    <p
-                      className={`text-sm font-medium ${reminder.is_completed ? 'text-gray-500 line-through' : 'text-gray-900 dark:text-gray-100'}`}
-                    >
-                      {reminder.title}
-                    </p>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                      {reminder.due_date && (
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {new Date(reminder.due_date).toLocaleString()}
+                }
+                iconAlignTop={true}
+                title={
+                  <span
+                    onClick={() => openEditDialog(reminder)}
+                    className={`text-sm font-medium ${reminder.is_completed ? 'text-gray-500 line-through' : 'text-gray-900 dark:text-gray-100'}`}
+                  >
+                    {reminder.title}
+                  </span>
+                }
+                metadata={
+                  <div className="flex flex-wrap gap-2">
+                    {reminder.due_date && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {new Date(reminder.due_date).toLocaleString()}
+                      </span>
+                    )}
+                    {reminder.created_by_user && (
+                      <span>by {reminder.created_by_user.name}</span>
+                    )}
+                    {reminder.entity_type !== entityType && (
+                        <span className="text-blue-600 dark:text-blue-400">
+                          From {reminder.entity_type.charAt(0).toUpperCase() + reminder.entity_type.slice(1)}{reminder.entity_name ? `: ${reminder.entity_name}` : ''}
                         </span>
                       )}
-                      {reminder.created_by_user && (
-                        <span>by {reminder.created_by_user.name}</span>
-                      )}
-                      {reminder.entity_type !== entityType && (
-                          <span className="text-blue-600 dark:text-blue-400">
-                            From {reminder.entity_type.charAt(0).toUpperCase() + reminder.entity_type.slice(1)}{reminder.entity_name ? `: ${reminder.entity_name}` : ''}
-                          </span>
-                        )}
-                    </div>
                   </div>
-                </div>
-                <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                  <button
-                    onClick={() => openEditDialog(reminder)}
-                    className="p-1 text-gray-400 hover:text-blue-500"
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (
-                        confirm(
-                          'Are you sure you want to delete this reminder?',
-                        )
-                      ) {
-                        deleteMutation.mutate(reminder.id);
-                      }
-                    }}
-                    className="p-1 text-gray-400 hover:text-red-500"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
+                }
+                actions={
+                  <>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => openEditDialog(reminder)}
+                      className="h-7 w-7 text-gray-400 hover:text-blue-500"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => {
+                        if (
+                          confirm(
+                            'Are you sure you want to delete this reminder?',
+                          )
+                        ) {
+                          deleteMutation.mutate(reminder.id);
+                        }
+                      }}
+                      className="h-7 w-7 text-gray-400 hover:text-red-500"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </>
+                }
+              />
             ))}
-          </div>
+          </CardWidgetList>
         ) : (
           <div className="py-8 text-center">
             <AlertCircle className="mx-auto mb-2 h-8 w-8 text-gray-300" />
             <p className="text-sm text-gray-500">No reminders</p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </CardWidgetContainer>
   );
 }
 
@@ -462,13 +468,12 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-gray-400" />
-          <CardTitle className="text-base">Meetings</CardTitle>
-        </div>
-        {canScheduleMeeting && (
+    <CardWidgetContainer
+      title="Meetings"
+      hideHeaderBorder={true}
+      icon={<Calendar className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+      icon2={
+        canScheduleMeeting && (
           <Dialog
             open={isOpen}
             onOpenChange={(open) => {
@@ -486,8 +491,8 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
             }}
           >
             <DialogTrigger asChild>
-              <Button size="sm" variant="ghost" className="gap-1 text-xs">
-                <Plus className="h-3 w-3" />
+              <Button size="sm" variant="ghost" className="gap-1 text-sm text-blue-500 hover:text-blue-600">
+                <Plus className="h-4 w-4" />
                 Schedule
               </Button>
             </DialogTrigger>
@@ -559,28 +564,39 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
               </div>
             </DialogContent>
           </Dialog>
-        )}
-      </CardHeader>
-      <CardContent>
+        )
+      }
+    >
+      <div className="px-6 py-3">
         {isLoading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
         ) : meetings.length > 0 ? (
-          <div className="space-y-3">
+          <CardWidgetList>
             {meetings.map((meeting: any) => (
-              <div
+              <CardWidgetListItem
                 key={meeting.id}
-                className="group relative rounded-lg border border-transparent bg-gray-50 p-3 transition-colors hover:border-gray-200 dark:bg-slate-900"
-              >
-                <div
-                  className="cursor-pointer"
-                  onClick={() => openEditDialog(meeting)}
-                >
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                title={
+                  <span
+                    className="text-sm font-medium text-gray-900 dark:text-gray-100"
+                    onClick={() => openEditDialog(meeting)}
+                  >
                     {meeting.title}
-                  </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                  </span>
+                }
+                content={
+                  meeting.location ? (
+                    <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
+                      <MapPin className="h-3 w-3" />
+                      <span className="max-w-[200px] truncate">
+                        {meeting.location}
+                      </span>
+                    </div>
+                  ) : undefined
+                }
+                metadata={
+                  <div className="flex flex-wrap gap-2">
                     <span className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       {new Date(meeting.start_time).toLocaleString()}
@@ -594,46 +610,44 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
                         </span>
                       )}
                   </div>
-                  {meeting.location && (
-                    <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
-                      <MapPin className="h-3 w-3" />
-                      <span className="max-w-[200px] truncate">
-                        {meeting.location}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                  <button
-                    onClick={() => openEditDialog(meeting)}
-                    className="p-1 text-gray-400 hover:text-blue-500"
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (
-                        confirm('Are you sure you want to delete this meeting?')
-                      ) {
-                        deleteMutation.mutate(meeting.id);
-                      }
-                    }}
-                    className="p-1 text-gray-400 hover:text-red-500"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
+                }
+                actions={
+                  <>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => openEditDialog(meeting)}
+                      className="h-7 w-7 text-gray-400 hover:text-blue-500"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => {
+                        if (
+                          confirm('Are you sure you want to delete this meeting?')
+                        ) {
+                          deleteMutation.mutate(meeting.id);
+                        }
+                      }}
+                      className="h-7 w-7 text-gray-400 hover:text-red-500"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </>
+                }
+              />
             ))}
-          </div>
+          </CardWidgetList>
         ) : (
           <div className="py-8 text-center">
             <Calendar className="mx-auto mb-2 h-8 w-8 text-gray-300" />
             <p className="text-sm text-gray-500">No meetings</p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </CardWidgetContainer>
   );
 }
 
@@ -725,12 +739,11 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <div className="flex items-center gap-2">
-          <Download className="h-5 w-5 text-gray-400" />
-          <CardTitle className="text-base">Documents</CardTitle>
-        </div>
+    <CardWidgetContainer
+      title="Documents"
+      hideHeaderBorder={true}
+      icon={<Download className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+      icon2={
         <Dialog
           open={isOpen}
           onOpenChange={(open) => {
@@ -743,8 +756,8 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
           }}
         >
           <DialogTrigger asChild>
-            <Button size="sm" variant="outline" className="gap-2 text-xs">
-              <Plus className="h-3 w-3" />
+            <Button size="sm" variant="ghost" className="gap-1 text-sm text-blue-500 hover:text-blue-600">
+              <Plus className="h-4 w-4" />
               Upload
             </Button>
           </DialogTrigger>
@@ -791,91 +804,99 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
             </div>
           </DialogContent>
         </Dialog>
-      </CardHeader>
-      <CardContent>
+      }
+    >
+      <div className="px-6 py-3">
         {isLoading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
         ) : documents.length > 0 ? (
-          <div className="space-y-3">
+          <CardWidgetList>
             {documents.map((doc: any) => (
-              <div
+              <CardWidgetListItem
                 key={doc.id}
-                className="group flex items-center justify-between rounded-lg bg-gray-50 p-3 transition-colors hover:bg-gray-100 dark:bg-slate-900"
-              >
-                <div
-                  className="flex cursor-pointer items-center gap-3"
-                  onClick={() => openEditDialog(doc)}
-                >
+                icon={
                   <div className="rounded border bg-white p-2 dark:bg-slate-800">
                     <File className="h-4 w-4 text-blue-500" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {doc.name}
-                    </p>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                      <span>
-                        {new Date(doc.created_at).toLocaleDateString()}
-                      </span>
-                      {doc.created_by_user && (
-                        <span>by {doc.created_by_user.name}</span>
-                      )}
-                      {doc.entity_name && doc.entity_type !== entityType && (
-                        <span className="text-blue-600 dark:text-blue-400">
-                          from {doc.entity_type}: {doc.entity_name}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                  <button
+                }
+                iconAlignTop={true}
+                title={
+                  <span
+                    className="text-sm font-medium text-gray-900 dark:text-gray-100"
                     onClick={() => openEditDialog(doc)}
-                    className="p-1 text-gray-400 hover:text-blue-500"
                   >
-                    <Pencil className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (
-                        confirm(
-                          'Are you sure you want to delete this document?',
-                        )
-                      ) {
-                        deleteMutation.mutate(doc.id);
-                      }
-                    }}
-                    className="p-1 text-gray-400 hover:text-red-500"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-gray-400"
-                    asChild
-                  >
-                    <a
-                      href={`/api/documents/download/${doc.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    {doc.name}
+                  </span>
+                }
+                metadata={
+                  <div className="flex flex-wrap gap-2">
+                    <span>
+                      {new Date(doc.created_at).toLocaleDateString()}
+                    </span>
+                    {doc.created_by_user && (
+                      <span>by {doc.created_by_user.name}</span>
+                    )}
+                    {doc.entity_name && doc.entity_type !== entityType && (
+                      <span className="text-blue-600 dark:text-blue-400">
+                        from {doc.entity_type}: {doc.entity_name}
+                      </span>
+                    )}
+                  </div>
+                }
+                actions={
+                  <>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => openEditDialog(doc)}
+                      className="h-7 w-7 text-gray-400 hover:text-blue-500"
                     >
-                      <Download className="h-4 w-4" />
-                    </a>
-                  </Button>
-                </div>
-              </div>
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => {
+                        if (
+                          confirm(
+                            'Are you sure you want to delete this document?',
+                          )
+                        ) {
+                          deleteMutation.mutate(doc.id);
+                        }
+                      }}
+                      className="h-7 w-7 text-gray-400 hover:text-red-500"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-gray-400"
+                      asChild
+                    >
+                      <a
+                        href={`/api/documents/download/${doc.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Download className="h-3 w-3" />
+                      </a>
+                    </Button>
+                  </>
+                }
+              />
             ))}
-          </div>
+          </CardWidgetList>
         ) : (
           <div className="py-8 text-center">
             <Download className="mx-auto mb-2 h-8 w-8 text-gray-300" />
             <p className="text-sm text-gray-500">No documents</p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </CardWidgetContainer>
   );
 }
