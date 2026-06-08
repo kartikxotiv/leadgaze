@@ -83,10 +83,5 @@ function MobileNavigation() {
 }
 
 async function getLayoutStyle() {
-  const cookieStore = await cookies();
-
-  return (
-    (cookieStore.get('layout-style')?.value as PageLayoutStyle) ??
-    navigationConfig.style
-  );
+  return 'header' as PageLayoutStyle;
 }
