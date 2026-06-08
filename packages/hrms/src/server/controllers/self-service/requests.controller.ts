@@ -1,18 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
-
 import {
   ApiError,
   catchAsync,
   successDataResponse,
-} from '~/utils/response-handler';
-
+} from '../../../utils/response-handler';
 import { getSelfServiceContext, normalizeText } from './controller.shared';
 
 const createSelfServiceRequestController = catchAsync(
-  async ({ body, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
-    const context = await getSelfServiceContext(user?.id);
+  async ({ body, request, user }) => {
+    const context = await getSelfServiceContext({ request, user });
 
     if (!context.canCreateRequest) {
       throw new ApiError(
@@ -23,17 +19,17 @@ const createSelfServiceRequestController = catchAsync(
 
     const requestBody = body as Record<string, unknown>;
 
-    const { data, error } = await (supabaseAdmin as any)
+    const { data, error } = await context.hrms
       .from('hr_requests')
       .insert({
         category: requestBody.category,
-        created_by: user?.id ?? null,
+        created_by: context.userId,
         description: normalizeText(requestBody.description),
         employee_id: context.employeeId,
-        organization_id: context.organizationId,
         priority: requestBody.priority,
         subject: normalizeText(requestBody.subject),
-        updated_by: user?.id ?? null,
+        updated_by: context.userId,
+        workspace_id: context.workspaceId,
       })
       .select(
         `

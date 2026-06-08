@@ -10,6 +10,7 @@ export * from './pages/leave/page';
 export * from './pages/payroll/page';
 export * from './pages/recruitment/page';
 export * from './pages/separation/page';
+export * from './pages/self-service/page';
 export * from './pages/support-system/page';
 
 export * from './utils/index';
