@@ -25,7 +25,7 @@ import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { DetailHeader } from '@kit/ui/detail-header';
-import { PageBody } from '@kit/ui/page';
+import { PageBody, PageHeader } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
 import {
   Tooltip,
@@ -295,15 +295,29 @@ export default function LeadDetailsPage() {
 
   return (
     <ModuleGuard module="leads">
-      <div className="px-6 pt-4 pb-0">
-        <div className="mb-2">
-          <Button variant="ghost" size="sm" asChild className="-ml-2">
+      <div className="px-6 pt-4 pb-2 flex justify-between items-center w-full">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" asChild className="border p-0 border-leadgaze-border">
             <Link href="/home/leads">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
+              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
             </Link>
           </Button>
+          <div className="flex flex-col">
+            <h1 className="text-lg font-semibold">Lead details</h1>
+            <p className="text-leadgaze-muted text-sm">View and edit lead information</p>
+          </div>
         </div>
+        {canEdit && (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setIsEditDialogOpen(true)}
+            className="gap-2"
+          >
+            <Edit2 className="h-4 w-4" />
+            Edit Profile
+          </Button>
+        )}
       </div>
 
       <PageBody className="pb-6">
@@ -413,17 +427,7 @@ export default function LeadDetailsPage() {
                     </Button>
                   )}
 
-                  {canEdit && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsEditDialogOpen(true)}
-                      className="flex h-8 items-center justify-center gap-2 px-4"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                      Edit Profile
-                    </Button>
-                  )}
+                 
                 </div>
               }
             />
