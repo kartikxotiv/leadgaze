@@ -54,6 +54,7 @@
     "./server/recruitment/onboarding-tasks/[id]": "./src/server/controllers/recruitment/onboarding-tasks/[id]/route.ts",
     "./server/recruitment/options": "./src/server/controllers/recruitment/options/route.ts",
     "./server/recruitment/requisitions/[id]": "./src/server/controllers/recruitment/requisitions/[id]/route.ts",
+    "./server/reports": "./src/server/controllers/reports/route.ts",
     "./server/separation/asset-clearances": "./src/server/controllers/separation/asset-clearances/route.ts",
     "./server/separation/asset-clearances/[id]": "./src/server/controllers/separation/asset-clearances/[id]/route.ts",
     "./server/separation/exit-checklist-items": "./src/server/controllers/separation/exit-checklist-items/route.ts",

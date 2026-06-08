@@ -7,7 +7,7 @@ const Card: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   ...props
 }) => (
   <div
-    className={cn('bg-card text-card-foreground card-container', className)}
+    className={cn('bg-card text-card-foreground card-container dark:dark-button-border-color', className)}
     {...props}
   />
 );

@@ -1,19 +1,15 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
-import { useUser } from '@kit/supabase/hooks/use-user';
-import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
-import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import {
   Pagination,
@@ -31,13 +27,8 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { ListToolBar } from '@kit/ui/list-toolbar';
 
 import { Skeleton } from '@kit/ui/skeleton';
 
@@ -108,14 +99,11 @@ export default function ContactsPage() {
   const router = useRouter();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
-  const { data: user } = useUser();
 
   const columns = useMemo(
     () => [
@@ -214,76 +202,38 @@ export default function ContactsPage() {
             className="bg-sidebar shrink-0 px-6 py-4"
             title={`Contacts (${totalCount})`}
             description="Manage your contacts (People)"
-          >
-            <div className="flex items-center gap-2">
-              <div className="flex items-center">
-                <div
-                  className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${
-                    isSearchOpen ? 'w-64 lg:w-72' : 'w-9'
-                  }`}
-                >
-                  {isSearchOpen ? (
-                    <div className="relative w-full">
-                      <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-500 dark:text-white" />
-                      <Input
-                        ref={searchInputRef}
-                        placeholder="Search by name, email, or account..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-8 pl-10"
-                        onBlur={() => {
-                          if (!searchTerm) setIsSearchOpen(false);
-                        }}
-                        autoFocus
-                      />
-                    </div>
-                  ) : (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          className="border-input hover:bg-accent -mr-6 flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white text-gray-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
-                          onClick={() => setIsSearchOpen(true)}
-                        >
-                          <Search className="h-4 w-4 text-gray-500 dark:text-white" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p>Search</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                </div>
-              </div>
+          />
+        </div>
 
-              {canAccess('contacts', 'create') && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      onClick={() => setCreateDialogOpen(true)}
-                      className="h-8 w-8 bg-white p-0 text-black dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
-                    >
-                      <Plus className="h-4 w-4 text-gray-500 dark:text-white" />
-                    </Button>
-                  </TooltipTrigger>
-
-                  <TooltipContent side="bottom">
-                    <p>New Contact</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-
+        {/* Full-width search / filter / actions toolbar */}
+        <div className="bg-sidebar w-full shrink-0 border-b px-6 py-2">
+          <ListToolBar
+            showSearch
+            searchPlaceholder="Search by name, email, or account..."
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            actions={[
+              {
+                key: 'add',
+                label: 'New Contact',
+                icon: Plus,
+                onClick: () => setCreateDialogOpen(true),
+                show: canAccess('contacts', 'create'),
+                buttonVariant: 'default',
+              },
+            ]}
+            columnVisibilitySlot={
               <ColumnVisibilitySelector
                 columns={columns}
                 visibility={visibility}
                 onToggle={toggleVisibility}
                 onReset={reset}
               />
-            </div>
-          </PageHeader>
+            }
+          />
         </div>
 
-        <PageBody className="bg-sidebar sticky -mt-6 flex min-w-0 flex-1 flex-col overflow-hidden pt-6 pb-0">
+        <PageBody className="bg-sidebar sticky flex min-w-0 flex-1 flex-col overflow-hidden pt-3 pb-0">
           <div className="flex min-h-0 flex-1 flex-col">
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
               <CardContent className="flex min-h-0 flex-1 flex-col p-0">
