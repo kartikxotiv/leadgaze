@@ -1,6 +1,5 @@
-import type { ReportsDashboardResponse } from '~/types/reports.type';
-
-import type { ReportsTabValue } from '../page.data';
+import type { ReportsTabValue } from '../pages/reports/page.data';
+import type { ReportsDashboardResponse } from '../types/reports.type';
 
 type ExportSection = {
   columns: string[];
