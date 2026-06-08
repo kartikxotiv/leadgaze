@@ -11,6 +11,13 @@
   line-height: 32px !important;
 }
 
+@utility primary-heading-big {
+  font-family: var(--font-sans) !important;
+  font-size: 22px !important;
+  font-weight: 500 !important;
+  line-height: 20px !important;
+}
+
 @utility primary-heading {
   font-family: var(--font-sans) !important;
   font-size: 18px !important;

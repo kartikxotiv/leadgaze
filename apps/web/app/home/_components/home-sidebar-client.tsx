@@ -404,6 +404,11 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
             path: pathsConfig.app.profileSettings,
             Icon: <UserPen className="h-4 w-4" />,
           },
+          {
+            label: 'common:routes.workspace-settings',
+            path: pathsConfig.app.workspaceSettings,
+            Icon: <Settings className="h-4 w-4" />,
+          },
           ...(teamItems.length > 0
             ? teamItems.map((item) => {
                 const IconComponent = item.Icon;
