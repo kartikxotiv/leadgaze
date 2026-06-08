@@ -482,7 +482,7 @@ export default function LeadDetailsPage() {
             {/* Comapny */}
             <CardWidgetContainer title="Company" icon={<User className="w-5 h-5 text-leadgaze-muted dark:text-white" />}>
             <div className="flex-1">
-              <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2 pt-4">
+              <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
                 {lead.company_name && (
                   <CustomInputForView
                     label="Company"
@@ -544,7 +544,7 @@ export default function LeadDetailsPage() {
                     as="textarea"
                   />                  
                 )}
-              </CardContent>
+              </div>
               
             </div>
             </CardWidgetContainer>
@@ -553,7 +553,7 @@ export default function LeadDetailsPage() {
             {/* Contact Information Section */}
             <CardWidgetContainer title="Contact" icon={<User className="w-5 h-5 text-leadgaze-muted dark:text-white" />}>
               <div className="flex-1">
-                <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2 pt-4">
+                <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
                   {lead.email && (
                     <CustomInputForView
                       label="Primary Email"
@@ -630,7 +630,7 @@ export default function LeadDetailsPage() {
                     />                  
                   )}
 
-                </CardContent>
+                </div>
               </div>
             </CardWidgetContainer>
             
