@@ -1,7 +1,7 @@
 import type {
   ReportsEmployeeOption,
   ReportsFilterState,
-} from '~/types/reports.type';
+} from '../types/reports.type';
 
 function toIsoDate(value: Date) {
   const year = value.getFullYear();
