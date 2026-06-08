@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { Eye, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Eye, MoreHorizontal, MoreVertical, Trash2 } from 'lucide-react';
 
 import { Button } from '@kit/ui/button';
 import {
@@ -33,7 +33,7 @@ export function EntityActionsDropdown({
           onClick={(e) => e.stopPropagation()}
         >
           <span className="sr-only">Open menu</span>
-          <MoreHorizontal className="h-4 w-4" />
+          <MoreVertical className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

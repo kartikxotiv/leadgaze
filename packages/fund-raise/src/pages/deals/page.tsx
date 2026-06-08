@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@kit/ui/select';
+import { Skeleton } from '@kit/ui/skeleton';
 import { Textarea } from '@kit/ui/textarea';
 import {
   createCommitmentService,
@@ -199,6 +200,40 @@ function AccessDenied() {
   return <div className="p-6 text-sm text-muted-foreground">You do not have permission to view the fundraising pipeline.</div>;
 }
 
+function FundraisingDealsPageSkeleton() {
+  return (
+    <div className="flex h-full w-full flex-col gap-5 p-6">
+      <div className="flex justify-end">
+        <Skeleton className="h-8 w-32 rounded-md" />
+      </div>
+      <div className="grid auto-cols-[minmax(280px,1fr)] grid-flow-col gap-4 overflow-x-auto pb-4">
+        {[...Array(3)].map((_, col) => (
+          <div key={col} className="rounded-md border bg-muted/20">
+            <div className="flex items-center justify-between border-b p-3">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-5 w-8 rounded-full" />
+            </div>
+            <div className="grid gap-3 p-3">
+              {[...Array(3)].map((_, card) => (
+                <div key={card} className="rounded-md border bg-background p-4 space-y-3">
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-3 w-24" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function FundraisingDealsPage({ workspaceId }: { workspaceId: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -222,7 +257,7 @@ export function FundraisingDealsPage({ workspaceId }: { workspaceId: string }) {
   const openDeal = (dealId: string) => router.push(`/home/funds/deals/${dealId}`);
 
   if (isPermissionsLoading) {
-    return <div className="p-6 text-sm text-muted-foreground">Checking permissions...</div>;
+    return <FundraisingDealsPageSkeleton />;
   }
 
   if (!canView) {

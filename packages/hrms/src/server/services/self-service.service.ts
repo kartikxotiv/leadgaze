@@ -5,10 +5,9 @@ import type {
   SelfServiceProfileUpdatePayload,
   SelfServiceRequest,
   SelfServiceRequestCreatePayload,
-} from '~/types/self-service.type';
-import { asyncHandlerClient } from '~/utils/async-handler';
-
-import ApiClient from '../utils/axios-client';
+} from '../../types/self-service.type';
+import { asyncHandlerClient } from '../../utils/async-handler';
+import ApiClient from '../../utils/axios-client';
 
 const getSelfServiceDashboardService = asyncHandlerClient(async () => {
   const response =
@@ -53,7 +52,7 @@ const getSelfServicePayslipDetailService = asyncHandlerClient(
 const downloadSelfServicePayslipService = asyncHandlerClient(
   async (payslipId: string) => {
     const response = await fetch(
-      `/api/self-service/payslips/${payslipId}/download`,
+      `/api/hrms/self-service/payslips/${payslipId}/download`,
       {
         credentials: 'include',
       },

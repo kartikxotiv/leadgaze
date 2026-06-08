@@ -9,6 +9,7 @@ import {
   ClipboardList,
   LifeBuoy,
   LogOut,
+  ShieldCheck,
   UserPlus,
   Users,
   WalletCards,
@@ -62,6 +63,11 @@ const hrmsRoutes = {
       label: 'Support System',
       path: '/home/hrms/support-system',
       Icon: <LifeBuoy className="h-4 w-4" />,
+    },
+    {
+      label: 'Self Service',
+      path: '/home/hrms/self-service',
+      Icon: <ShieldCheck className="h-4 w-4" />,
     },
     {
       label: 'Payroll',

@@ -1,0 +1,198 @@
+'use client';
+
+import { Download, LifeBuoy } from 'lucide-react';
+
+import { Badge } from '@kit/ui/badge';
+import { Button } from '@kit/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@kit/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@kit/ui/table';
+import { TabsContent } from '@kit/ui/tabs';
+
+import type {
+  SelfServicePayslipSummary,
+  SelfServiceRequest,
+} from '../../types/self-service.type';
+import {
+  formatCurrency,
+  formatDate,
+  formatPayslipPeriod,
+  getRequestCategoryLabel,
+  getRequestStatusLabel,
+} from './page.data';
+import { getStatusBadgeClassName } from './page.shared';
+
+export function SelfServicePayslipsTab(props: {
+  canDownload: boolean;
+  onDownload: (payslipId: string) => void;
+  onView: (payslip: SelfServicePayslipSummary) => void;
+  payslips: Array<SelfServicePayslipSummary>;
+}) {
+  return (
+    <TabsContent value="payslips" className="mt-0">
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle>Payslips</CardTitle>
+          <CardDescription>
+            Review payroll snapshots and download them when access is granted.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-x-auto p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Period</TableHead>
+                <TableHead>Gross</TableHead>
+                <TableHead>Deductions</TableHead>
+                <TableHead>Net Pay</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {props.payslips.map((payslip) => (
+                <TableRow key={payslip.id}>
+                  <TableCell className="font-medium">
+                    {formatPayslipPeriod(payslip)}
+                  </TableCell>
+                  <TableCell>{formatCurrency(payslip.gross_salary)}</TableCell>
+                  <TableCell>{formatCurrency(payslip.deductions)}</TableCell>
+                  <TableCell className="font-semibold">
+                    {formatCurrency(payslip.net_salary)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={getStatusBadgeClassName(payslip.status)}
+                    >
+                      {payslip.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => props.onView(payslip)}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={!props.canDownload}
+                        onClick={() => props.onDownload(payslip.id)}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Download
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {props.payslips.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-8 text-center">
+                    No payslips are available yet.
+                  </TableCell>
+                </TableRow>
+              ) : null}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </TabsContent>
+  );
+}
+
+export function SelfServiceRequestsTab(props: {
+  canCreateRequest: boolean;
+  onRaiseRequest: () => void;
+  requests: Array<SelfServiceRequest>;
+}) {
+  return (
+    <TabsContent value="requests" className="mt-0">
+      <Card className="shadow-sm">
+        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <CardTitle>HR Requests</CardTitle>
+            <CardDescription>
+              Track tickets raised with HR, payroll, or operations.
+            </CardDescription>
+          </div>
+
+          {props.canCreateRequest ? (
+            <Button size="sm" onClick={props.onRaiseRequest}>
+              <LifeBuoy className="mr-1.5 h-3.5 w-3.5" />
+              Raise Request
+            </Button>
+          ) : null}
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {props.requests.length === 0 ? (
+            <div className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm">
+              No requests raised yet.
+            </div>
+          ) : (
+            props.requests.map((request) => (
+              <div key={request.id} className="rounded-lg border p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="secondary">
+                        {getRequestCategoryLabel(request.category)}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className={getStatusBadgeClassName(request.status)}
+                      >
+                        {getRequestStatusLabel(request.status)}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className={getStatusBadgeClassName(request.priority)}
+                      >
+                        {request.priority}
+                      </Badge>
+                    </div>
+                    <p className="font-semibold">{request.subject}</p>
+                    <p className="text-muted-foreground text-sm leading-6">
+                      {request.description}
+                    </p>
+                  </div>
+                  <div className="text-muted-foreground text-xs sm:text-right">
+                    <p>Raised {formatDate(request.created_at)}</p>
+                    {request.resolved_at ? (
+                      <p className="mt-1">
+                        Resolved {formatDate(request.resolved_at)}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
+                {request.response_message ? (
+                  <div className="bg-muted/40 mt-4 rounded-lg border p-3 text-sm">
+                    <span className="font-medium">HR update:</span>{' '}
+                    {request.response_message}
+                  </div>
+                ) : null}
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+    </TabsContent>
+  );
+}

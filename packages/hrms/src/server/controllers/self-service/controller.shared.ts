@@ -1,33 +1,45 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import { getCurrentUserOrganizationId } from '~/lib/server/organizations';
-import { requirePermission } from '~/lib/server/rbac';
-import { ApiError } from '~/utils/response-handler';
+import { ApiError } from '../../../utils/response-handler';
+import {
+  getHrmsClient,
+  getRequiredWorkspaceId,
+  getRouteUserId,
+  requireEmployeePermission,
+} from '../employees/controller.helpers';
+
+type AccessLevel = 'none' | 'own' | 'team' | 'all';
 
 type SelfServiceContext = {
-  organizationId: string;
-  employeeId: string;
-  accessLevel: 'none' | 'own' | 'team';
-  canUpdateProfile: boolean;
+  accessLevel: AccessLevel;
   canCreateRequest: boolean;
   canDownloadPayslip: boolean;
+  canUpdateProfile: boolean;
+  employeeId: string;
+  hrms: any;
+  supabaseAdmin: any;
+  userId: string;
+  workspaceId: string;
 };
 
+const moduleKey = 'hrms_self_service';
+
 async function hasSelfServicePermission(params: {
-  accountId: string;
-  organizationId: string;
-  employeeId: string;
   featureKey: string;
+  minAccessLevel?: 'own' | 'team' | 'all';
+  supabaseAdmin: any;
+  userId: string;
+  workspaceId: string;
 }) {
   try {
-    await requirePermission({
-      accountId: params.accountId,
-      organizationId: params.organizationId,
-      moduleKey: 'self_service',
+    await requireEmployeePermission({
       featureKey: params.featureKey,
-      minAccessLevel: 'own',
-      targetEmployeeId: params.employeeId,
+      minAccessLevel: params.minAccessLevel ?? 'own',
+      moduleKey,
+      supabaseAdmin: params.supabaseAdmin,
+      userId: params.userId,
+      workspaceId: params.workspaceId,
     });
 
     return true;
@@ -51,76 +63,93 @@ function normalizeText(value: unknown) {
 
 function formatCurrency(value: number | null | undefined) {
   return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
     currency: 'INR',
     maximumFractionDigits: 2,
+    style: 'currency',
   }).format(value ?? 0);
 }
 
-async function getSelfServiceContext(
-  userId?: string,
-): Promise<SelfServiceContext> {
+async function getSelfServiceContext(params: {
+  request: Request;
+  user: unknown;
+}): Promise<SelfServiceContext> {
+  const supabaseAdmin = getSupabaseServerAdminClient();
+  const userId = getRouteUserId(params.user);
+
   if (!userId) {
-    throw new ApiError('User not found', 401);
+    throw new ApiError('Unauthorized', 401);
   }
 
-  const organizationId = await getCurrentUserOrganizationId(userId);
-
-  if (!organizationId) {
-    throw new ApiError('Organization not found for user', 404);
-  }
-
-  const viewPermission = await requirePermission({
-    accountId: userId,
-    organizationId,
-    moduleKey: 'self_service',
-    featureKey: 'view',
-    minAccessLevel: 'own',
+  const workspaceId = await getRequiredWorkspaceId({
+    request: params.request as any,
+    supabaseAdmin,
+    userId,
   });
 
-  if (!viewPermission.employeeId) {
+  await requireEmployeePermission({
+    featureKey: 'view',
+    minAccessLevel: 'own',
+    moduleKey,
+    supabaseAdmin,
+    userId,
+    workspaceId,
+  });
+
+  const hrms = getHrmsClient(supabaseAdmin);
+  const { data: employee, error: employeeError } = await hrms
+    .from('employees')
+    .select('id')
+    .eq('workspace_id', workspaceId)
+    .eq('account_id', userId)
+    .eq('is_deleted', false)
+    .limit(1)
+    .maybeSingle();
+
+  if (employeeError) {
+    throw new ApiError(employeeError.message, 400);
+  }
+
+  if (!employee?.id) {
     throw new ApiError('Employee record not found for the current user', 404);
   }
 
   const [canUpdateProfile, canCreateRequest, canDownloadPayslip] =
     await Promise.all([
       hasSelfServicePermission({
-        accountId: userId,
-        organizationId,
-        employeeId: viewPermission.employeeId,
         featureKey: 'update_profile',
+        supabaseAdmin,
+        userId,
+        workspaceId,
       }),
       hasSelfServicePermission({
-        accountId: userId,
-        organizationId,
-        employeeId: viewPermission.employeeId,
         featureKey: 'create_request',
+        supabaseAdmin,
+        userId,
+        workspaceId,
       }),
       hasSelfServicePermission({
-        accountId: userId,
-        organizationId,
-        employeeId: viewPermission.employeeId,
         featureKey: 'download_payslip',
+        supabaseAdmin,
+        userId,
+        workspaceId,
       }),
     ]);
 
   return {
-    organizationId,
-    employeeId: viewPermission.employeeId,
-    accessLevel: viewPermission.permission.accessLevel,
-    canUpdateProfile,
+    accessLevel: 'own',
     canCreateRequest,
     canDownloadPayslip,
+    canUpdateProfile,
+    employeeId: employee.id,
+    hrms,
+    supabaseAdmin,
+    userId,
+    workspaceId,
   };
 }
 
-async function getEmployeeProfile(params: {
-  organizationId: string;
-  employeeId: string;
-}) {
-  const supabaseAdmin = getSupabaseServerAdminClient();
-
-  const { data: employee, error } = await (supabaseAdmin as any)
+async function getEmployeeProfile(context: SelfServiceContext) {
+  const { data: employee, error } = await context.hrms
     .from('employees')
     .select(
       `
@@ -140,8 +169,8 @@ async function getEmployeeProfile(params: {
       department:departments!employees_department_id_fkey(id, name, code)
     `,
     )
-    .eq('organization_id', params.organizationId)
-    .eq('id', params.employeeId)
+    .eq('workspace_id', context.workspaceId)
+    .eq('id', context.employeeId)
     .maybeSingle();
 
   if (error) {
@@ -155,10 +184,10 @@ async function getEmployeeProfile(params: {
   let managerName: string | null = null;
 
   if (employee.manager_employee_id) {
-    const { data: manager, error: managerError } = await (supabaseAdmin as any)
+    const { data: manager, error: managerError } = await context.hrms
       .from('employees')
       .select('first_name, last_name')
-      .eq('organization_id', params.organizationId)
+      .eq('workspace_id', context.workspaceId)
       .eq('id', employee.manager_employee_id)
       .maybeSingle();
 
@@ -192,12 +221,10 @@ async function getEmployeeProfile(params: {
 }
 
 async function getPayslipDetail(params: {
-  organizationId: string;
+  context: SelfServiceContext;
   payslipId: string;
 }) {
-  const supabaseAdmin = getSupabaseServerAdminClient();
-
-  const { data: payslip, error: payslipError } = await (supabaseAdmin as any)
+  const { data: payslip, error: payslipError } = await params.context.hrms
     .from('payslips')
     .select(
       `
@@ -217,14 +244,15 @@ async function getPayslipDetail(params: {
         period_end,
         payment_date
       ),
-      employee:employees!payslips_employee_id_fkey(
+      employee:employees(
         employee_code,
         first_name,
         last_name
       )
     `,
     )
-    .eq('organization_id', params.organizationId)
+    .eq('workspace_id', params.context.workspaceId)
+    .eq('employee_id', params.context.employeeId)
     .eq('id', params.payslipId)
     .maybeSingle();
 
@@ -236,9 +264,7 @@ async function getPayslipDetail(params: {
     throw new ApiError('Payslip not found', 404);
   }
 
-  const { data: components, error: componentsError } = await (
-    supabaseAdmin as any
-  )
+  const { data: components, error: componentsError } = await params.context.hrms
     .from('payslip_components')
     .select(
       `
@@ -258,7 +284,7 @@ async function getPayslipDetail(params: {
       )
     `,
     )
-    .eq('organization_id', params.organizationId)
+    .eq('workspace_id', params.context.workspaceId)
     .eq('payslip_id', params.payslipId)
     .order('display_order', { ascending: true });
 
@@ -327,5 +353,7 @@ export {
   getEmployeeProfile,
   getPayslipDetail,
   getSelfServiceContext,
+  hasSelfServicePermission,
   normalizeText,
 };
+export type { SelfServiceContext };
