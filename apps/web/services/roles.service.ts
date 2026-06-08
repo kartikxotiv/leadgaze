@@ -105,6 +105,15 @@ const reorderRolesService = asyncHandlerClient(
   },
 );
 
+const getModuleRolesService = asyncHandlerClient(
+  async (workspaceId: string, moduleKey: string) => {
+    const response = await ApiClient.get(
+      `/roles?workspaceId=${workspaceId}&moduleKey=${moduleKey}`,
+    );
+    return response.data;
+  },
+);
+
 export {
   getRolesService,
   getRoleByIdService,
@@ -112,6 +121,7 @@ export {
   updateRoleService,
   deleteRoleService,
   reorderRolesService,
+  getModuleRolesService,
   getModulesService,
   getRolePermissionsService,
   updateRolePermissionsService,

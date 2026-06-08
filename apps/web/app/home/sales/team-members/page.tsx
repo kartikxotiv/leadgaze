@@ -2,11 +2,14 @@
 
 import { useMemo, useState } from 'react';
 
+import { usePathname } from 'next/navigation';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Check,
   Clock,
   Edit2,
+  Loader2,
   Plus,
   RotateCcw,
   Trash2,
@@ -25,7 +28,6 @@ import {
 } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { PageBody, PageHeader } from '@kit/ui/page';
-import { Skeleton } from '@kit/ui/skeleton';
 import {
   TableBody,
   TableCell,
@@ -33,12 +35,12 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
+import '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
-import { getRolesService } from '~/services/roles.service';
+import { getModuleRolesService } from '~/services/roles.service';
 import {
   type WorkspaceMember,
   getMembersService,
@@ -46,71 +48,28 @@ import {
   resendInvitationService,
 } from '~/services/team-members.service';
 
-import { InviteMemberDialog } from './components/invite-member-dialog';
-import { ModuleSeatSection } from './components/module-seat-section';
-import { UpdateMemberDialog } from './components/update-member-dialog';
+import { InviteMemberDialog } from '../../team-members/components/invite-member-dialog';
+import { UpdateMemberDialog } from '../../team-members/components/update-member-dialog';
 
-function TeamMembersPageSkeleton() {
-  return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden">
-      <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
-        <div className="bg-sidebar flex items-center justify-between px-6 py-4">
-          <div className="space-y-1">
-            <Skeleton className="h-6 w-36" />
-            <Skeleton className="h-4 w-64" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-8" />
-            <Skeleton className="h-8 w-8" />
-          </div>
-        </div>
-        <div className="bg-sidebar -mt-1 w-full overflow-x-auto px-6 pb-7">
-          <div className="-mb-3 flex items-center gap-3">
-            <Skeleton className="h-10 w-52 rounded-lg" />
-            <Skeleton className="h-10 w-32 rounded-lg" />
-            <Skeleton className="h-10 w-52 rounded-lg" />
-          </div>
-        </div>
-      </div>
-      <div className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden px-4 pt-4 pb-6 lg:px-8">
-        <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
-          <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
-            <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
-              <TableRow>
-                <TableHead>Member</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Primary Contact</TableHead>
-                <TableHead className="sticky right-0 px-4 text-right">
-                  Actions
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {[...Array(10)].map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell className="h-[52px] px-4 py-2" colSpan={6}>
-                    <Skeleton className="h-7 w-full" />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function TeamMembersPage() {
+export default function SalesTeamMembersPage() {
   const queryClient = useQueryClient();
   const { currentWorkspace, canAccess } = useRBAC();
+  const pathname = usePathname();
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [updatingMember, setUpdatingMember] = useState<WorkspaceMember | null>(
     null,
   );
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
+
+  // Detect module from pathname
+  const moduleKey = useMemo(() => {
+    if (pathname.includes('/sales/')) return 'sales';
+    if (pathname.includes('/hrms/')) return 'hrms';
+    if (pathname.includes('/inventory/')) return 'inventory';
+    if (pathname.includes('/services/')) return 'service_cloud';
+    if (pathname.includes('/funds/')) return 'funds';
+    return null;
+  }, [pathname]);
 
   const columns = useMemo(
     () => [
@@ -143,14 +102,20 @@ export default function TeamMembersPage() {
     enabled: !!currentWorkspace?.id,
   });
 
-  // Prefetch roles so they're available immediately when invite dialog opens
+  // Prefetch module-specific roles so they're available immediately when invite dialog opens
   useQuery({
-    queryKey: ['workspaceRoles', currentWorkspace?.id],
+    queryKey: ['moduleRoles', currentWorkspace?.id, moduleKey],
     queryFn: async () => {
-      const res = await getRolesService(currentWorkspace?.id || '');
-      return res?.data;
+      if (moduleKey) {
+        const res = await getModuleRolesService(
+          currentWorkspace?.id || '',
+          moduleKey,
+        );
+        return res?.data;
+      }
+      return [];
     },
-    enabled: !!currentWorkspace?.id,
+    enabled: !!currentWorkspace?.id && !!moduleKey,
   });
 
   const members = (membersData?.data || [])?.filter(
@@ -172,7 +137,7 @@ export default function TeamMembersPage() {
       });
       toast.success('Member removed successfully');
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast.error(error?.message || 'Failed to remove member');
     },
   });
@@ -186,7 +151,7 @@ export default function TeamMembersPage() {
       });
       toast.success('Invitation resent successfully');
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast.error(error?.message || 'Failed to resend invitation');
     },
   });
@@ -206,136 +171,103 @@ export default function TeamMembersPage() {
     setUpdateDialogOpen(true);
   };
 
+  const getRoleColor = (role: any) => {
+    if (!role) return '#6b7280';
+    return role.color || '#6b7280';
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'accepted':
         return (
-          <Badge className="gap-1 border-green-500/20 bg-green-500/10 text-green-500 hover:bg-green-500/20">
-            <Check className="h-3 w-3" />
+          <Badge
+            variant="default"
+            className="bg-green-500/10 text-green-600 hover:bg-green-500/20 dark:text-green-400"
+          >
+            <Check className="mr-1 h-3 w-3" />
             Active
           </Badge>
         );
       case 'pending':
         return (
-          <Badge className="gap-1 border-yellow-500/20 bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20 dark:text-yellow-500">
-            <Clock className="h-3 w-3" />
+          <Badge
+            variant="secondary"
+            className="bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 dark:text-amber-400"
+          >
+            <Clock className="mr-1 h-3 w-3" />
             Pending
           </Badge>
         );
-      case 'inactive':
+      case 'removed':
         return (
-          <Badge variant="secondary" className="gap-1">
-            Inactive
+          <Badge variant="destructive">
+            <Trash2 className="mr-1 h-3 w-3" />
+            Removed
           </Badge>
         );
       default:
-        return <Badge variant="outline">Unknown</Badge>;
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
-  const getRoleColor = (role: { color?: string } | null) => {
-    return role?.color || '#6b7280';
-  };
-
-  if (!currentWorkspace) {
-    return (
-      <ModuleGuard module="team_members">
-        <TeamMembersPageSkeleton />
-      </ModuleGuard>
-    );
-  }
-
   return (
-    <ModuleGuard module="team_members">
-      <div className="flex h-[100dvh] flex-col overflow-hidden">
-        <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
-          <PageHeader
-            className="bg-sidebar px-6 py-4"
-            title={`Members (${members.length})`}
-            description="Manage your workspace team members and permissions"
-          >
-            <div className="flex items-center gap-2">
-              {/* {canAccess('team_members', 'create') && (
-                <Button
-                  onClick={() => setInviteDialogOpen(true)}
-                  size="sm"
-                  className="h-9 gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Invite Member
-                </Button>
-              )} */}
+    <ModuleGuard module="team_members" feature="view">
+      <div className="@container/payment flex flex-col">
+        <PageHeader
+          title="Team Members"
+          description="Manage your team and their access permissions"
+          className="border-b pb-4"
+        >
+          <div className="flex items-center gap-2">
+            {canAccess('team_members', 'create') && (
+              <Button
+                onClick={() => setInviteDialogOpen(true)}
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Invite Member
+              </Button>
+            )}
+          </div>
+        </PageHeader>
 
-              {canAccess('team_members', 'create') && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      onClick={() => setInviteDialogOpen(true)}
-                      className="h-8 w-8 bg-white p-0 text-black dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
-                    >
-                      <Plus className="h-4 w-4 text-gray-500 dark:text-white" />
-                    </Button>
-                  </TooltipTrigger>
+        {/* Stats Cards */}
+        <div className="bg-card flex items-center gap-2 overflow-x-auto border-b px-4 py-2">
+          <div className="flex items-center gap-2">
+            <ColumnVisibilitySelector
+              columns={columns}
+              visibility={visibility}
+              onToggle={toggleVisibility}
+              onReset={reset}
+            />
+          </div>
 
-                  <TooltipContent side="bottom">
-                    <p>Invite Member</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-
-              {/* <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" /> */}
-
-              <ColumnVisibilitySelector
-                columns={columns}
-                visibility={visibility}
-                onToggle={toggleVisibility}
-                onReset={reset}
-              />
-            </div>
-          </PageHeader>
-          {/* Summary Cards - Fixed at top */}
-          <div className="bg-sidebar -mt-1 w-full max-w-full min-w-0 overflow-x-auto px-6 pb-7">
-            <div className="-mb-3 flex items-center gap-3">
-              <Card className="hover:border-primary/50 bg-card w-52 shrink-0 transition-all">
-                <CardContent className="flex h-10 items-center p-3">
-                  <div className="flex w-full flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-blue-500" />
-                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
-                        Total Members ({members.length})
-                      </span>
-                    </div>
+          <div className="flex items-center gap-2">
+            <Card className="hover:border-primary/50 bg-card w-52 shrink-0 transition-all">
+              <CardContent className="flex h-10 items-center p-3">
+                <div className="flex w-full flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                    <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
+                      Active Members ({activeMembers.length})
+                    </span>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card className="hover:border-primary/50 bg-card w-52 shrink-0 transition-all">
-                <CardContent className="flex h-10 items-center p-3">
-                  <div className="flex w-full flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-green-500" />
-                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
-                        Active ({activeMembers.length})
-                      </span>
-                    </div>
+            <Card className="hover:border-primary/50 bg-card w-52 shrink-0 transition-all">
+              <CardContent className="flex h-10 items-center p-3">
+                <div className="flex w-full flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-yellow-500" />
+                    <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
+                      Pending Invitations ({pendingMembers.length})
+                    </span>
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card className="hover:border-primary/50 bg-card w-52 shrink-0 transition-all">
-                <CardContent className="flex h-10 items-center p-3">
-                  <div className="flex w-full flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-yellow-500" />
-                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
-                        Pending Invitations ({pendingMembers.length})
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
@@ -353,41 +285,8 @@ export default function TeamMembersPage() {
               </CardHeader>
               <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
                 {isLoading ? (
-                  <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
-                    <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
-                      <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
-                        <TableRow>
-                          {isVisible('member') && <TableHead>Member</TableHead>}
-                          {isVisible('email') && <TableHead>Email</TableHead>}
-                          {isVisible('role') && <TableHead>Role</TableHead>}
-                          {isVisible('status') && <TableHead>Status</TableHead>}
-                          {isVisible('primary_contact') && (
-                            <TableHead>Primary Contact</TableHead>
-                          )}
-                          <TableHead className="sticky right-0 px-4 text-right">
-                            Actions
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {[...Array(10)].map((_, i) => (
-                          <TableRow key={i}>
-                            <TableCell
-                              className="h-[52px] px-4 py-2"
-                              colSpan={
-                                visibility
-                                  ? Object.values(visibility).filter(
-                                      (v) => v !== false,
-                                    ).length + 1
-                                  : 6
-                              }
-                            >
-                              <Skeleton className="h-7 w-full" />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </table>
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
                   </div>
                 ) : error ? (
                   <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border p-4">
@@ -530,9 +429,6 @@ export default function TeamMembersPage() {
                 )}
               </CardContent>
             </Card>
-
-            {/* Module Seat Access Section */}
-            <ModuleSeatSection />
           </div>
 
           {/* Dialogs */}

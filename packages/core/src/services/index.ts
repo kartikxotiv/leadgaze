@@ -7,3 +7,4 @@ export * from './email-templates.service';
 export * from './documents.service';
 export * from './activities.service';
 export * from './reminders.service';
+export * from './workspace-subscription.service';
