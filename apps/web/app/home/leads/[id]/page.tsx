@@ -71,7 +71,7 @@ import { CustomInputForView } from '@kit/ui/custom-input-for-view';
 function LeadDetailsSkeleton() {
   return (
     <div className="flex h-full flex-col">
-      <div className="px-6 pt-4 pb-0">
+      <div className="px-6 pt-4 pb-2">
         <Skeleton className="h-8 w-20 rounded-md" />
       </div>
       <PageBody>
@@ -434,7 +434,7 @@ export default function LeadDetailsPage() {
 {/* $$$$$$$$$$$$$*/}
 
             {/* Comapny */}
-            <CardWidgetContainer title="Company" icon={<User className="w-5 h-5 text-leadgaze-muted dark:text-white" />}>
+            <CardWidgetContainer title="Company" icon={<User className="w-5 h-5 text-leadgaze-dark dark:text-white" />}>
             <div className="flex-1">
               <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
                 {lead.company_name && (
@@ -505,7 +505,7 @@ export default function LeadDetailsPage() {
             
 
             {/* Contact Information Section */}
-            <CardWidgetContainer title="Contact" icon={<User className="w-5 h-5 text-leadgaze-muted dark:text-white" />}>
+            <CardWidgetContainer title="Contact" icon={<User className="w-5 h-5 text-leadgaze-dark dark:text-white" />}>
               <div className="flex-1">
                 <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
                   {lead.email && (
@@ -811,7 +811,7 @@ export default function LeadDetailsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-gray-400" />
+                  <Clock className="h-5 w-5 text-leadgaze-dark dark:text-white" />
                   <CardTitle className="text-lg">Activity</CardTitle>
                 </div>
               </CardHeader>
