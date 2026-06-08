@@ -1,27 +1,17 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  ChevronLeft,
-  ChevronRight,
-  FileUp,
-  Filter,
-  Plus,
-  Search,
-  X,
-} from 'lucide-react';
+import { FileUp, Plus } from 'lucide-react';
 
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
-import { Checkbox } from '@kit/ui/checkbox';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
-import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import {
   Pagination,
@@ -31,7 +21,6 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@kit/ui/pagination';
-import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
 import { Skeleton } from '@kit/ui/skeleton';
 import {
   Table,
@@ -41,13 +30,8 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { ListToolBar } from '@kit/ui/list-toolbar';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
@@ -72,12 +56,6 @@ export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedCreatedBy, setSelectedCreatedBy] = useState<string>('');
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [filterView, setFilterView] = useState<
-    'main' | 'status' | 'created_by'
-  >('main');
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
@@ -246,278 +224,7 @@ export default function LeadsPage() {
             className="bg-sidebar px-6 py-4"
             title={`Leads (${totalCount})`}
             description="Manage and track your sales leads"
-          >
-            <div className="flex items-center gap-2">
-              <div className="flex items-center">
-                <div
-                  className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${
-                    isSearchOpen ? 'w-64 lg:w-72' : 'w-9'
-                  }`}
-                >
-                  {isSearchOpen ? (
-                    <div className="relative w-full">
-                      <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        ref={searchInputRef}
-                        placeholder="Search by name or email"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-8 pl-10"
-                        onBlur={() => {
-                          if (!searchTerm) setIsSearchOpen(false);
-                        }}
-                        autoFocus
-                      />
-                    </div>
-                  ) : (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          className="border-input hover:bg-accent -mr-6 flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white text-gray-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
-                          onClick={() => setIsSearchOpen(true)}
-                        >
-                          <Search className="h-4 w-4 text-gray-400" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p>Search</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                </div>
-              </div>
-
-              {/* Filter button */}
-              <Popover
-                open={isFilterOpen}
-                onOpenChange={(open) => {
-                  setIsFilterOpen(open);
-                  if (!open) setFilterView('main');
-                }}
-              >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <PopoverTrigger asChild>
-                      <button
-                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white dark:border-zinc-700 dark:bg-zinc-900 ${
-                          isFilterOpen ? 'bg-accent' : ''
-                        }`}
-                      >
-                        <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
-                        {activeFilterCount > 0 && (
-                          <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
-                            {activeFilterCount}
-                          </span>
-                        )}
-                      </button>
-                    </PopoverTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p>Filter</p>
-                  </TooltipContent>
-                </Tooltip>
-                <PopoverContent className="w-80 p-0" align="end">
-                  <div className="flex items-center justify-between border-b px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {filterView !== 'main' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={() => setFilterView('main')}
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <span className="text-sm font-semibold">
-                        {filterView === 'main'
-                          ? 'Filters'
-                          : filterView === 'status'
-                            ? 'Filter by Status'
-                            : 'Filter by Created By'}
-                      </span>
-                    </div>
-                    <button
-                      className="text-muted-foreground hover:text-foreground text-xs underline"
-                      onClick={() => {
-                        setSelectedStatus('all');
-                        setSelectedCreatedBy('');
-                      }}
-                    >
-                      Clear all
-                    </button>
-                  </div>
-
-                  <div className="p-2">
-                    {filterView === 'main' && (
-                      <div className="flex flex-col gap-1">
-                        <button
-                          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
-                          onClick={() => setFilterView('status')}
-                        >
-                          <div className="flex flex-col gap-1">
-                            <span>Status</span>
-                            <span className="text-muted-foreground text-xs font-normal">
-                              {selectedStatus === 'all'
-                                ? 'All statuses'
-                                : statuses.find(
-                                    (s: any) => s.id === selectedStatus,
-                                  )?.status_name || '1 selected'}
-                            </span>
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-gray-400" />
-                        </button>
-                        <button
-                          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
-                          onClick={() => setFilterView('created_by')}
-                        >
-                          <div className="flex flex-col gap-1">
-                            <span>Created By</span>
-                            <span className="text-muted-foreground text-xs font-normal">
-                              {selectedCreatedBy
-                                ? members.find(
-                                    (m: any) => m.user_id === selectedCreatedBy,
-                                  )?.user?.user_metadata?.full_name ||
-                                  '1 selected'
-                                : 'All members'}
-                            </span>
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-gray-400" />
-                        </button>
-                      </div>
-                    )}
-
-                    {filterView === 'status' && (
-                      <div className="flex flex-col gap-1 p-1">
-                        {statuses.map((status: any) => {
-                          const isSelected = selectedStatus === status.id;
-                          return (
-                            <div
-                              key={status.id}
-                              className="hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors"
-                              onClick={() => {
-                                setSelectedStatus(
-                                  isSelected ? 'all' : status.id,
-                                );
-                              }}
-                            >
-                              <div
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
-                                  isSelected
-                                    ? 'border-black bg-transparent dark:border-white'
-                                    : 'border-black/20 bg-transparent dark:border-white/30'
-                                }`}
-                              >
-                                {isSelected && (
-                                  <div className="h-2 w-2 rounded-full bg-black dark:bg-white" />
-                                )}
-                              </div>
-                              <div
-                                className="h-2 w-2 shrink-0 rounded-full"
-                                style={{ backgroundColor: status.color }}
-                              />
-                              <span className="text-black dark:text-gray-200">
-                                {status.status_name}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {filterView === 'created_by' && (
-                      <div className="flex flex-col gap-1 p-1">
-                        {members
-                          .filter((m: any) => m.user_id)
-                          .map((member: any) => {
-                            const memberName =
-                              member.user?.user_metadata?.full_name ||
-                              member.user?.email ||
-                              member.user_id;
-                            const isChecked =
-                              selectedCreatedBy === member.user_id;
-                            return (
-                              <div
-                                key={member.user_id}
-                                className="hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors"
-                                onClick={() =>
-                                  setSelectedCreatedBy(
-                                    isChecked ? '' : member.user_id,
-                                  )
-                                }
-                              >
-                                <div
-                                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
-                                    isChecked
-                                      ? 'border-black bg-transparent dark:border-white'
-                                      : 'border-black/20 bg-transparent dark:border-white/30'
-                                  }`}
-                                >
-                                  {isChecked && (
-                                    <div className="h-2 w-2 rounded-full bg-black dark:bg-white" />
-                                  )}
-                                </div>
-                                <span className="truncate text-black dark:text-gray-200">
-                                  {memberName}
-                                </span>
-                              </div>
-                            );
-                          })}
-                      </div>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              {canAccess('leads', 'import') && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        onClick={() => setIsCreateDialogOpen(true)}
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                      >
-                        <FileUp className="h-4 w-4 text-gray-500 dark:text-white" />
-                      </Button>
-                    </TooltipTrigger>
-
-                    <TooltipContent side="bottom">
-                      <span>Import</span>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-
-              {canAccess('leads', 'create') && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        onClick={() => setIsCreateDialogOpen(true)}
-                        variant="outline"
-                        className="h-8 w-8 bg-white p-0 text-black dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
-                      >
-                        <Plus className="h-4 w-4 text-gray-500 dark:text-white" />
-                      </Button>
-                    </TooltipTrigger>
-
-                    <TooltipContent side="bottom">
-                      <span>New Lead</span>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              {/* <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" /> */}
-
-              <ColumnVisibilitySelector
-                columns={columns}
-                visibility={visibility}
-                onToggle={toggleVisibility}
-                onReset={reset}
-              />
-            </div>
-          </PageHeader>
+          />
 
           {/* Status Distribution Cards */}
           <div className="bg-sidebar -mt-1 w-full max-w-full min-w-0 overflow-x-auto px-6 pb-7">
@@ -555,7 +262,85 @@ export default function LeadsPage() {
             </div>
           </div>
         </div>
-        <PageBody className="bg-sidebar sticky -mt-3 flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-6">
+
+        {/* Full-width search / filter / actions toolbar */}
+        <div className="bg-sidebar w-full max-w-full min-w-0 shrink-0 border-b px-6 py-2">
+          <ListToolBar
+            showSearch
+            searchPlaceholder="Search leads..."
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            showFilter
+            filterGroups={[
+              {
+                key: 'status',
+                label: 'Status',
+                selectedValue: selectedStatus === 'all' ? '' : selectedStatus,
+                selectedLabel:
+                  selectedStatus === 'all'
+                    ? 'All statuses'
+                    : (statuses.find((s: any) => s.id === selectedStatus) as any)?.status_name ?? '1 selected',
+                options: statuses.map((s: any) => ({
+                  value: s.id,
+                  label: s.status_name,
+                  color: s.color,
+                })),
+                onSelect: (val) => setSelectedStatus(val || 'all'),
+              },
+              {
+                key: 'created_by',
+                label: 'Created By',
+                selectedValue: selectedCreatedBy,
+                selectedLabel: selectedCreatedBy
+                  ? (members.find((m: any) => m.user_id === selectedCreatedBy) as any)?.user?.user_metadata?.full_name ?? '1 selected'
+                  : 'All members',
+                options: members
+                  .filter((m: any) => m.user_id)
+                  .map((m: any) => ({
+                    value: m.user_id,
+                    label:
+                      m.user?.user_metadata?.full_name ||
+                      m.user?.email ||
+                      m.user_id,
+                  })),
+                onSelect: (val) => setSelectedCreatedBy(val),
+              },
+            ]}
+            activeFilterCount={activeFilterCount}
+            onClearFilters={() => {
+              setSelectedStatus('all');
+              setSelectedCreatedBy('');
+            }}
+            actions={[
+              {
+                key: 'import',
+                label: 'Import',
+                icon: FileUp,
+                onClick: () => setIsCreateDialogOpen(true),
+                show: canAccess('leads', 'import'),
+                buttonVariant: 'outline',
+              },
+              {
+                key: 'add',
+                label: 'New Lead',
+                icon: Plus,
+                onClick: () => setIsCreateDialogOpen(true),
+                show: canAccess('leads', 'create'),
+                buttonVariant: 'default',
+              },
+            ]}
+            columnVisibilitySlot={
+              <ColumnVisibilitySelector
+                columns={columns}
+                visibility={visibility}
+                onToggle={toggleVisibility}
+                onReset={reset}
+              />
+            }
+          />
+        </div>
+
+        <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
           <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
             <CustomTableContainer pagination={totalCount > 0 && (
                 <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">

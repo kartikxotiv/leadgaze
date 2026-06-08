@@ -85,3 +85,14 @@
 @utility dark-table-status-select-bg{
   background-color: #3953E7;
 }
+
+@utility border-light-gray{
+  border-color: #B0B0B0 !important;
+}
+
+@utility dark-theme-color{
+  background-color: #1E1E1E;
+}
+@utility dark-button-border-color{
+  border-color: #404040 !important;
+}
