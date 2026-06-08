@@ -72,17 +72,17 @@ export function PersonalAccountDropdown({
         aria-label="Open your profile menu"
         data-test={'account-dropdown-trigger'}
         className={cn(
-          'animate-in fade-in focus:outline-primary flex cursor-pointer items-center duration-500 group-data-[minimized=true]:px-0',
+          'rounded-full animate-in fade-in focus:outline-primary flex cursor-pointer items-center duration-500 group-data-[minimized=true]:px-0',
           className ?? '',
           {
-            ['active:bg-secondary/50 items-center gap-x-4 rounded-md' +
-            ' hover:bg-secondary p-2 transition-colors']: showProfileName,
+            ['active:bg-secondary/50 items-center gap-x-4 rounded-full' +
+            ' hover:bg-primary p-2 transition-colors']: showProfileName,
           },
         )}
       >
         <ProfileAvatar
-          className={'rounded-md'}
-          fallbackClassName={'rounded-md border'}
+          className={'rounded-full'}
+          fallbackClassName={'rounded-full border border-header-primary bg-header-primary text-primary-foreground dark:border-white dark:text-white'}
           displayName={displayName ?? user?.email ?? ''}
           pictureUrl={personalAccountData?.data?.picture_url}
         />
