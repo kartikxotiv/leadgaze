@@ -101,7 +101,7 @@ export function ContactAssignees({
     <CardWidgetContainer
       className="mt-6"
       title="Assigned Team Members"
-      icon={<Users className="h-5 w-5" />}
+      icon={<Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
         <Button
           size="sm"
@@ -147,7 +147,7 @@ export function ContactAssignees({
                       className="h-8 w-8 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#4053F5] text-sm font-semibold text-white">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-sm font-semibold text-white">
                       {getAssigneeInitials(assignee)}
                     </div>
                   )

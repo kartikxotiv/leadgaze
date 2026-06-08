@@ -135,7 +135,7 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
     <CardWidgetContainer
       title="Notes"
       hideHeaderBorder={true}
-      icon={<FileText className="text-leadgaze-dark h-5 w-5" />}
+      icon={<FileText className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
         canAddNote ? (
           <Dialog

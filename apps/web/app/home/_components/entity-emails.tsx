@@ -102,7 +102,7 @@ export function EntityEmails({
       <CardWidgetContainer
         title="Emails"
         hideHeaderBorder={true}
-        icon={<Mail className="text-leadgaze-dark h-5 w-5" />}
+        icon={<Mail className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       >
         <div className="px-6 py-3">
           <div className="flex justify-center py-4">
@@ -118,7 +118,7 @@ export function EntityEmails({
       <CardWidgetContainer
         title="Emails"
         hideHeaderBorder={true}
-        icon={<Mail className="text-leadgaze-dark h-5 w-5" />}
+        icon={<Mail className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       >
         <div className="px-6 py-3">
           <div className="flex justify-center py-4">
@@ -134,7 +134,7 @@ export function EntityEmails({
       <CardWidgetContainer
         title="Emails"
         hideHeaderBorder={true}
-        icon={<Mail className="text-leadgaze-dark h-5 w-5" />}
+        icon={<Mail className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
         icon2={
           <Button
             size="sm"
@@ -160,7 +160,8 @@ export function EntityEmails({
               <p className="text-sm text-gray-500">No email activity yet</p>
             </div>
           ) : (
-            <CardWidgetList>
+            <div className="max-h-[280px] overflow-y-auto pr-1">
+              <CardWidgetList>
               {combinedItems.map((item: any) => (
                 <CardWidgetListItem
                   key={item.id}
@@ -339,6 +340,7 @@ export function EntityEmails({
                 />
               ))}
             </CardWidgetList>
+            </div>
           )}
         </div>
       </CardWidgetContainer>

@@ -116,7 +116,7 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
         <CardWidgetContainer
             title="Call Logs"
             hideHeaderBorder={true}
-            icon={<Phone className="text-leadgaze-dark h-5 w-5" />}
+            icon={<Phone className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
             icon2={
                 <Button
                     size="sm"

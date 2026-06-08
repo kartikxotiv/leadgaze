@@ -61,7 +61,7 @@ import { EditContactDialog } from '../components/edit-contact-dialog';
 function ContactDetailsSkeleton() {
   return (
     <ModuleGuard module="contacts">
-      <div className="bg-background border-b px-6 py-4">
+      <div className="sticky top-0 z-10 bg-background border-b px-6 py-4">
         <div className="mb-4 flex items-center justify-between">
           <Skeleton className="h-8 w-20 rounded-md" />
           <div className="flex gap-2">
@@ -81,7 +81,7 @@ function ContactDetailsSkeleton() {
           </div>
         </div>
       </div>
-      <PageBody className="pb-6">
+      <PageBody className="pb-6 max-h-[calc(100vh-150px)] overflow-y-auto">
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
             <Card>
@@ -195,7 +195,7 @@ export default function ContactDetailsPage() {
 
   return (
     <ModuleGuard module="contacts">
-      <div className="bg-background px-6 py-4">
+      <div className="sticky top-0 z-10 bg-background border-b px-6 py-4">
         <div className="mb-4 flex items-center justify-between">
           <Button variant="ghost" size="sm" asChild className="-ml-2">
             <Link href="/home/contacts">
@@ -296,7 +296,7 @@ export default function ContactDetailsPage() {
         </div>
       </div>
 
-      <PageBody className="pb-6">
+      <PageBody className="pb-6 max-h-[calc(100vh-150px)] overflow-y-auto">
         <DeleteEntityDialog
           isOpen={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
