@@ -1,5 +1,4 @@
-import type { PayrollReportsData } from '~/types/reports.type';
-
+import type { PayrollReportsData } from '../../../../types/reports.type';
 import {
   createEmployeeSnapshot,
   formatRunPeriod,

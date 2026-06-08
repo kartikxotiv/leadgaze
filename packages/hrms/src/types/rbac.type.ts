@@ -1,4 +1,4 @@
-export type PermissionAccessLevel = 'none' | 'own' | 'team';
+export type PermissionAccessLevel = 'none' | 'own' | 'team' | 'all';
 
 export type RbacPermission = {
   module_key: string;
@@ -21,4 +21,3 @@ export type ApiSuccessResponse<T> = {
   message: string | null;
   data: T;
 };
-

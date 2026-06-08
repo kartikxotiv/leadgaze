@@ -5,9 +5,8 @@ import type {
   ReportsOptions,
   ReportsPermissionSummary,
   ReportsShiftOption,
-} from '~/types/reports.type';
-import { ApiError } from '~/utils/response-handler';
-
+} from '../../../../types/reports.type';
+import { ApiError } from '../../../../utils/response-handler';
 import { deriveAttendanceDisplayStatus } from '../../attendance/utils';
 import type {
   AttendanceRecordRow,

@@ -4,6 +4,7 @@ import {
   Building2,
   CalendarCheck,
   ClipboardList,
+  FileBarChart,
   FileText,
   LifeBuoy,
   LogOut,
@@ -83,6 +84,12 @@ const modules = [
     description: 'Salary structures, runs, payslips, and approvals.',
     href: '/home/hrms/payroll',
     icon: WalletCards,
+  },
+  {
+    title: 'Reports',
+    description: 'Attendance, leave, payroll, and workforce analytics.',
+    href: '/home/hrms/reports',
+    icon: FileBarChart,
   },
 ];
 

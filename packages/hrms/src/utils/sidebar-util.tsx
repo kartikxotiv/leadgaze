@@ -7,6 +7,7 @@ import {
   Building2,
   CalendarCheck,
   ClipboardList,
+  FileBarChart,
   LifeBuoy,
   LogOut,
   ShieldCheck,
@@ -73,6 +74,11 @@ const hrmsRoutes = {
       label: 'Payroll',
       path: '/home/hrms/payroll',
       Icon: <WalletCards className="h-4 w-4" />,
+    },
+    {
+      label: 'Reports',
+      path: '/home/hrms/reports',
+      Icon: <FileBarChart className="h-4 w-4" />,
     },
   ],
 };
