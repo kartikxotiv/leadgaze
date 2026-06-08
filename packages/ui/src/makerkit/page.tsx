@@ -69,7 +69,7 @@ function PageWithSidebar(props: PageProps) {
 }
 
 function PageWithHeader(props: PageProps) {
-  const { Navigation, Children, MobileNavigation } = getSlotsFromPage(props);
+  const { Navigation, Children } = getSlotsFromPage(props);
 
   return (
     <TooltipProvider>
@@ -86,19 +86,17 @@ function PageWithHeader(props: PageProps) {
         >
           <div
             className={cn(
-              'bg-header-primary text-white flex h-16 items-center justify-between border-b border-header-primary/20 px-6 lg:justify-start',
+              'bg-leadgaze-primary text-white flex h-16 items-center justify-between border-b border-header-primary/20 px-6 justify-start',
               {
-                'sticky top-0 z-10 backdrop-blur-md': props.sticky ?? true,
+                'sticky top-0 z-50 backdrop-blur-md': props.sticky ?? true,
               },
             )}
           >
             <div
-              className={'hidden w-full flex-1 items-center space-x-8 lg:flex'}
+              className={'flex w-full flex-1 items-center space-x-8'}
             >
               {Navigation}
             </div>
-
-            {MobileNavigation}
           </div>
 
           <div className={'w-full px-6 py-4 flex flex-1 flex-col'}>{Children}</div>
