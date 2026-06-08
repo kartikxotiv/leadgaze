@@ -53,7 +53,7 @@
 /* Thin scrollbar – applied globally */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  scrollbar-color: hsl(var(--border)) transparent;
 }
 
 *::-webkit-scrollbar {
