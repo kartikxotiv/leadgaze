@@ -4,17 +4,16 @@ import { useMemo, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 
-import { showToast } from '~/components/global/ToastAlert';
-import { useRbac } from '~/components/rbac/rbac-context';
-import { getReportsDashboardService } from '~/services/reports.service';
+import { showToast } from '../components/global/ToastAlert';
+import { useRbac } from '../components/rbac/rbac-context';
+import type { ReportsTabValue } from '../pages/reports/page.data';
+import { getReportsDashboardService } from '../server/services/reports.service';
 import type {
   ApiSuccessResponse,
   ReportsDashboardResponse,
   ReportsEmployeeOption,
   ReportsFilterState,
-} from '~/types/reports.type';
-
-import type { ReportsTabValue } from '../page.data';
+} from '../types/reports.type';
 import { exportReportsExcel, exportReportsPdf } from './reports-page-export';
 import {
   filterEmployeeOptions,

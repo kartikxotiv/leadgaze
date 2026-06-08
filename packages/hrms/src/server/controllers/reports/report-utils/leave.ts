@@ -1,5 +1,4 @@
-import type { LeaveReportsData } from '~/types/reports.type';
-
+import type { LeaveReportsData } from '../../../../types/reports.type';
 import {
   createEmployeeSnapshot,
   getDepartmentName,
