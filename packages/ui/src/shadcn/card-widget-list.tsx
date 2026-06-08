@@ -54,7 +54,7 @@ export function CardWidgetListItem({
   return (
     <div
       className={cn(
-        'group relative flex items-start justify-between gap-3 rounded-[4px] border-[0.6px] border-border bg-white p-2 opacity-100 transition-colors hover:bg-gray-50/50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800/50',
+        'group relative flex items-start justify-between gap-3 rounded-[4px] border-[0.6px] border-leadgaze-border bg-white p-2 opacity-100 transition-colors hover:bg-gray-50/50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800/50',
         className,
       )}
       {...props}

@@ -114,7 +114,7 @@ export function ContactAssignees({
         </Button>
       }
     >
-      <div className="p-6">
+      <div className="px-6 py-4">
         {isLoading ? (
           <div className="text-muted-foreground py-8 text-center text-sm">
             Loading assignees...

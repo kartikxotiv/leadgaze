@@ -316,7 +316,7 @@ export default function ContactDetailsPage() {
               }
             >
               <div className="flex-1">
-                <CardContent className="grid grid-cols-1 gap-4 pt-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
                   {contact.email && (
                     <CustomInputForView
                       label="Email"
@@ -455,7 +455,7 @@ export default function ContactDetailsPage() {
                       className="col-span-2"
                     />
                   )}
-                </CardContent>
+                </div>
               </div>
             </CardWidgetContainer>
 
