@@ -1,5 +1,4 @@
-import type { AttendanceReportsData } from '~/types/reports.type';
-
+import type { AttendanceReportsData } from '../../../../types/reports.type';
 import {
   computeLateEarlyMetrics,
   createEmployeeSnapshot,
