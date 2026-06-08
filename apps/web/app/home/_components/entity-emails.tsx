@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Clock, FileText, Loader2, Mail, Trash2 } from 'lucide-react';
+import { Clock, FileText, Loader2, Mail, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import { cn } from '@kit/ui/utils';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
@@ -98,52 +99,47 @@ export function EntityEmails({
 
   if (!mounted) {
     return (
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <div className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-gray-400" />
-            <CardTitle className="text-lg">Emails</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
+      <CardWidgetContainer
+        title="Emails"
+        hideHeaderBorder={true}
+        icon={<Mail className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+      >
+        <div className="px-6 py-3">
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </CardWidgetContainer>
     );
   }
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <div className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-gray-400" />
-            <CardTitle className="text-lg">Emails</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
+      <CardWidgetContainer
+        title="Emails"
+        hideHeaderBorder={true}
+        icon={<Mail className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+      >
+        <div className="px-6 py-3">
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </CardWidgetContainer>
     );
   }
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <div className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-gray-400" />
-            <CardTitle className="text-lg">Emails</CardTitle>
-          </div>
+      <CardWidgetContainer
+        title="Emails"
+        hideHeaderBorder={true}
+        icon={<Mail className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+        icon2={
           <Button
             size="sm"
-            variant="outline"
-            className="gap-2"
+            variant="ghost"
+            className="gap-2 text-blue-500 hover:text-blue-600 text-sm"
             onClick={() => {
               setSelectedDraft(null);
               setSelectedEmail(null);
@@ -151,36 +147,12 @@ export function EntityEmails({
               setIsComposeOpen(true);
             }}
           >
-            <Mail className="h-4 w-4" />
-            Send Email
+            <Plus className="h-4 w-4" />
+            Send Mail
           </Button>
-        </CardHeader>
-        <CardContent>
-          {uniqueRecipientOptions.length > 0 && (
-            <div className="mb-4 flex flex-wrap gap-2">
-              {uniqueRecipientOptions.map((recipient) => (
-                <button
-                  key={recipient.email}
-                  type="button"
-                  className="rounded-md border border-emerald-100 bg-emerald-50 px-2.5 py-1.5 text-left text-xs text-emerald-700 transition-colors hover:border-emerald-200 hover:bg-emerald-100"
-                  onClick={() => {
-                    setSelectedDraft(null);
-                    setSelectedEmail(null);
-                    setComposeRecipientEmail(recipient.email);
-                    setIsComposeOpen(true);
-                  }}
-                  title={`Send email to ${recipient.email}`}
-                >
-                  <span className="font-medium">
-                    {recipient.name || recipient.label || 'Contact'}
-                  </span>
-                  <span className="ml-1 text-emerald-600">
-                    &lt;{recipient.email}&gt;
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
+        }
+      >
+        <div className="px-6 py-3">
 
           {combinedItems.length === 0 ? (
             <div className="py-8 text-center">
@@ -188,39 +160,20 @@ export function EntityEmails({
               <p className="text-sm text-gray-500">No email activity yet</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="max-h-[280px] overflow-y-auto pr-1">
+              <CardWidgetList>
               {combinedItems.map((item: any) => (
-                <div
+                <CardWidgetListItem
                   key={item.id}
                   className={cn(
-                    'group relative rounded-lg border border-gray-100 bg-gray-50 p-3 transition-all dark:border-gray-800 dark:bg-slate-900',
                     item.status !== 'sent'
-                      ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800'
+                      ? 'cursor-pointer'
                       : 'cursor-default',
                   )}
-                  onClick={() => {
-                    if (
-                      item.direction !== 'inbound' &&
-                      item.status !== 'sent'
-                    ) {
-                      if (onOpenDraft) {
-                        onOpenDraft(item);
-                        return;
-                      }
-
-                      setSelectedDraft(item);
-                      setIsComposeOpen(true);
-                      return;
-                    }
-
-                    setSelectedEmail(item);
-                    setIsDetailOpen(true);
-                  }}
-                >
-                  <div className="flex items-start gap-3">
+                  icon={
                     <div
                       className={cn(
-                        'mt-0.5 rounded-full p-2',
+                        'rounded-md p-2',
                         item.direction === 'inbound'
                           ? 'bg-purple-100 text-purple-600'
                           : item.status === 'sent'
@@ -240,89 +193,157 @@ export function EntityEmails({
                         <FileText className="h-4 w-4" />
                       )}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {item.subject || '(No Subject)'}
-                        </p>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            'h-4 px-1 text-[10px]',
-                            item.direction === 'inbound'
-                              ? 'border-purple-200 bg-purple-50 text-purple-600'
-                              : item.status === 'sent'
-                                ? 'border-green-200 bg-green-50 text-green-600'
-                                : item.status === 'scheduled'
-                                  ? 'border-blue-200 bg-blue-50 text-blue-600'
-                                  : 'border-amber-200 bg-amber-50 text-amber-600',
-                          )}
-                        >
-                          {item.direction === 'inbound'
-                            ? 'Inbound'
-                            : item.status.charAt(0).toUpperCase() +
-                              item.status.slice(1)}
-                        </Badge>
-                        {item.direction !== 'inbound' &&
-                          item.status !== 'sent' && (
-                            <span className="text-[10px] text-blue-500 italic opacity-0 transition-opacity group-hover:opacity-100">
-                              • Click to Edit
-                            </span>
-                          )}
-                      </div>
-                      <p
-                        className="mt-1 line-clamp-2 text-xs text-gray-600 dark:text-gray-400"
-                        dangerouslySetInnerHTML={{ __html: item.html_body }}
-                      />
-                      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-gray-400">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>
-                            {new Date(
-                              item.received_at ||
-                                item.sent_at ||
-                                item.updated_at ||
-                                item.created_at ||
-                                new Date(),
-                            ).toLocaleString()}
-                          </span>
-                        </div>
-                        {item.direction === 'inbound' ? (
-                          <span className="max-w-[150px] truncate">
-                            From: {item.from_email}
-                          </span>
-                        ) : (
-                          <span className="max-w-[150px] truncate">
-                            To: {item.to_emails}
-                          </span>
-                        )}
-                        {item.cc_emails && (
-                          <span className="max-w-[100px] truncate">
-                            CC: {item.cc_emails}
-                          </span>
-                        )}
-                        {item.status === 'scheduled' && item.scheduled_at && (
-                          <span className="font-semibold text-blue-600">
-                            Due: {new Date(item.scheduled_at).toLocaleString()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  {item.status !== 'sent' && item.direction !== 'inbound' && (
-                    <button
-                      onClick={(e) => handleDelete(e, item.id)}
-                      className="absolute top-3 right-3 p-1 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500"
+                  }
+                  iconAlignTop={true}
+                  title={
+                    <span
+                      onClick={() => {
+                        if (
+                          item.direction !== 'inbound' &&
+                          item.status !== 'sent'
+                        ) {
+                          if (onOpenDraft) {
+                            onOpenDraft(item);
+                            return;
+                          }
+
+                          setSelectedDraft(item);
+                          setIsComposeOpen(true);
+                          return;
+                        }
+
+                        setSelectedEmail(item);
+                        setIsDetailOpen(true);
+                      }}
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
+                      {item.subject || '(No Subject)'}
+                    </span>
+                  }
+                  badge={
+                    <span
+                      onClick={() => {
+                        if (
+                          item.direction !== 'inbound' &&
+                          item.status !== 'sent'
+                        ) {
+                          if (onOpenDraft) {
+                            onOpenDraft(item);
+                            return;
+                          }
+
+                          setSelectedDraft(item);
+                          setIsComposeOpen(true);
+                          return;
+                        }
+
+                        setSelectedEmail(item);
+                        setIsDetailOpen(true);
+                      }}
+                    >
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          'h-4 px-3 py-2.5 text-[10px]',
+                          item.direction === 'inbound'
+                            ? 'border-purple-200 bg-purple-50 text-purple-600'
+                            : item.status === 'sent'
+                              ? 'border-green-200 bg-green-50 text-green-600'
+                              : item.status === 'scheduled'
+                                ? 'border-blue-200 bg-blue-50 text-blue-600'
+                                : 'border-amber-200 bg-amber-50 text-amber-600',
+                        )}
+                      >
+                        {item.direction === 'inbound'
+                          ? 'Inbound'
+                          : item.status.charAt(0).toUpperCase() +
+                            item.status.slice(1)}
+                      </Badge>
+                      {item.direction !== 'inbound' &&
+                        item.status !== 'sent' && (
+                          <span className="text-[10px] text-blue-500 italic opacity-0 transition-opacity group-hover:opacity-100 ml-1">
+                            • Click to Edit
+                          </span>
+                        )}
+                    </span>
+                  }
+                  content={
+                    <span
+                      onClick={() => {
+                        if (
+                          item.direction !== 'inbound' &&
+                          item.status !== 'sent'
+                        ) {
+                          if (onOpenDraft) {
+                            onOpenDraft(item);
+                            return;
+                          }
+
+                          setSelectedDraft(item);
+                          setIsComposeOpen(true);
+                          return;
+                        }
+
+                        setSelectedEmail(item);
+                        setIsDetailOpen(true);
+                      }}
+                      className="line-clamp-2 text-xs text-gray-600 dark:text-gray-400"
+                      dangerouslySetInnerHTML={{ __html: item.html_body }}
+                    />
+                  }
+                  metadata={
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-gray-400">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          {new Date(
+                            item.received_at ||
+                              item.sent_at ||
+                              item.updated_at ||
+                              item.created_at ||
+                              new Date(),
+                          ).toLocaleString()}
+                        </span>
+                      </div>
+                      {item.direction === 'inbound' ? (
+                        <span className="max-w-[150px] truncate">
+                          From: {item.from_email}
+                        </span>
+                      ) : (
+                        <span className="max-w-[150px] truncate">
+                          To: {item.to_emails}
+                        </span>
+                      )}
+                      {item.cc_emails && (
+                        <span className="max-w-[100px] truncate">
+                          CC: {item.cc_emails}
+                        </span>
+                      )}
+                      {item.status === 'scheduled' && item.scheduled_at && (
+                        <span className="font-semibold text-blue-600">
+                          Due: {new Date(item.scheduled_at).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  }
+                  actions={
+                    item.status !== 'sent' && item.direction !== 'inbound' && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={(e) => handleDelete(e, item.id)}
+                        className="h-7 w-7 text-gray-400 hover:text-red-500"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )
+                  }
+                />
               ))}
+            </CardWidgetList>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </CardWidgetContainer>
 
       <EmailDetailDialog
         open={isDetailOpen}

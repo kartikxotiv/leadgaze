@@ -1,12 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
-
 import {
   ApiError,
   catchAsync,
   successDataResponse,
-} from '~/utils/response-handler';
-
+} from '../../../utils/response-handler';
 import {
   getEmployeeProfile,
   getSelfServiceContext,
@@ -14,9 +11,8 @@ import {
 } from './controller.shared';
 
 const updateSelfServiceProfileController = catchAsync(
-  async ({ body, user }) => {
-    const supabaseAdmin = getSupabaseServerAdminClient();
-    const context = await getSelfServiceContext(user?.id);
+  async ({ body, request, user }) => {
+    const context = await getSelfServiceContext({ request, user });
 
     if (!context.canUpdateProfile) {
       throw new ApiError(
@@ -66,14 +62,14 @@ const updateSelfServiceProfileController = catchAsync(
       );
     }
 
-    const { error } = await (supabaseAdmin as any)
+    const { error } = await context.hrms
       .from('employees')
       .update({
         ...payload,
         updated_at: new Date().toISOString(),
-        updated_by: user?.id ?? null,
+        updated_by: context.userId,
       })
-      .eq('organization_id', context.organizationId)
+      .eq('workspace_id', context.workspaceId)
       .eq('id', context.employeeId);
 
     if (error) {
@@ -82,10 +78,7 @@ const updateSelfServiceProfileController = catchAsync(
 
     return successDataResponse(
       'Personal details updated successfully',
-      await getEmployeeProfile({
-        organizationId: context.organizationId,
-        employeeId: context.employeeId,
-      }),
+      await getEmployeeProfile(context),
     );
   },
 );

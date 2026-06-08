@@ -7,6 +7,7 @@ import {
   FileText,
   LifeBuoy,
   LogOut,
+  ShieldCheck,
   UserSearch,
   Users,
   WalletCards,
@@ -70,6 +71,12 @@ const modules = [
     description: 'Employee HR requests, ticket responses, and follow-up.',
     href: '/home/hrms/support-system',
     icon: LifeBuoy,
+  },
+  {
+    title: 'Self Service',
+    description: 'Profile updates, HR requests, announcements, and payslips.',
+    href: '/home/hrms/self-service',
+    icon: ShieldCheck,
   },
   {
     title: 'Payroll',

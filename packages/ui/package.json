@@ -102,6 +102,7 @@
     "./shadcn-sidebar": "./src/shadcn/sidebar.tsx",
     "./collapsible": "./src/shadcn/collapsible.tsx",
     "./card-widget-container": "./src/shadcn/card-widget-container.tsx",
+    "./card-widget-list": "./src/shadcn/card-widget-list.tsx",
     "./custom-input-for-view": "./src/shadcn/custom-input-for-view.tsx",
     "./custom-table-container": "./src/shadcn/custom-table-container.tsx",
     "./table-status-metric-tab": "./src/shadcn/table-status-metric-tab.tsx",
