@@ -18,7 +18,7 @@ The font sizes are defined in the following files:
 --color-activity-6: #6A7282; /* Gray – e.g., Task Created */
 ```
 
-## Global Text Colors
+## Global Theme & Text Colors
 
 ```css
 --color-leadgaze-primary: #3953E7;
@@ -52,7 +52,6 @@ The font sizes are defined in the following files:
 - **List Toolbar** – `packages/ui/src/shadcn/list-toolbar.tsx`
 - **Detail Header** – `packages/ui/src/shadcn/detail-header.tsx`
 - **Custom Table Container (with pagination)** – `packages/ui/src/shadcn/custom-table-container.tsx`
-
 - **Custom Tab for Metrics** – `packages/ui/src/shadcn/table-status-metric-tab.tsx`
 
 

@@ -48,7 +48,7 @@ export function CustomInputForView({
           />
         )
       ) : (
-        <div className="flex min-h-[37.5px] w-full items-center rounded-[4px] border border-leadgaze-border bg-white px-3 py-1 text-base shadow-2xs md:text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+        <div className="flex min-h-[37.5px] w-full items-center rounded-[4px] border border-leadgaze-border bg-white px-3 py-1 text-base md:text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
           {value}
         </div>
       )}

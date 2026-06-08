@@ -22,7 +22,7 @@ export function DetailHeader({
   return (
     <div
       className={cn(
-        'flex flex-col gap-4 rounded-xl border bg-card p-6 shadow-xs sm:flex-row sm:items-center sm:justify-between dark:bg-card/50',
+        'flex flex-col gap-4 rounded-none border border-leadgaze-border bg-card p-6 shadow-xs sm:flex-row sm:items-center sm:justify-between dark:bg-card/50',
         className,
       )}
       {...props}
