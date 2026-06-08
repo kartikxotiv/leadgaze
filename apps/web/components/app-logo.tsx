@@ -37,16 +37,15 @@ function LogoImage({
     );
   }
 
-  const isDark = mounted && resolvedTheme === 'dark';
-  const logoSrc = isDark ? '/images/leadgaze-dark.png' : '/images/leadgaze.png';
+  const logoSrc = '/images/leadgaze-logo-mini.png';
 
   return (
     <Image
       src={logoSrc}
-      height={150}
-      width={200}
+      height={32}
+      width={32}
       alt="leadgaze"
-      className={className}
+      className={cn('h-8 w-8 object-contain', className)}
     />
   );
 }
