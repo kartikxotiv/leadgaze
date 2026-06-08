@@ -4,19 +4,19 @@ import { useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { showToast } from '~/components/global/ToastAlert';
+import { showToast } from '../components/global/ToastAlert';
 import {
   createSelfServiceRequestService,
   downloadSelfServicePayslipService,
   getSelfServiceDashboardService,
   updateSelfServiceProfileService,
-} from '~/services/self-service.service';
+} from '../server/services/self-service.service';
 import type {
   SelfServicePayslipSummary,
   SelfServiceProfileUpdatePayload,
   SelfServiceRequestCreatePayload,
-} from '~/types/self-service.type';
-import { handleApiResponse } from '~/utils/api-response-handler';
+} from '../types/self-service.type';
+import { handleApiResponse } from '../utils/api-response-handler';
 
 export function useSelfServicePage(options?: { enabled?: boolean }) {
   const queryClient = useQueryClient();
