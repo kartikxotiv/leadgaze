@@ -2,17 +2,30 @@
 
 import React, { useMemo, useState } from 'react';
 
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Clock, Edit2, Mail, MapPin, Phone, Trash2, User } from 'lucide-react';
+import {
+  ArrowLeft,
+  Briefcase,
+  Building2,
+  Clock,
+  Edit2,
+  Mail,
+  MapPin,
+  Phone,
+  Trash2,
+  User,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
-import { PageBody, PageHeader } from '@kit/ui/page';
+import { DetailHeader } from '@kit/ui/detail-header';
+import { PageBody } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
 import {
   Tooltip,
@@ -58,29 +71,29 @@ import { CustomInputForView } from '@kit/ui/custom-input-for-view';
 function LeadDetailsSkeleton() {
   return (
     <div className="flex h-full flex-col">
-      <div className="bg-background border-b px-6 py-4">
-        <div className="mb-4 flex items-center justify-between">
-          <Skeleton className="h-8 w-20 rounded-md" />
-          <div className="flex gap-2">
-            <Skeleton className="h-8 w-8 rounded-md" />
-            <Skeleton className="h-8 w-8 rounded-md" />
-            <Skeleton className="h-8 w-28 rounded-md" />
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-16 w-16 rounded-full" />
-          <div className="space-y-2">
-            <Skeleton className="h-6 w-48" />
-            <div className="flex items-center gap-3">
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="h-4 w-36" />
-            </div>
-          </div>
-        </div>
+      <div className="px-6 pt-4 pb-0">
+        <Skeleton className="h-8 w-20 rounded-md" />
       </div>
       <PageBody>
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
+            <DetailHeader
+              avatar={<Skeleton className="h-16 w-16 rounded-full" />}
+              title={<Skeleton className="h-6 w-48" />}
+              subtitle={
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-36" />
+                </div>
+              }
+              actions={
+                <div className="flex gap-2">
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-28 rounded-md" />
+                </div>
+              }
+            />
             <Card>
               <CardHeader><Skeleton className="h-5 w-24" /></CardHeader>
               <CardContent className="grid gap-6 sm:grid-cols-2">
@@ -282,76 +295,18 @@ export default function LeadDetailsPage() {
 
   return (
     <ModuleGuard module="leads">
-      <PageHeader title="Lead Details">
-        <div className="flex gap-2">
-          {canEdit && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setStatusModalOpen(true)}
-              className="flex h-8 items-center justify-center px-4"
-              disabled={isSaving}
-            >
-              Change Status
-            </Button>
-          )}
-
-          {canEdit && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsLogCallDialogOpen(true)}
-              className="p-3"
-              title="Log a call"
-            >
-              {/* Phone icon */}
-              {/* Log Call */}
-              <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
-                <Phone className="h-3 w-3 text-white" />
-              </div>
-            </Button>
-          )}
-
-          <Button
-            variant="outline"
-            size="sm"
-            className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${!lead.email ? 'opacity-50' : ''}`}
-            disabled={!lead.email}
-            onClick={() => lead.email && setIsEmailDialogOpen(true)}
-            title={
-              !lead.email ? 'Lead has no email address' : 'Send email to lead'
-            }
-          >
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
-              <Mail className="h-3.5 w-3.5 text-white" />
-            </div>
+      <div className="px-6 pt-4 pb-0">
+        <div className="mb-2">
+          <Button variant="ghost" size="sm" asChild className="-ml-2">
+            <Link href="/home/leads">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Link>
           </Button>
-          {!lead.is_converted_to_account && canConvert && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleConvertLead}
-              className="flex h-8 items-center justify-center px-4"
-              disabled={isSaving}
-            >
-              Convert Lead
-            </Button>
-          )}
-          {canEdit && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditDialogOpen(true)}
-              className="flex h-8 items-center justify-center gap-2 px-4"
-            >
-              <Edit2 className="h-4 w-4" />
-              Edit Full Profile
-            </Button>
-          )}
         </div>
-      </PageHeader>
+      </div>
 
-      <PageBody>
+      <PageBody className="pb-6">
         <DeleteEntityDialog
           isOpen={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
@@ -363,120 +318,115 @@ export default function LeadDetailsPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="space-y-6 lg:col-span-2">
-            {/* Header Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="mb-2 flex items-center gap-3">
-                  <div
-                    className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br text-lg font-semibold text-white"
-                    style={{
-                      backgroundImage: `linear-gradient(135deg, ${statusColor}80 0%, ${statusColor} 100%)`,
-                    }}
-                  >
-                    {lead.first_name.charAt(0)}
-                    {lead.last_name?.charAt(0)}
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {fullName}
-                    </h1>
-                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-                      {lead.job_title && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {lead.job_title}
-                        </p>
-                      )}
-                      <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
-                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                        <Clock className="h-3 w-3" />
-                        <span>
-                          Created on{' '}
-                          {new Date(lead.created_at).toLocaleDateString(
-                            undefined,
-                            {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            },
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+            <DetailHeader
+              avatar={
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-semibold text-white">
+                  {lead.first_name.charAt(0)}
+                  {lead.last_name?.charAt(0)}
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Status and Source Badges */}
-                <div className="flex flex-wrap gap-2">
-                  {lead.status && (
-                    <Badge
-                      className="px-3 py-1"
-                      style={{
-                        backgroundColor: statusColor + '20',
-                        color: statusColor,
-                        border: `1px solid ${statusColor}40`,
-                      }}
-                    >
-                      {lead.status.status_name}
-                    </Badge>
-                  )}
-                  {lead.source && (
-                    <Badge
-                      variant="outline"
-                      className="px-3 py-1"
-                      style={{
-                        borderColor: sourceColor,
-                        color: sourceColor,
-                      }}
-                    >
-                      {lead.source.source_name}
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Key Information Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                  {lead.email && (
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-gray-400" />
-                      <a
-                        href={`mailto:${lead.email}`}
-                        className="truncate text-sm text-blue-600 hover:underline dark:text-blue-400"
-                      >
-                        {lead.email}
-                      </a>
-                    </div>
-                  )}
-                  {lead.phone_number && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-gray-400" />
-                      <a
-                        href={`tel:${lead.phone_number}`}
-                        className="text-sm text-gray-700 dark:text-gray-300"
-                      >
-                        {lead.phone_number}
-                      </a>
-                    </div>
+              }
+              title={fullName}
+              subtitle={
+                <>
+                  {lead.job_title && (
+                    <span className="flex items-center gap-1">
+                      <Briefcase className="h-3 w-3" />
+                      {lead.job_title}
+                    </span>
                   )}
                   {lead.company_name && (
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {lead.company_name}
-                      </span>
-                    </div>
+                    <span className="flex items-center gap-1">
+                      <Building2 className="h-3 w-3" />
+                      {lead.company_name}
+                    </span>
                   )}
-                  {lead.location && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {lead.location}
-                      </span>
+                  <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <Clock className="h-3 w-3" />
+                    <span>
+                      Created on{' '}
+                      {new Date(lead.created_at).toLocaleDateString(
+                        undefined,
+                        {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        },
+                      )}
+                    </span>
+                  </div>
+                </>
+              }
+              email={lead.email || undefined}
+              actions={
+                <div className="flex gap-2">
+                  {canEdit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setStatusModalOpen(true)}
+                      className="flex h-8 items-center justify-center px-4"
+                      disabled={isSaving}
+                    >
+                      Change Status
+                    </Button>
+                  )}
+
+                  {canEdit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsLogCallDialogOpen(true)}
+                      className="p-3"
+                      title="Log a call"
+                    >
+                      <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
+                        <Phone className="h-3 w-3 text-white" />
+                      </div>
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${!lead.email ? 'opacity-50' : ''}`}
+                    disabled={!lead.email}
+                    onClick={() => lead.email && setIsEmailDialogOpen(true)}
+                    title={
+                      !lead.email ? 'Lead has no email address' : 'Send email to lead'
+                    }
+                  >
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
+                      <Mail className="h-3.5 w-3.5 text-white" />
                     </div>
+                  </Button>
+
+                  {!lead.is_converted_to_account && canConvert && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleConvertLead}
+                      className="flex h-8 items-center justify-center px-4"
+                      disabled={isSaving}
+                    >
+                      Convert Lead
+                    </Button>
+                  )}
+
+                  {canEdit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditDialogOpen(true)}
+                      className="flex h-8 items-center justify-center gap-2 px-4"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                      Edit Profile
+                    </Button>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              }
+            />
 {/* $$$$$$$$$$$$$*/}
 
             {/* Comapny */}
