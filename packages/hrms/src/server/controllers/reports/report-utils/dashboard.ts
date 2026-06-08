@@ -3,8 +3,7 @@ import type {
   PayrollReportsData,
   ReportsDashboardResponse,
   ReportsPermissionSummary,
-} from '~/types/reports.type';
-
+} from '../../../../types/reports.type';
 import {
   getDepartmentName,
   getEmployeeName,

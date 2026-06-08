@@ -25,6 +25,7 @@ import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { CustomInputForView } from '@kit/ui/custom-input-for-view';
+import { DetailHeader } from '@kit/ui/detail-header';
 import { PageBody } from '@kit/ui/page';
 import { Separator } from '@kit/ui/separator';
 import { Skeleton } from '@kit/ui/skeleton';
@@ -61,29 +62,31 @@ import { EditContactDialog } from '../components/edit-contact-dialog';
 function ContactDetailsSkeleton() {
   return (
     <ModuleGuard module="contacts">
-      <div className="sticky top-0 z-10 bg-background border-b px-6 py-4">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="px-6 pt-4 pb-0">
+        <div className="mb-2">
           <Skeleton className="h-8 w-20 rounded-md" />
-          <div className="flex gap-2">
-            <Skeleton className="h-8 w-8 rounded-md" />
-            <Skeleton className="h-8 w-8 rounded-md" />
-            <Skeleton className="h-8 w-28 rounded-md" />
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-16 w-16 rounded-full" />
-          <div className="space-y-2">
-            <Skeleton className="h-6 w-48" />
-            <div className="flex items-center gap-3">
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="h-4 w-36" />
-            </div>
-          </div>
         </div>
       </div>
-      <PageBody className="pb-6 max-h-[calc(100vh-150px)] overflow-y-auto">
+      <PageBody className="pb-6">
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
+            <DetailHeader
+              avatar={<Skeleton className="h-16 w-16 rounded-full" />}
+              title={<Skeleton className="h-6 w-48" />}
+              subtitle={
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-36" />
+                </div>
+              }
+              actions={
+                <div className="flex gap-2">
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-28 rounded-md" />
+                </div>
+              }
+            />
             <Card>
               <CardHeader><Skeleton className="h-5 w-24" /></CardHeader>
               <CardContent className="grid gap-6 sm:grid-cols-2">
@@ -195,108 +198,18 @@ export default function ContactDetailsPage() {
 
   return (
     <ModuleGuard module="contacts">
-      <div className="sticky top-0 z-10 bg-background border-b px-6 py-4">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="px-6 pt-4 pb-0">
+        <div className="mb-2">
           <Button variant="ghost" size="sm" asChild className="-ml-2">
             <Link href="/home/contacts">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Link>
           </Button>
-          <div className="flex gap-2">
-            {canEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsLogCallDialogOpen(true)}
-                className="p-3"
-                title="Log a call"
-              >
-                <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
-                  <Phone className="h-3 w-3 text-white" />
-                </div>
-              </Button>
-            )}
-
-            <Button
-              variant="outline"
-              size="sm"
-              className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${
-                contactEmailRecipients.length === 0 ? 'opacity-50' : ''
-              }`}
-              disabled={contactEmailRecipients.length === 0}
-              onClick={() => setIsEmailDialogOpen(true)}
-              title={
-                contactEmailRecipients.length === 0
-                  ? 'Contact has no email address'
-                  : 'Send email to contact'
-              }
-            >
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
-                <Mail className="h-3.5 w-3.5 text-white" />
-              </div>
-            </Button>
-
-            {canEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditDialogOpen(true)}
-              >
-                Edit Contact
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-semibold text-white">
-              {contact.first_name.charAt(0)}
-              {contact.last_name?.charAt(0)}
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">
-                {contact.first_name} {contact.last_name}
-              </h1>
-              <div className="text-muted-foreground mt-1 flex items-center gap-3 text-sm">
-                {contact.job_title && (
-                  <span className="flex items-center gap-1">
-                    <Briefcase className="h-3 w-3" />
-                    {contact.job_title}
-                  </span>
-                )}
-                {contact.account && (
-                  <Link
-                    href={`/home/accounts/${contact.account.id}`}
-                    className="text-primary flex items-center gap-1 hover:underline"
-                  >
-                    <Building2 className="h-3 w-3" />
-                    {contact.account.account_name}
-                  </Link>
-                )}
-                <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
-                <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                  <Clock className="h-3 w-3" />
-                  <span>
-                    Created on{' '}
-                    {new Date(contact.created_at).toLocaleDateString(
-                      undefined,
-                      {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      },
-                    )}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
-      <PageBody className="pb-6 max-h-[calc(100vh-150px)] overflow-y-auto">
+      <PageBody className="pb-6">
         <DeleteEntityDialog
           isOpen={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
@@ -308,6 +221,96 @@ export default function ContactDetailsPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="space-y-6 lg:col-span-2">
+            <DetailHeader
+              avatar={
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-semibold text-white">
+                  {contact.first_name.charAt(0)}
+                  {contact.last_name?.charAt(0)}
+                </div>
+              }
+              title={`${contact.first_name} ${contact.last_name || ''}`}
+              subtitle={
+                <>
+                  {contact.job_title && (
+                    <span className="flex items-center gap-1">
+                      <Briefcase className="h-3 w-3" />
+                      {contact.job_title}
+                    </span>
+                  )}
+                  {contact.account && (
+                    <Link
+                      href={`/home/accounts/${contact.account.id}`}
+                      className="text-primary flex items-center gap-1 hover:underline"
+                    >
+                      <Building2 className="h-3 w-3" />
+                      {contact.account.account_name}
+                    </Link>
+                  )}
+                  <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <Clock className="h-3 w-3" />
+                    <span>
+                      Created on{' '}
+                      {new Date(contact.created_at).toLocaleDateString(
+                        undefined,
+                        {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        },
+                      )}
+                    </span>
+                  </div>
+                </>
+              }
+              email={contact.email || undefined}
+              actions={
+                <div className="flex gap-2">
+                  {canEdit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsLogCallDialogOpen(true)}
+                      className="p-3"
+                      title="Log a call"
+                    >
+                      <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
+                        <Phone className="h-3 w-3 text-white" />
+                      </div>
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${
+                      contactEmailRecipients.length === 0 ? 'opacity-50' : ''
+                    }`}
+                    disabled={contactEmailRecipients.length === 0}
+                    onClick={() => setIsEmailDialogOpen(true)}
+                    title={
+                      contactEmailRecipients.length === 0
+                        ? 'Contact has no email address'
+                        : 'Send email to contact'
+                    }
+                  >
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
+                      <Mail className="h-3.5 w-3.5 text-white" />
+                    </div>
+                  </Button>
+
+                  {canEdit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditDialogOpen(true)}
+                    >
+                      Edit Contact
+                    </Button>
+                  )}
+                </div>
+              }
+            />
 
             <CardWidgetContainer
               title="Details"
