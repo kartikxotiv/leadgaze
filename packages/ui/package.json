@@ -106,6 +106,7 @@
     "./custom-input-for-view": "./src/shadcn/custom-input-for-view.tsx",
     "./custom-table-container": "./src/shadcn/custom-table-container.tsx",
     "./table-status-metric-tab": "./src/shadcn/table-status-metric-tab.tsx",
+    "./detail-header": "./src/shadcn/detail-header.tsx",
     "./utils": "./src/lib/utils/index.ts",
     "./use-column-visibility": "./src/hooks/use-column-visibility.ts",
     "./column-visibility-selector": "./src/makerkit/column-visibility-selector.tsx",
