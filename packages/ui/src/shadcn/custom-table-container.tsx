@@ -36,7 +36,7 @@ export const CustomTableContainer: React.FC<CustomTableContainerProps> = ({
   return (
     <div className={cn('flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col space-y-4', className)}>
       {headerActions && <div className="mb-2">{headerActions}</div>}
-      <Card className="flex min-h-0 w-full max-w-full min-w-0 flex-col border-none shadow-none">
+      <Card className="flex min-h-0 w-full max-w-full min-w-0 flex-col border-none shadow-none mb-0">
         <CardContent className="flex min-h-0 w-full max-w-full min-w-0 flex-col p-0">
           <div className={cn(containerClass)}>{children}</div>
         </CardContent>

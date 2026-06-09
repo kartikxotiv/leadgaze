@@ -256,7 +256,7 @@ function NavDropdownContent({
       <div className="h-px bg-zinc-150 dark:bg-zinc-800 my-0.5" />
 
       <Link
-        href={type === 'Opportunities' ? '/home/opportunities' : `/home/${type.toLowerCase()}`}
+        href={type === 'Opportunities' ? '/home/sales/opportunities' : `/home/sales/${type.toLowerCase()}`}
         onClick={onItemClick}
         className="w-full text-center py-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium block hover:underline"
       >
