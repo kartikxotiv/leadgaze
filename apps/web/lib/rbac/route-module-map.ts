@@ -5,7 +5,6 @@
  * core module the page operates on.
  *
  * Examples:
- *   /home/team-members           → sales
  *   /home/sales/team-members     → sales
  *   /home/hrms/team-members      → hrms
  *   /home/services/roles         → service_cloud
@@ -14,8 +13,7 @@
  */
 
 export const ROUTE_MODULE_MAP: Record<string, string> = {
-  // Default (no prefix) → sales
-  '/home': 'sales',
+  // Sales CRM
   '/home/sales': 'sales',
   // HRMS
   '/home/hrms': 'hrms',

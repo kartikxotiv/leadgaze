@@ -16,7 +16,6 @@ import {
   Package,
   Plus,
   ShoppingCart,
-  Trash2,
   Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -38,18 +37,12 @@ import {
   type SeatAssignment,
   type SubscriptionProduct,
   type WorkspaceSeat,
-  assignSeatService,
   getSeatAssignmentsService,
   getSubscriptionProductsService,
   getWorkspaceSeatsService,
-  revokeSeatService,
   subscribeToProductService,
   updateSeatCountService,
 } from '~/services/subscription.service';
-import {
-  type WorkspaceMember,
-  getMembersService,
-} from '~/services/team-members.service';
 
 // ─── Constants ───────────────────────────────────────────────────
 
@@ -80,7 +73,7 @@ export default function OrgSubscriptionPage() {
     queryFn: () => getSubscriptionProductsService(),
   });
 
-  const { data: seatsData, isLoading: seatsLoading } = useQuery({
+  const { data: seatsData } = useQuery({
     queryKey: ['workspace-seats', workspaceId],
     queryFn: () => getWorkspaceSeatsService(workspaceId),
     enabled: !!workspaceId,
@@ -203,7 +196,6 @@ function ActiveSubscriptionCard({
 }) {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const product = seat.subscription_products;
   const color = PRODUCT_COLORS[product?.product_key ?? ''] ?? '#6b7280';
   const icon = PRODUCT_ICONS[product?.product_key ?? ''] ?? (
@@ -227,8 +219,8 @@ function ActiveSubscriptionCard({
       });
       toast.success('Seat count updated');
     },
-    onError: (err: any) =>
-      toast.error(err?.message || 'Failed to update seats'),
+    onError: (err: unknown) =>
+      toast.error((err as Error)?.message || 'Failed to update seats'),
   });
 
   return (
@@ -293,7 +285,7 @@ function ActiveSubscriptionCard({
             className="h-7 gap-1 text-xs"
             onClick={() => setExpanded(!expanded)}
           >
-            {expanded ? 'Hide' : 'Manage'} seats
+            {expanded ? 'Hide' : 'View'} seats
             {expanded ? (
               <ChevronUp className="h-3 w-3" />
             ) : (
@@ -319,35 +311,20 @@ function ActiveSubscriptionCard({
       {/* Expanded seat assignments */}
       {expanded && (
         <div className="border-t border-[#f3f2f2] px-5 py-4">
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3">
             <p className="text-xs font-semibold text-[#54698d]">
               Assigned Members
             </p>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 gap-1 text-xs"
-              onClick={() => setAssignDialogOpen(true)}
-            >
-              <Plus className="h-3 w-3" /> Assign Seat
-            </Button>
+            <p className="mt-1 text-[10px] text-[#706e6b]">
+              Seats are automatically assigned when members join and revoked
+              when they are removed.
+            </p>
           </div>
           <SeatAssignmentsList
             workspaceId={workspaceId}
             productKey={product?.product_key ?? ''}
           />
         </div>
-      )}
-
-      {/* Assign seat dialog */}
-      {assignDialogOpen && (
-        <AssignSeatDialog
-          workspaceId={workspaceId}
-          productKey={product?.product_key ?? ''}
-          productName={product?.display_name ?? 'Module'}
-          open={assignDialogOpen}
-          onOpenChange={setAssignDialogOpen}
-        />
       )}
     </div>
   );
@@ -362,26 +339,10 @@ function SeatAssignmentsList({
   workspaceId: string;
   productKey: string;
 }) {
-  const queryClient = useQueryClient();
-
   const { data, isLoading } = useQuery({
     queryKey: ['seat-assignments', workspaceId, productKey],
     queryFn: () => getSeatAssignmentsService(workspaceId, productKey),
     enabled: !!workspaceId && !!productKey,
-  });
-
-  const revokeMutation = useMutation({
-    mutationFn: (id: string) => revokeSeatService(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['seat-assignments', workspaceId, productKey],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['workspace-seats', workspaceId],
-      });
-      toast.success('Seat revoked');
-    },
-    onError: (err: any) => toast.error(err?.message || 'Failed to revoke seat'),
   });
 
   const assignments: SeatAssignment[] = (data?.data ?? []).filter(
@@ -395,7 +356,8 @@ function SeatAssignmentsList({
   if (assignments.length === 0) {
     return (
       <p className="py-3 text-center text-xs text-[#706e6b]">
-        No members assigned yet. Click &quot;Assign Seat&quot; to add members.
+        No members assigned yet. Seats will be assigned automatically when
+        members join.
       </p>
     );
   }
@@ -418,147 +380,9 @@ function SeatAssignmentsList({
               <p className="text-[10px] text-[#706e6b]">{a.accounts?.email}</p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-[#c23934] hover:bg-[#fce9e9] hover:text-[#c23934]"
-            onClick={() => revokeMutation.mutate(a.id)}
-            disabled={revokeMutation.isPending}
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
         </div>
       ))}
     </div>
-  );
-}
-
-// ─── Assign Seat Dialog ──────────────────────────────────────────
-
-function AssignSeatDialog({
-  workspaceId,
-  productKey,
-  productName,
-  open,
-  onOpenChange,
-}: {
-  workspaceId: string;
-  productKey: string;
-  productName: string;
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-}) {
-  const queryClient = useQueryClient();
-  const [selectedUserId, setSelectedUserId] = useState('');
-
-  // Fetch members
-  const { data: membersData } = useQuery({
-    queryKey: ['workspaceMembers', workspaceId],
-    queryFn: () => getMembersService(workspaceId),
-    enabled: !!workspaceId,
-  });
-
-  // Fetch current assignments to exclude already-assigned users
-  const { data: assignmentsData } = useQuery({
-    queryKey: ['seat-assignments', workspaceId, productKey],
-    queryFn: () => getSeatAssignmentsService(workspaceId, productKey),
-    enabled: !!workspaceId && !!productKey,
-  });
-
-  const assignedUserIds = useMemo(() => {
-    const set = new Set<string>();
-    for (const a of assignmentsData?.data ?? []) {
-      if (a.is_active) set.add(a.user_id);
-    }
-    return set;
-  }, [assignmentsData]);
-
-  const members: WorkspaceMember[] = (membersData?.data ?? []).filter(
-    (m: WorkspaceMember) =>
-      m.status === 'accepted' && !assignedUserIds.has(m.user_id),
-  );
-
-  const assignMutation = useMutation({
-    mutationFn: () =>
-      assignSeatService({ workspaceId, userId: selectedUserId, productKey }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['seat-assignments', workspaceId, productKey],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['workspace-seats', workspaceId],
-      });
-      toast.success(`Seat assigned for ${productName}`);
-      onOpenChange(false);
-      setSelectedUserId('');
-    },
-    onError: (err: any) => toast.error(err?.message || 'Failed to assign seat'),
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Assign Seat — {productName}</DialogTitle>
-          <DialogDescription>
-            Select a team member to assign a seat for this module.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-3 py-2">
-          {members.length === 0 ? (
-            <p className="py-4 text-center text-sm text-[#706e6b]">
-              All team members already have seats for this module.
-            </p>
-          ) : (
-            <div className="max-h-64 space-y-1 overflow-y-auto">
-              {members.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  className={cn(
-                    'flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-colors',
-                    selectedUserId === m.user_id
-                      ? 'border border-[#0176d3]/30 bg-[#e8f4fd]'
-                      : 'border border-transparent hover:bg-[#f3f2f2]',
-                  )}
-                  onClick={() => setSelectedUserId(m.user_id)}
-                >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f3f2f2] text-xs font-semibold">
-                    {(m.user?.email?.charAt(0) ?? 'U').toUpperCase()}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-[#1b2533]">
-                      {m.user?.user_metadata?.full_name ?? 'Team Member'}
-                    </p>
-                    <p className="text-xs text-[#706e6b]">{m.user?.email}</p>
-                  </div>
-                  {selectedUserId === m.user_id && (
-                    <Check className="h-4 w-4 text-[#0176d3]" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            className="bg-[#0176d3] text-white hover:bg-[#0161b0]"
-            disabled={!selectedUserId || assignMutation.isPending}
-            onClick={() => assignMutation.mutate()}
-          >
-            {assignMutation.isPending && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}
-            Assign Seat
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
 
@@ -672,8 +496,8 @@ function CheckoutModal({
       });
       toast.success(`Subscribed to ${product.display_name}!`);
     },
-    onError: (err: any) => {
-      toast.error(err?.message || 'Checkout failed');
+    onError: (err: unknown) => {
+      toast.error((err as Error)?.message || 'Checkout failed');
       setStep('form');
     },
   });
@@ -703,8 +527,8 @@ function CheckoutModal({
             <DialogTitle className="text-lg">Subscription Active!</DialogTitle>
             <DialogDescription className="mt-2">
               {product.display_name} is now active with {seats} seat
-              {seats !== 1 ? 's' : ''}. Assign seats to your team members from
-              the subscription page.
+              {seats !== 1 ? 's' : ''}. Seats will be automatically assigned
+              when team members join.
             </DialogDescription>
             <Button
               className="mt-6 bg-[#0176d3] text-white hover:bg-[#0161b0]"

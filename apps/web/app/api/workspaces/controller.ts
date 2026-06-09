@@ -165,7 +165,8 @@ const createNewWorkspace = catchAsync(
 // ─── Helper: Auto-create 7-day trial seats for all modules ──────
 
 async function createTrialSeats(workspaceId: string, ownerUserId: string) {
-  const adminClient = getSupabaseServerAdminClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const adminClient = getSupabaseServerAdminClient() as any;
 
   const now = new Date();
   const trialEnd = new Date(now.getTime());

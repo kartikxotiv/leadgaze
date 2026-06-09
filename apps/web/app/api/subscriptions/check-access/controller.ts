@@ -39,11 +39,15 @@ export const checkAccess = catchAsync(
     }
 
     // Call the DB function
-    const { data, error } = await adminClient.rpc('user_has_product_access', {
-      p_user_id: user.id,
-      p_workspace_id: workspaceId,
-      p_product_key: productKey,
-    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (adminClient as any).rpc(
+      'user_has_product_access',
+      {
+        p_user_id: user.id,
+        p_workspace_id: workspaceId,
+        p_product_key: productKey,
+      },
+    );
 
     if (error) {
       console.error('Check access error:', error);

@@ -2,18 +2,23 @@
 
 import { useMemo, useState } from 'react';
 
+import { usePathname } from 'next/navigation';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Check,
   Clock,
+  CreditCard,
   Edit2,
   Plus,
   RotateCcw,
+  Shield,
   Trash2,
   Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { getWorkspaceSubscriptionService } from '@kit/core/services';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import {
@@ -38,6 +43,7 @@ import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { getModuleKeyFromPath } from '~/lib/rbac/route-module-map';
 import { getRolesService } from '~/services/roles.service';
 import {
   type WorkspaceMember,
@@ -47,7 +53,6 @@ import {
 } from '~/services/team-members.service';
 
 import { InviteMemberDialog } from './components/invite-member-dialog';
-import { ModuleSeatSection } from './components/module-seat-section';
 import { UpdateMemberDialog } from './components/update-member-dialog';
 
 function TeamMembersPageSkeleton() {
@@ -106,11 +111,26 @@ function TeamMembersPageSkeleton() {
 export default function TeamMembersPage() {
   const queryClient = useQueryClient();
   const { currentWorkspace, canAccess } = useRBAC();
+  const pathname = usePathname();
+  const productKey = getModuleKeyFromPath(pathname);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [updatingMember, setUpdatingMember] = useState<WorkspaceMember | null>(
     null,
   );
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
+
+  // Fetch workspace subscription status for seat capacity
+  const { data: subscriptionData } = useQuery({
+    queryKey: ['workspace-subscription', currentWorkspace?.id],
+    queryFn: () => getWorkspaceSubscriptionService(currentWorkspace?.id || ''),
+    enabled: !!currentWorkspace?.id,
+  });
+
+  const currentModule = useMemo(() => {
+    return subscriptionData?.enabled_modules?.find(
+      (m) => m.module_key === productKey,
+    );
+  }, [subscriptionData, productKey]);
 
   const columns = useMemo(
     () => [
@@ -233,7 +253,7 @@ export default function TeamMembersPage() {
     }
   };
 
-  const getRoleColor = (role: { color?: string } | null) => {
+  const getRoleColor = (role: { color?: string } | null | undefined) => {
     return role?.color || '#6b7280';
   };
 
@@ -335,6 +355,44 @@ export default function TeamMembersPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              {currentModule && (
+                <Card className="hover:border-primary/50 bg-card w-64 shrink-0 transition-all">
+                  <CardContent className="flex h-10 items-center p-3">
+                    <div className="flex w-full items-center gap-2">
+                      <Shield className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
+                        Seats: {currentModule.used_seats} /{' '}
+                        {currentModule.purchased_seats}
+                      </span>
+                      {currentModule.used_seats >=
+                        currentModule.purchased_seats && (
+                        <Badge
+                          variant="destructive"
+                          className="ml-auto h-4 px-1.5 text-[9px]"
+                        >
+                          Full
+                        </Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    onClick={() => (window.location.href = '/org/subscription')}
+                    className="h-8 w-8 p-0"
+                  >
+                    <CreditCard className="h-4 w-4 text-gray-500" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>Manage Subscription</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
         </div>
@@ -530,15 +588,13 @@ export default function TeamMembersPage() {
                 )}
               </CardContent>
             </Card>
-
-            {/* Module Seat Access Section */}
-            <ModuleSeatSection />
           </div>
 
           {/* Dialogs */}
           <InviteMemberDialog
             open={inviteDialogOpen}
             onOpenChange={setInviteDialogOpen}
+            productKey={productKey}
           />
 
           {updatingMember && (

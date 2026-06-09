@@ -19,7 +19,8 @@ export const dummyCheckout = catchAsync(
     request: NextRequest;
     user?: { id: string };
   }) => {
-    const adminClient = getSupabaseServerAdminClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const adminClient = getSupabaseServerAdminClient() as any;
     const supabase = getSupabaseServerClient();
 
     if (!user) {
@@ -110,6 +111,15 @@ export const dummyCheckout = catchAsync(
         processed_at: new Date().toISOString(),
       });
 
+      // Auto-assign seat to buyer if they don't already have one for this product
+      await autoAssignSeatToBuyer(
+        adminClient,
+        workspaceId,
+        user.id,
+        product.id,
+        existingSeat.id,
+      );
+
       return NextResponse.json({
         success: true,
         data,
@@ -180,6 +190,16 @@ export const dummyCheckout = catchAsync(
       processed_at: new Date().toISOString(),
     });
 
+    // ── Auto-assign a seat to the buyer ────────────────────────────
+    // The person who subscribes should immediately get access.
+    await autoAssignSeatToBuyer(
+      adminClient,
+      workspaceId,
+      user.id,
+      product.id,
+      newSeat.id,
+    );
+
     return NextResponse.json({
       success: true,
       data: newSeat,
@@ -187,3 +207,64 @@ export const dummyCheckout = catchAsync(
     });
   },
 );
+
+// ─── Helper: Auto-assign seat to the buyer ─────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function autoAssignSeatToBuyer(
+  adminClient: any,
+  workspaceId: string,
+  userId: string,
+  productId: string,
+  seatId: string,
+) {
+  try {
+    // Check if buyer already has an active assignment for this product
+    const { data: existing } = await adminClient
+      .from('seat_assignments')
+      .select('id')
+      .eq('workspace_id', workspaceId)
+      .eq('user_id', userId)
+      .eq('product_id', productId)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (existing) return; // already assigned
+
+    // Check if there's a previously revoked assignment to reactivate
+    const { data: inactive } = await adminClient
+      .from('seat_assignments')
+      .select('id')
+      .eq('workspace_id', workspaceId)
+      .eq('user_id', userId)
+      .eq('product_id', productId)
+      .eq('is_active', false)
+      .maybeSingle();
+
+    if (inactive) {
+      await adminClient
+        .from('seat_assignments')
+        .update({
+          is_active: true,
+          assigned_at: new Date().toISOString(),
+          assigned_by: userId,
+          revoked_at: null,
+          revoked_by: null,
+        })
+        .eq('id', inactive.id);
+      return;
+    }
+
+    // Create new assignment
+    await adminClient.from('seat_assignments').insert({
+      seat_id: seatId,
+      workspace_id: workspaceId,
+      user_id: userId,
+      product_id: productId,
+      is_active: true,
+      assigned_by: userId,
+    });
+  } catch (error) {
+    console.error('Auto-assign seat to buyer error:', error);
+  }
+}

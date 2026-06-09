@@ -1,60 +1,40 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+
 import Link from 'next/link';
-import {
-  Activity,
-  Bell,
-  Calendar,
-  FileText,
-  NotebookPen,
-  Settings,
-  ShieldCheck,
-  UserPen,
-  Users,
-  History,
-  Briefcase,
-  User,
-  Search,
-  ChevronDown,
-  Mail,
-  Grip,
-  Loader2,
-  Plus,
-} from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getLeadsService } from '~/services/leads.service';
-import { getContactsService } from '~/services/contacts.service';
-import { getAccountsService } from '~/services/accounts.service';
-import { getOpportunitiesService } from '~/services/opportunities.service';
-
-import CreateLeadDialog from '../leads/components/create-lead-dialog';
-import { CreateContactDialog } from '../contacts/components/create-contact-dialog';
-import { CreateAccountDialog } from '../accounts/components/create-account-dialog';
-import { OpportunityDialog } from '../opportunities/components/opportunity-dialog';
-
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@kit/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@kit/ui/dialog';
-import { AppLogo } from '~/components/app-logo';
-import { ProfileAccountDropdownContainer } from '~/components/personal-account-dropdown-container';
-import { cn, isRouteActive } from '@kit/ui/utils';
-import { Trans } from '@kit/ui/trans';
-import { useRBAC } from '~/lib/rbac/rbac-provider';
-import { usePermissionBasedNavigationConfig } from '~/lib/permissions/use-navigation-permissions';
-import { getNavigationConfig } from '~/lib/rbac/use-dynamic-navigation';
+  Activity,
+  ArrowUpRight,
+  Bell,
+  Box,
+  Briefcase,
+  Calendar,
+  ChevronDown,
+  DollarSign,
+  FileText,
+  Grip,
+  Headphones,
+  History,
+  Loader2,
+  Mail,
+  NotebookPen,
+  Package,
+  Plus,
+  Search,
+  Settings,
+  ShieldCheck,
+  ShoppingCart,
+  User,
+  UserPen,
+  Users,
+  Users as UsersIcon,
+} from 'lucide-react';
+
+import { getWorkspaceSubscriptionService } from '@kit/core/services';
 import {
   getFundraiseRoutesForPermissions,
   useFundraisingPermissions,
@@ -68,7 +48,39 @@ import {
   getServiceCloudRoutesForPermissions,
   useServiceCloudPermissions,
 } from '@kit/service-cloud';
+import { useUser } from '@kit/supabase/hooks/use-user';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@kit/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@kit/ui/dropdown-menu';
+import { Trans } from '@kit/ui/trans';
+import { cn, isRouteActive } from '@kit/ui/utils';
+
+import { AppLogo } from '~/components/app-logo';
+import { ProfileAccountDropdownContainer } from '~/components/personal-account-dropdown-container';
 import pathsConfig from '~/config/paths.config';
+import { usePermissionBasedNavigationConfig } from '~/lib/permissions/use-navigation-permissions';
+import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { getNavigationConfig } from '~/lib/rbac/use-dynamic-navigation';
+import { getAccountsService } from '~/services/accounts.service';
+import { getContactsService } from '~/services/contacts.service';
+import { getLeadsService } from '~/services/leads.service';
+import { getOpportunitiesService } from '~/services/opportunities.service';
+import { getSeatAssignmentsService } from '~/services/subscription.service';
+
+import { CreateAccountDialog } from '../accounts/components/create-account-dialog';
+import { CreateContactDialog } from '../contacts/components/create-contact-dialog';
+import CreateLeadDialog from '../leads/components/create-lead-dialog';
+import { OpportunityDialog } from '../opportunities/components/opportunity-dialog';
 
 function getModuleCommonPaths(moduleBasePath: string) {
   return {
@@ -160,7 +172,10 @@ function NavDropdownContent({
   onItemClick,
 }: NavDropdownContentProps) {
   const queryClient = useQueryClient();
-  const queryKey = type.toLowerCase() === 'opportunities' ? 'opportunities' : type.toLowerCase();
+  const queryKey =
+    type.toLowerCase() === 'opportunities'
+      ? 'opportunities'
+      : type.toLowerCase();
 
   useEffect(() => {
     if (workspaceId) {
@@ -188,9 +203,9 @@ function NavDropdownContent({
   const records = (data as any)?.data || [];
 
   return (
-    <div className="w-64 p-2 flex flex-col space-y-1.5 text-zinc-950 dark:text-zinc-50">
+    <div className="flex w-64 flex-col space-y-1.5 p-2 text-zinc-950 dark:text-zinc-50">
       <div className="flex items-center justify-between px-2 py-0.5">
-        <span className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+        <span className="text-[10px] font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">
           Recent {type === 'Opportunities' ? 'Deals' : type}
         </span>
         <button
@@ -199,25 +214,25 @@ function NavDropdownContent({
             e.stopPropagation();
             onAddNewClick();
           }}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 bg-transparent border-0 cursor-pointer outline-none"
+          className="inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent text-xs font-semibold text-blue-600 outline-none hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
         >
           <Plus className="h-3.5 w-3.5" />
           <span>New</span>
         </button>
       </div>
 
-      <div className="h-px bg-zinc-150 dark:bg-zinc-800 my-0.5" />
+      <div className="bg-zinc-150 my-0.5 h-px dark:bg-zinc-800" />
 
       {isLoading ? (
         <div className="flex items-center justify-center py-4">
           <Loader2 className="h-4 w-4 animate-spin text-zinc-400" />
         </div>
       ) : error ? (
-        <div className="text-xs text-red-500 px-2 py-2">
+        <div className="px-2 py-2 text-xs text-red-500">
           Failed to load {type.toLowerCase()}
         </div>
       ) : records.length === 0 ? (
-        <div className="text-xs text-zinc-500 px-2 py-3 text-center">
+        <div className="px-2 py-3 text-center text-xs text-zinc-500">
           No recent {type.toLowerCase()} found
         </div>
       ) : (
@@ -226,10 +241,16 @@ function NavDropdownContent({
             let name = '';
             let detailPath = '';
             if (type === 'Leads') {
-              name = `${record.first_name || ''} ${record.last_name || ''}`.trim() || record.email || 'Unnamed Lead';
+              name =
+                `${record.first_name || ''} ${record.last_name || ''}`.trim() ||
+                record.email ||
+                'Unnamed Lead';
               detailPath = `/home/sales/leads/${record.id}`;
             } else if (type === 'Contacts') {
-              name = `${record.first_name || ''} ${record.last_name || ''}`.trim() || record.email || 'Unnamed Contact';
+              name =
+                `${record.first_name || ''} ${record.last_name || ''}`.trim() ||
+                record.email ||
+                'Unnamed Contact';
               detailPath = `/home/sales/contacts/${record.id}`;
             } else if (type === 'Accounts') {
               name = record.account_name || 'Unnamed Account';
@@ -244,7 +265,7 @@ function NavDropdownContent({
                 key={record.id}
                 href={detailPath}
                 onClick={onItemClick}
-                className="w-full text-left px-2 py-1 text-sm rounded hover:bg-zinc-100 dark:hover:bg-zinc-800/80 block truncate transition-colors text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white"
+                className="block w-full truncate rounded px-2 py-1 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800/80 dark:hover:text-white"
               >
                 {name}
               </Link>
@@ -253,12 +274,16 @@ function NavDropdownContent({
         </div>
       )}
 
-      <div className="h-px bg-zinc-150 dark:bg-zinc-800 my-0.5" />
+      <div className="bg-zinc-150 my-0.5 h-px dark:bg-zinc-800" />
 
       <Link
-        href={type === 'Opportunities' ? '/home/opportunities' : `/home/${type.toLowerCase()}`}
+        href={
+          type === 'Opportunities'
+            ? '/home/opportunities'
+            : `/home/${type.toLowerCase()}`
+        }
         onClick={onItemClick}
-        className="w-full text-center py-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium block hover:underline"
+        className="block w-full py-1 text-center text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400"
       >
         View All {type === 'Opportunities' ? 'Deals' : type}
       </Link>
@@ -291,10 +316,10 @@ function NavDropdown({
           <button
             type="button"
             className={cn(
-              'px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1 bg-transparent border-0 cursor-pointer outline-none focus:outline-none',
+              'flex cursor-pointer items-center gap-1 rounded-md border-0 bg-transparent px-3 py-1.5 text-sm font-medium transition-colors outline-none focus:outline-none',
               active
                 ? 'bg-header-primary text-white'
-                : 'text-blue-100 hover:text-white hover:bg-white/10'
+                : 'text-blue-100 hover:bg-white/10 hover:text-white',
             )}
           >
             <span>
@@ -303,7 +328,10 @@ function NavDropdown({
             <ChevronDown className="h-3.5 w-3.5 opacity-70" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="mt-1 p-0 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md shadow-lg">
+        <DropdownMenuContent
+          align="start"
+          className="mt-1 rounded-md border border-zinc-200 bg-white p-0 shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+        >
           <NavDropdownContent
             type={formattedLabel}
             workspaceId={workspaceId}
@@ -353,8 +381,58 @@ function NavDropdown({
   );
 }
 
+// ─── App Launcher Helpers ───────────────────────────────────────
+
+const LAUNCHER_MODULE_META: Record<
+  string,
+  { icon: React.ReactNode; color: string; route: string; description: string }
+> = {
+  sales: {
+    icon: <ShoppingCart className="h-4 w-4" />,
+    color: '#0176d3',
+    route: '/home/sales/leads',
+    description: 'Manage Your Sales CRM System',
+  },
+  hrms: {
+    icon: <UsersIcon className="h-4 w-4" />,
+    color: '#9050dd',
+    route: '/home/hrms',
+    description: 'Manage Your Human Resource System',
+  },
+  inventory: {
+    icon: <Package className="h-4 w-4" />,
+    color: '#2e844a',
+    route: '/home/inventory',
+    description: 'Manage Your Stocks and Inventory',
+  },
+  service_cloud: {
+    icon: <Headphones className="h-4 w-4" />,
+    color: '#dd7a01',
+    route: '/home/services',
+    description: 'Manage Your Customer Support System',
+  },
+  funds: {
+    icon: <DollarSign className="h-4 w-4" />,
+    color: '#0b7764',
+    route: '/home/funds',
+    description: 'Manage Your Fundraising System',
+  },
+};
+
+function getLauncherMeta(moduleKey: string) {
+  return (
+    LAUNCHER_MODULE_META[moduleKey] ?? {
+      icon: <Box className="h-4 w-4" />,
+      color: '#5c5e66',
+      route: `/home/${moduleKey}`,
+      description: 'Module',
+    }
+  );
+}
+
 export function HomeMenuNavigation() {
   const { canAccess, currentWorkspace } = useRBAC();
+  const { data: authUser } = useUser();
   const pathname = usePathname() || '';
   const [isLauncherOpen, setIsLauncherOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(1200);
@@ -378,10 +456,47 @@ export function HomeMenuNavigation() {
     currentWorkspace?.id,
   );
 
+  // Fetch workspace subscription for dynamic app launcher
+  const { data: subscriptionStatus } = useQuery({
+    queryKey: ['workspace-subscription', currentWorkspace?.id],
+    queryFn: () => getWorkspaceSubscriptionService(currentWorkspace?.id || ''),
+    enabled: !!currentWorkspace?.id,
+  });
+
+  // Fetch user's seat assignments to filter launcher modules
+  const { data: assignmentsData } = useQuery({
+    queryKey: ['user-seat-assignments', currentWorkspace?.id],
+    queryFn: () => getSeatAssignmentsService(currentWorkspace?.id || ''),
+    enabled: !!currentWorkspace?.id,
+  });
+
+  const userAssignedProductIds = useMemo(() => {
+    const assignments = (assignmentsData?.data ?? []) as Array<{
+      is_active: boolean;
+      user_id: string;
+      product_id: string;
+    }>;
+    const userId = authUser?.id;
+    return new Set(
+      assignments
+        .filter((a) => a.is_active && a.user_id === userId)
+        .map((a) => a.product_id),
+    );
+  }, [assignmentsData, authUser?.id]);
+
+  const launcherModules = useMemo(() => {
+    const allEnabled = subscriptionStatus?.enabled_modules ?? [];
+    // Only show modules where the user has an active seat assignment
+    return allEnabled.filter((mod) =>
+      userAssignedProductIds.has(mod.module_id),
+    );
+  }, [subscriptionStatus, userAssignedProductIds]);
+
   // Use permission-based navigation
   const permissionNavConfig = usePermissionBasedNavigationConfig();
 
-  const isFundraiseModule = pathname.startsWith('/home/fund') || pathname.startsWith('/home/funds');
+  const isFundraiseModule =
+    pathname.startsWith('/home/fund') || pathname.startsWith('/home/funds');
   const isHrmsModule = pathname.startsWith('/home/hrms');
   const isInventoryModule = pathname.startsWith('/home/inventory');
   const isServiceCloudModule = pathname.startsWith('/home/services');
@@ -392,7 +507,12 @@ export function HomeMenuNavigation() {
     if (isInventoryModule) return 'Stocks';
     if (isServiceCloudModule) return 'Service Cloud';
     return 'Sales';
-  }, [isHrmsModule, isFundraiseModule, isInventoryModule, isServiceCloudModule]);
+  }, [
+    isHrmsModule,
+    isFundraiseModule,
+    isInventoryModule,
+    isServiceCloudModule,
+  ]);
 
   const navConfig = useMemo(() => {
     // 1. Fundraising Module
@@ -645,7 +765,10 @@ export function HomeMenuNavigation() {
     }> = [];
 
     navConfig.forEach((group) => {
-      if (group.label === 'common:routes.settings' || group.label?.includes('settings')) {
+      if (
+        group.label === 'common:routes.settings' ||
+        group.label?.includes('settings')
+      ) {
         return;
       }
 
@@ -683,14 +806,16 @@ export function HomeMenuNavigation() {
       return totalItemsCount;
     }
 
-    const maxFit = Math.floor((availableWidth - moreButtonWidth) / estimatedItemWidth);
+    const maxFit = Math.floor(
+      (availableWidth - moreButtonWidth) / estimatedItemWidth,
+    );
     return Math.max(1, maxFit);
   }, [windowWidth, allMainRoutes.length]);
 
   // Find active route index
   const activeIndex = useMemo(() => {
     return allMainRoutes.findIndex((item) =>
-      isRouteActive(item.path, pathname, item.end ?? false)
+      isRouteActive(item.path, pathname, item.end ?? false),
     );
   }, [allMainRoutes, pathname]);
 
@@ -709,7 +834,7 @@ export function HomeMenuNavigation() {
     visible.push(allMainRoutes[activeIndex]);
 
     const more = allMainRoutes.filter(
-      (item) => !visible.some((v) => v.path === item.path)
+      (item) => !visible.some((v) => v.path === item.path),
     );
 
     return {
@@ -727,7 +852,10 @@ export function HomeMenuNavigation() {
     }> = [];
 
     navConfig.forEach((group) => {
-      if (group.label === 'common:routes.settings' || group.label?.includes('settings')) {
+      if (
+        group.label === 'common:routes.settings' ||
+        group.label?.includes('settings')
+      ) {
         if ('children' in group && Array.isArray(group.children)) {
           group.children.forEach((child) => {
             items.push({
@@ -750,73 +878,76 @@ export function HomeMenuNavigation() {
         <div className="flex items-center space-x-4">
           <AppLogo className="max-h-8 w-auto" />
           <div className="h-6 w-px bg-white/25" />
-          
+
           {/* App Launcher Trigger Modal */}
           <Dialog open={isLauncherOpen} onOpenChange={setIsLauncherOpen}>
             <DialogTrigger asChild>
-              <button className="flex items-center space-x-2 bg-transparent hover:bg-transparent px-3 py-1.5 text-white transition-colors cursor-pointer">
+              <button className="flex cursor-pointer items-center space-x-2 bg-transparent px-3 py-1.5 text-white transition-colors hover:bg-transparent">
                 <Grip className="h-5 w-5" />
                 <span className="primary-heading-big">{currentAppName}</span>
               </button>
             </DialogTrigger>
-            
-            <DialogContent className="max-w-2xl p-6 bg-white dark:bg-zinc-950 rounded-lg shadow-2xl border border-zinc-200 dark:border-zinc-800">
-              <DialogHeader className="border-b pb-4 mb-4">
-                <DialogTitle className="text-xl font-bold flex items-center gap-2 text-zinc-900 dark:text-white">
+
+            <DialogContent className="max-w-2xl rounded-lg border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
+              <DialogHeader className="mb-4 border-b pb-4">
+                <DialogTitle className="flex items-center gap-2 text-xl font-bold text-zinc-900 dark:text-white">
                   <Grip className="h-5 w-5 text-blue-600" />
                   App Launcher
                 </DialogTitle>
               </DialogHeader>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* HRMS */}
-                <Link
-                  href="/home/hrms"
-                  onClick={() => setIsLauncherOpen(false)}
-                  className="flex flex-col p-4 bg-zinc-50 hover:bg-blue-50/50 dark:bg-zinc-900/50 dark:hover:bg-blue-950/20 border border-zinc-200 dark:border-zinc-800 rounded-lg transition-all hover:border-blue-400 group"
-                >
-                  <span className="font-bold text-zinc-900 dark:text-white group-hover:text-blue-600 transition-colors">HRMS</span>
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                    Manage Your Human Resource System
-                  </span>
-                </Link>
-                
-                {/* Fundraising */}
-                <Link
-                  href="/home/funds"
-                  onClick={() => setIsLauncherOpen(false)}
-                  className="flex flex-col p-4 bg-zinc-50 hover:bg-blue-50/50 dark:bg-zinc-900/50 dark:hover:bg-blue-950/20 border border-zinc-200 dark:border-zinc-800 rounded-lg transition-all hover:border-blue-400 group"
-                >
-                  <span className="font-bold text-zinc-900 dark:text-white group-hover:text-blue-600 transition-colors">Fundraising</span>
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                    Manage Your Fundraising System
-                  </span>
-                </Link>
-                
-                {/* Stocks / Inventory */}
-                <Link
-                  href="/home/inventory"
-                  onClick={() => setIsLauncherOpen(false)}
-                  className="flex flex-col p-4 bg-zinc-50 hover:bg-blue-50/50 dark:bg-zinc-900/50 dark:hover:bg-blue-950/20 border border-zinc-200 dark:border-zinc-800 rounded-lg transition-all hover:border-blue-400 group"
-                >
-                  <span className="font-bold text-zinc-900 dark:text-white group-hover:text-blue-600 transition-colors">Stocks</span>
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                    Manage Your Stocks and Inventory
-                  </span>
-                </Link>
-                
-                {/* Sales */}
-                <Link
-                  href="/home"
-                  onClick={() => setIsLauncherOpen(false)}
-                  className="flex flex-col p-4 bg-zinc-50 hover:bg-blue-50/50 dark:bg-zinc-900/50 dark:hover:bg-blue-950/20 border border-zinc-200 dark:border-zinc-800 rounded-lg transition-all hover:border-blue-400 group"
-                >
-                  <span className="font-bold text-zinc-900 dark:text-white group-hover:text-blue-600 transition-colors">Sales</span>
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                    Manage Your Sales CRM System
-                  </span>
-                </Link>
-              </div>
+
+              {launcherModules.length === 0 ? (
+                <div className="py-8 text-center">
+                  <Loader2 className="mx-auto h-5 w-5 animate-spin text-zinc-400" />
+                  <p className="mt-2 text-sm text-zinc-500">
+                    Loading modules...
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {launcherModules.map((mod) => {
+                    const meta = getLauncherMeta(mod.module_key);
+                    return (
+                      <Link
+                        key={mod.module_id}
+                        href={meta.route}
+                        onClick={() => {
+                          localStorage.setItem(
+                            'selected_module',
+                            mod.module_key,
+                          );
+                          setIsLauncherOpen(false);
+                        }}
+                        className="group flex flex-col rounded-lg border border-zinc-200 bg-zinc-50 p-4 transition-all hover:border-blue-400 hover:bg-blue-50/50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-blue-950/20"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="flex h-7 w-7 items-center justify-center rounded-md"
+                              style={{
+                                backgroundColor: `${meta.color}20`,
+                                color: meta.color,
+                              }}
+                            >
+                              {meta.icon}
+                            </div>
+                            <span className="font-bold text-zinc-900 transition-colors group-hover:text-blue-600 dark:text-white">
+                              {mod.module_name}
+                            </span>
+                          </div>
+                          <ArrowUpRight className="h-3.5 w-3.5 text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100" />
+                        </div>
+                        <span className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                          {meta.description}
+                        </span>
+                        <span className="mt-1 text-[10px] text-zinc-400 dark:text-zinc-500">
+                          {mod.used_seats} / {mod.purchased_seats} seats used
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
             </DialogContent>
           </Dialog>
           <div className="h-6 w-px bg-white/25" />
@@ -826,9 +957,17 @@ export function HomeMenuNavigation() {
         <nav className="flex items-center space-x-1 lg:space-x-2">
           {visibleRoutes.map((item) => {
             const formatted = formatLabel(item.label);
-            const active = isRouteActive(item.path, pathname, item.end ?? false);
+            const active = isRouteActive(
+              item.path,
+              pathname,
+              item.end ?? false,
+            );
 
-            if (['Leads', 'Contacts', 'Accounts', 'Opportunities'].includes(formatted)) {
+            if (
+              ['Leads', 'Contacts', 'Accounts', 'Opportunities'].includes(
+                formatted,
+              )
+            ) {
               return (
                 <NavDropdown
                   key={item.path}
@@ -836,7 +975,13 @@ export function HomeMenuNavigation() {
                   path={item.path}
                   active={active}
                   workspaceId={currentWorkspace?.id}
-                  formattedLabel={formatted as 'Leads' | 'Contacts' | 'Accounts' | 'Opportunities'}
+                  formattedLabel={
+                    formatted as
+                      | 'Leads'
+                      | 'Contacts'
+                      | 'Accounts'
+                      | 'Opportunities'
+                  }
                 />
               );
             }
@@ -848,16 +993,18 @@ export function HomeMenuNavigation() {
                 key={item.path}
                 href={item.path}
                 className={cn(
-                  'px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1',
+                  'flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
                   active
                     ? 'bg-header-primary text-white'
-                    : 'text-blue-100 hover:text-white hover:bg-white/10'
+                    : 'text-blue-100 hover:bg-white/10 hover:text-white',
                 )}
               >
                 <span>
                   <Trans i18nKey={item.label} defaults={formatted} />
                 </span>
-                {hasChevron && <ChevronDown className="h-3.5 w-3.5 opacity-70" />}
+                {hasChevron && (
+                  <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                )}
               </Link>
             );
           })}
@@ -866,17 +1013,20 @@ export function HomeMenuNavigation() {
           {moreRoutes.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="px-3 py-1.5 rounded-md text-sm font-medium text-blue-100 hover:text-white hover:bg-white/10 transition-colors flex items-center gap-1 cursor-pointer">
+                <button className="flex cursor-pointer items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium text-blue-100 transition-colors hover:bg-white/10 hover:text-white">
                   <span>More</span>
                   <ChevronDown className="h-3.5 w-3.5 opacity-70" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48 mt-1">
+              <DropdownMenuContent align="start" className="mt-1 w-48">
                 {moreRoutes.map((item) => {
                   const formatted = formatLabel(item.label);
                   return (
                     <DropdownMenuItem key={item.path} asChild>
-                      <Link href={item.path} className="w-full cursor-pointer py-2 px-3">
+                      <Link
+                        href={item.path}
+                        className="w-full cursor-pointer px-3 py-2"
+                      >
                         <Trans i18nKey={item.label} defaults={formatted} />
                       </Link>
                     </DropdownMenuItem>
@@ -912,17 +1062,23 @@ export function HomeMenuNavigation() {
         {settingsMenuItems.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="p-2 text-blue-100 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer">
+              <button className="cursor-pointer rounded-full p-2 text-blue-100 transition-colors hover:bg-white/10 hover:text-white">
                 <Settings className="h-5 w-5" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52 mt-1">
+            <DropdownMenuContent align="end" className="mt-1 w-52">
               {settingsMenuItems.map((item) => (
                 <DropdownMenuItem key={item.path} asChild>
-                  <Link href={item.path} className="flex items-center gap-2.5 w-full cursor-pointer py-2 px-3">
+                  <Link
+                    href={item.path}
+                    className="flex w-full cursor-pointer items-center gap-2.5 px-3 py-2"
+                  >
                     {item.Icon}
                     <span>
-                      <Trans i18nKey={item.label} defaults={formatLabel(item.label)} />
+                      <Trans
+                        i18nKey={item.label}
+                        defaults={formatLabel(item.label)}
+                      />
                     </span>
                   </Link>
                 </DropdownMenuItem>

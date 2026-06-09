@@ -40,7 +40,11 @@ export function SubscriptionGuard({
 
   const productKey = getModuleKeyFromPath(pathname);
 
-  const { data: accessData, isLoading: isAccessLoading } = useQuery({
+  const {
+    data: accessData,
+    isLoading: isAccessLoading,
+    error: accessError,
+  } = useQuery({
     queryKey: ['subscription-access', currentWorkspace?.id, productKey],
     queryFn: async () => {
       if (!currentWorkspace?.id) return { hasAccess: false };
@@ -52,7 +56,19 @@ export function SubscriptionGuard({
     },
     enabled: !!currentWorkspace?.id && !!productKey,
     staleTime: 30_000, // Cache for 30s
+    retry: 2,
   });
+
+  // Log access errors for debugging
+  if (accessError) {
+    console.error(
+      '[SubscriptionGuard] Access check failed for',
+      productKey,
+      'in workspace',
+      currentWorkspace?.id,
+      accessError,
+    );
+  }
 
   useEffect(() => {
     if (!isRbacLoading && !isAccessLoading) {
@@ -68,6 +84,12 @@ export function SubscriptionGuard({
   const hasAccess = accessData?.hasAccess ?? false;
 
   if (hasAccess) {
+    return <>{children}</>;
+  }
+
+  // If the access check API itself failed (network error, 431, etc.),
+  // allow access through rather than blocking — the error was logged above.
+  if (accessError) {
     return <>{children}</>;
   }
 

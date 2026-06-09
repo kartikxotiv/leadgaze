@@ -4,12 +4,10 @@ import { useMemo } from 'react';
 
 import { usePathname } from 'next/navigation';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Check, Loader2, Shield, ShieldOff } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
-import { Button } from '@kit/ui/button';
 import {
   Card,
   CardContent,
@@ -23,10 +21,8 @@ import { getModuleKeyFromPath } from '~/lib/rbac/route-module-map';
 import {
   type SeatAssignment,
   type WorkspaceSeat,
-  assignSeatService,
   getSeatAssignmentsService,
   getWorkspaceSeatsService,
-  revokeSeatService,
 } from '~/services/subscription.service';
 import {
   type WorkspaceMember,
@@ -50,12 +46,17 @@ const MODULE_COLORS: Record<string, string> = {
 };
 
 /**
- * ModuleSeatSection — Shows seat assignments for the current module
- * on the team-members page. Allows admin to assign/revoke seats.
+ * ModuleSeatSection — Read-only display of seat assignments for the
+ * current module on the team-members page.
+ *
+ * Seat allocation is fully automatic:
+ *  - When a member joins the workspace, seats are auto-assigned for all active modules.
+ *  - When a member is removed, all their seats are auto-revoked.
+ *
+ * This component simply shows the current seat status per member.
  */
 export function ModuleSeatSection() {
-  const queryClient = useQueryClient();
-  const { currentWorkspace, canAccess } = useRBAC();
+  const { currentWorkspace } = useRBAC();
   const pathname = usePathname();
   const workspaceId = currentWorkspace?.id ?? '';
   const productKey = getModuleKeyFromPath(pathname);
@@ -101,47 +102,10 @@ export function ModuleSeatSection() {
     [assignments],
   );
 
-  // Assign seat mutation
-  const assignMutation = useMutation({
-    mutationFn: (userId: string) =>
-      assignSeatService({ workspaceId, userId, productKey }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['seat-assignments', workspaceId, productKey],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['workspace-seats', workspaceId],
-      });
-      toast.success(`Seat assigned for ${moduleLabel}`);
-    },
-    onError: (err: Error) =>
-      toast.error(err?.message || 'Failed to assign seat'),
-  });
-
-  // Revoke seat mutation
-  const revokeMutation = useMutation({
-    mutationFn: (assignmentId: string) => revokeSeatService(assignmentId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['seat-assignments', workspaceId, productKey],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['workspace-seats', workspaceId],
-      });
-      toast.success(`Seat revoked for ${moduleLabel}`);
-    },
-    onError: (err: Error) =>
-      toast.error(err?.message || 'Failed to revoke seat'),
-  });
-
-  const canManageSeats = canAccess('team_members', 'edit');
-
   // No subscription for this module
   if (!moduleSeat) {
     return null;
   }
-
-  const seatsAvailable = moduleSeat.seats_purchased > moduleSeat.seats_used;
 
   return (
     <Card className="flex flex-col border-none shadow-none">
@@ -187,15 +151,12 @@ export function ModuleSeatSection() {
           </div>
         ) : allMembers.length === 0 ? (
           <p className="text-muted-foreground py-4 text-center text-sm">
-            No accepted team members to assign seats to.
+            No accepted team members yet.
           </p>
         ) : (
           <div className="space-y-1">
             {allMembers.map((member) => {
               const hasSeat = assignedUserIds.has(member.user_id);
-              const assignment = assignments.find(
-                (a) => a.user_id === member.user_id,
-              );
 
               return (
                 <div
@@ -218,66 +179,31 @@ export function ModuleSeatSection() {
 
                   <div className="flex items-center gap-2">
                     {hasSeat ? (
-                      <>
-                        <Badge
-                          variant="outline"
-                          className="gap-1 border-green-500/30 text-[10px] text-green-600"
-                        >
-                          <Check className="h-3 w-3" />
-                          Assigned
-                        </Badge>
-                        {canManageSeats && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:bg-destructive/10 hover:text-destructive h-7 gap-1 text-xs"
-                            disabled={revokeMutation.isPending}
-                            onClick={() => {
-                              if (assignment) {
-                                revokeMutation.mutate(assignment.id);
-                              }
-                            }}
-                          >
-                            <ShieldOff className="h-3 w-3" />
-                            Revoke
-                          </Button>
-                        )}
-                      </>
-                    ) : (
-                      <Button
+                      <Badge
                         variant="outline"
-                        size="sm"
-                        className="h-7 gap-1 text-xs"
-                        disabled={!seatsAvailable || assignMutation.isPending}
-                        onClick={() => assignMutation.mutate(member.user_id)}
+                        className="gap-1 border-green-500/30 text-[10px] text-green-600"
                       >
-                        {assignMutation.isPending &&
-                        assignMutation.variables === member.user_id ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <Shield className="h-3 w-3" />
-                        )}
-                        Assign Seat
-                      </Button>
+                        <Check className="h-3 w-3" />
+                        Assigned
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="text-muted-foreground gap-1 text-[10px]"
+                      >
+                        <ShieldOff className="h-3 w-3" />
+                        No Seat
+                      </Badge>
                     )}
                   </div>
                 </div>
               );
             })}
 
-            {!seatsAvailable && (
-              <p className="text-muted-foreground mt-2 text-center text-xs">
-                No available seats. Purchase more seats from the{' '}
-                <a
-                  href="/org/subscription"
-                  className="font-medium underline"
-                  style={{ color: moduleColor }}
-                >
-                  subscription page
-                </a>
-                .
-              </p>
-            )}
+            <p className="text-muted-foreground mt-3 text-center text-[11px]">
+              Seats are automatically assigned when members join and revoked
+              when they are removed.
+            </p>
           </div>
         )}
       </CardContent>

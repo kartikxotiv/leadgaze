@@ -32,11 +32,13 @@ import { inviteMemberService } from '~/services/team-members.service';
 interface InviteMemberDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  productKey?: string;
 }
 
 export function InviteMemberDialog({
   open,
   onOpenChange,
+  productKey,
 }: InviteMemberDialogProps) {
   const { currentWorkspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -61,6 +63,7 @@ export function InviteMemberDialog({
       inviteMemberService(currentWorkspace?.id || '', {
         email: formData.email,
         role_id: formData.role_id,
+        productKey,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -70,6 +73,7 @@ export function InviteMemberDialog({
       setFormData({ email: '', role_id: '' });
       onOpenChange(false);
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (error: any) => {
       toast.error(error?.message || 'Failed to send invitation');
     },
@@ -122,6 +126,7 @@ export function InviteMemberDialog({
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
               <SelectContent>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {roles.map((role: any) => (
                   <SelectItem key={role.id} value={role.id}>
                     <div className="flex items-center gap-2">

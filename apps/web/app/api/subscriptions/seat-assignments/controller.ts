@@ -64,16 +64,21 @@ export const getSeatAssignments = catchAsync(
       );
     }
 
-    // Deduplicate by user_id — keep only the most recent assignment per user
-    const seen = new Set<string>();
-    const deduped = (data || []).filter((row: Record<string, unknown>) => {
-      const uid = row.user_id as string;
-      if (seen.has(uid)) return false;
-      seen.add(uid);
-      return true;
-    });
+    // When filtered by productKey, deduplicate by user_id (a user should only
+    // have one assignment per product). Without productKey filter, return ALL
+    // rows so callers can see every user-product combination.
+    let result = data || [];
+    if (productKey) {
+      const seen = new Set<string>();
+      result = result.filter((row: Record<string, unknown>) => {
+        const uid = row.user_id as string;
+        if (seen.has(uid)) return false;
+        seen.add(uid);
+        return true;
+      });
+    }
 
-    return NextResponse.json({ success: true, data: deduped });
+    return NextResponse.json({ success: true, data: result });
   },
 );
 
