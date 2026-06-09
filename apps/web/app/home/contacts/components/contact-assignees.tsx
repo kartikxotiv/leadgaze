@@ -147,7 +147,7 @@ export function ContactAssignees({
                       className="h-8 w-8 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-sm font-semibold text-white">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
                       {getAssigneeInitials(assignee)}
                     </div>
                   )
