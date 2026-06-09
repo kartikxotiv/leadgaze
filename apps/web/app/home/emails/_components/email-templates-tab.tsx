@@ -87,7 +87,7 @@ export function EmailTemplatesTab() {
                       key: 'add',
                       label: 'New Template',
                       icon: Plus,
-                      onClick: () => setIsDialogOpen(true),
+                      onClick: () => handleCreateTemplate(),
                       show: canManage,
                       buttonVariant: 'default',
                     },
