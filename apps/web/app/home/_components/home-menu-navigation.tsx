@@ -279,8 +279,8 @@ function NavDropdownContent({
       <Link
         href={
           type === 'Opportunities'
-            ? '/home/opportunities'
-            : `/home/${type.toLowerCase()}`
+            ? '/home/sales/opportunities'
+            : `/home/sales/${type.toLowerCase()}`
         }
         onClick={onItemClick}
         className="block w-full py-1 text-center text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400"

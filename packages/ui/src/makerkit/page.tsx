@@ -100,8 +100,8 @@ function PageWithHeader(props: PageProps) {
           </div>
 
           <div className={'w-full py-4 flex flex-1 flex-col pt-0 bg-graylight dark:dark-background-color px-6'}>
-            {/* <div className="flex px-6 h-[100dvh] w-full max-w-full min-w-0 flex-col overflow-hidden">{Children}</div> */}
-            {Children}
+            <div className="flex px-6 h-[91dvh] w-full max-w-full min-w-0 flex-col overflow-auto">{Children}</div>
+            {/* {Children} */}
             </div>
         </div>
       </div>
