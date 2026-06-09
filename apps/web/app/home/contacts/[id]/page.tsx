@@ -12,6 +12,7 @@ import {
   Building2,
   Calendar,
   Clock,
+  Edit2,
   Linkedin,
   Mail,
   MapPin,
@@ -62,7 +63,7 @@ import { EditContactDialog } from '../components/edit-contact-dialog';
 function ContactDetailsSkeleton() {
   return (
     <ModuleGuard module="contacts">
-      <div className="px-6 pt-4 pb-0">
+      <div className="px-6 pt-4 pb-2">
         <div className="mb-2">
           <Skeleton className="h-8 w-20 rounded-md" />
         </div>
@@ -198,7 +199,7 @@ export default function ContactDetailsPage() {
 
   return (
     <ModuleGuard module="contacts">
-      <div className="px-6 pt-4 pb-0">
+      {/* <div className="px-6 pt-4 pb-0">
         <div className="mb-2">
           <Button variant="ghost" size="sm" asChild className="-ml-2">
             <Link href="/home/contacts">
@@ -207,6 +208,31 @@ export default function ContactDetailsPage() {
             </Link>
           </Button>
         </div>
+      </div> */}
+     
+<div className="px-6 pt-4 pb-2 flex justify-between items-center w-full">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" asChild className="border p-0 border-leadgaze-border">
+            <Link href="/home/contacts">
+              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
+            </Link>
+          </Button>
+          <div className="flex flex-col">
+            <h1 className="text-lg font-semibold">Contact details</h1>
+            <p className="text-leadgaze-muted text-sm">View and edit lead information</p>
+          </div>
+        </div>
+       {canEdit && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => setIsEditDialogOpen(true)}
+                      className="gap-2"
+                    >
+                      <Edit2 className="h-4 w-4"/>
+                      Edit Contact
+                    </Button>
+                  )}
       </div>
 
       <PageBody className="pb-6">
@@ -297,17 +323,7 @@ export default function ContactDetailsPage() {
                     <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
                       <Mail className="h-3.5 w-3.5 text-white" />
                     </div>
-                  </Button>
-
-                  {canEdit && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsEditDialogOpen(true)}
-                    >
-                      Edit Contact
-                    </Button>
-                  )}
+                  </Button>                
                 </div>
               }
             />
