@@ -302,22 +302,22 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
               : []),
             {
               label: 'Meetings',
-              path: '/home/meetings',
+              path: '/home/sales/meetings',
               Icon: <Calendar className="h-4 w-4" />,
             },
             {
               label: 'Reminders',
-              path: '/home/reminders',
+              path: '/home/sales/reminders',
               Icon: <Bell className="h-4 w-4" />,
             },
             {
               label: 'Notes',
-              path: '/home/notes',
+              path: '/home/sales/notes',
               Icon: <NotebookPen className="h-4 w-4" />,
             },
             {
               label: 'Document',
-              path: '/home/document',
+              path: '/home/sales/document',
               Icon: <FileText className="h-4 w-4" />,
             },
           ],

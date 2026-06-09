@@ -30,6 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 
 import { EmailAccountsSettings } from './_components/email-accounts-settings';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -90,9 +91,9 @@ function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
 
   if (!currentWorkspace) return null;
 
-  return (
+  return (    
     <Card>
-      <CardHeader>
+      <CardHeader className="p-4">
         <CardTitle>Workspace Management</CardTitle>
         <CardDescription>
           Select and manage your active workspace.
@@ -102,7 +103,7 @@ function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
         <div className="flex items-center gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-[300px] justify-between">
+              <Button variant="outline" className="w-[300px] justify-between dark:text-white">
                 <span className="flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
                   {currentWorkspace.name}
@@ -110,12 +111,12 @@ function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
                 <ChevronDown className="h-4 w-4 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[300px]">
+            <DropdownMenuContent align="start" className="w-[300px] h-[32px]">
               {workspaces.map((ws) => (
                 <DropdownMenuItem
                   key={ws.id}
                   onClick={() => handleWorkspaceChange(ws.id)}
-                  className="cursor-pointer gap-2"
+                  className="cursor-pointer gap-2 w-[290px] pt-0"
                 >
                   <Building2 className="h-4 w-4" />
                   <span className="flex-1 truncate">{ws.name}</span>
@@ -140,11 +141,10 @@ export default function WorkspaceSettingsPage() {
   return (
     <>
       <PageHeader
-        className="bg-sidebar"
         title="Workspace"
         description="Manage your workspace configuration, email accounts, and templates."
       />
-      <PageBody className="bg-sidebar sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pt-6 pb-6">
+      <PageBody className="sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pt-6 pb-6">
         <Tabs defaultValue="general" className="space-y-6">
           <TabsList className="h-auto w-full justify-start gap-8 rounded-none border-b bg-transparent p-0">
             <TabsTrigger

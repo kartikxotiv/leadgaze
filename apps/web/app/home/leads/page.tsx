@@ -226,7 +226,7 @@ export default function LeadsPage() {
         </div>
         
           {/* Status Distribution Cards */}
-          <div className="w-full max-w-full min-w-0 overflow-x-auto py-2">
+          <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2">
             <div className="flex flex-wrap items-center gap-2">
               <TableStatusMetricTab
                    key={0}
@@ -264,7 +264,7 @@ export default function LeadsPage() {
         
 
         {/* Full-width search / filter / actions toolbar */}
-        <div className="w-full max-w-full min-w-0 shrink-0 border-b py-2">
+        <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
           <ListToolBar
             showSearch
             searchPlaceholder="Search leads..."
