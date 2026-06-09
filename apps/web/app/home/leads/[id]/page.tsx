@@ -25,7 +25,7 @@ import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { DetailHeader } from '@kit/ui/detail-header';
-import { PageBody } from '@kit/ui/page';
+import { PageBody, PageHeader } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
 import {
   Tooltip,
@@ -71,7 +71,7 @@ import { CustomInputForView } from '@kit/ui/custom-input-for-view';
 function LeadDetailsSkeleton() {
   return (
     <div className="flex h-full flex-col">
-      <div className="px-6 pt-4 pb-0">
+      <div className="px-6 pt-4 pb-2">
         <Skeleton className="h-8 w-20 rounded-md" />
       </div>
       <PageBody>
@@ -295,15 +295,29 @@ export default function LeadDetailsPage() {
 
   return (
     <ModuleGuard module="leads">
-      <div className="px-6 pt-4 pb-0">
-        <div className="mb-2">
-          <Button variant="ghost" size="sm" asChild className="-ml-2">
-            <Link href="/home/leads">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
+      <div className="px-6 pt-4 pb-2 flex justify-between items-center w-full">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" asChild className="border p-0 border-leadgaze-border">
+            <Link href="/home/sales/leads">
+              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
             </Link>
           </Button>
+          <div className="flex flex-col">
+            <h1 className="text-lg font-semibold">Lead details</h1>
+            <p className="text-leadgaze-muted text-sm">View and edit lead information</p>
+          </div>
         </div>
+        {canEdit && (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setIsEditDialogOpen(true)}
+            className="gap-2"
+          >
+            <Edit2 className="h-4 w-4" />
+            Edit Profile
+          </Button>
+        )}
       </div>
 
       <PageBody className="pb-6">
@@ -313,7 +327,7 @@ export default function LeadDetailsPage() {
           entityId={leadId}
           entityType="lead"
           entityName={`${lead.first_name} ${lead.last_name || ''}`}
-          onSuccess={() => router.push('/home/leads')}
+          onSuccess={() => router.push('/home/sales/leads')}
         />
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
@@ -413,24 +427,14 @@ export default function LeadDetailsPage() {
                     </Button>
                   )}
 
-                  {canEdit && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsEditDialogOpen(true)}
-                      className="flex h-8 items-center justify-center gap-2 px-4"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                      Edit Profile
-                    </Button>
-                  )}
+                 
                 </div>
               }
             />
 {/* $$$$$$$$$$$$$*/}
 
             {/* Comapny */}
-            <CardWidgetContainer title="Company" icon={<User className="w-5 h-5 text-leadgaze-muted dark:text-white" />}>
+            <CardWidgetContainer title="Company" icon={<User className="w-5 h-5 text-leadgaze-dark dark:text-white" />}>
             <div className="flex-1">
               <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
                 {lead.company_name && (
@@ -501,7 +505,7 @@ export default function LeadDetailsPage() {
             
 
             {/* Contact Information Section */}
-            <CardWidgetContainer title="Contact" icon={<User className="w-5 h-5 text-leadgaze-muted dark:text-white" />}>
+            <CardWidgetContainer title="Contact" icon={<User className="w-5 h-5 text-leadgaze-dark dark:text-white" />}>
               <div className="flex-1">
                 <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
                   {lead.email && (
@@ -634,147 +638,151 @@ export default function LeadDetailsPage() {
             {/* Lead Scoring Card */}
             {lead.lead_score !== null && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Lead Score</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-center">
-                    <div className="relative h-24 w-24">
-                      <svg
-                        className="h-full w-full -rotate-90 transform"
-                        viewBox="0 0 100 100"
-                      >
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="45"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          className="text-gray-200 dark:text-gray-700"
-                        />
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="45"
-                          fill="none"
-                          stroke={statusColor}
-                          strokeWidth="2"
-                          strokeDasharray={`${((scoringResult?.totalScore ?? lead.lead_score) / 100) * 283} 283`}
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {scoringResult?.totalScore ?? lead.lead_score}
+                <CardContent className="pt-6">
+                  <div className="flex flex-row items-start justify-between gap-6">
+                    {/* Left side: Breakdown */}
+                    <div className="flex-1 space-y-4 w-full">
+                      <h3 className="text-base font-semibold text-zinc-950 dark:text-white mb-2">
+                        Lead Score
+                      </h3>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Total Score
+                        </span>
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {scoringResult?.totalScore ?? lead.lead_score} / 100
                         </span>
                       </div>
-                    </div>
-                  </div>
 
-                  <div className="mt-4 space-y-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600 dark:text-gray-400">
-                        Total Score
-                      </span>
-                      <span className="font-semibold text-gray-900 dark:text-white">
-                        {scoringResult?.totalScore ?? lead.lead_score} / 100
-                      </span>
-                    </div>
+                      {scoringResult && (
+                        <div className="space-y-3 border-t pt-4">
+                          <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
+                            Breakdown
+                          </p>
 
-                    {scoringResult && (
-                      <div className="space-y-3 border-t pt-4">
-                        <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
-                          Breakdown
-                        </p>
-
-                        {/* Fit Score Breakdown */}
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-xs font-semibold text-gray-400">
-                            <span>Fit Coverage</span>
-                            <span>{scoringResult.fitScore} / 60</span>
+                          {/* Fit Score Breakdown */}
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs font-semibold text-gray-400">
+                              <span>Fit Coverage</span>
+                              <span>{scoringResult.fitScore} / 60</span>
+                            </div>
+                            {Object.entries(scoringResult.breakdown.fit).map(
+                              ([label, score]) => (
+                                <div
+                                  key={label}
+                                  className="flex justify-between text-xs"
+                                >
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    {label}
+                                  </span>
+                                  <span className="font-medium text-green-600">
+                                    +{score}
+                                  </span>
+                                </div>
+                              ),
+                            )}
                           </div>
-                          {Object.entries(scoringResult.breakdown.fit).map(
-                            ([label, score]) => (
-                              <div
-                                key={label}
-                                className="flex justify-between text-xs"
-                              >
-                                <span className="text-gray-600 dark:text-gray-400">
-                                  {label}
-                                </span>
-                                <span className="font-medium text-green-600">
-                                  +{score}
-                                </span>
-                              </div>
-                            ),
+
+                          {/* Engagement Score Breakdown */}
+                          {Object.keys(scoringResult.breakdown.engagement)
+                            .length > 0 && (
+                            <div className="space-y-1 pt-2">
+                              <p className="text-xs font-semibold text-gray-400">
+                                Engagement
+                              </p>
+                              {Object.entries(
+                                scoringResult.breakdown.engagement,
+                              ).map(([label, score]) => (
+                                <div
+                                  key={label}
+                                  className="flex justify-between text-xs"
+                                >
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    {label}
+                                  </span>
+                                  <span className="font-medium text-blue-600">
+                                    +{score}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Adjustments (Status) */}
+                          {Object.keys(scoringResult.breakdown.adjustments)
+                            .length > 0 && (
+                            <div className="space-y-1 pt-2">
+                              <p className="text-xs font-semibold text-gray-400">
+                                Status Adjustments
+                              </p>
+                              {Object.entries(
+                                scoringResult.breakdown.adjustments,
+                              ).map(([label, score]) => (
+                                <div
+                                  key={label}
+                                  className="flex justify-between text-xs"
+                                >
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    {label}
+                                  </span>
+                                  <span
+                                    className={cn(
+                                      'font-medium',
+                                      score > 0
+                                        ? 'text-green-600'
+                                        : score === -100
+                                          ? 'text-red-600'
+                                          : 'text-amber-600',
+                                    )}
+                                  >
+                                    {score > 0
+                                      ? `+${score}`
+                                      : score === -100
+                                        ? 'Reset'
+                                        : score}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
                           )}
                         </div>
+                      )}
+                    </div>
 
-                        {/* Engagement Score Breakdown */}
-                        {Object.keys(scoringResult.breakdown.engagement)
-                          .length > 0 && (
-                          <div className="space-y-1 pt-2">
-                            <p className="text-xs font-semibold text-gray-400">
-                              Engagement
-                            </p>
-                            {Object.entries(
-                              scoringResult.breakdown.engagement,
-                            ).map(([label, score]) => (
-                              <div
-                                key={label}
-                                className="flex justify-between text-xs"
-                              >
-                                <span className="text-gray-600 dark:text-gray-400">
-                                  {label}
-                                </span>
-                                <span className="font-medium text-blue-600">
-                                  +{score}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Adjustments (Status) */}
-                        {Object.keys(scoringResult.breakdown.adjustments)
-                          .length > 0 && (
-                          <div className="space-y-1 pt-2">
-                            <p className="text-xs font-semibold text-gray-400">
-                              Status Adjustments
-                            </p>
-                            {Object.entries(
-                              scoringResult.breakdown.adjustments,
-                            ).map(([label, score]) => (
-                              <div
-                                key={label}
-                                className="flex justify-between text-xs"
-                              >
-                                <span className="text-gray-600 dark:text-gray-400">
-                                  {label}
-                                </span>
-                                <span
-                                  className={cn(
-                                    'font-medium',
-                                    score > 0
-                                      ? 'text-green-600'
-                                      : score === -100
-                                        ? 'text-red-600'
-                                        : 'text-amber-600',
-                                  )}
-                                >
-                                  {score > 0
-                                    ? `+${score}`
-                                    : score === -100
-                                      ? 'Reset'
-                                      : score}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                    {/* Right side: Circular Progress Indicator */}
+                    <div className="flex items-center justify-center flex-shrink-0 self-center sm:self-start">
+                      <div className="relative h-24 w-24">
+                        <svg
+                          className="h-full w-full -rotate-90 transform"
+                          viewBox="0 0 100 100"
+                        >
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="45"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            className="text-gray-200 dark:text-gray-700"
+                          />
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="45"
+                            fill="none"
+                            stroke={statusColor}
+                            strokeWidth="2"
+                            strokeDasharray={`${((scoringResult?.totalScore ?? lead.lead_score) / 100) * 283} 283`}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                            {scoringResult?.totalScore ?? lead.lead_score}
+                          </span>
+                        </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -807,7 +815,7 @@ export default function LeadDetailsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-gray-400" />
+                  <Clock className="h-5 w-5 text-leadgaze-dark dark:text-white" />
                   <CardTitle className="text-lg">Activity</CardTitle>
                 </div>
               </CardHeader>
