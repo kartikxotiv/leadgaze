@@ -519,7 +519,7 @@ export default function LeadsPage() {
                               key={lead.id}
                               className="hover:bg-muted/50 cursor-pointer"
                               onClick={() =>
-                                router.push(`/home/leads/${lead.id}`)
+                                router.push(`/home/sales/leads/${lead.id}`)
                               }
                             >
                               {isVisible('sno') && (
@@ -730,7 +730,7 @@ export default function LeadsPage() {
                                 <div className="flex items-center justify-end gap-2">
                                   <EntityActionsDropdown
                                     id={lead.id}
-                                    viewPath={`/home/leads/${lead.id}`}
+                                    viewPath={`/home/sales/leads/${lead.id}`}
                                     canDelete={canAccess('leads', 'delete')}
                                     onDelete={() => {
                                       setLeadToDelete(lead);
