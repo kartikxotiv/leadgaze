@@ -200,11 +200,9 @@ export default function RolesPage() {
   };
 
   return (
-    <ModuleGuard module="roles">
-      <div className="flex h-[100dvh] flex-col">
-        <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
-          <PageHeader
-            className="bg-sidebar px-6 py-4"
+    <ModuleGuard module="roles">      
+        <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
+          <PageHeader            
             title={`Roles Management (${Array.isArray(roles) ? roles.length : 0})`}
             description="Create and manage workspace roles with custom permissions"
           >
@@ -226,9 +224,10 @@ export default function RolesPage() {
                     <Button
                       variant="outline"
                       onClick={() => setCreateDialogOpen(true)}
-                      className="h-8 w-8 bg-white p-0 text-black dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
+                      size="sm"
+                      className="h-9 w-9 p-2"
                     >
-                      <Plus className="h-4 w-4 text-gray-500 dark:text-white" />
+                      <Plus className="h-4 w-4 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white" />
                     </Button>
                   </TooltipTrigger>
 
@@ -290,7 +289,7 @@ export default function RolesPage() {
             </div>
           </div>
         </div>
-        <PageBody className="bg-sidebar sticky flex min-h-0 flex-1 shrink-0 flex-col overflow-hidden pt-4 pb-6">
+        <PageBody className="sticky flex min-h-0 flex-1 shrink-0 flex-col overflow-hidden pt-4 pb-6">
           <div className="flex min-h-0 flex-1 flex-col space-y-6">
             {/* Roles Table */}
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
@@ -487,7 +486,7 @@ export default function RolesPage() {
             />
           )}
         </PageBody>
-      </div>
+      
     </ModuleGuard>
   );
 }

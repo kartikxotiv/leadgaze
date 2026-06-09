@@ -76,6 +76,7 @@ import {
 
 import { EmailTemplatesTab } from '../../emails/_components/email-templates-tab';
 import { EmailVariablesTab } from '../../emails/_components/email-variables-tab';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 
 type SmtpFormState = {
   email: string;
@@ -251,27 +252,19 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
       ) : null}
 
       <Tabs defaultValue="accounts" className="space-y-6">
-        <TabsList>
+        <TabsList className="mb-1">
           <TabsTrigger value="accounts">Email Accounts</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="variables">Variables</TabsTrigger>
         </TabsList>
 
         <TabsContent value="accounts">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Email Accounts</CardTitle>
-                <CardDescription>
-                  Connect accounts to send emails from your workspace.
-                </CardDescription>
-              </div>
-              <Dialog
+          <CardWidgetContainer title="Email Accounts" desc="Connect accounts to send emails from your workspace." icon2={<Dialog
                 open={isConnectDialogOpen}
                 onOpenChange={setIsConnectDialogOpen}
               >
                 <DialogTrigger asChild>
-                  <Button className="h-8 w-8 p-0" variant="outline">
+                  <Button className="h-9 w-9 p-0" variant="outline">
                     <Plus className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
@@ -291,7 +284,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                       </div>
                       <Button
                         onClick={handleGoogleConnect}
-                        className="w-full"
+                        className="w-full text-leadgaze-dark dark:text-white"
                         variant="outline"
                       >
                         <Mail className="mr-2 h-4 w-4" />
@@ -410,9 +403,8 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                     </TabsContent>
                   </Tabs>
                 </DialogContent>
-              </Dialog>
-            </CardHeader>
-            <CardContent>
+              </Dialog>}>
+            <div className='mb-2'>            
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -567,8 +559,8 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                   )}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
+            </div>
+          </CardWidgetContainer>         
         </TabsContent>
 
         <TabsContent value="templates">

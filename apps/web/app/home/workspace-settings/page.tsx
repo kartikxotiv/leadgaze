@@ -93,13 +93,13 @@ function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
 
   return (    
     <Card>
-      <CardHeader className="p-4">
-        <CardTitle>Workspace Management</CardTitle>
+      <CardHeader className="p-4 pb-3">
+        <CardTitle className="mb-0">Workspace Management</CardTitle>
         <CardDescription>
           Select and manage your active workspace.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4 pt-0">
         <div className="flex items-center gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -144,9 +144,9 @@ export default function WorkspaceSettingsPage() {
         title="Workspace"
         description="Manage your workspace configuration, email accounts, and templates."
       />
-      <PageBody className="sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pt-6 pb-6">
+      <PageBody className="sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden">
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="h-auto w-full justify-start gap-8 rounded-none border-b bg-transparent p-0">
+          <TabsList className="h-auto w-full justify-start gap-8 rounded-none border-b bg-transparent p-0 mb-1">
             <TabsTrigger
               value="general"
               className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
