@@ -2,19 +2,23 @@
 
 import { useMemo, useState } from 'react';
 
+import { usePathname } from 'next/navigation';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Check,
   Clock,
+  CreditCard,
   Edit2,
-  Loader2,
   Plus,
   RotateCcw,
+  Shield,
   Trash2,
   Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { getWorkspaceSubscriptionService } from '@kit/core/services';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import {
@@ -26,6 +30,7 @@ import {
 } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { PageBody, PageHeader } from '@kit/ui/page';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   TableBody,
   TableCell,
@@ -33,18 +38,12 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@kit/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
-
-import { Skeleton } from '@kit/ui/skeleton';
 
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { getModuleKeyFromPath } from '~/lib/rbac/route-module-map';
 import { getRolesService } from '~/services/roles.service';
 import {
   type WorkspaceMember,
@@ -78,7 +77,7 @@ function TeamMembersPageSkeleton() {
           </div>
         </div>
       </div>
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-4 pb-6 px-4 lg:px-8">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pt-4 pb-6 lg:px-8">
         <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
           <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
             <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
@@ -88,7 +87,9 @@ function TeamMembersPageSkeleton() {
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Primary Contact</TableHead>
-                <TableHead className="sticky right-0 px-4 text-right">Actions</TableHead>
+                <TableHead className="sticky right-0 px-4 text-right">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -110,11 +111,26 @@ function TeamMembersPageSkeleton() {
 export default function TeamMembersPage() {
   const queryClient = useQueryClient();
   const { currentWorkspace, canAccess } = useRBAC();
+  const pathname = usePathname();
+  const productKey = getModuleKeyFromPath(pathname);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [updatingMember, setUpdatingMember] = useState<WorkspaceMember | null>(
     null,
   );
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
+
+  // Fetch workspace subscription status for seat capacity
+  const { data: subscriptionData } = useQuery({
+    queryKey: ['workspace-subscription', currentWorkspace?.id],
+    queryFn: () => getWorkspaceSubscriptionService(currentWorkspace?.id || ''),
+    enabled: !!currentWorkspace?.id,
+  });
+
+  const currentModule = useMemo(() => {
+    return subscriptionData?.enabled_modules?.find(
+      (m) => m.module_key === productKey,
+    );
+  }, [subscriptionData, productKey]);
 
   const columns = useMemo(
     () => [
@@ -176,7 +192,7 @@ export default function TeamMembersPage() {
       });
       toast.success('Member removed successfully');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error?.message || 'Failed to remove member');
     },
   });
@@ -190,7 +206,7 @@ export default function TeamMembersPage() {
       });
       toast.success('Invitation resent successfully');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error?.message || 'Failed to resend invitation');
     },
   });
@@ -237,7 +253,7 @@ export default function TeamMembersPage() {
     }
   };
 
-  const getRoleColor = (role: any) => {
+  const getRoleColor = (role: { color?: string } | null | undefined) => {
     return role?.color || '#6b7280';
   };
 
@@ -301,9 +317,9 @@ export default function TeamMembersPage() {
           {/* Summary Cards - Fixed at top */}
           <div className="-mt-1 w-full max-w-full min-w-0 overflow-x-auto px-6 pb-7">
             <div className="-mb-3 flex items-center gap-3">
-              <Card className="hover:border-primary/50 bg-card transition-all w-52 shrink-0">
-                <CardContent className="h-10 p-3 flex items-center">
-                  <div className="flex flex-col gap-1 w-full">
+              <Card className="hover:border-primary/50 bg-card w-52 shrink-0 transition-all">
+                <CardContent className="flex h-10 items-center p-3">
+                  <div className="flex w-full flex-col gap-1">
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full bg-blue-500" />
                       <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
@@ -314,9 +330,9 @@ export default function TeamMembersPage() {
                 </CardContent>
               </Card>
 
-              <Card className="hover:border-primary/50 bg-card transition-all w-52 shrink-0">
-                <CardContent className="h-10 p-3 flex items-center">
-                  <div className="flex flex-col gap-1 w-full">
+              <Card className="hover:border-primary/50 bg-card w-52 shrink-0 transition-all">
+                <CardContent className="flex h-10 items-center p-3">
+                  <div className="flex w-full flex-col gap-1">
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full bg-green-500" />
                       <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
@@ -327,9 +343,9 @@ export default function TeamMembersPage() {
                 </CardContent>
               </Card>
 
-              <Card className="hover:border-primary/50 bg-card transition-all w-52 shrink-0">
-                <CardContent className="h-10 p-3 flex items-center">
-                  <div className="flex flex-col gap-1 w-full">
+              <Card className="hover:border-primary/50 bg-card w-52 shrink-0 transition-all">
+                <CardContent className="flex h-10 items-center p-3">
+                  <div className="flex w-full flex-col gap-1">
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full bg-yellow-500" />
                       <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
@@ -339,6 +355,44 @@ export default function TeamMembersPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              {currentModule && (
+                <Card className="hover:border-primary/50 bg-card w-64 shrink-0 transition-all">
+                  <CardContent className="flex h-10 items-center p-3">
+                    <div className="flex w-full items-center gap-2">
+                      <Shield className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
+                        Seats: {currentModule.used_seats} /{' '}
+                        {currentModule.purchased_seats}
+                      </span>
+                      {currentModule.used_seats >=
+                        currentModule.purchased_seats && (
+                        <Badge
+                          variant="destructive"
+                          className="ml-auto h-4 px-1.5 text-[9px]"
+                        >
+                          Full
+                        </Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    onClick={() => (window.location.href = '/org/subscription')}
+                    className="h-8 w-8 p-0"
+                  >
+                    <CreditCard className="h-4 w-4 text-gray-500" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>Manage Subscription</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
         </div>
@@ -349,9 +403,7 @@ export default function TeamMembersPage() {
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
               <CardHeader className="shrink-0 p-4">
                 <div>
-                  <CardTitle className="leading-tight">
-                    Members
-                  </CardTitle>
+                  <CardTitle className="leading-tight">Members</CardTitle>
                   <CardDescription>
                     Manage team members and their roles
                   </CardDescription>
@@ -367,8 +419,12 @@ export default function TeamMembersPage() {
                           {isVisible('email') && <TableHead>Email</TableHead>}
                           {isVisible('role') && <TableHead>Role</TableHead>}
                           {isVisible('status') && <TableHead>Status</TableHead>}
-                          {isVisible('primary_contact') && <TableHead>Primary Contact</TableHead>}
-                          <TableHead className="sticky right-0 px-4 text-right">Actions</TableHead>
+                          {isVisible('primary_contact') && (
+                            <TableHead>Primary Contact</TableHead>
+                          )}
+                          <TableHead className="sticky right-0 px-4 text-right">
+                            Actions
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -378,7 +434,9 @@ export default function TeamMembersPage() {
                               className="h-[52px] px-4 py-2"
                               colSpan={
                                 visibility
-                                  ? Object.values(visibility).filter((v) => v !== false).length + 1
+                                  ? Object.values(visibility).filter(
+                                      (v) => v !== false,
+                                    ).length + 1
                                   : 6
                               }
                             >
@@ -536,6 +594,7 @@ export default function TeamMembersPage() {
           <InviteMemberDialog
             open={inviteDialogOpen}
             onOpenChange={setInviteDialogOpen}
+            productKey={productKey}
           />
 
           {updatingMember && (

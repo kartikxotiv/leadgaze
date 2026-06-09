@@ -6,6 +6,8 @@ import { usePathname } from 'next/navigation';
 
 import { PageHeader } from '@kit/ui/page';
 
+import { ModuleAccessGuardWrapper } from '../_components/module-access-guard-wrapper';
+
 const routeHeaders = [
   {
     segment: '/tickets',
@@ -55,7 +57,11 @@ export default function ServiceCloudLayout({
   const pathname = usePathname();
 
   if (routesWithOwnHeader.some((segment) => pathname.includes(segment))) {
-    return <>{children}</>;
+    return (
+      <ModuleAccessGuardWrapper moduleKey="service_cloud">
+        {children}
+      </ModuleAccessGuardWrapper>
+    );
   }
 
   const header = routeHeaders.find((item) =>
@@ -67,13 +73,13 @@ export default function ServiceCloudLayout({
   };
 
   return (
-    <>
+    <ModuleAccessGuardWrapper moduleKey="service_cloud">
       <PageHeader
         className="bg-sidebar"
         title={header.title}
         description={header.description}
       />
       {children}
-    </>
+    </ModuleAccessGuardWrapper>
   );
 }

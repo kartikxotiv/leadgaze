@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import {
@@ -65,7 +66,7 @@ const createNewWorkspace = catchAsync(
         role_name: 'Admin',
         hierarchy_level: 100,
         is_system: true,
-      }
+      },
       // {
       //   role_key: 'manager',
       //   role_name: 'Manager',
@@ -154,8 +155,82 @@ const createNewWorkspace = catchAsync(
       }
     }
 
+    // Create 7-day trial seats for all modules (owner gets access to everything)
+    await createTrialSeats(workspace.id, userId);
+
     return successDataResponse(workspace, 'Workspace created successfully');
   },
 );
+
+// ─── Helper: Auto-create 7-day trial seats for all modules ──────
+
+async function createTrialSeats(workspaceId: string, ownerUserId: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const adminClient = getSupabaseServerAdminClient() as any;
+
+  const now = new Date();
+  const trialEnd = new Date(now.getTime());
+  trialEnd.setDate(trialEnd.getDate() + 7);
+
+  // Get all active subscription products
+  const { data: products } = await adminClient
+    .from('subscription_products')
+    .select('id, product_key, display_name')
+    .eq('is_active', true);
+
+  if (!products || products.length === 0) {
+    console.warn(
+      'No active subscription products found — skipping trial seats.',
+    );
+    return;
+  }
+
+  // Create workspace_module_seats + seat_assignment for each product
+  const seatRows = products.map((product) => ({
+    workspace_id: workspaceId,
+    product_id: product.id,
+    seats_purchased: 1,
+    seats_used: 0, // sync_seats_used trigger will set to 1 when assignment is created
+    status: 'trialing' as const,
+    billing_cycle: 'monthly' as const,
+    current_period_start: now.toISOString(),
+    current_period_end: trialEnd.toISOString(),
+    trial_ends_at: trialEnd.toISOString(),
+    payment_provider: 'manual' as const,
+    provider_customer_id: `trial_cus_${workspaceId}`,
+    provider_subscription_id: `trial_sub_${workspaceId}_${product.product_key}`,
+    provider_metadata: { trial: true, source: 'workspace-creation' },
+    created_by: ownerUserId,
+    updated_by: ownerUserId,
+  }));
+
+  const { data: createdSeats, error: seatsError } = await adminClient
+    .from('workspace_module_seats')
+    .insert(seatRows)
+    .select('id, product_id');
+
+  if (seatsError || !createdSeats) {
+    console.error('Failed to create trial seats:', seatsError);
+    return;
+  }
+
+  // Create seat_assignment for the owner on each product
+  const assignmentRows = createdSeats.map((seat) => ({
+    seat_id: seat.id,
+    workspace_id: workspaceId,
+    user_id: ownerUserId,
+    product_id: seat.product_id,
+    is_active: true,
+    assigned_by: ownerUserId,
+  }));
+
+  const { error: assignError } = await adminClient
+    .from('seat_assignments')
+    .insert(assignmentRows);
+
+  if (assignError) {
+    console.error('Failed to create trial seat assignments:', assignError);
+  }
+}
 
 export { createNewWorkspace };
