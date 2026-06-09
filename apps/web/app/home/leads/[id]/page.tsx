@@ -295,7 +295,7 @@ export default function LeadDetailsPage() {
 
   return (
     <ModuleGuard module="leads">
-      <div className="px-6 pt-4 pb-2 flex justify-between items-center w-full">
+      <div className="pt-4 pb-2 flex justify-between items-center w-full">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" asChild className="border p-0 border-leadgaze-border">
             <Link href="/home/sales/leads">
