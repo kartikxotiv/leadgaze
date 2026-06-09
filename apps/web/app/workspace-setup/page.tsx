@@ -96,8 +96,8 @@ export default function WorkspaceSetupPage() {
         queryKey: ['userWorkspaces', user?.id],
       });
 
-      // Redirect to home
-      router.push(pathsConfig.app.home);
+      // Redirect to module selector so the user can choose which module to enter
+      router.push('/org/home');
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
