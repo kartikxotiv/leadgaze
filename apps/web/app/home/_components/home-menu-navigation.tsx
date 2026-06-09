@@ -718,6 +718,11 @@ export function HomeMenuNavigation() {
             path: '/home/document',
             Icon: <FileText className="h-4 w-4" />,
           },
+          {
+            label: 'Teams',
+            path: pathsConfig.app.teams,
+            Icon: <Users className="h-4 w-4" />,
+          },
         ],
       },
       {

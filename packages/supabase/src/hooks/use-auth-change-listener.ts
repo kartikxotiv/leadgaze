@@ -64,7 +64,7 @@ export function useAuthChangeListener({
         if (AUTH_PATHS.some((path) => pathName.startsWith(path))) {
           return;
         }
-
+        localStorage.removeItem('selected_module');
         window.location.reload();
       }
     });

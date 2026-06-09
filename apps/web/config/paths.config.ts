@@ -36,9 +36,9 @@ const pathsConfig = PathsSchema.parse({
     passwordUpdate: '/update-password',
   },
   app: {
-    home: '/home',
+    home: '/org/home',
     profileSettings: '/home/sales/settings',
-    workspaceSetup: '/sales/workspace-setup',
+    workspaceSetup: '/workspace-setup',
     leads: '/home/sales/leads',
     contacts: '/home/sales/contacts',
     accounts: '/home/sales/accounts',
