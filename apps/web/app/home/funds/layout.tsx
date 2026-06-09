@@ -6,6 +6,8 @@ import { usePathname } from 'next/navigation';
 
 import { PageHeader } from '@kit/ui/page';
 
+import { ModuleAccessGuardWrapper } from '../_components/module-access-guard-wrapper';
+
 const routeHeaders = [
   {
     segment: '/investors',
@@ -30,7 +32,8 @@ const routeHeaders = [
   {
     segment: '/activities',
     title: 'Activities',
-    description: 'Review fundraising activity across investors, rounds, and deals.',
+    description:
+      'Review fundraising activity across investors, rounds, and deals.',
   },
   {
     segment: '/settings',
@@ -52,20 +55,24 @@ export default function FundsLayout({ children }: React.PropsWithChildren) {
   const pathname = usePathname();
 
   if (routesWithOwnHeader.some((segment) => pathname.includes(segment))) {
-    return <>{children}</>;
+    return (
+      <ModuleAccessGuardWrapper moduleKey="funds">
+        {children}
+      </ModuleAccessGuardWrapper>
+    );
   }
 
-  const header =
-    routeHeaders.find((item) => pathname.includes(item.segment)) ??
-    {
-      title: 'Funds',
-      description: 'Quick view of rounds, investors, and pipeline health.',
-    };
+  const header = routeHeaders.find((item) =>
+    pathname.includes(item.segment),
+  ) ?? {
+    title: 'Funds',
+    description: 'Quick view of rounds, investors, and pipeline health.',
+  };
 
   return (
-    <>
+    <ModuleAccessGuardWrapper moduleKey="funds">
       <PageHeader title={header.title} description={header.description} />
       {children}
-    </>
+    </ModuleAccessGuardWrapper>
   );
 }
