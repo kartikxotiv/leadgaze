@@ -86,7 +86,7 @@ function PageWithHeader(props: PageProps) {
         >
           <div
             className={cn(
-              'bg-leadgaze-primary text-white flex h-16 items-center justify-between border-b border-header-primary/20 px-6 justify-start',
+              'bg-leadgaze-primary text-white flex h-16 items-center justify-between border-b border-header-primary/20 px-6 justify-start mb-0',
               {
                 'sticky top-0 z-50 backdrop-blur-md': props.sticky ?? true,
               },
@@ -99,7 +99,10 @@ function PageWithHeader(props: PageProps) {
             </div>
           </div>
 
-          <div className={'w-full px-6 py-4 flex flex-1 flex-col'}>{Children}</div>
+          <div className={'w-full py-4 flex flex-1 flex-col pt-0 bg-graylight dark:dark-background-color px-6'}>
+            {/* <div className="flex px-6 h-[100dvh] w-full max-w-full min-w-0 flex-col overflow-hidden">{Children}</div> */}
+            {Children}
+            </div>
         </div>
       </div>
     </TooltipProvider>
@@ -111,7 +114,7 @@ export function PageBody(
     className?: string;
   }>,
 ) {
-  const className = cn('flex w-full flex-1 flex-col px-6', props.className);
+  const className = cn('flex w-full flex-1 flex-col px-0', props.className);
 
   return <div className={className}>{props.children}</div>;
 }

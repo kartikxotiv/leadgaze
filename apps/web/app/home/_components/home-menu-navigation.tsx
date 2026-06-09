@@ -227,16 +227,16 @@ function NavDropdownContent({
             let detailPath = '';
             if (type === 'Leads') {
               name = `${record.first_name || ''} ${record.last_name || ''}`.trim() || record.email || 'Unnamed Lead';
-              detailPath = `/home/leads/${record.id}`;
+              detailPath = `/home/sales/leads/${record.id}`;
             } else if (type === 'Contacts') {
               name = `${record.first_name || ''} ${record.last_name || ''}`.trim() || record.email || 'Unnamed Contact';
-              detailPath = `/home/contacts/${record.id}`;
+              detailPath = `/home/sales/contacts/${record.id}`;
             } else if (type === 'Accounts') {
               name = record.account_name || 'Unnamed Account';
-              detailPath = `/home/accounts/${record.id}`;
+              detailPath = `/home/sales/accounts/${record.id}`;
             } else if (type === 'Opportunities') {
               name = record.opportunity_name || 'Unnamed Opportunity';
-              detailPath = `/home/opportunities/${record.id}`;
+              detailPath = `/home/sales/opportunities/${record.id}`;
             }
 
             return (
@@ -555,7 +555,7 @@ export function HomeMenuNavigation() {
           },
           {
             label: 'Leads',
-            path: '/home/leads',
+            path: '/home/sales/leads',
             Icon: <Briefcase className="h-4 w-4" />,
           },
           {

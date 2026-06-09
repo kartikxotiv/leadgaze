@@ -298,7 +298,7 @@ export default function LeadDetailsPage() {
       <div className="px-6 pt-4 pb-2 flex justify-between items-center w-full">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" asChild className="border p-0 border-leadgaze-border">
-            <Link href="/home/leads">
+            <Link href="/home/sales/leads">
               <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
             </Link>
           </Button>
@@ -327,7 +327,7 @@ export default function LeadDetailsPage() {
           entityId={leadId}
           entityType="lead"
           entityName={`${lead.first_name} ${lead.last_name || ''}`}
-          onSuccess={() => router.push('/home/leads')}
+          onSuccess={() => router.push('/home/sales/leads')}
         />
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
