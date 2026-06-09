@@ -22,6 +22,7 @@ import {
   Trash2,
   User,
   Wallet,
+  Workflow,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -520,11 +521,12 @@ export default function OpportunityDetailsPage() {
             />
 
             {/* Sales Pipeline Timeline */}
-            <Card className="bg-card overflow-hidden border shadow-sm">
-              <CardContent className="p-4">
-                <p className="text-muted-foreground mb-4 text-center text-[10px] font-bold tracking-widest uppercase">
-                  Opportunity Sales Pipeline
-                </p>
+            <CardWidgetContainer
+              title="Opportunity Sales Pipeline"
+              icon={<Workflow className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+              className="w-full border shadow-sm"
+            >
+              <div className="px-6 pb-6 pt-4">
                 <OpportunityStatusTimeline
                   opportunityId={id}
                   currentStatusId={opportunity.stage_id}
@@ -532,8 +534,8 @@ export default function OpportunityDetailsPage() {
                   onStatusChange={refetch}
                   canEdit={canEdit}
                 />
-              </CardContent>
-            </Card>
+              </div>
+            </CardWidgetContainer>
 
             {/* Details */}
             <CardWidgetContainer
