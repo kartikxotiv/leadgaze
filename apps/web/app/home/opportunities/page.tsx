@@ -368,7 +368,7 @@ export default function OpportunitiesPage() {
                   All Opportunities ({totalCount})
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-[15px] font-bold">
+                  <span className="text-[15px] font-bold dark:text-white">
                     {new Intl.NumberFormat('en-US', {
                       style: 'currency',
                       currency: 'USD',
@@ -403,12 +403,12 @@ export default function OpportunitiesPage() {
                         className="h-2 w-2 shrink-0 rounded-full"
                         style={{ backgroundColor: stage.color }}
                       />
-                      <span className="text-muted-foreground text-[10px] font-medium whitespace-nowrap uppercase">
+                      <span className="text-muted-foreground dark:text-white text-[10px] font-medium whitespace-nowrap uppercase">
                         {stage.status_name} ({displayCount})
                       </span>
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-[15px] font-bold">
+                      <span className="text-[15px] dark:text-white font-bold">
                         {new Intl.NumberFormat('en-US', {
                           style: 'currency',
                           currency: 'USD',
