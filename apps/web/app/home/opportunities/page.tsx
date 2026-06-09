@@ -12,8 +12,6 @@ import {
   Plus,
   Search,
 } from 'lucide-react';
-
-import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
@@ -29,13 +27,6 @@ import {
   PaginationPrevious,
 } from '@kit/ui/pagination';
 import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@kit/ui/select';
 import { Skeleton } from '@kit/ui/skeleton';
 import {
   TableBody,
