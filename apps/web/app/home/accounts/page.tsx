@@ -1,15 +1,12 @@
 'use client';
 
 import React, { useMemo, useRef, useState } from 'react';
-
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search, Trash2 } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 
 import { useUser } from '@kit/supabase/hooks/use-user';
-import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
@@ -34,7 +31,6 @@ import {
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
@@ -257,15 +253,6 @@ export default function AccountsPage() {
                 )}
               </div>
             </div>
-            {/* {canAccess('accounts', 'create') && (
-              <Button
-                onClick={() => setCreateDialogOpen(true)}
-                className="h-9 gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                New Account
-              </Button>
-            )} */}
 
             {canAccess('accounts', 'create') && (
               <Tooltip>
