@@ -7,7 +7,7 @@ const Card: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   ...props
 }) => (
   <div
-    className={cn('bg-card text-card-foreground card-container dark:dark-button-border-color', className)}
+    className={cn('bg-card text-leadgaze-dark card-container dark:dark-button-border-color', className)}
     {...props}
   />
 );
@@ -26,7 +26,7 @@ const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
   ...props
 }) => (
   <h3
-    className={cn('leading-none font-semibold tracking-tight', className)}
+    className={cn('primary-heading text-leadgaze-dark flex tracking-tight dark:text-zinc-100', className)}
     {...props}
   />
 );
@@ -36,7 +36,7 @@ const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = ({
   className,
   ...props
 }) => (
-  <p className={cn('text-muted-foreground text-sm', className)} {...props} />
+  <p className={cn('text-muted-foreground primary-text-regular', className)} {...props} />
 );
 CardDescription.displayName = 'CardDescription';
 
