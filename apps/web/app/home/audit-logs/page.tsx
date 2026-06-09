@@ -148,7 +148,6 @@ export default function AuditLogsPage() {
     <ModuleGuard module="audit_logs">
       <div className="flex h-[100dvh] w-full max-w-full min-w-0 flex-col overflow-hidden">
         <PageHeader
-          className="bg-sidebar"
           title={`Audit Logs (${count})`}
           description="Track all activities and changes within your workspace"
         >
@@ -361,7 +360,7 @@ export default function AuditLogsPage() {
           </div>
         </PageHeader>
 
-        <PageBody className="bg-sidebar flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-6">
+        <PageBody className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-6">
           <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col space-y-6">
             {/* Table */}
             <Card className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col border-none shadow-none">

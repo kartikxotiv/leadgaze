@@ -59,7 +59,7 @@ import { UpdateMemberDialog } from './components/update-member-dialog';
 function TeamMembersPageSkeleton() {
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden">
-      <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
         <div className="bg-sidebar flex items-center justify-between px-6 py-4">
           <div className="space-y-1">
             <Skeleton className="h-6 w-36" />
@@ -70,7 +70,7 @@ function TeamMembersPageSkeleton() {
             <Skeleton className="h-8 w-8" />
           </div>
         </div>
-        <div className="bg-sidebar -mt-1 w-full overflow-x-auto px-6 pb-7">
+        <div className="-mt-1 w-full overflow-x-auto px-6 pb-7">
           <div className="-mb-3 flex items-center gap-3">
             <Skeleton className="h-10 w-52 rounded-lg" />
             <Skeleton className="h-10 w-32 rounded-lg" />
@@ -78,7 +78,7 @@ function TeamMembersPageSkeleton() {
           </div>
         </div>
       </div>
-      <div className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden pt-4 pb-6 px-4 lg:px-8">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-4 pb-6 px-4 lg:px-8">
         <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
           <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
             <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
@@ -252,9 +252,9 @@ export default function TeamMembersPage() {
   return (
     <ModuleGuard module="team_members">
       <div className="flex h-[100dvh] flex-col overflow-hidden">
-        <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
+        <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
           <PageHeader
-            className="bg-sidebar px-6 py-4"
+            className="px-6 py-4"
             title={`Members (${members.length})`}
             description="Manage your workspace team members and permissions"
           >
@@ -299,7 +299,7 @@ export default function TeamMembersPage() {
             </div>
           </PageHeader>
           {/* Summary Cards - Fixed at top */}
-          <div className="bg-sidebar -mt-1 w-full max-w-full min-w-0 overflow-x-auto px-6 pb-7">
+          <div className="-mt-1 w-full max-w-full min-w-0 overflow-x-auto px-6 pb-7">
             <div className="-mb-3 flex items-center gap-3">
               <Card className="hover:border-primary/50 bg-card transition-all w-52 shrink-0">
                 <CardContent className="h-10 p-3 flex items-center">

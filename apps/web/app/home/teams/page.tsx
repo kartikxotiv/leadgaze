@@ -46,8 +46,7 @@ import { ManageTeamMembersDialog } from './components/manage-team-members-dialog
 
 function TeamsPageSkeleton() {
   return (
-    <ModuleGuard module="team_members">
-      <div className="flex h-[100dvh] flex-col overflow-hidden">
+    <ModuleGuard module="team_members">      
         <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
           <div className="bg-sidebar flex items-center justify-between px-6 py-4">
             <div className="space-y-1">
@@ -90,8 +89,7 @@ function TeamsPageSkeleton() {
               </tbody>
             </table>
           </div>
-        </div>
-      </div>
+        </div>      
     </ModuleGuard>
   );
 }
@@ -165,7 +163,7 @@ export default function TeamsPage() {
 
   return (
     <ModuleGuard module="team_members">
-      <div className="flex h-[100dvh] flex-col overflow-hidden">
+      
         <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
           <PageHeader
             className="bg-sidebar px-6 py-4"
@@ -384,7 +382,7 @@ export default function TeamsPage() {
             />
           )}
         </PageBody>
-      </div>
+
     </ModuleGuard>
   );
 }
