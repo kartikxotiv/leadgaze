@@ -1,17 +1,19 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Search, X } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
-import { Button } from '@kit/ui/button';
-import { Input } from '@kit/ui/input';
+import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
+import { ListToolBar } from '@kit/ui/list-toolbar';
+import { PageBody, PageHeader } from '@kit/ui/page';
+import { TableStatusMetricTab } from '@kit/ui/table-status-metric-tab';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
-import { AddDepartmentButton } from '../../components/departments/add-department-button';
 import { DeleteDepartmentDialog } from '../../components/departments/delete-department-dialog';
 import { DepartmentFormDialog } from '../../components/departments/department-form-dialog';
-import { DepartmentSummaryCards } from '../../components/departments/department-summary-cards';
 import { DepartmentsDirectoryCard } from '../../components/departments/departments-directory-card';
 import { showToast } from '../../components/global/ToastAlert';
 import { useRbac } from '../../components/rbac/rbac-context';
@@ -31,6 +33,19 @@ import { handleApiResponse } from '../../utils/api-response-handler';
 const departmentsQueryKey = ['hrms', 'departments'];
 const departmentOptionsQueryKey = ['hrms', 'department-options'];
 
+const departmentColumns: Array<{ id: string; label: string }> = [
+  { id: 'sno', label: 'S. No.' },
+  { id: 'department', label: 'Department' },
+  { id: 'code', label: 'Code' },
+  { id: 'parent', label: 'Parent' },
+  { id: 'head', label: 'Head' },
+  { id: 'cost_center', label: 'Cost Center' },
+  { id: 'status', label: 'Status' },
+  { id: 'updated', label: 'Updated' },
+];
+
+type DepartmentQuickFilter = 'active' | 'all' | 'assigned_heads' | 'root';
+
 function buildDepartmentSearchText(department: Department) {
   return [
     department.name,
@@ -48,10 +63,13 @@ function buildDepartmentSearchText(department: Department) {
     .toLowerCase();
 }
 
-export function DepartmentsPage() {
+export function DepartmentsPage(props: {
+  headerActions?: ReactNode;
+  workspaceName?: string;
+}) {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
-  const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [quickFilter, setQuickFilter] = useState<DepartmentQuickFilter>('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(
     null,
@@ -60,6 +78,17 @@ export function DepartmentsPage() {
     useState<Department | null>(null);
   const { hasPermission } = useRbac();
   const canCreateDepartment = hasPermission('departments', 'create', 'team');
+  const { visibility, toggleVisibility, isVisible, reset } =
+    useColumnVisibility('hrms-departments', {
+      sno: true,
+      department: true,
+      code: true,
+      parent: true,
+      head: true,
+      cost_center: true,
+      status: true,
+      updated: false,
+    });
 
   const departmentsQuery = useQuery({
     queryKey: departmentsQueryKey,
@@ -120,18 +149,6 @@ export function DepartmentsPage() {
     },
   });
 
-  const filteredDepartments = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
-
-    if (!query) {
-      return departments;
-    }
-
-    return departments.filter((department) =>
-      buildDepartmentSearchText(department).includes(query),
-    );
-  }, [departments, searchTerm]);
-
   const summary = useMemo(() => {
     const activeCount = departments.filter(
       (department) => department.is_active,
@@ -150,6 +167,29 @@ export function DepartmentsPage() {
       totalCount: departments.length,
     };
   }, [departments]);
+
+  const filteredDepartments = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+
+    return departments.filter((department) => {
+      const matchesQuickFilter =
+        quickFilter === 'all' ||
+        (quickFilter === 'active' && department.is_active) ||
+        (quickFilter === 'root' && !department.parent_department_id) ||
+        (quickFilter === 'assigned_heads' &&
+          Boolean(department.head_account_id));
+
+      if (!matchesQuickFilter) {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
+      return buildDepartmentSearchText(department).includes(query);
+    });
+  }, [departments, quickFilter, searchTerm]);
 
   const onCreateRequested = () => {
     setEditingDepartment(null);
@@ -174,56 +214,101 @@ export function DepartmentsPage() {
   };
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <DepartmentSummaryCards summary={summary} />
+    <section className="flex h-[100dvh] min-h-0 flex-col overflow-hidden">
+      <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
+        <PageHeader
+          className="bg-sidebar shrink-0 px-6 py-4"
+          title={`Departments (${filteredDepartments.length})`}
+          description={
+            props.workspaceName
+              ? `${props.workspaceName} HR structure`
+              : 'HR department structure'
+          }
+        >
+          {props.headerActions}
+        </PageHeader>
 
-        <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-          {isSearchVisible ? (
-            <div className="relative">
-              <Input
-                className="h-9 w-full pr-9 sm:w-[320px]"
-                placeholder="Search departments"
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
+        <div className="bg-sidebar w-full max-w-full min-w-0 overflow-x-auto px-6 pb-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <TableStatusMetricTab
+              id="all"
+              color="#4eacff"
+              statusName="All Departments"
+              count={summary.totalCount}
+              isSelected={quickFilter === 'all'}
+              onClick={() => setQuickFilter('all')}
+            />
+            <TableStatusMetricTab
+              id="active"
+              color="#22c55e"
+              statusName="Active Departments"
+              count={summary.activeCount}
+              isSelected={quickFilter === 'active'}
+              onClick={() => setQuickFilter('active')}
+            />
+            <TableStatusMetricTab
+              id="root"
+              color="#6366f1"
+              statusName="Root Departments"
+              count={summary.rootCount}
+              isSelected={quickFilter === 'root'}
+              onClick={() => setQuickFilter('root')}
+            />
+            <TableStatusMetricTab
+              id="assigned_heads"
+              color="#8b5cf6"
+              statusName="Heads Assigned"
+              count={summary.assignedHeadsCount}
+              isSelected={quickFilter === 'assigned_heads'}
+              onClick={() => setQuickFilter('assigned_heads')}
+            />
+          </div>
+        </div>
+
+        <div className="bg-sidebar w-full shrink-0 border-b px-6 py-2">
+          <ListToolBar
+            showSearch
+            searchPlaceholder="Search departments..."
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            activeFilterCount={quickFilter === 'all' ? 0 : 1}
+            onClearFilters={() => setQuickFilter('all')}
+            actions={[
+              {
+                key: 'add',
+                label: 'Add Department',
+                icon: Plus,
+                onClick: onCreateRequested,
+                show: canCreateDepartment,
+                buttonVariant: 'default',
+              },
+            ]}
+            columnVisibilitySlot={
+              <ColumnVisibilitySelector
+                columns={departmentColumns}
+                visibility={visibility}
+                onToggle={toggleVisibility}
+                onReset={reset}
               />
-              <Button
-                aria-label="Close search"
-                className="absolute top-0 right-0 h-9 w-9"
-                size="icon"
-                variant="ghost"
-                onClick={() => {
-                  setSearchTerm('');
-                  setIsSearchVisible(false);
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <Button
-              aria-label="Search departments"
-              size="icon"
-              variant="outline"
-              onClick={() => setIsSearchVisible(true)}
-            >
-              <Search className="h-4 w-4" />
-            </Button>
-          )}
-
-          {canCreateDepartment ? (
-            <AddDepartmentButton onClick={onCreateRequested} />
-          ) : null}
+            }
+          />
         </div>
       </div>
 
-      <DepartmentsDirectoryCard
-        departments={departments}
-        filteredDepartments={filteredDepartments}
-        isLoading={departmentsQuery.isLoading}
-        onDeleteRequested={setDepartmentToDelete}
-        onEditRequested={onEditRequested}
-      />
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3 pb-0">
+        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+          <DepartmentsDirectoryCard
+            departments={departments}
+            filteredDepartments={filteredDepartments}
+            hasFilters={Boolean(searchTerm.trim()) || quickFilter !== 'all'}
+            isColumnVisible={isVisible}
+            isLoading={departmentsQuery.isLoading}
+            onDeleteRequested={setDepartmentToDelete}
+            onEditRequested={onEditRequested}
+            visibility={visibility}
+          />
+        </div>
+      </PageBody>
 
       <DepartmentFormDialog
         department={editingDepartment}

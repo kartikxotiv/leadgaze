@@ -1,7 +1,7 @@
 'use client';
 
 import { DepartmentsPage } from '@kit/hrms';
-import { PageBody, PageHeader, PageHeaderActions } from '@kit/ui/page';
+import { PageHeaderActions } from '@kit/ui/page';
 
 import { ModuleSwitcher } from '~/home/_components/module-switcher';
 import { WorkspaceCheckWrapper } from '~/home/_components/workspace-check-wrapper';
@@ -12,21 +12,14 @@ export default function HrmsDepartmentsPage() {
 
   return (
     <WorkspaceCheckWrapper>
-      <PageHeader
-        title="Departments"
-        description={
-          currentWorkspace
-            ? `${currentWorkspace.name} HR structure`
-            : 'HR department structure'
+      <DepartmentsPage
+        headerActions={
+          <PageHeaderActions>
+            <ModuleSwitcher value="hrms" />
+          </PageHeaderActions>
         }
-      >
-        <PageHeaderActions>
-          <ModuleSwitcher value="hrms" />
-        </PageHeaderActions>
-      </PageHeader>
-      <PageBody className="flex min-h-0 flex-1 flex-col">
-        <DepartmentsPage />
-      </PageBody>
+        workspaceName={currentWorkspace?.name}
+      />
     </WorkspaceCheckWrapper>
   );
 }

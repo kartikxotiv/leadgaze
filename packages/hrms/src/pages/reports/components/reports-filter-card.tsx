@@ -1,13 +1,6 @@
 import { FilterX, RefreshCcw } from 'lucide-react';
 
 import { Button } from '@kit/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kit/ui/card';
 import { Input } from '@kit/ui/input';
 import {
   Select,
@@ -24,16 +17,18 @@ export function ReportsFilterCard(props: { page: ReportsPageController }) {
   const { page } = props;
 
   return (
-    <Card className="shadow-sm">
-      <CardHeader>
-        <CardTitle>Custom Filters</CardTitle>
-        <CardDescription>
+    <div className="bg-card grid gap-4 overflow-hidden rounded-lg border p-4 shadow-sm">
+      <div>
+        <h2 className="text-base leading-tight font-semibold">
+          Custom Filters
+        </h2>
+        <p className="text-muted-foreground mt-1 text-sm">
           Select a report scope for one employee, multiple employees, or
           everyone you can access.
-        </CardDescription>
-      </CardHeader>
+        </p>
+      </div>
 
-      <CardContent className="grid gap-4 overflow-hidden">
+      <div className="grid gap-4 overflow-hidden">
         <div className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-[repeat(5,minmax(0,1fr))]">
           <div className="min-w-0 space-y-2">
             <label className="text-sm font-medium">From</label>
@@ -154,7 +149,7 @@ export function ReportsFilterCard(props: { page: ReportsPageController }) {
             </p>
           ) : null}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

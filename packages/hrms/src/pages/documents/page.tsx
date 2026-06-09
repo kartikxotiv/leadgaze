@@ -1,15 +1,19 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 
-import { Button } from '@kit/ui/button';
+import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
+import { ListToolBar } from '@kit/ui/list-toolbar';
+import { PageBody, PageHeader } from '@kit/ui/page';
+import { TableStatusMetricTab } from '@kit/ui/table-status-metric-tab';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 import { DeleteDocumentDialog } from '../../components/documents/delete-document-dialog';
 import { DocumentsDirectoryCard } from '../../components/documents/documents-directory-card';
-import { DocumentsSummaryCards } from '../../components/documents/documents-summary-cards';
 import { UpsertDocumentDialog } from '../../components/documents/upsert-document-dialog';
 import { showToast } from '../../components/global/ToastAlert';
 import { useRbac } from '../../components/rbac/rbac-context';
@@ -29,8 +33,35 @@ import { handleApiResponse } from '../../utils/api-response-handler';
 const documentsQueryKey = ['hrms', 'employee_documents'];
 const documentEmployeesQueryKey = ['hrms', 'document-employees'];
 
-export function DocumentsPage() {
+const documentColumns: Array<{ id: string; label: string }> = [
+  { id: 'sno', label: 'S. No.' },
+  { id: 'document', label: 'Document' },
+  { id: 'employee', label: 'Employee' },
+  { id: 'employee_code', label: 'Employee Code' },
+  { id: 'uploaded', label: 'Uploaded' },
+  { id: 'status', label: 'Status' },
+  { id: 'view', label: 'View' },
+];
+
+function buildDocumentSearchText(document: EmployeeDocument) {
+  return [
+    document.name,
+    document.status,
+    document.employee?.employee_code ?? '',
+    document.employee?.first_name ?? '',
+    document.employee?.last_name ?? '',
+    document.employee?.work_email ?? '',
+  ]
+    .join(' ')
+    .toLowerCase();
+}
+
+export function DocumentsPage(props: {
+  headerActions?: ReactNode;
+  workspaceName?: string;
+}) {
   const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState('');
   const [isUpsertOpen, setIsUpsertOpen] = useState(false);
   const [editingDocument, setEditingDocument] =
     useState<EmployeeDocument | null>(null);
@@ -38,6 +69,16 @@ export function DocumentsPage() {
     useState<EmployeeDocument | null>(null);
   const { hasPermission } = useRbac();
   const canCreateDocument = hasPermission('documents', 'create', 'team');
+  const { visibility, toggleVisibility, isVisible, reset } =
+    useColumnVisibility('hrms-documents', {
+      sno: true,
+      document: true,
+      employee: true,
+      employee_code: false,
+      uploaded: true,
+      status: false,
+      view: true,
+    });
 
   const documentsQuery = useQuery({
     queryKey: documentsQueryKey,
@@ -60,12 +101,22 @@ export function DocumentsPage() {
       ),
     [employeesQuery.data?.data],
   );
-  const summary = useMemo(
-    () => ({
-      totalCount: documents.length,
-    }),
-    [documents.length],
+  const filteredDocuments = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+
+    if (!query) {
+      return documents;
+    }
+
+    return documents.filter((document) =>
+      buildDocumentSearchText(document).includes(query),
+    );
+  }, [documents, searchTerm]);
+  const linkedCount = useMemo(
+    () => documents.filter((document) => document.employee_id).length,
+    [documents],
   );
+  const unlinkedCount = documents.length - linkedCount;
 
   const createDocument = useMutation({
     mutationFn: createDocumentService,
@@ -125,31 +176,91 @@ export function DocumentsPage() {
   };
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <DocumentsSummaryCards summary={summary} />
+    <section className="flex h-[100dvh] min-h-0 flex-col overflow-hidden">
+      <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
+        <PageHeader
+          className="bg-sidebar shrink-0 px-6 py-4"
+          title={`Documents (${filteredDocuments.length})`}
+          description={
+            props.workspaceName
+              ? `${props.workspaceName} employee documents`
+              : 'Employee documents'
+          }
+        >
+          {props.headerActions}
+        </PageHeader>
 
-        {canCreateDocument ? (
-          <Button
-            size="sm"
-            className="w-full sm:w-auto"
-            onClick={onCreateRequested}
-          >
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Add Document
-          </Button>
-        ) : null}
+        <div className="bg-sidebar w-full max-w-full min-w-0 overflow-x-auto px-6 pb-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <TableStatusMetricTab
+              id="all"
+              color="#4eacff"
+              statusName="All Documents"
+              count={documents.length}
+              isSelected
+            />
+            <TableStatusMetricTab
+              id="linked"
+              color="#22c55e"
+              statusName="Linked Employees"
+              count={linkedCount}
+              className="cursor-default"
+            />
+            <TableStatusMetricTab
+              id="unlinked"
+              color="#f59e0b"
+              statusName="Needs Assignment"
+              count={unlinkedCount}
+              className="cursor-default"
+            />
+          </div>
+        </div>
+
+        <div className="bg-sidebar w-full shrink-0 border-b px-6 py-2">
+          <ListToolBar
+            showSearch
+            searchPlaceholder="Search documents..."
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            actions={[
+              {
+                key: 'add',
+                label: 'Add Document',
+                icon: Plus,
+                onClick: onCreateRequested,
+                show: canCreateDocument,
+                buttonVariant: 'default',
+              },
+            ]}
+            columnVisibilitySlot={
+              <ColumnVisibilitySelector
+                columns={documentColumns}
+                visibility={visibility}
+                onToggle={toggleVisibility}
+                onReset={reset}
+              />
+            }
+          />
+        </div>
       </div>
 
-      <DocumentsDirectoryCard
-        documents={documents}
-        isLoading={documentsQuery.isLoading}
-        onDeleteRequested={setDocumentToDelete}
-        onEditRequested={(document) => {
-          setEditingDocument(document);
-          setIsUpsertOpen(true);
-        }}
-      />
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3 pb-0">
+        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+          <DocumentsDirectoryCard
+            documents={documents}
+            filteredDocuments={filteredDocuments}
+            hasFilters={Boolean(searchTerm.trim())}
+            isColumnVisible={isVisible}
+            isLoading={documentsQuery.isLoading}
+            onDeleteRequested={setDocumentToDelete}
+            onEditRequested={(document) => {
+              setEditingDocument(document);
+              setIsUpsertOpen(true);
+            }}
+            visibility={visibility}
+          />
+        </div>
+      </PageBody>
 
       <UpsertDocumentDialog
         document={editingDocument}
