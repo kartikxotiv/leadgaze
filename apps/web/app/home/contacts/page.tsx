@@ -40,6 +40,7 @@ import { Contact, getContactsService } from '~/services/contacts.service';
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { CreateContactDialog } from './components/create-contact-dialog';
+import CustomTableContainer from '@kit/ui/custom-table-container';
 
 function ContactsPageSkeleton() {
   return (
@@ -196,17 +197,15 @@ export default function ContactsPage() {
 
   return (
     <ModuleGuard module="contacts">
-      <div className="flex h-[100dvh] flex-col overflow-hidden">
-        <div className="bg-sidebar flex shrink-0 flex-col gap-2">
-          <PageHeader
-            className="bg-sidebar shrink-0 px-6 py-4"
-            title={`Contacts (${totalCount})`}
-            description="Manage your contacts (People)"
-          />
-        </div>
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+        <PageHeader            
+          title={`Contacts (${totalCount})`}
+          description="Manage your contacts (People)"
+        />          
+      </div>
 
         {/* Full-width search / filter / actions toolbar */}
-        <div className="bg-sidebar w-full shrink-0 border-b px-6 py-2">
+        <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
           <ListToolBar
             showSearch
             searchPlaceholder="Search by name, email, or account..."
@@ -233,7 +232,273 @@ export default function ContactsPage() {
           />
         </div>
 
-        <PageBody className="bg-sidebar sticky flex min-w-0 flex-1 flex-col overflow-hidden pt-3 pb-0">
+        <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
+              <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+                    <CustomTableContainer pagination={totalCount > 0 && (
+              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t py-1.5 px-4 lg:-mx-8 lg:px-8">
+                <div>
+                  Showing{' '}
+                  <span className="text-foreground font-medium">
+                    {(currentPage - 1) * itemsPerPage + 1}
+                  </span>{' '}
+                  to{' '}
+                  <span className="text-foreground font-medium">
+                    {Math.min(currentPage * itemsPerPage, totalCount)}
+                  </span>{' '}
+                  of{' '}
+                  <span className="text-foreground font-medium">
+                    {totalCount}
+                  </span>{' '}
+                  contacts
+                </div>
+                <Pagination className="w-auto">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        className={
+                          currentPage === 1
+                            ? 'pointer-events-none opacity-50'
+                            : 'cursor-pointer'
+                        }
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.max(prev - 1, 1))
+                        }
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }).map((_, i) => (
+                      <PaginationItem key={i}>
+                        <PaginationLink
+                          isActive={currentPage === i + 1}
+                          onClick={() => setCurrentPage(i + 1)}
+                          className="cursor-pointer"
+                        >
+                          {i + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        className={
+                          currentPage === totalPages
+                            ? 'pointer-events-none opacity-50'
+                            : 'cursor-pointer'
+                        }
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(prev + 1, totalPages),
+                          )
+                        }
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}>
+                      <Table>
+                      <TableHeader>
+                      <TableRow>
+                        {isVisible('sno') && (
+                          <TableHead className="w-12 whitespace-nowrap">
+                            S. No.
+                          </TableHead>
+                        )}
+                        {isVisible('name') && <TableHead>Name</TableHead>}
+                        {isVisible('first_name') && (
+                          <TableHead>First Name</TableHead>
+                        )}
+                        {isVisible('last_name') && (
+                          <TableHead>Last Name</TableHead>
+                        )}
+                        {isVisible('job_title') && (
+                          <TableHead>Job Title</TableHead>
+                        )}
+                        {isVisible('email') && <TableHead>Email</TableHead>}
+                        {isVisible('phone') && <TableHead>Phone</TableHead>}
+                        {isVisible('account') && <TableHead>Account</TableHead>}
+                        {isVisible('owner') && <TableHead>Owner</TableHead>}
+                        {isVisible('created_by') && (
+                          <TableHead>Created By</TableHead>
+                        )}
+                        {isVisible('created_at') && (
+                          <TableHead>Created On</TableHead>
+                        )}
+                        {isVisible('updated_by') && (
+                          <TableHead>Last Updated By</TableHead>
+                        )}
+                        <TableHead className="sticky-right-header">
+                          Actions
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading ? (
+                        <>
+                          {[...Array(12)].map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell
+                                className="h-[52px] px-4 py-2"
+                                colSpan={
+                                  visibility
+                                    ? Object.values(visibility).filter((v) => v !== false).length + 1
+                                    : 7
+                                }
+                              >
+                                <Skeleton className="h-7 w-full" />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </>
+                      ) : paginatedContacts.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={
+                              visibility
+                                ? Object.values(visibility).filter(
+                                    (v) => v !== false,
+                                  ).length + 1
+                                : 7
+                            }
+                            className="h-24 text-center"
+                          >
+                            <div className="text-gray-500">
+                              {searchTerm
+                                ? 'No contacts match your search'
+                                : 'No contacts yet.'}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedContacts.map(
+                          (contact: Contact, index: number) => (
+                            <TableRow
+                              key={contact.id}
+                              className="hover:bg-muted/50 cursor-pointer"
+                              onClick={() =>
+                                router.push(`/home/contacts/${contact.id}`)
+                              }
+                            >
+                              {isVisible('sno') && (
+                                <TableCell className="text-muted-foreground w-12">
+                                  {(currentPage - 1) * itemsPerPage + index + 1}
+                                </TableCell>
+                              )}
+                              {isVisible('name') && (
+                                <TableCell className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
+                                  <span>
+                                    {contact.first_name}{' '}
+                                    {contact.last_name || ''}
+                                  </span>
+                                </TableCell>
+                              )}
+                              {isVisible('first_name') && (
+                                <TableCell className="">
+                                  {contact.first_name || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('last_name') && (
+                                <TableCell className="">
+                                  {contact.last_name || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('job_title') && (
+                                <TableCell className="">
+                                  {contact.job_title || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('email') && (
+                                <TableCell className="text-muted-foreground">
+                                  {contact.email || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('phone') && (
+                                <TableCell className="">
+                                  {contact.phone_number || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('account') && (
+                                <TableCell className="">
+                                  {contact.account?.account_name || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('notes') && (
+                                <TableCell className=" max-w-[200px] truncate">
+                                  {contact.notes || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('owner') && (
+                                <TableCell className="">
+                                  {contact.owner?.name || '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('created_by') && (
+                                <TableCell className="">
+                                  {contact.created_by_account?.name ||
+                                    contact.created_by ||
+                                    '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('created_at') && (
+                                <TableCell className="">
+                                  {contact.created_at
+                                    ? new Date(
+                                        contact.created_at,
+                                      ).toLocaleDateString()
+                                    : '-'}
+                                </TableCell>
+                              )}
+                              {isVisible('updated_by') && (
+                                <TableCell className="">
+                                  {contact.updated_by_account?.name ||
+                                    contact.updated_by ||
+                                    '-'}
+                                </TableCell>
+                              )}
+                              <TableCell className="bg-card sticky right-0 px-4 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <EntityActionsDropdown
+                                    id={contact.id}
+                                    viewPath={`/home/contacts/${contact.id}`}
+                                    canDelete={canAccess('contacts', 'delete')}
+                                    onDelete={() => {
+                                      setContactToDelete(contact);
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                  />
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ),
+                        )
+                      )}
+                    </TableBody>
+                    </Table>               
+        
+                      
+                    </CustomTableContainer>
+                    {/* closes table area div */}
+                  </div>
+                  {/* closes filter panel + table flex row */}
+        
+            <CreateContactDialog
+              open={createDialogOpen}
+              onOpenChange={setCreateDialogOpen}
+              onSuccess={() => refetch()}
+            />
+
+            <DeleteEntityDialog
+              isOpen={deleteDialogOpen}
+              onOpenChange={setDeleteDialogOpen}
+              entityId={contactToDelete?.id || ''}
+              entityType="contact"
+              entityName={`${contactToDelete?.first_name} ${contactToDelete?.last_name || ''}`}
+              onSuccess={() => {
+                setContactToDelete(null);
+                refetch();
+              }}
+            />
+                </PageBody>
+
+        {/* <PageBody className="bg-sidebar sticky flex min-w-0 flex-1 flex-col overflow-hidden pt-3 pb-0">
           <div className="flex min-h-0 flex-1 flex-col">
             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
               <CardContent className="flex min-h-0 flex-1 flex-col p-0">
@@ -499,8 +764,7 @@ export default function ContactsPage() {
               }}
             />
           </div>
-        </PageBody>
-      </div>
+        </PageBody> */}
     </ModuleGuard>
   );
 }
