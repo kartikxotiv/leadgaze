@@ -77,7 +77,7 @@ const TableCell: React.FC<React.TdHTMLAttributes<HTMLTableCellElement>> = ({
 }) => (
   <td
     className={cn(
-      'table-row-border h-[42px] px-4 py-0 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+      'table-row-border text-leadgaze-dark dark:text-white h-[42px] px-4 py-0 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
       className,
     )}
     {...props}

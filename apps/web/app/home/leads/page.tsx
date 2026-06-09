@@ -217,18 +217,17 @@ export default function LeadsPage() {
   }
 
   return (
-    <ModuleGuard module="leads">
-      <div className="flex h-[100dvh] w-full max-w-full min-w-0 flex-col overflow-hidden">
-        <div className="bg-sidebar flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
-          <PageHeader
-            className="bg-sidebar px-6 py-4"
+    <ModuleGuard module="leads">      
+        <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+          <PageHeader            
             title={`Leads (${totalCount})`}
             description="Manage and track your sales leads"
-          />
-
+          />          
+        </div>
+        
           {/* Status Distribution Cards */}
-          <div className="bg-sidebar -mt-1 w-full max-w-full min-w-0 overflow-x-auto px-6 pb-7">
-            <div className="-mb-3 flex flex-wrap items-center gap-2">
+          <div className="w-full max-w-full min-w-0 overflow-x-auto py-2">
+            <div className="flex flex-wrap items-center gap-2">
               <TableStatusMetricTab
                    key={0}
                    id={0}
@@ -261,10 +260,11 @@ export default function LeadsPage() {
               })}
             </div>
           </div>
-        </div>
+
+        
 
         {/* Full-width search / filter / actions toolbar */}
-        <div className="bg-sidebar w-full max-w-full min-w-0 shrink-0 border-b px-6 py-2">
+        <div className="w-full max-w-full min-w-0 shrink-0 border-b py-2">
           <ListToolBar
             showSearch
             searchPlaceholder="Search leads..."
@@ -528,29 +528,29 @@ export default function LeadsPage() {
                                 </TableCell>
                               )}
                               {isVisible('name') && (
-                                <TableCell className="font-medium">
+                                <TableCell className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
                                   <span>
                                     {lead.first_name} {lead.last_name || ''}
                                   </span>
                                 </TableCell>
                               )}
                               {isVisible('first_name') && (
-                                <TableCell className="text-muted-foreground">
+                                <TableCell>
                                   {lead.first_name || '-'}
                                 </TableCell>
                               )}
                               {isVisible('last_name') && (
-                                <TableCell className="text-muted-foreground">
+                                <TableCell>
                                   {lead.last_name || '-'}
                                 </TableCell>
                               )}
                               {isVisible('job_title') && (
-                                <TableCell className="text-muted-foreground">
+                                <TableCell>
                                   {lead.job_title || '-'}
                                 </TableCell>
                               )}
                               {isVisible('email') && (
-                                <TableCell className="text-muted-foreground">
+                                <TableCell className='text-muted-foreground'>
                                   {lead.email || '-'}
                                 </TableCell>
                               )}
@@ -560,57 +560,57 @@ export default function LeadsPage() {
                                 </TableCell>
                               )}
                               {isVisible('phone') && (
-                                <TableCell className="text-muted-foreground">
+                                <TableCell>
                                   {lead.phone_number || '-'}
                                 </TableCell>
                               )}
                               {isVisible('mobile') && (
-                                <TableCell className="text-muted-foreground">
+                                <TableCell>
                                   {lead.mobile_number || '-'}
                                 </TableCell>
                               )}
                               {isVisible('company') && (
-                                <TableCell className="text-muted-foreground">
+                                <TableCell>
                                   {lead.company_name || '-'}
                                 </TableCell>
                               )}
                               {isVisible('company_website') && (
-                                <TableCell className="text-muted-foreground">
+                                <TableCell>
                                   {lead.company_website || '-'}
                                 </TableCell>
                               )}
                               {isVisible('company_linkedin') && (
-                                <TableCell className="text-muted-foreground max-w-[150px] truncate">
+                                <TableCell className="max-w-[150px] truncate">
                                   {lead.company_linkedin_url || '-'}
                                 </TableCell>
                               )}
                               {isVisible('linkedin') && (
-                                <TableCell className="text-muted-foreground max-w-[150px] truncate">
+                                <TableCell className="max-w-[150px] truncate">
                                   {lead.linkedin_url || '-'}
                                 </TableCell>
                               )}
                               {isVisible('department') && (
-                                <TableCell className="text-muted-foreground">
+                                <TableCell>
                                   {lead.department || '-'}
                                 </TableCell>
                               )}
                               {isVisible('industry') && (
-                                <TableCell className="text-muted-foreground">
+                                <TableCell>
                                   {lead.industry?.industry_name || '-'}
                                 </TableCell>
                               )}
                               {isVisible('company_size') && (
-                                <TableCell className="text-muted-foreground">
+                                <TableCell>
                                   {lead.company_size || '-'}
                                 </TableCell>
                               )}
                               {isVisible('location') && (
-                                <TableCell className="text-muted-foreground">
+                                <TableCell>
                                   {lead.location || '-'}
                                 </TableCell>
                               )}
                               {isVisible('timezone') && (
-                                <TableCell className="text-muted-foreground">
+                                <TableCell>
                                   {lead.timezone || '-'}
                                 </TableCell>
                               )}
@@ -632,17 +632,17 @@ export default function LeadsPage() {
                                 </TableCell>
                               )}
                               {isVisible('source') && (
-                                <TableCell className="text-muted-foreground">
+                                <TableCell>
                                   {lead.source?.source_name || '-'}
                                 </TableCell>
                               )}
                               {isVisible('trigger') && (
-                                <TableCell className="text-muted-foreground">
+                                <TableCell>
                                   {lead.trigger || '-'}
                                 </TableCell>
                               )}
                               {isVisible('notes') && (
-                                <TableCell className="text-muted-foreground max-w-[200px] truncate">
+                                <TableCell className="max-w-[200px] truncate">
                                   {lead.notes || '-'}
                                 </TableCell>
                               )}
@@ -678,7 +678,7 @@ export default function LeadsPage() {
                                         }}
                                       />
                                     </div>
-                                    <span className="text-muted-foreground w-8 text-right text-sm">
+                                    <span className="w-8 text-right text-sm">
                                       {
                                         calculateLeadScore({
                                           first_name: lead.first_name,
@@ -703,14 +703,14 @@ export default function LeadsPage() {
                                 </TableCell>
                               )}
                               {isVisible('created_by') && (
-                                <TableCell className="text-muted-foreground">
+                                <TableCell>
                                   {lead.created_by_account?.name ||
                                     lead.created_by ||
                                     '-'}
                                 </TableCell>
                               )}
                               {isVisible('created_at') && (
-                                <TableCell className="text-muted-foreground whitespace-nowrap">
+                                <TableCell className="whitespace-nowrap">
                                   {lead.created_at
                                     ? new Date(
                                         lead.created_at,
@@ -719,7 +719,7 @@ export default function LeadsPage() {
                                 </TableCell>
                               )}
                               {isVisible('updated_by') && (
-                                <TableCell className="text-muted-foreground">
+                                <TableCell>
                                   {lead.updated_by_account?.name ||
                                     lead.updated_by ||
                                     '-'}
@@ -770,7 +770,6 @@ export default function LeadsPage() {
             }}
           />
         </PageBody>
-      </div>
     </ModuleGuard>
   );
 }

@@ -103,3 +103,7 @@
 @utility dark-button-border-color{
   border-color: #404040 !important;
 }
+
+@utility dark-background-color{
+  background-color: #171717 !important;
+}
