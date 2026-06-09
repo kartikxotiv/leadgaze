@@ -115,7 +115,7 @@ export default function DashboardDemo() {
   return (
     <div
       className={
-        'animate-in fade-in flex h-full flex-col overflow-y-auto p-4 duration-500 xl:overflow-hidden xl:p-3 2xl:overflow-y-auto 2xl:p-4'
+        'animate-in fade-in flex h-full flex-col overflow-y-auto p-0 pb-4 duration-500 xl:overflow-hidden xl:px-0 xl:pb-4 2xl:overflow-y-auto 2xl:p-0 2xl:pb-4'
       }
     >
       <div

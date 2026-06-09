@@ -47,7 +47,7 @@
 }
 
 @utility card-container {
-  border: 0.6px solid #B0B0B0;
+  border: 0.6px solid var(--card-border);
   border-radius: 0.7px !important;  
 }
 
@@ -59,19 +59,19 @@
   background-color: #E6E6E6;
 }
 @utility card-seperator-border {
-  border-color: #B0B0B0;
+  border-color: var(--card-border);
 }
 
 @utility table-row-border {
   border-bottom-width: 0.6px;
   border-bottom-style: solid;
-  border-bottom-color: #B0B0B0;
+  border-bottom-color: var(--card-border);
 }
 
 @utility table-header-border{
   border-left-width: 0.6px;
   border-style: solid;
-  border-color: #B0B0B0;
+  border-color: var(--card-border);
 }
 
 @utility sticky-right-header{
@@ -94,7 +94,7 @@
 }
 
 @utility border-light-gray{
-  border-color: #B0B0B0 !important;
+  border-color: var(--card-border) !important;
 }
 
 @utility dark-theme-color{
@@ -102,4 +102,11 @@
 }
 @utility dark-button-border-color{
   border-color: #404040 !important;
+}
+
+@utility dark-background-color{
+  background-color: #171717 !important;
+}
+@utility dark-black-light-bg{
+  background-color: #262626 !important;
 }

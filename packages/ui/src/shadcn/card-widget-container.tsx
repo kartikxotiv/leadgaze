@@ -36,7 +36,7 @@ export function CardWidgetContainer({
           'flex items-center justify-between',
           hideHeaderBorder
             ? 'px-6 pt-4 pb-2 xl:px-4 xl:pt-3 xl:pb-1.5 2xl:px-6 2xl:pt-4 2xl:pb-2'
-            : 'card-seperator-border dark:card-seperator-border border-b px-6 py-4 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4',
+            : 'card-seperator-border border-b px-6 py-4 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4',
           headerClassName,
         )}
       >
