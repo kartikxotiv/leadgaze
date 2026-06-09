@@ -62,6 +62,13 @@ const SALES_MODULES: NavItem[] = [
     feature: 'view_inbox',
     module: 'emails',
   },
+  {
+    label: 'Teams',
+    path: pathsConfig.app.teams,
+    Icon: Users,
+    feature: 'view',
+    module: 'team_members',
+  },
 ];
 
 // Team Module Features
@@ -71,13 +78,6 @@ const TEAM_MODULES: NavItem[] = [
   {
     label: 'Members',
     path: pathsConfig.app.teamMembers,
-    Icon: Users,
-    feature: 'view',
-    module: 'team_members',
-  },
-  {
-    label: 'Teams',
-    path: pathsConfig.app.teams,
     Icon: Users,
     feature: 'view',
     module: 'team_members',
