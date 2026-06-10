@@ -1,98 +1,195 @@
 'use client';
 
-import { Filter, Search, X } from 'lucide-react';
+import type { ReactNode } from 'react';
 
-import { Button } from '@kit/ui/button';
-import { Input } from '@kit/ui/input';
+import { Plus } from 'lucide-react';
 
-import {
-  AddEmployeeButton,
-  AddEmployessDialog,
-} from '../../components/employees/add-employees';
+import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
+import { ListToolBar } from '@kit/ui/list-toolbar';
+import { PageBody, PageHeader } from '@kit/ui/page';
+import { TableStatusMetricTab } from '@kit/ui/table-status-metric-tab';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+
+import { AddEmployessDialog } from '../../components/employees/add-employees';
 import { DeleteEmployeeDialog } from '../../components/employees/delete-employee-dialog';
+import { getEmployeeStatusLabel } from '../../components/employees/employee-status-badge';
 import { EmployeesDirectoryCard } from '../../components/employees/employees-directory-card';
-import { EmployeesFilterPanel } from '../../components/employees/employees-filter-panel';
-import { EmployeesSummaryCards } from '../../components/employees/employees-summary-cards';
 import { useEmployeesPage } from '../../hooks/use-employees-page';
+import { allEmployeeStatuses, employeeStatusOptions } from './page.data';
 
-export function EmployeesPage() {
+const employeeColumns: Array<{ id: string; label: string }> = [
+  { id: 'sno', label: 'S. No.' },
+  { id: 'employee', label: 'Employee' },
+  { id: 'code', label: 'Code' },
+  { id: 'department', label: 'Department' },
+  { id: 'manager', label: 'Manager' },
+  { id: 'designation', label: 'Designation' },
+  { id: 'employment_type', label: 'Employment Type' },
+  { id: 'status', label: 'Status' },
+  { id: 'joining_date', label: 'Joining Date' },
+  { id: 'email', label: 'Email' },
+  { id: 'phone', label: 'Phone' },
+];
+
+const statusColors = {
+  active: '#22c55e',
+  invited: '#f59e0b',
+  probation: '#6366f1',
+  notice_period: '#ef4444',
+  inactive: '#64748b',
+  exited: '#94a3b8',
+} as const;
+
+export function EmployeesPage(props: {
+  headerActions?: ReactNode;
+  workspaceName?: string;
+}) {
   const controller = useEmployeesPage();
+  const { visibility, toggleVisibility, isVisible, reset } =
+    useColumnVisibility('hrms-employees', {
+      sno: true,
+      employee: true,
+      code: true,
+      department: true,
+      manager: true,
+      designation: true,
+      employment_type: false,
+      status: true,
+      joining_date: true,
+      email: false,
+      phone: false,
+    });
+
+  const selectedStatusLabel =
+    controller.statusFilter === allEmployeeStatuses
+      ? 'All statuses'
+      : getEmployeeStatusLabel(controller.statusFilter);
+  const activeFilterCount =
+    controller.statusFilter === allEmployeeStatuses ? 0 : 1;
+  const visibleTotal = controller.pagination.total;
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <EmployeesSummaryCards summary={controller.summary} />
+    <section className="flex h-[100dvh] min-h-0 flex-col overflow-hidden">
+      <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
+        <PageHeader
+          className="bg-sidebar shrink-0"
+          title={`Employees (${visibleTotal})`}
+          description={
+            props.workspaceName
+              ? `${props.workspaceName} employee directory`
+              : 'Employee directory'
+          }
+        >
+          {props.headerActions}
+        </PageHeader>
 
-        <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-          {controller.isSearchVisible ? (
-            <div className="relative">
-              <Input
-                className="h-9 w-full pr-9 sm:w-[280px]"
-                placeholder="Search employees"
-                value={controller.searchTerm}
-                onChange={(event) =>
-                  controller.onSearchTermChange(event.target.value)
-                }
+        <div className="bg-sidebar w-full max-w-full min-w-0 overflow-x-auto">
+          <div className="flex flex-wrap items-center gap-2">
+            <TableStatusMetricTab
+              id={allEmployeeStatuses}
+              color="#4eacff"
+              statusName="All Employees"
+              count={controller.summary.totalCount}
+              isSelected={controller.statusFilter === allEmployeeStatuses}
+              onClick={() =>
+                controller.onStatusFilterChange(allEmployeeStatuses)
+              }
+            />
+            <TableStatusMetricTab
+              id="active"
+              color={statusColors.active}
+              statusName="Active Employees"
+              count={controller.summary.activeCount}
+              isSelected={controller.statusFilter === 'active'}
+              onClick={() => controller.onStatusFilterChange('active')}
+            />
+            <TableStatusMetricTab
+              id="invited"
+              color={statusColors.invited}
+              statusName="Pending Invites"
+              count={controller.summary.invitedCount}
+              isSelected={controller.statusFilter === 'invited'}
+              onClick={() => controller.onStatusFilterChange('invited')}
+            />
+            <TableStatusMetricTab
+              id="departments"
+              color="#8b5cf6"
+              statusName="Departments Covered"
+              count={controller.summary.departmentCoverage}
+              className="cursor-default"
+            />
+          </div>
+        </div>
+
+        <div className="bg-sidebar w-full shrink-0 border-b">
+          <ListToolBar
+            showSearch
+            searchPlaceholder="Search employees..."
+            searchValue={controller.searchTerm}
+            onSearchChange={controller.onSearchTermChange}
+            showFilter
+            filterGroups={[
+              {
+                key: 'status',
+                label: 'Status',
+                selectedValue:
+                  controller.statusFilter === allEmployeeStatuses
+                    ? ''
+                    : controller.statusFilter,
+                selectedLabel: selectedStatusLabel,
+                options: employeeStatusOptions
+                  .filter((option) => option.value !== allEmployeeStatuses)
+                  .map((option) => ({
+                    value: option.value,
+                    label: option.label,
+                    color:
+                      option.value === allEmployeeStatuses
+                        ? undefined
+                        : statusColors[option.value],
+                  })),
+                onSelect: (value) =>
+                  controller.onStatusFilterChange(value || allEmployeeStatuses),
+              },
+            ]}
+            activeFilterCount={activeFilterCount}
+            onClearFilters={controller.resetEmployeeFilters}
+            actions={[
+              {
+                key: 'add',
+                label: 'Add Employee',
+                icon: Plus,
+                onClick: controller.onAddRequested,
+                show: controller.canCreateEmployee,
+                buttonVariant: 'default',
+              },
+            ]}
+            columnVisibilitySlot={
+              <ColumnVisibilitySelector
+                columns={employeeColumns}
+                visibility={visibility}
+                onToggle={toggleVisibility}
+                onReset={reset}
               />
-              <Button
-                aria-label="Close search"
-                className="absolute right-0 top-0 h-9 w-9"
-                size="icon"
-                variant="ghost"
-                onClick={() => {
-                  controller.onSearchTermChange('');
-                  controller.setIsSearchVisible(false);
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <Button
-              aria-label="Search employees"
-              size="icon"
-              variant="outline"
-              onClick={() => controller.setIsSearchVisible(true)}
-            >
-              <Search className="h-4 w-4" />
-            </Button>
-          )}
-
-          <Button
-            aria-label="Filter employees"
-            size="icon"
-            variant={controller.isFiltersVisible ? 'default' : 'outline'}
-            onClick={() =>
-              controller.setIsFiltersVisible(!controller.isFiltersVisible)
             }
-          >
-            <Filter className="h-4 w-4" />
-          </Button>
-
-          {controller.canCreateEmployee ? (
-            <AddEmployeeButton onClick={controller.onAddRequested} />
-          ) : null}
+          />
         </div>
       </div>
 
-      {controller.isFiltersVisible ? (
-        <EmployeesFilterPanel
-          hasEmployeeFilters={controller.hasEmployeeFilters}
-          onResetFilters={controller.resetEmployeeFilters}
-          onStatusFilterChange={controller.onStatusFilterChange}
-          statusFilter={controller.statusFilter}
-        />
-      ) : null}
-
-      <EmployeesDirectoryCard
-        employees={controller.employees}
-        hasFilters={controller.hasEmployeeFilters}
-        isLoading={controller.isEmployeesLoading}
-        onDeleteRequested={controller.setEmployeeToDelete}
-        onEditRequested={controller.onEditRequested}
-        onPageChange={controller.onPageChange}
-        pagination={controller.pagination}
-      />
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3 pb-0">
+        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+          <EmployeesDirectoryCard
+            employees={controller.employees}
+            hasFilters={controller.hasEmployeeFilters}
+            isColumnVisible={isVisible}
+            isLoading={controller.isEmployeesLoading}
+            onDeleteRequested={controller.setEmployeeToDelete}
+            onEditRequested={controller.onEditRequested}
+            onPageChange={controller.onPageChange}
+            pagination={controller.pagination}
+            visibility={visibility}
+          />
+        </div>
+      </PageBody>
 
       <AddEmployessDialog
         employee={controller.editingEmployee}

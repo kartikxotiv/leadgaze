@@ -6,14 +6,9 @@ import { Check, ChevronDown } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kit/ui/card';
+import { Card, CardContent } from '@kit/ui/card';
 import { Checkbox } from '@kit/ui/checkbox';
+import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
 import { ScrollArea } from '@kit/ui/scroll-area';
 import {
@@ -146,63 +141,64 @@ export function ReportTableCard(props: {
   title: string;
 }) {
   return (
-    <Card className="shadow-sm">
-      <CardHeader>
-        <CardTitle>{props.title}</CardTitle>
+    <div className="flex min-h-0 flex-col gap-3">
+      <div className="px-1">
+        <h2 className="text-base leading-tight font-semibold">{props.title}</h2>
         {props.description ? (
-          <CardDescription>{props.description}</CardDescription>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {props.description}
+          </p>
         ) : null}
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {props.columns.map((column) => (
-                  <TableHead
-                    key={column.key}
-                    className={cn(column.align === 'right' ? 'text-right' : '')}
-                  >
-                    {column.label}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {props.rows.length > 0 ? (
-                props.rows.map((row, index) => (
-                  <TableRow key={`${props.title}-${index}`}>
-                    {props.columns.map((column) => (
-                      <TableCell
-                        key={column.key}
-                        className={cn(
-                          column.align === 'right' ? 'text-right' : '',
-                          column.key === props.columns[0]?.key
-                            ? 'font-medium'
-                            : '',
-                        )}
-                      >
-                        {row[column.key] ?? '-'}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={props.columns.length}
-                    className="text-muted-foreground py-10 text-center"
-                  >
-                    {props.emptyMessage ??
-                      'No records found for the selected filters.'}
-                  </TableCell>
+      </div>
+
+      <CustomTableContainer>
+        <Table>
+          <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+            <TableRow>
+              {props.columns.map((column) => (
+                <TableHead
+                  key={column.key}
+                  className={cn(column.align === 'right' ? 'text-right' : '')}
+                >
+                  {column.label}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {props.rows.length > 0 ? (
+              props.rows.map((row, index) => (
+                <TableRow key={`${props.title}-${index}`}>
+                  {props.columns.map((column) => (
+                    <TableCell
+                      key={column.key}
+                      className={cn(
+                        column.align === 'right' ? 'text-right' : '',
+                        column.key === props.columns[0]?.key
+                          ? 'font-medium'
+                          : '',
+                      )}
+                    >
+                      {row[column.key] ?? '-'}
+                    </TableCell>
+                  ))}
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={props.columns.length}
+                  className="text-muted-foreground h-24 text-center"
+                >
+                  {props.emptyMessage ??
+                    'No records found for the selected filters.'}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CustomTableContainer>
+    </div>
   );
 }
 
