@@ -31,7 +31,7 @@ export function ReportsPage(props: {
     <section className="flex h-[100dvh] min-h-0 flex-col overflow-hidden">
       <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          className="bg-sidebar shrink-0 px-6 py-4"
+          className="bg-sidebar shrink-0"
           title="Reports"
           description={
             props.workspaceName
@@ -44,7 +44,7 @@ export function ReportsPage(props: {
 
         {!page.isRbacLoading && page.canViewReports ? (
           <>
-            <div className="bg-sidebar w-full max-w-full min-w-0 overflow-x-auto px-6 pb-2">
+            <div className="bg-sidebar w-full max-w-full min-w-0 overflow-x-auto">
               <div className="flex flex-wrap items-center gap-2">
                 <TableStatusMetricTab
                   id="employees"
@@ -77,7 +77,7 @@ export function ReportsPage(props: {
               </div>
             </div>
 
-            <div className="bg-sidebar w-full shrink-0 border-b px-6 py-2">
+            <div className="bg-sidebar w-full shrink-0 border-b">
               <ListToolBar
                 actions={[
                   {
@@ -103,8 +103,8 @@ export function ReportsPage(props: {
         ) : null}
       </div>
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3 pb-0">
-        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-6 lg:px-8">
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col gap-4 overflow-y-auto">
           {!page.isRbacLoading && !page.canViewReports ? (
             <ReportsAccessCard />
           ) : (

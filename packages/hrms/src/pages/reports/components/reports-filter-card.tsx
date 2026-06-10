@@ -17,17 +17,7 @@ export function ReportsFilterCard(props: { page: ReportsPageController }) {
   const { page } = props;
 
   return (
-    <div className="bg-card grid gap-4 overflow-hidden rounded-lg border p-4 shadow-sm">
-      <div>
-        <h2 className="text-base leading-tight font-semibold">
-          Custom Filters
-        </h2>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Select a report scope for one employee, multiple employees, or
-          everyone you can access.
-        </p>
-      </div>
-
+    <div className="bg-card grid gap-4 overflow-hidden rounded-lg border shadow-sm">
       <div className="grid gap-4 overflow-hidden">
         <div className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-[repeat(5,minmax(0,1fr))]">
           <div className="min-w-0 space-y-2">
