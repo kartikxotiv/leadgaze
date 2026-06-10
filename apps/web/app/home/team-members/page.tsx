@@ -269,7 +269,7 @@ export default function TeamMembersPage() {
   }
 
   return (
-    <ModuleGuard module="team_members">
+    <ModuleGuard module="team_members"> 
         <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
           <PageHeader
             title={`Members (${members.length})`}
@@ -435,7 +435,7 @@ export default function TeamMembersPage() {
                                       member.user?.email?.charAt(0) || 'M'
                                     ).toUpperCase()}
                                   </div>
-                                  <span className="font-medium">
+                                  <span className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
                                     {member.user?.user_metadata?.full_name ||
                                       'Team Member'}
                                   </span>
@@ -451,7 +451,7 @@ export default function TeamMembersPage() {
                               <TableCell>
                                 <div className="flex items-center gap-2">
                                   <div
-                                    className="h-3 w-3 rounded-full"
+                                    className="h-2 w-2 rounded-full"
                                     style={{
                                       backgroundColor: getRoleColor(
                                         member.role,

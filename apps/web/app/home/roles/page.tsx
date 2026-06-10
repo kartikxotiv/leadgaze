@@ -18,6 +18,7 @@ import {
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import {
+  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -44,6 +45,8 @@ import {
 
 import { CreateRoleDialog } from './components/create-role-dialog';
 import { EditRoleDialog } from './components/edit-role-dialog';
+import { cn } from '@kit/ui/utils';
+import CustomTableContainer from '@kit/ui/custom-table-container';
 
 const EMPTY_ROLES: Role[] = [];
 
@@ -200,13 +203,15 @@ export default function RolesPage() {
   };
 
   return (
-    <ModuleGuard module="roles">      
-        <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
-          <PageHeader            
-            title={`Roles Management (${Array.isArray(roles) ? roles.length : 0})`}
-            description="Create and manage workspace roles with custom permissions"
-          >
-            <div className="flex items-center gap-2">
+    <ModuleGuard module="roles">
+      <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
+                  <PageHeader
+                    title={`Roles Management (${Array.isArray(roles) ? roles.length : 0})`}
+                    description="Create and manage workspace roles with custom permissions"
+                  >
+                    <div className="flex items-center gap-2">
+
+      
               {/* {canAccess('roles', 'create') && (
                 <Button
                   onClick={() => setCreateDialogOpen(true)}
@@ -225,9 +230,9 @@ export default function RolesPage() {
                       variant="outline"
                       onClick={() => setCreateDialogOpen(true)}
                       size="sm"
-                      className="h-9 w-9 p-2"
+                      className="h-9 w-9 bg-white p-0 dark:dark-background-color hover:cursor-pointer"
                     >
-                      <Plus className="h-4 w-4 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white" />
+                      <Plus className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
 
@@ -246,64 +251,57 @@ export default function RolesPage() {
             </div>
           </PageHeader>
           {/* Summary Cards */}
-          <div className="bg-sidebar -mt-1 w-full max-w-full min-w-0 overflow-x-auto px-6 pb-7">
-            <div className="-mb-3 flex items-center gap-3">
-              <Card className="hover:border-primary/50 bg-card transition-all w-52 shrink-0">
-                <CardContent className="h-10 p-3 flex items-center">
-                  <div className="flex flex-col gap-1 w-full">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-purple-500" />
-                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
-                        Total Roles ({Array.isArray(roles) ? roles.length : 0})
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+          <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <Card className={cn('hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer rounded-sm-card transition-all')}>
+                                    <CardContent className={cn('flex items-center px-3 py-2')}>
+                                      <div className="flex items-center gap-2 whitespace-nowrap">
+                                        <div className="h-2 w-2 shrink-0 rounded-full bg-activity-3" />
+                                        <span className={cn("primary-text-medium text-leadgaze-dark uppercase dark:text-white")}>
+                                          Total Roles ({Array.isArray(roles) ? roles.length : 0})
+                                        </span>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
 
-              <Card className="hover:border-primary/50 bg-card transition-all w-52 shrink-0">
-                <CardContent className="h-10 p-3 flex items-center">
-                  <div className="flex flex-col gap-1 w-full">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-blue-500" />
-                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
-                        System Roles ({Array.isArray(roles) ? roles.filter((r: Role) => r.is_system).length : 0})
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                                  <Card className={cn('hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer rounded-sm-card transition-all')}>
+                                    <CardContent className={cn('flex items-center px-3 py-2')}>
+                                      <div className="flex items-center gap-2 whitespace-nowrap">
+                                        <div className="h-2 w-2 shrink-0 rounded-full bg-activity-1" />
+                                        <span className={cn("primary-text-medium text-leadgaze-dark uppercase dark:text-white")}>
+                                          System Roles ({Array.isArray(roles) ? roles.filter((r: Role) => r.is_system).length : 0})
+                                        </span>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
 
-              <Card className="hover:border-primary/50 bg-card transition-all w-52 shrink-0">
-                <CardContent className="h-10 p-3 flex items-center">
-                  <div className="flex flex-col gap-1 w-full">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-indigo-500" />
-                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
-                        Custom Roles ({Array.isArray(roles) ? roles.filter((r: Role) => !r.is_system).length : 0})
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                                  <Card className={cn('hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer rounded-sm-card transition-all')}>
+                                    <CardContent className={cn('flex items-center px-3 py-2')}>
+                                      <div className="flex items-center gap-2 whitespace-nowrap">
+                                        <div className="h-2 w-2 shrink-0 rounded-full bg-activity-4" />
+                                        <span className={cn("primary-text-medium text-leadgaze-dark uppercase dark:text-white")}>
+                                          Custom Roles ({Array.isArray(roles) ? roles.filter((r: Role) => !r.is_system).length : 0})
+                                        </span>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
             </div>
           </div>
         </div>
-        <PageBody className="sticky flex min-h-0 flex-1 shrink-0 flex-col overflow-hidden pt-4 pb-6">
-          <div className="flex min-h-0 flex-1 flex-col space-y-6">
-            {/* Roles Table */}
-            <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
-              <CardHeader className="p-4">
-                <div>
-                  <CardTitle className="leading-tight">
-                    Workspace Roles
-                  </CardTitle>
-                  <CardDescription>
-                    Manage roles and their permissions
-                  </CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="flex min-h-0 flex-1 flex-col p-0">
+         <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
+                  <div className="flex min-h-0 w-full max-w-full min-w-0 gap-0 flex-col flex-1">
+                    <Card className="flex min-h-0 flex-col border-none shadow-none">
+                      <CardHeader className="shrink-0 p-4">
+                        <div>
+                          <CardTitle className="leading-tight">Workspace Roles</CardTitle>
+                          <CardDescription>
+                            Manage roles and their permissions
+                          </CardDescription>
+                        </div>
+                      </CardHeader>
+                      </Card>
+                      <CustomTableContainer>       
+        
                 {isLoading ? (
                   <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
                     <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
@@ -345,9 +343,9 @@ export default function RolesPage() {
                     <p className="text-muted-foreground">No roles found</p>
                   </div>
                 ) : (
-                  <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
-                    <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
-                      <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                  
+                    <Table>
+                      <TableHeader>
                         <TableRow>
                           {isVisible('role_name') && (
                             <TableHead>Role Name</TableHead>
@@ -360,7 +358,7 @@ export default function RolesPage() {
                           )}
                           {isVisible('type') && <TableHead>Type</TableHead>}
                           {isVisible('status') && <TableHead>Status</TableHead>}
-                          <TableHead className="bg-card sticky right-0 px-4 text-right">
+                          <TableHead className="sticky-right-header text-right">
                             Actions
                           </TableHead>
                         </TableRow>
@@ -383,7 +381,7 @@ export default function RolesPage() {
                                     <GripVertical className="h-4 w-4 cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing" />
                                   )}
                                   <div
-                                    className="h-3 w-3 rounded-full"
+                                    className="h-2 w-2 rounded-full"
                                     style={{
                                       backgroundColor: getRoleColor(role),
                                     }}
@@ -403,7 +401,7 @@ export default function RolesPage() {
                             )}
                             {isVisible('hierarchy') && (
                               <TableCell>
-                                <Badge variant="outline">
+                                <Badge variant="outline" className="dark-button-border-color">
                                   {getHierarchyLabel(role)}
                                 </Badge>
                               </TableCell>
@@ -464,11 +462,11 @@ export default function RolesPage() {
                           </TableRow>
                         ))}
                       </TableBody>
-                    </table>
-                  </div>
+                    </Table>
+                  
                 )}
-              </CardContent>
-            </Card>
+              </CustomTableContainer>
+            
           </div>
 
           {/* Dialogs */}

@@ -17,6 +17,7 @@ import {
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import {
+  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -43,6 +44,8 @@ import {
 import { CreateTeamDialog } from './components/create-team-dialog';
 import { EditTeamDialog } from './components/edit-team-dialog';
 import { ManageTeamMembersDialog } from './components/manage-team-members-dialog';
+import { cn } from '@kit/ui/utils';
+import CustomTableContainer from '@kit/ui/custom-table-container';
 
 function TeamsPageSkeleton() {
   return (
@@ -164,22 +167,22 @@ export default function TeamsPage() {
   return (
     <ModuleGuard module="team_members">
       
-        <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
-          <PageHeader
-            className="bg-sidebar px-6 py-4"
-            title={`Teams (${teams.length})`}
-            description="Manage your workspace teams and their members"
-          >
-            <div className="flex items-center gap-2">
+        <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
+                  <PageHeader
+                    title={`Teams (${teams.length})`}
+                    description="Manage your workspace teams and their members"
+                  >
+                    <div className="flex items-center gap-2">        
+        
               {canAccess('team_members', 'create') && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="outline"
                       onClick={() => setCreateDialogOpen(true)}
-                      className="h-8 w-8 bg-white p-0 text-black dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
-                    >
-                      <Plus className="h-4 w-4 text-gray-500 dark:text-white" />
+                      className="h-9 w-9 bg-white p-0 dark:dark-background-color hover:cursor-pointer">
+                    
+                      <Plus className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
 
@@ -198,40 +201,36 @@ export default function TeamsPage() {
             </div>
           </PageHeader>
           {/* Summary Cards */}
-          <div className="bg-sidebar -mt-1 w-full max-w-full min-w-0 overflow-x-auto px-6 pb-7">
-            <div className="-mb-3 flex items-center gap-3">
-              <Card className="hover:border-primary/50 bg-card transition-all w-52 shrink-0">
-                <CardContent className="h-10 p-3 flex items-center">
-                  <div className="flex flex-col gap-1 w-full">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-blue-500" />
-                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
-                        Total Teams ({teams.length})
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+          <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Card className={cn('hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer rounded-sm-card transition-all')}>
+                          <CardContent className={cn('flex items-center px-3 py-2')}>
+                            <div className="flex items-center gap-2 whitespace-nowrap">
+                              <div className="h-2 w-2 shrink-0 rounded-full bg-activity-1" />
+                              <span className={cn("primary-text-medium text-leadgaze-dark uppercase dark:text-white")}>
+                                Total Teams ({teams.length})
+                              </span>
+                            </div>
+                          </CardContent>
+                        </Card>
 
-              <Card className="hover:border-primary/50 bg-card transition-all shrink-0">
-                <CardContent className="h-10 p-3 flex items-center">
-                  <div className="flex flex-col gap-1 w-full">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-green-500" />
-                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
-                        Total Team Assignments ({teams.reduce((acc: number, team: Team) => acc + (team._count?.members || 0), 0)})
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                        <Card className={cn('hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer rounded-sm-card transition-all')}>
+                          <CardContent className={cn('flex items-center px-3 py-2')}>
+                            <div className="flex items-center gap-2 whitespace-nowrap">
+                              <div className="h-2 w-2 shrink-0 rounded-full bg-activity-2" />
+                              <span className={cn("primary-text-medium text-leadgaze-dark uppercase dark:text-white")}>
+                                Total Team Assignments ({teams.reduce((acc: number, team: Team) => acc + (team._count?.members || 0), 0)})
+                              </span>
+                            </div>
+                          </CardContent>
+                        </Card>
             </div>
           </div>
         </div>
 
-        <PageBody className="bg-sidebar sticky flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
-          <div className="flex min-h-0 flex-1 flex-col space-y-6">
-            <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
+        <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
+          <div className="flex min-h-0 w-full max-w-full min-w-0 gap-0 flex-col flex-1">
+            <Card className="flex min-h-0 flex-col border-none shadow-none">
               <CardHeader className="shrink-0 p-4">
                 <div>
                   <CardTitle className="leading-tight">Workspace Teams</CardTitle>
@@ -240,7 +239,8 @@ export default function TeamsPage() {
                   </CardDescription>
                 </div>
               </CardHeader>
-              <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+              </Card>
+              <CustomTableContainer>                                    
                 {isLoading ? (
                   <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
                     <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
@@ -283,24 +283,25 @@ export default function TeamsPage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
-                    <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
-                      <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
-                        <TableRow className="bg-card">
+                  <Table>
+                     <TableHeader>
+                       <TableRow>
+                      
+                        
                           {isVisible('name') && <TableHead>Team Name</TableHead>}
                           {isVisible('description') && <TableHead>Description</TableHead>}
                           {isVisible('members') && <TableHead>Members</TableHead>}
-                          <TableHead className="bg-card sticky right-0 px-4 text-right">
+                          <TableHead className="sticky-right-header text-right">
                             Actions
                           </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {teams.map((team: Team) => (
-                          <TableRow key={team.id} className="hover:bg-muted/50">
+                          <TableRow key={team.id}>
                             {isVisible('name') && (
                               <TableCell>
-                                <span className="font-medium">{team.name}</span>
+                                <span className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">{team.name}</span>
                               </TableCell>
                             )}
                             {isVisible('description') && (
@@ -313,7 +314,7 @@ export default function TeamsPage() {
                                 {team._count?.members || 0} members
                               </TableCell>
                             )}
-                            <TableCell className="bg-card sticky right-0 px-4 text-right">
+                            <TableCell className="">
                               <div className="flex items-center justify-end gap-2">
                                 {canAccess('team_members', 'edit') && (
                                   <Button
@@ -352,11 +353,9 @@ export default function TeamsPage() {
                           </TableRow>
                         ))}
                       </TableBody>
-                    </table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                    </Table>
+                  )}
+                </CustomTableContainer>            
           </div>
 
           {/* Dialogs */}
