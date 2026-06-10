@@ -242,7 +242,7 @@ export function CoreInboxTab({
               </div>
             </div>
           ) : (
-            <div className="grid gap-3">
+            <div className="grid gap-3 h-[calc(100vh-320px)] min-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
               {emails.map((email: any) => (
                 <button
                   key={email.id}
