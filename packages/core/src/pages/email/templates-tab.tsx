@@ -47,6 +47,9 @@ import {
   getCoreEmailVariablesService,
   saveCoreEmailTemplateService,
 } from '../../services/email-templates.service';
+import { ListToolBar } from '@kit/ui/list-toolbar';
+import CustomTableContainer from '@kit/ui/custom-table-container';
+
 
 export function CoreEmailTemplatesTab({
   workspaceId,
@@ -86,30 +89,26 @@ export function CoreEmailTemplatesTab({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative w-full max-w-sm">
-          <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
-          <Input
-            placeholder="Search templates..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-          />
-        </div>
-        <Button
-          size="sm"
-          onClick={() => {
-            setSelectedTemplate(null);
-            setIsDialogOpen(true);
-          }}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          New Template
-        </Button>
-      </div>
-
-      <Card>
-        <CardContent className="p-0">
+      {/* Full-width search / filter / actions toolbar */}
+              <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+                <ListToolBar
+                  showSearch
+                  searchPlaceholder="Search templates..."
+                  searchValue={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  actions={[
+                    {
+                      key: 'add',
+                      label: 'New Template',
+                      icon: Plus,
+                      onClick: () => {setSelectedTemplate(null); setIsDialogOpen(true);},
+                      show: true,
+                      buttonVariant: 'default',
+                    },
+                  ]}                  
+                />
+              </div>
+       <CustomTableContainer>      
           <Table>
             <TableHeader>
               <TableRow>
@@ -175,8 +174,7 @@ export function CoreEmailTemplatesTab({
               )}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </CustomTableContainer>
 
       <CoreTemplateDialog
         open={isDialogOpen}
