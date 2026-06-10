@@ -27,6 +27,7 @@ import { CoreEmailReplyDialog, CoreEntityPanel } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import {
   Card,
   CardContent,
@@ -273,8 +274,8 @@ export function ServiceCloudTicketDetailPage({
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-[28px] border bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_34%),linear-gradient(135deg,_#0f172a,_#164e63_52%,_#0f172a)] text-white shadow-xl">
-        <div className="flex flex-col gap-6 p-6 lg:flex-row lg:items-end lg:justify-between lg:p-8">
+      <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_34%),linear-gradient(135deg,_#0f172a,_#164e63_52%,_#0f172a)] p-6 text-white shadow-xl">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-4xl space-y-5">
             <Button
               asChild
@@ -340,36 +341,28 @@ export function ServiceCloudTicketDetailPage({
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
         <main className="space-y-6">
-          <Card className="border-slate-200 shadow-sm dark:border-slate-800">
-            <CardHeader className="pb-3">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-xl">
-                    <Inbox className="h-5 w-5 text-cyan-600" />
-                    Ticket Workspace
-                  </CardTitle>
-                  <CardDescription>
-                    Customer conversation, internal work, attachments, and
-                    service timeline.
-                  </CardDescription>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {latestThreadEmail ? (
-                    <Button
-                      size="sm"
-                      onClick={() => setReplyEmail(latestThreadEmail)}
-                    >
-                      <Mail className="mr-2 h-4 w-4" />
-                      Reply in thread
-                    </Button>
-                  ) : null}
-                  <StatusPill label={ticket.source ?? 'manual'} />
-                  <StatusPill label={`${emails.length} emails`} />
-                  <StatusPill label={formatDuration(totalLoggedSeconds)} />
-                </div>
+          <CardWidgetContainer
+            title="Ticket Workspace"
+            description="Customer conversation, internal work, attachments, and service timeline."
+            icon={<Inbox className="h-5 w-5 text-cyan-600" />}
+            icon2={
+              <div className="flex flex-wrap gap-2">
+                {latestThreadEmail ? (
+                  <Button
+                    size="sm"
+                    onClick={() => setReplyEmail(latestThreadEmail)}
+                  >
+                    <Mail className="mr-2 h-4 w-4" />
+                    Reply in thread
+                  </Button>
+                ) : null}
+                <StatusPill label={ticket.source ?? 'manual'} />
+                <StatusPill label={`${emails.length} emails`} />
+                <StatusPill label={formatDuration(totalLoggedSeconds)} />
               </div>
-            </CardHeader>
-            <CardContent>
+            }
+          >
+            <div className="px-6 py-4">
               <Tabs defaultValue="conversation" className="space-y-5">
                 <TabsList className="grid h-auto grid-cols-2 rounded-2xl bg-slate-100 p-1 md:w-fit md:grid-cols-4 dark:bg-slate-900">
                   <TabsTrigger value="conversation">Conversation</TabsTrigger>
@@ -385,88 +378,86 @@ export function ServiceCloudTicketDetailPage({
                       description="Emails converted into this ticket will appear here."
                     />
                   ) : (
-                    emails.map((item: any) => {
-                      const email = item.email;
-                      return (
-                        <article
-                          key={item.id}
-                          className="overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-zinc-950"
-                        >
-                          <div className="border-b bg-slate-50 p-4 dark:bg-slate-900/60">
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <div className="truncate text-base font-semibold">
-                                  {email?.subject || '(No Subject)'}
-                                </div>
-                                <div className="text-muted-foreground mt-1 text-xs">
-                                  {email?.direction === 'inbound'
-                                    ? `From ${email?.from_email}`
-                                    : `To ${emailRecipientText(email)}`}
-                                </div>
-                                {Array.isArray(email?.cc_emails) &&
-                                email.cc_emails.length > 0 ? (
-                                  <div className="text-muted-foreground mt-1 text-xs">
-                                    Cc {email.cc_emails.join(', ')}
+                    <div className="space-y-4 h-[calc(100vh-420px)] min-h-[350px] overflow-y-auto pr-2 scrollbar-thin">
+                      {emails.map((item: any) => {
+                        const email = item.email;
+                        return (
+                          <article
+                            key={item.id}
+                            className="overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-zinc-950"
+                          >
+                            <div className="border-b bg-slate-50 p-4 dark:bg-slate-900/60">
+                              <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <div className="truncate text-base font-semibold">
+                                    {email?.subject || '(No Subject)'}
                                   </div>
-                                ) : null}
-                              </div>
-                              <div className="flex flex-col items-end gap-2">
-                                <Badge variant="outline">
-                                  {item.email_role}
-                                </Badge>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setReplyEmail(email)}
-                                >
-                                  Reply
-                                </Button>
-                                <span className="text-muted-foreground text-xs">
-                                  {formatDateTime(
-                                    email?.received_at ||
-                                      email?.sent_at ||
-                                      email?.created_at,
-                                  )}
-                                </span>
+                                  <div className="text-muted-foreground mt-1 text-xs">
+                                    {email?.direction === 'inbound'
+                                      ? `From ${email?.from_email}`
+                                      : `To ${emailRecipientText(email)}`}
+                                  </div>
+                                  {Array.isArray(email?.cc_emails) &&
+                                  email.cc_emails.length > 0 ? (
+                                    <div className="text-muted-foreground mt-1 text-xs">
+                                      Cc {email.cc_emails.join(', ')}
+                                    </div>
+                                  ) : null}
+                                </div>
+                                <div className="flex flex-col items-end gap-2">
+                                  <Badge variant="outline">
+                                    {item.email_role}
+                                  </Badge>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setReplyEmail(email)}
+                                  >
+                                    Reply
+                                  </Button>
+                                  <span className="text-muted-foreground text-xs">
+                                    {formatDateTime(
+                                      email?.received_at ||
+                                        email?.sent_at ||
+                                        email?.created_at,
+                                    )}
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <div className="p-5">
-                            <div className="prose prose-sm dark:prose-invert max-w-none">
-                              {email?.html_body || email?.body ? (
-                                <div
-                                  dangerouslySetInnerHTML={{
-                                    __html: email.html_body || email.body,
-                                  }}
-                                />
-                              ) : (
-                                <p>
-                                  {email?.text_body ||
-                                    email?.snippet ||
-                                    'No content.'}
-                                </p>
-                              )}
+                            <div className="p-5">
+                              <div className="prose prose-sm dark:prose-invert max-w-none">
+                                {email?.html_body || email?.body ? (
+                                  <div
+                                    dangerouslySetInnerHTML={{
+                                      __html: email.html_body || email.body,
+                                    }}
+                                  />
+                                ) : (
+                                  <p>
+                                    {email?.text_body ||
+                                      email?.snippet ||
+                                      'No content.'}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </article>
-                      );
-                    })
+                          </article>
+                        );
+                      })}
+                    </div>
                   )}
                 </TabsContent>
 
                 <TabsContent value="work" className="space-y-4">
                   <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <Timer className="h-4 w-4" />
-                          Log Time
-                        </CardTitle>
-                        <CardDescription>
-                          Track work directly against this ticket.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
+                    <CardWidgetContainer
+                      title="Log Time"
+                      description="Track work directly against this ticket."
+                      icon={<Timer className="h-4 w-4" />}
+                      hideHeaderBorder={true}
+                    >
+                      <div className="space-y-4 px-6 pb-4">
                         <div className="grid grid-cols-2 gap-3">
                           <Field label="Hours">
                             <Input
@@ -515,19 +506,15 @@ export function ServiceCloudTicketDetailPage({
                           <Clock3 className="mr-2 h-4 w-4" />
                           Log Time
                         </Button>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </CardWidgetContainer>
 
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">
-                          Time Entries
-                        </CardTitle>
-                        <CardDescription>
-                          Total logged: {formatDuration(totalLoggedSeconds)}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
+                    <CardWidgetContainer
+                      title="Time Entries"
+                      description={`Total logged: ${formatDuration(totalLoggedSeconds)}`}
+                      hideHeaderBorder={true}
+                    >
+                      <div className="space-y-3 px-6 pb-4">
                         {timeEntries.length === 0 ? (
                           <EmptyState
                             title="No time logged"
@@ -556,45 +543,36 @@ export function ServiceCloudTicketDetailPage({
                             </div>
                           ))
                         )}
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </CardWidgetContainer>
                   </div>
                 </TabsContent>
 
                 <TabsContent value="files">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <Paperclip className="h-4 w-4" />
-                        Notes & Attachments
-                      </CardTitle>
-                      <CardDescription>
-                        Core notes and documents attached to this ticket.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
+                  <CardWidgetContainer
+                    title="Notes & Attachments"
+                    description="Core notes and documents attached to this ticket."
+                    icon={<Paperclip className="h-4 w-4" />}
+                    hideHeaderBorder={true}
+                  >
+                    <div className="px-6 pb-4">
                       <CoreEntityPanel
                         workspaceId={workspaceId}
                         entityType="service_cloud_ticket"
                         entityId={ticketId}
                         capabilities={['notes', 'documents']}
                       />
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </CardWidgetContainer>
                 </TabsContent>
 
                 <TabsContent value="activity">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">
-                        Ticket Activity
-                      </CardTitle>
-                      <CardDescription>
-                        Status, priority, assignment, email, and time-log
-                        history for this ticket.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
+                  <CardWidgetContainer
+                    title="Ticket Activity"
+                    description="Status, priority, assignment, email, and time-log history for this ticket."
+                    hideHeaderBorder={true}
+                  >
+                    <div className="space-y-3 px-6 pb-4 max-h-[calc(100vh-450px)] min-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
                       {(data.activities ?? []).length === 0 ? (
                         <EmptyState
                           title="No activity yet"
@@ -636,23 +614,21 @@ export function ServiceCloudTicketDetailPage({
                           </div>
                         ))
                       )}
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </CardWidgetContainer>
                 </TabsContent>
               </Tabs>
-            </CardContent>
-          </Card>
+            </div>
+          </CardWidgetContainer>
         </main>
 
         <aside className="space-y-4 xl:sticky xl:top-4 xl:self-start">
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base">Ticket Properties</CardTitle>
-              <CardDescription>
-                Operational fields agents update while working the case.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <CardWidgetContainer
+            title="Ticket Properties"
+            description="Operational fields agents update while working the case."
+            hideHeaderBorder={true}
+          >
+            <div className="space-y-4 px-6 py-4">
               <EditableSelect
                 icon={<Flag className="h-4 w-4" />}
                 label="Status"
@@ -723,14 +699,15 @@ export function ServiceCloudTicketDetailPage({
                   })
                 }
               />
-            </CardContent>
-          </Card>
+            </div>
+          </CardWidgetContainer>
 
-          <Card className={priorityTone(ticket.priority)}>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">SLA Snapshot</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
+          <CardWidgetContainer
+            title="SLA Snapshot"
+            hideHeaderBorder={true}
+            className={priorityTone(ticket.priority)}
+          >
+            <div className="space-y-3 px-6 py-4 text-sm">
               <Metric
                 label="Priority"
                 value={ticket.priority?.name ?? 'Not set'}
@@ -740,17 +717,15 @@ export function ServiceCloudTicketDetailPage({
                 value={formatDateTime(ticket.response_due_at)}
               />
               <Metric label="Resolution due" value={formatDateOnly(dueValue)} />
-            </CardContent>
-          </Card>
+            </div>
+          </CardWidgetContainer>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <UserRound className="h-4 w-4" />
-                Customer Context
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
+          <CardWidgetContainer
+            title="Customer Context"
+            icon={<UserRound className="h-4 w-4" />}
+            hideHeaderBorder={true}
+          >
+            <div className="space-y-3 px-6 py-4 text-sm">
               <Metric label="Name" value={ticket.customer?.name ?? '-'} />
               <Metric label="Email" value={ticket.customer?.email ?? '-'} />
               <Metric label="Phone" value={ticket.customer?.phone ?? '-'} />
@@ -767,17 +742,15 @@ export function ServiceCloudTicketDetailPage({
                 label="Website"
                 value={ticket.organization?.website ?? '-'}
               />
-            </CardContent>
-          </Card>
+            </div>
+          </CardWidgetContainer>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Building2 className="h-4 w-4" />
-                Record Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
+          <CardWidgetContainer
+            title="Record Details"
+            icon={<Building2 className="h-4 w-4" />}
+            hideHeaderBorder={true}
+          >
+            <div className="space-y-3 px-6 py-4 text-sm">
               <Metric label="Source" value={ticket.source ?? '-'} />
               <Metric
                 label="First response"
@@ -791,8 +764,8 @@ export function ServiceCloudTicketDetailPage({
                 label="Updated"
                 value={formatDateTime(ticket.updated_at)}
               />
-            </CardContent>
-          </Card>
+            </div>
+          </CardWidgetContainer>
         </aside>
       </div>
 

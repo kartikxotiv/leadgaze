@@ -69,11 +69,14 @@ export function CoreEmailDetailDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[90vh] max-w-4xl flex-col overflow-hidden p-0">
-        <DialogHeader className="shrink-0 border-b px-6 py-4">
-          <DialogTitle className="truncate pr-8 text-xl font-bold">
+        <DialogTitle className="sr-only">
+          {email.subject || '(No Subject)'}
+        </DialogTitle>
+        <div className="flex items-center justify-between border-b px-6 py-3 shrink-0">
+          <div className="truncate text-base font-semibold text-zinc-900 dark:text-zinc-50 pr-12" title={email.subject || '(No Subject)'}>
             {email.subject || '(No Subject)'}
-          </DialogTitle>
-        </DialogHeader>
+          </div>
+        </div>
 
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="shrink-0 space-y-3 bg-gray-50/50 px-6 py-4 dark:bg-zinc-900/50">
