@@ -74,8 +74,7 @@ export default function ServiceCloudLayout({
 
   return (
     <ModuleAccessGuardWrapper moduleKey="service_cloud">
-      <PageHeader
-        className="bg-sidebar"
+      <PageHeader        
         title={header.title}
         description={header.description}
       />
