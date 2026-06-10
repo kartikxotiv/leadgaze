@@ -199,18 +199,7 @@ export default function ContactDetailsPage() {
 
   return (
     <ModuleGuard module="contacts">
-      {/* <div className="px-6 pt-4 pb-0">
-        <div className="mb-2">
-          <Button variant="ghost" size="sm" asChild className="-ml-2">
-            <Link href="/home/contacts">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Link>
-          </Button>
-        </div>
-      </div> */}
-     
-<div className="px-6 pt-4 pb-2 flex justify-between items-center w-full">
+    <div className="pt-4 pb-2 flex justify-between items-center w-full">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" asChild className="border p-0 border-leadgaze-border">
             <Link href="/home/contacts">
