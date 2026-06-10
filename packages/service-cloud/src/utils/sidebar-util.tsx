@@ -27,10 +27,12 @@ type ServiceCloudRoute = {
   Icon: React.ReactNode;
   moduleKey: ServiceCloudModuleKey;
   featureKey: ServiceCloudFeatureKey;
+  end?: boolean; // optional flag for exact matching
 };
 
 const serviceCloudRouteChildren: ServiceCloudRoute[] = [
   {
+    end: true,
     label: 'Overview',
     path: '/home/services',
     Icon: <Activity className="h-4 w-4" />,
@@ -38,6 +40,7 @@ const serviceCloudRouteChildren: ServiceCloudRoute[] = [
     featureKey: SERVICE_CLOUD_FEATURE_KEYS.view,
   },
   {
+    end: true,
     label: 'Tickets',
     path: '/home/services/tickets',
     Icon: <Ticket className="h-4 w-4" />,
@@ -45,6 +48,7 @@ const serviceCloudRouteChildren: ServiceCloudRoute[] = [
     featureKey: SERVICE_CLOUD_FEATURE_KEYS.view,
   },
   {
+    end: true,
     label: 'Customers',
     path: '/home/services/customers',
     Icon: <Users className="h-4 w-4" />,
@@ -52,6 +56,7 @@ const serviceCloudRouteChildren: ServiceCloudRoute[] = [
     featureKey: SERVICE_CLOUD_FEATURE_KEYS.view,
   },
   {
+    end: true,
     label: 'Inboxes',
     path: '/home/services/inboxes',
     Icon: <Inbox className="h-4 w-4" />,
@@ -59,6 +64,7 @@ const serviceCloudRouteChildren: ServiceCloudRoute[] = [
     featureKey: SERVICE_CLOUD_FEATURE_KEYS.view,
   },
   {
+    end: true,
     label: 'Teams',
     path: '/home/services/teams',
     Icon: <Tags className="h-4 w-4" />,
@@ -66,6 +72,7 @@ const serviceCloudRouteChildren: ServiceCloudRoute[] = [
     featureKey: SERVICE_CLOUD_FEATURE_KEYS.view,
   },
   {
+    end: true,
     label: 'Reports',
     path: '/home/services/reports',
     Icon: <BarChart3 className="h-4 w-4" />,
@@ -73,6 +80,7 @@ const serviceCloudRouteChildren: ServiceCloudRoute[] = [
     featureKey: SERVICE_CLOUD_FEATURE_KEYS.view,
   },
   {
+    end: true,
     label: 'Settings',
     path: '/home/services/settings',
     Icon: <Settings className="h-4 w-4" />,
