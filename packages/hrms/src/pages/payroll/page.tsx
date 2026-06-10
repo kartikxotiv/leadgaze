@@ -1,11 +1,15 @@
 'use client';
 
-import { Plus } from 'lucide-react';
+import { type ReactNode, useState } from 'react';
 
-import { Button } from '@kit/ui/button';
-import { Card, CardDescription, CardHeader, CardTitle } from '@kit/ui/card';
+import { Plus, ShieldAlert } from 'lucide-react';
+
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { ListToolBar } from '@kit/ui/list-toolbar';
+import { PageBody, PageHeader } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
-import { Tabs, TabsList, TabsTrigger } from '@kit/ui/tabs';
+import { TableStatusMetricTab } from '@kit/ui/table-status-metric-tab';
+import { Tabs } from '@kit/ui/tabs';
 
 import { CreatePayrollRunDialog } from '../../components/payroll/create-payroll-run-dialog';
 import { EmployeeCompensationFormDialog } from '../../components/payroll/employee-compensation-form-dialog';
@@ -23,143 +27,199 @@ import { SalaryStructureFormDialog } from '../../components/payroll/salary-struc
 import { useRbac } from '../../components/rbac/rbac-context';
 import { usePayrollPage } from '../../hooks/use-payroll-page';
 
-export function PayrollPage() {
+type PayrollTab = 'compensation' | 'pay-items' | 'payslips' | 'runs' | 'setup';
+
+const payrollTabs: Array<{ label: string; value: PayrollTab }> = [
+  { label: 'Setup', value: 'setup' },
+  { label: 'Compensation', value: 'compensation' },
+  { label: 'Pay Items', value: 'pay-items' },
+  { label: 'Payroll Runs', value: 'runs' },
+  { label: 'Generated Payslips', value: 'payslips' },
+];
+
+export function PayrollPage(props: {
+  headerActions?: ReactNode;
+  workspaceName?: string;
+}) {
   const page = usePayrollPage();
   const { hasPermission, isLoading: isRbacLoading } = useRbac();
+  const [activeTab, setActiveTab] = useState<PayrollTab>('setup');
 
   const canView = hasPermission('payroll', 'view', 'own');
   const canProcess = hasPermission('payroll', 'process', 'team');
   const canEdit = hasPermission('payroll', 'edit', 'team');
   const canApprove = hasPermission('payroll', 'approve', 'team');
-
-  if (!isRbacLoading && !canView) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Payroll access is restricted</CardTitle>
-          <CardDescription>
-            Ask an administrator to grant payroll permissions for your role.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-
-  if (page.dashboardQuery.isLoading || isRbacLoading) {
-    return (
-      <section className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-32 rounded-xl" />
-          ))}
-        </div>
-        <Skeleton className="h-[440px] rounded-xl" />
-      </section>
-    );
-  }
-
-  if (page.dashboardQuery.isError) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Unable to load payroll</CardTitle>
-          <CardDescription>
-            {(page.dashboardQuery.error as Error)?.message ??
-              'Something went wrong while loading payroll.'}
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
+  const activeCount = getPayrollTabCount(activeTab, page);
 
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex justify-end">
-        {canProcess ? (
-          <Button size="sm" onClick={() => page.setIsCreateRunDialogOpen(true)}>
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Create Run
-          </Button>
+    <section className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
+      <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col overflow-hidden">
+        <PageHeader
+          title={`Payroll (${activeCount})`}
+          description={
+            props.workspaceName
+              ? `${props.workspaceName} payroll operations`
+              : 'Workspace payroll operations'
+          }
+        >
+          {props.headerActions}
+        </PageHeader>
+
+        {!isRbacLoading && canView ? (
+          <>
+            <div className="w-full min-w-0 max-w-full overflow-x-auto pb-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {payrollTabs.map((tab) => (
+                  <TableStatusMetricTab
+                    key={tab.value}
+                    id={tab.value}
+                    color={getPayrollTabColor(tab.value)}
+                    statusName={tab.label}
+                    count={getPayrollTabCount(tab.value, page)}
+                    isSelected={activeTab === tab.value}
+                    onClick={() => setActiveTab(tab.value)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {canProcess ? (
+              <div className="w-full min-w-0 max-w-full shrink-0 border-b pb-2">
+                <ListToolBar
+                  actions={[
+                    {
+                      key: 'run',
+                      label: 'Create Run',
+                      icon: Plus,
+                      onClick: () => page.setIsCreateRunDialogOpen(true),
+                      show: true,
+                      buttonVariant: 'default',
+                    },
+                  ]}
+                />
+              </div>
+            ) : null}
+          </>
         ) : null}
       </div>
 
-      <PayrollSummaryCards items={page.metricsItems} />
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden pt-3">
+        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-4 overflow-y-auto pb-6">
+          {!isRbacLoading && !canView ? (
+            <CardWidgetContainer
+              title="Payroll access is restricted"
+              desc="Ask an administrator to grant payroll permissions for your role."
+              contentClassName="hidden"
+              icon2={<ShieldAlert className="text-leadgaze-muted h-5 w-5" />}
+            >
+              <div />
+            </CardWidgetContainer>
+          ) : page.dashboardQuery.isLoading || isRbacLoading ? (
+            <>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <Skeleton key={index} className="h-32 rounded-xl" />
+                ))}
+              </div>
+              <Skeleton className="h-[440px] rounded-xl" />
+            </>
+          ) : page.dashboardQuery.isError ? (
+            <CardWidgetContainer
+              title="Unable to load payroll"
+              desc={
+                (page.dashboardQuery.error as Error)?.message ??
+                'Something went wrong while loading payroll.'
+              }
+              contentClassName="hidden"
+            >
+              <div />
+            </CardWidgetContainer>
+          ) : (
+            <>
+              <PayrollSummaryCards items={page.metricsItems} />
 
-      <Tabs defaultValue="setup">
-        <TabsList className="h-auto flex-wrap justify-start">
-          <TabsTrigger value="setup">Setup</TabsTrigger>
-          <TabsTrigger value="compensation">Compensation</TabsTrigger>
-          <TabsTrigger value="pay-items">Pay Items</TabsTrigger>
-          <TabsTrigger value="runs">Payroll Runs</TabsTrigger>
-          <TabsTrigger value="payslips">Generated Payslips</TabsTrigger>
-        </TabsList>
+              <Tabs
+                value={activeTab}
+                onValueChange={(value) => setActiveTab(value as PayrollTab)}
+              >
+                <PayrollSetupTab
+                  salaryComponents={page.componentsQuery.data?.data ?? []}
+                  salaryStructures={page.dashboardData?.salaryStructures ?? []}
+                  onCreateComponent={() => {
+                    page.setEditingComponent(null);
+                    page.setIsCreateComponentDialogOpen(true);
+                  }}
+                  onCreateStructure={() => {
+                    page.setEditingStructure(null);
+                    page.setIsCreateStructureDialogOpen(true);
+                  }}
+                  onConfigureStructure={page.handleOpenConfig}
+                  onEditComponent={(component) => {
+                    page.setEditingComponent(component);
+                    page.setIsCreateComponentDialogOpen(true);
+                  }}
+                  onDeleteComponent={(id) =>
+                    page.deleteComponentMutation.mutate(id)
+                  }
+                  onEditStructure={(structure) => {
+                    page.setEditingStructure(structure);
+                    page.setIsCreateStructureDialogOpen(true);
+                  }}
+                  onDeleteStructure={(id) =>
+                    page.deleteStructureMutation.mutate(id)
+                  }
+                  canEdit={canEdit}
+                />
 
-        <PayrollSetupTab
-          salaryComponents={page.componentsQuery.data?.data ?? []}
-          salaryStructures={page.dashboardData?.salaryStructures ?? []}
-          onCreateComponent={() => {
-            page.setEditingComponent(null);
-            page.setIsCreateComponentDialogOpen(true);
-          }}
-          onCreateStructure={() => {
-            page.setEditingStructure(null);
-            page.setIsCreateStructureDialogOpen(true);
-          }}
-          onConfigureStructure={page.handleOpenConfig}
-          onEditComponent={(component) => {
-            page.setEditingComponent(component);
-            page.setIsCreateComponentDialogOpen(true);
-          }}
-          onDeleteComponent={(id) => page.deleteComponentMutation.mutate(id)}
-          onEditStructure={(structure) => {
-            page.setEditingStructure(structure);
-            page.setIsCreateStructureDialogOpen(true);
-          }}
-          onDeleteStructure={(id) => page.deleteStructureMutation.mutate(id)}
-          canEdit={canEdit}
-        />
+                <PayrollCompensationTab
+                  employeeAssignments={
+                    page.dashboardData?.employeeAssignments ?? []
+                  }
+                  onCreateAssignment={() => {
+                    page.setEditingAssignment(null);
+                    page.setIsCreateCompensationDialogOpen(true);
+                  }}
+                  onEditAssignment={(assignment) => {
+                    page.setEditingAssignment(assignment);
+                    page.setIsCreateCompensationDialogOpen(true);
+                  }}
+                  onDeleteAssignment={(id) =>
+                    page.deleteAssignmentMutation.mutate(id)
+                  }
+                  canEdit={canEdit}
+                />
 
-        <PayrollCompensationTab
-          employeeAssignments={page.dashboardData?.employeeAssignments ?? []}
-          onCreateAssignment={() => {
-            page.setEditingAssignment(null);
-            page.setIsCreateCompensationDialogOpen(true);
-          }}
-          onEditAssignment={(assignment) => {
-            page.setEditingAssignment(assignment);
-            page.setIsCreateCompensationDialogOpen(true);
-          }}
-          onDeleteAssignment={(id) => page.deleteAssignmentMutation.mutate(id)}
-          canEdit={canEdit}
-        />
+                <PayrollPayItemsTab
+                  payItems={page.dashboardData?.payItems ?? []}
+                  onCreateItem={() => {
+                    page.setEditingPayItem(null);
+                    page.setIsPayItemDialogOpen(true);
+                  }}
+                  onEditItem={(item) => {
+                    page.setEditingPayItem(item);
+                    page.setIsPayItemDialogOpen(true);
+                  }}
+                  onDeleteItem={(id) => page.deletePayItemMutation.mutate(id)}
+                  canEdit={canEdit}
+                />
 
-        <PayrollPayItemsTab
-          payItems={page.dashboardData?.payItems ?? []}
-          onCreateItem={() => {
-            page.setEditingPayItem(null);
-            page.setIsPayItemDialogOpen(true);
-          }}
-          onEditItem={(item) => {
-            page.setEditingPayItem(item);
-            page.setIsPayItemDialogOpen(true);
-          }}
-          onDeleteItem={(id) => page.deletePayItemMutation.mutate(id)}
-          canEdit={canEdit}
-        />
+                <PayrollRunsTab
+                  payrollRuns={page.dashboardData?.payrollRuns ?? []}
+                  onApproveRun={page.handleApproveRun}
+                  canApprove={canApprove}
+                />
 
-        <PayrollRunsTab
-          payrollRuns={page.dashboardData?.payrollRuns ?? []}
-          onApproveRun={page.handleApproveRun}
-          canApprove={canApprove}
-        />
-
-        <PayrollPayslipsTab
-          onViewDetails={(payslip) => {
-            page.setSelectedPayslip(payslip);
-            page.setIsPayslipDetailsDialogOpen(true);
-          }}
-        />
-      </Tabs>
+                <PayrollPayslipsTab
+                  onViewDetails={(payslip) => {
+                    page.setSelectedPayslip(payslip);
+                    page.setIsPayslipDetailsDialogOpen(true);
+                  }}
+                />
+              </Tabs>
+            </>
+          )}
+        </div>
+      </PageBody>
 
       <SalaryStructureFormDialog
         open={page.isCreateStructureDialogOpen}
@@ -203,4 +263,42 @@ export function PayrollPage() {
       />
     </section>
   );
+}
+
+function getPayrollTabCount(
+  tab: PayrollTab,
+  page: ReturnType<typeof usePayrollPage>,
+) {
+  if (tab === 'setup') {
+    return (
+      (page.componentsQuery.data?.data.length ?? 0) +
+      (page.dashboardData?.salaryStructures.length ?? 0)
+    );
+  }
+
+  if (tab === 'compensation') {
+    return page.dashboardData?.employeeAssignments.length ?? 0;
+  }
+
+  if (tab === 'pay-items') {
+    return page.dashboardData?.payItems.length ?? 0;
+  }
+
+  if (tab === 'runs') {
+    return page.dashboardData?.payrollRuns.length ?? 0;
+  }
+
+  return page.dashboardData?.payslipSnapshots.length ?? 0;
+}
+
+function getPayrollTabColor(tab: PayrollTab) {
+  const colors = {
+    compensation: '#22c55e',
+    'pay-items': '#f59e0b',
+    payslips: '#8b5cf6',
+    runs: '#6366f1',
+    setup: '#4eacff',
+  } as const;
+
+  return colors[tab];
 }

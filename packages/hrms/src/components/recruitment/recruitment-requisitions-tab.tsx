@@ -3,13 +3,7 @@
 import { Pencil, Trash2 } from 'lucide-react';
 
 import { Button } from '@kit/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kit/ui/card';
+import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import {
   Table,
   TableBody,
@@ -30,29 +24,29 @@ export function RecruitmentRequisitionsTab(props: {
   requisitions: RecruitmentRequisitionSummary[];
 }) {
   return (
-    <Card className="shadow-sm">
-      <CardHeader>
-        <CardTitle>Job Requisitions</CardTitle>
-        <CardDescription>
-          HR and admins can raise, assign, prioritize, and track open demand.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-0">
+    <div className="grid gap-3">
+      <RecruitmentTableHeader
+        title="Job Requisitions"
+        description="HR and admins can raise, assign, prioritize, and track open demand."
+      />
+      <CustomTableContainer>
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
             <TableRow>
               <TableHead>Requisition</TableHead>
               <TableHead>Department</TableHead>
               <TableHead>Owner</TableHead>
               <TableHead>Pipeline</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="bg-card sticky right-0 px-4 text-right">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {props.requisitions.length ? (
               props.requisitions.map((requisition) => (
-                <TableRow key={requisition.id}>
+                <TableRow key={requisition.id} className="hover:bg-muted/50">
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="font-medium">{requisition.title}</span>
@@ -75,7 +69,7 @@ export function RecruitmentRequisitionsTab(props: {
                       label={formatLabel(requisition.status)}
                     />
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="bg-card sticky right-0 px-4 text-right">
                     {props.canEditRequisition ? (
                       <div className="flex justify-end gap-1">
                         <Button
@@ -107,7 +101,16 @@ export function RecruitmentRequisitionsTab(props: {
             )}
           </TableBody>
         </Table>
-      </CardContent>
-    </Card>
+      </CustomTableContainer>
+    </div>
+  );
+}
+
+function RecruitmentTableHeader(props: { description: string; title: string }) {
+  return (
+    <div className="px-1">
+      <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
+      <p className="text-muted-foreground mt-1 text-sm">{props.description}</p>
+    </div>
   );
 }

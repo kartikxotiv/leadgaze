@@ -1,6 +1,7 @@
 import { FilterX, RefreshCcw } from 'lucide-react';
 
 import { Button } from '@kit/ui/button';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { Input } from '@kit/ui/input';
 import {
   Select,
@@ -17,7 +18,11 @@ export function ReportsFilterCard(props: { page: ReportsPageController }) {
   const { page } = props;
 
   return (
-    <div className="bg-card grid gap-4 overflow-hidden rounded-lg border shadow-sm">
+    <CardWidgetContainer
+      title="Report Filters"
+      desc="Adjust date, department, shift, and employee scope before exporting."
+      contentClassName="grid gap-4 p-4"
+    >
       <div className="grid gap-4 overflow-hidden">
         <div className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-[repeat(5,minmax(0,1fr))]">
           <div className="min-w-0 space-y-2">
@@ -140,6 +145,6 @@ export function ReportsFilterCard(props: { page: ReportsPageController }) {
           ) : null}
         </div>
       </div>
-    </div>
+    </CardWidgetContainer>
   );
 }

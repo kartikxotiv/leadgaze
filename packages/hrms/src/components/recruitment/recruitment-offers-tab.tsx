@@ -3,13 +3,7 @@
 import { Pencil, Trash2 } from 'lucide-react';
 
 import { Button } from '@kit/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kit/ui/card';
+import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import {
   Table,
   TableBody,
@@ -33,30 +27,29 @@ export function RecruitmentOffersTab(props: {
   onEdit: (offer: RecruitmentOfferSummary) => void;
 }) {
   return (
-    <Card className="shadow-sm">
-      <CardHeader>
-        <CardTitle>Offers</CardTitle>
-        <CardDescription>
-          Manage offer preparation, approvals, release, response, and joining
-          plans.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-0">
+    <div className="grid gap-3">
+      <RecruitmentTableHeader
+        title="Offers"
+        description="Manage offer preparation, approvals, release, response, and joining plans."
+      />
+      <CustomTableContainer>
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
             <TableRow>
               <TableHead>Candidate</TableHead>
               <TableHead>Designation</TableHead>
               <TableHead>Compensation</TableHead>
               <TableHead>Joining</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="bg-card sticky right-0 px-4 text-right">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {props.offers.length ? (
               props.offers.map((offer) => (
-                <TableRow key={offer.id}>
+                <TableRow key={offer.id} className="hover:bg-muted/50">
                   <TableCell>{offer.candidate_name}</TableCell>
                   <TableCell>{offer.offered_designation}</TableCell>
                   <TableCell>
@@ -66,7 +59,7 @@ export function RecruitmentOffersTab(props: {
                   <TableCell>
                     <RecruitmentStatusBadge label={formatLabel(offer.status)} />
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="bg-card sticky right-0 px-4 text-right">
                     <div className="flex justify-end gap-1">
                       {props.canManageOffers ? (
                         <>
@@ -111,7 +104,16 @@ export function RecruitmentOffersTab(props: {
             )}
           </TableBody>
         </Table>
-      </CardContent>
-    </Card>
+      </CustomTableContainer>
+    </div>
+  );
+}
+
+function RecruitmentTableHeader(props: { description: string; title: string }) {
+  return (
+    <div className="px-1">
+      <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
+      <p className="text-muted-foreground mt-1 text-sm">{props.description}</p>
+    </div>
   );
 }

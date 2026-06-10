@@ -1,7 +1,7 @@
 'use client';
 
 import { RecruitmentPage } from '@kit/hrms';
-import { PageBody, PageHeader, PageHeaderActions } from '@kit/ui/page';
+import { PageHeaderActions } from '@kit/ui/page';
 
 import { ModuleSwitcher } from '~/home/_components/module-switcher';
 import { WorkspaceCheckWrapper } from '~/home/_components/workspace-check-wrapper';
@@ -12,21 +12,14 @@ export default function HrmsRecruitmentPage() {
 
   return (
     <WorkspaceCheckWrapper>
-      <PageHeader
-        title="Recruitment"
-        description={
-          currentWorkspace
-            ? `${currentWorkspace.name} hiring pipeline`
-            : 'Hiring pipeline'
+      <RecruitmentPage
+        headerActions={
+          <PageHeaderActions>
+            <ModuleSwitcher value="hrms" />
+          </PageHeaderActions>
         }
-      >
-        <PageHeaderActions>
-          <ModuleSwitcher value="hrms" />
-        </PageHeaderActions>
-      </PageHeader>
-      <PageBody className="flex min-h-0 flex-1 flex-col">
-        <RecruitmentPage />
-      </PageBody>
+        workspaceName={currentWorkspace?.name}
+      />
     </WorkspaceCheckWrapper>
   );
 }

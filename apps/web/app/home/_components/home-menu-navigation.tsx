@@ -573,11 +573,6 @@ export function HomeMenuNavigation() {
               path: commonPaths.workspaceSettings,
               Icon: <Settings className="h-4 w-4" />,
             },
-            {
-              label: 'Roles',
-              path: commonPaths.roles,
-              Icon: <ShieldCheck className="h-4 w-4" />,
-            },
             ...scopedTeamItems.map((item) => {
               const IconComponent = item.Icon;
               return {
