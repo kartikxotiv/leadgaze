@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation';
+
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { SiteFooter } from '~/(marketing)/_components/site-footer';
@@ -21,3 +23,7 @@ async function SiteLayout(props: React.PropsWithChildren) {
 }
 
 export default withI18n(SiteLayout);
+
+// export default function SalesPage() {
+//   redirect('/auth/sign-in');
+// }
