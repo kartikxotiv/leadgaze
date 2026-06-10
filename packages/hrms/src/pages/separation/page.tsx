@@ -4,14 +4,27 @@ import React, { type ReactNode, useMemo, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { Plus } from 'lucide-react';
+import {
+  CheckCircle2,
+  CircleAlert,
+  Clock3,
+  type LucideIcon,
+  Plus,
+  TrendingDown,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@kit/ui/card';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { TableStatusMetricTab } from '@kit/ui/table-status-metric-tab';
 
-import { SummaryMetricCard } from '../../components/dashboard/hrms-module-primitives';
 import { useRbac } from '../../components/rbac/rbac-context';
 import type { ConfirmDialogProps } from '../../components/separation/ConfirmRemarkDialog';
 import { SeparationDialogs } from '../../components/separation/SeparationDialogs';
@@ -339,8 +352,8 @@ export function SeparationPage(props: {
   const activeCount = getSeparationTabCount(selectedTabKey, tableData);
 
   return (
-    <section className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col overflow-hidden">
+    <section className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
+      <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col overflow-hidden">
         <PageHeader
           title={`Separation (${activeCount})`}
           description={
@@ -352,7 +365,7 @@ export function SeparationPage(props: {
           {props.headerActions}
         </PageHeader>
 
-        <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2">
+        <div className="w-full min-w-0 max-w-full overflow-x-auto pb-2">
           <div className="flex flex-wrap items-center gap-2">
             {filteredTabs.map((tab) => (
               <TableStatusMetricTab
@@ -369,7 +382,7 @@ export function SeparationPage(props: {
         </div>
 
         {activeCreateActionTab ? (
-          <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+          <div className="w-full min-w-0 max-w-full shrink-0 border-b pb-2">
             <ListToolBar
               actions={[
                 {
@@ -393,11 +406,11 @@ export function SeparationPage(props: {
         ) : null}
       </div>
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
-        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col gap-4 overflow-y-auto pb-6">
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden pt-3">
+        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-4 overflow-y-auto pb-6">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {separationCards.map((card) => (
-              <SummaryMetricCard
+              <SeparationMetricCard
                 key={card.title}
                 title={card.title}
                 value={card.value}
@@ -447,6 +460,65 @@ export function SeparationPage(props: {
         fetchResignationIdForEmployee={fetchResignationIdForEmployee}
       />
     </section>
+  );
+}
+
+type SeparationMetricAccent = 'sky' | 'emerald' | 'amber' | 'rose';
+
+const separationMetricPresentation = {
+  amber: {
+    icon: CircleAlert,
+    iconClassName: 'bg-activity-4',
+  },
+  emerald: {
+    icon: CheckCircle2,
+    iconClassName: 'bg-activity-5',
+  },
+  rose: {
+    icon: TrendingDown,
+    iconClassName: 'bg-destructive',
+  },
+  sky: {
+    icon: Clock3,
+    iconClassName: 'bg-primary',
+  },
+} satisfies Record<
+  SeparationMetricAccent,
+  { icon: LucideIcon; iconClassName: string }
+>;
+
+function SeparationMetricCard(props: {
+  accent: SeparationMetricAccent;
+  hint: string;
+  title: string;
+  value: string;
+}) {
+  const presentation = separationMetricPresentation[props.accent];
+  const Icon = presentation.icon;
+
+  return (
+    <Card className="flex h-32 flex-col justify-between xl:h-28 2xl:h-32">
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+        <div className="space-y-1">
+          <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
+            {props.title}
+          </CardTitle>
+          <div className="primary-heading-number text-leadgaze-dark dark:text-zinc-100">
+            {props.value}
+          </div>
+        </div>
+        <div
+          className={`flex h-8 w-8 items-center justify-center rounded ${presentation.iconClassName}`}
+        >
+          <Icon className="h-4 w-4 text-white" />
+        </div>
+      </CardHeader>
+      <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
+        <CardDescription className="secondary-text-small text-leadgaze-success">
+          {props.hint}
+        </CardDescription>
+      </CardContent>
+    </Card>
   );
 }
 

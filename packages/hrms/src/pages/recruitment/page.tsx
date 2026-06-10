@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 
 import { FileCheck2, MessageSquarePlus, Plus } from 'lucide-react';
 
-import { Card, CardContent } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { TableStatusMetricTab } from '@kit/ui/table-status-metric-tab';
@@ -54,8 +54,8 @@ export function RecruitmentPage(props: {
   };
 
   return (
-    <section className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col overflow-hidden">
+    <section className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
+      <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col overflow-hidden">
         <PageHeader
           title={`Recruitment (${activeCount})`}
           description={
@@ -67,7 +67,7 @@ export function RecruitmentPage(props: {
           {props.headerActions}
         </PageHeader>
 
-        <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2">
+        <div className="w-full min-w-0 max-w-full overflow-x-auto pb-2">
           <div className="flex flex-wrap items-center gap-2">
             {recruitmentTabDefinitions.map((tab) => (
               <TableStatusMetricTab
@@ -83,7 +83,7 @@ export function RecruitmentPage(props: {
           </div>
         </div>
 
-        <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+        <div className="w-full min-w-0 max-w-full shrink-0 border-b pb-2">
           <ListToolBar
             actions={[
               {
@@ -123,8 +123,8 @@ export function RecruitmentPage(props: {
         </div>
       </div>
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
-        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col gap-4 overflow-y-auto pb-6">
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden pt-3">
+        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-4 overflow-y-auto pb-6">
           <RecruitmentOverview
             candidateStageCards={controller.candidateStageCards}
             metricsItems={controller.metricsItems}
@@ -248,11 +248,11 @@ export function RecruitmentPage(props: {
           </Tabs>
 
           {controller.dashboardQuery.isLoading ? (
-            <Card>
-              <CardContent className="text-muted-foreground p-6 text-sm">
+            <CardWidgetContainer title="Loading recruitment data">
+              <div className="text-muted-foreground p-6 text-sm">
                 Loading recruitment data...
-              </CardContent>
-            </Card>
+              </div>
+            </CardWidgetContainer>
           ) : null}
         </div>
       </PageBody>

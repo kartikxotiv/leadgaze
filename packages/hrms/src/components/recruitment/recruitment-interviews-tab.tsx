@@ -3,13 +3,7 @@
 import { Pencil, Trash2 } from 'lucide-react';
 
 import { Button } from '@kit/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kit/ui/card';
+import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import {
   Table,
   TableBody,
@@ -33,30 +27,29 @@ export function RecruitmentInterviewsTab(props: {
   onEdit: (interview: RecruitmentInterviewSummary) => void;
 }) {
   return (
-    <Card className="shadow-sm">
-      <CardHeader>
-        <CardTitle>Interviews</CardTitle>
-        <CardDescription>
-          Schedule interview rounds, assign interviewers, and monitor pending
-          feedback.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-0">
+    <div className="grid gap-3">
+      <RecruitmentTableHeader
+        title="Interviews"
+        description="Schedule interview rounds, assign interviewers, and monitor pending feedback."
+      />
+      <CustomTableContainer>
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
             <TableRow>
               <TableHead>Interview</TableHead>
               <TableHead>Candidate</TableHead>
               <TableHead>Schedule</TableHead>
               <TableHead>Interviewer</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="bg-card sticky right-0 px-4 text-right">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {props.interviews.length ? (
               props.interviews.map((interview) => (
-                <TableRow key={interview.id}>
+                <TableRow key={interview.id} className="hover:bg-muted/50">
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="font-medium">{interview.title}</span>
@@ -78,7 +71,7 @@ export function RecruitmentInterviewsTab(props: {
                       label={formatLabel(interview.status)}
                     />
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="bg-card sticky right-0 px-4 text-right">
                     <div className="flex justify-end gap-1">
                       {props.canScheduleInterviews ? (
                         <>
@@ -121,7 +114,16 @@ export function RecruitmentInterviewsTab(props: {
             )}
           </TableBody>
         </Table>
-      </CardContent>
-    </Card>
+      </CustomTableContainer>
+    </div>
+  );
+}
+
+function RecruitmentTableHeader(props: { description: string; title: string }) {
+  return (
+    <div className="px-1">
+      <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
+      <p className="text-muted-foreground mt-1 text-sm">{props.description}</p>
+    </div>
   );
 }

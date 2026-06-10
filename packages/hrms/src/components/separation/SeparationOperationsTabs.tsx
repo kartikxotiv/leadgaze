@@ -66,22 +66,28 @@ export function SeparationOperationsTabs({
   onDeleteResignation,
 }: SeparationOperationsTabsProps) {
   return (
-    <Tabs value={selectedTabKey} onValueChange={onTabChange}>
+    <Tabs
+      value={selectedTabKey}
+      onValueChange={onTabChange}
+      className="min-h-0 w-full"
+    >
       {tabs.map((tab) => (
         <TabsContent key={tab.key} value={tab.key} className="mt-0">
           <CustomTableContainer>
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                 <TableRow>
                   {tab.columns.map((column) => (
                     <TableHead key={column}>{column}</TableHead>
                   ))}
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="bg-card sticky right-0 px-4 text-right">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {getSeparationTableRows(tab.key, tableData).map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow key={row.id} className="hover:bg-muted/50">
                     {row.cells.map((cell, index) => (
                       <TableCell key={index}>
                         {index === row.cells.length - 1 ? (
@@ -91,7 +97,7 @@ export function SeparationOperationsTabs({
                         )}
                       </TableCell>
                     ))}
-                    <TableCell className="text-right">
+                    <TableCell className="bg-card sticky right-0 px-4 text-right">
                       {tab.key === 'exit_checklist' ? (
                         <span className="text-muted-foreground">-</span>
                       ) : (
