@@ -1,37 +1,25 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-
-import Image from 'next/image';
-
+import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Briefcase,
   Building2,
-  ChevronLeft,
-  ChevronRight,
-  Download,
   Edit,
-  FileCode,
   FileImage,
   FileText,
   FileType,
   FileUp,
-  Filter,
-  Loader2,
   File as LucideFile,
+  Loader2,
   MoreHorizontal,
-  Plus,
-  Search,
   Trash2,
   User,
   Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import {
   Dialog,
@@ -56,7 +44,6 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@kit/ui/pagination';
-import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@kit/ui/radio-group';
 import {
   Select,
@@ -67,19 +54,16 @@ import {
 } from '@kit/ui/select';
 import { Skeleton } from '@kit/ui/skeleton';
 import {
+  Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { ListToolBar } from '@kit/ui/list-toolbar';
+import CustomTableContainer from '@kit/ui/custom-table-container';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
@@ -94,18 +78,60 @@ import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
 
+function DocumentPageSkeleton() {
+  return (
+    <div className="flex h-[100dvh] flex-col overflow-hidden">
+      <div className="bg-sidebar flex shrink-0 flex-col gap-2">
+        <div className="bg-sidebar flex items-center justify-between px-6 py-4">
+          <div className="space-y-1">
+            <Skeleton className="h-6 w-36" />
+            <Skeleton className="h-4 w-52" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+          </div>
+        </div>
+      </div>
+      <div className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
+        <div className="flex min-h-0 flex-1 flex-col px-4 lg:px-8">
+          <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
+            <Table className="w-max min-w-full border-separate border-spacing-0 text-sm">
+              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                <TableRow>
+                  <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Size</TableHead>
+                  <TableHead>Uploaded By</TableHead>
+                  <TableHead>Entity</TableHead>
+                  <TableHead className="sticky right-0 text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...Array(12)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="h-[52px] px-4 py-2" colSpan={7}>
+                      <Skeleton className="h-7 w-full" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DocumentPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const [typeFilter, setTypeFilter] = useState('all');
   const [entityTypeFilter, setEntityTypeFilter] = useState('all');
-  const [filterView, setFilterView] = useState<'main' | 'type' | 'entity'>(
-    'main',
-  );
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
@@ -351,477 +377,109 @@ export default function DocumentPage() {
     return 'Document';
   };
 
+  const filterGroups = useMemo(() => {
+    return [
+      {
+        key: 'type',
+        label: 'File Type',
+        selectedValue: typeFilter === 'all' ? '' : typeFilter,
+        selectedLabel: typeFilter === 'all'
+          ? 'All types'
+          : typeFilter.toUpperCase(),
+        options: [
+          { value: 'pdf', label: 'PDF' },
+          { value: 'image', label: 'Images' },
+          { value: 'sheet', label: 'Spreadsheets' },
+          { value: 'document', label: 'Documents' },
+        ],
+        onSelect: (val: string) => setTypeFilter(val || 'all'),
+      },
+      {
+        key: 'entity',
+        label: 'Entity',
+        selectedValue: entityTypeFilter === 'all' ? '' : entityTypeFilter,
+        selectedLabel: entityTypeFilter === 'all'
+          ? 'All entities'
+          : entityTypeFilter.charAt(0).toUpperCase() + entityTypeFilter.slice(1) + 's',
+        options: [
+          { value: 'lead', label: 'Leads' },
+          { value: 'contact', label: 'Contacts' },
+          { value: 'account', label: 'Accounts' },
+          { value: 'opportunity', label: 'Opportunities' },
+        ],
+        onSelect: (val: string) => setEntityTypeFilter(val || 'all'),
+      },
+    ];
+  }, [typeFilter, entityTypeFilter]);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (typeFilter !== 'all') count++;
+    if (entityTypeFilter !== 'all') count++;
+    return count;
+  }, [typeFilter, entityTypeFilter]);
+
+  const handleClearFilters = () => {
+    setTypeFilter('all');
+    setEntityTypeFilter('all');
+  };
+
   if (!workspace) {
-    return null;
+    return <DocumentPageSkeleton />;
   }
 
   return (
     <>
-      <div className="flex h-[100dvh] flex-col">
-        <div className="bg-sidebar flex shrink-0 flex-col gap-2">
-          <PageHeader
-            className='bg-sidebar'
-            title={`Documents (${documents.length})`}
-            description="Manage and organize your files and documents"
-          >
-            <div className="flex items-center gap-2">
-              <div className="flex items-center">
-                <div
-                  className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${isSearchOpen ? 'w-64 lg:w-72' : 'w-9'
-                    }`}
-                >
-                  {isSearchOpen ? (
-                    <div className="relative w-full">
-                      <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        ref={searchInputRef}
-                        placeholder="Search by document name"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-8 pl-10"
-                        onBlur={() => {
-                          if (!searchTerm) setIsSearchOpen(false);
-                        }}
-                        autoFocus
-                      />
-                    </div>
-                  ) : (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          className="border-input hover:bg-accent -mr-6 flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white text-gray-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
-                          onClick={() => setIsSearchOpen(true)}
-                        >
-                          <Search className="h-4 w-4 text-gray-500 dark:text-white" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p>Search</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                </div>
-              </div>
-              <Popover
-                open={isFilterOpen}
-                onOpenChange={(open) => {
-                  setIsFilterOpen(open);
-                  if (!open) setFilterView('main');
-                }}
-              >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <PopoverTrigger asChild>
-                      <button
-                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white dark:border-zinc-700 dark:bg-zinc-900 ${isFilterOpen ? 'bg-accent' : ''
-                          }`}
-                      >
-                        <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
-                        {(typeFilter !== 'all' ||
-                          entityTypeFilter !== 'all') && (
-                            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
-                              {(typeFilter !== 'all' ? 1 : 0) +
-                                (entityTypeFilter !== 'all' ? 1 : 0)}
-                            </span>
-                          )}
-                      </button>
-                    </PopoverTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p>Filter</p>
-                  </TooltipContent>
-                </Tooltip>
-                <PopoverContent className="w-80 p-0" align="end">
-                  <div className="flex items-center justify-between border-b px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {filterView !== 'main' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={() => setFilterView('main')}
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <span className="text-sm font-semibold">
-                        {filterView === 'main'
-                          ? 'Filters'
-                          : filterView === 'type'
-                            ? 'Filter by Type'
-                            : 'Filter by Entity'}
-                      </span>
-                    </div>
-                    <button
-                      className="text-muted-foreground hover:text-foreground text-xs underline"
-                      onClick={() => {
-                        setTypeFilter('all');
-                        setEntityTypeFilter('all');
-                      }}
-                    >
-                      Clear all
-                    </button>
-                  </div>
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+        <PageHeader
+          title={`Documents (${documents.length})`}
+          description="Manage and organize your files and documents"
+        />
+      </div>
 
-                  <div className="p-2">
-                    {filterView === 'main' && (
-                      <div className="flex flex-col gap-1">
-                        <button
-                          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
-                          onClick={() => setFilterView('type')}
-                        >
-                          <div className="flex flex-col gap-1">
-                            <span>File Type</span>
-                            <span className="text-muted-foreground text-xs font-normal">
-                              {typeFilter === 'all'
-                                ? 'All types'
-                                : typeFilter.toUpperCase()}
-                            </span>
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-gray-400" />
-                        </button>
-                        <button
-                          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
-                          onClick={() => setFilterView('entity')}
-                        >
-                          <div className="flex flex-col gap-1">
-                            <span>Entity</span>
-                            <span className="text-muted-foreground text-xs font-normal">
-                              {entityTypeFilter === 'all'
-                                ? 'All entities'
-                                : entityTypeFilter.charAt(0).toUpperCase() +
-                                entityTypeFilter.slice(1) +
-                                's'}
-                            </span>
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-gray-400" />
-                        </button>
-                      </div>
-                    )}
+      {/* Full-width search / filter / actions toolbar */}
+      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+        <ListToolBar
+          showSearch
+          searchPlaceholder="Search documents..."
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          showFilter
+          filterLabel="Show Filters"
+          filterGroups={filterGroups}
+          activeFilterCount={activeFilterCount}
+          onClearFilters={handleClearFilters}
+          actions={[
+            {
+              key: 'add',
+              label: 'Upload File',
+              icon: FileUp,
+              onClick: () => {
+                setFile(null);
+                setEntityType('lead');
+                setEntityId('');
+                setIsUploadDialogOpen(true);
+              },
+              show: true,
+              buttonVariant: 'default',
+            },
+          ]}
+          columnVisibilitySlot={
+            <ColumnVisibilitySelector
+              columns={documentColumns}
+              visibility={visibility}
+              onToggle={toggleVisibility}
+              onReset={reset}
+            />
+          }
+        />
+      </div>
 
-                    {filterView === 'type' && (
-                      <div className="flex flex-col gap-1 p-1">
-                        {[
-                          { id: 'all', label: 'All Types' },
-                          { id: 'pdf', label: 'PDF' },
-                          { id: 'image', label: 'Images' },
-                          { id: 'sheet', label: 'Spreadsheets' },
-                          { id: 'document', label: 'Documents' },
-                        ].map((t) => {
-                          const isChecked = typeFilter === t.id;
-                          return (
-                            <label
-                              key={t.id}
-                              className={`group hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-all ${isChecked ? 'bg-muted/40' : ''
-                                }`}
-                            >
-                              <input
-                                type="radio"
-                                name="type-filter"
-                                className="sr-only"
-                                checked={isChecked}
-                                onChange={() => setTypeFilter(t.id)}
-                              />
-                              <div
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${isChecked
-                                    ? 'border-[#4eacff] bg-[#4eacff]'
-                                    : 'border-gray-300 group-hover:border-gray-400'
-                                  }`}
-                              >
-                                {isChecked && (
-                                  <div className="animate-in fade-in zoom-in h-1.5 w-1.5 rounded-full bg-white duration-200" />
-                                )}
-                              </div>
-                              <span
-                                className={`truncate font-medium transition-colors ${isChecked
-                                    ? 'text-[#4eacff]'
-                                    : 'text-foreground'
-                                  }`}
-                              >
-                                {t.label}
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {filterView === 'entity' && (
-                      <div className="flex flex-col gap-1 p-1">
-                        {[
-                          { id: 'all', label: 'All Entities' },
-                          { id: 'lead', label: 'Leads' },
-                          { id: 'contact', label: 'Contacts' },
-                          { id: 'account', label: 'Accounts' },
-                          { id: 'opportunity', label: 'Opportunities' },
-                        ].map((e) => {
-                          const isChecked = entityTypeFilter === e.id;
-                          return (
-                            <label
-                              key={e.id}
-                              className={`group hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-all ${isChecked ? 'bg-muted/40' : ''
-                                }`}
-                            >
-                              <input
-                                type="radio"
-                                name="entity-filter"
-                                className="sr-only"
-                                checked={isChecked}
-                                onChange={() => setEntityTypeFilter(e.id)}
-                              />
-                              <div
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${isChecked
-                                    ? 'border-[#4eacff] bg-[#4eacff]'
-                                    : 'border-gray-300 group-hover:border-gray-400'
-                                  }`}
-                              >
-                                {isChecked && (
-                                  <div className="animate-in fade-in zoom-in h-1.5 w-1.5 rounded-full bg-white duration-200" />
-                                )}
-                              </div>
-                              <span
-                                className={`truncate font-medium transition-colors ${isChecked
-                                    ? 'text-[#4eacff]'
-                                    : 'text-foreground'
-                                  }`}
-                              >
-                                {e.label}
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-              {/* <Button
-                className="h-9 gap-2"
-                onClick={() => {
-                  setFile(null);
-                  setEntityType('lead');
-                  setEntityId('');
-                  setIsUploadDialogOpen(true);
-                }}
-              >
-                <Plus className="h-4 w-4" />
-                
-              </Button> */}
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="-mr-2 h-8 w-8 bg-white p-0 text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
-                    onClick={() => {
-                      setFile(null);
-                      setEntityType('lead');
-                      setEntityId('');
-                      setIsUploadDialogOpen(true);
-                    }}
-                  >
-                    <Image
-                      src="/images/upload-file.png"
-                      alt="Upload"
-                      width={16}
-                      height={16}
-                      className="h-4.5 w-4.5 dark:invert"
-                    />
-                  </Button>
-                </TooltipTrigger>
-
-                <TooltipContent side="bottom">
-                  <p>Upload File</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <div />
-
-              {/* <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" /> */}
-
-              <ColumnVisibilitySelector
-                columns={documentColumns}
-                visibility={visibility}
-                onToggle={toggleVisibility}
-                onReset={reset}
-              />
-            </div>
-          </PageHeader>
-        </div>
-        <PageBody className="bg-sidebar sticky flex min-h-0 flex-1 shrink-0 flex-col overflow-hidden pt-6 pb-6">
-          <div className="flex min-h-0 flex-1 flex-col space-y-6">
-            {/* Documents List Table */}
-            <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
-              <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-                <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
-                  <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
-                    <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
-                      <TableRow>
-                        {isVisible('sno') && (
-                          <TableHead className="w-12 whitespace-nowrap">
-                            S. No.
-                          </TableHead>
-                        )}
-                        {isVisible('name') && <TableHead>Name</TableHead>}
-                        {isVisible('type') && <TableHead>Type</TableHead>}
-                        {isVisible('size') && <TableHead>Size</TableHead>}
-                        {isVisible('uploader') && (
-                          <TableHead>Uploaded By</TableHead>
-                        )}
-                        {isVisible('entity') && <TableHead>Entity</TableHead>}
-                        {isVisible('last_modified') && (
-                          <TableHead>Last Modified At</TableHead>
-                        )}
-                        {isVisible('created_by') && (
-                          <TableHead>Created By</TableHead>
-                        )}
-                        {isVisible('created_at') && (
-                          <TableHead>Created On</TableHead>
-                        )}
-                        {isVisible('updated_by') && (
-                          <TableHead>Last Updated By</TableHead>
-                        )}
-                        <TableHead className="bg-card sticky right-0 px-4 text-right">
-                          Actions
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoading ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={
-                              visibility
-                                ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
-                                : 6
-                            }
-                            className="h-24 text-center"
-                          >
-                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
-                          </TableCell>
-                        </TableRow>
-                      ) : paginatedDocs.length > 0 ? (
-                        paginatedDocs.map((doc: Document, index: number) => (
-                          <TableRow key={doc.id} className="hover:bg-muted/50">
-                            {isVisible('sno') && (
-                              <TableCell className="text-muted-foreground w-12">
-                                {(currentPage - 1) * itemsPerPage + index + 1}
-                              </TableCell>
-                            )}
-                            {isVisible('name') && (
-                              <TableCell className="font-medium">
-                                <div className="flex items-center gap-3">
-                                  {getFileIcon(doc.file_type || '')}
-                                  <span
-                                    className="max-w-[200px] truncate"
-                                    title={doc.name}
-                                  >
-                                    {doc.name}
-                                  </span>
-                                </div>
-                              </TableCell>
-                            )}
-                            {isVisible('type') && (
-                              <TableCell className="text-muted-foreground">
-                                {getFileTypeDisplay(doc.file_type || '')}
-                              </TableCell>
-                            )}
-                            {isVisible('size') && (
-                              <TableCell className="text-muted-foreground">
-                                {formatSize(doc.size_bytes)}
-                              </TableCell>
-                            )}
-                            {isVisible('uploader') && (
-                              <TableCell className="text-muted-foreground">
-                                {doc.created_by_user?.name || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('entity') && (
-                              <TableCell>
-                                {doc.entity_name && (
-                                  <span
-                                    className="text-muted-foreground text-xs"
-                                    title={`${doc.entity_type}: ${doc.entity_name}`}
-                                  >
-                                    {doc.entity_name}
-                                  </span>
-                                )}
-                              </TableCell>
-                            )}
-                            {isVisible('last_modified') && (
-                              <TableCell className="text-muted-foreground">
-                                {new Date(
-                                  doc.updated_at || doc.created_at,
-                                ).toLocaleDateString()}
-                              </TableCell>
-                            )}
-                            {isVisible('created_by') && (
-                              <TableCell className="text-muted-foreground">
-                                {doc.created_by_user?.name || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('created_at') && (
-                              <TableCell className="text-muted-foreground">
-                                {new Date(doc.created_at).toLocaleDateString()}
-                              </TableCell>
-                            )}
-                            {isVisible('updated_by') && (
-                              <TableCell className="text-muted-foreground">
-                                {doc.updated_by || '-'}
-                              </TableCell>
-                            )}
-                            <TableCell className="bg-card sticky right-0 px-4 text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    className="gap-2"
-                                    onClick={() => handleEdit(doc)}
-                                  >
-                                    <Edit className="h-4 w-4" /> Rename
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    className="gap-2 text-red-500"
-                                    onClick={() => handleDelete(doc.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" /> Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell
-                            colSpan={
-                              visibility
-                                ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
-                                : 6
-                            }
-                            className="text-muted-foreground h-24 text-center"
-                          >
-                            No documents match your search.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Pagination */}
-            {totalCount > 0 && (
-              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 -mb-4 flex shrink-0 items-center justify-between border-t p-4 px-4 lg:-mx-8 lg:-mb-8 lg:px-8">
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3 pb-6">
+        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+          <CustomTableContainer
+            pagination={totalCount > 0 && (
+              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t py-1.5 px-4 lg:-mx-8 lg:px-8">
                 <div>
                   Showing{' '}
                   <span className="text-foreground font-medium">
@@ -880,9 +538,160 @@ export default function DocumentPage() {
                 </Pagination>
               </div>
             )}
-          </div>
-        </PageBody>
-      </div>
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {isVisible('sno') && (
+                    <TableHead className="w-12 whitespace-nowrap">
+                      S. No.
+                    </TableHead>
+                  )}
+                  {isVisible('name') && <TableHead>Name</TableHead>}
+                  {isVisible('type') && <TableHead>Type</TableHead>}
+                  {isVisible('size') && <TableHead>Size</TableHead>}
+                  {isVisible('uploader') && <TableHead>Uploaded By</TableHead>}
+                  {isVisible('entity') && <TableHead>Entity</TableHead>}
+                  {isVisible('last_modified') && <TableHead>Last Modified At</TableHead>}
+                  {isVisible('created_by') && <TableHead>Created By</TableHead>}
+                  {isVisible('created_at') && <TableHead>Created On</TableHead>}
+                  {isVisible('updated_by') && <TableHead>Last Updated By</TableHead>}
+                  <TableHead className="sticky-right-header">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <>
+                    {[...Array(10)].map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell
+                          className="h-[52px] px-4 py-2"
+                          colSpan={
+                            visibility
+                              ? Object.values(visibility).filter((v) => v !== false).length + 1
+                              : 6
+                          }
+                        >
+                          <Skeleton className="h-7 w-full" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </>
+                ) : paginatedDocs.length > 0 ? (
+                  paginatedDocs.map((doc: Document, index: number) => (
+                    <TableRow key={doc.id} className="hover:bg-muted/50">
+                      {isVisible('sno') && (
+                        <TableCell className="text-muted-foreground w-12">
+                          {(currentPage - 1) * itemsPerPage + index + 1}
+                        </TableCell>
+                      )}
+                      {isVisible('name') && (
+                        <TableCell className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
+                          <div className="flex items-center gap-3">
+                            {getFileIcon(doc.file_type || '')}
+                            <span
+                              className="max-w-[200px] truncate"
+                              title={doc.name}
+                            >
+                              {doc.name}
+                            </span>
+                          </div>
+                        </TableCell>
+                      )}
+                      {isVisible('type') && (
+                        <TableCell className="text-muted-foreground">
+                          {getFileTypeDisplay(doc.file_type || '')}
+                        </TableCell>
+                      )}
+                      {isVisible('size') && (
+                        <TableCell className="text-muted-foreground">
+                          {formatSize(doc.size_bytes)}
+                        </TableCell>
+                      )}
+                      {isVisible('uploader') && (
+                        <TableCell className="text-muted-foreground">
+                          {doc.created_by_user?.name || '-'}
+                        </TableCell>
+                      )}
+                      {isVisible('entity') && (
+                        <TableCell>
+                          {doc.entity_name && (
+                            <Link
+                              href={`/home/${doc.entity_type === 'opportunity' ? 'opportunities' : `${doc.entity_type}s`}/${doc.entity_id}`}
+                              className="hover:text-primary text-muted-foreground text-xs hover:underline"
+                              title={`${doc.entity_type}: ${doc.entity_name}`}
+                            >
+                              {doc.entity_name}
+                            </Link>
+                          )}
+                        </TableCell>
+                      )}
+                      {isVisible('last_modified') && (
+                        <TableCell className="text-muted-foreground">
+                          {new Date(
+                            doc.updated_at || doc.created_at,
+                          ).toLocaleDateString()}
+                        </TableCell>
+                      )}
+                      {isVisible('created_by') && (
+                        <TableCell className="text-muted-foreground">
+                          {doc.created_by_user?.name || '-'}
+                        </TableCell>
+                      )}
+                      {isVisible('created_at') && (
+                        <TableCell className="text-muted-foreground">
+                          {new Date(doc.created_at).toLocaleDateString()}
+                        </TableCell>
+                      )}
+                      {isVisible('updated_by') && (
+                        <TableCell className="text-muted-foreground">
+                          {doc.updated_by || '-'}
+                        </TableCell>
+                      )}
+                      <TableCell className="bg-card sticky right-0 px-4 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="gap-2"
+                              onClick={() => handleEdit(doc)}
+                            >
+                              <Edit className="h-4 w-4" /> Rename
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="gap-2 text-red-500"
+                              onClick={() => handleDelete(doc.id)}
+                            >
+                              <Trash2 className="h-4 w-4" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={
+                        visibility
+                          ? Object.values(visibility).filter((v) => v !== false).length + 1
+                          : 10
+                      }
+                      className="text-muted-foreground h-24 text-center"
+                    >
+                      No documents match your search.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CustomTableContainer>
+        </div>
+      </PageBody>
 
       {/* Upload Dialog */}
       <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>

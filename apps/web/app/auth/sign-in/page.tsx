@@ -134,7 +134,7 @@ function SignInPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white px-8 py-8 shadow-xl sm:px-9">
+          <div className="auth-card rounded-xl border border-slate-200 bg-white px-8 py-8 shadow-xl sm:px-9">
             <div className="mb-7">
               <h2 className="text-2xl font-semibold tracking-normal text-slate-800">
                 Welcome back
