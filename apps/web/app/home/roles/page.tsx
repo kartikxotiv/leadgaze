@@ -2,8 +2,17 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { usePathname } from 'next/navigation';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Edit2, GripVertical, Loader2, Plus, Shield, Trash2 } from 'lucide-react';
+import {
+  Edit2,
+  GripVertical,
+  Loader2,
+  Plus,
+  Shield,
+  Trash2,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
@@ -17,6 +26,7 @@ import {
 } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { PageBody, PageHeader } from '@kit/ui/page';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   TableBody,
   TableCell,
@@ -24,17 +34,12 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@kit/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
-
-import { Skeleton } from '@kit/ui/skeleton';
 
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { getModuleKeyFromPath } from '~/lib/rbac/route-module-map';
 import {
   type Role,
   deleteRoleService,
@@ -50,6 +55,8 @@ const EMPTY_ROLES: Role[] = [];
 export default function RolesPage() {
   const queryClient = useQueryClient();
   const { currentWorkspace, canAccess } = useRBAC();
+  const pathname = usePathname();
+  const productKey = getModuleKeyFromPath(pathname);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -76,15 +83,15 @@ export default function RolesPage() {
       status: true,
     });
 
-  // Fetch roles
+  // Fetch roles filtered by current product/module
   const {
     data: roles = EMPTY_ROLES,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['workspaceRoles', currentWorkspace?.id],
+    queryKey: ['workspaceRoles', currentWorkspace?.id, productKey],
     queryFn: async () => {
-      const res = await getRolesService(currentWorkspace?.id || '');
+      const res = await getRolesService(currentWorkspace?.id || '', productKey);
       return res?.data || [];
     },
     enabled: !!currentWorkspace?.id,
@@ -99,7 +106,7 @@ export default function RolesPage() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['workspaceRoles', currentWorkspace?.id],
+        queryKey: ['workspaceRoles', currentWorkspace?.id, productKey],
       });
       toast.success('Role order updated successfully');
     },
@@ -112,7 +119,10 @@ export default function RolesPage() {
   useEffect(() => {
     if (Array.isArray(roles)) {
       setOrderedRoles(
-        [...roles].sort((a: Role, b: Role) => (b.hierarchy_level || 0) - (a.hierarchy_level || 0))
+        [...roles].sort(
+          (a: Role, b: Role) =>
+            (b.hierarchy_level || 0) - (a.hierarchy_level || 0),
+        ),
       );
     }
   }, [roles]);
@@ -121,7 +131,8 @@ export default function RolesPage() {
     setDraggedRoleIndex(index);
     e.dataTransfer.effectAllowed = 'move';
     const img = new Image();
-    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    img.src =
+      'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
     e.dataTransfer.setDragImage(img, 0, 0);
   };
 
@@ -158,7 +169,7 @@ export default function RolesPage() {
     mutationFn: deleteRoleService,
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['workspaceRoles', currentWorkspace?.id],
+        queryKey: ['workspaceRoles', currentWorkspace?.id, productKey],
       });
       toast.success('Role deleted successfully');
     },
@@ -249,9 +260,9 @@ export default function RolesPage() {
           {/* Summary Cards */}
           <div className="bg-sidebar -mt-1 w-full max-w-full min-w-0 overflow-x-auto px-6 pb-7">
             <div className="-mb-3 flex items-center gap-3">
-              <Card className="hover:border-primary/50 bg-card transition-all w-52 shrink-0">
-                <CardContent className="h-10 p-3 flex items-center">
-                  <div className="flex flex-col gap-1 w-full">
+              <Card className="hover:border-primary/50 bg-card w-52 shrink-0 transition-all">
+                <CardContent className="flex h-10 items-center p-3">
+                  <div className="flex w-full flex-col gap-1">
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full bg-purple-500" />
                       <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
@@ -262,26 +273,34 @@ export default function RolesPage() {
                 </CardContent>
               </Card>
 
-              <Card className="hover:border-primary/50 bg-card transition-all w-52 shrink-0">
-                <CardContent className="h-10 p-3 flex items-center">
-                  <div className="flex flex-col gap-1 w-full">
+              <Card className="hover:border-primary/50 bg-card w-52 shrink-0 transition-all">
+                <CardContent className="flex h-10 items-center p-3">
+                  <div className="flex w-full flex-col gap-1">
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full bg-blue-500" />
                       <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
-                        System Roles ({Array.isArray(roles) ? roles.filter((r: Role) => r.is_system).length : 0})
+                        System Roles (
+                        {Array.isArray(roles)
+                          ? roles.filter((r: Role) => r.is_system).length
+                          : 0}
+                        )
                       </span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="hover:border-primary/50 bg-card transition-all w-52 shrink-0">
-                <CardContent className="h-10 p-3 flex items-center">
-                  <div className="flex flex-col gap-1 w-full">
+              <Card className="hover:border-primary/50 bg-card w-52 shrink-0 transition-all">
+                <CardContent className="flex h-10 items-center p-3">
+                  <div className="flex w-full flex-col gap-1">
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full bg-indigo-500" />
                       <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
-                        Custom Roles ({Array.isArray(roles) ? roles.filter((r: Role) => !r.is_system).length : 0})
+                        Custom Roles (
+                        {Array.isArray(roles)
+                          ? roles.filter((r: Role) => !r.is_system).length
+                          : 0}
+                        )
                       </span>
                     </div>
                   </div>
@@ -310,12 +329,20 @@ export default function RolesPage() {
                     <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
                       <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                         <TableRow>
-                          {isVisible('role_name') && <TableHead>Role Name</TableHead>}
-                          {isVisible('role_key') && <TableHead>Role Key</TableHead>}
-                          {isVisible('hierarchy') && <TableHead>Access Level</TableHead>}
+                          {isVisible('role_name') && (
+                            <TableHead>Role Name</TableHead>
+                          )}
+                          {isVisible('role_key') && (
+                            <TableHead>Role Key</TableHead>
+                          )}
+                          {isVisible('hierarchy') && (
+                            <TableHead>Access Level</TableHead>
+                          )}
                           {isVisible('type') && <TableHead>Type</TableHead>}
                           {isVisible('status') && <TableHead>Status</TableHead>}
-                          <TableHead className="sticky right-0 px-4 text-right">Actions</TableHead>
+                          <TableHead className="sticky right-0 px-4 text-right">
+                            Actions
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -325,7 +352,9 @@ export default function RolesPage() {
                               className="h-[52px] px-4 py-2"
                               colSpan={
                                 visibility
-                                  ? Object.values(visibility).filter((v) => v !== false).length + 1
+                                  ? Object.values(visibility).filter(
+                                      (v) => v !== false,
+                                    ).length + 1
                                   : 6
                               }
                             >
@@ -370,7 +399,9 @@ export default function RolesPage() {
                         {orderedRoles?.map((role: Role, index: number) => (
                           <TableRow
                             key={role.id}
-                            className={draggedRoleIndex === index ? 'opacity-50' : ''}
+                            className={
+                              draggedRoleIndex === index ? 'opacity-50' : ''
+                            }
                             draggable={canAccess('roles', 'edit')}
                             onDragStart={(e) => handleDragStart(e, index)}
                             onDragOver={(e) => handleDragOver(e, index)}
@@ -381,7 +412,7 @@ export default function RolesPage() {
                               <TableCell>
                                 <div className="flex items-center gap-3">
                                   {canAccess('roles', 'edit') && (
-                                    <GripVertical className="h-4 w-4 cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing" />
+                                    <GripVertical className="text-muted-foreground hover:text-foreground h-4 w-4 cursor-grab active:cursor-grabbing" />
                                   )}
                                   <div
                                     className="h-3 w-3 rounded-full"
@@ -476,6 +507,7 @@ export default function RolesPage() {
           <CreateRoleDialog
             open={createDialogOpen}
             onOpenChange={setCreateDialogOpen}
+            productKey={productKey}
           />
 
           {editingRole && (
@@ -483,6 +515,7 @@ export default function RolesPage() {
               role={editingRole}
               open={editDialogOpen}
               onOpenChange={setEditDialogOpen}
+              productKey={productKey}
               onSuccess={() => setEditingRole(null)}
             />
           )}

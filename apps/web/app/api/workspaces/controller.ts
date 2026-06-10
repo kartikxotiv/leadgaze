@@ -15,7 +15,7 @@ const createNewWorkspace = catchAsync(
     request: NextRequest;
     params?: Record<string, string>;
   }) => {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient() as any;
     const { name, owner_id } = await request.json();
 
     // Validate input
@@ -58,34 +58,27 @@ const createNewWorkspace = catchAsync(
       );
     }
 
-    // Get default roles from workspace_roles table (should be created during workspace creation in app logic)
-    // For now, we'll create basic roles
-    const roles = [
-      {
+    // Get all active subscription products to seed admin roles for each
+    const { data: activeProducts } = await supabase
+      .from('subscription_products')
+      .select('product_key')
+      .eq('is_active', true);
+
+    const productKeys = activeProducts?.map((p: any) => p.product_key) || [
+      'sales',
+    ];
+
+    // Create admin role for each active product
+    const roles: any[] = [];
+    for (const productKey of productKeys) {
+      roles.push({
         role_key: 'admin',
         role_name: 'Admin',
         hierarchy_level: 100,
         is_system: true,
-      },
-      // {
-      //   role_key: 'manager',
-      //   role_name: 'Manager',
-      //   hierarchy_level: 50,
-      //   is_system: true,
-      // },
-      // {
-      //   role_key: 'user',
-      //   role_name: 'User',
-      //   hierarchy_level: 10,
-      //   is_system: true,
-      // },
-      // {
-      //   role_key: 'viewer',
-      //   role_name: 'Viewer',
-      //   hierarchy_level: 1,
-      //   is_system: true,
-      // },
-    ];
+        product_key: productKey,
+      });
+    }
 
     const { data: rolesData, error: rolesError }: any = await supabase
       .from('workspace_roles')
@@ -102,7 +95,7 @@ const createNewWorkspace = catchAsync(
       console.error('Roles creation error:', rolesError);
     }
 
-    // Add owner as admin member
+    // Add owner as admin member (use the first admin role, typically 'sales')
     const adminRole = rolesData?.[0]; // Admin is first
     if (adminRole) {
       const { error: memberError } = await supabase
@@ -121,36 +114,54 @@ const createNewWorkspace = catchAsync(
       }
     }
 
-    // Create default permissions for all roles
-    // Get all features
-    const { data: features, error: featuresError } = await supabase
-      .from('crm_module_features')
-      .select('id');
+    // Create default permissions for admin roles (only for features in their product)
+    if (rolesData && rolesData.length > 0) {
+      for (let i = 0; i < rolesData.length; i++) {
+        const role = rolesData[i];
+        const productKey = role.product_key;
 
-    if (!featuresError && features && rolesData) {
-      // Create permissions for each role
-      const permissions: any = [];
+        // Get modules for this product directly from crm_modules.product_key
+        // Include 'common' modules (shared across all products)
+        const { data: modules } = await supabase
+          .from('crm_modules')
+          .select('id')
+          .in('product_key', [productKey, 'common'])
+          .eq('is_active', true);
 
-      // Admin: Full access to all features
-      for (const feature of features) {
-        permissions.push({
+        const moduleIds = (modules ?? []).map((m: any) => m.id);
+        if (moduleIds.length === 0) continue;
+
+        // Get features for these modules
+        const { data: features } = await supabase
+          .from('crm_module_features')
+          .select('id')
+          .in('module_id', moduleIds)
+          .eq('is_active', true);
+
+        if (!features || features.length === 0) continue;
+
+        // Create permissions for this admin role
+        const permissions = features.map((feature: any) => ({
           workspace_id: workspace.id,
-          role_id: rolesData[0].id, // Admin
+          role_id: role.id,
           module_feature_id: feature.id,
           can_access: true,
-          access_level: 'all',
+          access_level: 'all' as const,
           can_view_sensitive_data: true,
           can_override_owner: true,
-        });
-      }
+        }));
 
-      if (permissions.length > 0) {
-        const { error: permError } = await supabase
-          .from('role_permissions')
-          .insert(permissions);
+        if (permissions.length > 0) {
+          const { error: permError } = await supabase
+            .from('role_permissions')
+            .insert(permissions);
 
-        if (permError) {
-          console.error('Permissions creation error:', permError);
+          if (permError) {
+            console.error(
+              `Permissions creation error for ${productKey}:`,
+              permError,
+            );
+          }
         }
       }
     }
