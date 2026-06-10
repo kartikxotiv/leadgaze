@@ -362,7 +362,7 @@ export default function TeamMembersPage() {
                         currentModule.purchased_seats && (
                         <Badge
                           variant="destructive"
-                          className="ml-auto h-4 px-1.5 text-[9px]"
+                          className="ml-auto h-4 px-2"
                         >
                           Full
                         </Badge>

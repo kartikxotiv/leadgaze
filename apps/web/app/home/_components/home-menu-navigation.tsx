@@ -680,42 +680,42 @@ export function HomeMenuNavigation() {
           },
           {
             label: 'Contacts',
-            path: '/home/contacts',
+            path: '/home/sales/contacts',
             Icon: <User className="h-4 w-4" />,
           },
           {
             label: 'Accounts',
-            path: '/home/accounts',
+            path: '/home/sales/accounts',
             Icon: <Users className="h-4 w-4" />,
           },
           {
             label: 'Opportunities',
-            path: '/home/opportunities',
+            path: '/home/sales/opportunities',
             Icon: <Activity className="h-4 w-4" />,
           },
           {
             label: 'Emails',
-            path: '/home/emails',
+            path: '/home/sales/emails',
             Icon: <Mail className="h-4 w-4" />,
           },
           {
             label: 'Meetings',
-            path: '/home/meetings',
+            path: '/home/sales/meetings',
             Icon: <Calendar className="h-4 w-4" />,
           },
           {
             label: 'Reminders',
-            path: '/home/reminders',
+            path: '/home/sales/reminders',
             Icon: <Bell className="h-4 w-4" />,
           },
           {
             label: 'Notes',
-            path: '/home/notes',
+            path: '/home/sales/notes',
             Icon: <NotebookPen className="h-4 w-4" />,
           },
           {
             label: 'Document',
-            path: '/home/document',
+            path: '/home/sales/document',
             Icon: <FileText className="h-4 w-4" />,
           },
           {

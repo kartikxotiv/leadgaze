@@ -445,7 +445,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                               account.provider === 'google'
                                 ? 'secondary'
                                 : 'outline'
-                            }
+                            }                            
                           >
                             {account.provider === 'google' ? 'Google' : 'SMTP'}
                           </Badge>
