@@ -215,7 +215,7 @@ export function DepartmentsPage(props: {
 
   return (
     <section className="flex h-[100dvh] min-h-0 flex-col overflow-hidden">
-      <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="bg-sidebar flex shrink-0 flex-col overflow-hidden">
         <PageHeader
           className="bg-sidebar shrink-0"
           title={`Departments (${filteredDepartments.length})`}
@@ -228,7 +228,7 @@ export function DepartmentsPage(props: {
           {props.headerActions}
         </PageHeader>
 
-        <div className="bg-sidebar w-full max-w-full min-w-0 overflow-x-auto">
+        <div className="bg-sidebar w-full max-w-full min-w-0 overflow-x-auto pb-2">
           <div className="flex flex-wrap items-center gap-2">
             <TableStatusMetricTab
               id="all"
@@ -265,7 +265,7 @@ export function DepartmentsPage(props: {
           </div>
         </div>
 
-        <div className="bg-sidebar w-full shrink-0 border-b">
+        <div className="bg-sidebar w-full shrink-0 border-b pb-2">
           <ListToolBar
             showSearch
             searchPlaceholder="Search departments..."

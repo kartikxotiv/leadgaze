@@ -85,7 +85,7 @@ export function MyAttendanceCard(props: {
 
   return (
     <Card className="shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between p-4">
+      <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className={'text-lg font-semibold'}>My Day</CardTitle>
           <p className={'text-muted-foreground text-sm'}>
@@ -95,7 +95,7 @@ export function MyAttendanceCard(props: {
         </div>
         <StatusPill status={status} />
       </CardHeader>
-      <CardContent className="space-y-4 p-4 pt-0">
+      <CardContent className="space-y-4">
         <div className={'grid gap-3 sm:grid-cols-3'}>
           <Metric
             icon={LogIn}
