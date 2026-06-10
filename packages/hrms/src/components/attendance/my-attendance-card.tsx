@@ -84,8 +84,8 @@ export function MyAttendanceCard(props: {
   }, [props.record?.work_hours, status, workedMinutes]);
 
   return (
-    <Card className={'shadow-sm'}>
-      <CardHeader className={'flex flex-row items-center justify-between p-2'}>
+    <Card className="shadow-sm">
+      <CardHeader className="flex flex-row items-center justify-between p-4">
         <div>
           <CardTitle className={'text-lg font-semibold'}>My Day</CardTitle>
           <p className={'text-muted-foreground text-sm'}>
@@ -95,7 +95,7 @@ export function MyAttendanceCard(props: {
         </div>
         <StatusPill status={status} />
       </CardHeader>
-      <CardContent className={'space-y-4 p-2'}>
+      <CardContent className="space-y-4 p-4 pt-0">
         <div className={'grid gap-3 sm:grid-cols-3'}>
           <Metric
             icon={LogIn}
@@ -145,7 +145,7 @@ export function MyAttendanceCard(props: {
           </Button>
         </div>
 
-        <div className={'rounded-lg border p-4'}>
+        <div className="rounded-lg border p-4">
           <p className={'text-sm font-medium'}>Today&apos;s Punches</p>
           <div className={'mt-3 space-y-2'}>
             {props.logs.length === 0 ? (
@@ -180,14 +180,14 @@ function Metric(props: {
   const Icon = props.icon;
 
   return (
-    <div className={'rounded-lg border p-4'}>
-      <div className={'flex items-center gap-2'}>
-        <Icon className={'text-muted-foreground h-4 w-4'} />
-        <p className={'text-muted-foreground text-xs font-medium'}>
+    <div className="rounded-lg border p-4">
+      <div className="flex items-center gap-2">
+        <Icon className="text-muted-foreground h-4 w-4" />
+        <p className="text-muted-foreground text-xs font-medium">
           {props.label}
         </p>
       </div>
-      <p className={'mt-2 text-lg font-semibold'}>{props.value}</p>
+      <p className="mt-2 text-lg font-semibold">{props.value}</p>
     </div>
   );
 }

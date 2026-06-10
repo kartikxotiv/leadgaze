@@ -9,15 +9,15 @@ export function RecentAttendanceCard(props: {
   records: Array<AttendanceRecord>;
 }) {
   return (
-    <Card className={'shadow-sm'}>
-      <CardHeader className="p-2">
+    <Card className="shadow-sm">
+      <CardHeader className="p-4">
         <CardTitle className={'text-lg font-semibold'}>Recent Days</CardTitle>
         <p className={'text-muted-foreground text-sm'}>
           Last 14 processed attendance records.
         </p>
       </CardHeader>
 
-      <CardContent className={'space-y-3'}>
+      <CardContent className="space-y-3 p-4 pt-0">
         {props.records.length === 0 ? (
           <p className={'text-muted-foreground text-sm'}>
             No processed records yet.

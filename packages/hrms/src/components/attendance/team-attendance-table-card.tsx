@@ -4,13 +4,14 @@ import { MoreHorizontal } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@kit/ui/dropdown-menu';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -34,144 +35,123 @@ export function TeamAttendanceTableCard(props: {
   className?: string;
 }) {
   return (
-    <Card
-      className={cn(
-        'flex min-h-0 flex-col overflow-hidden shadow-sm',
-        props.className,
-      )}
-    >
-      <CardHeader
-        className={'flex shrink-0 flex-row items-center justify-between p-4'}
-      >
-        <div>
-          <CardTitle className={'text-lg font-semibold'}>
-            Team Attendance
-          </CardTitle>
-          <p className={'text-muted-foreground text-sm'}>
-            Review check-ins and update attendance status.
-          </p>
-        </div>
-      </CardHeader>
-      <CardContent className={'min-h-0 flex-1 overflow-hidden p-0'}>
-        <div
-          className={
-            'mx-4 mb-4 max-h-[min(520px,calc(100vh-23rem))] min-h-[240px] overflow-auto rounded-lg border'
-          }
-        >
-          <Table>
-            <TableHeader>
-              <TableRow className={'hover:bg-transparent'}>
-                <TableHead>Employee</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Shift</TableHead>
-                <TableHead>Check In</TableHead>
-                <TableHead>Check Out</TableHead>
-                <TableHead>Hours</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className={'w-[48px]'} />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {props.isLoading ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className={'text-muted-foreground py-8 text-center text-sm'}
-                  >
-                    Loading attendance...
-                  </TableCell>
-                </TableRow>
-              ) : null}
+    <div className={cn('flex min-h-0 flex-col', props.className)}>
+      <CustomTableContainer>
+        <Table>
+          <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+            <TableRow>
+              <TableHead>Employee</TableHead>
+              <TableHead>Department</TableHead>
+              <TableHead>Shift</TableHead>
+              <TableHead>Check In</TableHead>
+              <TableHead>Check Out</TableHead>
+              <TableHead>Hours</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="bg-card sticky right-0 px-4 text-right">
+                Actions
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {props.isLoading
+              ? [...Array(8)].map((_, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="h-[52px] px-4 py-2" colSpan={8}>
+                      <Skeleton className="h-7 w-full rounded-md" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              : null}
 
-              {!props.isLoading && props.rows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className={'text-muted-foreground py-8 text-center text-sm'}
-                  >
+            {!props.isLoading && props.rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="h-24 text-center">
+                  <div className="text-gray-500">
                     {props.hasFilters
-                      ? 'No attendance records match the current filters.'
+                      ? 'No attendance records match your search or filters.'
                       : 'No employees found.'}
-                  </TableCell>
-                </TableRow>
-              ) : null}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : null}
 
-              {props.rows.map((row) => (
-                <TableRow key={row.employee.id}>
-                  <TableCell>
-                    <div>
-                      <p className={'font-semibold'}>{getEmployeeName(row)}</p>
-                      <p className={'text-muted-foreground text-xs'}>
-                        {row.employee.work_email}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell className={'text-muted-foreground'}>
-                    {row.employee.department?.name ?? 'Unassigned'}
-                  </TableCell>
-                  <TableCell className={'text-muted-foreground'}>
-                    {getShiftName(row)}
-                  </TableCell>
-                  <TableCell className={'text-muted-foreground'}>
-                    {row.record?.check_in
-                      ? formatTime(row.record.check_in)
+            {props.rows.map((row) => (
+              <TableRow key={row.employee.id} className="hover:bg-muted/50">
+                <TableCell className="min-w-[220px]">
+                  <div className="min-w-0">
+                    <p className="primary-text-medium truncate">
+                      {getEmployeeName(row)}
+                    </p>
+                    <p className="text-muted-foreground truncate text-xs">
+                      {row.employee.work_email}
+                    </p>
+                  </div>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {row.employee.department?.name ?? 'Unassigned'}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {getShiftName(row)}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {row.record?.check_in
+                    ? formatTime(row.record.check_in)
+                    : '--'}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {row.record?.check_out
+                    ? formatTime(row.record.check_out)
+                    : '--'}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {row.record?.work_hours != null
+                    ? `${row.record.work_hours}h`
+                    : row.displayStatus === 'in_progress'
+                      ? 'In Progress'
                       : '--'}
-                  </TableCell>
-                  <TableCell className={'text-muted-foreground'}>
-                    {row.record?.check_out
-                      ? formatTime(row.record.check_out)
-                      : '--'}
-                  </TableCell>
-                  <TableCell className={'text-muted-foreground'}>
-                    {row.record?.work_hours != null
-                      ? `${row.record.work_hours}h`
-                      : row.displayStatus === 'in_progress'
-                        ? 'In Progress'
-                        : '--'}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={row.displayStatus} />
-                  </TableCell>
-                  <TableCell>
-                    {props.canApprove ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            size={'icon'}
-                            variant={'ghost'}
-                            aria-label={'Attendance actions'}
-                          >
-                            <MoreHorizontal className={'h-4 w-4'} />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align={'end'}>
-                          <DropdownMenuItem
-                            onClick={() => props.onEditRequested(row)}
-                          >
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => props.onMarkPresentRequested(row)}
-                          >
-                            Mark Present
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className={'text-destructive'}
-                            onClick={() => props.onMarkAbsentRequested(row)}
-                          >
-                            Mark Absent
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : null}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+                </TableCell>
+                <TableCell>
+                  <StatusBadge status={row.displayStatus} />
+                </TableCell>
+                <TableCell className="bg-card sticky right-0 px-4 text-right">
+                  {props.canApprove ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label="Attendance actions"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => props.onEditRequested(row)}
+                        >
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => props.onMarkPresentRequested(row)}
+                        >
+                          Mark Present
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => props.onMarkAbsentRequested(row)}
+                        >
+                          Mark Absent
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : null}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CustomTableContainer>
+    </div>
   );
 }
 
@@ -196,8 +176,8 @@ function StatusBadge(props: { status: AdminAttendanceRow['displayStatus'] }) {
   if (props.status === 'absent') {
     return (
       <Badge
-        variant={'outline'}
-        className={'border-red-500/30 bg-red-500/10 text-red-600'}
+        variant="outline"
+        className="border-red-500/30 bg-red-500/10 text-red-600"
       >
         Absent
       </Badge>
@@ -207,8 +187,8 @@ function StatusBadge(props: { status: AdminAttendanceRow['displayStatus'] }) {
   if (props.status === 'in_progress') {
     return (
       <Badge
-        variant={'outline'}
-        className={'border-sky-500/30 bg-sky-500/10 text-sky-700'}
+        variant="outline"
+        className="border-sky-500/30 bg-sky-500/10 text-sky-700"
       >
         In Progress
       </Badge>
@@ -217,8 +197,8 @@ function StatusBadge(props: { status: AdminAttendanceRow['displayStatus'] }) {
 
   return (
     <Badge
-      variant={'outline'}
-      className={'border-green-500/30 bg-green-500/10 text-green-700'}
+      variant="outline"
+      className="border-green-500/30 bg-green-500/10 text-green-700"
     >
       Present
     </Badge>

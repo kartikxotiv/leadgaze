@@ -39,7 +39,7 @@ export function WorkingDaysCard(props: {
   };
 
   return (
-    <Card>
+    <Card className="shadow-sm">
       <CardHeader
         className={'flex flex-row items-center justify-between gap-3 p-4'}
       >
@@ -62,7 +62,7 @@ export function WorkingDaysCard(props: {
         ) : null}
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="p-4 pt-0">
         <div className={'grid gap-3 sm:grid-cols-7'}>
           {weekdays.map((day) => (
             <label

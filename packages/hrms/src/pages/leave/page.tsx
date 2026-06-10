@@ -1,9 +1,15 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 import { Plus } from 'lucide-react';
 
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import { Input } from '@kit/ui/input';
+import { ListToolBar } from '@kit/ui/list-toolbar';
+import { PageBody, PageHeader } from '@kit/ui/page';
+import { TableStatusMetricTab } from '@kit/ui/table-status-metric-tab';
 import { Tabs } from '@kit/ui/tabs';
 
 import { HolidayDialog } from '../../components/leave/holiday-dialog';
@@ -12,7 +18,6 @@ import {
   LeaveHolidaysTab,
   LeaveTypesTab,
 } from '../../components/leave/leave-configuration-tabs';
-import { LeavePageControls } from '../../components/leave/leave-page-controls';
 import { LeaveReportsTab } from '../../components/leave/leave-reports-tab';
 import { LeaveRequestDialog } from '../../components/leave/leave-request-dialog';
 import {
@@ -20,9 +25,13 @@ import {
   LeaveRequestsTab,
 } from '../../components/leave/leave-request-tabs';
 import { LeaveTypeDialog } from '../../components/leave/leave-type-dialog';
+import type { LeaveTab } from '../../hooks/use-leave-page';
 import { useLeavePage } from '../../hooks/use-leave-page';
 
-export function LeavePage() {
+export function LeavePage(props: {
+  headerActions?: ReactNode;
+  workspaceName?: string;
+}) {
   const page = useLeavePage();
   const canShowRequests = page.availableTabs.includes('requests');
   const canShowApprovals = page.availableTabs.includes('approvals');
@@ -48,95 +57,152 @@ export function LeavePage() {
             }
           : null;
 
-  if (!page.isRbacLoading && page.availableTabs.length === 0) {
-    return (
-      <Card>
-        <CardContent className="text-muted-foreground p-6 text-sm">
-          You do not have permission to access the Leave module.
-        </CardContent>
-      </Card>
-    );
-  }
+  const activeCount = getLeaveTabCount(page, page.activeTab);
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <LeavePageControls
-          activeTab={page.activeTab}
-          availableTabs={page.availableTabs}
-          onTabChange={page.setActiveTab}
-          onYearChange={page.setSelectedYear}
-          selectedYear={page.selectedYear}
-        />
+    <section className="flex h-[100dvh] min-h-0 flex-col overflow-hidden">
+      <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
+        <PageHeader
+          className="bg-sidebar shrink-0 px-6 py-4"
+          title={`Leave (${activeCount})`}
+          description={
+            props.workspaceName
+              ? `${props.workspaceName} leave operations`
+              : 'Leave operations'
+          }
+        >
+          {props.headerActions}
+        </PageHeader>
 
-        {primaryAction ? (
-          <Button
-            size="sm"
-            className="w-full sm:w-auto"
-            onClick={primaryAction.onClick}
-          >
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            {primaryAction.label}
-          </Button>
+        {!page.isRbacLoading && page.availableTabs.length > 0 ? (
+          <>
+            <div className="bg-sidebar w-full max-w-full min-w-0 overflow-x-auto px-6 pb-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {page.availableTabs.map((tab) => (
+                  <TableStatusMetricTab
+                    key={tab}
+                    id={tab}
+                    color={getLeaveTabColor(tab)}
+                    statusName={getLeaveTabLabel(tab)}
+                    count={getLeaveTabCount(page, tab)}
+                    isSelected={page.activeTab === tab}
+                    onClick={() => page.setActiveTab(tab)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {primaryAction ? (
+              <div className="bg-sidebar w-full shrink-0 border-b px-6 py-2">
+                <ListToolBar
+                  actions={[
+                    {
+                      key: 'primary',
+                      label: primaryAction.label,
+                      icon: Plus,
+                      onClick: primaryAction.onClick,
+                      show: true,
+                      buttonVariant: 'default',
+                    },
+                  ]}
+                />
+              </div>
+            ) : null}
+          </>
         ) : null}
       </div>
 
-      <LeaveBalancesGrid balances={page.balances} />
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3 pb-0">
+        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-6 lg:px-8">
+          {!page.isRbacLoading && page.availableTabs.length === 0 ? (
+            <Card>
+              <CardContent className="text-muted-foreground p-6 text-sm">
+                You do not have permission to access the Leave module.
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <div className="bg-card flex flex-col gap-3 rounded-lg border p-4 shadow-sm sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium">Leave Year</p>
+                  <p className="text-muted-foreground text-sm">
+                    Review balances, approvals, holidays, and reports for the
+                    selected year.
+                  </p>
+                </div>
+                <Input
+                  className="h-9 w-full sm:w-32"
+                  min={2020}
+                  type="number"
+                  value={page.selectedYear}
+                  onChange={(event) =>
+                    page.setSelectedYear(
+                      Number(event.target.value || new Date().getFullYear()),
+                    )
+                  }
+                />
+              </div>
 
-      <Tabs
-        value={page.activeTab}
-        onValueChange={(value) =>
-          page.setActiveTab(value as typeof page.activeTab)
-        }
-      >
-        {canShowRequests ? (
-          <LeaveRequestsTab
-            requests={page.myRequests}
-            selectedYear={page.selectedYear}
-            updatePending={page.updateLeaveRequestPending}
-            onUpdateRequest={page.updateLeaveRequest}
-          />
-        ) : null}
+              <LeaveBalancesGrid balances={page.balances} />
 
-        {canShowApprovals ? (
-          <LeaveApprovalsTab
-            requests={page.approvalRequests}
-            selectedYear={page.selectedYear}
-            updatePending={page.updateLeaveRequestPending}
-            onUpdateRequest={page.updateLeaveRequest}
-          />
-        ) : null}
+              <Tabs
+                value={page.activeTab}
+                onValueChange={(value) => page.setActiveTab(value as LeaveTab)}
+              >
+                {canShowRequests ? (
+                  <LeaveRequestsTab
+                    requests={page.myRequests}
+                    selectedYear={page.selectedYear}
+                    updatePending={page.updateLeaveRequestPending}
+                    onUpdateRequest={page.updateLeaveRequest}
+                  />
+                ) : null}
 
-        {canShowHolidays ? (
-          <LeaveHolidaysTab
-            holidays={page.holidays}
-            canManageHolidays={page.permissions.canManageHolidays}
-            deletePending={page.deleteHolidayPending}
-            onDeleteHoliday={page.deleteHoliday}
-            onEditHoliday={page.openEditHolidayDialog}
-          />
-        ) : null}
+                {canShowApprovals ? (
+                  <LeaveApprovalsTab
+                    requests={page.approvalRequests}
+                    selectedYear={page.selectedYear}
+                    updatePending={page.updateLeaveRequestPending}
+                    onUpdateRequest={page.updateLeaveRequest}
+                  />
+                ) : null}
 
-        {canShowTypes ? (
-          <LeaveTypesTab
-            canManageLeaveTypes={page.permissions.canManageLeaveTypes}
-            deletePending={page.deleteLeaveTypePending}
-            leaveTypes={page.leaveTypes}
-            onDeleteLeaveType={page.deleteLeaveType}
-            onEditLeaveType={page.openEditTypeDialog}
-          />
-        ) : null}
+                {canShowHolidays ? (
+                  <LeaveHolidaysTab
+                    holidays={page.holidays}
+                    canManageHolidays={page.permissions.canManageHolidays}
+                    deletePending={page.deleteHolidayPending}
+                    onDeleteHoliday={page.deleteHoliday}
+                    onEditHoliday={page.openEditHolidayDialog}
+                  />
+                ) : null}
 
-        {canShowReports ? <LeaveReportsTab reports={page.reports} /> : null}
-      </Tabs>
+                {canShowTypes ? (
+                  <LeaveTypesTab
+                    canManageLeaveTypes={page.permissions.canManageLeaveTypes}
+                    deletePending={page.deleteLeaveTypePending}
+                    leaveTypes={page.leaveTypes}
+                    onDeleteLeaveType={page.deleteLeaveType}
+                    onEditLeaveType={page.openEditTypeDialog}
+                  />
+                ) : null}
 
-      {page.dashboardQuery.isLoading ? (
-        <Card>
-          <CardContent className="text-muted-foreground p-6 text-sm">
-            Loading leave data...
-          </CardContent>
-        </Card>
-      ) : null}
+                {canShowReports ? (
+                  <LeaveReportsTab reports={page.reports} />
+                ) : null}
+              </Tabs>
+
+              {page.dashboardQuery.isLoading ? (
+                <Card>
+                  <CardContent className="text-muted-foreground p-6 text-sm">
+                    Loading leave data...
+                  </CardContent>
+                </Card>
+              ) : null}
+            </>
+          )}
+        </div>
+      </PageBody>
 
       {page.permissions.canApply ? (
         <LeaveRequestDialog
@@ -167,4 +233,59 @@ export function LeavePage() {
       ) : null}
     </section>
   );
+}
+
+function getLeaveTabCount(
+  page: ReturnType<typeof useLeavePage>,
+  tab: LeaveTab,
+) {
+  if (tab === 'requests') {
+    return page.myRequests.length;
+  }
+
+  if (tab === 'approvals') {
+    return page.approvalRequests.length;
+  }
+
+  if (tab === 'holidays') {
+    return page.holidays.length;
+  }
+
+  if (tab === 'types') {
+    return page.leaveTypes.length;
+  }
+
+  return page.reports?.summary.total ?? 0;
+}
+
+function getLeaveTabLabel(tab: LeaveTab) {
+  if (tab === 'requests') {
+    return 'Requests';
+  }
+
+  if (tab === 'approvals') {
+    return 'Approvals';
+  }
+
+  if (tab === 'holidays') {
+    return 'Holidays';
+  }
+
+  if (tab === 'types') {
+    return 'Leave Types';
+  }
+
+  return 'Reports';
+}
+
+function getLeaveTabColor(tab: LeaveTab) {
+  const colors = {
+    approvals: '#f59e0b',
+    holidays: '#6366f1',
+    reports: '#8b5cf6',
+    requests: '#4eacff',
+    types: '#22c55e',
+  } as const;
+
+  return colors[tab];
 }
