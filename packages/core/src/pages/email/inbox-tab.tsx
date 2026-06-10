@@ -1,6 +1,6 @@
 'use client';
 
-import { useDeferredValue, useEffect, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@kit/ui/select';
+import { ListToolBar } from '@kit/ui/list-toolbar';
 import { cn } from '@kit/ui/utils';
 
 import type { CoreEmailAccount } from '../../services/email-accounts.service';
@@ -146,74 +147,82 @@ export function CoreInboxTab({
 
   return (
     <div className="grid gap-4">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2">
-            {(['all', 'inbound', 'outbound'] as const).map((value) => (
-              <Button
-                key={value}
-                variant={filter === value ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilter(value)}
-              >
-                {value[0]!.toUpperCase() + value.slice(1)}
-              </Button>
-            ))}
-          </div>
-
-          <Select
-            value={selectedInboxEmail}
-            onValueChange={setSelectedInboxEmail}
-          >
-            <SelectTrigger className="w-full sm:w-[280px]">
-              <SelectValue placeholder="Choose inbox" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All inboxes</SelectItem>
-              {inboxAccounts.map((account: CoreEmailAccount) => (
-                <SelectItem key={account.id} value={account.email}>
-                  {account.email}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex w-full gap-2 lg:w-auto">
-          {canReply ? (
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-2">
+          {(['all', 'inbound', 'outbound'] as const).map((value) => (
             <Button
-              className="shrink-0"
-              disabled={sendableAccounts.length === 0}
-              onClick={() => setIsComposeOpen(true)}
+              key={value}
+              variant={filter === value ? 'default' : 'outline'}
+              className="h-[38px]"
+              onClick={() => setFilter(value)}
             >
-              <MailPlus className="mr-2 h-4 w-4" />
-              New Email
+              {value[0]!.toUpperCase() + value.slice(1)}
             </Button>
-          ) : null}
-          <div className="relative w-full lg:w-80">
-            <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
-            <Input
-              className="pl-10"
-              placeholder="Search emails..."
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-            />
-          </div>
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={isFetching || syncMutation.isPending}
-            onClick={() => syncMutation.mutate()}
-          >
-            <RefreshCw
-              className={cn(
-                'h-4 w-4',
-                (isFetching || syncMutation.isPending) && 'animate-spin',
-              )}
-            />
-          </Button>
+          ))}
         </div>
+
+        <Select
+          value={selectedInboxEmail}
+          onValueChange={setSelectedInboxEmail}
+        >
+          <SelectTrigger className="w-full h-[38px] sm:w-[280px]">
+            <SelectValue placeholder="Choose inbox" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All inboxes</SelectItem>
+            {inboxAccounts.map((account: CoreEmailAccount) => (
+              <SelectItem key={account.id} value={account.email}>
+                {account.email}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
+      <ListToolBar
+        showSearch
+        searchPlaceholder="Search emails..."
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        actions={[
+          ...(canReply
+            ? [
+                {
+                  key: 'compose',
+                  label: 'New Email',
+                  icon: MailPlus,
+                  onClick: () => {
+                    if (sendableAccounts.length === 0) {
+                      toast.error('No sendable accounts available');
+                      return;
+                    }
+                    setIsComposeOpen(true);
+                  },
+                  show: true,
+                  buttonVariant: 'default' as const,
+                },
+              ]
+            : []),
+          {
+            key: 'sync',
+            label:
+              isFetching || syncMutation.isPending
+                ? 'Syncing...'
+                : 'Sync Inbox',
+            icon: ((props: any) => (
+              <RefreshCw
+                className={cn(
+                  props.className,
+                  (isFetching || syncMutation.isPending) && 'animate-spin',
+                )}
+              />
+            )) as any,
+            onClick: () => syncMutation.mutate(),
+            variant: 'icon' as const,
+            show: true,
+          },
+        ]}
+      />
 
       <Card className="border-none bg-transparent shadow-none">
         <CardContent className="p-0">
