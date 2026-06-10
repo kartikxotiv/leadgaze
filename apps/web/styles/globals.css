@@ -102,3 +102,14 @@
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
+
+/* Auth pages input style overrides for dark mode compatibility */
+.auth-card input:not([type="checkbox"]):not([type="radio"]) {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.auth-card input:not([type="checkbox"]):not([type="radio"])::placeholder {
+  color: #94a3b8 !important;
+}

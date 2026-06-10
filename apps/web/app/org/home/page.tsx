@@ -24,11 +24,13 @@ import {
   type WorkspaceSubscriptionStatus,
   getWorkspaceSubscriptionService,
 } from '@kit/core/services';
+import { useUser } from '@kit/supabase/hooks/use-user';
 import { Button } from '@kit/ui/button';
 import { cn } from '@kit/ui/utils';
 
 import { WorkspaceCheckWrapper } from '~/home/_components/workspace-check-wrapper';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { getSeatAssignmentsService } from '~/services/subscription.service';
 
 // ─── Constants ───────────────────────────────────────────────────
 
@@ -117,6 +119,14 @@ function ModuleSelectorPage() {
   const router = useRouter();
   const { currentWorkspace } = useRBAC();
   const workspaceId = currentWorkspace?.id ?? '';
+  const { data: authUser } = useUser();
+
+  // Owner detection
+  const isOwner = Boolean(
+    currentWorkspace?.owner_id &&
+      authUser?.id &&
+      currentWorkspace.owner_id === authUser.id,
+  );
 
   const { data, isLoading } = useQuery<WorkspaceSubscriptionStatus>({
     queryKey: ['workspace-subscription', workspaceId],
@@ -124,7 +134,35 @@ function ModuleSelectorPage() {
     enabled: Boolean(workspaceId),
   });
 
-  const enabledModules = useMemo(() => data?.enabled_modules ?? [], [data]);
+  // Fetch user seat assignments
+  const { data: assignmentsData } = useQuery({
+    queryKey: ['user-seat-assignments', workspaceId],
+    queryFn: () => getSeatAssignmentsService(workspaceId),
+    enabled: Boolean(workspaceId),
+  });
+
+  const userAssignedProductIds = useMemo(() => {
+    const assignments = (assignmentsData?.data ?? []) as Array<{
+      is_active: boolean;
+      user_id: string;
+      product_id: string;
+    }>;
+    return new Set(
+      assignments
+        .filter((a) => a.is_active && a.user_id === authUser?.id)
+        .map((a) => a.product_id),
+    );
+  }, [assignmentsData, authUser?.id]);
+
+  const allEnabledModules = useMemo(() => data?.enabled_modules ?? [], [data]);
+
+  // Owners see all enabled modules; non-owners only see modules they have seats in
+  const enabledModules = useMemo(() => {
+    if (isOwner || allEnabledModules.length === 0) return allEnabledModules;
+    return allEnabledModules.filter((mod) =>
+      userAssignedProductIds.has(mod.module_id),
+    );
+  }, [isOwner, allEnabledModules, userAssignedProductIds]);
 
   // Auto-redirect logic
   useEffect(() => {
