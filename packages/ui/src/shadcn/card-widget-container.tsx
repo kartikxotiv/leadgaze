@@ -11,6 +11,7 @@ interface CardWidgetContainerProps
   hideHeaderBorder?: boolean;
   headerClassName?: string;
   contentClassName?: string;
+  desc?: string;
 }
 
 export function CardWidgetContainer({
@@ -23,6 +24,7 @@ export function CardWidgetContainer({
   contentClassName,
   children,
   className,
+  desc,
   ...props
 }: CardWidgetContainerProps) {
   return (

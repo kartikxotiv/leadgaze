@@ -76,6 +76,7 @@ import {
 import { CoreEmailTemplatesTab } from './templates-tab';
 import type { CoreEmailPageProps } from './types';
 import { CoreEmailVariablesTab } from './variables-tab';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 
 type SmtpFormState = {
   email: string;
@@ -286,7 +287,7 @@ export function CoreEmailSettingsPage({
           </Alert>
         ) : (
           <Tabs defaultValue={settingsTabs[0]!.value} className="space-y-6">
-            <TabsList>
+            <TabsList className="mb-1">
               {settingsTabs.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value}>
                   {tab.label}
@@ -296,15 +297,7 @@ export function CoreEmailSettingsPage({
 
             {canManageAccounts ? (
               <TabsContent value="accounts">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle>Email Accounts</CardTitle>
-                      <CardDescription>
-                        Connect Gmail or SMTP/IMAP accounts for Core email.
-                      </CardDescription>
-                    </div>
-                    <Dialog
+                <CardWidgetContainer title="Email Accounts" desc="Connect Gmail or SMTP/IMAP accounts for Core email." icon2={<Dialog
                       open={isConnectDialogOpen}
                       onOpenChange={setIsConnectDialogOpen}
                     >
@@ -463,9 +456,8 @@ export function CoreEmailSettingsPage({
                           </TabsContent>
                         </Tabs>
                       </DialogContent>
-                    </Dialog>
-                  </CardHeader>
-                  <CardContent>
+                    </Dialog>}>
+                  <div className='mb-2'>                  
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -657,8 +649,8 @@ export function CoreEmailSettingsPage({
                         )}
                       </TableBody>
                     </Table>
-                  </CardContent>
-                </Card>
+                  </div>
+                  </CardWidgetContainer>
               </TabsContent>
             ) : null}
 

@@ -31,6 +31,8 @@ import {
   getCoreEmailVariablesService,
   saveCoreEmailVariableService,
 } from '../../services/email-templates.service';
+import { ListToolBar } from '@kit/ui/list-toolbar';
+import CustomTableContainer from '@kit/ui/custom-table-container';
 
 export function CoreEmailVariablesTab({ workspaceId }: { workspaceId: string }) {
   const queryClient = useQueryClient();
@@ -64,76 +66,78 @@ export function CoreEmailVariablesTab({ workspaceId }: { workspaceId: string }) 
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative w-full max-w-sm">
-          <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
-          <Input className="pl-10" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search variables..." />
-        </div>
-        <Button
-          size="sm"
-          onClick={() => {
-            setSelectedVariable(null);
-            setIsDialogOpen(true);
-          }}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          New Variable
-        </Button>
-      </div>
-
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Key</TableHead>
-                <TableHead>Value</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-muted-foreground h-24 text-center">Loading variables...</TableCell>
-                </TableRow>
-              ) : filteredVariables.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center">
-                    <div className="text-muted-foreground flex flex-col items-center gap-2">
-                      <Variable className="h-8 w-8 opacity-30" />
-                      No variables found
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredVariables.map((variable: any) => (
-                  <TableRow key={variable.id}>
-                    <TableCell>
-                      <code className="bg-muted text-primary rounded px-1.5 py-0.5 text-xs">{`{{${variable.key}}}`}</code>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground max-w-lg truncate">{variable.value}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedVariable(variable);
-                          setIsDialogOpen(true);
-                        }}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(variable.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+      {/* Full-width search / filter / actions toolbar */}
+                          <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+                            <ListToolBar
+                              showSearch
+                              searchPlaceholder="Search variables..."
+                              searchValue={searchTerm}
+                              onSearchChange={setSearchTerm}
+                              actions={[
+                                {
+                                  key: 'add',
+                                  label: 'New Variable',
+                                  icon: Plus,
+                                  onClick: () => {setSelectedVariable(null); setIsDialogOpen(true);          },
+                                  show: true,
+                                  buttonVariant: 'default',
+                                },
+                              ]}                  
+                            />
+                          </div>
+            
+      
+            <CustomTableContainer>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Key</TableHead>
+                    <TableHead>Value</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-muted-foreground h-24 text-center">Loading variables...</TableCell>
+                    </TableRow>
+                  ) : filteredVariables.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="h-24 text-center">
+                        <div className="text-muted-foreground flex flex-col items-center gap-2">
+                          <Variable className="h-8 w-8 opacity-30" />
+                          No variables found
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredVariables.map((variable: any) => (
+                      <TableRow key={variable.id}>
+                        <TableCell>
+                          <code className="bg-muted text-primary rounded px-1.5 py-0.5 text-xs">{`{{${variable.key}}}`}</code>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground max-w-lg truncate">{variable.value}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedVariable(variable);
+                              setIsDialogOpen(true);
+                            }}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(variable.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CustomTableContainer>
 
       <CoreVariableDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} variable={selectedVariable} workspaceId={workspaceId} />
     </div>
