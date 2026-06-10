@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type React from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { Edit2, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
@@ -48,6 +48,8 @@ import {
   getServiceCloudResourceService,
   updateServiceCloudResourceService,
 } from '../../services';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { cn } from '@kit/ui/utils';
 
 export type ResourceField = {
   key: string;
@@ -175,18 +177,12 @@ export function ServiceCloudResourcePage({
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-4">
-        <div>
-          <CardTitle>{title}</CardTitle>
-          <CardDescription>{description}</CardDescription>
-        </div>
-        <div className="flex items-center gap-2">
+    <CardWidgetContainer title="Email Accounts" desc="Connect Gmail or SMTP/IMAP accounts for Core email." icon2={<div className="flex items-center gap-2">
           {toolbar}
           {canCreate ? (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button onClick={openCreate} size="sm">
+                <Button onClick={openCreate}>
                   <Plus className="mr-2 h-4 w-4" />
                   New
                 </Button>
@@ -260,9 +256,8 @@ export function ServiceCloudResourcePage({
               </DialogContent>
             </Dialog>
           ) : null}
-        </div>
-      </CardHeader>
-      <CardContent>
+        </div>}>
+        <div className='mb-2'>
         <Table>
           <TableHeader>
             <TableRow>
@@ -297,7 +292,7 @@ export function ServiceCloudResourcePage({
               data.map((record) => (
                 <TableRow key={record.id}>
                   {columns.map((column) => (
-                    <TableCell key={column.key}>
+                    <TableCell key={column.key} className={cn(column.key === 'name' && 'primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary')}>
                       {column.render
                         ? column.render(record)
                         : String(record[column.key] ?? '-')}
@@ -308,12 +303,12 @@ export function ServiceCloudResourcePage({
                       <div className="flex justify-end gap-2">
                         {canEdit ? (
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
                             onClick={() => openEdit(record)}
                           >
-                            Edit
-                          </Button>
+                            <Edit2 className="h-4 w-4" />
+                          </Button>                          
                         ) : null}
                         {canDelete ? (
                           <Button
@@ -332,8 +327,8 @@ export function ServiceCloudResourcePage({
             )}
           </TableBody>
         </Table>
-      </CardContent>
-    </Card>
+      </div>
+    </CardWidgetContainer>
   );
 }
 
