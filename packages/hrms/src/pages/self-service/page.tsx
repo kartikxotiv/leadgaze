@@ -4,7 +4,7 @@ import { type ReactNode, useState } from 'react';
 
 import { LifeBuoy } from 'lucide-react';
 
-import { Card, CardDescription, CardHeader, CardTitle } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
@@ -43,8 +43,8 @@ export function SelfServicePage(props: {
       : (dashboardData?.requests.length ?? 0);
 
   return (
-    <section className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col overflow-hidden">
+    <section className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
+      <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col overflow-hidden">
         <PageHeader
           title={`Self Service (${activeCount})`}
           description={
@@ -58,7 +58,7 @@ export function SelfServicePage(props: {
 
         {!isRbacLoading && canViewSelfService ? (
           <>
-            <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2">
+            <div className="w-full min-w-0 max-w-full overflow-x-auto pb-2">
               <div className="flex flex-wrap items-center gap-2">
                 <TableStatusMetricTab
                   id="payslips"
@@ -83,19 +83,19 @@ export function SelfServicePage(props: {
                   count={dashboardData?.announcements.length ?? 0}
                   className="cursor-default"
                 />
-                <TableStatusMetricTab
+                {/* <TableStatusMetricTab
                   id="profile"
                   color="#8b5cf6"
                   statusName="Profile Completion"
                   count={dashboardData?.metrics.profileCompletion ?? 0}
                   className="cursor-default"
-                />
+                /> */}
               </div>
             </div>
 
             {activeTab === 'requests' &&
             dashboardData?.permissions.canCreateRequest ? (
-              <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+              <div className="w-full min-w-0 max-w-full shrink-0 border-b pb-2">
                 <ListToolBar
                   actions={[
                     {
@@ -114,8 +114,8 @@ export function SelfServicePage(props: {
         ) : null}
       </div>
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
-        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col gap-4 overflow-y-auto pb-6">
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden pt-3">
+        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-4 overflow-y-auto pb-6">
           {!isRbacLoading && !canViewSelfService ? (
             <SelfServiceAccessCard />
           ) : page.dashboardQuery.isLoading || isRbacLoading ? (
@@ -131,15 +131,16 @@ export function SelfServicePage(props: {
               </div>
             </>
           ) : page.dashboardQuery.isError || !dashboardData ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Unable to load self service</CardTitle>
-                <CardDescription>
-                  {(page.dashboardQuery.error as Error)?.message ??
-                    'Something went wrong while loading your self-service workspace.'}
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <CardWidgetContainer
+              title="Unable to load self service"
+              desc={
+                (page.dashboardQuery.error as Error)?.message ??
+                'Something went wrong while loading your self-service workspace.'
+              }
+              contentClassName="hidden"
+            >
+              <div />
+            </CardWidgetContainer>
           ) : (
             <>
               <SelfServiceMetricCards metrics={dashboardData.metrics} />

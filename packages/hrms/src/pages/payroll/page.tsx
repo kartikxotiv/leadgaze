@@ -2,9 +2,9 @@
 
 import { type ReactNode, useState } from 'react';
 
-import { Plus } from 'lucide-react';
+import { Plus, ShieldAlert } from 'lucide-react';
 
-import { Card, CardDescription, CardHeader, CardTitle } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
@@ -52,8 +52,8 @@ export function PayrollPage(props: {
   const activeCount = getPayrollTabCount(activeTab, page);
 
   return (
-    <section className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col overflow-hidden">
+    <section className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
+      <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col overflow-hidden">
         <PageHeader
           title={`Payroll (${activeCount})`}
           description={
@@ -67,7 +67,7 @@ export function PayrollPage(props: {
 
         {!isRbacLoading && canView ? (
           <>
-            <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2">
+            <div className="w-full min-w-0 max-w-full overflow-x-auto pb-2">
               <div className="flex flex-wrap items-center gap-2">
                 {payrollTabs.map((tab) => (
                   <TableStatusMetricTab
@@ -84,7 +84,7 @@ export function PayrollPage(props: {
             </div>
 
             {canProcess ? (
-              <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+              <div className="w-full min-w-0 max-w-full shrink-0 border-b pb-2">
                 <ListToolBar
                   actions={[
                     {
@@ -103,18 +103,17 @@ export function PayrollPage(props: {
         ) : null}
       </div>
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
-        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col gap-4 overflow-y-auto pb-6">
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden pt-3">
+        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-4 overflow-y-auto pb-6">
           {!isRbacLoading && !canView ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Payroll access is restricted</CardTitle>
-                <CardDescription>
-                  Ask an administrator to grant payroll permissions for your
-                  role.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <CardWidgetContainer
+              title="Payroll access is restricted"
+              desc="Ask an administrator to grant payroll permissions for your role."
+              contentClassName="hidden"
+              icon2={<ShieldAlert className="text-leadgaze-muted h-5 w-5" />}
+            >
+              <div />
+            </CardWidgetContainer>
           ) : page.dashboardQuery.isLoading || isRbacLoading ? (
             <>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -125,15 +124,16 @@ export function PayrollPage(props: {
               <Skeleton className="h-[440px] rounded-xl" />
             </>
           ) : page.dashboardQuery.isError ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Unable to load payroll</CardTitle>
-                <CardDescription>
-                  {(page.dashboardQuery.error as Error)?.message ??
-                    'Something went wrong while loading payroll.'}
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <CardWidgetContainer
+              title="Unable to load payroll"
+              desc={
+                (page.dashboardQuery.error as Error)?.message ??
+                'Something went wrong while loading payroll.'
+              }
+              contentClassName="hidden"
+            >
+              <div />
+            </CardWidgetContainer>
           ) : (
             <>
               <PayrollSummaryCards items={page.metricsItems} />

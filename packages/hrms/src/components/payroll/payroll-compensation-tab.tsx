@@ -1,15 +1,12 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 import { Edit2, Plus, Trash2 } from 'lucide-react';
 
 import { Button } from '@kit/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import {
   Table,
   TableBody,
@@ -36,37 +33,37 @@ export function PayrollCompensationTab(props: {
   return (
     <TabsContent value="compensation" className="mt-0">
       <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Employee Compensation</CardTitle>
-              <CardDescription>
-                One row represents one employee compensation assignment for a
-                date range.
-              </CardDescription>
-            </div>
-            {props.canEdit && (
-              <Button size="sm" onClick={props.onCreateAssignment}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Assignment
-              </Button>
-            )}
-          </CardHeader>
-          <CardContent className="p-0">
+        <div className="grid gap-3">
+          <PayrollTableHeader
+            title="Employee Compensation"
+            description="One row represents one employee compensation assignment for a date range."
+            action={
+              props.canEdit ? (
+                <Button size="sm" onClick={props.onCreateAssignment}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Assignment
+                </Button>
+              ) : null
+            }
+          />
+
+          <CustomTableContainer>
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                 <TableRow>
                   <TableHead>Employee</TableHead>
                   <TableHead>Assignment</TableHead>
                   <TableHead>Period</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="bg-card sticky right-0 px-4 text-right">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {props.employeeAssignments.length > 0 ? (
                   props.employeeAssignments.map((item) => (
-                    <TableRow key={item.id}>
+                    <TableRow key={item.id} className="hover:bg-muted/50">
                       <TableCell className="font-medium">
                         {item.employee}
                       </TableCell>
@@ -75,7 +72,7 @@ export function PayrollCompensationTab(props: {
                       <TableCell>
                         <PayrollStatusBadge label={item.status} />
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="bg-card sticky right-0 px-4 text-right">
                         {props.canEdit && (
                           <div className="flex justify-end gap-1">
                             <Button
@@ -101,7 +98,7 @@ export function PayrollCompensationTab(props: {
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={4}
+                      colSpan={5}
                       className="text-muted-foreground py-6 text-center"
                     >
                       No assignments found. Setup a salary structure first.
@@ -110,29 +107,41 @@ export function PayrollCompensationTab(props: {
                 )}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+          </CustomTableContainer>
+        </div>
 
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle>What Goes Where</CardTitle>
-            <CardDescription>
-              Simple rules to decide which table should store a payroll value.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {dataModelNotes.map((item) => (
-              <div key={item.label} className="rounded-lg border p-4">
-                <p className="text-sm font-medium">{item.label}</p>
-                <p className="mt-1 text-sm">{item.value}</p>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  {item.hint}
-                </p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        <CardWidgetContainer
+          title="What Goes Where"
+          desc="Simple rules to decide which table should store a payroll value."
+          contentClassName="space-y-4 p-4"
+        >
+          {dataModelNotes.map((item) => (
+            <div key={item.label} className="rounded-lg border p-4">
+              <p className="text-sm font-medium">{item.label}</p>
+              <p className="mt-1 text-sm">{item.value}</p>
+              <p className="text-muted-foreground mt-1 text-sm">{item.hint}</p>
+            </div>
+          ))}
+        </CardWidgetContainer>
       </div>
     </TabsContent>
+  );
+}
+
+function PayrollTableHeader(props: {
+  action?: ReactNode;
+  description: string;
+  title: string;
+}) {
+  return (
+    <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
+        <p className="text-muted-foreground mt-1 text-sm">
+          {props.description}
+        </p>
+      </div>
+      {props.action}
+    </div>
   );
 }

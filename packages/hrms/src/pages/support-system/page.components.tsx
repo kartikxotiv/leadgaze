@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from 'react';
 
-import { MessageSquareReply } from 'lucide-react';
+import {
+  CheckCircle2,
+  Clock3,
+  Inbox,
+  MessageSquareReply,
+  ShieldAlert,
+  Timer,
+} from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
@@ -13,6 +20,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import {
   Dialog,
   DialogContent,
@@ -74,34 +83,61 @@ function getBadgeClassName(value: string) {
 
 export function SupportSystemAccessCard() {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Support System access is restricted</CardTitle>
-        <CardDescription>
-          Ask an administrator to grant support-system permissions for your
-          role.
-        </CardDescription>
-      </CardHeader>
-    </Card>
+    <CardWidgetContainer
+      title="Support System access is restricted"
+      desc="Ask an administrator to grant support-system permissions for your role."
+      contentClassName="hidden"
+      icon2={<ShieldAlert className="text-leadgaze-muted h-5 w-5" />}
+    >
+      <div />
+    </CardWidgetContainer>
   );
 }
 
 export function SupportSystemMetricCards(props: {
   items: SupportSystemMetric[];
 }) {
+  const icons = [Inbox, Clock3, Timer, CheckCircle2];
+  const iconColors = [
+    'bg-primary',
+    'bg-activity-5',
+    'bg-activity-4',
+    'bg-activity-3',
+  ];
+
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {props.items.map((item) => (
-        <Card key={item.label}>
-          <CardHeader>
-            <CardDescription>{item.label}</CardDescription>
-            <CardTitle className="text-2xl">{item.value}</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <p className="text-muted-foreground text-sm">{item.hint}</p>
-          </CardContent>
-        </Card>
-      ))}
+      {props.items.map((item, index) => {
+        const Icon = icons[index % icons.length] ?? Inbox;
+
+        return (
+          <Card
+            key={item.label}
+            className="flex h-32 flex-col justify-between xl:h-28 2xl:h-32"
+          >
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+              <div className="space-y-1">
+                <CardDescription className="secondary-text-small text-leadgaze-muted dark:text-white">
+                  {item.label}
+                </CardDescription>
+                <CardTitle className="primary-heading-number text-leadgaze-dark dark:text-zinc-100">
+                  {item.value}
+                </CardTitle>
+              </div>
+              <div
+                className={`flex h-8 w-8 items-center justify-center rounded ${iconColors[index % iconColors.length]}`}
+              >
+                <Icon className="h-4 w-4 text-white" />
+              </div>
+            </CardHeader>
+            <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
+              <p className="secondary-text-small text-leadgaze-success">
+                {item.hint}
+              </p>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
@@ -114,18 +150,15 @@ export function SupportSystemRequestsCard(props: {
   requests: SupportSystemRequest[];
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>HR Requests</CardTitle>
-        <CardDescription>
-          Tickets raised by employees are visible here for HR and admin
-          follow-up.
-        </CardDescription>
-      </CardHeader>
+    <div className="grid gap-3">
+      <SupportSystemTableHeader
+        title="HR Requests"
+        description="Tickets raised by employees are visible here for HR and admin follow-up."
+      />
 
-      <CardContent className="overflow-x-auto p-0">
+      <CustomTableContainer>
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
             <TableRow>
               <TableHead>Employee</TableHead>
               <TableHead>Request</TableHead>
@@ -133,13 +166,15 @@ export function SupportSystemRequestsCard(props: {
               <TableHead>Priority</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Created</TableHead>
-              <TableHead className="text-right">Action</TableHead>
+              <TableHead className="bg-card sticky right-0 px-4 text-right">
+                Action
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {props.requests.map((request) => (
-              <TableRow key={request.id}>
-                <TableCell className="align-top">
+              <TableRow key={request.id} className="hover:bg-muted/50">
+                <TableCell className="h-14">
                   <div className="space-y-1">
                     <p className="font-medium">{request.employee.name}</p>
                     <p className="text-muted-foreground text-xs">
@@ -150,15 +185,12 @@ export function SupportSystemRequestsCard(props: {
                     </p>
                   </div>
                 </TableCell>
-                <TableCell className="align-top">
+                <TableCell className="">
                   <div className="space-y-1">
                     <p className="font-medium">{request.subject}</p>
-                    <p className="text-muted-foreground line-clamp-2 max-w-[320px] text-xs">
-                      {request.description}
-                    </p>
                   </div>
                 </TableCell>
-                <TableCell className="align-top">
+                <TableCell className="">
                   <Badge
                     variant="outline"
                     className={getBadgeClassName(request.category)}
@@ -166,15 +198,15 @@ export function SupportSystemRequestsCard(props: {
                     {getSupportRequestCategoryLabel(request.category)}
                   </Badge>
                 </TableCell>
-                <TableCell className="align-top">
+                <TableCell className="">
                   <Badge
                     variant="outline"
                     className={getBadgeClassName(request.priority)}
                   >
-                    {request.priority}
+                    {getSupportRequestStatusLabel(request.priority)}
                   </Badge>
                 </TableCell>
-                <TableCell className="align-top">
+                <TableCell className="">
                   <Badge
                     variant="outline"
                     className={getBadgeClassName(request.status)}
@@ -182,10 +214,10 @@ export function SupportSystemRequestsCard(props: {
                     {getSupportRequestStatusLabel(request.status)}
                   </Badge>
                 </TableCell>
-                <TableCell className="align-top text-sm">
+                <TableCell className="text-sm">
                   {formatDate(request.created_at)}
                 </TableCell>
-                <TableCell className="text-right align-top">
+                <TableCell className="bg-card sticky right-0 px-4 text-right">
                   <Button
                     size="sm"
                     variant="ghost"
@@ -206,8 +238,20 @@ export function SupportSystemRequestsCard(props: {
             ) : null}
           </TableBody>
         </Table>
-      </CardContent>
-    </Card>
+      </CustomTableContainer>
+    </div>
+  );
+}
+
+function SupportSystemTableHeader(props: {
+  description: string;
+  title: string;
+}) {
+  return (
+    <div className="px-1">
+      <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
+      <p className="text-muted-foreground mt-1 text-sm">{props.description}</p>
+    </div>
   );
 }
 
@@ -343,19 +387,13 @@ export function SupportRequestUpdateDialog(props: {
 
 export function SupportSystemIntroCard() {
   return (
-    <Card>
-      <CardContent className="flex items-start gap-4 p-6">
-        <div className="bg-primary/10 text-primary flex h-11 w-11 shrink-0 items-center justify-center rounded-xl">
-          <MessageSquareReply className="h-5 w-5" />
-        </div>
-        <div className="space-y-2">
-          <p className="font-semibold">Centralized HR request handling</p>
-          <p className="text-muted-foreground text-sm leading-6">
-            Every employee ticket lands here, so HR can review, respond, and
-            close the loop from one workspace.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+    <CardWidgetContainer
+      title="Centralized HR request handling"
+      desc="Every employee ticket lands here, so HR can review, respond, and close the loop from one workspace."
+      contentClassName="hidden"
+      icon2={<MessageSquareReply className="text-leadgaze-muted h-5 w-5" />}
+    >
+      <div />
+    </CardWidgetContainer>
   );
 }

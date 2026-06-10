@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import { Card, CardDescription, CardHeader, CardTitle } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
 import { TableStatusMetricTab } from '@kit/ui/table-status-metric-tab';
@@ -33,8 +33,8 @@ export function SupportSystemPage(props: {
   const activeCount = getSupportTabRequests(requests, page.activeTab).length;
 
   return (
-    <section className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col overflow-hidden">
+    <section className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
+      <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col overflow-hidden">
         <PageHeader
           title={`Support System (${activeCount})`}
           description={
@@ -47,7 +47,7 @@ export function SupportSystemPage(props: {
         </PageHeader>
 
         {!isRbacLoading && canViewSupportSystem ? (
-          <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2">
+          <div className="w-full min-w-0 max-w-full overflow-x-auto pb-2">
             <div className="flex flex-wrap items-center gap-2">
               {SUPPORT_SYSTEM_TABS.map((tab) => (
                 <TableStatusMetricTab
@@ -65,8 +65,8 @@ export function SupportSystemPage(props: {
         ) : null}
       </div>
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
-        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col gap-4 overflow-y-auto pb-6">
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden pt-3">
+        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-4 overflow-y-auto pb-6">
           {!isRbacLoading && !canViewSupportSystem ? (
             <SupportSystemAccessCard />
           ) : page.dashboardQuery.isLoading || isRbacLoading ? (
@@ -79,15 +79,16 @@ export function SupportSystemPage(props: {
               <Skeleton className="h-[420px] rounded-xl" />
             </>
           ) : page.dashboardQuery.isError || !page.dashboardData ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Unable to load support system</CardTitle>
-                <CardDescription>
-                  {(page.dashboardQuery.error as Error)?.message ??
-                    'Something went wrong while loading support requests.'}
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <CardWidgetContainer
+              title="Unable to load support system"
+              desc={
+                (page.dashboardQuery.error as Error)?.message ??
+                'Something went wrong while loading support requests.'
+              }
+              contentClassName="hidden"
+            >
+              <div />
+            </CardWidgetContainer>
           ) : (
             <>
               <SupportSystemMetricCards items={page.dashboardData.metrics} />
