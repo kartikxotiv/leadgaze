@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle,
+  ArrowRight,
   ArrowUpRight,
   Box,
   Clock,
@@ -17,7 +18,9 @@ import {
   Package,
   Shield,
   ShoppingCart,
+  Sparkles,
   Users,
+  Zap,
 } from 'lucide-react';
 
 import {
@@ -25,9 +28,12 @@ import {
   getWorkspaceSubscriptionService,
 } from '@kit/core/services';
 import { useUser } from '@kit/supabase/hooks/use-user';
+import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
+import { Card, CardContent } from '@kit/ui/card';
 import { cn } from '@kit/ui/utils';
 
+import { AppLogo } from '~/components/app-logo';
 import { WorkspaceCheckWrapper } from '~/home/_components/workspace-check-wrapper';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getSeatAssignmentsService } from '~/services/subscription.service';
@@ -35,7 +41,7 @@ import { getSeatAssignmentsService } from '~/services/subscription.service';
 // ─── Constants ───────────────────────────────────────────────────
 
 const MODULE_DASHBOARD_ROUTES: Record<string, string> = {
-  sales: '/home/sales/leads',
+  sales: '/home/sales',
   hrms: '/home/hrms',
   inventory: '/home/inventory',
   service_cloud: '/home/services',
@@ -46,46 +52,58 @@ const MODULE_META: Record<
   string,
   {
     icon: React.ReactNode;
-    accentColor: string;
-    bgClass: string;
+    gradient: string;
+    iconBg: string;
+    iconColor: string;
     description: string;
     stat: string;
+    features: string[];
   }
 > = {
   sales: {
     icon: <ShoppingCart className="h-5 w-5" />,
-    accentColor: '#0176d3',
-    bgClass: 'bg-[#e8f4fd]',
-    description: 'Leads, contacts, accounts & pipeline',
+    gradient: 'from-blue-500/10 to-indigo-500/5',
+    iconBg: 'bg-blue-50 dark:bg-blue-500/10',
+    iconColor: 'text-blue-600 dark:text-blue-400',
+    description: 'Leads, contacts, accounts & pipeline management',
     stat: 'CRM',
+    features: ['Lead scoring', 'Pipeline tracking', 'Email campaigns'],
   },
   hrms: {
     icon: <Users className="h-5 w-5" />,
-    accentColor: '#9050dd',
-    bgClass: 'bg-[#f5f0fd]',
+    gradient: 'from-violet-500/10 to-purple-500/5',
+    iconBg: 'bg-violet-50 dark:bg-violet-500/10',
+    iconColor: 'text-violet-600 dark:text-violet-400',
     description: 'Employees, attendance, payroll & more',
     stat: 'HRMS',
+    features: ['Employee management', 'Leave tracking', 'Payroll'],
   },
   inventory: {
     icon: <Package className="h-5 w-5" />,
-    accentColor: '#2e844a',
-    bgClass: 'bg-[#eef5f0]',
+    gradient: 'from-emerald-500/10 to-green-500/5',
+    iconBg: 'bg-emerald-50 dark:bg-emerald-500/10',
+    iconColor: 'text-emerald-600 dark:text-emerald-400',
     description: 'Products, stock, purchases & orders',
     stat: 'IMS',
+    features: ['Stock tracking', 'Purchase orders', 'Warehousing'],
   },
   service_cloud: {
     icon: <Headphones className="h-5 w-5" />,
-    accentColor: '#dd7a01',
-    bgClass: 'bg-[#fdf4e5]',
+    gradient: 'from-amber-500/10 to-orange-500/5',
+    iconBg: 'bg-amber-50 dark:bg-amber-500/10',
+    iconColor: 'text-amber-600 dark:text-amber-400',
     description: 'Tickets, inboxes & customer support',
     stat: 'Service',
+    features: ['Ticket management', 'Inbox', 'SLA tracking'],
   },
   funds: {
     icon: <DollarSign className="h-5 w-5" />,
-    accentColor: '#0b7764',
-    bgClass: 'bg-[#e5f4f1]',
+    gradient: 'from-teal-500/10 to-cyan-500/5',
+    iconBg: 'bg-teal-50 dark:bg-teal-500/10',
+    iconColor: 'text-teal-600 dark:text-teal-400',
     description: 'Investors, rounds & deal pipeline',
     stat: 'Funds',
+    features: ['Investor CRM', 'Deal pipeline', 'Fundraising'],
   },
 };
 
@@ -93,10 +111,12 @@ function getModuleMeta(key: string) {
   return (
     MODULE_META[key] ?? {
       icon: <Box className="h-5 w-5" />,
-      accentColor: '#5c5e66',
-      bgClass: 'bg-slate-50',
+      gradient: 'from-slate-500/10 to-gray-500/5',
+      iconBg: 'bg-slate-50 dark:bg-slate-500/10',
+      iconColor: 'text-slate-600 dark:text-slate-400',
       description: 'Module',
       stat: key.toUpperCase(),
+      features: [],
     }
   );
 }
@@ -121,7 +141,6 @@ function ModuleSelectorPage() {
   const workspaceId = currentWorkspace?.id ?? '';
   const { data: authUser } = useUser();
 
-  // Owner detection
   const isOwner = Boolean(
     currentWorkspace?.owner_id &&
       authUser?.id &&
@@ -134,7 +153,6 @@ function ModuleSelectorPage() {
     enabled: Boolean(workspaceId),
   });
 
-  // Fetch user seat assignments
   const { data: assignmentsData } = useQuery({
     queryKey: ['user-seat-assignments', workspaceId],
     queryFn: () => getSeatAssignmentsService(workspaceId),
@@ -156,7 +174,6 @@ function ModuleSelectorPage() {
 
   const allEnabledModules = useMemo(() => data?.enabled_modules ?? [], [data]);
 
-  // Owners see all enabled modules; non-owners only see modules they have seats in
   const enabledModules = useMemo(() => {
     if (isOwner || allEnabledModules.length === 0) return allEnabledModules;
     return allEnabledModules.filter((mod) =>
@@ -198,45 +215,40 @@ function ModuleSelectorPage() {
   // Loading
   if (isLoading || !data) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#f3f2f2]">
+      <div className="bg-background flex h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="flex items-center gap-2">
-            <LeadgazeLogo size={32} />
-            <span className="text-xl font-semibold tracking-tight text-[#1b2533]">
-              Leadgaze
-            </span>
-          </div>
-          <Loader2 className="h-5 w-5 animate-spin text-[#0176d3]" />
+          <AppLogo href={null} collapsed />
+          <Loader2 className="text-primary h-5 w-5 animate-spin" />
+          <p className="text-muted-foreground text-sm">Loading workspace...</p>
         </div>
       </div>
     );
   }
 
-  // No active subscription and no modules
+  // No active subscription
   if (enabledModules.length === 0 && !data.is_subscription_valid) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center gap-6 bg-[#f3f2f2]">
-        <div className="flex max-w-md flex-col items-center gap-4 rounded-lg border border-[#dddbda] bg-white p-10 text-center shadow-sm">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#fce9e9]">
-            <AlertTriangle className="h-7 w-7 text-[#c23934]" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-[#1b2533]">
-              No Active Subscription
-            </h2>
-            <p className="mt-1 text-sm text-[#54698d]">
-              Your workspace does not have any active modules. Subscribe to a
-              module to get started.
-            </p>
-          </div>
-          <Button
-            className="bg-[#0176d3] text-white hover:bg-[#0161b0]"
-            onClick={() => router.push('/org/subscription')}
-          >
-            <CreditCard className="mr-2 h-4 w-4" />
-            Subscribe Now
-          </Button>
-        </div>
+      <div className="bg-background flex h-screen flex-col items-center justify-center">
+        <Card className="mx-4 w-full max-w-md text-center">
+          <CardContent className="flex flex-col items-center gap-5 p-10">
+            <div className="bg-destructive/10 flex h-14 w-14 items-center justify-center rounded-full">
+              <AlertTriangle className="text-destructive h-7 w-7" />
+            </div>
+            <div>
+              <h2 className="primary-heading text-foreground">
+                No Active Subscription
+              </h2>
+              <p className="primary-text-regular text-muted-foreground mt-2">
+                Your workspace does not have any active modules. Subscribe to a
+                module to get started.
+              </p>
+            </div>
+            <Button onClick={() => router.push('/org/subscription')}>
+              <CreditCard className="mr-2 h-4 w-4" />
+              Subscribe Now
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -244,27 +256,26 @@ function ModuleSelectorPage() {
   // Subscription expired
   if (!data.is_subscription_valid && data.is_trial_expired) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center gap-6 bg-[#f3f2f2]">
-        <div className="flex max-w-md flex-col items-center gap-4 rounded-lg border border-[#dddbda] bg-white p-10 text-center shadow-sm">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#fce9e9]">
-            <AlertTriangle className="h-7 w-7 text-[#c23934]" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-[#1b2533]">
-              Subscription Expired
-            </h2>
-            <p className="mt-1 text-sm text-[#54698d]">
-              Your subscription has ended. Renew to regain access to all
-              Leadgaze modules.
-            </p>
-          </div>
-          <Button
-            className="bg-[#0176d3] text-white hover:bg-[#0161b0]"
-            onClick={() => router.push('/org/subscription')}
-          >
-            Renew Subscription
-          </Button>
-        </div>
+      <div className="bg-background flex h-screen flex-col items-center justify-center">
+        <Card className="mx-4 w-full max-w-md text-center">
+          <CardContent className="flex flex-col items-center gap-5 p-10">
+            <div className="bg-destructive/10 flex h-14 w-14 items-center justify-center rounded-full">
+              <AlertTriangle className="text-destructive h-7 w-7" />
+            </div>
+            <div>
+              <h2 className="primary-heading text-foreground">
+                Subscription Expired
+              </h2>
+              <p className="primary-text-regular text-muted-foreground mt-2">
+                Your subscription has ended. Renew to regain access to all
+                Leadgaze modules.
+              </p>
+            </div>
+            <Button onClick={() => router.push('/org/subscription')}>
+              Renew Subscription
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -272,94 +283,120 @@ function ModuleSelectorPage() {
   // Single module — redirect happening via useEffect
   if (enabledModules.length <= 1) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#f3f2f2]">
-        <Loader2 className="h-5 w-5 animate-spin text-[#0176d3]" />
+      <div className="bg-background flex h-screen items-center justify-center">
+        <Loader2 className="text-primary h-5 w-5 animate-spin" />
       </div>
     );
   }
 
   // Multiple modules — show selector
   return (
-    <div className="min-h-screen bg-[#f3f2f2]">
+    <div className="bg-background min-h-screen">
       {/* Top bar */}
-      <header className="border-b border-[#dddbda] bg-[#1b2533] px-6 py-0">
-        <div className="flex h-12 items-center justify-between">
+      <header className="border-border bg-card/80 sticky top-0 z-40 border-b backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <LeadgazeLogo size={24} inverted />
-            <span className="text-sm font-semibold tracking-wide text-white">
-              LEADGAZE
-            </span>
-            <div className="mx-2 h-4 w-px bg-white/20" />
-            <span className="text-xs text-white/50">Platform</span>
+            <AppLogo href={null} collapsed />
+            <div className="flex items-center gap-2">
+              <span className="text-foreground text-sm font-semibold">
+                Leadgaze
+              </span>
+              <span className="text-muted-foreground text-xs">/</span>
+              <span className="text-muted-foreground text-xs">Platform</span>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {data.subscription?.status === 'trialing' &&
               data.trial_days_remaining != null && (
-                <button
-                  className="flex items-center gap-1.5 rounded bg-[#dd7a01] px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-[#c96d00]"
+                <Badge
+                  variant="warning"
+                  className="cursor-pointer gap-1.5"
                   onClick={() => router.push('/org/subscription')}
                 >
                   <Clock className="h-3 w-3" />
-                  {data.trial_days_remaining}d trial remaining
-                </button>
+                  {data.trial_days_remaining}d trial left
+                </Badge>
               )}
-            <button
-              className="flex items-center gap-1.5 rounded border border-white/20 px-3 py-1 text-xs text-white/70 transition-colors hover:border-white/40 hover:text-white"
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
               onClick={() => router.push('/org/subscription')}
             >
-              <CreditCard className="h-3 w-3" />
-              Manage plan
-            </button>
+              <CreditCard className="h-3.5 w-3.5" />
+              Manage Plan
+            </Button>
           </div>
         </div>
       </header>
 
       {/* Hero */}
-      <div className="border-b border-[#dddbda] bg-white px-6 py-8">
-        <div className="mx-auto max-w-5xl">
-          <div className="flex items-start justify-between">
+      <div className="border-border from-primary/[0.03] border-b bg-gradient-to-b to-transparent">
+        <div className="mx-auto max-w-6xl px-6 py-10">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="mb-1 text-xs font-semibold tracking-widest text-[#0176d3] uppercase">
-                Leadgaze Platform
-              </p>
-              <h1 className="text-2xl font-bold text-[#1b2533]">
-                {currentWorkspace?.name ?? 'Your Workspace'}
-              </h1>
-              <p className="mt-1.5 text-sm text-[#54698d]">
-                Select a module to continue. Your access is based on your
-                current subscription plan.
-              </p>
-            </div>
-            <div className="flex flex-col items-end gap-1.5">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[#4bca81]" />
-                <span className="text-xs font-medium text-[#2e844a]">
-                  All systems operational
+              <div className="mb-2 flex items-center gap-2">
+                <Sparkles className="text-primary h-4 w-4" />
+                <span className="secondary-text-small text-primary font-medium tracking-widest uppercase">
+                  Workspace
                 </span>
               </div>
-              <span className="text-xs text-[#706e6b]">
+              <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">
+                {currentWorkspace?.name ?? 'Your Workspace'}
+              </h1>
+              <p className="primary-text-regular text-muted-foreground mt-2">
+                Select a module to continue. Your access is based on your
+                subscription plan.
+              </p>
+            </div>
+            <div className="flex flex-col items-start gap-2 sm:items-end">
+              <Badge variant="success" className="gap-1.5">
+                <Zap className="h-3 w-3" />
+                All systems operational
+              </Badge>
+              <span className="secondary-text-small text-muted-foreground">
                 {enabledModules.length} module
                 {enabledModules.length !== 1 ? 's' : ''} active
               </span>
             </div>
           </div>
 
-          {/* Summary stats */}
-          <div className="mt-6 grid grid-cols-3 gap-4 sm:grid-cols-4 lg:grid-cols-6">
+          {/* Module summary pills */}
+          <div className="mt-8 flex flex-wrap gap-2">
             {enabledModules.map((mod) => {
               const meta = getModuleMeta(mod.module_key);
               return (
                 <div
                   key={mod.module_id}
-                  className="rounded-md border border-[#dddbda] bg-[#f3f2f2] px-3 py-2.5 text-center"
+                  className="border-border bg-card flex items-center gap-2 rounded-full border px-3 py-1.5"
                 >
-                  <p className="text-[11px] font-semibold tracking-wider text-[#706e6b] uppercase">
+                  <div
+                    className={cn(
+                      'flex h-5 w-5 items-center justify-center rounded',
+                      meta.iconBg,
+                      meta.iconColor,
+                    )}
+                  >
+                    {mod.module_key === 'sales' && (
+                      <ShoppingCart className="h-3 w-3" />
+                    )}
+                    {mod.module_key === 'hrms' && <Users className="h-3 w-3" />}
+                    {mod.module_key === 'inventory' && (
+                      <Package className="h-3 w-3" />
+                    )}
+                    {mod.module_key === 'service_cloud' && (
+                      <Headphones className="h-3 w-3" />
+                    )}
+                    {mod.module_key === 'funds' && (
+                      <DollarSign className="h-3 w-3" />
+                    )}
+                  </div>
+                  <span className="secondary-text-small text-foreground font-medium">
                     {meta.stat}
-                  </p>
-                  <p className="mt-0.5 text-lg font-bold text-[#1b2533]">
-                    {mod.purchased_seats}
-                  </p>
-                  <p className="text-[10px] text-[#9ea4ac]">seats</p>
+                  </span>
+                  <span className="secondary-text-small text-muted-foreground">
+                    · {mod.used_seats}/{mod.purchased_seats} seats
+                  </span>
                 </div>
               );
             })}
@@ -368,18 +405,18 @@ function ModuleSelectorPage() {
       </div>
 
       {/* Module grid */}
-      <div className="mx-auto max-w-5xl px-6 py-8">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xs font-semibold tracking-widest text-[#706e6b] uppercase">
-            Available Modules
-          </h2>
-          <button
-            className="flex items-center gap-1.5 text-xs text-[#0176d3] hover:underline"
+      <div className="mx-auto max-w-6xl px-6 py-8">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="primary-heading text-foreground">Available Modules</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-primary gap-1.5"
             onClick={() => router.push('/org/subscription')}
           >
             Add modules
-            <ArrowUpRight className="h-3 w-3" />
-          </button>
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </Button>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -396,19 +433,21 @@ function ModuleSelectorPage() {
         </div>
 
         {/* Footer note */}
-        <div className="mt-10 flex items-center gap-2 rounded-md border border-[#dddbda] bg-white px-4 py-3">
-          <Shield className="h-4 w-4 shrink-0 text-[#706e6b]" />
-          <p className="text-xs text-[#706e6b]">
-            Access is controlled by your workspace role and seat assignment.
-            Contact your admin if you need permissions adjusted.
-            <button
-              className="ml-1 text-[#0176d3] hover:underline"
-              onClick={() => router.push('/org/subscription')}
-            >
-              Manage subscription &rarr;
-            </button>
-          </p>
-        </div>
+        <Card className="mt-8">
+          <CardContent className="flex items-center gap-3 p-4">
+            <Shield className="text-muted-foreground h-4 w-4 shrink-0" />
+            <p className="secondary-text-small text-muted-foreground">
+              Access is controlled by your workspace role and seat assignment.
+              Contact your admin if you need permissions adjusted.
+              <button
+                className="text-primary ml-1 font-medium hover:underline"
+                onClick={() => router.push('/org/subscription')}
+              >
+                Manage subscription &rarr;
+              </button>
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
@@ -423,7 +462,6 @@ function ModuleCard({
   module: WorkspaceSubscriptionStatus['enabled_modules'][0];
   onClick: () => void;
 }) {
-  const [hovered, setHovered] = useState(false);
   const meta = getModuleMeta(mod.module_key);
 
   const seatPercent =
@@ -440,141 +478,98 @@ function ModuleCard({
         ? 'Trial'
         : (mod.subscription_status?.replace(/_/g, ' ') ?? 'Inactive');
 
-  const statusDot =
+  const statusVariant =
     mod.subscription_status === 'active'
-      ? 'bg-[#4bca81]'
+      ? 'success'
       : mod.subscription_status === 'trialing'
-        ? 'bg-[#dd7a01]'
-        : 'bg-[#aeacaa]';
+        ? 'warning'
+        : ('secondary' as const);
 
   return (
-    <button
+    <Card
+      className="group cursor-pointer overflow-hidden transition-all duration-200 hover:shadow-md"
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className={cn(
-        'group relative flex flex-col rounded-md border bg-white text-left shadow-sm transition-all duration-200',
-        hovered ? 'shadow-md' : 'border-[#dddbda]',
-      )}
-      style={{
-        borderColor: hovered ? meta.accentColor : undefined,
-        outline: hovered ? `1px solid ${meta.accentColor}` : 'none',
-      }}
     >
-      {/* Top accent bar */}
+      {/* Top gradient accent */}
       <div
-        className="h-1 w-full rounded-t-md transition-opacity"
-        style={{
-          backgroundColor: meta.accentColor,
-          opacity: hovered ? 1 : 0.4,
-        }}
+        className={cn(
+          'h-1 bg-gradient-to-r',
+          meta.gradient.replace('/10', '/60').replace('/5', '/30'),
+        )}
       />
 
-      <div className="p-5">
-        {/* Header row */}
+      <CardContent className="p-5">
+        {/* Header */}
         <div className="flex items-start justify-between">
           <div
             className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-md',
-              meta.bgClass,
+              'flex h-11 w-11 items-center justify-center rounded-lg',
+              meta.iconBg,
+              meta.iconColor,
             )}
-            style={{ color: meta.accentColor }}
           >
             {meta.icon}
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className={cn('h-1.5 w-1.5 rounded-full', statusDot)} />
-            <span className="text-[11px] font-medium text-[#54698d]">
-              {statusLabel}
-            </span>
-          </div>
+          <Badge variant={statusVariant} className="text-[10px]">
+            {statusLabel}
+          </Badge>
         </div>
 
         {/* Module info */}
-        <div className="mt-3">
-          <h3 className="text-sm font-semibold text-[#1b2533]">
-            {mod.module_name}
-          </h3>
-          <p className="mt-0.5 text-xs text-[#706e6b]">{meta.description}</p>
+        <div className="mt-4">
+          <h3 className="primary-heading text-foreground">{mod.module_name}</h3>
+          <p className="secondary-text-small text-muted-foreground mt-1">
+            {meta.description}
+          </p>
         </div>
 
-        {/* Divider */}
-        <div className="my-4 border-t border-[#f3f2f2]" />
+        {/* Feature tags */}
+        {meta.features.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1">
+            {meta.features.map((f) => (
+              <span
+                key={f}
+                className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[10px] font-medium"
+              >
+                {f}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Seat usage */}
-        <div className="space-y-1.5">
+        <div className="mt-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-[#706e6b]">Seat usage</span>
-            <span className="text-[11px] font-medium text-[#1b2533]">
+            <span className="secondary-text-small text-muted-foreground">
+              Seat usage
+            </span>
+            <span className="secondary-text-small text-foreground font-semibold">
               {mod.used_seats} / {mod.purchased_seats}
             </span>
           </div>
           {mod.purchased_seats > 0 && (
-            <div className="h-1 w-full overflow-hidden rounded-full bg-[#f3f2f2]">
+            <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
                   width: `${seatPercent}%`,
                   backgroundColor: isNearCapacity
-                    ? '#c23934'
-                    : meta.accentColor,
+                    ? 'var(--destructive)'
+                    : 'var(--primary)',
                 }}
               />
             </div>
           )}
         </div>
-      </div>
+      </CardContent>
 
-      {/* Open module footer */}
-      <div
-        className={cn(
-          'flex items-center justify-between rounded-b-md border-t border-[#f3f2f2] px-5 py-3 transition-colors',
-          hovered ? 'bg-[#f3f2f2]' : 'bg-transparent',
-        )}
-      >
-        <span
-          className="text-xs font-medium"
-          style={{ color: meta.accentColor }}
-        >
+      {/* Footer */}
+      <div className="border-border bg-muted/30 group-hover:bg-muted/50 flex items-center justify-between border-t px-5 py-3 transition-colors">
+        <span className="primary-text-medium text-primary">
           Open {meta.stat}
         </span>
-        <ArrowUpRight
-          className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-          style={{ color: meta.accentColor }}
-        />
+        <ArrowRight className="text-primary h-4 w-4 transition-transform group-hover:translate-x-1" />
       </div>
-    </button>
-  );
-}
-
-// ─── Logo ────────────────────────────────────────────────────────
-
-function LeadgazeLogo({
-  size = 28,
-  inverted = false,
-}: {
-  size?: number;
-  inverted?: boolean;
-}) {
-  const fg = inverted ? '#fff' : '#0176d3';
-  const bg = inverted ? '#0176d3' : '#e8f4fd';
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect width="32" height="32" rx="6" fill={bg} />
-      <path
-        d="M8 22L14 10L20 18L24 14"
-        stroke={fg}
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="24" cy="14" r="2.5" fill={fg} />
-    </svg>
+    </Card>
   );
 }

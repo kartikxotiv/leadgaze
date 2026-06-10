@@ -4,13 +4,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { Button } from '@kit/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kit/ui/card';
+import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import {
   Table,
   TableBody,
@@ -30,6 +24,8 @@ import { formatCurrency } from '../utils';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export function PayrollPayslipsTab(props: {
   onViewDetails: (payslip: any) => void;
 }) {
@@ -42,24 +38,24 @@ export function PayrollPayslipsTab(props: {
 
   return (
     <TabsContent value="payslips" className="mt-0">
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle>Generated Payslips</CardTitle>
-          <CardDescription>
-            Official payroll records for your employees. Click any row to see
-            the breakdown.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
+      <div className="grid gap-3">
+        <PayrollTableHeader
+          title="Generated Payslips"
+          description="Official payroll records for your employees. Click any row to see the breakdown."
+        />
+
+        <CustomTableContainer>
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
               <TableRow>
                 <TableHead>Employee</TableHead>
                 <TableHead>Period</TableHead>
                 <TableHead>Gross Pay</TableHead>
                 <TableHead>Net Pay</TableHead>
                 <TableHead>Generated At</TableHead>
-                <TableHead className="text-right">Action</TableHead>
+                <TableHead className="bg-card sticky right-0 px-4 text-right">
+                  Action
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -80,7 +76,7 @@ export function PayrollPayslipsTab(props: {
                   <TableCell>
                     {new Date(item.generated_at).toLocaleDateString()}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="bg-card sticky right-0 px-4 text-right">
                     <Button size="sm" variant="ghost">
                       View Details
                     </Button>
@@ -96,8 +92,17 @@ export function PayrollPayslipsTab(props: {
               )}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </CustomTableContainer>
+      </div>
     </TabsContent>
+  );
+}
+
+function PayrollTableHeader(props: { description: string; title: string }) {
+  return (
+    <div className="px-1">
+      <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
+      <p className="text-muted-foreground mt-1 text-sm">{props.description}</p>
+    </div>
   );
 }

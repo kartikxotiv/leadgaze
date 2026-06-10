@@ -59,12 +59,12 @@ export function useAuthChangeListener({
 
       // revalidate user session when user signs in or out
       if (event === 'SIGNED_OUT') {
+        localStorage.removeItem('selected_module');
         // sometimes Supabase sends SIGNED_OUT event
         // but in the auth path, so we ignore it
         if (AUTH_PATHS.some((path) => pathName.startsWith(path))) {
           return;
         }
-        localStorage.removeItem('selected_module');
         window.location.reload();
       }
     });

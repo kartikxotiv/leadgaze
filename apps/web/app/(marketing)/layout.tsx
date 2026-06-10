@@ -1,23 +1,29 @@
-import { getSupabaseServerClient } from '@kit/supabase/server-client';
+import { redirect } from 'next/navigation';
 
-import { SiteFooter } from '~/(marketing)/_components/site-footer';
-import { SiteHeader } from '~/(marketing)/_components/site-header';
-import { withI18n } from '~/lib/i18n/with-i18n';
+// import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-async function SiteLayout(props: React.PropsWithChildren) {
-  const client = getSupabaseServerClient();
+// import { SiteFooter } from '~/(marketing)/_components/site-footer';
+// import { SiteHeader } from '~/(marketing)/_components/site-header';
+// import { withI18n } from '~/lib/i18n/with-i18n';
 
-  const { data } = await client.auth.getClaims();
+// async function SiteLayout(props: React.PropsWithChildren) {
+//   const client = getSupabaseServerClient();
 
-  return (
-    <div className={'flex min-h-[100vh] flex-col'}>
-      <SiteHeader user={data?.claims} />
+//   const { data } = await client.auth.getClaims();
 
-      {props.children}
+//   return (
+//     <div className={'flex min-h-[100vh] flex-col'}>
+//       <SiteHeader user={data?.claims} />
 
-      <SiteFooter />
-    </div>
-  );
+//       {props.children}
+
+//       <SiteFooter />
+//     </div>
+//   );
+// }
+
+// export default withI18n(SiteLayout);
+
+export default function SalesPage() {
+  redirect('/auth/sign-in');
 }
-
-export default withI18n(SiteLayout);

@@ -110,9 +110,6 @@ export function DepartmentsDirectoryCard(props: {
                     <p className="primary-text-medium truncate">
                       {department.name}
                     </p>
-                    <p className="text-muted-foreground truncate text-xs">
-                      Updated {formatDate(department.updated_at)}
-                    </p>
                   </div>
                 </TableCell>
               )}

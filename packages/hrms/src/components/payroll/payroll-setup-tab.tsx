@@ -1,16 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
+import type { ReactNode } from 'react';
+
 import { Edit2, Plus, Trash2 } from 'lucide-react';
 
 import { Button } from '@kit/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kit/ui/card';
+import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import {
   Table,
   TableBody,
@@ -23,6 +19,8 @@ import { TabsContent } from '@kit/ui/tabs';
 
 import type { PayrollDashboardResponse } from '../../types/payroll.type';
 import { PayrollStatusBadge } from '../page.components';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -45,37 +43,37 @@ export function PayrollSetupTab(props: {
   return (
     <TabsContent value="setup" className="mt-0">
       <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Components</CardTitle>
-              <CardDescription>
-                Reusable payroll heads like Basic, HRA, PF, bonus, and
-                reimbursements.
-              </CardDescription>
-            </div>
-            {props.canEdit && (
-              <Button size="sm" onClick={props.onCreateComponent}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Component
-              </Button>
-            )}
-          </CardHeader>
-          <CardContent className="p-0">
+        <div className="grid gap-3">
+          <PayrollTableHeader
+            title="Components"
+            description="Reusable payroll heads like Basic, HRA, PF, bonus, and reimbursements."
+            action={
+              props.canEdit ? (
+                <Button size="sm" onClick={props.onCreateComponent}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Component
+                </Button>
+              ) : null
+            }
+          />
+
+          <CustomTableContainer>
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Taxable?</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="bg-card sticky right-0 px-4 text-right">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {props.salaryComponents.length > 0 ? (
                   props.salaryComponents.map((component) => (
-                    <TableRow key={component.id}>
+                    <TableRow key={component.id} className="hover:bg-muted/50">
                       <TableCell className="font-medium">
                         {component.name}
                       </TableCell>
@@ -86,7 +84,7 @@ export function PayrollSetupTab(props: {
                           label={component.is_active ? 'Live' : 'Inactive'}
                         />
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="bg-card sticky right-0 px-4 text-right">
                         {props.canEdit && (
                           <div className="flex justify-end gap-1">
                             <Button
@@ -113,7 +111,7 @@ export function PayrollSetupTab(props: {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="py-6 text-center">
+                    <TableCell colSpan={5} className="py-6 text-center">
                       No salary components found. Create one to start payroll
                       setup.
                     </TableCell>
@@ -121,39 +119,39 @@ export function PayrollSetupTab(props: {
                 )}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+          </CustomTableContainer>
+        </div>
 
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Salary Structures</CardTitle>
-              <CardDescription>
-                Default templates for common roles before employee-level
-                overrides.
-              </CardDescription>
-            </div>
-            {props.canEdit && (
-              <Button size="sm" onClick={props.onCreateStructure}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Structure
-              </Button>
-            )}
-          </CardHeader>
-          <CardContent className="p-0">
+        <div className="grid gap-3">
+          <PayrollTableHeader
+            title="Salary Structures"
+            description="Default templates for common roles before employee-level overrides."
+            action={
+              props.canEdit ? (
+                <Button size="sm" onClick={props.onCreateStructure}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Structure
+                </Button>
+              ) : null
+            }
+          />
+
+          <CustomTableContainer>
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Currency</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="bg-card sticky right-0 px-4 text-right">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {props.salaryStructures.map((item) => (
-                  <TableRow key={item.id}>
+                  <TableRow key={item.id} className="hover:bg-muted/50">
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell>{item.description ?? '-'}</TableCell>
                     <TableCell>{item.currency_code}</TableCell>
@@ -162,7 +160,7 @@ export function PayrollSetupTab(props: {
                         label={item.is_active ? 'Live' : 'Inactive'}
                       />
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="bg-card sticky right-0 px-4 text-right">
                       {props.canEdit && (
                         <div className="flex justify-end gap-1">
                           <Button
@@ -199,9 +197,27 @@ export function PayrollSetupTab(props: {
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+          </CustomTableContainer>
+        </div>
       </div>
     </TabsContent>
+  );
+}
+
+function PayrollTableHeader(props: {
+  action?: ReactNode;
+  description: string;
+  title: string;
+}) {
+  return (
+    <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
+        <p className="text-muted-foreground mt-1 text-sm">
+          {props.description}
+        </p>
+      </div>
+      {props.action}
+    </div>
   );
 }

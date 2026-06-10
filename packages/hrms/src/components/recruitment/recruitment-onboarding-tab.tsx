@@ -3,13 +3,7 @@
 import { Pencil, Trash2 } from 'lucide-react';
 
 import { Button } from '@kit/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kit/ui/card';
+import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import {
   Table,
   TableBody,
@@ -31,29 +25,29 @@ export function RecruitmentOnboardingTab(props: {
   onboardingTasks: RecruitmentOnboardingTaskSummary[];
 }) {
   return (
-    <Card className="shadow-sm">
-      <CardHeader>
-        <CardTitle>Onboarding Checklist</CardTitle>
-        <CardDescription>
-          Track pre-joining tasks, owners, blockers, and completion dates.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-0">
+    <div className="grid gap-3">
+      <RecruitmentTableHeader
+        title="Onboarding Checklist"
+        description="Track pre-joining tasks, owners, blockers, and completion dates."
+      />
+      <CustomTableContainer>
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
             <TableRow>
               <TableHead>Candidate</TableHead>
               <TableHead>Task</TableHead>
               <TableHead>Owner</TableHead>
               <TableHead>Due Date</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="bg-card sticky right-0 px-4 text-right">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {props.onboardingTasks.length ? (
               props.onboardingTasks.map((task) => (
-                <TableRow key={task.id}>
+                <TableRow key={task.id} className="hover:bg-muted/50">
                   <TableCell>{task.candidate_name}</TableCell>
                   <TableCell>
                     <div className="flex flex-col">
@@ -68,7 +62,7 @@ export function RecruitmentOnboardingTab(props: {
                   <TableCell>
                     <RecruitmentStatusBadge label={formatLabel(task.status)} />
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="bg-card sticky right-0 px-4 text-right">
                     {props.canManageOnboarding ? (
                       <div className="flex justify-end gap-1">
                         <Button
@@ -100,7 +94,16 @@ export function RecruitmentOnboardingTab(props: {
             )}
           </TableBody>
         </Table>
-      </CardContent>
-    </Card>
+      </CustomTableContainer>
+    </div>
+  );
+}
+
+function RecruitmentTableHeader(props: { description: string; title: string }) {
+  return (
+    <div className="px-1">
+      <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
+      <p className="text-muted-foreground mt-1 text-sm">{props.description}</p>
+    </div>
   );
 }

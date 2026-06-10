@@ -1,20 +1,16 @@
 'use client';
 
-import { Filter, Plus, Search, X } from 'lucide-react';
+import type { ReactNode } from 'react';
 
-import { Button } from '@kit/ui/button';
-import { Input } from '@kit/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@kit/ui/select';
+import { Plus } from 'lucide-react';
+
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { ListToolBar } from '@kit/ui/list-toolbar';
+import { PageBody, PageHeader } from '@kit/ui/page';
+import { TableStatusMetricTab } from '@kit/ui/table-status-metric-tab';
 
 import { EMPTY_ATTENDANCE_SUMMARY } from '../../attendance-page.utils';
 import { AttendanceRecordDialog } from '../../components/attendance/attendance-record-dialog';
-import { AttendanceSummaryCards } from '../../components/attendance/attendance-summary-cards';
 import { MyAttendanceCard } from '../../components/attendance/my-attendance-card';
 import { RecentAttendanceCard } from '../../components/attendance/recent-attendance-card';
 import { ShiftFormDialog } from '../../components/attendance/shift-form-dialog';
@@ -23,7 +19,10 @@ import { TeamAttendanceTableCard } from '../../components/attendance/team-attend
 import { WorkingDaysCard } from '../../components/attendance/working-days-card';
 import { useAttendancePage } from '../../hooks/use-attendance-page';
 
-export function AttendancePage() {
+export function AttendancePage(props: {
+  headerActions?: ReactNode;
+  workspaceName?: string;
+}) {
   const {
     activeView,
     adminData,
@@ -42,10 +41,8 @@ export function AttendancePage() {
     editingShift,
     filterableAttendanceShifts,
     hasAttendanceFilters,
-    isFiltersVisible,
     isEditDialogOpen,
     isMemberOnlyView,
-    isSearchVisible,
     isShiftDialogOpen,
     markRowAbsent,
     markRowPresent,
@@ -65,8 +62,6 @@ export function AttendancePage() {
     selectedDateLabel,
     setActiveView,
     setAttendanceSearchTerm,
-    setIsFiltersVisible,
-    setIsSearchVisible,
     setSelectedDate,
     setShiftFilter,
     setStatusFilter,
@@ -79,242 +74,261 @@ export function AttendancePage() {
     submitWorkingDays,
     workingDays,
   } = useAttendancePage();
+  const summary = adminData?.summary ?? EMPTY_ATTENDANCE_SUMMARY;
   const showTeamFilters = !isMemberOnlyView && activeView === 'team';
+  const canShowTeamView = !isMemberOnlyView && canViewTeam;
+  const canShowShiftView = !isMemberOnlyView && canManageShifts;
+  const activeFilterCount =
+    (statusFilter !== allAttendanceStatuses ? 1 : 0) +
+    (shiftFilter !== allAttendanceShifts ? 1 : 0);
 
   return (
-    <section
-      className={
-        activeView === 'team'
-          ? 'flex min-h-0 flex-1 flex-col gap-4'
-          : 'flex flex-col gap-4'
-      }
-    >
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        {showTeamFilters ? (
-          isSearchVisible ? (
-            <div className="relative">
-              <Input
-                className="h-9 w-full pr-9 sm:w-[320px]"
-                placeholder="Search attendance"
-                value={searchTerm}
-                onChange={(event) =>
-                  setAttendanceSearchTerm(event.target.value)
-                }
-              />
-              <Button
-                aria-label="Close search"
-                className="absolute right-0 top-0 h-9 w-9"
-                size="icon"
-                variant="ghost"
-                onClick={() => {
-                  setAttendanceSearchTerm('');
-                  setIsSearchVisible(false);
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <Button
-              aria-label="Search attendance"
-              size="icon"
-              variant="outline"
-              onClick={() => setIsSearchVisible(true)}
-            >
-              <Search className="h-4 w-4" />
-            </Button>
-          )
-        ) : (
-          <div />
-        )}
+    <section className="flex h-[100dvh] min-h-0 flex-col overflow-hidden">
+      <div className="bg-sidebar flex shrink-0 flex-col overflow-hidden">
+        <PageHeader
+          className="bg-sidebar shrink-0"
+          title={`Attendance (${getAttendanceCount({
+            activeView,
+            recentCount: myData?.recent.length ?? 0,
+            shiftsCount: shifts.length,
+            teamTotal: summary.total,
+          })})`}
+          description={
+            props.workspaceName
+              ? `${props.workspaceName} attendance`
+              : 'Attendance'
+          }
+        >
+          {props.headerActions}
+        </PageHeader>
 
-        {!isMemberOnlyView ? (
-          <div className="flex gap-2">
-            {activeView === 'shifts' && canManageShifts ? (
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9"
-                onClick={openCreateShiftDialog}
-                aria-label="Create shift"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            ) : null}
-            {showTeamFilters ? (
-              <Button
-                variant={
-                  hasAttendanceFilters || isFiltersVisible
-                    ? 'default'
-                    : 'outline'
-                }
-                size="icon"
-                className="h-9 w-9"
-                onClick={() => setIsFiltersVisible((visible) => !visible)}
-                aria-pressed={isFiltersVisible}
-                aria-label="Filter attendance"
-              >
-                <Filter className="h-4 w-4" />
-              </Button>
-            ) : null}
+        <div className="bg-sidebar w-full min-w-0 max-w-full overflow-x-auto pb-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {!isMemberOnlyView ? (
+              <>
+                {canShowTeamView ? (
+                  <TableStatusMetricTab
+                    id="team"
+                    color="#4eacff"
+                    statusName="Team"
+                    count={summary.total}
+                    isSelected={activeView === 'team'}
+                    onClick={() => setActiveView('team')}
+                  />
+                ) : null}
+                <TableStatusMetricTab
+                  id="my"
+                  color="#22c55e"
+                  statusName="My Attendance"
+                  count={myData?.recent.length ?? 0}
+                  isSelected={activeView === 'my'}
+                  onClick={() => setActiveView('my')}
+                />
+                {canShowShiftView ? (
+                  <TableStatusMetricTab
+                    id="shifts"
+                    color="#8b5cf6"
+                    statusName="Shifts"
+                    count={shifts.length}
+                    isSelected={activeView === 'shifts'}
+                    onClick={() => setActiveView('shifts')}
+                  />
+                ) : null}
+              </>
+            ) : (
+              <TableStatusMetricTab
+                id="my"
+                color="#22c55e"
+                statusName="My Attendance"
+                count={myData?.recent.length ?? 0}
+                isSelected
+              />
+            )}
+          </div>
+        </div>
+
+        {showTeamFilters || (activeView === 'shifts' && canManageShifts) ? (
+          <div className="bg-sidebar w-full shrink-0 border-b pb-2">
+            <ListToolBar
+              showSearch={showTeamFilters}
+              searchPlaceholder="Search attendance..."
+              searchValue={searchTerm}
+              onSearchChange={setAttendanceSearchTerm}
+              showFilter={showTeamFilters}
+              filterGroups={[
+                {
+                  key: 'status',
+                  label: 'Status',
+                  selectedValue:
+                    statusFilter === allAttendanceStatuses ? '' : statusFilter,
+                  selectedLabel:
+                    statusFilter === allAttendanceStatuses
+                      ? 'All statuses'
+                      : getAttendanceStatusLabel(statusFilter),
+                  options: [
+                    {
+                      value: 'present',
+                      label: 'Present',
+                      color: '#22c55e',
+                    },
+                    {
+                      value: 'in_progress',
+                      label: 'In Progress',
+                      color: '#0ea5e9',
+                    },
+                    {
+                      value: 'absent',
+                      label: 'Absent',
+                      color: '#ef4444',
+                    },
+                  ],
+                  onSelect: (value) =>
+                    setStatusFilter(value || allAttendanceStatuses),
+                },
+                {
+                  key: 'shift',
+                  label: 'Shift',
+                  selectedValue:
+                    shiftFilter === allAttendanceShifts ? '' : shiftFilter,
+                  selectedLabel:
+                    shiftFilter === allAttendanceShifts
+                      ? 'All shifts'
+                      : (filterableAttendanceShifts.find(
+                          (shift) => shift.id === shiftFilter,
+                        )?.name ?? '1 selected'),
+                  options: filterableAttendanceShifts.map((shift) => ({
+                    value: shift.id,
+                    label: shift.name,
+                  })),
+                  onSelect: (value) =>
+                    setShiftFilter(value || allAttendanceShifts),
+                },
+              ]}
+              activeFilterCount={activeFilterCount}
+              onClearFilters={resetAttendanceFilters}
+              actions={[
+                {
+                  key: 'shift',
+                  label: 'New Shift',
+                  icon: Plus,
+                  onClick: openCreateShiftDialog,
+                  show: activeView === 'shifts' && canManageShifts,
+                  buttonVariant: 'default',
+                },
+              ]}
+            />
           </div>
         ) : null}
       </div>
 
-      {showTeamFilters && isFiltersVisible ? (
-        <div className="bg-card grid gap-4 rounded-lg border p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
-          <div className="grid gap-2">
-            <label
-              className="text-sm font-medium"
-              htmlFor="attendance-status-filter"
-            >
-              Status
-            </label>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger id="attendance-status-filter">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={allAttendanceStatuses}>
-                  All statuses
-                </SelectItem>
-                <SelectItem value="present">Present</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="absent">Absent</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-2">
-            <label
-              className="text-sm font-medium"
-              htmlFor="attendance-shift-filter"
-            >
-              Shift
-            </label>
-            <Select value={shiftFilter} onValueChange={setShiftFilter}>
-              <SelectTrigger id="attendance-shift-filter">
-                <SelectValue placeholder="Select shift" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={allAttendanceShifts}>All shifts</SelectItem>
-                {filterableAttendanceShifts.map((shift) => (
-                  <SelectItem key={shift.id} value={shift.id}>
-                    {shift.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button
-            variant="outline"
-            onClick={resetAttendanceFilters}
-            disabled={!hasAttendanceFilters}
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-4 overflow-y-auto">
+          <CardWidgetContainer
+            title="Selected Date"
+            desc={
+              isMemberOnlyView
+                ? 'Choose a date to view your attendance.'
+                : `${getViewLabel(activeView)} - ${selectedDateLabel}`
+            }
+            contentClassName="hidden"
+            icon2={
+              <input
+                title="date"
+                className="bg-background h-9 rounded-md border px-3 text-sm"
+                type="date"
+                value={selectedDate}
+                onChange={(event) => setSelectedDate(event.target.value)}
+              />
+            }
           >
-            Clear filters
-          </Button>
-        </div>
-      ) : null}
+            <div />
+          </CardWidgetContainer>
 
-      <div className="bg-card flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm font-medium">Selected Date</p>
-          <p className="text-muted-foreground text-sm">
-            {isMemberOnlyView
-              ? 'Choose a date to view your attendance.'
-              : 'Use this date for team review and record edits.'}
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <input
-            title="date"
-            className="bg-background h-9 rounded-md border px-3 text-sm"
-            type="date"
-            value={selectedDate}
-            onChange={(event) => setSelectedDate(event.target.value)}
-          />
-          {!isMemberOnlyView && canViewTeam ? (
-            <Button
-              variant={activeView === 'team' ? 'default' : 'outline'}
-              onClick={() => setActiveView('team')}
-            >
-              Team
-            </Button>
+          {activeView === 'team' ? (
+            <div className="flex min-h-0 flex-1 flex-col gap-4">
+              <div className="w-full min-w-0 max-w-full overflow-x-auto">
+                <div className="flex flex-wrap items-center gap-2">
+                  <TableStatusMetricTab
+                    id="present"
+                    color="#22c55e"
+                    statusName="Present"
+                    count={summary.present}
+                    className="cursor-default"
+                  />
+                  <TableStatusMetricTab
+                    id="absent"
+                    color="#ef4444"
+                    statusName="Absent"
+                    count={summary.absent}
+                    className="cursor-default"
+                  />
+                  <TableStatusMetricTab
+                    id="in_progress"
+                    color="#0ea5e9"
+                    statusName="In Progress"
+                    count={summary.inProgress}
+                    className="cursor-default"
+                  />
+                  <TableStatusMetricTab
+                    id="total"
+                    color="#8b5cf6"
+                    statusName="Total"
+                    count={summary.total}
+                    className="cursor-default"
+                  />
+                </div>
+              </div>
+              <TeamAttendanceTableCard
+                className="min-h-0 flex-1"
+                isLoading={adminAttendanceQuery.isLoading}
+                rows={adminData?.rows ?? []}
+                hasFilters={hasAttendanceFilters}
+                onEditRequested={openEditDialog}
+                onMarkAbsentRequested={markRowAbsent}
+                onMarkPresentRequested={markRowPresent}
+                canApprove={canApprove}
+              />
+            </div>
           ) : null}
-          {!isMemberOnlyView ? (
-            <Button
-              variant={activeView === 'my' ? 'default' : 'outline'}
-              onClick={() => setActiveView('my')}
-            >
-              My
-            </Button>
+
+          {activeView === 'my' ? (
+            <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+              <MyAttendanceCard
+                date={selectedDate}
+                logs={myData?.logs ?? []}
+                onCheckIn={() => checkInMutation.mutate()}
+                onCheckOut={() => checkOutMutation.mutate()}
+                record={myData?.today ?? null}
+                isCheckingIn={checkInMutation.isPending}
+                isCheckingOut={checkOutMutation.isPending}
+                isWorkingDay={myData?.isWorkingDay ?? true}
+              />
+              <RecentAttendanceCard records={myData?.recent ?? []} />
+            </div>
           ) : null}
-          {!isMemberOnlyView && canManageShifts ? (
-            <Button
-              variant={activeView === 'shifts' ? 'default' : 'outline'}
-              onClick={() => setActiveView('shifts')}
-            >
-              Shifts
-            </Button>
+
+          {activeView === 'shifts' ? (
+            <div className="grid gap-4">
+              <WorkingDaysCard
+                workingDays={workingDays}
+                isLoading={attendanceSettingsQuery.isLoading}
+                isPending={pendingWorkingDaysSave}
+                onChange={submitWorkingDays}
+                onReset={resetWorkingDays}
+                canManageShifts={canManageShifts}
+              />
+              <ShiftsTableCard
+                shifts={shifts}
+                isLoading={shiftsQuery.isLoading}
+                onCreateRequested={openCreateShiftDialog}
+                onEditRequested={openEditShiftDialog}
+                onDeleteRequested={(shift) => deleteShift(shift.id)}
+                canManageShifts={canManageShifts}
+              />
+            </div>
           ) : null}
         </div>
-      </div>
-
-      {activeView === 'my' ? (
-        <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <MyAttendanceCard
-            date={selectedDate}
-            logs={myData?.logs ?? []}
-            onCheckIn={() => checkInMutation.mutate()}
-            onCheckOut={() => checkOutMutation.mutate()}
-            record={myData?.today ?? null}
-            isCheckingIn={checkInMutation.isPending}
-            isCheckingOut={checkOutMutation.isPending}
-            isWorkingDay={myData?.isWorkingDay ?? true}
-          />
-          <RecentAttendanceCard records={myData?.recent ?? []} />
-        </div>
-      ) : null}
-
-      {activeView === 'team' ? (
-        <div className="flex min-h-0 flex-1 flex-col gap-4">
-          <div className="shrink-0">
-            <AttendanceSummaryCards
-              summary={adminData?.summary ?? EMPTY_ATTENDANCE_SUMMARY}
-            />
-          </div>
-          <TeamAttendanceTableCard
-            className="min-h-0 flex-1"
-            isLoading={adminAttendanceQuery.isLoading}
-            rows={adminData?.rows ?? []}
-            hasFilters={hasAttendanceFilters}
-            onEditRequested={openEditDialog}
-            onMarkAbsentRequested={markRowAbsent}
-            onMarkPresentRequested={markRowPresent}
-            canApprove={canApprove}
-          />
-        </div>
-      ) : null}
-
-      {activeView === 'shifts' ? (
-        <div className="grid gap-4">
-          <WorkingDaysCard
-            workingDays={workingDays}
-            isLoading={attendanceSettingsQuery.isLoading}
-            isPending={pendingWorkingDaysSave}
-            onChange={submitWorkingDays}
-            onReset={resetWorkingDays}
-            canManageShifts={canManageShifts}
-          />
-          <ShiftsTableCard
-            shifts={shifts}
-            isLoading={shiftsQuery.isLoading}
-            onCreateRequested={openCreateShiftDialog}
-            onEditRequested={openEditShiftDialog}
-            onDeleteRequested={(shift) => deleteShift(shift.id)}
-            canManageShifts={canManageShifts}
-          />
-        </div>
-      ) : null}
+      </PageBody>
 
       <AttendanceRecordDialog
         open={isEditDialogOpen}
@@ -334,4 +348,49 @@ export function AttendancePage() {
       />
     </section>
   );
+}
+
+function getAttendanceStatusLabel(value: string) {
+  if (value === 'present') {
+    return 'Present';
+  }
+
+  if (value === 'in_progress') {
+    return 'In Progress';
+  }
+
+  if (value === 'absent') {
+    return 'Absent';
+  }
+
+  return 'All statuses';
+}
+
+function getViewLabel(value: string) {
+  if (value === 'team') {
+    return 'Team overview';
+  }
+
+  if (value === 'shifts') {
+    return 'Shift configuration';
+  }
+
+  return 'My attendance';
+}
+
+function getAttendanceCount(props: {
+  activeView: string;
+  recentCount: number;
+  shiftsCount: number;
+  teamTotal: number;
+}) {
+  if (props.activeView === 'team') {
+    return props.teamTotal;
+  }
+
+  if (props.activeView === 'shifts') {
+    return props.shiftsCount;
+  }
+
+  return props.recentCount;
 }

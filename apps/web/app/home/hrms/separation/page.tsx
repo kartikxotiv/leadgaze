@@ -1,7 +1,7 @@
 'use client';
 
 import { SeparationPage } from '@kit/hrms';
-import { PageBody, PageHeader, PageHeaderActions } from '@kit/ui/page';
+import { PageHeaderActions } from '@kit/ui/page';
 
 import { ModuleSwitcher } from '~/home/_components/module-switcher';
 import { WorkspaceCheckWrapper } from '~/home/_components/workspace-check-wrapper';
@@ -12,21 +12,14 @@ export default function HrmsSeparationPage() {
 
   return (
     <WorkspaceCheckWrapper>
-      <PageHeader
-        title="Separation"
-        description={
-          currentWorkspace
-            ? `${currentWorkspace.name} separation operations`
-            : 'Separation operations'
+      <SeparationPage
+        headerActions={
+          <PageHeaderActions>
+            <ModuleSwitcher value="hrms" />
+          </PageHeaderActions>
         }
-      >
-        <PageHeaderActions>
-          <ModuleSwitcher value="hrms" />
-        </PageHeaderActions>
-      </PageHeader>
-      <PageBody className="flex min-h-0 flex-1 flex-col">
-        <SeparationPage />
-      </PageBody>
+        workspaceName={currentWorkspace?.name}
+      />
     </WorkspaceCheckWrapper>
   );
 }

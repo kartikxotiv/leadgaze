@@ -1,16 +1,11 @@
 'use client';
 
-import { Download, LifeBuoy } from 'lucide-react';
+import { Download } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import {
   Table,
   TableBody,
@@ -42,28 +37,29 @@ export function SelfServicePayslipsTab(props: {
 }) {
   return (
     <TabsContent value="payslips" className="mt-0">
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle>Payslips</CardTitle>
-          <CardDescription>
-            Review payroll snapshots and download them when access is granted.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto p-0">
+      <div className="grid gap-3">
+        <SelfServiceTabHeader
+          title="Payslips"
+          description="Review payroll snapshots and download them when access is granted."
+        />
+
+        <CustomTableContainer>
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
               <TableRow>
                 <TableHead>Period</TableHead>
                 <TableHead>Gross</TableHead>
                 <TableHead>Deductions</TableHead>
                 <TableHead>Net Pay</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="bg-card sticky right-0 px-4 text-right">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {props.payslips.map((payslip) => (
-                <TableRow key={payslip.id}>
+                <TableRow key={payslip.id} className="hover:bg-muted/50">
                   <TableCell className="font-medium">
                     {formatPayslipPeriod(payslip)}
                   </TableCell>
@@ -80,7 +76,7 @@ export function SelfServicePayslipsTab(props: {
                       {payslip.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="bg-card sticky right-0 px-4 text-right">
                     <div className="flex justify-end gap-2">
                       <Button
                         size="sm"
@@ -111,88 +107,82 @@ export function SelfServicePayslipsTab(props: {
               ) : null}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </CustomTableContainer>
+      </div>
     </TabsContent>
   );
 }
 
 export function SelfServiceRequestsTab(props: {
-  canCreateRequest: boolean;
-  onRaiseRequest: () => void;
   requests: Array<SelfServiceRequest>;
 }) {
   return (
     <TabsContent value="requests" className="mt-0">
-      <Card className="shadow-sm">
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <CardTitle>HR Requests</CardTitle>
-            <CardDescription>
-              Track tickets raised with HR, payroll, or operations.
-            </CardDescription>
+      <CardWidgetContainer
+        title="HR Requests"
+        desc="Track tickets raised with HR, payroll, or operations."
+        contentClassName="space-y-3 p-4"
+      >
+        {props.requests.length === 0 ? (
+          <div className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm">
+            No requests raised yet.
           </div>
-
-          {props.canCreateRequest ? (
-            <Button size="sm" onClick={props.onRaiseRequest}>
-              <LifeBuoy className="mr-1.5 h-3.5 w-3.5" />
-              Raise Request
-            </Button>
-          ) : null}
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {props.requests.length === 0 ? (
-            <div className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm">
-              No requests raised yet.
-            </div>
-          ) : (
-            props.requests.map((request) => (
-              <div key={request.id} className="rounded-lg border p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="secondary">
-                        {getRequestCategoryLabel(request.category)}
-                      </Badge>
-                      <Badge
-                        variant="outline"
-                        className={getStatusBadgeClassName(request.status)}
-                      >
-                        {getRequestStatusLabel(request.status)}
-                      </Badge>
-                      <Badge
-                        variant="outline"
-                        className={getStatusBadgeClassName(request.priority)}
-                      >
-                        {request.priority}
-                      </Badge>
-                    </div>
-                    <p className="font-semibold">{request.subject}</p>
-                    <p className="text-muted-foreground text-sm leading-6">
-                      {request.description}
-                    </p>
+        ) : (
+          props.requests.map((request) => (
+            <div key={request.id} className="rounded-lg border p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary">
+                      {getRequestCategoryLabel(request.category)}
+                    </Badge>
+                    <Badge
+                      variant="outline"
+                      className={getStatusBadgeClassName(request.status)}
+                    >
+                      {getRequestStatusLabel(request.status)}
+                    </Badge>
+                    <Badge
+                      variant="outline"
+                      className={getStatusBadgeClassName(request.priority)}
+                    >
+                      {request.priority}
+                    </Badge>
                   </div>
-                  <div className="text-muted-foreground text-xs sm:text-right">
-                    <p>Raised {formatDate(request.created_at)}</p>
-                    {request.resolved_at ? (
-                      <p className="mt-1">
-                        Resolved {formatDate(request.resolved_at)}
-                      </p>
-                    ) : null}
-                  </div>
+                  <p className="font-semibold">{request.subject}</p>
+                  <p className="text-muted-foreground text-sm leading-6">
+                    {request.description}
+                  </p>
                 </div>
-
-                {request.response_message ? (
-                  <div className="bg-muted/40 mt-4 rounded-lg border p-3 text-sm">
-                    <span className="font-medium">HR update:</span>{' '}
-                    {request.response_message}
-                  </div>
-                ) : null}
+                <div className="text-muted-foreground text-xs sm:text-right">
+                  <p>Raised {formatDate(request.created_at)}</p>
+                  {request.resolved_at ? (
+                    <p className="mt-1">
+                      Resolved {formatDate(request.resolved_at)}
+                    </p>
+                  ) : null}
+                </div>
               </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
+
+              {request.response_message ? (
+                <div className="bg-muted/40 mt-4 rounded-lg border p-3 text-sm">
+                  <span className="font-medium">HR update:</span>{' '}
+                  {request.response_message}
+                </div>
+              ) : null}
+            </div>
+          ))
+        )}
+      </CardWidgetContainer>
     </TabsContent>
+  );
+}
+
+function SelfServiceTabHeader(props: { description: string; title: string }) {
+  return (
+    <div className="px-1">
+      <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
+      <p className="text-muted-foreground mt-1 text-sm">{props.description}</p>
+    </div>
   );
 }

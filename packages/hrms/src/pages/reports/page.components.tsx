@@ -2,11 +2,24 @@
 
 import type { ReactNode } from 'react';
 
-import { Check, ChevronDown } from 'lucide-react';
+import {
+  Banknote,
+  CalendarDays,
+  Check,
+  ChevronDown,
+  ClipboardList,
+  Users,
+} from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { Card, CardContent } from '@kit/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@kit/ui/card';
 import { Checkbox } from '@kit/ui/checkbox';
 import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
@@ -41,19 +54,47 @@ type TableColumn = {
 type TableRowValue = ReactNode | number | string | null | undefined;
 
 export function ReportsMetricGrid(props: { items: MetricItem[] }) {
+  const icons = [Users, CalendarDays, Banknote, ClipboardList];
+  const iconColors = [
+    'bg-primary',
+    'bg-activity-5',
+    'bg-activity-4',
+    'bg-activity-3',
+  ];
+
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {props.items.map((item) => (
-        <Card key={item.label}>
-          <CardContent className="p-5">
-            <p className="text-muted-foreground text-xs">{item.label}</p>
-            <p className="mt-2 text-3xl font-bold">{item.value}</p>
-            <p className="text-muted-foreground mt-2 text-xs leading-5">
-              {item.hint}
-            </p>
-          </CardContent>
-        </Card>
-      ))}
+      {props.items.map((item, index) => {
+        const Icon = icons[index % icons.length] ?? ClipboardList;
+
+        return (
+          <Card
+            key={item.label}
+            className="flex h-32 flex-col justify-between xl:h-28 2xl:h-32"
+          >
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+              <div className="space-y-1">
+                <CardDescription className="secondary-text-small text-leadgaze-muted dark:text-white">
+                  {item.label}
+                </CardDescription>
+                <CardTitle className="primary-heading-number text-leadgaze-dark dark:text-zinc-100">
+                  {item.value}
+                </CardTitle>
+              </div>
+              <div
+                className={`flex h-8 w-8 items-center justify-center rounded ${iconColors[index % iconColors.length]}`}
+              >
+                <Icon className="h-4 w-4 text-white" />
+              </div>
+            </CardHeader>
+            <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
+              <p className="secondary-text-small text-leadgaze-success">
+                {item.hint}
+              </p>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
@@ -143,7 +184,7 @@ export function ReportTableCard(props: {
   return (
     <div className="flex min-h-0 flex-col gap-3">
       <div className="px-1">
-        <h2 className="text-base leading-tight font-semibold">{props.title}</h2>
+        <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
         {props.description ? (
           <p className="text-muted-foreground mt-1 text-sm">
             {props.description}
@@ -168,7 +209,10 @@ export function ReportTableCard(props: {
           <TableBody>
             {props.rows.length > 0 ? (
               props.rows.map((row, index) => (
-                <TableRow key={`${props.title}-${index}`}>
+                <TableRow
+                  key={`${props.title}-${index}`}
+                  className="hover:bg-muted/50"
+                >
                   {props.columns.map((column) => (
                     <TableCell
                       key={column.key}
