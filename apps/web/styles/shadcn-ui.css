@@ -40,6 +40,7 @@
     --border: var(--color-gray-100);
     --input: var(--color-gray-200);
     --ring: var(--color-neutral-800);
+    --custom-popover-foreground: #333333;
 
     --radius: 0.5rem;
 
@@ -58,6 +59,7 @@
     --sidebar-border: var(--border);
     --sidebar-ring: var(--color-blue-500);
     --card-border: #B0B0B0;
+    --popover-foreground-custome: var(--custom-popover-foreground);
   }
 
   .dark {
@@ -104,6 +106,8 @@
     --sidebar-border: var(--border);
     --sidebar-ring: var(--color-blue-500);
     --card-border: #262626;
+    --popover-foreground-custome: var(--color-white);
+      
   }
 
   .dark input::-webkit-calendar-picker-indicator {

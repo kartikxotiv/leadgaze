@@ -31,6 +31,7 @@ import {
   type WorkspaceMember,
   updateMemberService,
 } from '~/services/team-members.service';
+import { CustomInputForView } from '@kit/ui/custom-input-for-view';
 
 interface UpdateMemberDialogProps {
   member: WorkspaceMember;
@@ -108,11 +109,12 @@ export function UpdateMemberDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Email</Label>
-            <div className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
-              {member.user?.email}
-            </div>
+            <CustomInputForView
+                                label="Email"
+                                value={member.user?.email}                    
+                              />   
           </div>
+            
 
           <div className="space-y-2">
             <Label htmlFor="role">Role *</Label>
