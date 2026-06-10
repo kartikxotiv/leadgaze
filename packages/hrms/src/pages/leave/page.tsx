@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { Plus } from 'lucide-react';
 
 import { Card, CardContent } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { Input } from '@kit/ui/input';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
@@ -59,8 +60,8 @@ export function LeavePage(props: {
   const activeCount = getLeaveTabCount(page, page.activeTab);
 
   return (
-    <section className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col overflow-hidden">
+    <section className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
+      <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col overflow-hidden">
         <PageHeader
           title={`Leave (${activeCount})`}
           description={
@@ -74,7 +75,7 @@ export function LeavePage(props: {
 
         {!page.isRbacLoading && page.availableTabs.length > 0 ? (
           <>
-            <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2">
+            <div className="w-full min-w-0 max-w-full overflow-x-auto pb-2">
               <div className="flex flex-wrap items-center gap-2">
                 {page.availableTabs.map((tab) => (
                   <TableStatusMetricTab
@@ -91,7 +92,7 @@ export function LeavePage(props: {
             </div>
 
             {primaryAction ? (
-              <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+              <div className="w-full min-w-0 max-w-full shrink-0 border-b pb-2">
                 <ListToolBar
                   actions={[
                     {
@@ -110,8 +111,8 @@ export function LeavePage(props: {
         ) : null}
       </div>
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
-        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col gap-4 overflow-y-auto pb-6">
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden pt-3">
+        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-4 overflow-y-auto pb-6">
           {!page.isRbacLoading && page.availableTabs.length === 0 ? (
             <Card>
               <CardContent className="text-muted-foreground p-6 text-sm">
@@ -120,26 +121,26 @@ export function LeavePage(props: {
             </Card>
           ) : (
             <>
-              <div className="bg-card flex flex-col gap-3 rounded-lg border p-4 shadow-sm sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-sm font-medium">Leave Year</p>
-                  <p className="text-muted-foreground text-sm">
-                    Review balances, approvals, holidays, and reports for the
-                    selected year.
-                  </p>
-                </div>
-                <Input
-                  className="h-9 w-full sm:w-32"
-                  min={2020}
-                  type="number"
-                  value={page.selectedYear}
-                  onChange={(event) =>
-                    page.setSelectedYear(
-                      Number(event.target.value || new Date().getFullYear()),
-                    )
-                  }
-                />
-              </div>
+              <CardWidgetContainer
+                title="Leave Year"
+                desc="Review balances, approvals, holidays, and reports for the selected year."
+                contentClassName="hidden"
+                icon2={
+                  <Input
+                    className="h-9 w-full sm:w-32"
+                    min={2020}
+                    type="number"
+                    value={page.selectedYear}
+                    onChange={(event) =>
+                      page.setSelectedYear(
+                        Number(event.target.value || new Date().getFullYear()),
+                      )
+                    }
+                  />
+                }
+              >
+                <div />
+              </CardWidgetContainer>
 
               <LeaveBalancesGrid balances={page.balances} />
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@kit/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { Checkbox } from '@kit/ui/checkbox';
 
 import type { WorkingDay } from '../../types/attendance.type';
@@ -39,18 +39,12 @@ export function WorkingDaysCard(props: {
   };
 
   return (
-    <Card className="shadow-sm">
-      <CardHeader
-        className={'flex flex-row items-center justify-between gap-3 p-4'}
-      >
-        <div>
-          <CardTitle>Working Days</CardTitle>
-          <p className={'text-muted-foreground text-sm'}>
-            Set the regular office days used by attendance.
-          </p>
-        </div>
-
-        {props.canManageShifts ? (
+    <CardWidgetContainer
+      title="Working Days"
+      desc="Set the regular office days used by attendance."
+      contentClassName="p-4"
+      icon2={
+        props.canManageShifts ? (
           <Button
             variant={'outline'}
             size={'sm'}
@@ -59,30 +53,28 @@ export function WorkingDaysCard(props: {
           >
             Mon-Fri
           </Button>
-        ) : null}
-      </CardHeader>
-
-      <CardContent className="p-4 pt-0">
-        <div className={'grid gap-3 sm:grid-cols-7'}>
-          {weekdays.map((day) => (
-            <label
-              key={day.value}
-              className={
-                'bg-background flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border p-3 text-sm font-medium'
+        ) : null
+      }
+    >
+      <div className={'grid gap-3 sm:grid-cols-7'}>
+        {weekdays.map((day) => (
+          <label
+            key={day.value}
+            className={
+              'bg-background flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border p-3 text-sm font-medium'
+            }
+          >
+            <Checkbox
+              checked={selectedDays.has(day.value)}
+              disabled={
+                !props.canManageShifts || props.isLoading || props.isPending
               }
-            >
-              <Checkbox
-                checked={selectedDays.has(day.value)}
-                disabled={
-                  !props.canManageShifts || props.isLoading || props.isPending
-                }
-                onCheckedChange={() => toggleDay(day.value)}
-              />
-              {day.label}
-            </label>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+              onCheckedChange={() => toggleDay(day.value)}
+            />
+            {day.label}
+          </label>
+        ))}
+      </div>
+    </CardWidgetContainer>
   );
 }

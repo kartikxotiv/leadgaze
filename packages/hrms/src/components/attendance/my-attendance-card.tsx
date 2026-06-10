@@ -6,7 +6,7 @@ import { CheckCircle2, Clock, LogIn, LogOut, Timer } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 
 import type {
   AttendanceLog,
@@ -84,91 +84,84 @@ export function MyAttendanceCard(props: {
   }, [props.record?.work_hours, status, workedMinutes]);
 
   return (
-    <Card className="shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className={'text-lg font-semibold'}>My Day</CardTitle>
-          <p className={'text-muted-foreground text-sm'}>
-            {formatDate(props.date)}{' '}
-            {props.record?.shift ? ` - ${props.record.shift.name}` : ''}
-          </p>
-        </div>
-        <StatusPill status={status} />
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className={'grid gap-3 sm:grid-cols-3'}>
-          <Metric
-            icon={LogIn}
-            label={'Check In'}
-            value={
-              props.record?.check_in ? formatTime(props.record.check_in) : '--'
-            }
-          />
-          <Metric
-            icon={LogOut}
-            label={'Check Out'}
-            value={
-              props.record?.check_out
-                ? formatTime(props.record.check_out)
-                : '--'
-            }
-          />
-          <Metric icon={Timer} label={'Work Hours'} value={workHoursLabel} />
-        </div>
+    <CardWidgetContainer
+      title="My Day"
+      desc={`${formatDate(props.date)}${
+        props.record?.shift ? ` - ${props.record.shift.name}` : ''
+      }`}
+      icon2={<StatusPill status={status} />}
+      contentClassName="space-y-4 p-4"
+    >
+      <div className={'grid gap-3 sm:grid-cols-3'}>
+        <Metric
+          icon={LogIn}
+          label={'Check In'}
+          value={
+            props.record?.check_in ? formatTime(props.record.check_in) : '--'
+          }
+        />
+        <Metric
+          icon={LogOut}
+          label={'Check Out'}
+          value={
+            props.record?.check_out ? formatTime(props.record.check_out) : '--'
+          }
+        />
+        <Metric icon={Timer} label={'Work Hours'} value={workHoursLabel} />
+      </div>
 
-        <div className={'flex flex-col gap-3 sm:flex-row'}>
-          <Button
-            className={'flex-1'}
-            disabled={
-              !props.isWorkingDay ||
-              status !== 'not_checked_in' ||
-              props.isCheckingIn ||
-              props.isCheckingOut
-            }
-            onClick={props.onCheckIn}
-          >
-            <Clock className={'mr-2 h-4 w-4'} />
-            {props.isCheckingIn ? 'Checking in...' : 'Check In'}
-          </Button>
-          <Button
-            className={'flex-1'}
-            variant={'outline'}
-            disabled={
-              status !== 'in_progress' ||
-              props.isCheckingIn ||
-              props.isCheckingOut
-            }
-            onClick={props.onCheckOut}
-          >
-            <CheckCircle2 className={'mr-2 h-4 w-4'} />
-            {props.isCheckingOut ? 'Checking out...' : 'Check Out'}
-          </Button>
-        </div>
+      <div className={'flex flex-col gap-3 sm:flex-row'}>
+        <Button
+          className={'flex-1'}
+          disabled={
+            !props.isWorkingDay ||
+            status !== 'not_checked_in' ||
+            props.isCheckingIn ||
+            props.isCheckingOut
+          }
+          onClick={props.onCheckIn}
+        >
+          <Clock className={'mr-2 h-4 w-4'} />
+          {props.isCheckingIn ? 'Checking in...' : 'Check In'}
+        </Button>
+        <Button
+          className={'flex-1'}
+          variant={'outline'}
+          disabled={
+            status !== 'in_progress' ||
+            props.isCheckingIn ||
+            props.isCheckingOut
+          }
+          onClick={props.onCheckOut}
+        >
+          <CheckCircle2 className={'mr-2 h-4 w-4'} />
+          {props.isCheckingOut ? 'Checking out...' : 'Check Out'}
+        </Button>
+      </div>
 
-        <div className="rounded-lg border p-4">
-          <p className={'text-sm font-medium'}>Today&apos;s Punches</p>
-          <div className={'mt-3 space-y-2'}>
-            {props.logs.length === 0 ? (
-              <p className={'text-muted-foreground text-sm'}>No punches yet.</p>
-            ) : (
-              props.logs.map((log) => (
-                <div
-                  key={log.id}
-                  className={'flex items-center justify-between text-sm'}
-                >
-                  <span className={'text-muted-foreground'}>
-                    {log.punch_type === 'in' ? 'Check In' : 'Check Out'}
-                  </span>
-                  <span className={'font-medium'}>
-                    {formatTime(log.punch_time)}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
+      <div className="rounded-lg border p-4">
+        <p className={'text-sm font-medium'}>Today&apos;s Punches</p>
+        <div className={'mt-3 space-y-2'}>
+          {props.logs.length === 0 ? (
+            <p className={'text-muted-foreground text-sm'}>No punches yet.</p>
+          ) : (
+            props.logs.map((log) => (
+              <div
+                key={log.id}
+                className={'flex items-center justify-between text-sm'}
+              >
+                <span className={'text-muted-foreground'}>
+                  {log.punch_type === 'in' ? 'Check In' : 'Check Out'}
+                </span>
+                <span className={'font-medium'}>
+                  {formatTime(log.punch_time)}
+                </span>
+              </div>
+            ))
+          )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </CardWidgetContainer>
   );
 }
 

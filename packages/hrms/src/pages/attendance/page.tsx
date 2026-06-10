@@ -4,13 +4,13 @@ import type { ReactNode } from 'react';
 
 import { Plus } from 'lucide-react';
 
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { TableStatusMetricTab } from '@kit/ui/table-status-metric-tab';
 
 import { EMPTY_ATTENDANCE_SUMMARY } from '../../attendance-page.utils';
 import { AttendanceRecordDialog } from '../../components/attendance/attendance-record-dialog';
-import { AttendanceSummaryCards } from '../../components/attendance/attendance-summary-cards';
 import { MyAttendanceCard } from '../../components/attendance/my-attendance-card';
 import { RecentAttendanceCard } from '../../components/attendance/recent-attendance-card';
 import { ShiftFormDialog } from '../../components/attendance/shift-form-dialog';
@@ -102,7 +102,7 @@ export function AttendancePage(props: {
           {props.headerActions}
         </PageHeader>
 
-        <div className="bg-sidebar w-full max-w-full min-w-0 overflow-x-auto pb-2">
+        <div className="bg-sidebar w-full min-w-0 max-w-full overflow-x-auto pb-2">
           <div className="flex flex-wrap items-center gap-2">
             {!isMemberOnlyView ? (
               <>
@@ -221,29 +221,32 @@ export function AttendancePage(props: {
         ) : null}
       </div>
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col gap-4 overflow-y-auto">
-          <div className="bg-card flex flex-col gap-3 rounded-lg border p-4 shadow-sm sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-medium">Selected Date</p>
-              <p className="text-muted-foreground text-sm">
-                {isMemberOnlyView
-                  ? 'Choose a date to view your attendance.'
-                  : `${getViewLabel(activeView)} - ${selectedDateLabel}`}
-              </p>
-            </div>
-            <input
-              title="date"
-              className="bg-background h-9 rounded-md border px-3 text-sm"
-              type="date"
-              value={selectedDate}
-              onChange={(event) => setSelectedDate(event.target.value)}
-            />
-          </div>
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-4 overflow-y-auto">
+          <CardWidgetContainer
+            title="Selected Date"
+            desc={
+              isMemberOnlyView
+                ? 'Choose a date to view your attendance.'
+                : `${getViewLabel(activeView)} - ${selectedDateLabel}`
+            }
+            contentClassName="hidden"
+            icon2={
+              <input
+                title="date"
+                className="bg-background h-9 rounded-md border px-3 text-sm"
+                type="date"
+                value={selectedDate}
+                onChange={(event) => setSelectedDate(event.target.value)}
+              />
+            }
+          >
+            <div />
+          </CardWidgetContainer>
 
           {activeView === 'team' ? (
             <div className="flex min-h-0 flex-1 flex-col gap-4">
-              <div className="w-full max-w-full min-w-0 overflow-x-auto">
+              <div className="w-full min-w-0 max-w-full overflow-x-auto">
                 <div className="flex flex-wrap items-center gap-2">
                   <TableStatusMetricTab
                     id="present"

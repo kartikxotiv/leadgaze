@@ -2,7 +2,22 @@
 
 import type { ReactNode } from 'react';
 
-import { Card, CardContent } from '@kit/ui/card';
+import {
+  Ban,
+  CheckCircle2,
+  ClipboardList,
+  Clock3,
+  type LucideIcon,
+  XCircle,
+} from 'lucide-react';
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@kit/ui/card';
 import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import {
   Table,
@@ -25,22 +40,37 @@ export function LeaveReportsTab(props: { reports: LeaveReports | null }) {
           <ReportMetric
             label="Total Requests"
             value={props.reports?.summary.total ?? 0}
+            description="All requests in the selected period"
+            icon={ClipboardList}
+            iconClassName="bg-primary"
           />
           <ReportMetric
             label="Approved"
             value={props.reports?.summary.approved ?? 0}
+            description="Requests approved by reviewers"
+            icon={CheckCircle2}
+            iconClassName="bg-activity-5"
           />
           <ReportMetric
             label="Pending"
             value={props.reports?.summary.pending ?? 0}
+            description="Requests still awaiting action"
+            icon={Clock3}
+            iconClassName="bg-activity-4"
           />
           <ReportMetric
             label="Rejected"
             value={props.reports?.summary.rejected ?? 0}
+            description="Requests declined by approvers"
+            icon={XCircle}
+            iconClassName="bg-destructive"
           />
           <ReportMetric
             label="Cancelled"
             value={props.reports?.summary.cancelled ?? 0}
+            description="Requests cancelled by employees"
+            icon={Ban}
+            iconClassName="bg-activity-3"
           />
         </div>
 
@@ -223,12 +253,36 @@ export function LeaveReportsTab(props: { reports: LeaveReports | null }) {
   );
 }
 
-function ReportMetric(props: { label: string; value: number }) {
+function ReportMetric(props: {
+  description: string;
+  icon: LucideIcon;
+  iconClassName: string;
+  label: string;
+  value: number;
+}) {
+  const Icon = props.icon;
+
   return (
-    <Card>
-      <CardContent className="p-5">
-        <p className="text-muted-foreground text-xs">{props.label}</p>
-        <p className="mt-2 text-3xl font-bold">{props.value}</p>
+    <Card className="flex h-32 flex-col justify-between xl:h-28 2xl:h-32">
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+        <div className="space-y-1">
+          <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
+            {props.label}
+          </CardTitle>
+          <div className="primary-heading-number text-leadgaze-dark dark:text-zinc-100">
+            {props.value}
+          </div>
+        </div>
+        <div
+          className={`flex h-8 w-8 items-center justify-center rounded ${props.iconClassName}`}
+        >
+          <Icon className="h-4 w-4 text-white" />
+        </div>
+      </CardHeader>
+      <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
+        <CardDescription className="secondary-text-small text-leadgaze-success">
+          {props.description}
+        </CardDescription>
       </CardContent>
     </Card>
   );
@@ -242,7 +296,7 @@ function ReportSection(props: {
   return (
     <div className="grid gap-3">
       <div className="px-1">
-        <h2 className="text-base leading-tight font-semibold">{props.title}</h2>
+        <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
         {props.description ? (
           <p className="text-muted-foreground mt-1 text-sm">
             {props.description}
