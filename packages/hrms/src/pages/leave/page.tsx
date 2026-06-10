@@ -60,8 +60,8 @@ export function LeavePage(props: {
   const activeCount = getLeaveTabCount(page, page.activeTab);
 
   return (
-    <section className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
-      <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col overflow-hidden">
+    <section className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col">
+      <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col">
         <PageHeader
           title={`Leave (${activeCount})`}
           description={
@@ -111,8 +111,8 @@ export function LeavePage(props: {
         ) : null}
       </div>
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden pt-3">
-        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-4 overflow-y-auto pb-6">
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col pt-3">
+        <div className="flex w-full min-w-0 max-w-full flex-col gap-4 pb-6">
           {!page.isRbacLoading && page.availableTabs.length === 0 ? (
             <Card>
               <CardContent className="text-muted-foreground p-6 text-sm">
