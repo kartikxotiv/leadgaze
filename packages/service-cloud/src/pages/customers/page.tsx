@@ -22,7 +22,7 @@ export function ServiceCloudCustomersPage({ workspaceId }: { workspaceId: string
 
   return (
     <Tabs defaultValue="customers" className="space-y-4">
-      <TabsList>
+      <TabsList className="mb-1">
         <TabsTrigger value="customers">Customers</TabsTrigger>
         <TabsTrigger value="organizations">Organizations</TabsTrigger>
       </TabsList>

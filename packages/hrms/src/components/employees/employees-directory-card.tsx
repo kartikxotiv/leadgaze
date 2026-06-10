@@ -197,15 +197,15 @@ export function EmployeesDirectoryCard(props: {
                 </TableCell>
               )}
               {props.isColumnVisible('employee') && (
-                <TableCell className="min-w-[220px]">
-                  <div className="flex items-center gap-3">
+                <TableCell className="min-w-[220px] h-14">
+                  <div className="flex items-center gap-3 primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
                     <Avatar className="h-9 w-9">
                       <AvatarFallback className="text-xs font-semibold">
                         {getInitials(getEmployeeName(employee))}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
-                      <p className="primary-text-medium truncate">
+                      <p className="">
                         {getEmployeeName(employee)}
                       </p>
                       <p className="text-muted-foreground truncate text-xs">

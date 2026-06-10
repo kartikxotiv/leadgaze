@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Button } from '@kit/ui/button';
@@ -22,7 +24,6 @@ import {
 } from '@kit/ui/dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
-
 import {
   Select,
   SelectContent,
@@ -40,13 +41,12 @@ import {
   updateRolePermissionsService,
   updateRoleService,
 } from '~/services/roles.service';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 
 interface EditRoleDialogProps {
   role: Role;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  productKey?: string;
   onSuccess?: () => void;
 }
 
@@ -64,6 +64,7 @@ export function EditRoleDialog({
   role,
   open,
   onOpenChange,
+  productKey,
   onSuccess,
 }: EditRoleDialogProps) {
   const { currentWorkspace } = useRBAC();
@@ -77,8 +78,6 @@ export function EditRoleDialog({
     is_active: true,
   });
 
-
-
   const [selectedPermissions, setSelectedPermissions] = useState<
     Record<string, boolean>
   >({});
@@ -86,10 +85,10 @@ export function EditRoleDialog({
     Record<string, boolean>
   >({});
 
-  // Fetch modules and features
+  // Fetch modules and features filtered by current product
   const { data: modulesData, isLoading: modulesLoading } = useQuery({
-    queryKey: ['modules'],
-    queryFn: () => getModulesService(),
+    queryKey: ['modules', productKey],
+    queryFn: () => getModulesService(productKey),
     enabled: open,
   });
 
@@ -150,7 +149,7 @@ export function EditRoleDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['workspaceRoles', currentWorkspace?.id],
+        queryKey: ['workspaceRoles', currentWorkspace?.id, productKey],
       });
       queryClient.invalidateQueries({
         queryKey: ['rolePermissions', role.id],
@@ -248,7 +247,6 @@ export function EditRoleDialog({
               </div>
 
               <div className="grid grid-cols-1 gap-4">
-
                 <div className="space-y-2">
                   <Label htmlFor="color">Color</Label>
                   <Select
@@ -313,8 +311,9 @@ export function EditRoleDialog({
                           <div className="flex items-center gap-2">
                             <CollapsibleTrigger className="flex items-center gap-2">
                               <ChevronDown
-                                className={`h-4 w-4 transition-transform ${expandedModules[module.id] ? '' : '-rotate-90'
-                                  }`}
+                                className={`h-4 w-4 transition-transform ${
+                                  expandedModules[module.id] ? '' : '-rotate-90'
+                                }`}
                               />
                             </CollapsibleTrigger>
                             <Checkbox

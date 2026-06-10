@@ -112,15 +112,9 @@ export function DocumentsDirectoryCard(props: {
                 {props.isColumnVisible('document') && (
                   <TableCell className="min-w-[220px]">
                     <div className="flex items-center gap-2">
-                      <div className="text-brand flex h-9 w-9 items-center justify-center">
-                        <FileText className="h-4 w-4" />
-                      </div>
                       <div className="min-w-0">
                         <p className="primary-text-medium truncate">
                           {document.name}
-                        </p>
-                        <p className="text-muted-foreground truncate text-xs">
-                          Uploaded {formatDate(document.uploaded_at)}
                         </p>
                       </div>
                     </div>

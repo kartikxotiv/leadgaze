@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 
 import { Download, FileText } from 'lucide-react';
 
-import { Card, CardDescription, CardHeader, CardTitle } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
@@ -28,10 +28,9 @@ export function ReportsPage(props: {
   const shiftsCount = page.dashboardData?.options.shifts.length ?? 0;
 
   return (
-    <section className="flex h-[100dvh] min-h-0 flex-col overflow-hidden">
-      <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
+    <section className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col">
+      <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col overflow-hidden">
         <PageHeader
-          className="bg-sidebar shrink-0"
           title="Reports"
           description={
             props.workspaceName
@@ -44,7 +43,7 @@ export function ReportsPage(props: {
 
         {!page.isRbacLoading && page.canViewReports ? (
           <>
-            <div className="bg-sidebar w-full max-w-full min-w-0 overflow-x-auto">
+            <div className="w-full min-w-0 max-w-full overflow-x-auto pb-2">
               <div className="flex flex-wrap items-center gap-2">
                 <TableStatusMetricTab
                   id="employees"
@@ -77,7 +76,7 @@ export function ReportsPage(props: {
               </div>
             </div>
 
-            <div className="bg-sidebar w-full shrink-0 border-b">
+            <div className="w-full min-w-0 max-w-full shrink-0 border-b pb-2">
               <ListToolBar
                 actions={[
                   {
@@ -103,8 +102,8 @@ export function ReportsPage(props: {
         ) : null}
       </div>
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col gap-4 overflow-y-auto">
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col pt-3">
+        <div className="flex w-full min-w-0 max-w-full flex-col gap-4 pb-6">
           {!page.isRbacLoading && !page.canViewReports ? (
             <ReportsAccessCard />
           ) : (
@@ -118,15 +117,16 @@ export function ReportsPage(props: {
                   ))}
                 </div>
               ) : page.dashboardQuery.isError ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Unable to load reports</CardTitle>
-                    <CardDescription>
-                      {(page.dashboardQuery.error as Error)?.message ??
-                        'Something went wrong while loading reports.'}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
+                <CardWidgetContainer
+                  title="Unable to load reports"
+                  desc={
+                    (page.dashboardQuery.error as Error)?.message ??
+                    'Something went wrong while loading reports.'
+                  }
+                  contentClassName="hidden"
+                >
+                  <div />
+                </CardWidgetContainer>
               ) : page.dashboardData ? (
                 <ReportsTabs page={page} />
               ) : null}
