@@ -1,16 +1,25 @@
 'use client';
 
-import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@kit/ui/avatar';
 import { Button } from '@kit/ui/button';
-import { Card, CardContent } from '@kit/ui/card';
+import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@kit/ui/dropdown-menu';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@kit/ui/pagination';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -30,11 +39,13 @@ import { EmployeeStatusBadge } from './employee-status-badge';
 export function EmployeesDirectoryCard(props: {
   employees: Array<Employee>;
   hasFilters: boolean;
+  isColumnVisible: (columnId: string) => boolean;
   isLoading: boolean;
   onDeleteRequested: (employee: Employee) => void;
   onEditRequested: (employee: Employee) => void;
   onPageChange: (page: number) => void;
   pagination: EmployeeListPagination;
+  visibility: Record<string, boolean>;
 }) {
   const { hasPermission } = useRbac();
   const canEdit = hasPermission('employees', 'edit', 'team');
@@ -47,179 +58,257 @@ export function EmployeesDirectoryCard(props: {
     props.pagination.page * props.pagination.pageSize,
     props.pagination.total,
   );
+  const visibleColumnCount =
+    Object.values(props.visibility).filter((value) => value !== false).length +
+    1;
 
   return (
-    <Card className={'flex min-h-0 flex-1 flex-col'}>
-      <CardContent className={'flex min-h-0 flex-1 flex-col gap-3 p-0'}>
-        <div className={'min-h-0 flex-1 overflow-auto rounded-lg'}>
-          <Table>
-            <TableHeader className={'bg-background sticky top-0 z-10'}>
-              <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead>Code</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Manager</TableHead>
-                <TableHead>Designation</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Joining Date</TableHead>
-                <TableHead className={'w-[48px]'} />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {props.isLoading ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className={'text-muted-foreground py-8 text-center text-sm'}
-                  >
-                    Loading employees...
-                  </TableCell>
-                </TableRow>
-              ) : null}
-
-              {!props.isLoading && props.employees.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className={'text-muted-foreground py-8 text-center text-sm'}
-                  >
-                    {props.hasFilters
-                      ? 'No employees match the current filters.'
-                      : 'No employees found.'}
-                  </TableCell>
-                </TableRow>
-              ) : null}
-
-              {props.employees.map((employee) => (
-                <TableRow key={employee.id}>
-                  <TableCell>
-                    <div className={'flex items-center gap-3'}>
-                      <Avatar className={'h-9 w-9'}>
-                        <AvatarFallback className={'text-xs font-semibold'}>
-                          {getInitials(getEmployeeName(employee))}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className={'font-medium'}>
-                          {getEmployeeName(employee)}
-                        </p>
-                        <p className={'text-muted-foreground text-xs'}>
-                          {employee.work_email}
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className={'font-medium'}>
-                    {employee.employee_code}
-                  </TableCell>
-                  <TableCell>
-                    {employee.department?.name ?? 'Unassigned'}
-                  </TableCell>
-                  <TableCell>
-                    {employee.manager ? (
-                      <div>
-                        <p className={'font-medium'}>
-                          {getEmployeeName(employee.manager)}
-                        </p>
-                        <p className={'text-muted-foreground text-xs'}>
-                          {employee.manager.employee_code}
-                        </p>
-                      </div>
-                    ) : (
-                      <span className={'text-muted-foreground'}>
-                        Unassigned
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell>{employee.designation ?? 'Not Set'}</TableCell>
-                  <TableCell>
-                    <EmployeeStatusBadge status={employee.status} />
-                  </TableCell>
-                  <TableCell>
-                    {employee.joining_date
-                      ? formatDate(employee.joining_date)
-                      : 'Not Set'}
-                  </TableCell>
-                  <TableCell>
-                    {canEdit || canDelete ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            size={'icon'}
-                            variant={'ghost'}
-                            aria-label={'More actions'}
-                          >
-                            <MoreHorizontal className={'h-4 w-4'} />
-                          </Button>
-                        </DropdownMenuTrigger>
-
-                        <DropdownMenuContent align={'end'}>
-                          {canEdit && (
-                            <DropdownMenuItem
-                              onClick={() => props.onEditRequested(employee)}
-                            >
-                              Edit
-                            </DropdownMenuItem>
-                          )}
-                          {canDelete && employee?.status !== 'active' && (
-                            <DropdownMenuItem
-                              className={'text-destructive'}
-                              onClick={() => props.onDeleteRequested(employee)}
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : null}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        <div
-          className={
-            'flex flex-col gap-3 p-3 text-sm sm:flex-row sm:items-center sm:justify-between'
-          }
-        >
-          <p className={'text-muted-foreground'}>
-            Showing {from}-{to} of {props.pagination.total} employees
-          </p>
-
-          <div className={'flex items-center gap-2'}>
-            <Button
-              variant={'outline'}
-              size={'icon'}
-              className={'h-8 w-8'}
-              disabled={!props.pagination.hasPreviousPage || props.isLoading}
-              onClick={() => props.onPageChange(props.pagination.page - 1)}
-              aria-label={'Previous page'}
-            >
-              <ChevronLeft className={'h-4 w-4'} />
-            </Button>
-
-            <span className={'text-muted-foreground min-w-24 text-center'}>
-              Page{' '}
-              {props.pagination.totalPages === 0 ? 0 : props.pagination.page} of{' '}
-              {props.pagination.totalPages}
-            </span>
-
-            <Button
-              variant={'outline'}
-              size={'icon'}
-              className={'h-8 w-8'}
-              disabled={!props.pagination.hasNextPage || props.isLoading}
-              onClick={() => props.onPageChange(props.pagination.page + 1)}
-              aria-label={'Next page'}
-            >
-              <ChevronRight className={'h-4 w-4'} />
-            </Button>
+    <CustomTableContainer
+      pagination={
+        props.pagination.total > 0 ? (
+          <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
+            <div>
+              Showing{' '}
+              <span className="primary-text-regular text-leadgaze-muted">
+                {from}
+              </span>{' '}
+              to{' '}
+              <span className="primary-text-regular text-leadgaze-muted">
+                {to}
+              </span>{' '}
+              of{' '}
+              <span className="primary-text-regular text-leadgaze-muted">
+                {props.pagination.total}
+              </span>{' '}
+              entries
+            </div>
+            <Pagination className="w-auto">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    className={
+                      !props.pagination.hasPreviousPage || props.isLoading
+                        ? 'pointer-events-none opacity-50'
+                        : 'cursor-pointer'
+                    }
+                    onClick={() =>
+                      props.onPageChange(props.pagination.page - 1)
+                    }
+                  />
+                </PaginationItem>
+                {Array.from({ length: props.pagination.totalPages }).map(
+                  (_, index) => (
+                    <PaginationItem key={index}>
+                      <PaginationLink
+                        isActive={props.pagination.page === index + 1}
+                        onClick={() => props.onPageChange(index + 1)}
+                        className="cursor-pointer"
+                      >
+                        {index + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ),
+                )}
+                <PaginationItem>
+                  <PaginationNext
+                    className={
+                      !props.pagination.hasNextPage || props.isLoading
+                        ? 'pointer-events-none opacity-50'
+                        : 'cursor-pointer'
+                    }
+                    onClick={() =>
+                      props.onPageChange(props.pagination.page + 1)
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        ) : null
+      }
+    >
+      <Table>
+        <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+          <TableRow>
+            {props.isColumnVisible('sno') && (
+              <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
+            )}
+            {props.isColumnVisible('employee') && (
+              <TableHead>Employee</TableHead>
+            )}
+            {props.isColumnVisible('code') && <TableHead>Code</TableHead>}
+            {props.isColumnVisible('department') && (
+              <TableHead>Department</TableHead>
+            )}
+            {props.isColumnVisible('manager') && <TableHead>Manager</TableHead>}
+            {props.isColumnVisible('designation') && (
+              <TableHead>Designation</TableHead>
+            )}
+            {props.isColumnVisible('employment_type') && (
+              <TableHead>Employment Type</TableHead>
+            )}
+            {props.isColumnVisible('status') && <TableHead>Status</TableHead>}
+            {props.isColumnVisible('joining_date') && (
+              <TableHead>Joining Date</TableHead>
+            )}
+            {props.isColumnVisible('email') && <TableHead>Email</TableHead>}
+            {props.isColumnVisible('phone') && <TableHead>Phone</TableHead>}
+            <TableHead className="bg-card sticky right-0 px-4 text-right">
+              Actions
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {props.isLoading
+            ? [...Array(10)].map((_, index) => (
+                <TableRow key={index}>
+                  <TableCell
+                    className="h-[52px] px-4 py-2"
+                    colSpan={visibleColumnCount}
+                  >
+                    <Skeleton className="h-7 w-full rounded-md" />
+                  </TableCell>
+                </TableRow>
+              ))
+            : null}
+
+          {!props.isLoading && props.employees.length === 0 ? (
+            <TableRow>
+              <TableCell
+                colSpan={visibleColumnCount}
+                className="h-24 text-center"
+              >
+                <div className="text-gray-500">
+                  {props.hasFilters
+                    ? 'No employees match your search or filters.'
+                    : 'No employees yet.'}
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : null}
+
+          {props.employees.map((employee, index) => (
+            <TableRow key={employee.id} className="hover:bg-muted/50">
+              {props.isColumnVisible('sno') && (
+                <TableCell className="text-muted-foreground w-12">
+                  {(props.pagination.page - 1) * props.pagination.pageSize +
+                    index +
+                    1}
+                </TableCell>
+              )}
+              {props.isColumnVisible('employee') && (
+                <TableCell className="min-w-[220px]">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-9 w-9">
+                      <AvatarFallback className="text-xs font-semibold">
+                        {getInitials(getEmployeeName(employee))}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="primary-text-medium truncate">
+                        {getEmployeeName(employee)}
+                      </p>
+                      <p className="text-muted-foreground truncate text-xs">
+                        {employee.work_email}
+                      </p>
+                    </div>
+                  </div>
+                </TableCell>
+              )}
+              {props.isColumnVisible('code') && (
+                <TableCell className="primary-text-medium">
+                  {employee.employee_code}
+                </TableCell>
+              )}
+              {props.isColumnVisible('department') && (
+                <TableCell>
+                  {employee.department?.name ?? 'Unassigned'}
+                </TableCell>
+              )}
+              {props.isColumnVisible('manager') && (
+                <TableCell>
+                  {employee.manager ? (
+                    <div>
+                      <p className="primary-text-medium">
+                        {getEmployeeName(employee.manager)}
+                      </p>
+                      <p className="text-muted-foreground text-xs">
+                        {employee.manager.employee_code}
+                      </p>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">Unassigned</span>
+                  )}
+                </TableCell>
+              )}
+              {props.isColumnVisible('designation') && (
+                <TableCell>{employee.designation ?? 'Not Set'}</TableCell>
+              )}
+              {props.isColumnVisible('employment_type') && (
+                <TableCell>
+                  {formatEmploymentType(employee.employment_type)}
+                </TableCell>
+              )}
+              {props.isColumnVisible('status') && (
+                <TableCell>
+                  <EmployeeStatusBadge status={employee.status} />
+                </TableCell>
+              )}
+              {props.isColumnVisible('joining_date') && (
+                <TableCell>
+                  {employee.joining_date
+                    ? formatDate(employee.joining_date)
+                    : 'Not Set'}
+                </TableCell>
+              )}
+              {props.isColumnVisible('email') && (
+                <TableCell className="text-muted-foreground">
+                  {employee.work_email}
+                </TableCell>
+              )}
+              {props.isColumnVisible('phone') && (
+                <TableCell className="text-muted-foreground">
+                  {employee.phone ?? '-'}
+                </TableCell>
+              )}
+              <TableCell className="bg-card sticky right-0 px-4 text-right">
+                {canEdit || canDelete ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label="More actions"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent align="end">
+                      {canEdit && (
+                        <DropdownMenuItem
+                          onClick={() => props.onEditRequested(employee)}
+                        >
+                          Edit
+                        </DropdownMenuItem>
+                      )}
+                      {canDelete && employee.status !== 'active' && (
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => props.onDeleteRequested(employee)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : null}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </CustomTableContainer>
   );
 }
 
@@ -240,4 +329,11 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat('en-IN', {
     dateStyle: 'medium',
   }).format(new Date(value));
+}
+
+function formatEmploymentType(value: Employee['employment_type']) {
+  return value
+    .split('_')
+    .map((part) => part[0]?.toUpperCase() + part.slice(1))
+    .join(' ');
 }

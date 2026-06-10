@@ -513,6 +513,9 @@ importers:
       next:
         specifier: 15.5.9
         version: 15.5.9(@playwright/test@1.56.0)(babel-plugin-react-compiler@19.1.0-rc.3)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      nodemailer:
+        specifier: ^7.0.12
+        version: 7.0.12
       react:
         specifier: 19.2.1
         version: 19.2.1
@@ -529,6 +532,9 @@ importers:
       '@kit/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
+      '@types/nodemailer':
+        specifier: ^7.0.9
+        version: 7.0.9
       '@types/react':
         specifier: 19.2.7
         version: 19.2.7
