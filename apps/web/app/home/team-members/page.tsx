@@ -47,6 +47,10 @@ import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getModuleKeyFromPath } from '~/lib/rbac/route-module-map';
 import { getRolesService } from '~/services/roles.service';
 import {
+  type SeatAssignment,
+  getSeatAssignmentsService,
+} from '~/services/subscription.service';
+import {
   type WorkspaceMember,
   getMembersService,
   removeMemberService,
@@ -166,6 +170,22 @@ export default function TeamMembersPage() {
     enabled: !!currentWorkspace?.id,
   });
 
+  // Fetch seat assignments for the current module to filter members
+  const { data: assignmentsData } = useQuery({
+    queryKey: ['module-seat-assignments', currentWorkspace?.id, productKey],
+    queryFn: () =>
+      getSeatAssignmentsService(currentWorkspace?.id || '', productKey),
+    enabled: !!currentWorkspace?.id && !!productKey,
+  });
+
+  // Build set of user_ids who have an active seat in this module
+  const moduleAssignedUserIds = useMemo(() => {
+    const assignments = (assignmentsData?.data ?? []) as SeatAssignment[];
+    return new Set(
+      assignments.filter((a) => a.is_active).map((a) => a.user_id),
+    );
+  }, [assignmentsData]);
+
   // Prefetch roles so they're available immediately when invite dialog opens
   useQuery({
     queryKey: ['workspaceRoles', currentWorkspace?.id],
@@ -176,9 +196,14 @@ export default function TeamMembersPage() {
     enabled: !!currentWorkspace?.id,
   });
 
-  const members = (membersData?.data || [])?.filter(
-    (m: WorkspaceMember) => m.status !== 'removed',
-  );
+  // Only show members who have an active seat in the current module.
+  // Pending members (not yet accepted) are always shown so admins can manage invites.
+  const members = (membersData?.data || [])
+    .filter((m: WorkspaceMember) => m.status !== 'removed')
+    .filter(
+      (m: WorkspaceMember) =>
+        m.status === 'pending' || moduleAssignedUserIds.has(m.user_id),
+    );
   const activeMembers = members.filter(
     (m: WorkspaceMember) => m.status === 'accepted',
   );

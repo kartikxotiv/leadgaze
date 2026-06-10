@@ -15,7 +15,7 @@ const createNewWorkspace = catchAsync(
     request: NextRequest;
     params?: Record<string, string>;
   }) => {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient() as any;
     const { name, owner_id } = await request.json();
 
     // Validate input
@@ -58,34 +58,27 @@ const createNewWorkspace = catchAsync(
       );
     }
 
-    // Get default roles from workspace_roles table (should be created during workspace creation in app logic)
-    // For now, we'll create basic roles
-    const roles = [
-      {
+    // Get all active subscription products to seed admin roles for each
+    const { data: activeProducts } = await supabase
+      .from('subscription_products')
+      .select('product_key')
+      .eq('is_active', true);
+
+    const productKeys = activeProducts?.map((p: any) => p.product_key) || [
+      'sales',
+    ];
+
+    // Create admin role for each active product
+    const roles: any[] = [];
+    for (const productKey of productKeys) {
+      roles.push({
         role_key: 'admin',
         role_name: 'Admin',
         hierarchy_level: 100,
         is_system: true,
-      },
-      // {
-      //   role_key: 'manager',
-      //   role_name: 'Manager',
-      //   hierarchy_level: 50,
-      //   is_system: true,
-      // },
-      // {
-      //   role_key: 'user',
-      //   role_name: 'User',
-      //   hierarchy_level: 10,
-      //   is_system: true,
-      // },
-      // {
-      //   role_key: 'viewer',
-      //   role_name: 'Viewer',
-      //   hierarchy_level: 1,
-      //   is_system: true,
-      // },
-    ];
+        product_key: productKey,
+      });
+    }
 
     const { data: rolesData, error: rolesError }: any = await supabase
       .from('workspace_roles')
@@ -102,15 +95,21 @@ const createNewWorkspace = catchAsync(
       console.error('Roles creation error:', rolesError);
     }
 
-    // Add owner as admin member
-    const adminRole = rolesData?.[0]; // Admin is first
-    if (adminRole) {
+    // Add owner as admin member.
+    // Explicitly use the 'sales' admin role as the primary membership role because
+    // workspace_members stores only ONE role_id, and both rbac-provider and
+    // product-specific hooks (useServiceCloudPermissions, etc.) resolve
+    // permissions by querying role_permissions WHERE role_id = member.role_id.
+    // The sales admin role will hold ALL cross-product permissions for the owner.
+    const salesAdminRole =
+      rolesData?.find((r: any) => r.product_key === 'sales') ?? rolesData?.[0];
+    if (salesAdminRole) {
       const { error: memberError } = await supabase
         .from('workspace_members')
         .insert({
           workspace_id: workspace.id,
           user_id: userId,
-          role_id: adminRole.id,
+          role_id: salesAdminRole.id,
           status: 'accepted',
           accepted_at: new Date().toISOString(),
           is_primary_contact: true,
@@ -121,36 +120,108 @@ const createNewWorkspace = catchAsync(
       }
     }
 
-    // Create default permissions for all roles
-    // Get all features
-    const { data: features, error: featuresError } = await supabase
-      .from('crm_module_features')
-      .select('id');
+    // Create default permissions for the workspace owner.
+    //
+    // Architecture note: workspace_members has UNIQUE(workspace_id, user_id), so
+    // a user can only hold ONE role_id per workspace. Both rbac-provider and every
+    // product permission hook (useServiceCloudPermissions, etc.) resolve permissions
+    // by querying role_permissions WHERE role_id = workspace_members.role_id.
+    //
+    // Strategy:
+    //   1. The owner's primary membership points to the 'sales' admin role.
+    //   2. ALL cross-product permissions (sales, service_cloud, hrms, etc.) are
+    //      written onto that sales admin role → owner effectively has admin access
+    //      to every product through their single membership role.
+    //   3. Each per-product admin role also gets its own product-scoped permissions
+    //      seeded, so those roles are ready to use when invited team members are
+    //      assigned a product-specific admin role.
 
-    if (!featuresError && features && rolesData) {
-      // Create permissions for each role
-      const permissions: any = [];
+    if (salesAdminRole && rolesData && rolesData.length > 0) {
+      // ── Step 1: Owner's sales admin role gets ALL cross-product permissions ──
+      const { data: allModules } = await supabase
+        .from('crm_modules')
+        .select('id')
+        .eq('is_active', true);
 
-      // Admin: Full access to all features
-      for (const feature of features) {
-        permissions.push({
-          workspace_id: workspace.id,
-          role_id: rolesData[0].id, // Admin
-          module_feature_id: feature.id,
-          can_access: true,
-          access_level: 'all',
-          can_view_sensitive_data: true,
-          can_override_owner: true,
-        });
+      const allModuleIds = (allModules ?? []).map((m: any) => m.id);
+
+      if (allModuleIds.length > 0) {
+        const { data: allFeatures } = await supabase
+          .from('crm_module_features')
+          .select('id')
+          .in('module_id', allModuleIds)
+          .eq('is_active', true);
+
+        if (allFeatures && allFeatures.length > 0) {
+          const ownerPermissions = allFeatures.map((feature: any) => ({
+            workspace_id: workspace.id,
+            role_id: salesAdminRole.id,
+            module_feature_id: feature.id,
+            can_access: true,
+            access_level: 'all' as const,
+            can_view_sensitive_data: true,
+            can_override_owner: true,
+          }));
+
+          const { error: ownerPermError } = await supabase
+            .from('role_permissions')
+            .insert(ownerPermissions);
+
+          if (ownerPermError) {
+            console.error(
+              'Permissions creation error for owner (sales admin) role:',
+              ownerPermError,
+            );
+          }
+        }
       }
 
-      if (permissions.length > 0) {
-        const { error: permError } = await supabase
-          .from('role_permissions')
-          .insert(permissions);
+      // ── Step 2: Each per-product admin role gets its own product-scoped permissions ──
+      // These roles are ready to assign to invited team members who need
+      // product-specific admin access (e.g., an HRMS admin, a Service Cloud admin).
+      for (const role of rolesData) {
+        // Skip the sales admin role — already fully seeded above
+        if (role.product_key === 'sales' || role.id === salesAdminRole.id) continue;
 
-        if (permError) {
-          console.error('Permissions creation error:', permError);
+        const productKey = role.product_key as string;
+
+        // Get modules for this specific product + common/shared modules
+        const { data: productModules } = await supabase
+          .from('crm_modules')
+          .select('id')
+          .in('product_key', [productKey, 'common'])
+          .eq('is_active', true);
+
+        const productModuleIds = (productModules ?? []).map((m: any) => m.id);
+        if (productModuleIds.length === 0) continue;
+
+        const { data: productFeatures } = await supabase
+          .from('crm_module_features')
+          .select('id')
+          .in('module_id', productModuleIds)
+          .eq('is_active', true);
+
+        if (!productFeatures || productFeatures.length === 0) continue;
+
+        const productPermissions = productFeatures.map((feature: any) => ({
+          workspace_id: workspace.id,
+          role_id: role.id,
+          module_feature_id: feature.id,
+          can_access: true,
+          access_level: 'all' as const,
+          can_view_sensitive_data: true,
+          can_override_owner: true,
+        }));
+
+        const { error: productPermError } = await supabase
+          .from('role_permissions')
+          .insert(productPermissions);
+
+        if (productPermError) {
+          console.error(
+            `Permissions creation error for ${productKey} admin role:`,
+            productPermError,
+          );
         }
       }
     }

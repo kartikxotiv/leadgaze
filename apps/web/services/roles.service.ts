@@ -11,6 +11,7 @@ interface Role {
   is_system: boolean;
   is_active: boolean;
   color?: string;
+  product_key?: string;
 }
 
 interface CreateRolePayload {
@@ -18,6 +19,7 @@ interface CreateRolePayload {
   role_name: string;
   description?: string;
   color?: string;
+  product_key?: string;
   permissions?: RolePermission[];
 }
 
@@ -47,10 +49,14 @@ interface ModuleFeature {
   feature_type: string;
 }
 
-const getRolesService = asyncHandlerClient(async (workspaceId: string) => {
-  const response = await ApiClient.get(`/roles?workspaceId=${workspaceId}`);
-  return response.data;
-});
+const getRolesService = asyncHandlerClient(
+  async (workspaceId: string, productKey?: string) => {
+    const params = new URLSearchParams({ workspaceId });
+    if (productKey) params.set('productKey', productKey);
+    const response = await ApiClient.get(`/roles?${params.toString()}`);
+    return response.data;
+  },
+);
 
 const getRoleByIdService = asyncHandlerClient(async (roleId: string) => {
   const response = await ApiClient.get(`/roles/${roleId}`);
@@ -79,8 +85,9 @@ const deleteRoleService = asyncHandlerClient(async (roleId: string) => {
   return response.data;
 });
 
-const getModulesService = asyncHandlerClient(async () => {
-  const response = await ApiClient.get('/roles/modules');
+const getModulesService = asyncHandlerClient(async (productKey?: string) => {
+  const params = productKey ? `?productKey=${productKey}` : '';
+  const response = await ApiClient.get(`/roles/modules${params}`);
   return response.data;
 });
 
@@ -106,9 +113,9 @@ const reorderRolesService = asyncHandlerClient(
 );
 
 const getModuleRolesService = asyncHandlerClient(
-  async (workspaceId: string, moduleKey: string) => {
+  async (workspaceId: string, productKey: string) => {
     const response = await ApiClient.get(
-      `/roles?workspaceId=${workspaceId}&moduleKey=${moduleKey}`,
+      `/roles?workspaceId=${workspaceId}&productKey=${productKey}`,
     );
     return response.data;
   },
