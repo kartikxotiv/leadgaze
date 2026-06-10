@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import {
   Card,
   CardContent,
@@ -88,24 +90,46 @@ export function ServiceCloudReportsPage({
   const timeMax = maxCount(ticketTimeBreakdown, 'loggedSeconds');
 
   const cards = [
-    { label: 'Total Tickets', value: data?.totalTickets ?? 0, icon: Inbox },
+    {
+      label: 'Total Tickets',
+      value: data?.totalTickets ?? 0,
+      icon: Inbox,
+      detail: 'All active service tickets',
+      iconBg: 'bg-primary dark:bg-primary',
+    },
     {
       label: 'Open Tickets',
       value: data?.openTickets ?? 0,
       icon: AlertTriangle,
+      detail: 'Unresolved customer work',
+      iconBg: 'bg-activity-4',
     },
-    { label: 'Customers', value: data?.customers ?? 0, icon: UserRound },
-    { label: 'Teams', value: teamBreakdown.length, icon: UsersRound },
+    {
+      label: 'Customers',
+      value: data?.customers ?? 0,
+      icon: UserRound,
+      detail: 'Support customer records',
+      iconBg: 'bg-activity-5',
+    },
+    {
+      label: 'Teams',
+      value: teamBreakdown.length,
+      icon: UsersRound,
+      detail: 'Active support teams',
+      iconBg: 'bg-activity-3',
+    },
     {
       label: 'Logged Time',
       value: formatHours(data?.totalLoggedSeconds ?? 0),
       icon: Clock3,
+      detail: 'Tracked support effort',
+      iconBg: 'bg-activity-6',
     },
   ];
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-[28px] border bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.18),_transparent_35%),linear-gradient(135deg,_#102a43,_#0f766e_55%,_#172554)] p-6 text-white shadow-xl">
+      <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.18),_transparent_35%),linear-gradient(135deg,_#102a43,_#0f766e_55%,_#172554)] p-6 text-white shadow-xl">
         <div className="max-w-3xl">
           <Badge className="border-white/20 bg-white/15 text-white hover:bg-white/20">
             Service Intelligence
@@ -124,17 +148,24 @@ export function ServiceCloudReportsPage({
         {cards.map((card) => {
           const Icon = card.icon;
           return (
-            <Card key={card.label}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {card.label}
-                </CardTitle>
-                <Icon className="text-muted-foreground h-4 w-4" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-semibold">
-                  {isLoading ? '...' : card.value}
+            <Card key={card.label} className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+                <div className="space-y-1">
+                  <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
+                    {card.label}
+                  </CardTitle>
+                  <div className="primary-heading-number text-leadgaze-dark dark:text-zinc-100">
+                    {isLoading ? '...' : card.value}
+                  </div>
                 </div>
+                <div className={`flex h-8 w-8 items-center justify-center rounded ${card.iconBg}`}>
+                  <Icon className="h-4 w-4 text-white" />
+                </div>
+              </CardHeader>
+              <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
+                <CardDescription className="secondary-text-small text-leadgaze-success">
+                  {card.detail}
+                </CardDescription>
               </CardContent>
             </Card>
           );
@@ -143,14 +174,11 @@ export function ServiceCloudReportsPage({
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ticket Status Distribution</CardTitle>
-              <CardDescription>
-                How many tickets are currently sitting in each status.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <CardWidgetContainer
+            title="Ticket Status Distribution"
+            description="How many tickets are currently sitting in each status."
+          >
+            <div className="space-y-4 px-6 py-4">
               {statusBreakdown.length === 0 ? (
                 <EmptyReport label="No ticket statuses found." />
               ) : (
@@ -164,62 +192,122 @@ export function ServiceCloudReportsPage({
                   />
                 ))
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </CardWidgetContainer>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Customer-Specific Workload</CardTitle>
-              <CardDescription>
-                Customers with active/open tickets and total support effort.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <ReportTable
-                headers={[
-                  'Customer',
-                  'Open',
-                  'Total',
-                  'Closed',
-                  'Logged',
-                  'Latest',
-                ]}
-                empty="No customer ticket data yet."
-                rows={customerBreakdown.slice(0, 12).map((customer: any) => [
-                  <div key="customer">
-                    <div className="font-medium">{customer.name}</div>
-                    <div className="text-muted-foreground text-xs">
-                      {[customer.email, customer.organization]
-                        .filter(Boolean)
-                        .join(' · ') || 'No contact context'}
-                    </div>
-                    <div className="bg-muted mt-2 h-1.5 overflow-hidden rounded-full">
-                      <div
-                        className="h-full rounded-full bg-teal-600"
-                        style={{
-                          width: percent(customer.openTickets, customerMax),
-                        }}
-                      />
-                    </div>
-                  </div>,
-                  customer.openTickets,
-                  customer.totalTickets,
-                  customer.closedTickets,
-                  formatHours(customer.loggedSeconds),
-                  formatDate(customer.latestTicketAt),
+          <CardWidgetContainer
+            title="Customer-Specific Workload"
+            description="Customers with active/open tickets and total support effort."
+            hideHeaderBorder={true}
+          >
+            <ReportTable
+              headers={[
+                'Customer',
+                'Open',
+                'Total',
+                'Closed',
+                'Logged',
+                'Latest',
+              ]}
+              empty="No customer ticket data yet."
+              rows={customerBreakdown.slice(0, 12).map((customer: any) => [
+                <div key="customer">
+                  <div className="font-medium">{customer.name}</div>
+                  <div className="text-muted-foreground text-xs">
+                    {[customer.email, customer.organization]
+                      .filter(Boolean)
+                      .join(' · ') || 'No contact context'}
+                  </div>
+                  <div className="bar-bg mt-2 h-1.5 overflow-hidden rounded-full">
+                    <div
+                      className="h-full rounded-full bg-leadgaze-success"
+                      style={{
+                        width: percent(customer.openTickets, customerMax),
+                      }}
+                    />
+                  </div>
+                </div>,
+                customer.openTickets,
+                customer.totalTickets,
+                customer.closedTickets,
+                formatHours(customer.loggedSeconds),
+                formatDate(customer.latestTicketAt),
+              ])}
+            />
+          </CardWidgetContainer>
+        </div>
+
+        <aside className="space-y-6">
+          <CardWidgetContainer
+            title="Priority Mix"
+            description="Open pressure by priority."
+            hideHeaderBorder={true}
+          >
+            <div className="px-6 py-4">
+              {priorityBreakdown.length === 0 ? (
+                <EmptyReport label="No priority data." />
+              ) : (
+                <CardWidgetList>
+                  {priorityBreakdown.map((priority: any) => (
+                    <CardWidgetListItem
+                      key={priority.id}
+                      title={priority.name}
+                      subtitle={`${priority.openCount} open`}
+                      badge={<Badge variant="secondary">{priority.count}</Badge>}
+                    />
+                  ))}
+                </CardWidgetList>
+              )}
+            </div>
+          </CardWidgetContainer>
+
+          <CardWidgetContainer
+            title="Assignee Workload"
+            description="Ticket ownership and actual time logged by agents."
+            hideHeaderBorder={true}
+          >
+            <ReportTable
+              headers={['Agent', 'Open', 'Total', 'Logged']}
+              empty="No assignee data."
+              rows={assigneeWorkload
+                .slice(0, 10)
+                .map((assignee: any) => [
+                  assignee.name,
+                  assignee.openTickets,
+                  assignee.totalTickets,
+                  formatHours(
+                    assignee.actualLoggedSeconds ||
+                      assignee.ticketLoggedSeconds,
+                  ),
                 ])}
-              />
-            </CardContent>
-          </Card>
+            />
+          </CardWidgetContainer>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Ticket Time Investment</CardTitle>
-              <CardDescription>
-                Tickets consuming the most logged support time.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <CardWidgetContainer
+            title="Team Workload"
+            description="Tickets and effort by support team."
+            hideHeaderBorder={true}
+          >
+            <ReportTable
+              headers={['Team', 'Open', 'Total', 'Logged']}
+              empty="No team data."
+              rows={teamBreakdown
+                .slice(0, 10)
+                .map((team: any) => [
+                  team.name,
+                  team.openTickets,
+                  team.totalTickets,
+                  formatHours(team.loggedSeconds),
+                ])}
+            />
+          </CardWidgetContainer>
+
+          <CardWidgetContainer
+            title="Ticket Time Investment"
+            description="Tickets consuming the most logged support time."
+            hideHeaderBorder={true}
+          >
+            <div className="space-y-4 px-6 py-4">
               {ticketTimeBreakdown.length === 0 ? (
                 <EmptyReport label="No logged ticket time yet." />
               ) : (
@@ -242,9 +330,9 @@ export function ServiceCloudReportsPage({
                         {formatHours(ticket.loggedSeconds)}
                       </Badge>
                     </div>
-                    <div className="bg-muted mt-3 h-2 overflow-hidden rounded-full">
+                    <div className="bar-bg mt-3 h-2 overflow-hidden rounded-full">
                       <div
-                        className="h-full rounded-full bg-cyan-600"
+                        className="h-full rounded-full bg-leadgaze-success"
                         style={{
                           width: percent(ticket.loggedSeconds, timeMax),
                         }}
@@ -253,149 +341,63 @@ export function ServiceCloudReportsPage({
                   </div>
                 ))
               )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <aside className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Priority Mix</CardTitle>
-              <CardDescription>Open pressure by priority.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {priorityBreakdown.length === 0 ? (
-                <EmptyReport label="No priority data." />
-              ) : (
-                priorityBreakdown.map((priority: any) => (
-                  <div
-                    key={priority.id}
-                    className="flex items-center justify-between rounded-xl border p-3"
-                  >
-                    <div>
-                      <div className="font-medium">{priority.name}</div>
-                      <div className="text-muted-foreground text-xs">
-                        {priority.openCount} open
-                      </div>
-                    </div>
-                    <Badge variant="secondary">{priority.count}</Badge>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Assignee Workload</CardTitle>
-              <CardDescription>
-                Ticket ownership and actual time logged by agents.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <ReportTable
-                headers={['Agent', 'Open', 'Total', 'Logged']}
-                empty="No assignee data."
-                rows={assigneeWorkload
-                  .slice(0, 10)
-                  .map((assignee: any) => [
-                    assignee.name,
-                    assignee.openTickets,
-                    assignee.totalTickets,
-                    formatHours(
-                      assignee.actualLoggedSeconds ||
-                        assignee.ticketLoggedSeconds,
-                    ),
-                  ])}
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Team Workload</CardTitle>
-              <CardDescription>
-                Tickets and effort by support team.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <ReportTable
-                headers={['Team', 'Open', 'Total', 'Logged']}
-                empty="No team data."
-                rows={teamBreakdown
-                  .slice(0, 10)
-                  .map((team: any) => [
-                    team.name,
-                    team.openTickets,
-                    team.totalTickets,
-                    formatHours(team.loggedSeconds),
-                  ])}
-              />
-            </CardContent>
-          </Card>
+            </div>
+          </CardWidgetContainer>
         </aside>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Oldest Open Tickets</CardTitle>
-            <CardDescription>
-              Open tickets sorted by age so overdue work is visible.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ReportTable
-              headers={['Ticket', 'Customer', 'Owner', 'Age', 'Due']}
-              empty="No open tickets."
-              rows={openTicketAging.map((ticket: any) => [
+        <CardWidgetContainer
+          title="Oldest Open Tickets"
+          description="Open tickets sorted by age so overdue work is visible."
+          hideHeaderBorder={true}
+        >
+          <ReportTable
+            headers={['Ticket', 'Customer', 'Owner', 'Age', 'Due']}
+            empty="No open tickets."
+            rows={openTicketAging.map((ticket: any) => [
+              <Link
+                key="ticket"
+                href={`/home/services/tickets/${ticket.id}`}
+                className="font-medium hover:underline"
+              >
+                #{ticket.ticketNumber} {ticket.subject}
+              </Link>,
+              ticket.customer,
+              ticket.assignee,
+              `${ticket.daysOpen}d`,
+              formatDate(ticket.dueDate),
+            ])}
+          />
+        </CardWidgetContainer>
+
+        <CardWidgetContainer
+          title="Time Logs By Ticket"
+          description="Where time is being spent, based on individual time entries."
+          hideHeaderBorder={true}
+        >
+          <ReportTable
+            headers={['Ticket', 'Customer', 'Entries', 'Logged', 'Latest']}
+            empty="No time entries logged yet."
+            rows={timeByTicket.map((ticket: any) => [
+              ticket.id ? (
                 <Link
                   key="ticket"
                   href={`/home/services/tickets/${ticket.id}`}
                   className="font-medium hover:underline"
                 >
                   #{ticket.ticketNumber} {ticket.subject}
-                </Link>,
-                ticket.customer,
-                ticket.assignee,
-                `${ticket.daysOpen}d`,
-                formatDate(ticket.dueDate),
-              ])}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Time Logs By Ticket</CardTitle>
-            <CardDescription>
-              Where time is being spent, based on individual time entries.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ReportTable
-              headers={['Ticket', 'Customer', 'Entries', 'Logged', 'Latest']}
-              empty="No time entries logged yet."
-              rows={timeByTicket.map((ticket: any) => [
-                ticket.id ? (
-                  <Link
-                    key="ticket"
-                    href={`/home/services/tickets/${ticket.id}`}
-                    className="font-medium hover:underline"
-                  >
-                    #{ticket.ticketNumber} {ticket.subject}
-                  </Link>
-                ) : (
-                  ticket.subject
-                ),
-                ticket.customer,
-                ticket.entries,
-                formatHours(ticket.loggedSeconds),
-                formatDate(ticket.latestLoggedDate),
-              ])}
-            />
-          </CardContent>
-        </Card>
+                </Link>
+              ) : (
+                ticket.subject
+              ),
+              ticket.customer,
+              ticket.entries,
+              formatHours(ticket.loggedSeconds),
+              formatDate(ticket.latestLoggedDate),
+            ])}
+          />
+        </CardWidgetContainer>
       </div>
     </div>
   );
@@ -421,8 +423,11 @@ function MetricBar({
         </div>
         <div className="text-2xl font-semibold">{value}</div>
       </div>
-      <div className="bg-muted h-2 overflow-hidden rounded-full">
-        <div className="h-full rounded-full bg-sky-600" style={{ width }} />
+      <div className="h-2 w-full overflow-hidden bar-bg rounded-full">
+        <div
+          className="h-full rounded-full bg-leadgaze-success transition-all duration-500"
+          style={{ width }}
+        />
       </div>
     </div>
   );
