@@ -116,7 +116,7 @@ export function CreateAccountDialog({
 
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
           <div className="space-y-4">
-            <h3 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+            <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase">
               Basic Information
             </h3>
             <Separator />
@@ -194,7 +194,7 @@ export function CreateAccountDialog({
           </div>
 
           <div className="space-y-4 pt-4">
-            <h3 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+            <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase">
               Address Information
             </h3>
             <Separator />

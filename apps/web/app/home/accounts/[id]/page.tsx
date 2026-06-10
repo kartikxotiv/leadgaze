@@ -8,15 +8,18 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
+  Briefcase,
   Building2,
   Calendar,
   Clock,
   DollarSign,
+  Edit2,
   Globe,
   Linkedin,
   Mail,
   MapPin,
   Phone,
+  Plus,
   Trash2,
   User,
   Users,
@@ -26,8 +29,13 @@ import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
+import { CustomInputForView } from '@kit/ui/custom-input-for-view';
+import { DetailHeader } from '@kit/ui/detail-header';
 import { PageBody } from '@kit/ui/page';
 import { Separator } from '@kit/ui/separator';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   Tooltip,
   TooltipContent,
@@ -61,6 +69,80 @@ import { LogCallDialog } from '../../leads/components/log-call-dialog';
 import { OpportunityDialog } from '../../opportunities/components/opportunity-dialog';
 import { AccountAssignees } from '../components/account-assignees';
 import { EditAccountDialog } from '../components/edit-account-dialog';
+
+function AccountDetailsSkeleton() {
+  return (
+    <ModuleGuard module="accounts">
+      <div className="px-6 pt-4 pb-2">
+        <div className="mb-2">
+          <Skeleton className="h-8 w-20 rounded-md" />
+        </div>
+      </div>
+      <PageBody className="pb-6">
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
+            <DetailHeader
+              avatar={<Skeleton className="h-16 w-16 rounded-lg" />}
+              title={<Skeleton className="h-6 w-48" />}
+              subtitle={
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-36" />
+                </div>
+              }
+              actions={
+                <div className="flex gap-2">
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                </div>
+              }
+            />
+            <Card>
+              <CardHeader><Skeleton className="h-5 w-24" /></CardHeader>
+              <CardContent className="grid gap-6 sm:grid-cols-2">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="space-y-1">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><Skeleton className="h-5 w-24" /></CardHeader>
+              <CardContent className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-8 w-full rounded-md" />
+                ))}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
+              <CardContent className="space-y-3">
+                {[...Array(2)].map((_, i) => (
+                  <Skeleton key={i} className="h-8 w-full rounded-md" />
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader><Skeleton className="h-4 w-24" /></CardHeader>
+              <CardContent className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="space-y-1">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-28" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </PageBody>
+    </ModuleGuard>
+  );
+}
 
 export default function AccountDetailsPage() {
   const params = useParams();
@@ -146,13 +228,7 @@ export default function AccountDetailsPage() {
   });
 
   if (isLoading) {
-    return (
-      <ModuleGuard module="accounts">
-        <div className="flex h-screen items-center justify-center">
-          <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
-        </div>
-      </ModuleGuard>
-    );
+    return <AccountDetailsSkeleton />;
   }
 
   if (error || !account) {
@@ -174,107 +250,32 @@ export default function AccountDetailsPage() {
 
   return (
     <ModuleGuard module="accounts">
-      <div className="bg-background border-b px-6 py-4">
-        <div className="mb-4 flex items-center justify-between">
-          <Button variant="ghost" size="sm" asChild className="-ml-2">
+      <div className="pt-4 pb-2 flex justify-between items-center w-full">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" asChild className="border p-0 border-leadgaze-border">
             <Link href="/home/accounts">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
+              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
             </Link>
           </Button>
-          <div className="flex gap-2">
-            {canEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsLogCallDialogOpen(true)}
-                className="p-3"
-                title="Log a call"
-              >
-                <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
-                  <Phone className="h-3 w-3 text-white" />
-                </div>
-              </Button>
-            )}
-
-            <Button
-              variant="outline"
-              size="sm"
-              className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${
-                accountEmailRecipients.length === 0 ? 'opacity-50' : ''
-              }`}
-              disabled={accountEmailRecipients.length === 0}
-              onClick={() => setIsEmailDialogOpen(true)}
-              title={
-                accountEmailRecipients.length === 0
-                  ? 'Account has no contact email addresses'
-                  : 'Send email to account contact'
-              }
-            >
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
-                <Mail className="h-3.5 w-3.5 text-white" />
-              </div>
-            </Button>
-
-            {canEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditDialogOpen(true)}
-              >
-                Edit Account
-              </Button>
-            )}
+          <div className="flex flex-col">
+            <h1 className="text-lg font-semibold">Account details</h1>
+            <p className="text-leadgaze-muted text-sm">View and edit lead information</p>
           </div>
         </div>
-
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="bg-primary/10 flex h-16 w-16 items-center justify-center rounded-lg">
-              <Building2 className="text-primary h-8 w-8" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">{account.account_name}</h1>
-              <div className="text-muted-foreground mt-1 flex items-center gap-3 text-sm">
-                {account.industry && (
-                  <span className="flex items-center gap-1">
-                    <Building2 className="h-3 w-3" />
-                    {account.industry.industry_name}
-                  </span>
-                )}
-                {account.website && (
-                  <a
-                    href={account.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-primary flex items-center gap-1 hover:underline"
-                  >
-                    <Globe className="h-3 w-3" />
-                    {account.website.replace(/^https?:\/\//, '')}
-                  </a>
-                )}
-                <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
-                <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                  <Clock className="h-3 w-3" />
-                  <span>
-                    Created on{' '}
-                    {new Date(account.created_at).toLocaleDateString(
-                      undefined,
-                      {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      },
-                    )}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {canEdit && (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setIsEditDialogOpen(true)}
+            className="gap-2"
+          >
+            <Edit2 className="h-4 w-4" />
+            Edit Account
+          </Button>
+        )}
       </div>
 
-      <PageBody>
+      <PageBody className="pb-6">
         <DeleteEntityDialog
           isOpen={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
@@ -286,102 +287,181 @@ export default function AccountDetailsPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="space-y-6 lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Details</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-6 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Phone
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Phone className="text-muted-foreground h-4 w-4" />
+            <DetailHeader
+              avatar={
+                <div className="bg-primary/10 flex h-16 w-16 items-center justify-center rounded-lg">
+                  <Building2 className="text-primary h-8 w-8" />
+                </div>
+              }
+              title={account.account_name}
+              subtitle={
+                <>
+                  {account.industry && (
+                    <span className="flex items-center gap-1">
+                      <Building2 className="h-3 w-3" />
+                      {account.industry.industry_name}
+                    </span>
+                  )}
+                  {account.website && (
                     <a
-                      href={`tel:${account.phone_number}`}
-                      className="text-sm hover:underline"
+                      href={account.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary flex items-center gap-1 hover:underline"
                     >
-                      {account.phone_number || '-'}
+                      <Globe className="h-3 w-3" />
+                      {account.website.replace(/^https?:\/\//, '')}
                     </a>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Employees
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Users className="text-muted-foreground h-4 w-4" />
-                    <span className="text-sm">
-                      {account.company_size || account.employee_count || '-'}
+                  )}
+                  <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <Clock className="h-3 w-3" />
+                    <span>
+                      Created on{' '}
+                      {new Date(account.created_at).toLocaleDateString(
+                        undefined,
+                        {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        },
+                      )}
                     </span>
                   </div>
-                </div>
+                </>
+              }
+              actions={
+                <div className="flex gap-2">
+                  {canEdit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsLogCallDialogOpen(true)}
+                      className="p-3"
+                      title="Log a call"
+                    >
+                      <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
+                        <Phone className="h-3 w-3 text-white" />
+                      </div>
+                    </Button>
+                  )}
 
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Annual Revenue
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="text-muted-foreground h-4 w-4" />
-                    <span className="text-sm">
-                      {account.annual_revenue
-                        ? new Intl.NumberFormat('en-US', {
-                            style: 'currency',
-                            currency: 'USD',
-                          }).format(account.annual_revenue)
-                        : '-'}
-                    </span>
-                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${
+                      accountEmailRecipients.length === 0 ? 'opacity-50' : ''
+                    }`}
+                    disabled={accountEmailRecipients.length === 0}
+                    onClick={() => setIsEmailDialogOpen(true)}
+                    title={
+                      accountEmailRecipients.length === 0
+                        ? 'Account has no contact email addresses'
+                        : 'Send email to account contact'
+                    }
+                  >
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
+                      <Mail className="h-3.5 w-3.5 text-white" />
+                    </div>
+                  </Button>
                 </div>
+              }
+            />
+            <CardWidgetContainer
+              title="Details"
+              icon={
+                <Building2 className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+              }
+            >
+              <div className="flex-1">
+                <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
+                  {account.phone_number && (
+                    <CustomInputForView
+                      label="Phone"
+                      labelIcon={
+                        <Phone className="text-muted-foreground h-4 w-4" />
+                      }
+                      value={
+                        <a
+                          href={`tel:${account.phone_number}`}
+                          className="block text-sm text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {account.phone_number}
+                        </a>
+                      }
+                    />
+                  )}
 
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Type
-                  </p>
-                  <span className="text-sm capitalize">
-                    {account.account_type || '-'}
-                  </span>
-                </div>
+                  {(account.company_size || account.employee_count) && (
+                    <CustomInputForView
+                      label="Employees"
+                      labelIcon={
+                        <Users className="text-muted-foreground h-4 w-4" />
+                      }
+                      value={account.company_size || account.employee_count}
+                    />
+                  )}
 
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    LinkedIn
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Linkedin className="text-muted-foreground h-4 w-4" />
-                    {account.linkedin_url ? (
-                      <a
-                        href={account.linkedin_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm break-all hover:underline"
-                      >
-                        {account.linkedin_url}
-                      </a>
-                    ) : (
-                      <span className="text-sm">-</span>
-                    )}
-                  </div>
-                </div>
+                  {account.annual_revenue && (
+                    <CustomInputForView
+                      label="Annual Revenue"
+                      labelIcon={
+                        <DollarSign className="text-muted-foreground h-4 w-4" />
+                      }
+                      value={new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'USD',
+                      }).format(account.annual_revenue)}
+                    />
+                  )}
 
-                <div className="space-y-1 sm:col-span-2">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Description
-                  </p>
-                  <p className="text-sm whitespace-pre-wrap">
-                    {account.description || 'No description provided.'}
-                  </p>
-                </div>
+                  {account.account_type && (
+                    <CustomInputForView
+                      label="Type"
+                      value={account.account_type}
+                      className="capitalize"
+                    />
+                  )}
 
-                <div className="space-y-1 sm:col-span-2">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Billing Address
-                  </p>
-                  <div className="flex items-start gap-2">
-                    <MapPin className="text-muted-foreground mt-0.5 h-4 w-4" />
-                    <div className="text-sm">
-                      {[
+                  {account.linkedin_url && (
+                    <CustomInputForView
+                      label="LinkedIn"
+                      labelIcon={
+                        <Linkedin className="text-muted-foreground h-4 w-4" />
+                      }
+                      value={
+                        <a
+                          href={account.linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {account.linkedin_url}
+                        </a>
+                      }
+                    />
+                  )}
+
+                  {account.description && (
+                    <CustomInputForView
+                      label="Description"
+                      value={account.description}
+                      as="textarea"
+                      className="col-span-2"
+                    />
+                  )}
+
+                  {(account.billing_street ||
+                    account.billing_city ||
+                    account.billing_state ||
+                    account.billing_postal_code ||
+                    account.billing_country) && (
+                    <CustomInputForView
+                      label="Billing Address"
+                      labelIcon={
+                        <MapPin className="text-muted-foreground h-4 w-4" />
+                      }
+                      value={[
                         account.billing_street,
                         account.billing_city,
                         account.billing_state,
@@ -389,19 +469,22 @@ export default function AccountDetailsPage() {
                         account.billing_country,
                       ]
                         .filter(Boolean)
-                        .join(', ') || '-'}
-                    </div>
-                  </div>
-                </div>
+                        .join(', ')}
+                      className="col-span-2"
+                    />
+                  )}
 
-                <div className="space-y-1 sm:col-span-2">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Shipping Address
-                  </p>
-                  <div className="flex items-start gap-2">
-                    <MapPin className="text-muted-foreground mt-0.5 h-4 w-4" />
-                    <div className="text-sm">
-                      {[
+                  {(account.shipping_street ||
+                    account.shipping_city ||
+                    account.shipping_state ||
+                    account.shipping_postal_code ||
+                    account.shipping_country) && (
+                    <CustomInputForView
+                      label="Shipping Address"
+                      labelIcon={
+                        <MapPin className="text-muted-foreground h-4 w-4" />
+                      }
+                      value={[
                         account.shipping_street,
                         account.shipping_city,
                         account.shipping_state,
@@ -409,69 +492,73 @@ export default function AccountDetailsPage() {
                         account.shipping_country,
                       ]
                         .filter(Boolean)
-                        .join(', ') || '-'}
-                    </div>
-                  </div>
+                        .join(', ')}
+                      className="col-span-2"
+                    />
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </CardWidgetContainer>
 
             {/* Contacts Section */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg font-bold">Contacts</CardTitle>
-                {rbacCanAccess('accounts', 'add_contact') && (
+            <CardWidgetContainer
+              title="Contacts"
+              icon={
+                <Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+              }
+              icon2={
+                rbacCanAccess('accounts', 'add_contact') && (
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="default"
                     onClick={() => setIsContactDialogOpen(true)}
                   >
+                    <Plus className="mr-2 h-4 w-4" />
                     Add Contact
                   </Button>
-                )}
-              </CardHeader>
-              <CardContent>
+                )
+              }
+            >
+              <div className="px-6 py-4">
                 {rbacCanAccess('accounts', 'view_contacts') ? (
                   contacts && contacts.length > 0 ? (
-                    <div className="divide-y">
+                    <CardWidgetList>
                       {contacts.map((contact: any) => (
-                        <div
+                        <CardWidgetListItem
                           key={contact.id}
-                          className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
-                        >
-                          <div className="flex items-center gap-3">
+                          icon={
                             <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold">
                               {contact.first_name[0]}
                               {contact.last_name?.[0]}
                             </div>
-                            <div>
-                              <p className="text-sm font-medium">
-                                {contact.first_name} {contact.last_name}
-                              </p>
-                              <p className="text-muted-foreground text-xs">
-                                {contact.job_title}{' '}
-                                {contact.department
-                                  ? `(${contact.department})`
-                                  : ''}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-muted-foreground hidden text-right text-xs sm:block">
-                              <p>{contact.email}</p>
-                              <p>{contact.phone_number}</p>
-                            </div>
-                            {rbacCanAccess('contacts', 'view') && (
+                          }
+                          title={`${contact.first_name} ${contact.last_name || ''}`}
+                          subtitle={
+                            <span>
+                              {contact.job_title}
+                              {contact.job_title && contact.department && ' • '}
+                              {contact.department}
+                            </span>
+                          }
+                          metadata={
+                            <span>
+                              {contact.email}
+                              {contact.email && contact.phone_number && ' • '}
+                              {contact.phone_number}
+                            </span>
+                          }
+                          actions={
+                            rbacCanAccess('contacts', 'view') && (
                               <Button size="sm" variant="ghost" asChild>
                                 <Link href={`/home/contacts/${contact.id}`}>
                                   View
                                 </Link>
                               </Button>
-                            )}
-                          </div>
-                        </div>
+                            )
+                          }
+                        />
                       ))}
-                    </div>
+                    </CardWidgetList>
                   ) : (
                     <div className="text-muted-foreground py-6 text-center text-sm">
                       No contacts associated with this account.
@@ -482,76 +569,71 @@ export default function AccountDetailsPage() {
                     You do not have permission to view contacts.
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </CardWidgetContainer>
 
             {/* Opportunities Section */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg font-bold">
-                  Opportunities
-                </CardTitle>
+            <CardWidgetContainer
+              title="Opportunities"
+              icon={
+                <Briefcase className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+              }
+              icon2={
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="default"
                   onClick={() => setIsOpportunityDialogOpen(true)}
                 >
+                  <Plus className="mr-2 h-4 w-4" />
                   New Opportunity
                 </Button>
-              </CardHeader>
-              <CardContent>
+              }
+            >
+              <div className="px-6 py-4">
                 {rbacCanAccess('accounts', 'view_opportunities') ? (
                   opportunities && opportunities.length > 0 ? (
-                    <div className="divide-y">
+                    <CardWidgetList>
                       {opportunities.map((opp: any) => (
-                        <div
+                        <CardWidgetListItem
                           key={opp.id}
-                          className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
-                        >
-                          <div>
-                            <p className="text-sm font-medium">
-                              {opp.opportunity_name}
-                            </p>
-                            <div className="mt-1 flex items-center gap-2">
-                              {opp.stage && (
-                                <Badge
-                                  variant="outline"
-                                  className="h-4 text-[10px]"
-                                >
-                                  {opp.stage.status_name}
-                                </Badge>
-                              )}
-                              <span className="text-muted-foreground text-xs">
-                                {new Intl.NumberFormat('en-US', {
-                                  style: 'currency',
-                                  currency: opp.currency || 'USD',
-                                }).format(opp.amount)}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-muted-foreground hidden text-right text-xs sm:block">
-                              <p>
-                                Expected Close:{' '}
-                                {opp.expected_close_date
-                                  ? new Date(
-                                      opp.expected_close_date,
-                                    ).toLocaleDateString()
-                                  : '-'}
-                              </p>
-                              <p>Probability: {opp.probability}%</p>
-                            </div>
-                            {rbacCanAccess('opportunities', 'view') && (
+                          title={opp.opportunity_name}
+                          badge={
+                            opp.stage && (
+                              <Badge
+                                variant="outline"
+                                className="h-5 text-[10px]"
+                              >
+                                {opp.stage.status_name}
+                              </Badge>
+                            )
+                          }
+                          subtitle={
+                            <span>
+                              {new Intl.NumberFormat('en-US', {
+                                style: 'currency',
+                                currency: opp.currency || 'USD',
+                              }).format(opp.amount)}
+                            </span>
+                          }
+                          metadata={
+                            <span>
+                              {opp.expected_close_date && `Expected Close: ${new Date(opp.expected_close_date).toLocaleDateString()}`}
+                              {opp.expected_close_date && opp.probability !== undefined && ' • '}
+                              {opp.probability !== undefined && `Probability: ${opp.probability}%`}
+                            </span>
+                          }
+                          actions={
+                            rbacCanAccess('opportunities', 'view') && (
                               <Button size="sm" variant="ghost" asChild>
                                 <Link href={`/home/opportunities/${opp.id}`}>
                                   View
                                 </Link>
                               </Button>
-                            )}
-                          </div>
-                        </div>
+                            )
+                          }
+                        />
                       ))}
-                    </div>
+                    </CardWidgetList>
                   ) : (
                     <div className="text-muted-foreground py-6 text-center text-sm">
                       No opportunities associated with this account.
@@ -562,29 +644,11 @@ export default function AccountDetailsPage() {
                     You do not have permission to view opportunities.
                   </div>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* Account Assignees Section */}
-            {workspace?.id && (
-              <AccountAssignees accountId={id} workspaceId={workspace.id} />
-            )}
-
+              </div>
+            </CardWidgetContainer>
             {/* Notes Section */}
             <EntityNotes entityType="account" entityId={id} />
-
-            {/* Activity Sections */}
-            <EntityCalls entityType="account" entityId={id} />
-            <EntityEmails
-              entityId={id}
-              entityType="account"
-              entityName={account.account_name}
-              recipientOptions={accountEmailRecipients}
-            />
-            <EntityReminders entityType="account" entityId={id} />
-            <EntityMeetings entityType="account" entityId={id} />
-            <EntityDocuments entityType="account" entityId={id} />
-
+ 
             {/* Danger Zone */}
             {rbacCanAccess('accounts', 'delete') && (
               <Card className="border-destructive/50 border-solid">
@@ -626,7 +690,7 @@ export default function AccountDetailsPage() {
               </Card>
             )}
           </div>
-
+ 
           {/* Sidebar */}
           <div className="space-y-6">
             <Card>
@@ -670,7 +734,7 @@ export default function AccountDetailsPage() {
                     </span>
                   </div>
                 </div>
-
+ 
                 {account.twitter_handle && (
                   <>
                     <Separator />
@@ -712,6 +776,23 @@ export default function AccountDetailsPage() {
                 )}
               </CardContent>
             </Card>
+ 
+            {/* Account Assignees Section */}
+            {workspace?.id && (
+              <AccountAssignees accountId={id} workspaceId={workspace.id} />
+            )}
+ 
+            {/* Activity Sections */}
+            <EntityCalls entityType="account" entityId={id} />
+            <EntityEmails
+              entityId={id}
+              entityType="account"
+              entityName={account.account_name}
+              recipientOptions={accountEmailRecipients}
+            />
+            <EntityReminders entityType="account" entityId={id} />
+            <EntityMeetings entityType="account" entityId={id} />
+            <EntityDocuments entityType="account" entityId={id} />
           </div>
         </div>
       </PageBody>

@@ -44,6 +44,7 @@ import {
   SheetTitle,
 } from '@kit/ui/sheet';
 import {
+  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -58,9 +59,12 @@ import {
 } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
+import { Skeleton } from '@kit/ui/skeleton';
+
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAuditLogsService } from '~/services/audit-logs.service';
+import CustomTableContainer from '@kit/ui/custom-table-container';
 
 export default function AuditLogsPage() {
   const { currentWorkspace: workspace } = useRBAC();
@@ -144,13 +148,12 @@ export default function AuditLogsPage() {
 
   return (
     <ModuleGuard module="audit_logs">
-      <div className="flex h-[100dvh] w-full max-w-full min-w-0 flex-col overflow-hidden">
-        <PageHeader
-          className="bg-sidebar"
-          title={`Audit Logs (${count})`}
-          description="Track all activities and changes within your workspace"
-        >
-          <div className="flex items-center gap-3">
+      <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
+          <PageHeader
+            title={`Audit Logs (${count})`}
+            description="Track all activities and changes within your workspace"
+          >
+            <div className="flex items-center gap-2">
             <TooltipProvider>
               <Popover
                 open={isFilterOpen}
@@ -162,17 +165,17 @@ export default function AuditLogsPage() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
-                      <button
-                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white dark:border-zinc-700 dark:bg-zinc-900 ${isFilterOpen ? 'bg-accent' : ''
-                          }`}
-                      >
-                        <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
+                      <Button
+                      variant="outline"                      
+                      className="h-9 w-9 bg-white p-0 dark:dark-background-color hover:cursor-pointer">
+                      
+                        <Filter className="h-4 w-4" />
                         {activeFilterCount > 0 && (
                           <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
                             {activeFilterCount}
                           </span>
                         )}
-                      </button>
+                      </Button>
                     </PopoverTrigger>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
@@ -186,8 +189,8 @@ export default function AuditLogsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0"
                           onClick={() => setFilterView('main')}
+                          className="h-9 w-9 bg-white p-0 dark:dark-background-color hover:cursor-pointer"
                         >
                           <ChevronLeft className="h-4 w-4" />
                         </Button>
@@ -332,7 +335,7 @@ export default function AuditLogsPage() {
                 </PopoverContent>
               </Popover>
             </TooltipProvider>
-
+ 
             {activeFilterCount > 0 && (
               <Button
                 variant="outline"
@@ -358,67 +361,154 @@ export default function AuditLogsPage() {
             />
           </div>
         </PageHeader>
+        </div>
 
-        <PageBody className="bg-sidebar flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-6">
-          <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col space-y-6">
-            {/* Table */}
-            <Card className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col border-none shadow-none">
-              <CardContent className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col p-0 text-[13px]">
-                <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
-                  <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
-                    <TableHeader className="bg-card sticky top-0 z-20 shadow-sm">
+        <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
+            <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+              <CustomTableContainer pagination={count > 0 && (
+                  <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
+                  <div>
+                    Showing{' '}
+                    <span className="text-foreground font-medium">
+                      {(page - 1) * itemsPerPage + 1}
+                    </span>{' '}
+                    to{' '}
+                    <span className="text-foreground font-medium">
+                      {Math.min(page * itemsPerPage, count)}
+                    </span>{' '}
+                    of{' '}
+                    <span className="text-foreground font-medium">{count}</span>{' '}
+                    logs
+                  </div>
+                  <Pagination className="w-auto">
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          className={
+                            page === 1
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
+                          }
+                          onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        />
+                      </PaginationItem>
+                      {(() => {
+                        const visiblePages: (number | string)[] = [];
+                        const delta = 1; // Number of pages to show before and after current page
+
+                        if (totalPages <= 7) {
+                          // If total pages is small, show all
+                          for (let i = 1; i <= totalPages; i++)
+                            visiblePages.push(i);
+                        } else {
+                          visiblePages.push(1); // Always show first
+
+                          if (page > delta + 2) {
+                            visiblePages.push('ellipsis-start');
+                          }
+
+                          const start = Math.max(2, page - delta);
+                          const end = Math.min(totalPages - 1, page + delta);
+
+                          for (let i = start; i <= end; i++) visiblePages.push(i);
+
+                          if (page < totalPages - (delta + 1)) {
+                            visiblePages.push('ellipsis-end');
+                          }
+
+                          visiblePages.push(totalPages); // Always show last
+                        }
+
+                        return visiblePages.map((p, i) => {
+                          if (typeof p === 'string') {
+                            return (
+                              <PaginationItem key={`ellipsis-${i}`}>
+                                <span className="px-2">...</span>
+                              </PaginationItem>
+                            );
+                          }
+                          return (
+                            <PaginationItem key={p}>
+                              <PaginationLink
+                                isActive={page === p}
+                                onClick={() => setPage(p)}
+                                className="cursor-pointer"
+                              >
+                                {p}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        });
+                      })()}
+                      <PaginationItem>
+                        <PaginationNext
+                          className={
+                            page === totalPages
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
+                          }
+                          onClick={() =>
+                            setPage((p) => Math.min(totalPages, p + 1))
+                          }
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                  </div>
+                  )}>
+                  <Table>
+                    <TableHeader>
                       <TableRow>
                         {isVisible('date_time') && (
-                          <TableHead className="bg-card w-[180px] whitespace-nowrap">
+                          <TableHead className="w-[180px] whitespace-nowrap">
                             Date & Time
                           </TableHead>
                         )}
                         {isVisible('actor') && (
-                          <TableHead className="bg-card w-[180px] whitespace-nowrap">
+                          <TableHead className="w-[180px] whitespace-nowrap">
                             Actor
                           </TableHead>
                         )}
                         {isVisible('module') && (
-                          <TableHead className="bg-card w-[120px] whitespace-nowrap">
+                          <TableHead className="w-[120px] whitespace-nowrap">
                             Module
                           </TableHead>
                         )}
                         {isVisible('action') && (
-                          <TableHead className="bg-card w-[120px] whitespace-nowrap">
+                          <TableHead className="w-[120px] whitespace-nowrap">
                             Action
                           </TableHead>
                         )}
                         {isVisible('entity') && (
-                          <TableHead className="bg-card whitespace-nowrap">
+                          <TableHead className="whitespace-nowrap">
                             Entity
                           </TableHead>
                         )}
-                        <TableHead className="bg-card sticky right-0 z-30 border-l text-right whitespace-nowrap">
+                        <TableHead className="sticky-right-header text-right whitespace-nowrap">
                           Details
                         </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {isLoading ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={
-                              visibility
-                                ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
-                                : 6
-                            }
-                            className="h-32 text-center"
-                          >
-                            <div className="flex flex-col items-center justify-center gap-2">
-                              <div className="border-primary h-6 w-6 animate-spin rounded-full border-2 border-t-transparent" />
-                              <p className="text-muted-foreground text-sm">
-                                Loading logs...
-                              </p>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                        <>
+                          {[...Array(12)].map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell
+                                className="h-[52px] px-4 py-2"
+                                colSpan={
+                                  visibility
+                                    ? Object.values(visibility).filter(
+                                      (v) => v !== false,
+                                    ).length + 1
+                                    : 6
+                                }
+                              >
+                                <Skeleton className="h-7 w-full" />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </>
                       ) : logs.length === 0 ? (
                         <TableRow>
                           <TableCell
@@ -443,9 +533,9 @@ export default function AuditLogsPage() {
                             className="group hover:bg-muted/30 transition-colors"
                           >
                             {isVisible('date_time') && (
-                              <TableCell className="text-xs font-medium">
+                              <TableCell>
                                 <div className="flex flex-col">
-                                  <span>
+                                  <span className="font-medium">
                                     {format(
                                       new Date(log.created_at),
                                       'MMM d, yyyy',
@@ -463,16 +553,16 @@ export default function AuditLogsPage() {
                             {isVisible('actor') && (
                               <TableCell>
                                 <div className="flex items-center gap-2">
-                                  <div className="bg-primary/10 text-primary flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold">
+                                  <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-full secondary-text-small font-bold">
                                     {log.actor?.name?.[0] ||
                                       log.actor?.email?.[0] ||
                                       '?'}
                                   </div>
                                   <div className="flex min-w-0 flex-col">
-                                    <span className="truncate text-xs font-medium">
+                                    <span className="truncate font-medium">
                                       {log.actor?.name || 'System'}
                                     </span>
-                                    <span className="text-muted-foreground truncate text-[10px]">
+                                    <span className="text-muted-foreground truncate secondary-text-small">
                                       {log.actor?.email}
                                     </span>
                                   </div>
@@ -481,18 +571,16 @@ export default function AuditLogsPage() {
                             )}
                             {isVisible('module') && (
                               <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className="py-0 text-[10px] font-medium capitalize"
-                                >
+                                <Badge variant="outline" className="dark-button-border-color">
                                   {getModuleLabel(log.module)}
                                 </Badge>
                               </TableCell>
                             )}
                             {isVisible('action') && (
                               <TableCell>
+
                                 <Badge
-                                  className={`border px-2 py-0 text-[10px] font-bold ${getActionColor(log.action)}`}
+                                  className={`border px-2 font-bold ${getActionColor(log.action)}`}
                                 >
                                   {log.action}
                                 </Badge>
@@ -501,7 +589,7 @@ export default function AuditLogsPage() {
                             {isVisible('entity') && (
                               <TableCell>
                                 <div className="flex flex-col">
-                                  <span className="max-w-[200px] truncate text-xs font-medium">
+                                  <span className="max-w-[200px] truncate font-medium">
                                     {log.entity_name || '-'}
                                   </span>
                                   <span className="text-muted-foreground truncate font-mono text-[10px]">
@@ -524,105 +612,11 @@ export default function AuditLogsPage() {
                         ))
                       )}
                     </TableBody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-
-            {count > 0 && (
-              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
-                <div>
-                  Showing{' '}
-                  <span className="text-foreground font-medium">
-                    {(page - 1) * itemsPerPage + 1}
-                  </span>{' '}
-                  to{' '}
-                  <span className="text-foreground font-medium">
-                    {Math.min(page * itemsPerPage, count)}
-                  </span>{' '}
-                  of{' '}
-                  <span className="text-foreground font-medium">{count}</span>{' '}
-                  logs
-                </div>
-                <Pagination className="w-auto">
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        className={
-                          page === 1
-                            ? 'pointer-events-none opacity-50'
-                            : 'cursor-pointer'
-                        }
-                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      />
-                    </PaginationItem>
-                    {(() => {
-                      const visiblePages: (number | string)[] = [];
-                      const delta = 1; // Number of pages to show before and after current page
-
-                      if (totalPages <= 7) {
-                        // If total pages is small, show all
-                        for (let i = 1; i <= totalPages; i++)
-                          visiblePages.push(i);
-                      } else {
-                        visiblePages.push(1); // Always show first
-
-                        if (page > delta + 2) {
-                          visiblePages.push('ellipsis-start');
-                        }
-
-                        const start = Math.max(2, page - delta);
-                        const end = Math.min(totalPages - 1, page + delta);
-
-                        for (let i = start; i <= end; i++) visiblePages.push(i);
-
-                        if (page < totalPages - (delta + 1)) {
-                          visiblePages.push('ellipsis-end');
-                        }
-
-                        visiblePages.push(totalPages); // Always show last
-                      }
-
-                      return visiblePages.map((p, i) => {
-                        if (typeof p === 'string') {
-                          return (
-                            <PaginationItem key={`ellipsis-${i}`}>
-                              <span className="px-2">...</span>
-                            </PaginationItem>
-                          );
-                        }
-                        return (
-                          <PaginationItem key={p}>
-                            <PaginationLink
-                              isActive={page === p}
-                              onClick={() => setPage(p)}
-                              className="cursor-pointer"
-                            >
-                              {p}
-                            </PaginationLink>
-                          </PaginationItem>
-                        );
-                      });
-                    })()}
-                    <PaginationItem>
-                      <PaginationNext
-                        className={
-                          page === totalPages
-                            ? 'pointer-events-none opacity-50'
-                            : 'cursor-pointer'
-                        }
-                        onClick={() =>
-                          setPage((p) => Math.min(totalPages, p + 1))
-                        }
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
-          </div>
-        </PageBody>
-      </div>
+                  </Table>
+              </CustomTableContainer>
+            </div>
+        
+      
 
       <Sheet
         open={!!selectedLog}
@@ -729,6 +723,7 @@ export default function AuditLogsPage() {
           )}
         </SheetContent>
       </Sheet>
+      </PageBody>
     </ModuleGuard>
   );
 }

@@ -39,6 +39,11 @@ import { useAccessibleModules } from '~/lib/permissions';
  * Filters navigation items based on the new permission system
  */
 
+/**
+ * Permission-based Dynamic Navigation Hook
+ * Filters navigation items based on the new permission system
+ */
+
 interface NavItem {
   label: string;
   path: string;
@@ -142,16 +147,24 @@ export function usePermissionBasedNavigation() {
 
   // Separate into sales and team items
   const salesItems = useMemo(() => {
-    return filteredItems.filter((item) =>
-      ['leads', 'contacts', 'accounts', 'opportunities', 'emails'].includes(
-        item.moduleKey,
-      ),
+    return filteredItems.filter(
+      (item) =>
+        [
+          'leads',
+          'contacts',
+          'accounts',
+          'opportunities',
+          'emails',
+          'team_members',
+        ].includes(item.moduleKey) && item.path !== pathsConfig.app.teamMembers, // Members stays in team/settings
     );
   }, [filteredItems]);
 
   const teamItems = useMemo(() => {
-    return filteredItems.filter((item) =>
-      ['team_members', 'roles', 'audit_logs'].includes(item.moduleKey),
+    return filteredItems.filter(
+      (item) =>
+        ['team_members', 'roles', 'audit_logs'].includes(item.moduleKey) &&
+        item.path !== pathsConfig.app.teams, // Teams moved to sales nav
     );
   }, [filteredItems]);
 

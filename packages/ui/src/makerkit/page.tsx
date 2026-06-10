@@ -2,6 +2,7 @@ import * as React from 'react';
 
 import { cn } from '../lib/utils';
 import { If } from './if';
+import { TooltipProvider } from '../shadcn/tooltip';
 import {
   PageDescription,
   PageHeader,
@@ -68,40 +69,43 @@ function PageWithSidebar(props: PageProps) {
 }
 
 function PageWithHeader(props: PageProps) {
-  const { Navigation, Children, MobileNavigation } = getSlotsFromPage(props);
+  const { Navigation, Children } = getSlotsFromPage(props);
 
   return (
-    <div
-      className={cn(
-        'flex h-screen flex-1 flex-col overflow-y-auto',
-        props.className,
-      )}
-    >
+    <TooltipProvider>
       <div
-        className={
-          props.contentContainerClassName ?? 'flex flex-1 flex-col space-y-4'
-        }
+        className={cn(
+          'flex h-screen flex-1 flex-col overflow-y-auto',
+          props.className,
+        )}
       >
         <div
-          className={cn(
-            'bg-background/80 supports-[backdrop-filter]:bg-background/60 dark:border-border dark:shadow-primary/10 flex h-14 items-center justify-between border-b px-4 lg:justify-start lg:shadow-xs',
-            {
-              'sticky top-0 z-10 backdrop-blur-md': props.sticky ?? true,
-            },
-          )}
+          className={
+            props.contentContainerClassName ?? 'flex flex-1 flex-col space-y-4'
+          }
         >
           <div
-            className={'hidden w-full flex-1 items-center space-x-8 lg:flex'}
+            className={cn(
+              'bg-leadgaze-primary text-white flex h-16 items-center justify-between border-b border-header-primary/20 px-6 justify-start mb-0',
+              {
+                'sticky top-0 z-50 backdrop-blur-md': props.sticky ?? true,
+              },
+            )}
           >
-            {Navigation}
+            <div
+              className={'flex w-full flex-1 items-center space-x-8'}
+            >
+              {Navigation}
+            </div>
           </div>
 
-          {MobileNavigation}
+          <div className={'w-full py-4 flex flex-1 flex-col pt-0 bg-graylight dark:dark-background-color px-6'}>
+            <div className="flex px-6 h-[91dvh] w-full max-w-full min-w-0 flex-col overflow-auto">{Children}</div>
+            {/* {Children} */}
+            </div>
         </div>
-
-        <div className={'container flex flex-1 flex-col'}>{Children}</div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
 
@@ -110,7 +114,7 @@ export function PageBody(
     className?: string;
   }>,
 ) {
-  const className = cn('flex w-full flex-1 flex-col px-6', props.className);
+  const className = cn('flex w-full flex-1 flex-col px-0', props.className);
 
   return <div className={className}>{props.children}</div>;
 }

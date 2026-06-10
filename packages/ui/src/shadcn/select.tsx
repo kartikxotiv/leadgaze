@@ -23,7 +23,7 @@ const SelectTrigger: React.FC<
 > = ({ className, children, ...props }) => (
   <SelectPrimitive.Trigger
     className={cn(
-      'border-input ring-offset-background placeholder:text-muted-foreground focus:ring-ring flex h-9 w-full items-center justify-between rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-2xs focus:ring-1 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
+      'border-input ring-offset-background placeholder:text-muted-foreground focus:ring-ring flex h-[35.3px] w-full items-center justify-between rounded-[4px] border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-2xs focus:ring-1 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
       className,
     )}
     {...props}
@@ -112,7 +112,7 @@ const SelectItem: React.FC<
 > = ({ className, children, ...props }) => (
   <SelectPrimitive.Item
     className={cn(
-      'focus:bg-accent focus:text-accent-foreground relative flex w-full cursor-default items-center rounded-xs py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50',
+      'focus:bg-accent focus:text-accent-foreground relative flex w-full h-[32px] cursor-default items-center border-b border-[#F4F4F5] py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50',
       className,
     )}
     {...props}
@@ -131,7 +131,7 @@ const SelectSeparator: React.FC<
   React.ComponentPropsWithRef<typeof SelectPrimitive.Separator>
 > = ({ className, ...props }) => (
   <SelectPrimitive.Separator
-    className={cn('bg-muted -mx-1 my-1 h-px', className)}
+    className={cn('bg-[#F4F4F5] -mx-1 my-1 h-px', className)}
     {...props}
   />
 );
