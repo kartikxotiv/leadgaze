@@ -1,6 +1,7 @@
 'use client';
 
 import { Badge } from '@kit/ui/badge';
+import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import {
   Table,
   TableBody,
@@ -9,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
+import { Tabs, TabsContent } from '@kit/ui/tabs';
 
 import type {
   SeparationDialogKey,
@@ -65,29 +66,28 @@ export function SeparationOperationsTabs({
   onDeleteResignation,
 }: SeparationOperationsTabsProps) {
   return (
-    <Tabs value={selectedTabKey} onValueChange={onTabChange}>
-      <TabsList className="h-auto flex-wrap justify-start">
-        {tabs.map((tab) => (
-          <TabsTrigger key={tab.key} value={tab.key}>
-            {tab.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
+    <Tabs
+      value={selectedTabKey}
+      onValueChange={onTabChange}
+      className="min-h-0 w-full"
+    >
       {tabs.map((tab) => (
-        <TabsContent key={tab.key} value={tab.key} className="space-y-4 pt-2">
-          <div className="overflow-x-auto rounded-2xl border">
+        <TabsContent key={tab.key} value={tab.key} className="mt-0">
+          <CustomTableContainer>
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                 <TableRow>
                   {tab.columns.map((column) => (
                     <TableHead key={column}>{column}</TableHead>
                   ))}
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="bg-card sticky right-0 px-4 text-right">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {getSeparationTableRows(tab.key, tableData).map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow key={row.id} className="hover:bg-muted/50">
                     {row.cells.map((cell, index) => (
                       <TableCell key={index}>
                         {index === row.cells.length - 1 ? (
@@ -97,7 +97,7 @@ export function SeparationOperationsTabs({
                         )}
                       </TableCell>
                     ))}
-                    <TableCell className="text-right">
+                    <TableCell className="bg-card sticky right-0 px-4 text-right">
                       {tab.key === 'exit_checklist' ? (
                         <span className="text-muted-foreground">-</span>
                       ) : (
@@ -128,7 +128,7 @@ export function SeparationOperationsTabs({
                 ) : null}
               </TableBody>
             </Table>
-          </div>
+          </CustomTableContainer>
         </TabsContent>
       ))}
     </Tabs>

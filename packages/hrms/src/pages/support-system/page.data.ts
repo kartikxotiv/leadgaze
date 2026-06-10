@@ -41,11 +41,15 @@ export function formatDate(value: string | null | undefined) {
 }
 
 export function getSupportRequestCategoryLabel(category: string) {
-  return category.replace(/_/g, ' ');
+  return category
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 export function getSupportRequestStatusLabel(status: string) {
-  return status.replace(/_/g, ' ');
+  return status
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 export function getSupportTabRequests(

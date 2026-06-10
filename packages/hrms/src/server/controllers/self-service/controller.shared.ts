@@ -4,7 +4,6 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 import { ApiError } from '../../../utils/response-handler';
 import {
   getHrmsClient,
-  getRequiredWorkspaceId,
   getRouteUserId,
   requireEmployeePermission,
 } from '../employees/controller.helpers';
@@ -24,6 +23,18 @@ type SelfServiceContext = {
 };
 
 const moduleKey = 'hrms_self_service';
+
+type SelfServiceEmployeeIdentity = {
+  account_id: string | null;
+  id: string;
+  work_email?: string | null;
+  workspace_id: string;
+};
+
+type AccountProfile = {
+  email: string | null;
+  name: string | null;
+};
 
 async function hasSelfServicePermission(params: {
   featureKey: string;
@@ -61,6 +72,423 @@ function normalizeText(value: unknown) {
   return normalized.length > 0 ? normalized : null;
 }
 
+function normalizeEmail(value: unknown) {
+  return normalizeText(value)?.toLowerCase() ?? null;
+}
+
+function escapeIlikePattern(value: string) {
+  return value.replace(/[\\%_]/g, '\\$&');
+}
+
+async function getAccountEmail(params: {
+  supabaseAdmin: any;
+  user: unknown;
+  userId: string;
+}) {
+  const jwtEmail = normalizeEmail((params.user as { email?: string })?.email);
+
+  if (jwtEmail) {
+    return jwtEmail;
+  }
+
+  const { data, error } = await params.supabaseAdmin
+    .from('accounts')
+    .select('email')
+    .eq('id', params.userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new ApiError(error.message, 400);
+  }
+
+  return normalizeEmail((data as { email?: string | null } | null)?.email);
+}
+
+async function getAccountProfile(params: {
+  supabaseAdmin: any;
+  user: unknown;
+  userId: string;
+}) {
+  const jwtUser = params.user as
+    | {
+        email?: string;
+        user_metadata?: {
+          full_name?: string;
+          name?: string;
+        };
+      }
+    | undefined;
+  const jwtEmail = normalizeEmail(jwtUser?.email);
+  const jwtName = normalizeText(
+    jwtUser?.user_metadata?.name ?? jwtUser?.user_metadata?.full_name,
+  );
+
+  const { data, error } = await params.supabaseAdmin
+    .from('accounts')
+    .select('email, name')
+    .eq('id', params.userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new ApiError(error.message, 400);
+  }
+
+  const account = data as AccountProfile | null;
+
+  return {
+    email: normalizeEmail(account?.email) ?? jwtEmail,
+    name: normalizeText(account?.name) ?? jwtName,
+  } satisfies AccountProfile;
+}
+
+async function getAcceptedWorkspaceIds(params: {
+  request: Request;
+  supabaseAdmin: any;
+  userId: string;
+}) {
+  const preferredWorkspaceId =
+    (params.request as any).cookies?.get('organization_id')?.value ??
+    new URL(params.request.url).searchParams.get('workspace_id') ??
+    params.request.headers.get('x-workspace-id');
+
+  const { data, error } = await params.supabaseAdmin
+    .from('workspace_members')
+    .select('workspace_id')
+    .eq('user_id', params.userId)
+    .eq('status', 'accepted')
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    throw new ApiError(error.message, 400);
+  }
+
+  const workspaceIds = ((data ?? []) as Array<{ workspace_id?: string | null }>)
+    .map((member) => member.workspace_id)
+    .filter((workspaceId): workspaceId is string => Boolean(workspaceId));
+
+  if (preferredWorkspaceId && workspaceIds.includes(preferredWorkspaceId)) {
+    return [
+      preferredWorkspaceId,
+      ...workspaceIds.filter(
+        (workspaceId) => workspaceId !== preferredWorkspaceId,
+      ),
+    ];
+  }
+
+  return workspaceIds;
+}
+
+function getWorkspacePreferenceRank(
+  workspaceId: string,
+  workspaceIds: string[],
+) {
+  const index = workspaceIds.indexOf(workspaceId);
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+}
+
+function sortEmployeesByWorkspacePreference(
+  employees: SelfServiceEmployeeIdentity[],
+  workspaceIds: string[],
+) {
+  return employees.sort(
+    (left, right) =>
+      getWorkspacePreferenceRank(left.workspace_id, workspaceIds) -
+      getWorkspacePreferenceRank(right.workspace_id, workspaceIds),
+  );
+}
+
+async function getSelfServiceWorkspaceRoleId(params: {
+  supabaseAdmin: any;
+  workspaceId: string;
+}) {
+  const { data, error } = await params.supabaseAdmin
+    .from('workspace_roles')
+    .select('id, role_key, hierarchy_level')
+    .eq('workspace_id', params.workspaceId)
+    .eq('is_active', true);
+
+  if (error) {
+    throw new ApiError(error.message, 400);
+  }
+
+  const roles = (
+    (data ?? []) as Array<{
+      hierarchy_level?: number | null;
+      id: string;
+      role_key?: string | null;
+    }>
+  ).sort((left, right) => {
+    const leftRank = left.role_key === 'user' ? 0 : 1;
+    const rightRank = right.role_key === 'user' ? 0 : 1;
+
+    if (leftRank !== rightRank) {
+      return leftRank - rightRank;
+    }
+
+    return (left.hierarchy_level ?? 0) - (right.hierarchy_level ?? 0);
+  });
+
+  if (!roles[0]?.id) {
+    throw new ApiError(
+      'Workspace role is required for self-service access',
+      400,
+    );
+  }
+
+  return roles[0].id;
+}
+
+async function ensureSelfServiceWorkspaceMembership(params: {
+  supabaseAdmin: any;
+  userId: string;
+  workspaceId: string;
+}) {
+  const { data: member, error: memberError } = await params.supabaseAdmin
+    .from('workspace_members')
+    .select('id, role_id, status')
+    .eq('workspace_id', params.workspaceId)
+    .eq('user_id', params.userId)
+    .maybeSingle();
+
+  if (memberError) {
+    throw new ApiError(memberError.message, 400);
+  }
+
+  const existingMember = member as {
+    id: string;
+    role_id?: string | null;
+    status?: string | null;
+  } | null;
+
+  if (existingMember?.status === 'accepted') {
+    return;
+  }
+
+  if (existingMember?.status === 'removed') {
+    throw new ApiError('Workspace membership is removed', 403);
+  }
+
+  const now = new Date().toISOString();
+
+  if (existingMember?.id) {
+    const { error } = await params.supabaseAdmin
+      .from('workspace_members')
+      .update({
+        accepted_at: now,
+        status: 'accepted',
+      })
+      .eq('id', existingMember.id);
+
+    if (error) {
+      throw new ApiError(error.message, 400);
+    }
+
+    return;
+  }
+
+  const roleId = await getSelfServiceWorkspaceRoleId({
+    supabaseAdmin: params.supabaseAdmin,
+    workspaceId: params.workspaceId,
+  });
+
+  const { error } = await params.supabaseAdmin
+    .from('workspace_members')
+    .insert({
+      accepted_at: now,
+      invited_at: now,
+      role_id: roleId,
+      status: 'accepted',
+      user_id: params.userId,
+      workspace_id: params.workspaceId,
+    });
+
+  if (error) {
+    throw new ApiError(error.message, 400);
+  }
+}
+
+async function getSelfServiceEmployee(params: {
+  hrms: any;
+  supabaseAdmin: any;
+  user: unknown;
+  userId: string;
+  workspaceIds: string[];
+}) {
+  const { data: linkedEmployee, error: linkedEmployeeError } = await params.hrms
+    .from('employees')
+    .select('id, account_id, workspace_id')
+    .eq('account_id', params.userId)
+    .eq('is_deleted', false);
+
+  if (linkedEmployeeError) {
+    throw new ApiError(linkedEmployeeError.message, 400);
+  }
+
+  const linkedMatches = sortEmployeesByWorkspacePreference(
+    (linkedEmployee ?? []) as SelfServiceEmployeeIdentity[],
+    params.workspaceIds,
+  );
+
+  if (linkedMatches[0]?.id) {
+    return linkedMatches[0];
+  }
+
+  const accountEmail = await getAccountEmail({
+    supabaseAdmin: params.supabaseAdmin,
+    user: params.user,
+    userId: params.userId,
+  });
+
+  if (!accountEmail) {
+    return null;
+  }
+
+  const { data: employeesByEmail, error: employeesByEmailError } =
+    await params.hrms
+      .from('employees')
+      .select('id, account_id, work_email, workspace_id')
+      .ilike('work_email', escapeIlikePattern(accountEmail))
+      .eq('is_deleted', false)
+      .order('created_at', { ascending: true });
+
+  if (employeesByEmailError) {
+    throw new ApiError(employeesByEmailError.message, 400);
+  }
+
+  const matches = sortEmployeesByWorkspacePreference(
+    ((employeesByEmail ?? []) as SelfServiceEmployeeIdentity[]).filter(
+      (employee) => normalizeEmail(employee.work_email) === accountEmail,
+    ),
+    params.workspaceIds,
+  );
+
+  const employee = matches[0] ?? null;
+
+  if (!employee) {
+    return null;
+  }
+
+  if (employee.account_id && employee.account_id !== params.userId) {
+    throw new ApiError(
+      'Employee email is already linked to another account',
+      409,
+    );
+  }
+
+  if (!employee.account_id) {
+    await ensureSelfServiceWorkspaceMembership({
+      supabaseAdmin: params.supabaseAdmin,
+      userId: params.userId,
+      workspaceId: employee.workspace_id,
+    });
+
+    const { data: updatedEmployee, error: updateEmployeeError } =
+      await params.hrms
+        .from('employees')
+        .update({
+          account_id: params.userId,
+          updated_by: params.userId,
+        })
+        .eq('workspace_id', employee.workspace_id)
+        .eq('id', employee.id)
+        .is('account_id', null)
+        .select('id, account_id, workspace_id')
+        .single();
+
+    if (updateEmployeeError) {
+      throw new ApiError(updateEmployeeError.message, 400);
+    }
+
+    return updatedEmployee as SelfServiceEmployeeIdentity;
+  }
+
+  await ensureSelfServiceWorkspaceMembership({
+    supabaseAdmin: params.supabaseAdmin,
+    userId: params.userId,
+    workspaceId: employee.workspace_id,
+  });
+
+  return employee;
+}
+
+function getEmployeeNameParts(account: AccountProfile) {
+  const emailPrefix = account.email?.split('@')[0]?.replace(/[._-]+/g, ' ');
+  const normalizedName =
+    normalizeText(account.name) ?? emailPrefix ?? 'Employee';
+  const [firstName = 'Employee', ...lastNameParts] =
+    normalizedName.split(/\s+/);
+
+  return {
+    firstName,
+    lastName: lastNameParts.join(' ') || null,
+  };
+}
+
+function buildEmployeeCode(userId: string) {
+  return `EMP-${userId.replace(/-/g, '').slice(0, 10).toUpperCase()}`;
+}
+
+async function createSelfServiceEmployee(params: {
+  hrms: any;
+  supabaseAdmin: any;
+  user: unknown;
+  userId: string;
+  workspaceIds: string[];
+}) {
+  const workspaceId = params.workspaceIds[0];
+
+  if (!workspaceId) {
+    throw new ApiError('Workspace not found for user', 404);
+  }
+
+  const account = await getAccountProfile({
+    supabaseAdmin: params.supabaseAdmin,
+    user: params.user,
+    userId: params.userId,
+  });
+
+  if (!account.email) {
+    throw new ApiError('Account email is required for self-service', 400);
+  }
+
+  const { firstName, lastName } = getEmployeeNameParts(account);
+  const { data, error } = await params.hrms
+    .from('employees')
+    .insert({
+      account_id: params.userId,
+      created_by: params.userId,
+      employee_code: buildEmployeeCode(params.userId),
+      employment_type: 'full_time',
+      first_name: firstName,
+      last_name: lastName,
+      status: 'active',
+      updated_by: params.userId,
+      work_email: account.email,
+      workspace_id: workspaceId,
+    })
+    .select('id, account_id, workspace_id')
+    .single();
+
+  if (error) {
+    if (
+      typeof error.message === 'string' &&
+      error.message.toLowerCase().includes('duplicate')
+    ) {
+      return getSelfServiceEmployee({
+        hrms: params.hrms,
+        supabaseAdmin: params.supabaseAdmin,
+        user: params.user,
+        userId: params.userId,
+        workspaceIds: params.workspaceIds,
+      });
+    }
+
+    throw new ApiError(error.message, 400);
+  }
+
+  return data as SelfServiceEmployeeIdentity;
+}
+
 function formatCurrency(value: number | null | undefined) {
   return new Intl.NumberFormat('en-IN', {
     currency: 'INR',
@@ -80,10 +508,39 @@ async function getSelfServiceContext(params: {
     throw new ApiError('Unauthorized', 401);
   }
 
-  const workspaceId = await getRequiredWorkspaceId({
-    request: params.request as any,
+  const workspaceIds = await getAcceptedWorkspaceIds({
+    request: params.request,
     supabaseAdmin,
     userId,
+  });
+
+  const hrms = getHrmsClient(supabaseAdmin);
+  const employee =
+    (await getSelfServiceEmployee({
+      hrms,
+      supabaseAdmin,
+      user: params.user,
+      userId,
+      workspaceIds,
+    })) ??
+    (await createSelfServiceEmployee({
+      hrms,
+      supabaseAdmin,
+      user: params.user,
+      userId,
+      workspaceIds,
+    }));
+
+  if (!employee?.id) {
+    throw new ApiError('Employee record not found for the current user', 404);
+  }
+
+  const workspaceId = employee.workspace_id;
+
+  await ensureSelfServiceWorkspaceMembership({
+    supabaseAdmin,
+    userId,
+    workspaceId,
   });
 
   await requireEmployeePermission({
@@ -94,24 +551,6 @@ async function getSelfServiceContext(params: {
     userId,
     workspaceId,
   });
-
-  const hrms = getHrmsClient(supabaseAdmin);
-  const { data: employee, error: employeeError } = await hrms
-    .from('employees')
-    .select('id')
-    .eq('workspace_id', workspaceId)
-    .eq('account_id', userId)
-    .eq('is_deleted', false)
-    .limit(1)
-    .maybeSingle();
-
-  if (employeeError) {
-    throw new ApiError(employeeError.message, 400);
-  }
-
-  if (!employee?.id) {
-    throw new ApiError('Employee record not found for the current user', 404);
-  }
 
   const [canUpdateProfile, canCreateRequest, canDownloadPayslip] =
     await Promise.all([

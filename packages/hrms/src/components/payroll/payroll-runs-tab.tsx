@@ -3,13 +3,8 @@
 import { useState } from 'react';
 
 import { Button } from '@kit/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import {
   Table,
   TableBody,
@@ -39,17 +34,14 @@ export function PayrollRunsTab(props: {
   return (
     <TabsContent value="runs" className="mt-0">
       <div className="grid gap-6">
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle>Payroll Runs</CardTitle>
-            <CardDescription>
-              A payroll run processes one period and creates employee-level
-              entries before payslips are published.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
+        <div className="grid gap-3">
+          <PayrollTableHeader
+            title="Payroll Runs"
+            description="A payroll run processes one period and creates employee-level entries before payslips are published."
+          />
+          <CustomTableContainer>
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                 <TableRow>
                   <TableHead>Period</TableHead>
                   <TableHead>Dates</TableHead>
@@ -57,7 +49,9 @@ export function PayrollRunsTab(props: {
                   <TableHead>Entries</TableHead>
                   <TableHead>Payout</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="bg-card sticky right-0 px-4 text-right">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -67,8 +61,8 @@ export function PayrollRunsTab(props: {
                       key={item.id}
                       className={
                         selectedRun?.id === item.id
-                          ? 'bg-muted/40'
-                          : 'cursor-pointer'
+                          ? 'bg-muted/40 hover:bg-muted/50'
+                          : 'hover:bg-muted/50 cursor-pointer'
                       }
                       onClick={() => setSelectedRunId(item.id)}
                     >
@@ -82,7 +76,7 @@ export function PayrollRunsTab(props: {
                       <TableCell>
                         <PayrollStatusBadge label={item.status} />
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="bg-card sticky right-0 px-4 text-right">
                         {props.canApprove && item.status === 'draft' && (
                           <Button
                             size="sm"
@@ -109,94 +103,85 @@ export function PayrollRunsTab(props: {
                 )}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+          </CustomTableContainer>
+        </div>
 
         <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>Selected Run Summary</CardTitle>
-              <CardDescription>
-                Click a payroll run above to review its totals and
-                employee-level calculations.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {selectedRun ? (
-                <>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-lg border p-4">
-                      <p className="text-muted-foreground text-sm">Period</p>
-                      <p className="mt-1 font-medium">{selectedRun.dates}</p>
-                    </div>
-                    <div className="rounded-lg border p-4">
-                      <p className="text-muted-foreground text-sm">Status</p>
-                      <div className="mt-2">
-                        <PayrollStatusBadge label={selectedRun.status} />
-                      </div>
-                    </div>
-                    <div className="rounded-lg border p-4">
-                      <p className="text-muted-foreground text-sm">
-                        Eligible Assignments
-                      </p>
-                      <p className="mt-1 text-2xl font-semibold">
-                        {selectedRun.assignments}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border p-4">
-                      <p className="text-muted-foreground text-sm">
-                        Generated Entries
-                      </p>
-                      <p className="mt-1 text-2xl font-semibold">
-                        {selectedRun.entries}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border p-4">
-                      <p className="text-muted-foreground text-sm">
-                        Gross Earnings
-                      </p>
-                      <p className="mt-1 text-2xl font-semibold">
-                        {formatCurrency(selectedRun.grossEarnings)}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border p-4">
-                      <p className="text-muted-foreground text-sm">
-                        Net Payout
-                      </p>
-                      <p className="text-primary mt-1 text-2xl font-semibold">
-                        {formatCurrency(selectedRun.payout)}
-                      </p>
+          <CardWidgetContainer
+            title="Selected Run Summary"
+            desc="Click a payroll run above to review its totals and employee-level calculations."
+            contentClassName="space-y-4 p-4"
+          >
+            {selectedRun ? (
+              <>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="rounded-lg border p-4">
+                    <p className="text-muted-foreground text-sm">Period</p>
+                    <p className="mt-1 font-medium">{selectedRun.dates}</p>
+                  </div>
+                  <div className="rounded-lg border p-4">
+                    <p className="text-muted-foreground text-sm">Status</p>
+                    <div className="mt-2">
+                      <PayrollStatusBadge label={selectedRun.status} />
                     </div>
                   </div>
-
                   <div className="rounded-lg border p-4">
-                    <p className="text-sm font-medium">How to read this</p>
-                    <p className="text-muted-foreground mt-1 text-sm">
-                      Assignments shows how many active primary compensation
-                      assignments matched the run period. Entries shows how many
-                      payroll calculation rows were created. Net payout is the
-                      sum of all entry net pay values for this run.
+                    <p className="text-muted-foreground text-sm">
+                      Eligible Assignments
+                    </p>
+                    <p className="mt-1 text-2xl font-semibold">
+                      {selectedRun.assignments}
                     </p>
                   </div>
-                </>
-              ) : (
-                <p className="text-muted-foreground text-sm">
-                  No payroll run selected.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+                  <div className="rounded-lg border p-4">
+                    <p className="text-muted-foreground text-sm">
+                      Generated Entries
+                    </p>
+                    <p className="mt-1 text-2xl font-semibold">
+                      {selectedRun.entries}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border p-4">
+                    <p className="text-muted-foreground text-sm">
+                      Gross Earnings
+                    </p>
+                    <p className="mt-1 text-2xl font-semibold">
+                      {formatCurrency(selectedRun.grossEarnings)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border p-4">
+                    <p className="text-muted-foreground text-sm">Net Payout</p>
+                    <p className="text-primary mt-1 text-2xl font-semibold">
+                      {formatCurrency(selectedRun.payout)}
+                    </p>
+                  </div>
+                </div>
 
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>Employee Breakdown</CardTitle>
-              <CardDescription>
-                Detailed employee calculations for the selected payroll run.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm font-medium">How to read this</p>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    Assignments shows how many active primary compensation
+                    assignments matched the run period. Entries shows how many
+                    payroll calculation rows were created. Net payout is the sum
+                    of all entry net pay values for this run.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                No payroll run selected.
+              </p>
+            )}
+          </CardWidgetContainer>
+
+          <div className="grid gap-3">
+            <PayrollTableHeader
+              title="Employee Breakdown"
+              description="Detailed employee calculations for the selected payroll run."
+            />
+            <CustomTableContainer>
               <Table>
-                <TableHeader>
+                <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                   <TableRow>
                     <TableHead>Employee</TableHead>
                     <TableHead>Earnings</TableHead>
@@ -208,7 +193,7 @@ export function PayrollRunsTab(props: {
                 <TableBody>
                   {selectedRun && selectedRun.breakdown.length > 0 ? (
                     selectedRun.breakdown.map((item) => (
-                      <TableRow key={item.id}>
+                      <TableRow key={item.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">
                           {item.employee}
                         </TableCell>
@@ -232,79 +217,83 @@ export function PayrollRunsTab(props: {
                   )}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
+            </CustomTableContainer>
+          </div>
         </div>
 
         {selectedRun && selectedRun.breakdown.length > 0 && (
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>Line Item Breakdown</CardTitle>
-              <CardDescription>
-                Recurring assignment items and one-time pay items that make up
-                the selected run.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {selectedRun.breakdown.map((entry) => (
-                <div key={entry.id} className="rounded-lg border">
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-                    <div>
-                      <p className="font-medium">{entry.employee}</p>
-                      <p className="text-muted-foreground text-sm">
-                        Earnings {formatCurrency(entry.earnings)} • Deductions{' '}
-                        {formatCurrency(entry.deductions)} • Net{' '}
-                        {formatCurrency(entry.net)}
-                      </p>
-                    </div>
-                    <PayrollStatusBadge label={entry.status} />
+          <CardWidgetContainer
+            title="Line Item Breakdown"
+            desc="Recurring assignment items and one-time pay items that make up the selected run."
+            contentClassName="space-y-4 p-4"
+          >
+            {selectedRun.breakdown.map((entry) => (
+              <div key={entry.id} className="rounded-lg border">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
+                  <div>
+                    <p className="font-medium">{entry.employee}</p>
+                    <p className="text-muted-foreground text-sm">
+                      Earnings {formatCurrency(entry.earnings)} - Deductions{' '}
+                      {formatCurrency(entry.deductions)} - Net{' '}
+                      {formatCurrency(entry.net)}
+                    </p>
                   </div>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Component</TableHead>
-                        <TableHead>Source</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {entry.items.length > 0 ? (
-                        entry.items.map((line) => (
-                          <TableRow key={line.id}>
-                            <TableCell className="font-medium">
-                              {line.component}
-                            </TableCell>
-                            <TableCell className="capitalize">
-                              {line.source.replace('_', ' ')}
-                            </TableCell>
-                            <TableCell className="capitalize">
-                              {line.type.replace('_', ' ')}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {line.type === 'deduction' ? '-' : ''}
-                              {formatCurrency(line.amount)}
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell
-                            colSpan={4}
-                            className="text-muted-foreground py-4 text-center"
-                          >
-                            No line items were generated for this employee.
+                  <PayrollStatusBadge label={entry.status} />
+                </div>
+                <Table>
+                  <TableHeader className="bg-card">
+                    <TableRow>
+                      <TableHead>Component</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {entry.items.length > 0 ? (
+                      entry.items.map((line) => (
+                        <TableRow key={line.id} className="hover:bg-muted/50">
+                          <TableCell className="font-medium">
+                            {line.component}
+                          </TableCell>
+                          <TableCell className="capitalize">
+                            {line.source.replace('_', ' ')}
+                          </TableCell>
+                          <TableCell className="capitalize">
+                            {line.type.replace('_', ' ')}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {line.type === 'deduction' ? '-' : ''}
+                            {formatCurrency(line.amount)}
                           </TableCell>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={4}
+                          className="text-muted-foreground py-4 text-center"
+                        >
+                          No line items were generated for this employee.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            ))}
+          </CardWidgetContainer>
         )}
       </div>
     </TabsContent>
+  );
+}
+
+function PayrollTableHeader(props: { description: string; title: string }) {
+  return (
+    <div className="px-1">
+      <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
+      <p className="text-muted-foreground mt-1 text-sm">{props.description}</p>
+    </div>
   );
 }

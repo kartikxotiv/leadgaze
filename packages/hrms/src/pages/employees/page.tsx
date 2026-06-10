@@ -70,9 +70,9 @@ export function EmployeesPage(props: {
 
   return (
     <section className="flex h-[100dvh] min-h-0 flex-col overflow-hidden">
-      <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="bg-sidebar flex shrink-0 flex-col  overflow-hidden">
         <PageHeader
-          className="bg-sidebar shrink-0"
+          className=""
           title={`Employees (${visibleTotal})`}
           description={
             props.workspaceName
@@ -83,7 +83,7 @@ export function EmployeesPage(props: {
           {props.headerActions}
         </PageHeader>
 
-        <div className="bg-sidebar w-full max-w-full min-w-0 overflow-x-auto">
+        <div className="bg-sidebar w-full min-w-0 max-w-full overflow-x-auto pb-2">
           <div className="flex flex-wrap items-center gap-2">
             <TableStatusMetricTab
               id={allEmployeeStatuses}
@@ -121,7 +121,7 @@ export function EmployeesPage(props: {
           </div>
         </div>
 
-        <div className="bg-sidebar w-full shrink-0 border-b">
+        <div className="bg-sidebar w-full shrink-0 border-b pb-2">
           <ListToolBar
             showSearch
             searchPlaceholder="Search employees..."
@@ -175,8 +175,8 @@ export function EmployeesPage(props: {
         </div>
       </div>
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3 pb-0">
-        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden pb-0 pt-3">
+        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0">
           <EmployeesDirectoryCard
             employees={controller.employees}
             hasFilters={controller.hasEmployeeFilters}
