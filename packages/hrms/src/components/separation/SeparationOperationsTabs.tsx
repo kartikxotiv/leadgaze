@@ -1,6 +1,7 @@
 'use client';
 
 import { Badge } from '@kit/ui/badge';
+import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import {
   Table,
   TableBody,
@@ -9,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
+import { Tabs, TabsContent } from '@kit/ui/tabs';
 
 import type {
   SeparationDialogKey,
@@ -66,16 +67,9 @@ export function SeparationOperationsTabs({
 }: SeparationOperationsTabsProps) {
   return (
     <Tabs value={selectedTabKey} onValueChange={onTabChange}>
-      <TabsList className="h-auto flex-wrap justify-start">
-        {tabs.map((tab) => (
-          <TabsTrigger key={tab.key} value={tab.key}>
-            {tab.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
       {tabs.map((tab) => (
-        <TabsContent key={tab.key} value={tab.key} className="space-y-4 pt-2">
-          <div className="overflow-x-auto rounded-2xl border">
+        <TabsContent key={tab.key} value={tab.key} className="mt-0">
+          <CustomTableContainer>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -128,7 +122,7 @@ export function SeparationOperationsTabs({
                 ) : null}
               </TableBody>
             </Table>
-          </div>
+          </CustomTableContainer>
         </TabsContent>
       ))}
     </Tabs>

@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 
 import { Plus } from 'lucide-react';
 
-import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
 import { Input } from '@kit/ui/input';
 import { ListToolBar } from '@kit/ui/list-toolbar';
@@ -60,10 +59,9 @@ export function LeavePage(props: {
   const activeCount = getLeaveTabCount(page, page.activeTab);
 
   return (
-    <section className="flex h-[100dvh] min-h-0 flex-col overflow-hidden">
-      <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
+    <section className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col overflow-hidden">
         <PageHeader
-          className="bg-sidebar shrink-0 px-6 py-4"
           title={`Leave (${activeCount})`}
           description={
             props.workspaceName
@@ -76,7 +74,7 @@ export function LeavePage(props: {
 
         {!page.isRbacLoading && page.availableTabs.length > 0 ? (
           <>
-            <div className="bg-sidebar w-full max-w-full min-w-0 overflow-x-auto px-6 pb-2">
+            <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2">
               <div className="flex flex-wrap items-center gap-2">
                 {page.availableTabs.map((tab) => (
                   <TableStatusMetricTab
@@ -93,7 +91,7 @@ export function LeavePage(props: {
             </div>
 
             {primaryAction ? (
-              <div className="bg-sidebar w-full shrink-0 border-b px-6 py-2">
+              <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
                 <ListToolBar
                   actions={[
                     {
@@ -112,8 +110,8 @@ export function LeavePage(props: {
         ) : null}
       </div>
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3 pb-0">
-        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-6 lg:px-8">
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
+        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col gap-4 overflow-y-auto pb-6">
           {!page.isRbacLoading && page.availableTabs.length === 0 ? (
             <Card>
               <CardContent className="text-muted-foreground p-6 text-sm">

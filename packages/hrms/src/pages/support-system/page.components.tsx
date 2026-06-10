@@ -45,7 +45,6 @@ import type {
   SupportSystemRequestUpdatePayload,
 } from '../../types/support-system.type';
 import {
-  SUPPORT_SYSTEM_TABS,
   type SupportSystemTabValue,
   formatDate,
   getSupportRequestCategoryLabel,
@@ -122,18 +121,6 @@ export function SupportSystemRequestsCard(props: {
           Tickets raised by employees are visible here for HR and admin
           follow-up.
         </CardDescription>
-        <div className="flex flex-wrap gap-2 pt-2">
-          {SUPPORT_SYSTEM_TABS.map((tab) => (
-            <Button
-              key={tab.value}
-              size="sm"
-              variant={props.activeTab === tab.value ? 'default' : 'outline'}
-              onClick={() => props.onTabChange(tab.value)}
-            >
-              {tab.label}
-            </Button>
-          ))}
-        </div>
       </CardHeader>
 
       <CardContent className="overflow-x-auto p-0">

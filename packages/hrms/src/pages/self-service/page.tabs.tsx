@@ -1,6 +1,6 @@
 'use client';
 
-import { Download, LifeBuoy } from 'lucide-react';
+import { Download } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
@@ -118,27 +118,16 @@ export function SelfServicePayslipsTab(props: {
 }
 
 export function SelfServiceRequestsTab(props: {
-  canCreateRequest: boolean;
-  onRaiseRequest: () => void;
   requests: Array<SelfServiceRequest>;
 }) {
   return (
     <TabsContent value="requests" className="mt-0">
       <Card className="shadow-sm">
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <CardTitle>HR Requests</CardTitle>
-            <CardDescription>
-              Track tickets raised with HR, payroll, or operations.
-            </CardDescription>
-          </div>
-
-          {props.canCreateRequest ? (
-            <Button size="sm" onClick={props.onRaiseRequest}>
-              <LifeBuoy className="mr-1.5 h-3.5 w-3.5" />
-              Raise Request
-            </Button>
-          ) : null}
+        <CardHeader>
+          <CardTitle>HR Requests</CardTitle>
+          <CardDescription>
+            Track tickets raised with HR, payroll, or operations.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {props.requests.length === 0 ? (
