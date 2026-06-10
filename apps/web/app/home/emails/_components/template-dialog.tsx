@@ -153,7 +153,7 @@ export function TemplateDialog({
 
           <div className="space-y-3">
             <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
+              {/* <div className="flex items-center justify-between">
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">System Variables</Label>
                 <div className="flex flex-wrap gap-1.5">
                   {systemVariables.map((v) => (
@@ -168,7 +168,7 @@ export function TemplateDialog({
                     </Button>
                   ))}
                 </div>
-              </div>
+              </div> */}
 
               {customVariables.length > 0 && (
                 <div className="flex items-center justify-between">

@@ -10,6 +10,7 @@ interface CardWidgetContainerProps
   hideHeaderBorder?: boolean;
   headerClassName?: string;
   contentClassName?: string;
+  desc?: string;
 }
 
 export function CardWidgetContainer({
@@ -21,6 +22,7 @@ export function CardWidgetContainer({
   contentClassName,
   children,
   className,
+  desc,
   ...props
 }: CardWidgetContainerProps) {
   return (
@@ -40,9 +42,12 @@ export function CardWidgetContainer({
           headerClassName,
         )}
       >
-        <h2 className="primary-heading text-leadgaze-dark flex items-center gap-1.5 dark:text-zinc-100">
-          {icon} {title}
-        </h2>
+        <div className="flex flex-col">
+          <h2 className="primary-heading text-leadgaze-dark flex items-center gap-1.5 dark:text-zinc-100">
+            {icon} {title}
+          </h2>
+          {desc && <p className='text-xs text-muted-foreground'>{desc}</p>}
+        </div>
         {icon2}
       </div>
       <div className={cn('flex-1', contentClassName)}>{children}</div>

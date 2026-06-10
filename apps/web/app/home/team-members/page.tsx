@@ -32,6 +32,7 @@ import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
 import {
+  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -58,6 +59,8 @@ import {
 
 import { InviteMemberDialog } from './components/invite-member-dialog';
 import { UpdateMemberDialog } from './components/update-member-dialog';
+import CustomTableContainer from '@kit/ui/custom-table-container';
+import { cn } from '@kit/ui/utils';
 
 function TeamMembersPageSkeleton() {
   return (
@@ -279,7 +282,7 @@ export default function TeamMembersPage() {
   };
 
   const getRoleColor = (role: { color?: string } | null | undefined) => {
-    return role?.color || '#6b7280';
+    return role?.color || '#6A7282';
   };
 
   if (!currentWorkspace) {
@@ -291,11 +294,9 @@ export default function TeamMembersPage() {
   }
 
   return (
-    <ModuleGuard module="team_members">
-      <div className="flex h-[100dvh] flex-col overflow-hidden">
+    <ModuleGuard module="team_members"> 
         <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
           <PageHeader
-            className="px-6 py-4"
             title={`Members (${members.length})`}
             description="Manage your workspace team members and permissions"
           >
@@ -317,9 +318,8 @@ export default function TeamMembersPage() {
                     <Button
                       variant="outline"
                       onClick={() => setInviteDialogOpen(true)}
-                      className="h-8 w-8 bg-white p-0 text-black dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
-                    >
-                      <Plus className="h-4 w-4 text-gray-500 dark:text-white" />
+                      className="h-9 w-9 bg-white p-0 dark:dark-background-color hover:cursor-pointer">
+                        <Plus className="h-4 w-4" />                                        
                     </Button>
                   </TooltipTrigger>
 
@@ -340,105 +340,99 @@ export default function TeamMembersPage() {
             </div>
           </PageHeader>
           {/* Summary Cards - Fixed at top */}
-          <div className="-mt-1 w-full max-w-full min-w-0 overflow-x-auto px-6 pb-7">
-            <div className="-mb-3 flex items-center gap-3">
-              <Card className="hover:border-primary/50 bg-card w-52 shrink-0 transition-all">
-                <CardContent className="flex h-10 items-center p-3">
-                  <div className="flex w-full flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-blue-500" />
-                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
-                        Total Members ({members.length})
-                      </span>
-                    </div>
+          <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Card className={cn('hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer rounded-sm-card transition-all')}>
+                <CardContent className={cn('flex items-center px-3 py-2')}>
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <div className="h-2 w-2 shrink-0 rounded-full bg-activity-1" />
+                    <span className={cn("primary-text-medium text-leadgaze-dark uppercase dark:text-white")}>
+                      Total Members ({members.length})
+                    </span>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="hover:border-primary/50 bg-card w-52 shrink-0 transition-all">
-                <CardContent className="flex h-10 items-center p-3">
-                  <div className="flex w-full flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-green-500" />
-                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
-                        Active ({activeMembers.length})
-                      </span>
-                    </div>
+              <Card className={cn('hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer rounded-sm-card transition-all')}>
+                <CardContent className={cn('flex items-center px-3 py-2')}>
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <div className="h-2 w-2 shrink-0 rounded-full bg-activity-2" />
+                    <span className={cn("primary-text-medium text-leadgaze-dark uppercase dark:text-white")}>
+                      Active ({activeMembers.length})
+                    </span>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="hover:border-primary/50 bg-card w-52 shrink-0 transition-all">
-                <CardContent className="flex h-10 items-center p-3">
-                  <div className="flex w-full flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-yellow-500" />
-                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
-                        Pending Invitations ({pendingMembers.length})
-                      </span>
-                    </div>
+              <Card className={cn('hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer rounded-sm-card transition-all')}>
+                <CardContent className={cn('flex items-center px-3 py-2')}>
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <div className="h-2 w-2 shrink-0 rounded-full bg-activity-4" />
+                    <span className={cn("primary-text-medium text-leadgaze-dark uppercase dark:text-white")}>
+                      Pending Invitations ({pendingMembers.length})
+                    </span>
                   </div>
                 </CardContent>
               </Card>
 
-              {currentModule && (
-                <Card className="hover:border-primary/50 bg-card w-64 shrink-0 transition-all">
-                  <CardContent className="flex h-10 items-center p-3">
-                    <div className="flex w-full items-center gap-2">
-                      <Shield className="h-3.5 w-3.5 shrink-0 text-blue-500" />
-                      <span className="text-muted-foreground truncate text-[12px] font-medium tracking-wider uppercase">
-                        Seats: {currentModule.used_seats} /{' '}
+              {currentModule && ( <Card className={cn('hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer rounded-sm-card transition-all')}>
+                <CardContent className={cn('flex items-center px-3 py-2')}>
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <Shield className="h-3.5 w-3.5 shrink-0 text-activity-1" />                    
+                    <span className={cn("primary-text-medium text-leadgaze-dark uppercase dark:text-white")}>
+                      Seats: {currentModule.used_seats} /{' '}
                         {currentModule.purchased_seats}
-                      </span>
-                      {currentModule.used_seats >=
+                    </span>
+                    {currentModule.used_seats >=
                         currentModule.purchased_seats && (
                         <Badge
                           variant="destructive"
-                          className="ml-auto h-4 px-1.5 text-[9px]"
+                          className="ml-auto h-4 px-2"
                         >
                           Full
                         </Badge>
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                  </div>
+                </CardContent>
+              </Card>)}
 
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
                     onClick={() => (window.location.href = '/org/subscription')}
-                    className="h-8 w-8 p-0"
-                  >
-                    <CreditCard className="h-4 w-4 text-gray-500" />
+                    className="h-9 w-9 bg-white p-0 dark:dark-background-color hover:cursor-pointer">
+                    <CreditCard className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
                   <p>Manage Subscription</p>
                 </TooltipContent>
               </Tooltip>
+              </div>
             </div>
-          </div>
         </div>
 
-        <PageBody className="bg-sidebar sticky flex min-h-0 flex-1 flex-col overflow-hidden pt-4 pb-6">
-          <div className="flex min-h-0 flex-1 flex-col space-y-6">
-            {/* Team Members Table - Scrollable area */}
-            <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
-              <CardHeader className="shrink-0 p-4">
+          {/* <div className="flex min-h-0 flex-col space-y-6">
+            <Card className="flex min-h-0 flex-col border-none shadow-none bg-transparent">
+              <CardHeader className="shrink-0 py-4 px-0">
                 <div>
                   <CardTitle className="leading-tight">Members</CardTitle>
                   <CardDescription>
                     Manage team members and their roles
                   </CardDescription>
                 </div>
-              </CardHeader>
-              <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
-                {isLoading ? (
-                  <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
-                    <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
-                      <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+              </CardHeader>              
+            </Card>
+
+          </div> */}
+        
+
+          <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
+                  <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+                    <CustomTableContainer>
+                      <Table>
+                        <TableHeader>
                         <TableRow>
                           {isVisible('member') && <TableHead>Member</TableHead>}
                           {isVisible('email') && <TableHead>Email</TableHead>}
@@ -447,61 +441,7 @@ export default function TeamMembersPage() {
                           {isVisible('primary_contact') && (
                             <TableHead>Primary Contact</TableHead>
                           )}
-                          <TableHead className="sticky right-0 px-4 text-right">
-                            Actions
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {[...Array(10)].map((_, i) => (
-                          <TableRow key={i}>
-                            <TableCell
-                              className="h-[52px] px-4 py-2"
-                              colSpan={
-                                visibility
-                                  ? Object.values(visibility).filter(
-                                      (v) => v !== false,
-                                    ).length + 1
-                                  : 6
-                              }
-                            >
-                              <Skeleton className="h-7 w-full" />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </table>
-                  </div>
-                ) : error ? (
-                  <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border p-4">
-                    Failed to load team members
-                  </div>
-                ) : members.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <Users className="text-muted-foreground/30 mx-auto mb-4 h-12 w-12" />
-                    <p className="text-muted-foreground">No team members yet</p>
-                    <Button
-                      onClick={() => setInviteDialogOpen(true)}
-                      variant="outline"
-                      size="sm"
-                      className="mt-4"
-                    >
-                      Invite First Member
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
-                    <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
-                      <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
-                        <TableRow className="bg-card">
-                          {isVisible('member') && <TableHead>Member</TableHead>}
-                          {isVisible('email') && <TableHead>Email</TableHead>}
-                          {isVisible('role') && <TableHead>Role</TableHead>}
-                          {isVisible('status') && <TableHead>Status</TableHead>}
-                          {isVisible('primary_contact') && (
-                            <TableHead>Primary Contact</TableHead>
-                          )}
-                          <TableHead className="bg-card sticky right-0 px-4 text-right">
+                          <TableHead className="sticky-right-header">
                             Actions
                           </TableHead>
                         </TableRow>
@@ -520,7 +460,7 @@ export default function TeamMembersPage() {
                                       member.user?.email?.charAt(0) || 'M'
                                     ).toUpperCase()}
                                   </div>
-                                  <span className="font-medium">
+                                  <span className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
                                     {member.user?.user_metadata?.full_name ||
                                       'Team Member'}
                                   </span>
@@ -536,7 +476,7 @@ export default function TeamMembersPage() {
                               <TableCell>
                                 <div className="flex items-center gap-2">
                                   <div
-                                    className="h-3 w-3 rounded-full"
+                                    className="h-2 w-2 rounded-full"
                                     style={{
                                       backgroundColor: getRoleColor(
                                         member.role,
@@ -608,14 +548,11 @@ export default function TeamMembersPage() {
                           </TableRow>
                         ))}
                       </TableBody>
-                    </table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Dialogs */}
+                      </Table>
+                      
+                    </CustomTableContainer>
+                    </div>
+                              {/* Dialogs */}
           <InviteMemberDialog
             open={inviteDialogOpen}
             onOpenChange={setInviteDialogOpen}
@@ -630,8 +567,7 @@ export default function TeamMembersPage() {
               onSuccess={() => setUpdatingMember(null)}
             />
           )}
-        </PageBody>
-      </div>
+                    </PageBody>
     </ModuleGuard>
   );
 }
