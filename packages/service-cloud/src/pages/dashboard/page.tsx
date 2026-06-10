@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import {
   Card,
   CardContent,
@@ -89,30 +91,35 @@ export function ServiceCloudDashboardPage({
       value: data?.totalTickets ?? 0,
       icon: Ticket,
       detail: 'All active service tickets',
+      iconBg: 'bg-primary dark:bg-primary',
     },
     {
       label: 'Open Tickets',
       value: data?.openTickets ?? 0,
       icon: AlertCircle,
       detail: 'Unresolved customer work',
+      iconBg: 'bg-activity-4',
     },
     {
       label: 'Customers',
       value: data?.customers ?? 0,
       icon: Users,
       detail: 'Support customer records',
+      iconBg: 'bg-activity-5',
     },
     {
       label: 'Organizations',
       value: data?.organizations ?? 0,
       icon: Building2,
       detail: 'Linked companies',
+      iconBg: 'bg-activity-3',
     },
     {
       label: 'Logged Time',
       value: formatHours(data?.totalLoggedSeconds ?? 0),
       icon: Clock3,
       detail: 'Tracked support effort',
+      iconBg: 'bg-activity-6',
     },
   ];
 
@@ -156,22 +163,24 @@ export function ServiceCloudDashboardPage({
         {cards.map((card) => {
           const Icon = card.icon;
           return (
-            <Card key={card.label}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div>
-                  <CardTitle className="text-sm font-medium">
+            <Card key={card.label} className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+                <div className="space-y-1">
+                  <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
                     {card.label}
                   </CardTitle>
-                  <CardDescription className="text-xs">
-                    {card.detail}
-                  </CardDescription>
+                  <div className="primary-heading-number text-leadgaze-dark dark:text-zinc-100">
+                    {isLoading ? '...' : card.value}
+                  </div>
                 </div>
-                <Icon className="text-muted-foreground h-4 w-4" />
+                <div className={`flex h-8 w-8 items-center justify-center rounded ${card.iconBg}`}>
+                  <Icon className="h-4 w-4 text-white" />
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-semibold">
-                  {isLoading ? '...' : card.value}
-                </div>
+              <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
+                <CardDescription className="secondary-text-small text-leadgaze-success">
+                  {card.detail}
+                </CardDescription>
               </CardContent>
             </Card>
           );
@@ -180,18 +189,15 @@ export function ServiceCloudDashboardPage({
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Status Workload</CardTitle>
-              <CardDescription>
-                Where the current support queue is concentrated.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <CardWidgetContainer
+            title="Status Workload"
+            description="Where the current support queue is concentrated."
+          >
+            <div className="space-y-4 px-6 py-4">
               {statusBreakdown.length === 0 ? (
                 <EmptyState label="No ticket statuses found." />
               ) : (
-                statusBreakdown.map((status: any) => (
+                statusBreakdown.map((status: any, index: number) => (
                   <div key={status.id}>
                     <div className="mb-2 flex items-center justify-between gap-3">
                       <div>
@@ -205,148 +211,140 @@ export function ServiceCloudDashboardPage({
                         {status.count}
                       </div>
                     </div>
-                    <div className="bg-muted h-2 overflow-hidden rounded-full">
+                    <div className="h-2 w-full overflow-hidden bar-bg rounded-full">
                       <div
-                        className="h-full rounded-full bg-emerald-600"
+                        className="h-full rounded-full bg-leadgaze-success transition-all duration-500"
                         style={{ width: percent(status.count, statusMax) }}
                       />
                     </div>
                   </div>
                 ))
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </CardWidgetContainer>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Tickets</CardTitle>
-              <CardDescription>
-                Newest customer issues entering the queue.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {(data?.recentTickets ?? []).length === 0 ? (
-                  <EmptyState label="No tickets yet." />
-                ) : (
-                  data.recentTickets.map((ticket: any) => (
+          <CardWidgetContainer title="Recent Tickets" description="Newest customer issues entering the queue.">
+            <div className="px-6 py-4">
+              {(data?.recentTickets ?? []).length === 0 ? (
+                <EmptyState label="No tickets yet." />
+              ) : (
+                <CardWidgetList>
+                  {data.recentTickets.map((ticket: any) => (
                     <Link
                       key={ticket.id}
                       href={`/home/services/tickets/${ticket.id}`}
-                      className="hover:bg-muted/40 block rounded-xl border p-4 transition-colors"
+                      className="block"
                     >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <div className="font-medium">
-                            #{ticket.ticket_number} {ticket.subject}
+                      <CardWidgetListItem
+                        icon={
+                          <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-full">
+                            <Ticket className="h-4 w-4" />
                           </div>
-                          <div className="text-muted-foreground mt-1 text-sm">
-                            {ticket.source} · {formatDate(ticket.created_at)}
-                          </div>
-                        </div>
-                        <Badge variant="outline">
-                          {ticket.email_count ?? 0} emails
-                        </Badge>
-                      </div>
+                        }
+                        title={`#${ticket.ticket_number} ${ticket.subject}`}
+                        subtitle={`${ticket.source} · ${formatDate(ticket.created_at)}`}
+                        badge={
+                          <Badge variant="outline">
+                            {ticket.email_count ?? 0} emails
+                          </Badge>
+                        }
+                      />
                     </Link>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
+                </CardWidgetList>
+              )}
+            </div>
+          </CardWidgetContainer>
         </div>
 
         <aside className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Priority Pressure</CardTitle>
-              <CardDescription>Open work by severity.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <CardWidgetContainer
+            title="Priority Pressure"
+            description="Open work by severity."
+            hideHeaderBorder={true}
+          >
+            <div className="px-6 py-4">
               {priorityBreakdown.length === 0 ? (
                 <EmptyState label="No priority data yet." />
               ) : (
-                priorityBreakdown.slice(0, 6).map((priority: any) => (
-                  <div
-                    key={priority.id}
-                    className="flex items-center justify-between rounded-xl border p-3"
-                  >
-                    <div>
-                      <div className="font-medium">{priority.name}</div>
-                      <div className="text-muted-foreground text-xs">
-                        {priority.openCount} open tickets
-                      </div>
-                    </div>
-                    <Badge variant="secondary">{priority.count}</Badge>
-                  </div>
-                ))
+                <CardWidgetList>
+                  {priorityBreakdown.slice(0, 6).map((priority: any) => (
+                    <CardWidgetListItem
+                      key={priority.id}
+                      title={priority.name}
+                      subtitle={`${priority.openCount} open tickets`}
+                      badge={<Badge variant="secondary">{priority.count}</Badge>}
+                    />
+                  ))}
+                </CardWidgetList>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </CardWidgetContainer>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Customer Pressure</CardTitle>
-              <CardDescription>
-                Customers with the most open service work.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <CardWidgetContainer
+            title="Customer Pressure"
+            description="Customers with the most open service work."
+            hideHeaderBorder={true}
+          >
+            <div className="px-6 py-4">
               {customerBreakdown.length === 0 ? (
                 <EmptyState label="No customer ticket data." />
               ) : (
-                customerBreakdown.slice(0, 6).map((customer: any) => (
-                  <div key={customer.id} className="rounded-xl border p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="font-medium">{customer.name}</div>
-                        <div className="text-muted-foreground text-xs">
-                          {customer.email ||
-                            customer.organization ||
-                            'No contact context'}
-                        </div>
-                      </div>
-                      <Badge>{customer.openTickets} open</Badge>
-                    </div>
-                    <div className="text-muted-foreground mt-2 text-xs">
-                      {customer.totalTickets} total ·{' '}
-                      {formatHours(customer.loggedSeconds)} logged
-                    </div>
-                  </div>
-                ))
+                <CardWidgetList>
+                  {customerBreakdown.slice(0, 6).map((customer: any) => (
+                    <CardWidgetListItem
+                      key={customer.id}
+                      title={customer.name}
+                      subtitle={
+                        customer.email ||
+                        customer.organization ||
+                        'No contact context'
+                      }
+                      badge={<Badge>{customer.openTickets} open</Badge>}
+                      metadata={
+                        <span>
+                          {customer.totalTickets} total ·{' '}
+                          {formatHours(customer.loggedSeconds)} logged
+                        </span>
+                      }
+                    />
+                  ))}
+                </CardWidgetList>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </CardWidgetContainer>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Oldest Open Tickets</CardTitle>
-              <CardDescription>
-                Tickets most likely to need attention.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <CardWidgetContainer
+            title="Oldest Open Tickets"
+            description="Tickets most likely to need attention."
+            hideHeaderBorder={true}
+          >
+            <div className="px-6 py-4">
               {openTicketAging.length === 0 ? (
                 <EmptyState label="No open tickets." />
               ) : (
-                openTicketAging.slice(0, 6).map((ticket: any) => (
-                  <Link
-                    key={ticket.id}
-                    href={`/home/services/tickets/${ticket.id}`}
-                    className="hover:bg-muted/40 block rounded-xl border p-3"
-                  >
-                    <div className="font-medium">
-                      #{ticket.ticketNumber} {ticket.subject}
-                    </div>
-                    <div className="text-muted-foreground mt-1 text-xs">
-                      {ticket.customer} · {ticket.assignee} · {ticket.daysOpen}d
-                      open
-                    </div>
-                  </Link>
-                ))
+                <CardWidgetList>
+                  {openTicketAging.slice(0, 6).map((ticket: any) => (
+                    <Link
+                      key={ticket.id}
+                      href={`/home/services/tickets/${ticket.id}`}
+                      className="block"
+                    >
+                      <CardWidgetListItem
+                        title={`#${ticket.ticketNumber} ${ticket.subject}`}
+                        subtitle={`${ticket.customer} · ${ticket.assignee}`}
+                        badge={
+                          <Badge variant="secondary">
+                            {ticket.daysOpen}d open
+                          </Badge>
+                        }
+                      />
+                    </Link>
+                  ))}
+                </CardWidgetList>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </CardWidgetContainer>
         </aside>
       </div>
     </div>

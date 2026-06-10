@@ -5,6 +5,7 @@ import { cn } from '../lib/utils';
 interface CardWidgetContainerProps
   extends React.HTMLAttributes<HTMLDivElement> {
   title: string;
+  description?: React.ReactNode;
   icon?: React.ReactNode;
   icon2?: React.ReactNode;
   hideHeaderBorder?: boolean;
@@ -14,6 +15,7 @@ interface CardWidgetContainerProps
 
 export function CardWidgetContainer({
   title,
+  description,
   icon,
   icon2,
   hideHeaderBorder = false,
@@ -40,9 +42,16 @@ export function CardWidgetContainer({
           headerClassName,
         )}
       >
-        <h2 className="primary-heading text-leadgaze-dark flex items-center gap-1.5 dark:text-zinc-100">
-          {icon} {title}
-        </h2>
+        <div className="flex flex-col gap-0.5">
+          <h2 className="primary-heading text-leadgaze-dark flex items-center gap-1.5 dark:text-zinc-100">
+            {icon} {title}
+          </h2>
+          {description && (
+            <p className="text-xs text-muted-foreground font-normal">
+              {description}
+            </p>
+          )}
+        </div>
         {icon2}
       </div>
       <div className={cn('flex-1', contentClassName)}>{children}</div>
