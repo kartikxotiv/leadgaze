@@ -125,7 +125,7 @@ export function ServiceCloudDashboardPage({
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-[28px] border bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.18),_transparent_35%),linear-gradient(135deg,_#111827,_#0f766e_55%,_#1e3a8a)] p-6 text-white shadow-xl">
+      <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.18),_transparent_35%),linear-gradient(135deg,_#111827,_#0f766e_55%,_#1e3a8a)] p-6 text-white shadow-xl">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
             <Badge className="border-white/20 bg-white/15 text-white hover:bg-white/20">
