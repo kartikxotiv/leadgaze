@@ -70,6 +70,7 @@ import { CreateContactDialog } from '../contacts/components/create-contact-dialo
 import CreateLeadDialog from '../leads/components/create-lead-dialog';
 import { OpportunityDialog } from '../opportunities/components/opportunity-dialog';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { Skeleton } from '@kit/ui/skeleton';
 
 export default function DashboardDemo() {
   const { currentWorkspace } = useRBAC();
@@ -105,11 +106,7 @@ export default function DashboardDemo() {
   const opportunitiesTrend = useMemo(() => generateDemoData(), []);
 
   if (isLoading || !metrics) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
-      </div>
-    );
+    return <SalesDashboardSkeleton />;
   }
 
   return (
@@ -624,6 +621,78 @@ function Figure(props: React.PropsWithChildren) {
       className={'primary-heading-number text-leadgaze-dark dark:text-zinc-100'}
     >
       {props.children}
+    </div>
+  );
+}
+
+function SalesDashboardSkeleton() {
+  return (
+    <div className="flex flex-col gap-4 pb-4">
+      {/* 4 stat cards */}
+      <div className="grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-3 xl:pb-4 2xl:grid-cols-4 2xl:gap-4 2xl:pb-6">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-7 w-16" />
+              </div>
+              <Skeleton className="h-8 w-8 rounded" />
+            </CardHeader>
+            <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
+              <Skeleton className="h-3 w-36" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Lead Pipeline + Upcoming Tasks */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 xl:gap-4 2xl:gap-8">
+        {/* Lead Pipeline skeleton */}
+        <Card>
+          <CardHeader className="border-b">
+            <Skeleton className="h-5 w-32" />
+          </CardHeader>
+          <div className="space-y-6 p-6 xl:space-y-4 xl:p-4 2xl:space-y-6 2xl:p-6">
+            {['New Leads', 'Contacted', 'Qualified', 'Proposal Sent', 'Won'].map((stage) => (
+              <div key={stage} className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-6" />
+                </div>
+                <Skeleton className="h-2 w-full rounded-full" />
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Upcoming Tasks skeleton */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between border-b">
+            <Skeleton className="h-5 w-36" />
+            <Skeleton className="h-5 w-5 rounded" />
+          </CardHeader>
+          <div className="divide-y dark:divide-zinc-800">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between p-5 xl:p-3 2xl:p-5"
+              >
+                <div className="flex items-start gap-4">
+                  {/* Checkbox placeholder */}
+                  <Skeleton className="mt-0.5 h-4 w-4 rounded" />
+                  <div className="flex flex-col gap-1.5">
+                    <Skeleton className={`h-4 ${i === 1 ? 'w-48' : i === 2 ? 'w-40' : 'w-52'}`} />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+                {/* Priority badge */}
+                <Skeleton className="h-5 w-14 rounded-md" />
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

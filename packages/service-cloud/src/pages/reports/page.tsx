@@ -21,6 +21,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@kit/ui/card';
+import { Skeleton } from '@kit/ui/skeleton';
 
 import { getServiceCloudDashboardService } from '../../services';
 import {
@@ -64,12 +65,8 @@ export function ServiceCloudReportsPage({
     enabled: Boolean(workspaceId && canView),
   });
 
-  if (isPermissionLoading) {
-    return (
-      <div className="text-muted-foreground p-6 text-sm">
-        Checking permissions...
-      </div>
-    );
+  if (isPermissionLoading || isLoading) {
+    return <ServiceCloudReportsSkeleton />;
   }
 
   if (!canView) {
@@ -155,7 +152,7 @@ export function ServiceCloudReportsPage({
                     {card.label}
                   </CardTitle>
                   <div className="primary-heading-number text-leadgaze-dark dark:text-zinc-100">
-                    {isLoading ? '...' : card.value}
+                    {card.value}
                   </div>
                 </div>
                 <div className={`flex h-8 w-8 items-center justify-center rounded ${card.iconBg}`}>
@@ -485,6 +482,237 @@ function EmptyReport({ label }: { label: string }) {
   return (
     <div className="text-muted-foreground rounded-xl border border-dashed p-6 text-center text-sm">
       {label}
+    </div>
+  );
+}
+
+function ServiceCloudReportsSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Hero banner skeleton */}
+      <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.18),_transparent_35%),linear-gradient(135deg,_#102a43,_#0f766e_55%,_#172554)] p-6 shadow-xl">
+        <div className="max-w-3xl space-y-3">
+          <Skeleton className="h-5 w-36 rounded-full bg-white/20" />
+          <Skeleton className="h-9 w-56 bg-white/20" />
+          <Skeleton className="h-4 w-full max-w-lg bg-white/15" />
+        </div>
+      </section>
+
+      {/* Stat cards skeleton */}
+      <div className="grid gap-4 md:grid-cols-5">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <Card key={i} className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-7 w-12" />
+              </div>
+              <Skeleton className="h-8 w-8 rounded" />
+            </CardHeader>
+            <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
+              <Skeleton className="h-3 w-28" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Main grid: left + right aside */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+        {/* Left column */}
+        <div className="space-y-6">
+          {/* Status Distribution skeleton */}
+          <Card>
+            <CardHeader className="border-b">
+              <Skeleton className="h-5 w-52" />
+              <Skeleton className="h-3 w-64 mt-1" />
+            </CardHeader>
+            <div className="space-y-4 px-6 py-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="space-y-2">
+                  <div className="mb-2 flex items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-36" />
+                    </div>
+                    <Skeleton className="h-7 w-8" />
+                  </div>
+                  <Skeleton className="h-2 w-full rounded-full" />
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Customer Workload table skeleton */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-48" />
+              <Skeleton className="h-3 w-64 mt-1" />
+            </CardHeader>
+            <div className="overflow-x-auto">
+              {/* Table header */}
+              <div className="grid grid-cols-6 gap-3 border-b bg-muted/40 px-3 py-2">
+                {['Customer', 'Open', 'Total', 'Closed', 'Logged', 'Latest'].map((h) => (
+                  <Skeleton key={h} className="h-3 w-full max-w-[60px]" />
+                ))}
+              </div>
+              {/* Table rows */}
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="grid grid-cols-6 gap-3 border-b px-3 py-3 last:border-b-0">
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-3.5 w-24" />
+                    <Skeleton className="h-2.5 w-32" />
+                    <Skeleton className="h-1.5 w-full rounded-full mt-1" />
+                  </div>
+                  {[1, 2, 3, 4, 5].map((j) => (
+                    <Skeleton key={j} className="h-3.5 w-8" />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+
+        {/* Right aside */}
+        <aside className="space-y-6">
+          {/* Priority Mix */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-28" />
+              <Skeleton className="h-3 w-36 mt-1" />
+            </CardHeader>
+            <div className="px-6 py-4 space-y-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center gap-3 py-2">
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                  <Skeleton className="h-5 w-10 rounded-full" />
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Assignee Workload table skeleton */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-3 w-56 mt-1" />
+            </CardHeader>
+            <div className="overflow-x-auto">
+              <div className="grid grid-cols-4 gap-3 border-b bg-muted/40 px-3 py-2">
+                {['Agent', 'Open', 'Total', 'Logged'].map((h) => (
+                  <Skeleton key={h} className="h-3 w-full max-w-[48px]" />
+                ))}
+              </div>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="grid grid-cols-4 gap-3 border-b px-3 py-3 last:border-b-0">
+                  <Skeleton className="h-3.5 w-20" />
+                  <Skeleton className="h-3.5 w-6" />
+                  <Skeleton className="h-3.5 w-6" />
+                  <Skeleton className="h-3.5 w-10" />
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Team Workload table skeleton */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="h-3 w-48 mt-1" />
+            </CardHeader>
+            <div className="overflow-x-auto">
+              <div className="grid grid-cols-4 gap-3 border-b bg-muted/40 px-3 py-2">
+                {['Team', 'Open', 'Total', 'Logged'].map((h) => (
+                  <Skeleton key={h} className="h-3 w-full max-w-[48px]" />
+                ))}
+              </div>
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="grid grid-cols-4 gap-3 border-b px-3 py-3 last:border-b-0">
+                  <Skeleton className="h-3.5 w-24" />
+                  <Skeleton className="h-3.5 w-6" />
+                  <Skeleton className="h-3.5 w-6" />
+                  <Skeleton className="h-3.5 w-10" />
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Ticket Time Investment */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-44" />
+              <Skeleton className="h-3 w-56 mt-1" />
+            </CardHeader>
+            <div className="space-y-3 px-6 py-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="rounded-xl border p-4 space-y-2">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-1 min-w-0">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                    <Skeleton className="h-5 w-14 rounded-full" />
+                  </div>
+                  <Skeleton className="h-2 w-full rounded-full" />
+                </div>
+              ))}
+            </div>
+          </Card>
+        </aside>
+      </div>
+
+      {/* Bottom two-column tables */}
+      <div className="grid gap-6 xl:grid-cols-2">
+        {/* Oldest Open Tickets */}
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-5 w-44" />
+            <Skeleton className="h-3 w-56 mt-1" />
+          </CardHeader>
+          <div className="overflow-x-auto">
+            <div className="grid grid-cols-5 gap-3 border-b bg-muted/40 px-3 py-2">
+              {['Ticket', 'Customer', 'Owner', 'Age', 'Due'].map((h) => (
+                <Skeleton key={h} className="h-3 w-full max-w-[48px]" />
+              ))}
+            </div>
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="grid grid-cols-5 gap-3 border-b px-3 py-3 last:border-b-0">
+                <Skeleton className={`h-3.5 ${i % 2 === 0 ? 'w-32' : 'w-28'}`} />
+                <Skeleton className="h-3.5 w-20" />
+                <Skeleton className="h-3.5 w-16" />
+                <Skeleton className="h-3.5 w-8" />
+                <Skeleton className="h-3.5 w-20" />
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Time Logs By Ticket */}
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-3 w-56 mt-1" />
+          </CardHeader>
+          <div className="overflow-x-auto">
+            <div className="grid grid-cols-5 gap-3 border-b bg-muted/40 px-3 py-2">
+              {['Ticket', 'Customer', 'Entries', 'Logged', 'Latest'].map((h) => (
+                <Skeleton key={h} className="h-3 w-full max-w-[48px]" />
+              ))}
+            </div>
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="grid grid-cols-5 gap-3 border-b px-3 py-3 last:border-b-0">
+                <Skeleton className={`h-3.5 ${i % 2 === 0 ? 'w-28' : 'w-36'}`} />
+                <Skeleton className="h-3.5 w-20" />
+                <Skeleton className="h-3.5 w-8" />
+                <Skeleton className="h-3.5 w-10" />
+                <Skeleton className="h-3.5 w-20" />
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

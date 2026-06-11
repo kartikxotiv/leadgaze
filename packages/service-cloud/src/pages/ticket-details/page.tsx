@@ -45,6 +45,7 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import { Separator } from '@kit/ui/separator';
+import { Skeleton } from '@kit/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
 
@@ -213,9 +214,7 @@ export function ServiceCloudTicketDetailPage({
   });
 
   if (isLoading) {
-    return (
-      <div className="text-muted-foreground p-6 text-sm">Loading ticket...</div>
-    );
+    return <ServiceCloudTicketDetailSkeleton />;
   }
 
   if (!data?.ticket) {
@@ -955,6 +954,205 @@ function EmptyState({
     >
       <div className="font-medium">{title}</div>
       <p className="text-muted-foreground mt-1 text-sm">{description}</p>
+    </div>
+  );
+}
+
+function ServiceCloudTicketDetailSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* ── Hero banner skeleton ── */}
+      <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_34%),linear-gradient(135deg,_#0f172a,_#164e63_52%,_#0f172a)] p-6 shadow-xl">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-4xl space-y-5">
+            {/* Back button */}
+            <Skeleton className="h-8 w-32 rounded-md bg-white/20" />
+            <div className="space-y-3">
+              {/* Badges row */}
+              <div className="flex flex-wrap items-center gap-2">
+                <Skeleton className="h-5 w-14 rounded-full bg-white/20" />
+                <Skeleton className="h-5 w-16 rounded-full bg-white/20" />
+                <Skeleton className="h-5 w-14 rounded-full bg-white/20" />
+                <Skeleton className="h-5 w-40 rounded-full bg-white/15" />
+              </div>
+              {/* Title + description */}
+              <div className="space-y-2">
+                <Skeleton className="h-9 w-3/4 bg-white/20" />
+                <Skeleton className="h-4 w-full bg-white/15" />
+                <Skeleton className="h-4 w-5/6 bg-white/15" />
+              </div>
+            </div>
+          </div>
+          {/* Metrics panel */}
+          <div className="grid gap-3 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur md:min-w-[360px]">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex items-center justify-between gap-4">
+                <Skeleton className="h-4 w-24 bg-white/20" />
+                <Skeleton className="h-4 w-20 bg-white/20" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Body grid skeleton ── */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
+        {/* Left — Ticket Workspace */}
+        <div className="space-y-4">
+          <Card>
+            {/* Card header */}
+            <CardHeader className="flex flex-row items-start justify-between gap-4 border-b">
+              <div className="space-y-1.5">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-3 w-64" />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Skeleton className="h-8 w-32 rounded-md" />
+                <Skeleton className="h-7 w-20 rounded-full" />
+                <Skeleton className="h-7 w-20 rounded-full" />
+                <Skeleton className="h-7 w-16 rounded-full" />
+              </div>
+            </CardHeader>
+            <div className="px-6 py-4 space-y-5">
+              {/* Tab bar */}
+              <div className="flex gap-2 rounded-2xl bg-slate-100 p-1 w-fit dark:bg-slate-900">
+                {['Conversation', 'Work', 'Notes & Files', 'Activity'].map((tab) => (
+                  <Skeleton key={tab} className="h-8 w-24 rounded-xl" />
+                ))}
+              </div>
+              {/* Email cards */}
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="overflow-hidden rounded-2xl border shadow-sm">
+                  {/* Email header */}
+                  <div className="border-b bg-slate-50 p-4 dark:bg-slate-900/60">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="space-y-1.5 min-w-0">
+                        <Skeleton className="h-4 w-56" />
+                        <Skeleton className="h-3 w-40" />
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <Skeleton className="h-5 w-16 rounded-full" />
+                        <Skeleton className="h-7 w-16 rounded-md" />
+                        <Skeleton className="h-3 w-28" />
+                      </div>
+                    </div>
+                  </div>
+                  {/* Email body */}
+                  <div className="p-5 space-y-2">
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-11/12" />
+                    <Skeleton className="h-3 w-4/5" />
+                    {i === 1 && <Skeleton className="h-3 w-3/4" />}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+
+        {/* Right — aside cards */}
+        <aside className="space-y-4">
+          {/* Ticket Properties */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="h-3 w-52 mt-1" />
+            </CardHeader>
+            <div className="space-y-4 px-6 py-4">
+              {/* 5 select rows */}
+              {['Status', 'Priority', 'Category', 'Primary owner', 'Team'].map((label) => (
+                <div key={label} className="grid gap-2">
+                  <Skeleton className="h-3 w-20" />
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-4 rounded" />
+                    <Skeleton className="h-9 flex-1 rounded-md" />
+                  </div>
+                </div>
+              ))}
+              {/* Due date */}
+              <div className="grid gap-2">
+                <Skeleton className="h-3 w-16" />
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-4 rounded" />
+                  <Skeleton className="h-9 flex-1 rounded-md" />
+                </div>
+              </div>
+              <Skeleton className="h-px w-full" />
+              {/* Assignees section */}
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-3 w-52" />
+                </div>
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between gap-3 rounded-xl border p-3"
+                  >
+                    <div className="space-y-1 min-w-0">
+                      <Skeleton className="h-3.5 w-28" />
+                      <Skeleton className="h-3 w-36" />
+                    </div>
+                    <Skeleton className="h-8 w-14 rounded-md" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+
+          {/* SLA Snapshot */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-28" />
+            </CardHeader>
+            <div className="space-y-3 px-6 py-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center justify-between gap-4">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Customer Context */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-36" />
+            </CardHeader>
+            <div className="space-y-3 px-6 py-4">
+              {['Name', 'Email', 'Phone'].map((field) => (
+                <div key={field} className="flex items-center justify-between gap-4">
+                  <Skeleton className="h-4 w-12" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              ))}
+              <Skeleton className="h-px w-full" />
+              {['Company', 'Industry', 'Website'].map((field) => (
+                <div key={field} className="flex items-center justify-between gap-4">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-28" />
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Record Details */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-32" />
+            </CardHeader>
+            <div className="space-y-3 px-6 py-4">
+              {['Source', 'First response', 'Last customer reply', 'Updated'].map((field) => (
+                <div key={field} className="flex items-center justify-between gap-4">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              ))}
+            </div>
+          </Card>
+        </aside>
+      </div>
     </div>
   );
 }
