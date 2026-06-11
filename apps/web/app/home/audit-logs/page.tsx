@@ -76,6 +76,7 @@ export default function AuditLogsPage() {
   const productContextMatch = pathname.match(/^\/home\/([^/]+)\/audit-logs/);
   const contextProductKey = productContextMatch ? productContextMatch[1] : null;
 
+  const [selectedLog, setSelectedLog] = useState<any>(null);
   const [selectedProduct, setSelectedProduct] = useState<string>(contextProductKey || 'all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterView, setFilterView] = useState<'main' | 'module' | 'action' | 'product'>(
