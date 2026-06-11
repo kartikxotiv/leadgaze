@@ -606,9 +606,9 @@ BEGIN
 
   -- HRMS modules
   FOREACH v_module_key IN ARRAY ARRAY[
-    'hrms', 'hrms_employees', 'hrms_departments', 'hrms_attendance',
-    'hrms_leave', 'hrms_payroll', 'hrms_settings', 'hrms_documents',
-    'hrms_recruitment', 'hrms_separation', 'hrms_support_system'
+    'hrms_employees', 'hrms_departments', 'hrms_documents', 'hrms_attendance',
+    'hrms_leave', 'hrms_settings', 'hrms_recruitment', 'hrms_separation',
+    'hrms_support_system', 'hrms_self_service', 'hrms_payroll', 'hrms_reports'
   ]
   LOOP
     SELECT id INTO v_mod_id FROM public.crm_modules WHERE module_key = v_module_key;

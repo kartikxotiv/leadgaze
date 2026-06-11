@@ -1,5 +1,5 @@
 INSERT INTO public.crm_modules (module_key, module_name, description, display_order, is_system, is_active)
-VALUES ('hrms_reports', 'HRMS Reports', 'View and export HRMS attendance, leave, payroll, and workforce reports', 61, TRUE, TRUE)
+VALUES ('hrms_reports', 'HRMS Reports', 'View and export HRMS attendance, leave, payroll, and workforce reports', 62, TRUE, TRUE)
 ON CONFLICT (module_key) DO UPDATE SET
     module_name = EXCLUDED.module_name,
     description = EXCLUDED.description,
@@ -41,7 +41,7 @@ BEGIN
             SELECT id, role_key
             FROM public.workspace_roles
             WHERE workspace_id = workspace_record.id
-              AND role_key IN ('admin', 'manager', 'user', 'viewer')
+              AND role_key = 'admin'
         LOOP
             INSERT INTO public.role_permissions (
                 workspace_id,
@@ -56,21 +56,10 @@ BEGIN
                 workspace_record.id,
                 role_record.id,
                 features.id,
-                CASE
-                    WHEN role_record.role_key = 'admin' THEN TRUE
-                    WHEN role_record.role_key = 'manager' THEN TRUE
-                    WHEN role_record.role_key = 'user' THEN TRUE
-                    WHEN role_record.role_key = 'viewer' THEN features.feature_key = 'view'
-                    ELSE FALSE
-                END,
-                CASE
-                    WHEN role_record.role_key = 'admin' THEN 'all'::public.permission_access_level
-                    WHEN role_record.role_key = 'manager' THEN 'team'::public.permission_access_level
-                    WHEN role_record.role_key IN ('user', 'viewer') THEN 'own'::public.permission_access_level
-                    ELSE 'none'::public.permission_access_level
-                END,
-                role_record.role_key IN ('admin', 'manager'),
-                role_record.role_key = 'admin'
+                TRUE,
+                'all'::public.permission_access_level,
+                TRUE,
+                TRUE
             FROM public.crm_module_features features
             JOIN public.crm_modules modules ON modules.id = features.module_id
             WHERE modules.module_key = 'hrms_reports'

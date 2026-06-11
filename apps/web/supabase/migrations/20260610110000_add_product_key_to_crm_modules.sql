@@ -26,8 +26,7 @@ WHERE module_key IN ('roles', 'audit_logs', 'activities', 'team_members', 'setti
 -- HRMS modules
 UPDATE public.crm_modules
 SET product_key = 'hrms'
-WHERE module_key LIKE 'hrms%'
-   OR module_key = 'hrms';
+WHERE module_key LIKE 'hrms_%';
 
 -- Inventory modules
 UPDATE public.crm_modules

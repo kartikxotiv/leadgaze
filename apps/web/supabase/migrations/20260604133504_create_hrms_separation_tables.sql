@@ -228,7 +228,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON hrms.fnf_settlements FOR EACH ROW
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON hrms.employee_exit_letters FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 INSERT INTO public.crm_modules (module_key, module_name, description, display_order, is_system, is_active)
-VALUES ('hrms_separation', 'HRMS Separation', 'Manage resignations, exit checklist, asset clearance, FNF settlement, and exit letters', 57, TRUE, TRUE)
+VALUES ('hrms_separation', 'HRMS Separation', 'Manage resignations, exit checklist, asset clearance, FNF settlement, and exit letters', 58, TRUE, TRUE)
 ON CONFLICT (module_key) DO UPDATE SET
   module_name = EXCLUDED.module_name,
   description = EXCLUDED.description,
@@ -274,14 +274,13 @@ DECLARE
   workspace_record RECORD;
   role_record RECORD;
   feature_record RECORD;
-  access_level public.permission_access_level;
-  can_access BOOLEAN;
 BEGIN
   FOR workspace_record IN SELECT id FROM public.workspaces LOOP
     FOR role_record IN
       SELECT id, role_key
       FROM public.workspace_roles
       WHERE workspace_id = workspace_record.id
+        AND role_key = 'admin'
     LOOP
       FOR feature_record IN
         SELECT features.id, features.feature_key
@@ -289,22 +288,6 @@ BEGIN
         JOIN public.crm_modules modules ON modules.id = features.module_id
         WHERE modules.module_key = 'hrms_separation'
       LOOP
-        access_level := CASE
-          WHEN role_record.role_key IN ('admin', 'owner') THEN 'all'::public.permission_access_level
-          WHEN role_record.role_key = 'manager' THEN 'team'::public.permission_access_level
-          WHEN role_record.role_key = 'viewer' THEN 'all'::public.permission_access_level
-          ELSE 'own'::public.permission_access_level
-        END;
-
-        can_access := CASE
-          WHEN role_record.role_key IN ('admin', 'owner') THEN TRUE
-          WHEN role_record.role_key = 'manager' THEN TRUE
-          WHEN role_record.role_key = 'viewer' THEN feature_record.feature_key IN (
-            'view', 'view_resignation', 'view_checklist', 'view_assets', 'view_fnf', 'view_letters'
-          )
-          ELSE feature_record.feature_key IN ('view', 'view_resignation', 'create_resignation')
-        END;
-
         INSERT INTO public.role_permissions (
           workspace_id,
           role_id,
@@ -318,10 +301,10 @@ BEGIN
           workspace_record.id,
           role_record.id,
           feature_record.id,
-          can_access,
-          access_level,
-          role_record.role_key IN ('admin', 'owner', 'manager'),
-          role_record.role_key IN ('admin', 'owner')
+          TRUE,
+          'all'::public.permission_access_level,
+          TRUE,
+          TRUE
         )
         ON CONFLICT (role_id, module_feature_id) DO UPDATE SET
           can_access = EXCLUDED.can_access,

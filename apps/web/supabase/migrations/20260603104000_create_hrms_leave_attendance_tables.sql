@@ -272,7 +272,7 @@ BEGIN
             SELECT id, role_key
             FROM public.workspace_roles
             WHERE workspace_id = workspace_record.id
-              AND role_key IN ('admin', 'manager', 'user', 'viewer')
+              AND role_key = 'admin'
         LOOP
             INSERT INTO public.role_permissions (
                 workspace_id,
@@ -287,22 +287,10 @@ BEGIN
                 workspace_record.id,
                 role_record.id,
                 f.id,
-                CASE
-                    WHEN role_record.role_key = 'admin' THEN TRUE
-                    WHEN role_record.role_key = 'manager' THEN f.feature_key NOT IN ('delete')
-                    WHEN role_record.role_key = 'user' THEN f.feature_key IN ('view', 'view_requests', 'view_holidays', 'create', 'log')
-                    WHEN role_record.role_key = 'viewer' THEN f.feature_key IN ('view', 'view_holidays')
-                    ELSE FALSE
-                END,
-                CASE
-                    WHEN role_record.role_key = 'admin' THEN 'all'::public.permission_access_level
-                    WHEN role_record.role_key = 'manager' THEN 'team'::public.permission_access_level
-                    WHEN role_record.role_key = 'viewer' THEN 'all'::public.permission_access_level
-                    WHEN role_record.role_key = 'user' THEN 'own'::public.permission_access_level
-                    ELSE 'none'::public.permission_access_level
-                END,
-                role_record.role_key = 'admin',
-                role_record.role_key = 'admin'
+                TRUE,
+                'all'::public.permission_access_level,
+                TRUE,
+                TRUE
             FROM public.crm_module_features f
             JOIN public.crm_modules m ON m.id = f.module_id
             WHERE m.module_key IN ('hrms_attendance', 'hrms_leave')
