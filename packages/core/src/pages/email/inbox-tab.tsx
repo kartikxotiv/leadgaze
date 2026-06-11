@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Inbox,
-  Loader2,
   MailPlus,
   RefreshCw,
   Search,
@@ -28,6 +27,7 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import { ListToolBar } from '@kit/ui/list-toolbar';
+import { Skeleton } from '@kit/ui/skeleton';
 import { cn } from '@kit/ui/utils';
 
 import type { CoreEmailAccount } from '../../services/email-accounts.service';
@@ -227,9 +227,35 @@ export function CoreInboxTab({
       <Card className="border-none bg-transparent shadow-none">
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex h-64 flex-col items-center justify-center gap-4">
-              <Loader2 className="text-primary h-8 w-8 animate-spin" />
-              <p className="text-muted-foreground text-sm">Loading inbox...</p>
+            <div className="grid gap-3">
+              {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                <div
+                  key={i}
+                  className="flex flex-col gap-2 rounded-xl border border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-zinc-900"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex min-w-0 items-center gap-3">
+                      {/* Direction icon circle */}
+                      <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
+                      <div className="min-w-0 space-y-1.5">
+                        {/* Subject line */}
+                        <Skeleton className={`h-4 ${i % 3 === 0 ? 'w-56' : i % 2 === 0 ? 'w-72' : 'w-64'}`} />
+                        {/* From + timestamp */}
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-3 w-32" />
+                          <Skeleton className="h-3 w-1 rounded-full" />
+                          <Skeleton className="h-3 w-24" />
+                        </div>
+                      </div>
+                    </div>
+                    {/* Direction badge */}
+                    <Skeleton className="h-5 w-16 rounded-full flex-shrink-0" />
+                  </div>
+                  {/* Snippet lines */}
+                  <Skeleton className={`h-3 ${i % 2 === 0 ? 'w-full' : 'w-11/12'}`} />
+                  {i % 3 !== 2 && <Skeleton className="h-3 w-4/5" />}
+                </div>
+              ))}
             </div>
           ) : emails.length === 0 ? (
             <div className="flex h-80 flex-col items-center justify-center gap-4 rounded-xl border border-dashed text-center">

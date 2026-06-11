@@ -22,6 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@kit/ui/card';
+import { Skeleton } from '@kit/ui/skeleton';
 
 import { getServiceCloudDashboardService } from '../../services';
 import {
@@ -66,12 +67,8 @@ export function ServiceCloudDashboardPage({
     enabled: Boolean(workspaceId && canView),
   });
 
-  if (isPermissionLoading) {
-    return (
-      <div className="text-muted-foreground p-6 text-sm">
-        Checking permissions...
-      </div>
-    );
+  if (isPermissionLoading || isLoading) {
+    return <ServiceCloudDashboardSkeleton />;
   }
 
   if (!canView) {
@@ -170,7 +167,7 @@ export function ServiceCloudDashboardPage({
                     {card.label}
                   </CardTitle>
                   <div className="primary-heading-number text-leadgaze-dark dark:text-zinc-100">
-                    {isLoading ? '...' : card.value}
+                    {card.value}
                   </div>
                 </div>
                 <div className={`flex h-8 w-8 items-center justify-center rounded ${card.iconBg}`}>
@@ -376,6 +373,120 @@ function EmptyState({ label }: { label: string }) {
   return (
     <div className="text-muted-foreground rounded-xl border border-dashed p-6 text-center text-sm">
       {label}
+    </div>
+  );
+}
+
+function ServiceCloudDashboardSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Hero banner skeleton */}
+      <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.18),_transparent_35%),linear-gradient(135deg,_#111827,_#0f766e_55%,_#1e3a8a)] p-6 shadow-xl">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl space-y-3">
+            <Skeleton className="h-5 w-28 rounded-full bg-white/20" />
+            <Skeleton className="h-9 w-64 bg-white/20" />
+            <Skeleton className="h-4 w-80 bg-white/15" />
+          </div>
+          <div className="grid min-w-[260px] gap-3 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between gap-4">
+                <Skeleton className="h-4 w-24 bg-white/20" />
+                <Skeleton className="h-4 w-10 bg-white/20" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Stat cards skeleton */}
+      <div className="grid gap-4 md:grid-cols-5">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <Card key={i} className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-7 w-12" />
+              </div>
+              <Skeleton className="h-8 w-8 rounded" />
+            </CardHeader>
+            <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
+              <Skeleton className="h-3 w-28" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Main content skeleton */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+        {/* Left column */}
+        <div className="space-y-6">
+          {/* Status Workload skeleton */}
+          <Card>
+            <CardHeader className="border-b">
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="h-3 w-52 mt-1" />
+            </CardHeader>
+            <div className="space-y-4 px-6 py-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                    <Skeleton className="h-7 w-8" />
+                  </div>
+                  <Skeleton className="h-2 w-full rounded-full" />
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Recent Tickets skeleton */}
+          <Card>
+            <CardHeader className="border-b">
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="h-3 w-52 mt-1" />
+            </CardHeader>
+            <div className="px-6 py-4 space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-3 py-2">
+                  <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+
+        {/* Right aside skeleton */}
+        <aside className="space-y-6">
+          {["Priority Pressure", "Customer Pressure", "Oldest Open Tickets"].map((title) => (
+            <Card key={title}>
+              <CardHeader>
+                <Skeleton className="h-5 w-36" />
+                <Skeleton className="h-3 w-44 mt-1" />
+              </CardHeader>
+              <div className="px-6 py-4 space-y-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="flex items-center gap-3 py-2">
+                    <div className="flex-1 space-y-1.5">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                    <Skeleton className="h-5 w-12 rounded-full" />
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ))}
+        </aside>
+      </div>
     </div>
   );
 }

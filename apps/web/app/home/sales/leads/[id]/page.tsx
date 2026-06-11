@@ -20,7 +20,9 @@ import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import { DetailHeader } from '@kit/ui/detail-header';
 import { PageBody, PageHeader } from '@kit/ui/page';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   Tooltip,
   TooltipContent,
@@ -61,6 +63,71 @@ import { LogCallDialog } from '../components/log-call-dialog';
 import { getWorkspaceEmailAccountService } from '~/services/email.service';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { CustomInputForView } from '@kit/ui/custom-input-for-view';
+
+function LeadDetailsSkeleton() {
+  return (
+    <div className="flex h-full flex-col">
+      <div className="px-6 pt-4 pb-2">
+        <Skeleton className="h-8 w-20 rounded-md" />
+      </div>
+      <PageBody>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
+            <DetailHeader
+              avatar={<Skeleton className="h-16 w-16 rounded-full" />}
+              title={<Skeleton className="h-6 w-48" />}
+              subtitle={
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-36" />
+                </div>
+              }
+              actions={
+                <div className="flex gap-2">
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-28 rounded-md" />
+                </div>
+              }
+            />
+            <Card>
+              <CardHeader><Skeleton className="h-5 w-24" /></CardHeader>
+              <CardContent className="grid gap-6 sm:grid-cols-2">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="space-y-1">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
+              <CardContent className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-8 w-full rounded-md" />
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader><Skeleton className="h-4 w-24" /></CardHeader>
+              <CardContent className="space-y-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="space-y-1">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-28" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </PageBody>
+    </div>
+  );
+}
 
 export default function LeadDetailsPage() {
   const router = useRouter();
@@ -143,9 +210,9 @@ export default function LeadDetailsPage() {
 
   if (!workspace) {
     return (
-      <div className="flex h-96 items-center justify-center">
-        <p className="text-gray-500">Loading workspace...</p>
-      </div>
+      <ModuleGuard module="leads">
+        <LeadDetailsSkeleton />
+      </ModuleGuard>
     );
   }
 
@@ -176,12 +243,7 @@ export default function LeadDetailsPage() {
   if (isLoading) {
     return (
       <ModuleGuard module="leads">
-        <PageHeader title="Lead Details" />
-        <PageBody>
-          <div className="flex h-96 items-center justify-center">
-            <p className="text-gray-500">Loading lead details...</p>
-          </div>
-        </PageBody>
+        <LeadDetailsSkeleton />
       </ModuleGuard>
     );
   }

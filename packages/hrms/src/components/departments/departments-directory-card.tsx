@@ -107,7 +107,7 @@ export function DepartmentsDirectoryCard(props: {
               {props.isColumnVisible('department') && (
                 <TableCell className="min-w-[220px]">
                   <div className="min-w-0">
-                    <p className="primary-text-medium truncate">
+                    <p className="primary-text-medium truncate text-leadgaze-primary dark:text-leadgaze-primary">
                       {department.name}
                     </p>
                   </div>
