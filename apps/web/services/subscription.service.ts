@@ -33,6 +33,8 @@ export interface WorkspaceSeat {
   current_period_end: string | null;
   trial_ends_at: string | null;
   payment_provider: string;
+  provider_subscription_id: string | null;
+  provider_metadata: Record<string, unknown> | null;
   subscription_products?: {
     id: string;
     product_key: string;
@@ -99,6 +101,25 @@ export interface CheckoutPayload {
   billingCycle?: 'monthly' | 'yearly';
 }
 
+export interface CheckoutItem {
+  productKey: string;
+  seats: number;
+}
+
+export interface MultiCheckoutPayload {
+  workspaceId: string;
+  items: CheckoutItem[];
+  billingCycle: 'monthly' | 'yearly';
+}
+
+export interface CheckoutResponse {
+  success: boolean;
+  data: {
+    url: string;
+    sessionId: string;
+  };
+}
+
 export interface AssignSeatPayload {
   workspaceId: string;
   userId: string;
@@ -121,6 +142,35 @@ const getWorkspaceSeatsService = asyncHandlerClient(
   },
 );
 
+/**
+ * Creates a Stripe Checkout session for multiple products at once.
+ * One Stripe subscription with multiple line items.
+ */
+const createMultiProductCheckoutService = asyncHandlerClient(
+  async (payload: MultiCheckoutPayload): Promise<CheckoutResponse> => {
+    const response = await ApiClient.post(
+      '/subscriptions/checkout-multi',
+      payload,
+    );
+    return response.data;
+  },
+);
+
+/**
+ * Creates a Stripe Checkout session for a single module subscription.
+ * @deprecated Use createMultiProductCheckoutService instead.
+ */
+const createCheckoutSessionService = asyncHandlerClient(
+  async (payload: CheckoutPayload): Promise<CheckoutResponse> => {
+    const response = await ApiClient.post('/subscriptions/checkout', payload);
+    return response.data;
+  },
+);
+
+/**
+ * Legacy dummy checkout (kept for backward compatibility during migration).
+ * @deprecated Use createCheckoutSessionService instead.
+ */
 const subscribeToProductService = asyncHandlerClient(
   async (payload: CheckoutPayload) => {
     const response = await ApiClient.post(
@@ -131,6 +181,25 @@ const subscribeToProductService = asyncHandlerClient(
   },
 );
 
+/**
+ * Updates seat count via Stripe (prorated).
+ * Primary method for seat quantity changes.
+ */
+const updateSeatsViaStripeService = asyncHandlerClient(
+  async (seatId: string, newQuantity: number) => {
+    const response = await ApiClient.post('/subscriptions/update-seats', {
+      seatId,
+      newQuantity,
+    });
+    return response.data;
+  },
+);
+
+/**
+ * Updates seat count directly in the database.
+ * Fallback for manual/non-Stripe subscriptions.
+ * @deprecated Use updateSeatsViaStripeService for Stripe subscriptions.
+ */
 const updateSeatCountService = asyncHandlerClient(
   async (seatId: string, seatsPurchased: number) => {
     const response = await ApiClient.put('/subscriptions/workspace-seats', {
@@ -193,7 +262,10 @@ const getWorkspaceSubscriptionService = getWorkspaceSubscriptionStatus;
 export {
   getSubscriptionProductsService,
   getWorkspaceSeatsService,
+  createMultiProductCheckoutService,
+  createCheckoutSessionService,
   subscribeToProductService,
+  updateSeatsViaStripeService,
   updateSeatCountService,
   getSeatAssignmentsService,
   assignSeatService,

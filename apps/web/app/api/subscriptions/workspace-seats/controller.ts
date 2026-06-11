@@ -55,6 +55,11 @@ export const getWorkspaceSeats = catchAsync(
  * PUT /api/subscriptions/workspace-seats
  * Update seat count for an existing subscription.
  * Body: { seatId, seatsPurchased }
+ *
+ * NOTE: This is the direct DB update endpoint.
+ * For Stripe-managed subscriptions, prefer POST /api/subscriptions/update-seats
+ * which handles proration via Stripe. This endpoint serves as a fallback
+ * for manual/non-Stripe subscriptions.
  */
 export const updateWorkspaceSeats = catchAsync(
   async ({

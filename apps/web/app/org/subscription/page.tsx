@@ -1,14 +1,18 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
+import { useSearchParams } from 'next/navigation';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   Check,
   ChevronDown,
   ChevronUp,
+  Clock,
   CreditCard,
   DollarSign,
   Headphones,
@@ -19,21 +23,16 @@ import {
   ShoppingCart,
   Sparkles,
   Users,
-  Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import {
+  type WorkspaceSubscriptionStatus,
+  getWorkspaceSubscriptionService,
+} from '@kit/core/services';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@kit/ui/dialog';
 import { cn } from '@kit/ui/utils';
 
 import { AppLogo } from '~/components/app-logo';
@@ -42,11 +41,11 @@ import {
   type SeatAssignment,
   type SubscriptionProduct,
   type WorkspaceSeat,
+  createMultiProductCheckoutService,
   getSeatAssignmentsService,
   getSubscriptionProductsService,
   getWorkspaceSeatsService,
-  subscribeToProductService,
-  updateSeatCountService,
+  updateSeatsViaStripeService,
 } from '~/services/subscription.service';
 
 // ─── Constants ───────────────────────────────────────────────────
@@ -79,7 +78,6 @@ const PRODUCT_STYLES: Record<
       'Sales pipeline tracking',
       'Email campaigns & templates',
       'Activity timeline & notes',
-      'Custom fields & views',
     ],
   },
   hrms: {
@@ -92,7 +90,6 @@ const PRODUCT_STYLES: Record<
       'Attendance & leave tracking',
       'Payroll management',
       'Onboarding workflows',
-      'Document management',
     ],
   },
   inventory: {
@@ -105,7 +102,6 @@ const PRODUCT_STYLES: Record<
       'Stock management',
       'Purchase & sales orders',
       'Warehouse tracking',
-      'Supplier management',
     ],
   },
   service_cloud: {
@@ -118,7 +114,6 @@ const PRODUCT_STYLES: Record<
       'Shared inbox',
       'SLA tracking',
       'Knowledge base',
-      'Customer satisfaction',
     ],
   },
   funds: {
@@ -131,7 +126,6 @@ const PRODUCT_STYLES: Record<
       'Deal pipeline',
       'Fundraise tracking',
       'Portfolio management',
-      'Reporting & analytics',
     ],
   },
 };
@@ -153,6 +147,46 @@ function getProductStyle(key: string) {
 export default function OrgSubscriptionPage() {
   const { currentWorkspace } = useRBAC();
   const workspaceId = currentWorkspace?.id ?? '';
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
+
+  // Local state for pending seat changes (before checkout/apply)
+  const [pendingChanges, setPendingChanges] = useState<Record<string, number>>(
+    {},
+  );
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>(
+    'monthly',
+  );
+
+  // Handle checkout success/cancel query params from Stripe redirect
+  useEffect(() => {
+    const checkout = searchParams.get('checkout');
+    if (checkout === 'success') {
+      toast.success(
+        'Payment successful! Your subscription is being activated.',
+      );
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-seats', workspaceId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-subscription', workspaceId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['subscription-products'],
+      });
+      window.history.replaceState({}, '', '/org/subscription');
+    } else if (checkout === 'cancel') {
+      toast.error('Checkout was cancelled.');
+      window.history.replaceState({}, '', '/org/subscription');
+    }
+  }, [searchParams, workspaceId, queryClient]);
+
+  // Fetch workspace subscription status (trial info)
+  const { data: subscriptionStatus } = useQuery<WorkspaceSubscriptionStatus>({
+    queryKey: ['workspace-subscription', workspaceId],
+    queryFn: () => getWorkspaceSubscriptionService(workspaceId),
+    enabled: !!workspaceId,
+  });
 
   const { data: productsData, isLoading: productsLoading } = useQuery({
     queryKey: ['subscription-products'],
@@ -168,6 +202,18 @@ export default function OrgSubscriptionPage() {
   const products: SubscriptionProduct[] = productsData?.data ?? [];
   const seats: WorkspaceSeat[] = seatsData?.data ?? [];
 
+  const isTrial = seats.some(
+    (s) =>
+      s.status === 'trialing' ||
+      s.provider_subscription_id?.startsWith('trial_sub_'),
+  );
+  const isPaid = seats.some(
+    (s) =>
+      s.status === 'active' &&
+      s.provider_subscription_id &&
+      !s.provider_subscription_id.startsWith('trial_sub_'),
+  );
+
   const subscribedProductIds = useMemo(
     () => new Set(seats.map((s) => s.product_id)),
     [seats],
@@ -177,8 +223,122 @@ export default function OrgSubscriptionPage() {
     (p) => !subscribedProductIds.has(p.id),
   );
 
+  // Initialize pending changes from current seats
+  useEffect(() => {
+    setPendingChanges((prev) => {
+      const updated = { ...prev };
+      for (const seat of seats) {
+        if (!(seat.product_id in updated)) {
+          updated[seat.product_id] = seat.seats_purchased;
+        }
+      }
+      return updated;
+    });
+  }, [seats]);
+
+  // Calculate totals from pending changes
+  const { totalMonthly, totalSeats, changedItems } = useMemo(() => {
+    let monthly = 0;
+    let seatsTotal = 0;
+    const changed: Array<{ productKey: string; seats: number }> = [];
+
+    for (const seat of seats) {
+      const pending = pendingChanges[seat.product_id] ?? seat.seats_purchased;
+      const product = seat.subscription_products;
+      if (product) {
+        const price = product.monthly_price_per_seat ?? 0;
+        monthly += price * pending;
+        seatsTotal += pending;
+        if (pending !== seat.seats_purchased) {
+          changed.push({ productKey: product.product_key, seats: pending });
+        }
+      }
+    }
+
+    return {
+      totalMonthly: monthly,
+      totalSeats: seatsTotal,
+      changedItems: changed,
+    };
+  }, [seats, pendingChanges]);
+
+  // Trial info
+  const trialDaysRemaining = subscriptionStatus?.trial_days_remaining ?? null;
+  const isTrialExpired = subscriptionStatus?.is_trial_expired ?? false;
+
+  // Checkout mutation (for trial -> paid or new modules)
+  const checkoutMutation = useMutation({
+    mutationFn: () => {
+      const items =
+        changedItems.length > 0
+          ? changedItems
+          : seats.map((s) => ({
+              productKey: s.subscription_products?.product_key ?? '',
+              seats: pendingChanges[s.product_id] ?? s.seats_purchased,
+            }));
+
+      return createMultiProductCheckoutService({
+        workspaceId,
+        items: items.filter((i) => i.productKey),
+        billingCycle,
+      });
+    },
+    onSuccess: (data: { data?: { url?: string } }) => {
+      const url = data?.data?.url;
+      if (url) {
+        window.location.href = url;
+      } else {
+        toast.success(
+          data?.data
+            ? 'Subscription updated successfully!'
+            : 'No checkout URL returned.',
+        );
+        queryClient.invalidateQueries({
+          queryKey: ['workspace-seats', workspaceId],
+        });
+      }
+    },
+    onError: (err: unknown) => {
+      toast.error((err as Error)?.message || 'Failed to create checkout');
+    },
+  });
+
+  // Direct seat update (for paid subscriptions)
+  const handleDirectUpdate = async (seatId: string, newQuantity: number) => {
+    try {
+      const result = await updateSeatsViaStripeService(seatId, newQuantity);
+      toast.success(
+        (result as { message?: string })?.message ?? 'Seat count updated',
+      );
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-seats', workspaceId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-subscription', workspaceId],
+      });
+    } catch (err: unknown) {
+      const error = err as {
+        response?: { data?: { requiresCheckout?: boolean; message?: string } };
+        message?: string;
+      };
+      if (error?.response?.data?.requiresCheckout) {
+        toast.error(
+          'Please subscribe to a paid plan first to manage seat counts.',
+        );
+      } else {
+        toast.error(error?.message || 'Failed to update seats');
+      }
+    }
+  };
+
+  const updatePending = (productId: string, seats: number) => {
+    setPendingChanges((prev) => ({ ...prev, [productId]: seats }));
+  };
+
+  const hasChanges = changedItems.length > 0;
+
   return (
-    <div className="bg-background min-h-screen">
+    <div className="bg-background min-h-screen pb-24">
       {/* Header */}
       <header className="border-border bg-card/80 sticky top-0 z-40 border-b backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
@@ -205,7 +365,7 @@ export default function OrgSubscriptionPage() {
 
       {/* Page header */}
       <div className="border-border from-primary/[0.03] border-b bg-gradient-to-b to-transparent">
-        <div className="mx-auto max-w-6xl px-6 py-10">
+        <div className="mx-auto max-w-6xl px-6 py-8">
           <div className="flex items-center gap-2">
             <CreditCard className="text-primary h-4 w-4" />
             <span className="secondary-text-small text-primary font-medium tracking-widest uppercase">
@@ -216,62 +376,106 @@ export default function OrgSubscriptionPage() {
             Subscription & Modules
           </h1>
           <p className="primary-text-regular text-muted-foreground mt-2">
-            Manage your active modules, seat allocations, and billing. Add new
-            modules to unlock more capabilities.
+            Manage your active modules, seat allocations, and billing.
           </p>
 
-          {/* Quick stats */}
-          <div className="mt-6 flex flex-wrap gap-4">
-            <div className="border-border bg-card flex items-center gap-2 rounded-full border px-4 py-2">
-              <Package className="text-primary h-4 w-4" />
+          {/* Billing cycle toggle */}
+          {(!isPaid || isTrial) && (
+            <div className="mt-5 flex items-center gap-3">
               <span className="secondary-text-small text-muted-foreground">
-                Active modules
+                Billing:
               </span>
-              <span className="primary-text-medium text-foreground font-bold">
-                {seats.length}
-              </span>
+              <div className="border-border flex overflow-hidden rounded-lg border">
+                {(['monthly', 'yearly'] as const).map((cycle) => (
+                  <button
+                    key={cycle}
+                    type="button"
+                    className={cn(
+                      'px-4 py-1.5 text-xs font-medium transition-colors',
+                      billingCycle === cycle
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-card text-muted-foreground hover:bg-muted',
+                    )}
+                    onClick={() => setBillingCycle(cycle)}
+                  >
+                    {cycle === 'monthly' ? 'Monthly' : 'Yearly'}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="border-border bg-card flex items-center gap-2 rounded-full border px-4 py-2">
-              <Users className="text-primary h-4 w-4" />
-              <span className="secondary-text-small text-muted-foreground">
-                Total seats
-              </span>
-              <span className="primary-text-medium text-foreground font-bold">
-                {seats.reduce((sum, s) => sum + s.seats_purchased, 0)}
-              </span>
-            </div>
-            <div className="border-border bg-card flex items-center gap-2 rounded-full border px-4 py-2">
-              <Zap className="text-primary h-4 w-4" />
-              <span className="secondary-text-small text-muted-foreground">
-                Available modules
-              </span>
-              <span className="primary-text-medium text-foreground font-bold">
-                {availableProducts.length}
-              </span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
       {/* Content */}
-      <div className="mx-auto max-w-6xl space-y-10 px-6 py-8">
+      <div className="mx-auto max-w-6xl space-y-8 px-6 py-6">
+        {/* Trial Banner */}
+        {(isTrial || isTrialExpired) && (
+          <TrialBanner
+            trialDaysRemaining={trialDaysRemaining}
+            isExpired={isTrialExpired}
+          />
+        )}
+
+        {/* Quick stats */}
+        <div className="flex flex-wrap gap-3">
+          <div className="border-border bg-card flex items-center gap-2 rounded-full border px-4 py-2">
+            <Package className="text-primary h-4 w-4" />
+            <span className="secondary-text-small text-muted-foreground">
+              Active modules
+            </span>
+            <span className="primary-text-medium text-foreground font-bold">
+              {seats.length}
+            </span>
+          </div>
+          <div className="border-border bg-card flex items-center gap-2 rounded-full border px-4 py-2">
+            <Users className="text-primary h-4 w-4" />
+            <span className="secondary-text-small text-muted-foreground">
+              Total seats
+            </span>
+            <span className="primary-text-medium text-foreground font-bold">
+              {totalSeats}
+            </span>
+          </div>
+          {isPaid && monthlyTotalDisplay(totalMonthly) && (
+            <div className="border-border bg-card flex items-center gap-2 rounded-full border px-4 py-2">
+              <DollarSign className="text-primary h-4 w-4" />
+              <span className="secondary-text-small text-muted-foreground">
+                Monthly total
+              </span>
+              <span className="primary-text-medium text-foreground font-bold">
+                ${totalMonthly}/mo
+              </span>
+            </div>
+          )}
+        </div>
+
         {/* Active Subscriptions */}
         {seats.length > 0 && (
           <section>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="primary-heading text-foreground">
-                Active Subscriptions
-              </h2>
+              <h2 className="primary-heading text-foreground">Your Modules</h2>
               <Badge variant="secondary" className="text-xs">
                 {seats.length} module{seats.length !== 1 ? 's' : ''}
+                {isTrial && ' (Trial)'}
               </Badge>
             </div>
-            <div className="space-y-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               {seats.map((seat) => (
-                <ActiveSubscriptionCard
+                <ActiveModuleCard
                   key={seat.id}
                   seat={seat}
                   workspaceId={workspaceId}
+                  isPaid={isPaid}
+                  isTrial={isTrial}
+                  pendingSeats={
+                    pendingChanges[seat.product_id] ?? seat.seats_purchased
+                  }
+                  billingCycle={billingCycle}
+                  onPendingChange={(count) =>
+                    updatePending(seat.product_id, count)
+                  }
+                  onDirectUpdate={(count) => handleDirectUpdate(seat.id, count)}
                 />
               ))}
             </div>
@@ -279,78 +483,143 @@ export default function OrgSubscriptionPage() {
         )}
 
         {/* Available Products */}
-        <section>
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="primary-heading text-foreground">
-                Available Modules
-              </h2>
-              <p className="secondary-text-small text-muted-foreground mt-1">
-                Add modules to expand your workspace capabilities
-              </p>
-            </div>
-            {availableProducts.length > 0 && (
+        {availableProducts.length > 0 && (
+          <section>
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="primary-heading text-foreground">
+                  Available Modules
+                </h2>
+                <p className="secondary-text-small text-muted-foreground mt-1">
+                  Add modules to expand your workspace capabilities
+                </p>
+              </div>
               <Badge variant="info" className="gap-1 text-xs">
                 <Sparkles className="h-3 w-3" />
                 {availableProducts.length} available
               </Badge>
+            </div>
+            {productsLoading ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <Loader2 className="text-primary h-6 w-6 animate-spin" />
+                <p className="secondary-text-small text-muted-foreground mt-3">
+                  Loading modules...
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {availableProducts.map((product) => (
+                  <AvailableModuleCard
+                    key={product.id}
+                    product={product}
+                    billingCycle={billingCycle}
+                  />
+                ))}
+              </div>
             )}
+          </section>
+        )}
+      </div>
+
+      {/* Checkout Bar (for trial or non-paid states) */}
+      {(!isPaid || isTrial) && seats.length > 0 && (
+        <CheckoutBar
+          totalMonthly={totalMonthly}
+          totalSeats={totalSeats}
+          hasChanges={hasChanges}
+          isTrial={isTrial}
+          isTrialExpired={isTrialExpired}
+          isPending={checkoutMutation.isPending}
+          onCheckout={() => checkoutMutation.mutate()}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Trial Banner ────────────────────────────────────────────────
+
+function TrialBanner({
+  trialDaysRemaining,
+  isExpired,
+}: {
+  trialDaysRemaining: number | null;
+  isExpired: boolean;
+}) {
+  if (isExpired) {
+    return (
+      <div className="border-destructive/30 bg-destructive/5 rounded-xl border p-4">
+        <div className="flex items-start gap-3">
+          <div className="bg-destructive/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+            <AlertTriangle className="text-destructive h-4 w-4" />
           </div>
-          {productsLoading ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <Loader2 className="text-primary h-6 w-6 animate-spin" />
-              <p className="secondary-text-small text-muted-foreground mt-3">
-                Loading modules...
-              </p>
-            </div>
-          ) : availableProducts.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center py-12 text-center">
-                <div className="bg-primary/10 mb-3 flex h-12 w-12 items-center justify-center rounded-full">
-                  <Check className="text-primary h-6 w-6" />
-                </div>
-                <p className="primary-heading text-foreground">
-                  All modules subscribed
-                </p>
-                <p className="secondary-text-small text-muted-foreground mt-1">
-                  You have access to every Leadgaze module.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {availableProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  workspaceId={workspaceId}
-                />
-              ))}
-            </div>
-          )}
-        </section>
+          <div className="flex-1">
+            <p className="primary-heading text-destructive">Trial Expired</p>
+            <p className="secondary-text-small text-muted-foreground mt-1">
+              Your 7-day trial has ended. Subscribe now to keep access to all
+              modules and continue using Leadgaze without interruption.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-500/5">
+      <div className="flex items-start gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-500/10">
+          <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+        </div>
+        <div className="flex-1">
+          <p className="primary-heading text-amber-800 dark:text-amber-300">
+            {trialDaysRemaining != null
+              ? `${trialDaysRemaining} day${trialDaysRemaining !== 1 ? 's' : ''} left in your trial`
+              : 'Trial active'}
+          </p>
+          <p className="secondary-text-small mt-1 text-amber-700 dark:text-amber-400">
+            You have full access to all modules during your trial. Subscribe now
+            to keep your access and adjust seat counts for your team.
+          </p>
+        </div>
+        <Badge variant="warning" className="shrink-0 text-xs">
+          Trial
+        </Badge>
       </div>
     </div>
   );
 }
 
-// ─── Active Subscription Card ────────────────────────────────────
+// ─── Active Module Card ──────────────────────────────────────────
 
-function ActiveSubscriptionCard({
+function ActiveModuleCard({
   seat,
   workspaceId,
+  isPaid,
+  isTrial,
+  pendingSeats,
+  billingCycle,
+  onPendingChange,
+  onDirectUpdate,
 }: {
   seat: WorkspaceSeat;
   workspaceId: string;
+  isPaid: boolean;
+  isTrial: boolean;
+  pendingSeats: number;
+  billingCycle: 'monthly' | 'yearly';
+  onPendingChange: (count: number) => void;
+  onDirectUpdate: (count: number) => void;
 }) {
-  const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const product = seat.subscription_products;
   const style = getProductStyle(product?.product_key ?? '');
   const icon = PRODUCT_ICONS[product?.product_key ?? ''] ?? (
     <Package className="h-5 w-5" />
   );
 
+  const displaySeats = isPaid ? seat.seats_purchased : pendingSeats;
   const seatPercent =
     seat.seats_purchased > 0
       ? Math.min(
@@ -359,30 +628,70 @@ function ActiveSubscriptionCard({
         )
       : 0;
 
-  const monthlyPrice = product?.monthly_price_per_seat;
-  const monthlyTotal = monthlyPrice ? monthlyPrice * seat.seats_purchased : 0;
+  const pricePerSeat =
+    billingCycle === 'yearly'
+      ? product?.yearly_price_per_seat
+      : product?.monthly_price_per_seat;
+  const total = pricePerSeat ? Number(pricePerSeat) * displaySeats : 0;
 
-  const updateMutation = useMutation({
-    mutationFn: (newCount: number) => updateSeatCountService(seat.id, newCount),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['workspace-seats', workspaceId],
-      });
-      toast.success('Seat count updated');
-    },
-    onError: (err: unknown) =>
-      toast.error((err as Error)?.message || 'Failed to update seats'),
-  });
+  const handleIncrement = async () => {
+    const newCount = displaySeats + 1;
+    if (isPaid && !isTrial) {
+      setUpdating(true);
+      try {
+        await onDirectUpdate(newCount);
+      } finally {
+        setUpdating(false);
+      }
+    } else {
+      onPendingChange(newCount);
+    }
+  };
+
+  const handleDecrement = async () => {
+    if (displaySeats <= 1) return;
+    const newCount = displaySeats - 1;
+    if (isPaid && !isTrial) {
+      setUpdating(true);
+      try {
+        await onDirectUpdate(newCount);
+      } finally {
+        setUpdating(false);
+      }
+    } else {
+      onPendingChange(newCount);
+    }
+  };
+
+  const statusLabel =
+    seat.status === 'trialing'
+      ? 'Trial'
+      : seat.status === 'active'
+        ? 'Active'
+        : seat.status.replace(/_/g, ' ');
+
+  const statusVariant =
+    seat.status === 'active'
+      ? 'success'
+      : seat.status === 'trialing'
+        ? 'warning'
+        : ('secondary' as const);
 
   return (
     <Card className="overflow-hidden">
-      {/* Summary row */}
-      <CardContent className="p-0">
-        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
+      <div
+        className={cn(
+          'h-1 bg-gradient-to-r',
+          style.gradient.replace('/10', '/60').replace('/5', '/30'),
+        )}
+      />
+      <CardContent className="p-5">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
             <div
               className={cn(
-                'flex h-11 w-11 items-center justify-center rounded-lg',
+                'flex h-10 w-10 items-center justify-center rounded-lg',
                 style.iconBg,
                 style.iconColor,
               )}
@@ -394,66 +703,59 @@ function ActiveSubscriptionCard({
                 {product?.display_name ?? 'Module'}
               </h3>
               <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                <Badge
-                  variant={seat.status === 'active' ? 'success' : 'warning'}
-                  className="text-[10px]"
-                >
-                  {seat.status}
+                <Badge variant={statusVariant} className="text-[10px]">
+                  {statusLabel}
                 </Badge>
                 <span className="secondary-text-small text-muted-foreground">
-                  {seat.seats_used}/{seat.seats_purchased} seats &middot;{' '}
-                  <span className="capitalize">{seat.billing_cycle}</span>
+                  {seat.seats_used}/{seat.seats_purchased} used
                 </span>
-                {monthlyPrice && (
-                  <span className="secondary-text-small text-foreground font-medium">
-                    ${monthlyTotal}/
-                    {seat.billing_cycle === 'yearly' ? 'yr' : 'mo'}
-                  </span>
-                )}
               </div>
             </div>
           </div>
+        </div>
 
+        {/* Seat adjuster */}
+        <div className="mt-4 flex items-center justify-between">
+          <div>
+            <span className="secondary-text-small text-muted-foreground">
+              Seats
+            </span>
+            {pricePerSeat && (
+              <span className="secondary-text-small text-foreground ml-2 font-medium">
+                ${total}/{billingCycle === 'yearly' ? 'yr' : 'mo'}
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="h-8 gap-1"
-              disabled={seat.seats_purchased <= 1 || updateMutation.isPending}
-              onClick={() => updateMutation.mutate(seat.seats_purchased - 1)}
+              className="h-8 w-8 p-0"
+              disabled={displaySeats <= 1 || updating}
+              onClick={handleDecrement}
             >
               <Minus className="h-3 w-3" />
-              <span className="hidden sm:inline">Seat</span>
             </Button>
+            <span className="text-foreground w-8 text-center text-lg font-bold">
+              {displaySeats}
+            </span>
             <Button
               variant="outline"
               size="sm"
-              className="h-8 gap-1"
-              disabled={updateMutation.isPending}
-              onClick={() => updateMutation.mutate(seat.seats_purchased + 1)}
+              className="h-8 w-8 p-0"
+              disabled={updating}
+              onClick={handleIncrement}
             >
               <Plus className="h-3 w-3" />
-              <span className="hidden sm:inline">Seat</span>
             </Button>
-            <div className="bg-border mx-1 h-6 w-px" />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 gap-1"
-              onClick={() => setExpanded(!expanded)}
-            >
-              {expanded ? 'Hide' : 'View'} seats
-              {expanded ? (
-                <ChevronUp className="h-3 w-3" />
-              ) : (
-                <ChevronDown className="h-3 w-3" />
-              )}
-            </Button>
+            {updating && (
+              <Loader2 className="text-primary h-3.5 w-3.5 animate-spin" />
+            )}
           </div>
         </div>
 
         {/* Seat usage bar */}
-        <div className="px-5 pb-4">
+        <div className="mt-3">
           <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
             <div
               className="h-full rounded-full transition-all duration-300"
@@ -466,18 +768,29 @@ function ActiveSubscriptionCard({
           </div>
         </div>
 
+        {/* Pricing info */}
+        {pricePerSeat && (
+          <div className="mt-3 flex items-center justify-between">
+            <span className="secondary-text-small text-muted-foreground">
+              ${pricePerSeat}/seat/{billingCycle === 'yearly' ? 'yr' : 'mo'}
+            </span>
+            <button
+              className="secondary-text-small text-primary hover:underline"
+              onClick={() => setExpanded(!expanded)}
+            >
+              {expanded ? 'Hide' : 'View'} members{' '}
+              {expanded ? (
+                <ChevronUp className="inline h-3 w-3" />
+              ) : (
+                <ChevronDown className="inline h-3 w-3" />
+              )}
+            </button>
+          </div>
+        )}
+
         {/* Expanded seat assignments */}
         {expanded && (
-          <div className="border-border bg-muted/20 border-t px-5 py-4">
-            <div className="mb-3">
-              <p className="primary-text-medium text-foreground">
-                Assigned Members
-              </p>
-              <p className="secondary-text-small text-muted-foreground mt-0.5">
-                Seats are automatically assigned when members join and revoked
-                when they are removed.
-              </p>
-            </div>
+          <div className="border-border mt-3 border-t pt-3">
             <SeatAssignmentsList
               workspaceId={workspaceId}
               productKey={product?.product_key ?? ''}
@@ -486,6 +799,172 @@ function ActiveSubscriptionCard({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// ─── Available Module Card ───────────────────────────────────────
+
+function AvailableModuleCard({
+  product,
+  billingCycle,
+}: {
+  product: SubscriptionProduct;
+  billingCycle: 'monthly' | 'yearly';
+}) {
+  const style = getProductStyle(product.product_key);
+  const icon = PRODUCT_ICONS[product.product_key] ?? (
+    <Package className="h-5 w-5" />
+  );
+
+  const pricePerSeat =
+    billingCycle === 'yearly'
+      ? product.yearly_price_per_seat
+      : product.monthly_price_per_seat;
+
+  return (
+    <Card className="group flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md">
+      <div
+        className={cn(
+          'h-1 bg-gradient-to-r',
+          style.gradient.replace('/10', '/60').replace('/5', '/30'),
+        )}
+      />
+      <CardContent className="flex flex-1 flex-col p-5">
+        <div className="flex items-start justify-between">
+          <div
+            className={cn(
+              'flex h-11 w-11 items-center justify-center rounded-lg',
+              style.iconBg,
+              style.iconColor,
+            )}
+          >
+            {icon}
+          </div>
+          <Badge variant="info" className="text-[10px]">
+            Available
+          </Badge>
+        </div>
+
+        <div className="mt-4 flex-1">
+          <h3 className="primary-heading text-foreground">
+            {product.display_name}
+          </h3>
+          <p className="secondary-text-small text-muted-foreground mt-1">
+            {product.description}
+          </p>
+        </div>
+
+        <div className="border-border bg-muted/30 mt-4 rounded-lg border p-3">
+          <div className="flex items-baseline gap-1">
+            {pricePerSeat ? (
+              <>
+                <span className="text-foreground text-2xl font-bold">
+                  ${pricePerSeat}
+                </span>
+                <span className="secondary-text-small text-muted-foreground">
+                  /seat/{billingCycle === 'yearly' ? 'yr' : 'mo'}
+                </span>
+              </>
+            ) : (
+              <span className="primary-text-medium text-foreground">
+                Contact sales
+              </span>
+            )}
+          </div>
+        </div>
+
+        {style.features.length > 0 && (
+          <div className="mt-4 space-y-2">
+            {style.features.slice(0, 3).map((feature) => (
+              <div key={feature} className="flex items-center gap-2">
+                <Check className="text-primary h-3.5 w-3.5 shrink-0" />
+                <span className="secondary-text-small text-foreground">
+                  {feature}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <p className="secondary-text-small text-muted-foreground mt-4 text-center">
+          Subscribe via the checkout below to add this module.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Checkout Bar ────────────────────────────────────────────────
+
+function CheckoutBar({
+  totalMonthly,
+  totalSeats,
+  hasChanges,
+  isTrial,
+  isTrialExpired,
+  isPending,
+  onCheckout,
+}: {
+  totalMonthly: number;
+  totalSeats: number;
+  hasChanges: boolean;
+  isTrial: boolean;
+  isTrialExpired: boolean;
+  isPending: boolean;
+  onCheckout: () => void;
+}) {
+  const ctaLabel = isTrialExpired
+    ? 'Subscribe Now'
+    : isTrial
+      ? hasChanges
+        ? 'Subscribe with Changes'
+        : 'Subscribe Now'
+      : 'Proceed to Payment';
+
+  return (
+    <div className="border-border bg-card/95 fixed right-0 bottom-0 left-0 z-50 border-t backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Users className="text-muted-foreground h-4 w-4" />
+            <span className="secondary-text-small text-muted-foreground">
+              {totalSeats} seat{totalSeats !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="bg-border h-4 w-px" />
+          <span className="primary-heading text-foreground">
+            ${totalMonthly}
+            <span className="text-muted-foreground font-normal">/mo</span>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {isPending ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="text-primary h-4 w-4 animate-spin" />
+              <span className="secondary-text-small text-muted-foreground">
+                Preparing checkout...
+              </span>
+            </div>
+          ) : (
+            <>
+              <span className="secondary-text-small text-muted-foreground hidden sm:block">
+                Secure payment via Stripe
+              </span>
+              <Button
+                className="bg-primary hover:bg-primary/90 gap-2 text-white"
+                onClick={onCheckout}
+                disabled={isPending}
+              >
+                <CreditCard className="h-4 w-4" />
+                {ctaLabel}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -521,9 +1000,8 @@ function SeatAssignmentsList({
 
   if (assignments.length === 0) {
     return (
-      <p className="secondary-text-small text-muted-foreground py-4 text-center">
-        No members assigned yet. Seats will be assigned automatically when
-        members join.
+      <p className="secondary-text-small text-muted-foreground py-2 text-center">
+        No members assigned yet.
       </p>
     );
   }
@@ -533,17 +1011,17 @@ function SeatAssignmentsList({
       {assignments.map((a) => (
         <div
           key={a.id}
-          className="hover:bg-muted/50 flex items-center justify-between rounded-lg px-3 py-2.5 transition-colors"
+          className="hover:bg-muted/50 flex items-center justify-between rounded-lg px-3 py-2 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
+            <div className="bg-primary/10 text-primary flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold">
               {(a.accounts?.email?.charAt(0) ?? 'U').toUpperCase()}
             </div>
             <div>
-              <p className="primary-text-medium text-foreground">
+              <p className="primary-text-medium text-foreground text-sm">
                 {a.accounts?.name ?? 'User'}
               </p>
-              <p className="secondary-text-small text-muted-foreground">
+              <p className="secondary-text-small text-muted-foreground text-xs">
                 {a.accounts?.email}
               </p>
             </div>
@@ -557,371 +1035,8 @@ function SeatAssignmentsList({
   );
 }
 
-// ─── Product Card (unsubscribed) ─────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────
 
-function ProductCard({
-  product,
-  workspaceId,
-}: {
-  product: SubscriptionProduct;
-  workspaceId: string;
-}) {
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const style = getProductStyle(product.product_key);
-  const icon = PRODUCT_ICONS[product.product_key] ?? (
-    <Package className="h-5 w-5" />
-  );
-
-  return (
-    <>
-      <Card className="group flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md">
-        {/* Top gradient accent */}
-        <div
-          className={cn(
-            'h-1 bg-gradient-to-r',
-            style.gradient.replace('/10', '/60').replace('/5', '/30'),
-          )}
-        />
-        <CardContent className="flex flex-1 flex-col p-5">
-          {/* Header */}
-          <div className="flex items-start justify-between">
-            <div
-              className={cn(
-                'flex h-11 w-11 items-center justify-center rounded-lg',
-                style.iconBg,
-                style.iconColor,
-              )}
-            >
-              {icon}
-            </div>
-            <Badge variant="info" className="text-[10px]">
-              Available
-            </Badge>
-          </div>
-
-          {/* Product info */}
-          <div className="mt-4 flex-1">
-            <h3 className="primary-heading text-foreground">
-              {product.display_name}
-            </h3>
-            <p className="secondary-text-small text-muted-foreground mt-1">
-              {product.description}
-            </p>
-          </div>
-
-          {/* Pricing */}
-          <div className="border-border bg-muted/30 mt-4 rounded-lg border p-3">
-            <div className="flex items-baseline gap-1">
-              {product.monthly_price_per_seat ? (
-                <>
-                  <span className="text-foreground text-2xl font-bold">
-                    ${product.monthly_price_per_seat}
-                  </span>
-                  <span className="secondary-text-small text-muted-foreground">
-                    /seat/mo
-                  </span>
-                </>
-              ) : (
-                <span className="primary-text-medium text-foreground">
-                  Contact sales
-                </span>
-              )}
-            </div>
-            {product.yearly_price_per_seat && (
-              <p className="secondary-text-small text-muted-foreground mt-1">
-                ${product.yearly_price_per_seat}/seat/yr &middot;{' '}
-                <span className="text-primary font-medium">Save annually</span>
-              </p>
-            )}
-          </div>
-
-          {/* Features */}
-          {style.features.length > 0 && (
-            <div className="mt-4 space-y-2">
-              {style.features.slice(0, 4).map((feature) => (
-                <div key={feature} className="flex items-center gap-2">
-                  <Check className="text-primary h-3.5 w-3.5 shrink-0" />
-                  <span className="secondary-text-small text-foreground">
-                    {feature}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* CTA */}
-          <Button
-            className={cn('mt-5 w-full gap-2 text-white', style.accent)}
-            onClick={() => setCheckoutOpen(true)}
-          >
-            <CreditCard className="h-4 w-4" />
-            Subscribe Now
-          </Button>
-        </CardContent>
-      </Card>
-
-      {checkoutOpen && (
-        <CheckoutModal
-          product={product}
-          workspaceId={workspaceId}
-          open={checkoutOpen}
-          onOpenChange={setCheckoutOpen}
-        />
-      )}
-    </>
-  );
-}
-
-// ─── Checkout Modal ──────────────────────────────────────────────
-
-function CheckoutModal({
-  product,
-  workspaceId,
-  open,
-  onOpenChange,
-}: {
-  product: SubscriptionProduct;
-  workspaceId: string;
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-}) {
-  const queryClient = useQueryClient();
-  const [seats, setSeats] = useState(product.min_seats);
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>(
-    'monthly',
-  );
-  const [step, setStep] = useState<'form' | 'processing' | 'success'>('form');
-
-  const style = getProductStyle(product.product_key);
-  const pricePerSeat =
-    billingCycle === 'yearly'
-      ? product.yearly_price_per_seat
-      : product.monthly_price_per_seat;
-  const total = pricePerSeat ? Number(pricePerSeat) * seats : 0;
-
-  const yearlyTotal = product.yearly_price_per_seat
-    ? Number(product.yearly_price_per_seat) * seats
-    : 0;
-  const monthlyEquiv = yearlyTotal ? Math.round(yearlyTotal / 12) : 0;
-  const savings =
-    monthlyEquiv && product.monthly_price_per_seat
-      ? Math.round(
-          (1 -
-            monthlyEquiv / (Number(product.monthly_price_per_seat) * seats)) *
-            100,
-        )
-      : 0;
-
-  const subscribeMutation = useMutation({
-    mutationFn: () =>
-      subscribeToProductService({
-        workspaceId,
-        productKey: product.product_key,
-        seats,
-        billingCycle,
-      }),
-    onSuccess: () => {
-      setStep('success');
-      queryClient.invalidateQueries({
-        queryKey: ['workspace-seats', workspaceId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['workspace-subscription', workspaceId],
-      });
-      toast.success(`Subscribed to ${product.display_name}!`);
-    },
-    onError: (err: unknown) => {
-      toast.error((err as Error)?.message || 'Checkout failed');
-      setStep('form');
-    },
-  });
-
-  const handleCheckout = () => {
-    setStep('processing');
-    setTimeout(() => {
-      subscribeMutation.mutate();
-    }, 1200);
-  };
-
-  const handleClose = () => {
-    onOpenChange(false);
-    setStep('form');
-    setSeats(product.min_seats);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg">
-        {step === 'success' ? (
-          <div className="flex flex-col items-center py-6 text-center">
-            <div className="bg-primary/10 mb-4 flex h-14 w-14 items-center justify-center rounded-full">
-              <Check className="text-primary h-7 w-7" />
-            </div>
-            <DialogTitle className="text-lg">Subscription Active!</DialogTitle>
-            <DialogDescription className="mt-2">
-              {product.display_name} is now active with {seats} seat
-              {seats !== 1 ? 's' : ''}. Seats will be automatically assigned
-              when team members join.
-            </DialogDescription>
-            <Button className="mt-6" onClick={handleClose}>
-              Done
-            </Button>
-          </div>
-        ) : step === 'processing' ? (
-          <div className="flex flex-col items-center py-10 text-center">
-            <Loader2 className="text-primary mb-4 h-8 w-8 animate-spin" />
-            <DialogTitle className="text-lg">Processing...</DialogTitle>
-            <DialogDescription className="mt-1">
-              Activating your subscription. Please wait.
-            </DialogDescription>
-          </div>
-        ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-3">
-                <div
-                  className={cn(
-                    'flex h-9 w-9 items-center justify-center rounded-lg',
-                    style.iconBg,
-                    style.iconColor,
-                  )}
-                >
-                  {PRODUCT_ICONS[product.product_key] ?? (
-                    <Package className="h-4 w-4" />
-                  )}
-                </div>
-                Subscribe to {product.display_name}
-              </DialogTitle>
-              <DialogDescription>{product.description}</DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-5 py-2">
-              {/* Billing cycle toggle */}
-              <div>
-                <label className="primary-text-medium text-foreground mb-2 block">
-                  Billing Cycle
-                </label>
-                <div className="border-border flex overflow-hidden rounded-lg border">
-                  {(['monthly', 'yearly'] as const).map((cycle) => (
-                    <button
-                      key={cycle}
-                      type="button"
-                      className={cn(
-                        'flex-1 py-2.5 text-xs font-medium transition-colors',
-                        billingCycle === cycle
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-card text-muted-foreground hover:bg-muted',
-                      )}
-                      onClick={() => setBillingCycle(cycle)}
-                    >
-                      {cycle === 'monthly' ? 'Monthly' : 'Yearly'}
-                      {cycle === 'yearly' && product.yearly_price_per_seat && (
-                        <span className="ml-1 text-[10px] opacity-80">
-                          (Save)
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Seat count */}
-              <div>
-                <label className="primary-text-medium text-foreground mb-2 block">
-                  Number of Seats{' '}
-                  <span className="text-muted-foreground">
-                    (min {product.min_seats})
-                  </span>
-                </label>
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9 w-9 p-0"
-                    disabled={seats <= product.min_seats}
-                    onClick={() =>
-                      setSeats(Math.max(product.min_seats, seats - 1))
-                    }
-                  >
-                    <Minus className="h-3 w-3" />
-                  </Button>
-                  <span className="text-foreground w-12 text-center text-xl font-bold">
-                    {seats}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9 w-9 p-0"
-                    onClick={() => setSeats(seats + 1)}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Price summary */}
-              <Card>
-                <CardContent className="space-y-2.5 p-4">
-                  <div className="flex justify-between">
-                    <span className="secondary-text-small text-muted-foreground">
-                      Price per seat
-                    </span>
-                    <span className="primary-text-medium text-foreground">
-                      {pricePerSeat ? `$${pricePerSeat}` : 'Contact sales'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="secondary-text-small text-muted-foreground">
-                      Seats
-                    </span>
-                    <span className="primary-text-medium text-foreground">
-                      &times;{seats}
-                    </span>
-                  </div>
-                  {billingCycle === 'yearly' && savings > 0 && (
-                    <div className="flex justify-between">
-                      <span className="secondary-text-small text-muted-foreground">
-                        Annual savings
-                      </span>
-                      <Badge variant="success" className="text-[10px]">
-                        {savings}% off
-                      </Badge>
-                    </div>
-                  )}
-                  <div className="border-border flex justify-between border-t pt-2.5">
-                    <span className="primary-heading text-foreground">
-                      Total
-                    </span>
-                    <span className="primary-heading text-foreground">
-                      {total > 0
-                        ? `$${total}/${billingCycle === 'yearly' ? 'yr' : 'mo'}`
-                        : 'Contact sales'}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <p className="secondary-text-small text-muted-foreground text-center">
-                This is a demo checkout. No real payment will be processed.
-              </p>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-              <Button
-                className={cn('gap-2 text-white', style.accent)}
-                onClick={handleCheckout}
-              >
-                <CreditCard className="h-4 w-4" />
-                Complete Purchase
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </DialogFooter>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
+function monthlyTotalDisplay(total: number): boolean {
+  return total > 0;
 }
