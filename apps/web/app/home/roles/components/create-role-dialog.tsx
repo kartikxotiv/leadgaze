@@ -23,7 +23,6 @@ import {
 } from '@kit/ui/dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
-
 import {
   Select,
   SelectContent,
@@ -42,6 +41,7 @@ import {
 interface CreateRoleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  productKey?: string;
 }
 
 const ROLE_COLORS = [
@@ -57,6 +57,7 @@ const ROLE_COLORS = [
 export function CreateRoleDialog({
   open,
   onOpenChange,
+  productKey,
 }: CreateRoleDialogProps) {
   const { currentWorkspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -74,12 +75,10 @@ export function CreateRoleDialog({
     color: '#3b82f6',
   });
 
-
-
-  // Fetch modules and features
+  // Fetch modules and features filtered by current product
   const { data: modulesData, isLoading: modulesLoading } = useQuery({
-    queryKey: ['modules'],
-    queryFn: () => getModulesService(),
+    queryKey: ['modules', productKey],
+    queryFn: () => getModulesService(productKey),
     enabled: open,
   });
 
@@ -99,12 +98,13 @@ export function CreateRoleDialog({
         role_key: formData.role_key,
         description: formData.description,
         color: formData.color,
+        product_key: productKey,
         permissions,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['workspaceRoles', currentWorkspace?.id],
+        queryKey: ['workspaceRoles', currentWorkspace?.id, productKey],
       });
       toast.success('Role created successfully');
       setFormData({
@@ -216,7 +216,6 @@ export function CreateRoleDialog({
                 </div>
 
                 <div className="grid grid-cols-1 gap-4">
-
                   <div className="space-y-2">
                     <Label htmlFor="color">Color</Label>
                     <Select
@@ -265,8 +264,9 @@ export function CreateRoleDialog({
                           <div className="flex items-center gap-2">
                             <CollapsibleTrigger className="flex items-center gap-2">
                               <ChevronDown
-                                className={`h-4 w-4 transition-transform ${expandedModules[module.id] ? '' : '-rotate-90'
-                                  }`}
+                                className={`h-4 w-4 transition-transform ${
+                                  expandedModules[module.id] ? '' : '-rotate-90'
+                                }`}
                               />
                             </CollapsibleTrigger>
                             <Checkbox
@@ -335,7 +335,7 @@ export function CreateRoleDialog({
             </div>
           </div>
 
-          <DialogFooter className="shrink-0 border-t  px-6 py-4">
+          <DialogFooter className="shrink-0 border-t px-6 py-4">
             <Button
               type="button"
               variant="outline"

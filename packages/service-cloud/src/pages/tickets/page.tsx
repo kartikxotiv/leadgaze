@@ -142,7 +142,7 @@ export function ServiceCloudTicketsPage({
   );
 
   return (
-    <ServiceCloudResourcePage
+    <ServiceCloudResourcePage 
       workspaceId={workspaceId}
       resource="tickets"
       title="Tickets"
@@ -154,8 +154,7 @@ export function ServiceCloudTicketsPage({
       toolbar={
         <Button
           type="button"
-          variant={assignedToMeOnly ? 'default' : 'outline'}
-          size="sm"
+          variant={assignedToMeOnly ? 'default' : 'outline'}          
           onClick={() => setAssignedToMeOnly((current) => !current)}
         >
           <UserCheck className="mr-2 h-4 w-4" />

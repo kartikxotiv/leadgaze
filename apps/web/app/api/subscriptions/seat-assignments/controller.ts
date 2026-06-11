@@ -22,6 +22,23 @@ export const getSeatAssignments = catchAsync(
       );
     }
 
+    // If filtering by productKey, resolve the product_id first and filter
+    // on the seat_assignments table directly (embedded resource filtering on
+    // PostgREST is unreliable for joined-table column filters).
+    let productIdFilter: string | null = null;
+    if (productKey) {
+      const { data: product } = await adminClient
+        .from('subscription_products')
+        .select('id')
+        .eq('product_key', productKey)
+        .maybeSingle();
+
+      if (!product) {
+        return NextResponse.json({ success: true, data: [] });
+      }
+      productIdFilter = product.id;
+    }
+
     let query = adminClient
       .from('seat_assignments')
       .select(
@@ -50,8 +67,8 @@ export const getSeatAssignments = catchAsync(
       .eq('is_active', true)
       .order('assigned_at', { ascending: false });
 
-    if (productKey) {
-      query = query.eq('subscription_products.product_key', productKey);
+    if (productIdFilter) {
+      query = query.eq('product_id', productIdFilter);
     }
 
     const { data, error } = await query;
@@ -64,19 +81,17 @@ export const getSeatAssignments = catchAsync(
       );
     }
 
-    // When filtered by productKey, deduplicate by user_id (a user should only
-    // have one assignment per product). Without productKey filter, return ALL
-    // rows so callers can see every user-product combination.
+    // Deduplicate by (user_id, product_id) pair — a user should only have
+    // one assignment per product, but can have assignments across multiple
+    // products (modules).
     let result = data || [];
-    if (productKey) {
-      const seen = new Set<string>();
-      result = result.filter((row: Record<string, unknown>) => {
-        const uid = row.user_id as string;
-        if (seen.has(uid)) return false;
-        seen.add(uid);
-        return true;
-      });
-    }
+    const seen = new Set<string>();
+    result = result.filter((row: Record<string, unknown>) => {
+      const key = `${row.user_id}:${row.product_id}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 
     return NextResponse.json({ success: true, data: result });
   },

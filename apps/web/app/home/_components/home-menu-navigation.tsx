@@ -390,7 +390,7 @@ const LAUNCHER_MODULE_META: Record<
   sales: {
     icon: <ShoppingCart className="h-4 w-4" />,
     color: '#0176d3',
-    route: '/home/sales/leads',
+    route: '/home/sales',
     description: 'Manage Your Sales CRM System',
   },
   hrms: {
@@ -664,7 +664,7 @@ export function HomeMenuNavigation() {
         children: [
           {
             label: 'common:routes.dashboard',
-            path: pathsConfig.app.home,
+            path: '/home/sales',
             Icon: <Activity className="h-4 w-4" />,
             end: true,
           },
@@ -688,11 +688,11 @@ export function HomeMenuNavigation() {
             path: '/home/sales/opportunities',
             Icon: <Activity className="h-4 w-4" />,
           },
-          {
-            label: 'Emails',
-            path: '/home/sales/emails',
-            Icon: <Mail className="h-4 w-4" />,
-          },
+          // {
+          //   label: 'Emails',
+          //   path: '/home/emails',
+          //   Icon: <Mail className="h-4 w-4" />,
+          // },
           {
             label: 'Meetings',
             path: '/home/sales/meetings',
