@@ -113,11 +113,7 @@ export default function DashboardDemo() {
   }
 
   return (
-    <div
-      className={
-        'animate-in fade-in flex h-full flex-col overflow-y-auto p-0 pb-4 duration-500 xl:overflow-hidden xl:px-0 xl:pb-4 2xl:overflow-y-auto 2xl:p-0 2xl:pb-4'
-      }
-    >
+    <div className="animate-in fade-in flex flex-col gap-4 pb-4 duration-500">
       <div
         className={
           'grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-3 xl:pb-4 2xl:grid-cols-4 2xl:gap-4 2xl:pb-6'
@@ -227,8 +223,8 @@ export default function DashboardDemo() {
 
       {/* section 2 */}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-3 2xl:grid-cols-4 2xl:gap-4">
-        <Button
+      {/* <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-3 2xl:grid-cols-4 2xl:gap-4"> */}
+        {/* <Button
           variant="outline"
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateLeadOpen(true)}
@@ -239,24 +235,22 @@ export default function DashboardDemo() {
               Add Lead
             </span>
           </div>
-        </Button>
-        {/* font-heading text-2xl font-semibold */}
+        </Button>         */}
 
-        <Button
+        {/* <Button
           variant="outline"
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateContactOpen(true)}
         >
-          {/* <Contact /> */}
           <div className="flex items-center gap-2 xl:gap-1.5 2xl:gap-2">
             <User className="h-6 w-6 text-slate-500 xl:h-4 xl:w-4 2xl:h-6 2xl:w-6 dark:text-zinc-400" />
             <span className="text-[16px] font-semibold text-slate-700 xl:text-sm 2xl:text-[16px] dark:text-zinc-200">
               Add Contact
             </span>
           </div>
-        </Button>
+        </Button> */}
 
-        <Button
+        {/* <Button
           variant="outline"
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateAccountOpen(true)}
@@ -267,9 +261,9 @@ export default function DashboardDemo() {
               Add Account
             </span>
           </div>
-        </Button>
+        </Button> */}
 
-        <Button
+        {/* <Button
           variant="outline"
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateOpportunityOpen(true)}
@@ -280,8 +274,8 @@ export default function DashboardDemo() {
               Add Opportunity
             </span>
           </div>
-        </Button>
-      </div>
+        </Button> */}
+      {/* </div> */}
 
       <CreateLeadDialog
         open={isCreateLeadOpen}
@@ -308,7 +302,7 @@ export default function DashboardDemo() {
       />
 
       {/* Section 3: Pipeline & Upcoming Tasks */}
-      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2 xl:mt-4 xl:gap-4 2xl:mt-8 2xl:gap-8">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 xl:gap-4 2xl:gap-8">
         <CardWidgetContainer title="Lead Pipeline">
           <div className="flex-1">
             <PipelineOverview metrics={metrics} />
