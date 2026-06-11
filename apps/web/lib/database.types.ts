@@ -1169,6 +1169,7 @@ export type Database = {
           module_key: string
           module_name: string
           parent_module_id: string | null
+          product_key: string | null
           updated_at: string
         }
         Insert: {
@@ -1182,6 +1183,7 @@ export type Database = {
           module_key: string
           module_name: string
           parent_module_id?: string | null
+          product_key?: string | null
           updated_at?: string
         }
         Update: {
@@ -1195,6 +1197,7 @@ export type Database = {
           module_key?: string
           module_name?: string
           parent_module_id?: string | null
+          product_key?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2134,6 +2137,89 @@ export type Database = {
           },
         ]
       }
+      module_entitlements: {
+        Row: {
+          created_at: string
+          entitlement_type: Database["public"]["Enums"]["entitlement_type"]
+          granted_by: string | null
+          granted_seats: number | null
+          id: string
+          is_active: boolean
+          product_id: string
+          reason: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          updated_at: string
+          valid_from: string
+          valid_until: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          entitlement_type: Database["public"]["Enums"]["entitlement_type"]
+          granted_by?: string | null
+          granted_seats?: number | null
+          id?: string
+          is_active?: boolean
+          product_id: string
+          reason: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          entitlement_type?: Database["public"]["Enums"]["entitlement_type"]
+          granted_by?: string | null
+          granted_seats?: number | null
+          id?: string
+          is_active?: boolean
+          product_id?: string
+          reason?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_entitlements_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "module_entitlements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "module_entitlements_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "module_entitlements_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       opportunity_assignees: {
         Row: {
           assigned_at: string
@@ -2227,6 +2313,99 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          payment_provider: Database["public"]["Enums"]["payment_provider"]
+          processed_at: string | null
+          processing_error: string | null
+          provider_event_id: string
+          seat_id: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+          payment_provider: Database["public"]["Enums"]["payment_provider"]
+          processed_at?: string | null
+          processing_error?: string | null
+          provider_event_id: string
+          seat_id?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          payment_provider?: Database["public"]["Enums"]["payment_provider"]
+          processed_at?: string | null
+          processing_error?: string | null
+          provider_event_id?: string
+          seat_id?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_events_seat_id_fkey"
+            columns: ["seat_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_module_seats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_events_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_module_map: {
+        Row: {
+          access_mode: string
+          created_at: string
+          crm_module_id: string
+          id: string
+          product_id: string
+        }
+        Insert: {
+          access_mode?: string
+          created_at?: string
+          crm_module_id: string
+          id?: string
+          product_id: string
+        }
+        Update: {
+          access_mode?: string
+          created_at?: string
+          crm_module_id?: string
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_module_map_crm_module_id_fkey"
+            columns: ["crm_module_id"]
+            isOneToOne: false
+            referencedRelation: "crm_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_module_map_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_products"
             referencedColumns: ["id"]
           },
         ]
@@ -2333,6 +2512,148 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      seat_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          product_id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          seat_id: string
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          product_id: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          seat_id: string
+          updated_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          product_id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          seat_id?: string
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seat_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seat_assignments_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seat_assignments_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seat_assignments_seat_id_fkey"
+            columns: ["seat_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_module_seats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seat_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seat_assignments_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_products: {
+        Row: {
+          created_at: string
+          currency: string
+          description: string | null
+          display_name: string
+          id: string
+          is_active: boolean
+          is_public: boolean
+          min_seats: number
+          monthly_price_per_seat: number | null
+          product_key: string
+          stripe_monthly_price_id: string | null
+          stripe_product_id: string | null
+          stripe_yearly_price_id: string | null
+          updated_at: string
+          yearly_price_per_seat: number | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean
+          is_public?: boolean
+          min_seats?: number
+          monthly_price_per_seat?: number | null
+          product_key: string
+          stripe_monthly_price_id?: string | null
+          stripe_product_id?: string | null
+          stripe_yearly_price_id?: string | null
+          updated_at?: string
+          yearly_price_per_seat?: number | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          is_public?: boolean
+          min_seats?: number
+          monthly_price_per_seat?: number | null
+          product_key?: string
+          stripe_monthly_price_id?: string | null
+          stripe_product_id?: string | null
+          stripe_yearly_price_id?: string | null
+          updated_at?: string
+          yearly_price_per_seat?: number | null
+        }
+        Relationships: []
       }
       workspace_email_templates: {
         Row: {
@@ -2449,6 +2770,7 @@ export type Database = {
           invited_by: string | null
           is_primary_contact: boolean
           personal_settings: Json | null
+          product_key: string | null
           role_id: string
           status: Database["public"]["Enums"]["invitation_status"]
           token: string | null
@@ -2466,6 +2788,7 @@ export type Database = {
           invited_by?: string | null
           is_primary_contact?: boolean
           personal_settings?: Json | null
+          product_key?: string | null
           role_id: string
           status?: Database["public"]["Enums"]["invitation_status"]
           token?: string | null
@@ -2483,6 +2806,7 @@ export type Database = {
           invited_by?: string | null
           is_primary_contact?: boolean
           personal_settings?: Json | null
+          product_key?: string | null
           role_id?: string
           status?: Database["public"]["Enums"]["invitation_status"]
           token?: string | null
@@ -2575,6 +2899,98 @@ export type Database = {
           },
         ]
       }
+      workspace_module_seats: {
+        Row: {
+          billing_cycle: Database["public"]["Enums"]["billing_cycle"]
+          created_at: string
+          created_by: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          payment_provider: Database["public"]["Enums"]["payment_provider"]
+          product_id: string
+          provider_customer_id: string | null
+          provider_metadata: Json
+          provider_subscription_id: string | null
+          seats_purchased: number
+          seats_used: number
+          status: Database["public"]["Enums"]["seat_subscription_status"]
+          trial_ends_at: string | null
+          updated_at: string
+          updated_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          billing_cycle?: Database["public"]["Enums"]["billing_cycle"]
+          created_at?: string
+          created_by?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          payment_provider?: Database["public"]["Enums"]["payment_provider"]
+          product_id: string
+          provider_customer_id?: string | null
+          provider_metadata?: Json
+          provider_subscription_id?: string | null
+          seats_purchased?: number
+          seats_used?: number
+          status?: Database["public"]["Enums"]["seat_subscription_status"]
+          trial_ends_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          billing_cycle?: Database["public"]["Enums"]["billing_cycle"]
+          created_at?: string
+          created_by?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          payment_provider?: Database["public"]["Enums"]["payment_provider"]
+          product_id?: string
+          provider_customer_id?: string | null
+          provider_metadata?: Json
+          provider_subscription_id?: string | null
+          seats_purchased?: number
+          seats_used?: number
+          status?: Database["public"]["Enums"]["seat_subscription_status"]
+          trial_ends_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_module_seats_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_module_seats_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_module_seats_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_module_seats_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_roles: {
         Row: {
           color: string | null
@@ -2585,6 +3001,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_system: boolean
+          product_key: string
           role_key: string
           role_name: string
           updated_at: string
@@ -2599,6 +3016,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_system?: boolean
+          product_key?: string
           role_key: string
           role_name: string
           updated_at?: string
@@ -2613,6 +3031,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_system?: boolean
+          product_key?: string
           role_key?: string
           role_name?: string
           updated_at?: string
@@ -3012,8 +3431,17 @@ export type Database = {
         Args: { p_workspace_id: string }
         Returns: undefined
       }
+      user_has_product_access: {
+        Args: {
+          p_product_key: string
+          p_user_id: string
+          p_workspace_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      billing_cycle: "monthly" | "yearly"
       company_size: "startup" | "small" | "medium" | "large" | "enterprise"
       crm_feature_type:
         | "crud"
@@ -3024,13 +3452,26 @@ export type Database = {
         | "bulk"
       email_account_access_scope: "private" | "workspace"
       email_provider: "google" | "outlook" | "smtp"
+      entitlement_type:
+        | "free_internal"
+        | "partner"
+        | "close_customer"
+        | "trial"
+        | "promo"
       invitation_status:
         | "pending"
         | "accepted"
         | "expired"
         | "declined"
         | "revoked"
+      payment_provider: "stripe" | "razorpay" | "manual"
       permission_access_level: "none" | "own" | "team" | "all"
+      seat_subscription_status:
+        | "active"
+        | "trialing"
+        | "past_due"
+        | "cancelled"
+        | "expired"
       workspace_member_status: "pending" | "accepted" | "inactive" | "removed"
     }
     CompositeTypes: {
@@ -3159,10 +3600,18 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      billing_cycle: ["monthly", "yearly"],
       company_size: ["startup", "small", "medium", "large", "enterprise"],
       crm_feature_type: ["crud", "action", "view", "export", "import", "bulk"],
       email_account_access_scope: ["private", "workspace"],
       email_provider: ["google", "outlook", "smtp"],
+      entitlement_type: [
+        "free_internal",
+        "partner",
+        "close_customer",
+        "trial",
+        "promo",
+      ],
       invitation_status: [
         "pending",
         "accepted",
@@ -3170,7 +3619,15 @@ export const Constants = {
         "declined",
         "revoked",
       ],
+      payment_provider: ["stripe", "razorpay", "manual"],
       permission_access_level: ["none", "own", "team", "all"],
+      seat_subscription_status: [
+        "active",
+        "trialing",
+        "past_due",
+        "cancelled",
+        "expired",
+      ],
       workspace_member_status: ["pending", "accepted", "inactive", "removed"],
     },
   },

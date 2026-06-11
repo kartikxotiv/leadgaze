@@ -21,6 +21,7 @@
     "./server/employees/[employeeId]": "./src/server/controllers/employees/[employeeId]/route.ts",
     "./server/employees/invite": "./src/server/controllers/employees/invite/route.ts",
     "./server/employees/options": "./src/server/controllers/employees/options/route.ts",
+    "./server/home/dashboard": "./src/server/controllers/home/dashboard/route.ts",
     "./server/leave": "./src/server/controllers/leave/route.ts",
     "./server/leave/[requestId]": "./src/server/controllers/leave/[requestId]/route.ts",
     "./server/leave/holidays": "./src/server/controllers/leave/holidays/route.ts",

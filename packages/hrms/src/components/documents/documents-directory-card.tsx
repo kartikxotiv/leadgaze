@@ -113,7 +113,7 @@ export function DocumentsDirectoryCard(props: {
                   <TableCell className="min-w-[220px]">
                     <div className="flex items-center gap-2">
                       <div className="min-w-0">
-                        <p className="primary-text-medium truncate">
+                        <p className="primary-text-medium truncate text-leadgaze-primary dark:text-leadgaze-primary">
                           {document.name}
                         </p>
                       </div>

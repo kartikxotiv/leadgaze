@@ -74,7 +74,7 @@ export default function DashboardDemo() {
     },
     {
       title: 'PENDING PAYROLL',
-      value: '₹ 0',
+      value: 'INR 0',
       subtitle: 'Current cycle',
       trend: 'neutral' as const,
       icon: <IndianRupee className={'h-5 w-5 text-violet-500'} />,
@@ -96,25 +96,25 @@ export default function DashboardDemo() {
     {
       label: 'Add Employee',
       icon: UserPlus,
-      href: '/home/employes',
+      href: '/home/hrms/employees',
       color: 'text-blue-500',
     },
     {
       label: 'Approve Leave',
       icon: ShieldCheck,
-      href: '/home/leave',
+      href: '/home/hrms/leave',
       color: 'text-emerald-500',
     },
     {
       label: 'Payroll Setup',
       icon: Briefcase,
-      href: '/home/payroll',
+      href: '/home/hrms/payroll',
       color: 'text-violet-500',
     },
     {
       label: 'Reports',
       icon: FileText,
-      href: '/home/reports',
+      href: '/home/hrms/reports',
       color: 'text-amber-500',
     },
   ];
