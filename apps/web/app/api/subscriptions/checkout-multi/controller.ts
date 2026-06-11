@@ -150,11 +150,13 @@ export const createMultiProductCheckout = catchAsync(
       existingSeatMap.set(seat.product_id, seat);
     }
 
-    // Check if workspace already has a REAL Stripe subscription
-    // (not a trial subscription which starts with "trial_sub_")
+    // Check if workspace already has a REAL, ACTIVE Stripe subscription
+    // (not a trial subscription which starts with "trial_sub_",
+    //  and not a cancelled subscription which can no longer be modified)
     const realStripeSeat = (existingSeats ?? []).find(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (s: any) =>
+        s.status !== 'cancelled' &&
         s.provider_subscription_id &&
         !s.provider_subscription_id.startsWith('trial_sub_'),
     );

@@ -22,7 +22,9 @@ import {
   Plus,
   ShoppingCart,
   Sparkles,
+  Trash2,
   Users,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -33,6 +35,14 @@ import {
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@kit/ui/dialog';
 import { cn } from '@kit/ui/utils';
 
 import { AppLogo } from '~/components/app-logo';
@@ -41,6 +51,7 @@ import {
   type SeatAssignment,
   type SubscriptionProduct,
   type WorkspaceSeat,
+  cancelSubscriptionService,
   createMultiProductCheckoutService,
   getSeatAssignmentsService,
   getSubscriptionProductsService,
@@ -158,6 +169,34 @@ export default function OrgSubscriptionPage() {
     'monthly',
   );
 
+  // Track which available modules are selected for subscription (productKey -> seats)
+  const [availableSelections, setAvailableSelections] = useState<
+    Record<string, number>
+  >({});
+
+  // Cancel / remove confirmation state
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [removeModuleDialog, setRemoveModuleDialog] = useState<{
+    open: boolean;
+    productKey: string;
+    displayName: string;
+  }>({ open: false, productKey: '', displayName: '' });
+
+  // Seat update confirmation dialog state
+  const [seatUpdateDialog, setSeatUpdateDialog] = useState<{
+    open: boolean;
+    seatId: string;
+    displayName: string;
+    currentSeats: number;
+    newSeats: number;
+  }>({
+    open: false,
+    seatId: '',
+    displayName: '',
+    currentSeats: 0,
+    newSeats: 0,
+  });
+
   // Handle checkout success/cancel query params from Stripe redirect
   useEffect(() => {
     const checkout = searchParams.get('checkout');
@@ -200,7 +239,15 @@ export default function OrgSubscriptionPage() {
   });
 
   const products: SubscriptionProduct[] = productsData?.data ?? [];
-  const seats: WorkspaceSeat[] = seatsData?.data ?? [];
+  // Filter out cancelled seats — they should not appear in the active UI
+  // Wrapped in useMemo to keep a stable reference for useEffect dependencies
+  const seats: WorkspaceSeat[] = useMemo(
+    () =>
+      (seatsData?.data ?? []).filter(
+        (s: WorkspaceSeat) => s.status !== 'cancelled',
+      ),
+    [seatsData],
+  );
 
   const isTrial = seats.some(
     (s) =>
@@ -236,50 +283,74 @@ export default function OrgSubscriptionPage() {
     });
   }, [seats]);
 
-  // Calculate totals from pending changes
-  const { totalMonthly, totalSeats, changedItems } = useMemo(() => {
-    let monthly = 0;
-    let seatsTotal = 0;
-    const changed: Array<{ productKey: string; seats: number }> = [];
+  // Calculate totals from pending changes + available selections
+  const { totalMonthly, totalSeats, changedItems, selectedNewItems } =
+    useMemo(() => {
+      let monthly = 0;
+      let seatsTotal = 0;
+      const changed: Array<{ productKey: string; seats: number }> = [];
 
-    for (const seat of seats) {
-      const pending = pendingChanges[seat.product_id] ?? seat.seats_purchased;
-      const product = seat.subscription_products;
-      if (product) {
-        const price = product.monthly_price_per_seat ?? 0;
-        monthly += price * pending;
-        seatsTotal += pending;
-        if (pending !== seat.seats_purchased) {
-          changed.push({ productKey: product.product_key, seats: pending });
+      for (const seat of seats) {
+        const pending = pendingChanges[seat.product_id] ?? seat.seats_purchased;
+        const product = seat.subscription_products;
+        if (product) {
+          const price = product.monthly_price_per_seat ?? 0;
+          monthly += price * pending;
+          seatsTotal += pending;
+          if (pending !== seat.seats_purchased) {
+            changed.push({ productKey: product.product_key, seats: pending });
+          }
         }
       }
-    }
 
-    return {
-      totalMonthly: monthly,
-      totalSeats: seatsTotal,
-      changedItems: changed,
-    };
-  }, [seats, pendingChanges]);
+      // Add totals from selected available modules
+      const newItems: Array<{ productKey: string; seats: number }> = [];
+      for (const [productKey, seatCount] of Object.entries(
+        availableSelections,
+      )) {
+        const product = products.find((p) => p.product_key === productKey);
+        if (product) {
+          const price = product.monthly_price_per_seat ?? 0;
+          monthly += price * seatCount;
+          seatsTotal += seatCount;
+          newItems.push({ productKey, seats: seatCount });
+        }
+      }
+
+      return {
+        totalMonthly: monthly,
+        totalSeats: seatsTotal,
+        changedItems: changed,
+        selectedNewItems: newItems,
+      };
+    }, [seats, pendingChanges, availableSelections, products]);
 
   // Trial info
   const trialDaysRemaining = subscriptionStatus?.trial_days_remaining ?? null;
   const isTrialExpired = subscriptionStatus?.is_trial_expired ?? false;
 
-  // Checkout mutation (for trial -> paid or new modules)
+  // Checkout mutation (for trial -> paid, new modules, or combined)
   const checkoutMutation = useMutation({
     mutationFn: () => {
-      const items =
+      // Combine changed existing modules + selected new modules
+      const existingItems =
         changedItems.length > 0
           ? changedItems
-          : seats.map((s) => ({
-              productKey: s.subscription_products?.product_key ?? '',
-              seats: pendingChanges[s.product_id] ?? s.seats_purchased,
-            }));
+          : seats.length > 0
+            ? seats.map((s) => ({
+                productKey: s.subscription_products?.product_key ?? '',
+                seats: pendingChanges[s.product_id] ?? s.seats_purchased,
+              }))
+            : [];
+
+      const allItems = [
+        ...existingItems.filter((i) => i.productKey),
+        ...selectedNewItems,
+      ];
 
       return createMultiProductCheckoutService({
         workspaceId,
-        items: items.filter((i) => i.productKey),
+        items: allItems,
         billingCycle,
       });
     },
@@ -303,7 +374,7 @@ export default function OrgSubscriptionPage() {
     },
   });
 
-  // Direct seat update (for paid subscriptions)
+  // Direct seat update (for paid subscriptions) — shows confirmation first
   const handleDirectUpdate = async (seatId: string, newQuantity: number) => {
     try {
       const result = await updateSeatsViaStripeService(seatId, newQuantity);
@@ -331,11 +402,67 @@ export default function OrgSubscriptionPage() {
     }
   };
 
+  // Show confirmation dialog before updating seats on paid subscription
+  const requestSeatUpdate = (seat: WorkspaceSeat, newQuantity: number) => {
+    setSeatUpdateDialog({
+      open: true,
+      seatId: seat.id,
+      displayName: seat.subscription_products?.display_name ?? 'Module',
+      currentSeats: seat.seats_purchased,
+      newSeats: newQuantity,
+    });
+  };
+
   const updatePending = (productId: string, seats: number) => {
     setPendingChanges((prev) => ({ ...prev, [productId]: seats }));
   };
 
-  const hasChanges = changedItems.length > 0;
+  const hasChanges = changedItems.length > 0 || selectedNewItems.length > 0;
+
+  // Cancel subscription mutation (full cancellation)
+  const cancelMutation = useMutation({
+    mutationFn: () => cancelSubscriptionService({ workspaceId }),
+    onSuccess: (data) => {
+      toast.success(data?.message ?? 'Subscription cancelled.');
+      setCancelDialogOpen(false);
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-seats', workspaceId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-subscription', workspaceId],
+      });
+    },
+    onError: (err: unknown) => {
+      toast.error((err as Error)?.message || 'Failed to cancel subscription');
+    },
+  });
+
+  // Remove single module mutation
+  const removeModuleMutation = useMutation({
+    mutationFn: (productKey: string) =>
+      cancelSubscriptionService({ workspaceId, productKey }),
+    onSuccess: (data) => {
+      toast.success(data?.message ?? 'Module removed from subscription.');
+      setRemoveModuleDialog({ open: false, productKey: '', displayName: '' });
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-seats', workspaceId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-subscription', workspaceId],
+      });
+    },
+    onError: (err: unknown) => {
+      const error = err as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          'Failed to remove module',
+      );
+    },
+  });
 
   return (
     <div className="bg-background min-h-screen pb-24">
@@ -475,7 +602,15 @@ export default function OrgSubscriptionPage() {
                   onPendingChange={(count) =>
                     updatePending(seat.product_id, count)
                   }
-                  onDirectUpdate={(count) => handleDirectUpdate(seat.id, count)}
+                  onDirectUpdate={(count) => requestSeatUpdate(seat, count)}
+                  onRemove={() =>
+                    setRemoveModuleDialog({
+                      open: true,
+                      productKey: seat.subscription_products?.product_key ?? '',
+                      displayName:
+                        seat.subscription_products?.display_name ?? 'Module',
+                    })
+                  }
                 />
               ))}
             </div>
@@ -513,6 +648,29 @@ export default function OrgSubscriptionPage() {
                     key={product.id}
                     product={product}
                     billingCycle={billingCycle}
+                    isSelected={product.product_key in availableSelections}
+                    selectedSeats={
+                      availableSelections[product.product_key] ?? 1
+                    }
+                    onSelect={() => {
+                      setAvailableSelections((prev) => ({
+                        ...prev,
+                        [product.product_key]: 1,
+                      }));
+                    }}
+                    onDeselect={() => {
+                      setAvailableSelections((prev) => {
+                        const next = { ...prev };
+                        delete next[product.product_key];
+                        return next;
+                      });
+                    }}
+                    onSeatsChange={(seats) => {
+                      setAvailableSelections((prev) => ({
+                        ...prev,
+                        [product.product_key]: seats,
+                      }));
+                    }}
                   />
                 ))}
               </div>
@@ -521,8 +679,9 @@ export default function OrgSubscriptionPage() {
         )}
       </div>
 
-      {/* Checkout Bar (for trial or non-paid states) */}
-      {(!isPaid || isTrial) && seats.length > 0 && (
+      {/* Checkout Bar (for trial/non-paid states or when new modules are selected) */}
+      {(((!isPaid || isTrial) && seats.length > 0) ||
+        selectedNewItems.length > 0) && (
         <CheckoutBar
           totalMonthly={totalMonthly}
           totalSeats={totalSeats}
@@ -533,6 +692,290 @@ export default function OrgSubscriptionPage() {
           onCheckout={() => checkoutMutation.mutate()}
         />
       )}
+
+      {/* Cancel Subscription Section (only for paid subscriptions) */}
+      {isPaid && seats.length > 0 && (
+        <div className="mx-auto max-w-6xl px-6 pb-8">
+          <div className="border-destructive/20 rounded-xl border p-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-destructive/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+                <AlertTriangle className="text-destructive h-4 w-4" />
+              </div>
+              <div className="flex-1">
+                <h3 className="primary-heading text-destructive">
+                  Cancel Subscription
+                </h3>
+                <p className="secondary-text-small text-muted-foreground mt-1">
+                  Cancelling will revoke access to all modules at the end of
+                  your current billing period. This action cannot be undone.
+                </p>
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="shrink-0 gap-1.5"
+                disabled={cancelMutation.isPending}
+                onClick={() => setCancelDialogOpen(true)}
+              >
+                {cancelMutation.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <X className="h-3.5 w-3.5" />
+                )}
+                Cancel All
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Seat Update Confirmation Dialog */}
+      <Dialog
+        open={seatUpdateDialog.open}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSeatUpdateDialog({
+              open: false,
+              seatId: '',
+              displayName: '',
+              currentSeats: 0,
+              newSeats: 0,
+            });
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="text-primary h-5 w-5" />
+              {seatUpdateDialog.newSeats > seatUpdateDialog.currentSeats
+                ? 'Add Seat'
+                : 'Remove Seat'}{' '}
+              — {seatUpdateDialog.displayName}
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-3 pt-1">
+                <p>
+                  {seatUpdateDialog.newSeats > seatUpdateDialog.currentSeats
+                    ? `You are about to increase ${seatUpdateDialog.displayName} from ${seatUpdateDialog.currentSeats} to ${seatUpdateDialog.newSeats} seat${seatUpdateDialog.newSeats !== 1 ? 's' : ''}.`
+                    : `You are about to decrease ${seatUpdateDialog.displayName} from ${seatUpdateDialog.currentSeats} to ${seatUpdateDialog.newSeats} seat${seatUpdateDialog.newSeats !== 1 ? 's' : ''}.`}
+                </p>
+                <div className="bg-muted rounded-lg border p-3">
+                  <div className="flex items-start gap-2">
+                    <CreditCard className="text-primary mt-0.5 h-4 w-4 shrink-0" />
+                    <div className="space-y-1">
+                      <p className="text-foreground text-sm font-medium">
+                        Prorated billing
+                      </p>
+                      <p className="text-muted-foreground text-xs">
+                        Your subscription will be updated immediately. The
+                        difference will be calculated on a{' '}
+                        <strong>pro-rata basis</strong> and reflected in your
+                        next invoice.{' '}
+                        {seatUpdateDialog.newSeats >
+                        seatUpdateDialog.currentSeats
+                          ? 'You will be charged for the remaining days of the current billing period.'
+                          : 'A prorated credit will be applied to your next invoice.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() =>
+                setSeatUpdateDialog({
+                  open: false,
+                  seatId: '',
+                  displayName: '',
+                  currentSeats: 0,
+                  newSeats: 0,
+                })
+              }
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                await handleDirectUpdate(
+                  seatUpdateDialog.seatId,
+                  seatUpdateDialog.newSeats,
+                );
+                setSeatUpdateDialog({
+                  open: false,
+                  seatId: '',
+                  displayName: '',
+                  currentSeats: 0,
+                  newSeats: 0,
+                });
+              }}
+            >
+              Confirm Update
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Subscription Confirmation Dialog */}
+      <Dialog
+        open={cancelDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) setCancelDialogOpen(false);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Cancel Subscription
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-3 pt-1">
+                <p>
+                  Are you sure you want to cancel your subscription? All{' '}
+                  <strong>
+                    {seats.length} active module
+                    {seats.length !== 1 ? 's' : ''}
+                  </strong>{' '}
+                  will be deactivated and your team members will lose access to
+                  their assigned modules.
+                </p>
+                <div className="bg-muted rounded-lg border p-3">
+                  <div className="flex items-start gap-2">
+                    <CreditCard className="text-primary mt-0.5 h-4 w-4 shrink-0" />
+                    <div className="space-y-1">
+                      <p className="text-foreground text-sm font-medium">
+                        Billing & Access
+                      </p>
+                      <p className="text-muted-foreground text-xs">
+                        Your subscription will be cancelled immediately in
+                        Stripe. Access to all modules will be revoked. A{' '}
+                        <strong>prorated credit</strong> for any unused portion
+                        of your current billing period will be applied to your
+                        account.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-destructive text-xs">
+                  This action cannot be undone. You will need to re-subscribe to
+                  regain access.
+                </p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setCancelDialogOpen(false)}
+            >
+              Keep Subscription
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={cancelMutation.isPending}
+              onClick={() => cancelMutation.mutate()}
+            >
+              {cancelMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Cancelling...
+                </>
+              ) : (
+                'Yes, Cancel Subscription'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove Module Confirmation Dialog */}
+      <Dialog
+        open={removeModuleDialog.open}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRemoveModuleDialog({
+              open: false,
+              productKey: '',
+              displayName: '',
+            });
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2 className="text-destructive h-5 w-5" />
+              Remove Module
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-3 pt-1">
+                <p>
+                  Are you sure you want to remove{' '}
+                  <strong>{removeModuleDialog.displayName}</strong> from your
+                  subscription? You will lose access to this module immediately.
+                </p>
+                <div className="bg-muted rounded-lg border p-3">
+                  <div className="flex items-start gap-2">
+                    <CreditCard className="text-primary mt-0.5 h-4 w-4 shrink-0" />
+                    <div className="space-y-1">
+                      <p className="text-foreground text-sm font-medium">
+                        Prorated billing
+                      </p>
+                      <p className="text-muted-foreground text-xs">
+                        This module will be removed from your Stripe
+                        subscription immediately. A{' '}
+                        <strong>prorated credit</strong> for the unused portion
+                        of your billing period will be applied to your next
+                        invoice.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                {seats.length <= 1 && (
+                  <p className="text-destructive text-xs">
+                    This is your last active module. Removing it will cancel
+                    your entire subscription.
+                  </p>
+                )}
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() =>
+                setRemoveModuleDialog({
+                  open: false,
+                  productKey: '',
+                  displayName: '',
+                })
+              }
+            >
+              Keep Module
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={removeModuleMutation.isPending}
+              onClick={() =>
+                removeModuleMutation.mutate(removeModuleDialog.productKey)
+              }
+            >
+              {removeModuleMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Removing...
+                </>
+              ) : (
+                'Remove Module'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -601,6 +1044,7 @@ function ActiveModuleCard({
   billingCycle,
   onPendingChange,
   onDirectUpdate,
+  onRemove,
 }: {
   seat: WorkspaceSeat;
   workspaceId: string;
@@ -610,6 +1054,7 @@ function ActiveModuleCard({
   billingCycle: 'monthly' | 'yearly';
   onPendingChange: (count: number) => void;
   onDirectUpdate: (count: number) => void;
+  onRemove: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -712,6 +1157,18 @@ function ActiveModuleCard({
               </div>
             </div>
           </div>
+
+          {/* Remove module button — only when owner is the sole user */}
+          {seat.seats_used <= 1 && (
+            <button
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors"
+              onClick={onRemove}
+              title="Remove this module from your subscription"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Remove</span>
+            </button>
+          )}
         </div>
 
         {/* Seat adjuster */}
@@ -807,9 +1264,19 @@ function ActiveModuleCard({
 function AvailableModuleCard({
   product,
   billingCycle,
+  isSelected,
+  selectedSeats,
+  onSelect,
+  onDeselect,
+  onSeatsChange,
 }: {
   product: SubscriptionProduct;
   billingCycle: 'monthly' | 'yearly';
+  isSelected: boolean;
+  selectedSeats: number;
+  onSelect: () => void;
+  onDeselect: () => void;
+  onSeatsChange: (seats: number) => void;
 }) {
   const style = getProductStyle(product.product_key);
   const icon = PRODUCT_ICONS[product.product_key] ?? (
@@ -821,8 +1288,15 @@ function AvailableModuleCard({
       ? product.yearly_price_per_seat
       : product.monthly_price_per_seat;
 
+  const total = pricePerSeat ? Number(pricePerSeat) * selectedSeats : 0;
+
   return (
-    <Card className="group flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md">
+    <Card
+      className={cn(
+        'group flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md',
+        isSelected && 'ring-primary border-primary ring-2',
+      )}
+    >
       <div
         className={cn(
           'h-1 bg-gradient-to-r',
@@ -840,9 +1314,16 @@ function AvailableModuleCard({
           >
             {icon}
           </div>
-          <Badge variant="info" className="text-[10px]">
-            Available
-          </Badge>
+          {isSelected ? (
+            <Badge variant="success" className="gap-1 text-[10px]">
+              <Check className="h-3 w-3" />
+              Selected
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="text-[10px]">
+              Available
+            </Badge>
+          )}
         </div>
 
         <div className="mt-4 flex-1">
@@ -886,9 +1367,75 @@ function AvailableModuleCard({
           </div>
         )}
 
-        <p className="secondary-text-small text-muted-foreground mt-4 text-center">
-          Subscribe via the checkout below to add this module.
-        </p>
+        {/* Seat selector + Select button */}
+        {pricePerSeat ? (
+          <div className="border-border mt-4 space-y-3 border-t pt-4">
+            {isSelected && (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="secondary-text-small text-muted-foreground">
+                    Seats
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      disabled={selectedSeats <= 1}
+                      onClick={() =>
+                        onSeatsChange(Math.max(1, selectedSeats - 1))
+                      }
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                    <span className="text-foreground w-6 text-center text-base font-bold">
+                      {selectedSeats}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => onSeatsChange(selectedSeats + 1)}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="secondary-text-small text-muted-foreground">
+                    Total:{' '}
+                    <strong className="text-foreground">
+                      ${total}/{billingCycle === 'yearly' ? 'yr' : 'mo'}
+                    </strong>
+                  </span>
+                </div>
+              </>
+            )}
+
+            {isSelected ? (
+              <Button
+                variant="destructive"
+                className="w-full gap-2"
+                onClick={onDeselect}
+              >
+                <X className="h-4 w-4" />
+                Remove from Checkout
+              </Button>
+            ) : (
+              <Button
+                className={cn('w-full gap-2 text-white', style.accent)}
+                onClick={onSelect}
+              >
+                <Plus className="h-4 w-4" />
+                Select Module
+              </Button>
+            )}
+          </div>
+        ) : (
+          <p className="secondary-text-small text-muted-foreground mt-4 text-center">
+            Contact sales to subscribe to this module.
+          </p>
+        )}
       </CardContent>
     </Card>
   );

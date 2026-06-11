@@ -120,6 +120,17 @@ export interface CheckoutResponse {
   };
 }
 
+export interface CancelPayload {
+  workspaceId: string;
+  productKey?: string;
+}
+
+export interface CancelResponse {
+  success: boolean;
+  message: string;
+  fullCancellation: boolean;
+}
+
 export interface AssignSeatPayload {
   workspaceId: string;
   userId: string;
@@ -238,6 +249,17 @@ const revokeSeatService = asyncHandlerClient(async (assignmentId: string) => {
   return response.data;
 });
 
+/**
+ * Cancels the entire subscription or removes a single module.
+ * Syncs with Stripe — either cancels the subscription or removes a line item.
+ */
+const cancelSubscriptionService = asyncHandlerClient(
+  async (payload: CancelPayload): Promise<CancelResponse> => {
+    const response = await ApiClient.post('/subscriptions/cancel', payload);
+    return response.data;
+  },
+);
+
 const getWorkspaceSubscriptionStatus = asyncHandlerClient(
   async (workspaceId: string) => {
     const response = await ApiClient.get(
@@ -273,4 +295,5 @@ export {
   getWorkspaceSubscriptionStatus,
   checkProductAccessService,
   getWorkspaceSubscriptionService,
+  cancelSubscriptionService,
 };

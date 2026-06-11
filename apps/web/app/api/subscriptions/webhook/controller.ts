@@ -263,7 +263,6 @@ async function upsertSeatAndAssign(
   paymentEventId: string,
 ) {
   // Check if workspace already has a seat row for this product
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existingSeat } = await adminClient
     .from('workspace_module_seats')
     .select('id, seats_purchased, status')
@@ -390,7 +389,7 @@ async function handleSubscriptionUpdated(
   // Find ALL seat rows for this subscription
   const { data: seats } = await adminClient
     .from('workspace_module_seats')
-    .select('id, provider_metadata')
+    .select('id, provider_metadata, subscription_products(stripe_product_id)')
     .eq('provider_subscription_id', subscription.id);
 
   if (!seats || seats.length === 0) {
@@ -412,26 +411,38 @@ async function handleSubscriptionUpdated(
   };
   const mappedStatus = statusMap[subscription.status];
 
+  // Track which seat rows were updated via subscription items
+  const updatedSeatIds = new Set<string>();
+
   // Update each subscription item's corresponding seat row
   for (const subItem of subscription.items.data) {
     // Find the seat row that matches this subscription item
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const matchingSeat = seats.find((s: any) => {
       const meta = s.provider_metadata ?? {};
-      return meta.stripe_subscription_item_id === subItem.id;
+      if (meta.stripe_subscription_item_id === subItem.id) {
+        return true;
+      }
+      // Fallback: match by stripe product ID
+      const stripeProductId = s.subscription_products?.stripe_product_id;
+      const subItemProduct = typeof subItem.price.product === 'string'
+        ? subItem.price.product
+        : subItem.price.product?.id;
+      return stripeProductId && subItemProduct && stripeProductId === subItemProduct;
     });
 
-    if (!matchingSeat) {
+    let seatToUpdate;
+    if (matchingSeat) {
+      seatToUpdate = matchingSeat;
+    } else if (seats.length === 1) {
       // If only one seat row and one item, match directly
-      if (seats.length === 1) {
-        // fall through and use the single seat
-      } else {
-        console.warn(`No seat row found for subscription item ${subItem.id}`);
-        continue;
-      }
+      seatToUpdate = seats[0];
+    } else {
+      console.warn(`No seat row found for subscription item ${subItem.id}`);
+      continue;
     }
 
-    const seatToUpdate = matchingSeat ?? seats[0];
+    updatedSeatIds.add(seatToUpdate.id);
 
     const updatePayload: Record<string, unknown> = {
       current_period_start: new Date(
@@ -460,6 +471,27 @@ async function handleSubscriptionUpdated(
       .eq('id', seatToUpdate.id);
   }
 
+  // Detect removed items: seats no longer in the subscription
+  // (e.g., module was removed via cancel endpoint)
+  for (const seat of seats) {
+    if (!updatedSeatIds.has(seat.id)) {
+      await adminClient
+        .from('workspace_module_seats')
+        .update({ status: 'cancelled' })
+        .eq('id', seat.id);
+
+      // Deactivate seat assignments for the removed module
+      await adminClient
+        .from('seat_assignments')
+        .update({
+          is_active: false,
+          revoked_at: new Date().toISOString(),
+        })
+        .eq('seat_id', seat.id)
+        .eq('is_active', true);
+    }
+  }
+
   await logPaymentEvent(adminClient, {
     workspace_id: workspaceId,
     seat_id: seats[0]?.id ?? null,
@@ -482,7 +514,8 @@ async function handleSubscriptionUpdated(
  * customer.subscription.deleted
  *
  * Fired when a subscription is fully cancelled.
- * Sets seat status to 'cancelled'.
+ * Marks ALL seat rows tied to this subscription as 'cancelled'
+ * and deactivates their seat assignments.
  */
 async function handleSubscriptionDeleted(
   event: Stripe.Event,
@@ -492,35 +525,47 @@ async function handleSubscriptionDeleted(
   const subscription = event.data.object as Stripe.Subscription;
   const metadata = subscription.metadata ?? {};
 
-  // Find the seat row
-  const { data: seat } = await adminClient
+  // Find ALL seat rows for this subscription (multi-module support)
+  const { data: seats } = await adminClient
     .from('workspace_module_seats')
     .select('id, workspace_id')
-    .eq('provider_subscription_id', subscription.id)
-    .maybeSingle();
+    .eq('provider_subscription_id', subscription.id);
 
-  if (!seat) {
+  if (!seats || seats.length === 0) {
     console.warn(
       `No workspace_module_seats found for deleted subscription ${subscription.id}`,
     );
     return;
   }
 
+  const seatIds = seats.map((s: { id: string }) => s.id);
+  const workspaceId = seats[0].workspace_id;
+
+  // Mark all seats as cancelled
   await adminClient
     .from('workspace_module_seats')
+    .update({ status: 'cancelled' })
+    .in('id', seatIds);
+
+  // Deactivate all seat assignments tied to these seats
+  await adminClient
+    .from('seat_assignments')
     .update({
-      status: 'cancelled',
+      is_active: false,
+      revoked_at: new Date().toISOString(),
     })
-    .eq('id', seat.id);
+    .in('seat_id', seatIds)
+    .eq('is_active', true);
 
   await logPaymentEvent(adminClient, {
-    workspace_id: seat.workspace_id,
-    seat_id: seat.id,
+    workspace_id: workspaceId,
+    seat_id: seatIds[0],
     event_type: 'customer.subscription.deleted',
     provider_event_id: event.id,
     payload: {
       subscription_id: subscription.id,
       product_key: metadata.product_key,
+      seats_cancelled: seatIds.length,
     },
     processed_at: new Date().toISOString(),
   });
@@ -546,26 +591,30 @@ async function handleInvoicePaymentSucceeded(
       ? invoice.subscription
       : invoice.subscription.id;
 
-  // Find the seat row
-  const { data: seat } = await adminClient
+  // Find the seat rows
+  const { data: seats } = await adminClient
     .from('workspace_module_seats')
     .select('id, workspace_id, status')
-    .eq('provider_subscription_id', subscriptionId)
-    .maybeSingle();
+    .eq('provider_subscription_id', subscriptionId);
 
-  if (!seat) return;
+  if (!seats || seats.length === 0) return;
+
+  const seatIds = seats.map((s: { id: string }) => s.id);
+  const inactiveSeatIds = seats
+    .filter((s: { status: string }) => s.status !== 'active')
+    .map((s: { id: string }) => s.id);
 
   // Ensure status is active
-  if (seat.status !== 'active') {
+  if (inactiveSeatIds.length > 0) {
     await adminClient
       .from('workspace_module_seats')
       .update({ status: 'active' })
-      .eq('id', seat.id);
+      .in('id', inactiveSeatIds);
   }
 
   await logPaymentEvent(adminClient, {
-    workspace_id: seat.workspace_id,
-    seat_id: seat.id,
+    workspace_id: seats[0].workspace_id,
+    seat_id: seatIds[0],
     event_type: 'invoice.payment_succeeded',
     provider_event_id: event.id,
     payload: {
@@ -598,23 +647,24 @@ async function handleInvoicePaymentFailed(
       ? invoice.subscription
       : invoice.subscription.id;
 
-  // Find the seat row
-  const { data: seat } = await adminClient
+  // Find the seat rows
+  const { data: seats } = await adminClient
     .from('workspace_module_seats')
     .select('id, workspace_id')
-    .eq('provider_subscription_id', subscriptionId)
-    .maybeSingle();
+    .eq('provider_subscription_id', subscriptionId);
 
-  if (!seat) return;
+  if (!seats || seats.length === 0) return;
+
+  const seatIds = seats.map((s: { id: string }) => s.id);
 
   await adminClient
     .from('workspace_module_seats')
     .update({ status: 'past_due' })
-    .eq('id', seat.id);
+    .in('id', seatIds);
 
   await logPaymentEvent(adminClient, {
-    workspace_id: seat.workspace_id,
-    seat_id: seat.id,
+    workspace_id: seats[0].workspace_id,
+    seat_id: seatIds[0],
     event_type: 'invoice.payment_failed',
     provider_event_id: event.id,
     payload: {

@@ -26,8 +26,8 @@
     "supabase:db:lint": "supabase db lint",
     "supabase:deploy": "supabase link --project-ref $SUPABASE_PROJECT_REF && supabase db push",
     "supabase:typegen": "pnpm run supabase:typegen:packages && pnpm run supabase:typegen:app",
-    "supabase:typegen:packages": "supabase gen types typescript --project-id carwrljcvuzabktofqmt --schema public > ../../packages/supabase/src/database.types.ts",
-    "supabase:typegen:app": "supabase gen types typescript --project-id carwrljcvuzabktofqmt --schema public > ./lib/database.types.ts",
+    "supabase:typegen:packages": "supabase gen types typescript --project-id carwrljcvuzabktofqmt --schema public --schema hrms --schema core --schema service_cloud > ../../packages/supabase/src/database.types.ts",
+    "supabase:typegen:app": "supabase gen types typescript --project-id carwrljcvuzabktofqmt --schema public --schema hrms --schema core --schema service_cloud > ./lib/database.types.ts",
     "supabase:db:dump:local": "supabase db dump --local --data-only",
     "supabase:migration:applied": "supabase migration repair --status applied <timestamp>"
   },

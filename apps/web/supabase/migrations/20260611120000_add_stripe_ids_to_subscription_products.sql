@@ -28,3 +28,7 @@ COMMENT ON COLUMN public.subscription_products.stripe_yearly_price_id IS
 CREATE INDEX IF NOT EXISTS idx_sub_products_stripe_product
   ON public.subscription_products(stripe_product_id)
   WHERE stripe_product_id IS NOT NULL;
+
+
+-- Drop unique name constraint from service_cloud.organizations
+ALTER TABLE service_cloud.organizations DROP CONSTRAINT IF EXISTS sc_organizations_name_unique;
