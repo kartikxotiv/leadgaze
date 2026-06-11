@@ -243,27 +243,28 @@ export default function TeamsPage() {
               <CustomTableContainer>                                    
                 {isLoading ? (
                   <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
-                    <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
-                      <thead className="bg-muted sticky top-0 z-10">
-                        <tr>
-                          {[160, 240, 80, 80].map((w, i) => (
-                            <th key={i} className="h-11 px-4 border-b border-border">
-                              <Skeleton className="h-3" style={{ width: w }} />
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[...Array(8)].map((_, row) => (
-                          <tr key={row} className="bg-card border-b border-border">
-                            <td className="h-11 px-4"><Skeleton className="h-3.5 w-32" /></td>
-                            <td className="h-11 px-4"><Skeleton className="h-3.5 w-48" /></td>
-                            <td className="h-11 px-4"><Skeleton className="h-3.5 w-20" /></td>
-                            <td className="h-11 px-4"><Skeleton className="h-6 w-6 rounded ml-auto" /></td>
-                          </tr>
+                    <Table className="w-max min-w-full border-separate border-spacing-0 text-sm">
+                      <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                        <TableRow>
+                          <TableHead>Team Name</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead>Members</TableHead>
+                          <TableHead className="sticky-right-header text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {[...Array(8)].map((_, i) => (
+                          <TableRow key={i}>
+                            <TableCell className="h-[52px] px-4 py-2" colSpan={3}>
+                              <Skeleton className="h-7 w-full" />
+                            </TableCell>
+                            <TableCell className="bg-card right-0 px-4 text-right">
+                              <Skeleton className="h-7 ml-auto w-16" />
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 ) : error ? (
                   <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border p-4">

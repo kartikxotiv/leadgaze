@@ -77,8 +77,11 @@ function AccountsPageSkeleton() {
                   <TableBody>
                     {[...Array(12)].map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell className="h-[52px] px-4 py-2" colSpan={6}>
+                        <TableCell className="h-[52px] px-4 py-2" colSpan={5}>
                           <Skeleton className="h-7 w-full" />
+                        </TableCell>
+                        <TableCell className="bg-card right-0 px-4 text-right">
+                          <Skeleton className="h-7 ml-auto w-full" />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -372,6 +375,9 @@ export default function AccountsPage() {
                           }
                         >
                           <Skeleton className="h-7 w-full" />
+                        </TableCell>
+                         <TableCell className="bg-card right-0 px-4 text-right">
+                          <Skeleton className="h-7 ml-auto w-full" />
                         </TableCell>
                       </TableRow>
                     ))}

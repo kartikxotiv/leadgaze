@@ -73,36 +73,47 @@ function PageWithHeader(props: PageProps) {
 
   return (
     <TooltipProvider>
+      {/*
+        Outer shell: fixed full-viewport height, NO scroll.
+        The header sticks at the top; the content area below it scrolls.
+      */}
       <div
         className={cn(
-          'flex h-screen flex-1 flex-col overflow-y-auto',
+          'flex h-dvh flex-col overflow-hidden',
           props.className,
         )}
       >
         <div
           className={
-            props.contentContainerClassName ?? 'flex flex-1 flex-col space-y-4'
+            props.contentContainerClassName ??
+            'flex flex-1 flex-col min-h-0'
           }
         >
+          {/* ── Sticky Header ── */}
           <div
             className={cn(
-              'bg-leadgaze-primary text-white flex h-16 items-center justify-between border-b border-header-primary/20 px-6 justify-start mb-0',
+              'bg-leadgaze-primary text-white flex h-16 shrink-0 items-center justify-between border-b border-header-primary/20 px-6 justify-start',
               {
                 'sticky top-0 z-50 backdrop-blur-md': props.sticky ?? true,
               },
             )}
           >
-            <div
-              className={'flex w-full flex-1 items-center space-x-8'}
-            >
+            <div className={'flex w-full flex-1 items-center space-x-8'}>
               {Navigation}
             </div>
           </div>
 
-          <div className={'w-full py-4 flex flex-1 flex-col pt-0 bg-graylight dark:dark-background-color px-6'}>
-            <div className="flex px-6 h-[91dvh] w-full max-w-full min-w-0 flex-col overflow-auto">{Children}</div>
-            {/* {Children} */}
+          {/*
+            ── Scrollable Content Area ──
+            flex-1 + min-h-0 is the key: lets the flex child shrink below its
+            intrinsic height so overflow-y-auto can take over instead of the
+            parent growing and creating a second scrollbar.
+          */}
+          <div className={'flex flex-1 flex-col min-h-0 bg-graylight dark:dark-background-color'}>
+            <div className="flex flex-1 flex-col min-h-0 overflow-y-auto px-12 py-4">
+              {Children}
             </div>
+          </div>
         </div>
       </div>
     </TooltipProvider>
