@@ -73,7 +73,9 @@ function getResourceConfig(resource: string) {
 
 function cleanPayload(payload: Record<string, unknown>) {
   return Object.fromEntries(
-    Object.entries(payload).filter(([, value]) => value !== undefined),
+    Object.entries(payload)
+      .filter(([, value]) => value !== undefined)
+      .map(([key, value]) => [key, value === '' ? null : value])
   );
 }
 

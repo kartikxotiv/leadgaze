@@ -6,19 +6,15 @@ import { useQuery } from '@tanstack/react-query';
 import { usePathname } from 'next/navigation';
 import { format } from 'date-fns';
 import {
-  ArrowRight,
   ChevronLeft,
   ChevronRight,
   Filter,
-  History,
-  Search,
+  Eye,
 } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
-import { Input } from '@kit/ui/input';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import {
   Pagination,
@@ -29,13 +25,6 @@ import {
   PaginationPrevious,
 } from '@kit/ui/pagination';
 import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@kit/ui/select';
 import { Separator } from '@kit/ui/separator';
 import {
   Sheet,
@@ -135,18 +124,18 @@ export default function AuditLogsPage() {
   const count = data?.count || 0;
   const totalPages = Math.ceil(count / itemsPerPage);
 
-  const getActionColor = (action: string) => {
+  const getActionStyles = (action: string) => {
     switch (action) {
       case 'CREATE':
-        return 'text-green-600 bg-green-50 border-green-200';
+        return { bg: 'bg-green-500/10', text: 'text-green-600 dark:text-green-400', border: 'border-green-500/20' };
       case 'UPDATE':
-        return 'text-blue-600 bg-blue-50 border-blue-200';
+        return { bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/20' };
       case 'DELETE':
-        return 'text-red-600 bg-red-50 border-red-200';
+        return { bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400', border: 'border-red-500/20' };
       case 'READ':
-        return 'text-gray-600 bg-gray-50 border-gray-200';
+        return { bg: 'bg-gray-500/10', text: 'text-gray-600 dark:text-gray-400', border: 'border-gray-500/20' };
       default:
-        return 'text-gray-600 bg-gray-50 border-gray-200';
+        return { bg: 'bg-gray-500/10', text: 'text-gray-600 dark:text-gray-400', border: 'border-gray-500/20' };
     }
   };
 
@@ -528,33 +517,33 @@ export default function AuditLogsPage() {
                   )}>
                   <Table>
                     <TableHeader>
-                      <TableRow>
+                      <TableRow className="border-b bg-muted/50 hover:bg-muted/50">
                         {isVisible('date_time') && (
-                          <TableHead className="w-[180px] whitespace-nowrap">
+                          <TableHead className="w-[160px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
                             Date & Time
                           </TableHead>
                         )}
                         {isVisible('actor') && (
-                          <TableHead className="w-[180px] whitespace-nowrap">
+                          <TableHead className="w-[200px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
                             Actor
                           </TableHead>
                         )}
                         {isVisible('module') && (
-                          <TableHead className="w-[120px] whitespace-nowrap">
+                          <TableHead className="w-[140px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
                             Module
                           </TableHead>
                         )}
                         {isVisible('action') && (
-                          <TableHead className="w-[120px] whitespace-nowrap">
+                          <TableHead className="w-[120px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
                             Action
                           </TableHead>
                         )}
                         {isVisible('entity') && (
-                          <TableHead className="whitespace-nowrap">
+                          <TableHead className="w-full h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
                             Entity
                           </TableHead>
                         )}
-                        <TableHead className="sticky-right-header text-right whitespace-nowrap">
+                        <TableHead className="sticky-right-header w-[80px] h-11 text-xs uppercase tracking-wider font-semibold text-right whitespace-nowrap">
                           Details
                         </TableHead>
                       </TableRow>
@@ -600,39 +589,39 @@ export default function AuditLogsPage() {
                         logs.map((log: any) => (
                           <TableRow
                             key={log.id}
-                            className="group hover:bg-muted/30 transition-colors"
+                            className="group hover:bg-muted/30 transition-colors border-b last:border-0"
                           >
                             {isVisible('date_time') && (
-                              <TableCell>
-                                <div className="flex flex-col">
-                                  <span className="font-medium">
+                              <TableCell className="py-3 align-middle">
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-sm font-medium">
                                     {format(
                                       new Date(log.created_at),
                                       'MMM d, yyyy',
                                     )}
                                   </span>
-                                  <span className="text-muted-foreground font-normal">
+                                  <span className="text-muted-foreground text-xs font-normal">
                                     {format(
                                       new Date(log.created_at),
-                                      'HH:mm:ss',
+                                      'hh:mm:ss a',
                                     )}
                                   </span>
                                 </div>
                               </TableCell>
                             )}
                             {isVisible('actor') && (
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-full secondary-text-small font-bold">
+                              <TableCell className="py-3 align-middle">
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-primary/10 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ring-1 ring-primary/20">
                                     {log.actor?.name?.[0] ||
                                       log.actor?.email?.[0] ||
                                       '?'}
                                   </div>
                                   <div className="flex min-w-0 flex-col">
-                                    <span className="truncate font-medium">
+                                    <span className="truncate text-sm font-medium">
                                       {log.actor?.name || 'System'}
                                     </span>
-                                    <span className="text-muted-foreground truncate secondary-text-small">
+                                    <span className="text-muted-foreground truncate text-xs">
                                       {log.actor?.email}
                                     </span>
                                   </div>
@@ -640,42 +629,51 @@ export default function AuditLogsPage() {
                               </TableCell>
                             )}
                             {isVisible('module') && (
-                              <TableCell>
-                                <Badge variant="outline" className="dark-button-border-color">
-                                  {getModuleLabel(log.module)}
-                                </Badge>
+                              <TableCell className="py-3 align-middle">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-1.5 w-1.5 rounded-full bg-slate-400 dark:bg-slate-600"></div>
+                                  <span className="text-sm font-medium text-foreground/80">
+                                    {getModuleLabel(log.module)}
+                                  </span>
+                                </div>
                               </TableCell>
                             )}
                             {isVisible('action') && (
-                              <TableCell>
-
-                                <Badge
-                                  className={`border px-2 font-bold ${getActionColor(log.action)}`}
-                                >
-                                  {log.action}
-                                </Badge>
+                              <TableCell className="py-3 align-middle">
+                                {(() => {
+                                  const styles = getActionStyles(log.action);
+                                  return (
+                                    <Badge
+                                      variant="outline"
+                                      className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wide border ${styles.bg} ${styles.text} ${styles.border}`}
+                                    >
+                                      {log.action}
+                                    </Badge>
+                                  );
+                                })()}
                               </TableCell>
                             )}
                             {isVisible('entity') && (
-                              <TableCell>
-                                <div className="flex flex-col">
-                                  <span className="max-w-[200px] truncate font-medium">
+                              <TableCell className="py-3 align-middle w-full max-w-[200px] sm:max-w-auto">
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="truncate text-sm font-medium">
                                     {log.entity_name || '-'}
                                   </span>
-                                  <span className="text-muted-foreground truncate font-mono text-[10px]">
+                                  <span className="text-muted-foreground truncate font-mono text-[11px]">
                                     {log.entity_id.split('-')[0]}...
                                   </span>
                                 </div>
                               </TableCell>
                             )}
-                            <TableCell className="bg-card sticky right-0 text-right">
+                            <TableCell className="bg-card sticky right-0 py-3 text-right align-middle">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 w-8 p-0 opacity-0 transition-opacity group-hover:opacity-100"
+                                className="h-8 w-8 rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-primary transition-colors"
                                 onClick={() => setSelectedLog(log)}
                               >
-                                <ArrowRight className="h-4 w-4" />
+                                <Eye className="h-4 w-4" />
+                                <span className="sr-only">View Details</span>
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -705,11 +703,17 @@ export default function AuditLogsPage() {
                   <p className="text-muted-foreground text-xs font-medium uppercase">
                     Action
                   </p>
-                  <Badge
-                    className={`mt-1 font-bold ${getActionColor(selectedLog.action)}`}
-                  >
-                    {selectedLog.action}
-                  </Badge>
+                  {(() => {
+                    const styles = getActionStyles(selectedLog.action);
+                    return (
+                      <Badge
+                        variant="outline"
+                        className={`mt-1 rounded-full px-3 py-1 text-xs font-bold border ${styles.bg} ${styles.text} ${styles.border}`}
+                      >
+                        {selectedLog.action}
+                      </Badge>
+                    );
+                  })()}
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs font-medium uppercase">
