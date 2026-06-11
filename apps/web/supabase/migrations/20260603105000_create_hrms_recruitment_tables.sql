@@ -239,11 +239,10 @@ INSERT INTO public.crm_modules (
     is_active
 )
 VALUES
-    ('hrms_recruitment', 'HRMS Recruitment', 'Manage requisitions, candidates, interviews, offers, and onboarding', 57, TRUE, TRUE)
+    ('hrms_recruitment', 'HRMS Recruitment', 'Manage requisitions, candidates, interviews, offers, and onboarding', 56, TRUE, TRUE)
 ON CONFLICT (module_key) DO UPDATE SET
     module_name = EXCLUDED.module_name,
     description = EXCLUDED.description,
-    display_order = EXCLUDED.display_order,
     is_active = TRUE,
     updated_at = NOW();
 
@@ -296,7 +295,7 @@ BEGIN
             SELECT id, role_key
             FROM public.workspace_roles
             WHERE workspace_id = workspace_record.id
-              AND role_key = 'admin'
+              AND role_key IN ('admin', 'manager', 'user', 'viewer')
         LOOP
             INSERT INTO public.role_permissions (
                 workspace_id,
@@ -311,10 +310,22 @@ BEGIN
                 workspace_record.id,
                 role_record.id,
                 features.id,
-                TRUE,
-                'all'::public.permission_access_level,
-                TRUE,
-                TRUE
+                CASE
+                    WHEN role_record.role_key = 'admin' THEN TRUE
+                    WHEN role_record.role_key = 'manager' THEN TRUE
+                    WHEN role_record.role_key = 'user' THEN FALSE
+                    WHEN role_record.role_key = 'viewer' THEN features.feature_key = 'view'
+                    ELSE FALSE
+                END,
+                CASE
+                    WHEN role_record.role_key = 'admin' THEN 'all'::public.permission_access_level
+                    WHEN role_record.role_key = 'manager' THEN 'team'::public.permission_access_level
+                    WHEN role_record.role_key = 'viewer' THEN 'all'::public.permission_access_level
+                    WHEN role_record.role_key = 'user' THEN 'none'::public.permission_access_level
+                    ELSE 'none'::public.permission_access_level
+                END,
+                role_record.role_key = 'admin',
+                role_record.role_key = 'admin'
             FROM public.crm_module_features features
             JOIN public.crm_modules modules ON modules.id = features.module_id
             WHERE modules.module_key = 'hrms_recruitment'

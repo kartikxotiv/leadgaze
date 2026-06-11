@@ -392,7 +392,7 @@ END $$;
 GRANT USAGE ON SCHEMA hrms TO authenticated, service_role;
 
 INSERT INTO public.crm_modules (module_key, module_name, description, display_order, is_system, is_active)
-VALUES ('hrms_payroll', 'HRMS Payroll', 'Manage salary structures, compensation assignments, payroll runs, and payslips', 61, TRUE, TRUE)
+VALUES ('hrms_payroll', 'HRMS Payroll', 'Manage salary structures, compensation assignments, payroll runs, and payslips', 60, TRUE, TRUE)
 ON CONFLICT (module_key) DO UPDATE SET
     module_name = EXCLUDED.module_name,
     description = EXCLUDED.description,
@@ -437,7 +437,7 @@ BEGIN
             SELECT id, role_key
             FROM public.workspace_roles
             WHERE workspace_id = workspace_record.id
-              AND role_key = 'admin'
+              AND role_key IN ('admin', 'manager', 'user', 'viewer')
         LOOP
             INSERT INTO public.role_permissions (
                 workspace_id,
@@ -452,10 +452,21 @@ BEGIN
                 workspace_record.id,
                 role_record.id,
                 features.id,
-                TRUE,
-                'all'::public.permission_access_level,
-                TRUE,
-                TRUE
+                CASE
+                    WHEN role_record.role_key = 'admin' THEN TRUE
+                    WHEN role_record.role_key = 'manager' THEN features.feature_key IN ('view', 'edit', 'process', 'export')
+                    WHEN role_record.role_key = 'user' THEN features.feature_key = 'view'
+                    WHEN role_record.role_key = 'viewer' THEN features.feature_key = 'view'
+                    ELSE FALSE
+                END,
+                CASE
+                    WHEN role_record.role_key = 'admin' THEN 'all'::public.permission_access_level
+                    WHEN role_record.role_key = 'manager' THEN 'team'::public.permission_access_level
+                    WHEN role_record.role_key IN ('user', 'viewer') THEN 'own'::public.permission_access_level
+                    ELSE 'none'::public.permission_access_level
+                END,
+                role_record.role_key IN ('admin', 'manager'),
+                role_record.role_key = 'admin'
             FROM public.crm_module_features features
             JOIN public.crm_modules modules ON modules.id = features.module_id
             WHERE modules.module_key = 'hrms_payroll'

@@ -73,7 +73,7 @@ INSERT INTO public.crm_modules (
     is_active
 )
 VALUES
-    ('hrms_support_system', 'HRMS Support System', 'Review and manage employee HR requests and support tickets', 59, TRUE, TRUE)
+    ('hrms_support_system', 'HRMS Support System', 'Review and manage employee HR requests and support tickets', 58, TRUE, TRUE)
 ON CONFLICT (module_key) DO UPDATE SET
     module_name = EXCLUDED.module_name,
     description = EXCLUDED.description,
@@ -114,7 +114,7 @@ BEGIN
             SELECT id, role_key
             FROM public.workspace_roles
             WHERE workspace_id = workspace_record.id
-              AND role_key = 'admin'
+              AND role_key IN ('admin', 'manager', 'user', 'viewer')
         LOOP
             INSERT INTO public.role_permissions (
                 workspace_id,
@@ -129,10 +129,20 @@ BEGIN
                 workspace_record.id,
                 role_record.id,
                 features.id,
-                TRUE,
-                'all'::public.permission_access_level,
-                TRUE,
-                TRUE
+                CASE
+                    WHEN role_record.role_key = 'admin' THEN TRUE
+                    WHEN role_record.role_key = 'manager' THEN TRUE
+                    WHEN role_record.role_key = 'viewer' THEN features.feature_key = 'view'
+                    ELSE FALSE
+                END,
+                CASE
+                    WHEN role_record.role_key = 'admin' THEN 'all'::public.permission_access_level
+                    WHEN role_record.role_key = 'manager' THEN 'team'::public.permission_access_level
+                    WHEN role_record.role_key = 'viewer' THEN 'all'::public.permission_access_level
+                    ELSE 'none'::public.permission_access_level
+                END,
+                role_record.role_key IN ('admin', 'manager'),
+                role_record.role_key = 'admin'
             FROM public.crm_module_features features
             JOIN public.crm_modules modules ON modules.id = features.module_id
             WHERE modules.module_key = 'hrms_support_system'

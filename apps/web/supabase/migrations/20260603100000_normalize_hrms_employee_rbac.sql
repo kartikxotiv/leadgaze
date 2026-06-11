@@ -45,6 +45,9 @@ DO $$
 DECLARE
     workspace_record RECORD;
     admin_role_id UUID;
+    manager_role_id UUID;
+    user_role_id UUID;
+    viewer_role_id UUID;
     employee_module_id UUID;
 BEGIN
     SELECT id INTO employee_module_id
@@ -60,6 +63,24 @@ BEGIN
         FROM public.workspace_roles
         WHERE workspace_id = workspace_record.id
           AND role_key = 'admin'
+        LIMIT 1;
+
+        SELECT id INTO manager_role_id
+        FROM public.workspace_roles
+        WHERE workspace_id = workspace_record.id
+          AND role_key = 'manager'
+        LIMIT 1;
+
+        SELECT id INTO user_role_id
+        FROM public.workspace_roles
+        WHERE workspace_id = workspace_record.id
+          AND role_key = 'user'
+        LIMIT 1;
+
+        SELECT id INTO viewer_role_id
+        FROM public.workspace_roles
+        WHERE workspace_id = workspace_record.id
+          AND role_key = 'viewer'
         LIMIT 1;
 
         IF admin_role_id IS NOT NULL THEN
@@ -80,6 +101,129 @@ BEGIN
                 'all'::public.permission_access_level,
                 TRUE,
                 TRUE
+            FROM public.crm_module_features f
+            WHERE f.module_id = employee_module_id
+            ON CONFLICT (role_id, module_feature_id)
+            DO UPDATE SET
+                can_access = EXCLUDED.can_access,
+                access_level = EXCLUDED.access_level,
+                can_view_sensitive_data = EXCLUDED.can_view_sensitive_data,
+                can_override_owner = EXCLUDED.can_override_owner,
+                updated_at = NOW();
+        END IF;
+
+        IF manager_role_id IS NOT NULL THEN
+            INSERT INTO public.role_permissions (
+                workspace_id,
+                role_id,
+                module_feature_id,
+                can_access,
+                access_level,
+                can_view_sensitive_data,
+                can_override_owner
+            )
+            SELECT
+                workspace_record.id,
+                manager_role_id,
+                f.id,
+                f.feature_key IN (
+                    'view',
+                    'create',
+                    'edit',
+                    'update',
+                    'invite',
+                    'export',
+                    'manage_documents',
+                    'assign_roles'
+                ),
+                CASE
+                    WHEN f.feature_key IN (
+                        'view',
+                        'create',
+                        'edit',
+                        'update',
+                        'invite',
+                        'export',
+                        'manage_documents',
+                        'assign_roles'
+                    ) THEN 'team'::public.permission_access_level
+                    ELSE 'none'::public.permission_access_level
+                END,
+                f.feature_key IN (
+                    'view',
+                    'create',
+                    'edit',
+                    'update',
+                    'invite',
+                    'export',
+                    'manage_documents',
+                    'assign_roles'
+                ),
+                FALSE
+            FROM public.crm_module_features f
+            WHERE f.module_id = employee_module_id
+            ON CONFLICT (role_id, module_feature_id)
+            DO UPDATE SET
+                can_access = EXCLUDED.can_access,
+                access_level = EXCLUDED.access_level,
+                can_view_sensitive_data = EXCLUDED.can_view_sensitive_data,
+                can_override_owner = EXCLUDED.can_override_owner,
+                updated_at = NOW();
+        END IF;
+
+        IF user_role_id IS NOT NULL THEN
+            INSERT INTO public.role_permissions (
+                workspace_id,
+                role_id,
+                module_feature_id,
+                can_access,
+                access_level,
+                can_view_sensitive_data,
+                can_override_owner
+            )
+            SELECT
+                workspace_record.id,
+                user_role_id,
+                f.id,
+                f.feature_key = 'view',
+                CASE
+                    WHEN f.feature_key = 'view' THEN 'own'::public.permission_access_level
+                    ELSE 'none'::public.permission_access_level
+                END,
+                FALSE,
+                FALSE
+            FROM public.crm_module_features f
+            WHERE f.module_id = employee_module_id
+            ON CONFLICT (role_id, module_feature_id)
+            DO UPDATE SET
+                can_access = EXCLUDED.can_access,
+                access_level = EXCLUDED.access_level,
+                can_view_sensitive_data = EXCLUDED.can_view_sensitive_data,
+                can_override_owner = EXCLUDED.can_override_owner,
+                updated_at = NOW();
+        END IF;
+
+        IF viewer_role_id IS NOT NULL THEN
+            INSERT INTO public.role_permissions (
+                workspace_id,
+                role_id,
+                module_feature_id,
+                can_access,
+                access_level,
+                can_view_sensitive_data,
+                can_override_owner
+            )
+            SELECT
+                workspace_record.id,
+                viewer_role_id,
+                f.id,
+                f.feature_key IN ('view', 'export'),
+                CASE
+                    WHEN f.feature_key IN ('view', 'export') THEN 'all'::public.permission_access_level
+                    ELSE 'none'::public.permission_access_level
+                END,
+                FALSE,
+                FALSE
             FROM public.crm_module_features f
             WHERE f.module_id = employee_module_id
             ON CONFLICT (role_id, module_feature_id)
