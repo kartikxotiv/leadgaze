@@ -20,7 +20,7 @@ const hrmsRoutes = {
   label: '',
   children: [
     {
-      label: 'HRMS Dashboard',
+      label: 'Dashboard',
       path: '/home/hrms',
       Icon: <Activity className="h-4 w-4" />,
       end: true,

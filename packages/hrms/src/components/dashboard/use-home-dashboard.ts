@@ -1,8 +1,9 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { getHomeDashboardStatsService } from '~/services/home-dashboard.service';
-import { HomeDashboardData } from '~/types/home-dashboard.type';
+
+import { getHomeDashboardStatsService } from '../../server/services/home-dashboard.service';
+import type { HomeDashboardData } from '../../types/home-dashboard.type';
 
 export function useHomeDashboard() {
   const dashboardQuery = useQuery({
