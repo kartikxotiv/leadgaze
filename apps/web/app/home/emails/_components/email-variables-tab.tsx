@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import { Skeleton } from '@kit/ui/skeleton';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
@@ -74,9 +75,9 @@ export function EmailVariablesTab() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Full-width search / filter / actions toolbar */}
-                    <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+                    <div className="w-full max-w-full min-w-0 shrink-0 border-b">
                       <ListToolBar
                         showSearch
                         searchPlaceholder="Search variables..."
@@ -111,14 +112,18 @@ export function EmailVariablesTab() {
             </TableHeader>
             <TableBody>
               {isLoadingVariables ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={canManage ? 3 : 2}
-                    className="text-muted-foreground h-24 text-center"
-                  >
-                    Loading variables...
-                  </TableCell>
-                </TableRow>
+                [...Array(5)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="h-[52px] px-4 py-2" colSpan={2}>
+                      <Skeleton className="h-7 w-full" />
+                    </TableCell>
+                    {canManage && (
+                      <TableCell className="bg-card px-4 text-right">
+                        <Skeleton className="h-7 ml-auto w-full" />
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))
               ) : filteredVariables.length === 0 ? (
                 <TableRow>
                   <TableCell

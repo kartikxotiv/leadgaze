@@ -428,7 +428,7 @@ export default function TeamMembersPage() {
           </div> */}
         
 
-          <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
+          <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
                   <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
                     <CustomTableContainer>
                       <Table>
@@ -447,9 +447,27 @@ export default function TeamMembersPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {members.map((member: WorkspaceMember) => (
-                          <TableRow
-                            key={member.id}
+                        {isLoading ? (
+                          [...Array(8)].map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell className="h-[52px] px-4 py-2" colSpan={5}>
+                                <Skeleton className="h-7 w-full" />
+                              </TableCell>
+                              <TableCell className="bg-card right-0 px-4 text-right">
+                                <Skeleton className="h-7 ml-auto w-full" />
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : members.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                              No members found
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          members.map((member: WorkspaceMember) => (
+                            <TableRow
+                              key={member.id}
                             className="hover:bg-muted/50"
                           >
                             {isVisible('member') && (
@@ -546,7 +564,7 @@ export default function TeamMembersPage() {
                               </div>
                             </TableCell>
                           </TableRow>
-                        ))}
+                        )))}
                       </TableBody>
                       </Table>
                       
