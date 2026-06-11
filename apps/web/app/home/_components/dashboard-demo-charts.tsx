@@ -70,6 +70,7 @@ import { CreateContactDialog } from '../contacts/components/create-contact-dialo
 import CreateLeadDialog from '../leads/components/create-lead-dialog';
 import { OpportunityDialog } from '../opportunities/components/opportunity-dialog';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { Skeleton } from '@kit/ui/skeleton';
 
 export default function DashboardDemo() {
   const { currentWorkspace } = useRBAC();
@@ -105,19 +106,11 @@ export default function DashboardDemo() {
   const opportunitiesTrend = useMemo(() => generateDemoData(), []);
 
   if (isLoading || !metrics) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
-      </div>
-    );
+    return <SalesDashboardSkeleton />;
   }
 
   return (
-    <div
-      className={
-        'animate-in fade-in flex h-full flex-col overflow-y-auto p-0 pb-4 duration-500 xl:overflow-hidden xl:px-0 xl:pb-4 2xl:overflow-y-auto 2xl:p-0 2xl:pb-4'
-      }
-    >
+    <div className="animate-in fade-in flex flex-col gap-4 pb-4 duration-500">
       <div
         className={
           'grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-3 xl:pb-4 2xl:grid-cols-4 2xl:gap-4 2xl:pb-6'
@@ -227,8 +220,8 @@ export default function DashboardDemo() {
 
       {/* section 2 */}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-3 2xl:grid-cols-4 2xl:gap-4">
-        <Button
+      {/* <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-3 2xl:grid-cols-4 2xl:gap-4"> */}
+        {/* <Button
           variant="outline"
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateLeadOpen(true)}
@@ -239,24 +232,22 @@ export default function DashboardDemo() {
               Add Lead
             </span>
           </div>
-        </Button>
-        {/* font-heading text-2xl font-semibold */}
+        </Button>         */}
 
-        <Button
+        {/* <Button
           variant="outline"
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateContactOpen(true)}
         >
-          {/* <Contact /> */}
           <div className="flex items-center gap-2 xl:gap-1.5 2xl:gap-2">
             <User className="h-6 w-6 text-slate-500 xl:h-4 xl:w-4 2xl:h-6 2xl:w-6 dark:text-zinc-400" />
             <span className="text-[16px] font-semibold text-slate-700 xl:text-sm 2xl:text-[16px] dark:text-zinc-200">
               Add Contact
             </span>
           </div>
-        </Button>
+        </Button> */}
 
-        <Button
+        {/* <Button
           variant="outline"
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateAccountOpen(true)}
@@ -267,9 +258,9 @@ export default function DashboardDemo() {
               Add Account
             </span>
           </div>
-        </Button>
+        </Button> */}
 
-        <Button
+        {/* <Button
           variant="outline"
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateOpportunityOpen(true)}
@@ -280,8 +271,8 @@ export default function DashboardDemo() {
               Add Opportunity
             </span>
           </div>
-        </Button>
-      </div>
+        </Button> */}
+      {/* </div> */}
 
       <CreateLeadDialog
         open={isCreateLeadOpen}
@@ -308,7 +299,7 @@ export default function DashboardDemo() {
       />
 
       {/* Section 3: Pipeline & Upcoming Tasks */}
-      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2 xl:mt-4 xl:gap-4 2xl:mt-8 2xl:gap-8">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 xl:gap-4 2xl:gap-8">
         <CardWidgetContainer title="Lead Pipeline">
           <div className="flex-1">
             <PipelineOverview metrics={metrics} />
@@ -630,6 +621,78 @@ function Figure(props: React.PropsWithChildren) {
       className={'primary-heading-number text-leadgaze-dark dark:text-zinc-100'}
     >
       {props.children}
+    </div>
+  );
+}
+
+function SalesDashboardSkeleton() {
+  return (
+    <div className="flex flex-col gap-4 pb-4">
+      {/* 4 stat cards */}
+      <div className="grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-3 xl:pb-4 2xl:grid-cols-4 2xl:gap-4 2xl:pb-6">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-7 w-16" />
+              </div>
+              <Skeleton className="h-8 w-8 rounded" />
+            </CardHeader>
+            <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
+              <Skeleton className="h-3 w-36" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Lead Pipeline + Upcoming Tasks */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 xl:gap-4 2xl:gap-8">
+        {/* Lead Pipeline skeleton */}
+        <Card>
+          <CardHeader className="border-b">
+            <Skeleton className="h-5 w-32" />
+          </CardHeader>
+          <div className="space-y-6 p-6 xl:space-y-4 xl:p-4 2xl:space-y-6 2xl:p-6">
+            {['New Leads', 'Contacted', 'Qualified', 'Proposal Sent', 'Won'].map((stage) => (
+              <div key={stage} className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-6" />
+                </div>
+                <Skeleton className="h-2 w-full rounded-full" />
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Upcoming Tasks skeleton */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between border-b">
+            <Skeleton className="h-5 w-36" />
+            <Skeleton className="h-5 w-5 rounded" />
+          </CardHeader>
+          <div className="divide-y dark:divide-zinc-800">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between p-5 xl:p-3 2xl:p-5"
+              >
+                <div className="flex items-start gap-4">
+                  {/* Checkbox placeholder */}
+                  <Skeleton className="mt-0.5 h-4 w-4 rounded" />
+                  <div className="flex flex-col gap-1.5">
+                    <Skeleton className={`h-4 ${i === 1 ? 'w-48' : i === 2 ? 'w-40' : 'w-52'}`} />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+                {/* Priority badge */}
+                <Skeleton className="h-5 w-14 rounded-md" />
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

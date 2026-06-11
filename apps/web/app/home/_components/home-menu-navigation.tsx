@@ -68,6 +68,13 @@ import { cn, isRouteActive } from '@kit/ui/utils';
 import { AppLogo } from '~/components/app-logo';
 import { ProfileAccountDropdownContainer } from '~/components/personal-account-dropdown-container';
 import pathsConfig from '~/config/paths.config';
+import {
+  type AnyDropdownLabel,
+  type SalesDropdownLabel,
+  type ServicesDropdownLabel,
+  hasChevronForModule,
+  isDropdownLabel,
+} from '../_constants/nav-chevron.constants';
 import { usePermissionBasedNavigationConfig } from '~/lib/permissions/use-navigation-permissions';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getNavigationConfig } from '~/lib/rbac/use-dynamic-navigation';
@@ -76,6 +83,7 @@ import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
 import { getSeatAssignmentsService } from '~/services/subscription.service';
+import { getServiceCloudResourceService } from '@kit/service-cloud';
 
 import { CreateAccountDialog } from '../accounts/components/create-account-dialog';
 import { CreateContactDialog } from '../contacts/components/create-contact-dialog';
@@ -159,54 +167,141 @@ function formatLabel(label: string) {
 }
 
 interface NavDropdownContentProps {
-  type: 'Leads' | 'Contacts' | 'Accounts' | 'Opportunities';
+  module: 'sales' | 'services';
+  type: AnyDropdownLabel;
   workspaceId?: string;
   onAddNewClick: () => void;
   onItemClick: () => void;
 }
 
+// ─── Per-module helpers ─────────────────────────────────────────────────────
+
+/** Resolves the record's display name for each module+type combination. */
+function getRecordName(
+  module: 'sales' | 'services',
+  type: AnyDropdownLabel,
+  record: any,
+): string {
+  if (module === 'sales') {
+    const salesType = type as SalesDropdownLabel;
+    if (salesType === 'Leads' || salesType === 'Contacts') {
+      return (
+        `${record.first_name || ''} ${record.last_name || ''}`.trim() ||
+        record.email ||
+        `Unnamed ${salesType.slice(0, -1)}`
+      );
+    }
+    if (salesType === 'Accounts') return record.account_name || 'Unnamed Account';
+    if (salesType === 'Opportunities') return record.opportunity_name || 'Unnamed Opportunity';
+  }
+  if (module === 'services') {
+    const servicesType = type as ServicesDropdownLabel;
+    if (servicesType === 'Tickets')
+      return record.subject || record.title || `Ticket #${record.id?.slice(0, 8)}`;
+  }
+  return record.name || record.title || 'Unnamed Record';
+}
+
+/** Resolves the detail page path for each module+type combination. */
+function getDetailPath(
+  module: 'sales' | 'services',
+  type: AnyDropdownLabel,
+  id: string,
+): string {
+  if (module === 'sales') {
+    const salesType = type as SalesDropdownLabel;
+    if (salesType === 'Opportunities') return `/home/sales/opportunities/${id}`;
+    return `/home/sales/${salesType.toLowerCase()}/${id}`;
+  }
+  if (module === 'services') {
+    const servicesType = type as ServicesDropdownLabel;
+    if (servicesType === 'Tickets') return `/home/services/tickets/${id}`;
+  }
+  return '#';
+}
+
+/** Resolves the "View All" list path for each module+type combination. */
+function getViewAllPath(
+  module: 'sales' | 'services',
+  type: AnyDropdownLabel,
+): string {
+  if (module === 'sales') {
+    const salesType = type as SalesDropdownLabel;
+    if (salesType === 'Opportunities') return '/home/sales/opportunities';
+    return `/home/sales/${salesType.toLowerCase()}`;
+  }
+  if (module === 'services') {
+    const servicesType = type as ServicesDropdownLabel;
+    return `/home/services/${servicesType.toLowerCase()}`;
+  }
+  return '#';
+}
+
+/** Friendly display label for "View All" link. */
+function getViewAllLabel(type: AnyDropdownLabel): string {
+  if (type === 'Opportunities') return 'Deals';
+  return type;
+}
+
+// ─── Query fn per module ─────────────────────────────────────────────────────
+
+async function fetchDropdownRecords(
+  module: 'sales' | 'services',
+  type: AnyDropdownLabel,
+  workspaceId: string,
+): Promise<any> {
+  if (module === 'sales') {
+    const salesType = type as SalesDropdownLabel;
+    if (salesType === 'Leads') return getLeadsService({ workspaceId, limit: 5 });
+    if (salesType === 'Contacts') return getContactsService({ workspaceId, limit: 5 });
+    if (salesType === 'Accounts') return getAccountsService({ workspaceId, limit: 5 });
+    if (salesType === 'Opportunities') return getOpportunitiesService({ workspaceId, limit: 5 });
+  }
+  if (module === 'services') {
+    const servicesType = type as ServicesDropdownLabel;
+    if (servicesType === 'Tickets') {
+      // getServiceCloudResourceService returns the array directly
+      const rows = await getServiceCloudResourceService('tickets', workspaceId, { limit: '5' });
+      return { data: rows ?? [] };
+    }
+  }
+  return { data: [] };
+}
+
+// ─── NavDropdownContent ──────────────────────────────────────────────────────
+
 function NavDropdownContent({
+  module,
   type,
   workspaceId,
   onAddNewClick,
   onItemClick,
 }: NavDropdownContentProps) {
   const queryClient = useQueryClient();
-  const queryKey =
-    type.toLowerCase() === 'opportunities'
-      ? 'opportunities'
-      : type.toLowerCase();
+  const queryKey = `${module}:${type.toLowerCase()}`;
 
   useEffect(() => {
     if (workspaceId) {
       queryClient.invalidateQueries({ queryKey: [queryKey] });
     }
-  }, [type, workspaceId, queryClient, queryKey]);
+  }, [module, type, workspaceId, queryClient, queryKey]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: [queryKey, workspaceId],
     queryFn: async () => {
       if (!workspaceId) return { data: [] };
-      if (type === 'Leads') {
-        return getLeadsService({ workspaceId, limit: 5 });
-      } else if (type === 'Contacts') {
-        return getContactsService({ workspaceId, limit: 5 });
-      } else if (type === 'Accounts') {
-        return getAccountsService({ workspaceId, limit: 5 });
-      } else {
-        return getOpportunitiesService({ workspaceId, limit: 5 });
-      }
+      return fetchDropdownRecords(module, type, workspaceId);
     },
     enabled: !!workspaceId,
   });
 
-  const records = (data as any)?.data || [];
+  const records: any[] = (data as any)?.data ?? [];
 
   return (
     <div className="flex w-64 flex-col space-y-1.5 p-2 text-zinc-950 dark:text-zinc-50">
       <div className="flex items-center justify-between px-2 py-0.5">
         <span className="text-[10px] font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">
-          Recent {type === 'Opportunities' ? 'Deals' : type}
+          Recent {type}
         </span>
         <button
           type="button"
@@ -237,69 +332,43 @@ function NavDropdownContent({
         </div>
       ) : (
         <div className="flex flex-col space-y-0.5">
-          {records.slice(0, 5).map((record: any) => {
-            let name = '';
-            let detailPath = '';
-            if (type === 'Leads') {
-              name =
-                `${record.first_name || ''} ${record.last_name || ''}`.trim() ||
-                record.email ||
-                'Unnamed Lead';
-              detailPath = `/home/sales/leads/${record.id}`;
-            } else if (type === 'Contacts') {
-              name =
-                `${record.first_name || ''} ${record.last_name || ''}`.trim() ||
-                record.email ||
-                'Unnamed Contact';
-              detailPath = `/home/sales/contacts/${record.id}`;
-            } else if (type === 'Accounts') {
-              name = record.account_name || 'Unnamed Account';
-              detailPath = `/home/sales/accounts/${record.id}`;
-            } else if (type === 'Opportunities') {
-              name = record.opportunity_name || 'Unnamed Opportunity';
-              detailPath = `/home/sales/opportunities/${record.id}`;
-            }
-
-            return (
-              <Link
-                key={record.id}
-                href={detailPath}
-                onClick={onItemClick}
-                className="block w-full truncate rounded px-2 py-1 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800/80 dark:hover:text-white"
-              >
-                {name}
-              </Link>
-            );
-          })}
+          {records.slice(0, 5).map((record: any) => (
+            <Link
+              key={record.id}
+              href={getDetailPath(module, type, record.id)}
+              onClick={onItemClick}
+              className="block w-full truncate rounded px-2 py-1 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800/80 dark:hover:text-white"
+            >
+              {getRecordName(module, type, record)}
+            </Link>
+          ))}
         </div>
       )}
 
       <div className="bg-zinc-150 my-0.5 h-px dark:bg-zinc-800" />
 
       <Link
-        href={
-          type === 'Opportunities'
-            ? '/home/sales/opportunities'
-            : `/home/sales/${type.toLowerCase()}`
-        }
+        href={getViewAllPath(module, type)}
         onClick={onItemClick}
         className="block w-full py-1 text-center text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400"
       >
-        View All {type === 'Opportunities' ? 'Deals' : type}
+        View All {getViewAllLabel(type)}
       </Link>
     </div>
   );
 }
 
 interface NavDropdownProps {
+  module: 'sales' | 'services';
   label: string;
   path: string;
   active: boolean;
   workspaceId?: string;
-  formattedLabel: 'Leads' | 'Contacts' | 'Accounts' | 'Opportunities';
+  formattedLabel: AnyDropdownLabel;
 }
 
 function NavDropdown({
+  module,
   label,
   path,
   active,
@@ -311,42 +380,57 @@ function NavDropdown({
 
   return (
     <>
-      <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            className={cn(
-              'flex cursor-pointer items-center gap-1 rounded-md border-0 bg-transparent px-3 py-1.5 text-sm font-medium transition-colors outline-none focus:outline-none',
-              active
-                ? 'bg-header-primary text-white'
-                : 'text-blue-100 hover:bg-white/10 hover:text-white',
-            )}
-          >
-            <span>
-              <Trans i18nKey={label} defaults={formattedLabel} />
-            </span>
-            <ChevronDown className="h-3.5 w-3.5 opacity-70" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="start"
-          className="mt-1 rounded-md border border-zinc-200 bg-white p-0 shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+      {/* Wrapper keeps label + chevron visually grouped with shared active styling */}
+      <div
+        className={cn(
+          'flex items-center rounded-md text-sm font-medium transition-colors',
+          active
+            ? 'bg-header-primary text-white'
+            : 'text-blue-100 hover:bg-white/10 hover:text-white',
+        )}
+      >
+        {/* Text label — navigates to the main list page */}
+        <Link
+          href={path}
+          className="px-3 py-1.5 outline-none focus:outline-none"
         >
-          <NavDropdownContent
-            type={formattedLabel}
-            workspaceId={workspaceId}
-            onAddNewClick={() => {
-              setDropdownOpen(false);
-              setDialogOpen(true);
-            }}
-            onItemClick={() => {
-              setDropdownOpen(false);
-            }}
-          />
-        </DropdownMenuContent>
-      </DropdownMenu>
+          <Trans i18nKey={label} defaults={formattedLabel} />
+        </Link>
 
-      {formattedLabel === 'Leads' && (
+        {/* Chevron — solely responsible for opening the dropdown */}
+        <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label={`Open ${formattedLabel} quick-view`}
+              className="flex cursor-pointer items-center border-0 bg-transparent pr-2 pl-0 py-1.5 outline-none focus:outline-none"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            className="mt-1 rounded-md border border-zinc-200 bg-white p-0 shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+          >
+            <NavDropdownContent
+              module={module}
+              type={formattedLabel}
+              workspaceId={workspaceId}
+              onAddNewClick={() => {
+                setDropdownOpen(false);
+                setDialogOpen(true);
+              }}
+              onItemClick={() => {
+                setDropdownOpen(false);
+              }}
+            />
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Sales creation dialogs */}
+      {module === 'sales' && formattedLabel === 'Leads' && (
         <CreateLeadDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
@@ -354,7 +438,7 @@ function NavDropdown({
         />
       )}
 
-      {formattedLabel === 'Contacts' && (
+      {module === 'sales' && formattedLabel === 'Contacts' && (
         <CreateContactDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
@@ -362,7 +446,7 @@ function NavDropdown({
         />
       )}
 
-      {formattedLabel === 'Accounts' && (
+      {module === 'sales' && formattedLabel === 'Accounts' && (
         <CreateAccountDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
@@ -370,13 +454,15 @@ function NavDropdown({
         />
       )}
 
-      {formattedLabel === 'Opportunities' && (
+      {module === 'sales' && formattedLabel === 'Opportunities' && (
         <OpportunityDialog
           isOpen={dialogOpen}
           onOpenChange={setDialogOpen}
           onSuccess={() => {}}
         />
       )}
+
+      {/* Services: no creation dialog yet — "New" navigates to the list page */}
     </>
   );
 }
@@ -963,30 +1049,35 @@ export function HomeMenuNavigation() {
               item.end ?? false,
             );
 
-            if (
-              ['Leads', 'Contacts', 'Accounts', 'Opportunities'].includes(
-                formatted,
-              )
-            ) {
+            // Resolve the current module so we look up the right config entry.
+            const activeModule = isHrmsModule
+              ? 'hrms'
+              : isServiceCloudModule
+                ? 'services'
+                : isInventoryModule
+                  ? 'inventory'
+                  : isFundraiseModule
+                    ? 'funds'
+                    : 'sales';
+
+            // If this label is configured as a full data-fetch dropdown for
+            // the active module, render NavDropdown (works for both Sales & Services).
+            if (isDropdownLabel(activeModule, formatted)) {
               return (
                 <NavDropdown
                   key={item.path}
+                  module={activeModule as 'sales' | 'services'}
                   label={item.label}
                   path={item.path}
                   active={active}
                   workspaceId={currentWorkspace?.id}
-                  formattedLabel={
-                    formatted as
-                      | 'Leads'
-                      | 'Contacts'
-                      | 'Accounts'
-                      | 'Opportunities'
-                  }
+                  formattedLabel={formatted as AnyDropdownLabel}
                 />
               );
             }
 
-            const hasChevron = ['Deals', 'Reports'].includes(formatted);
+            // Otherwise, just show a chevron-only icon if configured.
+            const showChevron = hasChevronForModule(activeModule, formatted);
 
             return (
               <Link
@@ -1002,7 +1093,7 @@ export function HomeMenuNavigation() {
                 <span>
                   <Trans i18nKey={item.label} defaults={formatted} />
                 </span>
-                {hasChevron && (
+                {showChevron && (
                   <ChevronDown className="h-3.5 w-3.5 opacity-70" />
                 )}
               </Link>

@@ -260,7 +260,7 @@ export default function RolesPage() {
           </div>
         </PageHeader>
         {/* Summary Cards */}
-        <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2">
+        <div className="w-full max-w-full min-w-0 overflow-x-auto pb-3">
           <div className="flex flex-wrap items-center gap-2">
             <Card
               className={cn(
@@ -329,7 +329,7 @@ export default function RolesPage() {
           </div>
         </div>
       </div>
-      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
+      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col gap-0">
           <Card className="flex min-h-0 flex-col border-none shadow-none">
             <CardHeader className="shrink-0 p-4">
@@ -386,7 +386,7 @@ export default function RolesPage() {
                 Failed to load roles
               </div>
             ) : !Array.isArray(roles) || roles.length === 0 ? (
-              <div className="py-12 text-center">
+              <div className="py-12 text-center table-row-border">
                 <Shield className="text-muted-foreground/30 mx-auto mb-4 h-12 w-12" />
                 <p className="text-muted-foreground">No roles found</p>
               </div>

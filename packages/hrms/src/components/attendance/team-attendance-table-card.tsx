@@ -79,7 +79,7 @@ export function TeamAttendanceTableCard(props: {
               <TableRow key={row.employee.id} className="hover:bg-muted/50">
                 <TableCell className="min-w-[220px]">
                   <div className="min-w-0">
-                    <p className="primary-text-medium truncate">
+                    <p className="primary-text-medium truncate text-leadgaze-primary dark:text-leadgaze-primary">
                       {getEmployeeName(row)}
                     </p>
                     <p className="text-muted-foreground truncate text-xs">
