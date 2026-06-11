@@ -288,7 +288,7 @@ export function CoreEmailSettingsPage({
           </Alert>
         ) : (
           <Tabs defaultValue={settingsTabs[0]!.value} className="space-y-6">
-            <TabsList className="mb-1">
+            <TabsList className="mb-0">
               {settingsTabs.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value}>
                   {tab.label}

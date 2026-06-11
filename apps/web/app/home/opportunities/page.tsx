@@ -356,7 +356,7 @@ export default function OpportunitiesPage() {
       </div>
 
       {/* Pipeline Summary Cards */}
-      <div className="w-full max-w-full min-w-0 shrink-0 pb-4">
+      <div className="w-full max-w-full min-w-0 shrink-0 pb-2 pt-2">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           <Card
             className={`hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer transition-all ${selectedStage === 'all' ? 'border-primary table-status-select-bg dark:dark-table-status-select-bg' : ''}`}
@@ -457,7 +457,7 @@ export default function OpportunitiesPage() {
         />
       </div>
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3 pb-6">
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
           <CustomTableContainer
             pagination={totalCount > 0 && (

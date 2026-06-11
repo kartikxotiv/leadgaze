@@ -21,7 +21,7 @@ export function ServiceCloudSettingsPage({ workspaceId }: { workspaceId: string 
 
   return (
     <Tabs defaultValue="statuses" className="space-y-4">
-      <TabsList className="mb-1">
+      <TabsList className="mb-0">
         <TabsTrigger value="statuses">Statuses</TabsTrigger>
         <TabsTrigger value="priorities">Priorities</TabsTrigger>
         <TabsTrigger value="categories">Categories</TabsTrigger>

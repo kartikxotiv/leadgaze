@@ -196,16 +196,16 @@ export default function ContactsPage() {
   }
 
   return (
-    <ModuleGuard module="contacts">
+    <ModuleGuard module="contacts"> 
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader            
           title={`Contacts (${totalCount})`}
           description="Manage your contacts (People)"
-        />          
-      
+        />  
+      </div>
 
         {/* Full-width search / filter / actions toolbar */}
-        <div className="w-full max-w-full min-w-0 shrink-0 border-b">
+        <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2 pt-2">
           <ListToolBar
             showSearch
             searchPlaceholder="Search by name, email, or account..."
@@ -497,7 +497,7 @@ export default function ContactsPage() {
               }}
             />
                 </PageBody>
-                </div>
+          
     </ModuleGuard>
   );
 }
