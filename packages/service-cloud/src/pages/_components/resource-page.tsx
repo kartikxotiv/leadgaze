@@ -40,6 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import { Skeleton } from '@kit/ui/skeleton';
 
 import {
   type ServiceCloudRecord,
@@ -271,14 +272,18 @@ export function ServiceCloudResourcePage({
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length + 1}
-                  className="text-muted-foreground py-8 text-center"
-                >
-                  Loading...
-                </TableCell>
-              </TableRow>
+              [...Array(5)].map((_, i) => (
+                <TableRow key={`skeleton-${i}`}>
+                  <TableCell colSpan={columns.length} className="h-[52px] px-4 py-2">
+                    <Skeleton className="h-7 w-full" />
+                  </TableCell>
+                  {canEdit || canDelete ? (
+                    <TableCell className="bg-card px-4 text-right">
+                      <Skeleton className="h-7 ml-auto w-full" />
+                    </TableCell>
+                  ) : null}
+                </TableRow>
+              ))
             ) : data.length === 0 ? (
               <TableRow>
                 <TableCell
