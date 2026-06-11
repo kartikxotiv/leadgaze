@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
+import { usePathname } from 'next/navigation';
 import { format } from 'date-fns';
 import {
   ArrowRight,
@@ -71,15 +72,19 @@ export default function AuditLogsPage() {
   const [page, setPage] = useState(1);
   const [selectedModule, setSelectedModule] = useState<string>('all');
   const [selectedAction, setSelectedAction] = useState<string>('all');
-  const [selectedLog, setSelectedLog] = useState<any>(null);
+  const pathname = usePathname();
+  const productContextMatch = pathname.match(/^\/home\/([^/]+)\/audit-logs/);
+  const contextProductKey = productContextMatch ? productContextMatch[1] : null;
+
+  const [selectedProduct, setSelectedProduct] = useState<string>(contextProductKey || 'all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [filterView, setFilterView] = useState<'main' | 'module' | 'action'>(
+  const [filterView, setFilterView] = useState<'main' | 'module' | 'action' | 'product'>(
     'main',
   );
   const itemsPerPage = 15;
 
   const activeFilterCount =
-    (selectedModule !== 'all' ? 1 : 0) + (selectedAction !== 'all' ? 1 : 0);
+    (selectedModule !== 'all' ? 1 : 0) + (selectedAction !== 'all' ? 1 : 0) + (selectedProduct !== 'all' && !contextProductKey ? 1 : 0);
 
   const columns = useMemo(
     () => [
@@ -108,6 +113,7 @@ export default function AuditLogsPage() {
       page,
       selectedModule,
       selectedAction,
+      selectedProduct,
       itemsPerPage,
     ],
     queryFn: () => {
@@ -118,6 +124,7 @@ export default function AuditLogsPage() {
         limit: itemsPerPage,
         module: selectedModule === 'all' ? undefined : selectedModule,
         action: selectedAction === 'all' ? undefined : selectedAction,
+        productKey: selectedProduct === 'all' ? undefined : selectedProduct,
       });
     },
     enabled: !!workspace?.id,
@@ -200,7 +207,9 @@ export default function AuditLogsPage() {
                           ? 'Filters'
                           : filterView === 'module'
                             ? 'Filter by Module'
-                            : 'Filter by Action'}
+                            : filterView === 'product'
+                              ? 'Filter by Product'
+                              : 'Filter by Action'}
                       </span>
                     </div>
                     <button
@@ -208,6 +217,7 @@ export default function AuditLogsPage() {
                       onClick={() => {
                         setSelectedModule('all');
                         setSelectedAction('all');
+                        if (!contextProductKey) setSelectedProduct('all');
                         setPage(1);
                       }}
                     >
@@ -246,6 +256,22 @@ export default function AuditLogsPage() {
                           </div>
                           <ChevronRight className="h-4 w-4 text-gray-400" />
                         </button>
+                        {!contextProductKey && (
+                          <button
+                            className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
+                            onClick={() => setFilterView('product')}
+                          >
+                            <div className="flex flex-col gap-1">
+                              <span>Product</span>
+                              <span className="text-muted-foreground text-xs font-normal">
+                                {selectedProduct === 'all'
+                                  ? 'All products'
+                                  : getModuleLabel(selectedProduct)}
+                              </span>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-gray-400" />
+                          </button>
+                        )}
                       </div>
                     )}
 
@@ -331,6 +357,48 @@ export default function AuditLogsPage() {
                         )}
                       </div>
                     )}
+
+                    {filterView === 'product' && (
+                      <div className="flex flex-col gap-1 p-1">
+                        {[
+                          'all',
+                          'sales',
+                          'hrms',
+                          'inventory',
+                          'service_cloud',
+                          'funds',
+                          'common',
+                        ].map((prod) => {
+                          const isSelected = selectedProduct === prod;
+                          return (
+                            <div
+                              key={prod}
+                              className="hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors"
+                              onClick={() => {
+                                setSelectedProduct(prod);
+                                setPage(1);
+                              }}
+                            >
+                              <div
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${isSelected
+                                    ? 'border-black bg-transparent dark:border-white'
+                                    : 'border-black/20 bg-transparent dark:border-white/30'
+                                  }`}
+                              >
+                                {isSelected && (
+                                  <div className="h-2 w-2 rounded-full bg-black dark:bg-white" />
+                                )}
+                              </div>
+                              <span className="text-black capitalize dark:text-gray-200">
+                                {prod === 'all'
+                                  ? 'All Products'
+                                  : getModuleLabel(prod)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </PopoverContent>
               </Popover>
@@ -344,6 +412,7 @@ export default function AuditLogsPage() {
                 onClick={() => {
                   setSelectedModule('all');
                   setSelectedAction('all');
+                  if (!contextProductKey) setSelectedProduct('all');
                   setPage(1);
                 }}
               >
