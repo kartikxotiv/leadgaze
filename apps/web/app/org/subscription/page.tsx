@@ -266,7 +266,7 @@ export default function OrgSubscriptionPage() {
                 {seats.length} module{seats.length !== 1 ? 's' : ''}
               </Badge>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {seats.map((seat) => (
                 <ActiveSubscriptionCard
                   key={seat.id}

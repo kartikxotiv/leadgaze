@@ -820,7 +820,7 @@ export default function LeadDetailsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
                     <div className="h-2 w-2 rounded-full bg-green-500" />
                     <div className="min-w-0 flex-1">
