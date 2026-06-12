@@ -25,6 +25,8 @@ import {
   Users,
 } from 'lucide-react';
 
+import { CoreEmailComposeDialog } from '@kit/core/pages';
+import { getCoreEmailAccountsService } from '@kit/core/services';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
@@ -52,7 +54,6 @@ import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountByIdService } from '~/services/accounts.service';
 import { type Contact, getContactsService } from '~/services/contacts.service';
-import { getWorkspaceEmailAccountService } from '~/services/email.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
 
 import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
@@ -64,7 +65,6 @@ import {
 import { EntityCalls } from '../../_components/entity-calls';
 import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
-import { EmailLeadDialog } from '../../leads/components/email-lead-dialog';
 import { LogCallDialog } from '../../leads/components/log-call-dialog';
 import { OpportunityDialog } from '../../opportunities/components/opportunity-dialog';
 import { AccountAssignees } from '../components/account-assignees';
@@ -98,7 +98,9 @@ function AccountDetailsSkeleton() {
               }
             />
             <Card>
-              <CardHeader><Skeleton className="h-5 w-24" /></CardHeader>
+              <CardHeader>
+                <Skeleton className="h-5 w-24" />
+              </CardHeader>
               <CardContent className="grid gap-6 sm:grid-cols-2">
                 {[...Array(6)].map((_, i) => (
                   <div key={i} className="space-y-1">
@@ -109,7 +111,9 @@ function AccountDetailsSkeleton() {
               </CardContent>
             </Card>
             <Card>
-              <CardHeader><Skeleton className="h-5 w-24" /></CardHeader>
+              <CardHeader>
+                <Skeleton className="h-5 w-24" />
+              </CardHeader>
               <CardContent className="space-y-3">
                 {[...Array(3)].map((_, i) => (
                   <Skeleton key={i} className="h-8 w-full rounded-md" />
@@ -117,7 +121,9 @@ function AccountDetailsSkeleton() {
               </CardContent>
             </Card>
             <Card>
-              <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
+              <CardHeader>
+                <Skeleton className="h-5 w-32" />
+              </CardHeader>
               <CardContent className="space-y-3">
                 {[...Array(2)].map((_, i) => (
                   <Skeleton key={i} className="h-8 w-full rounded-md" />
@@ -127,7 +133,9 @@ function AccountDetailsSkeleton() {
           </div>
           <div className="space-y-6">
             <Card>
-              <CardHeader><Skeleton className="h-4 w-24" /></CardHeader>
+              <CardHeader>
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
               <CardContent className="space-y-4">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="space-y-1">
@@ -221,9 +229,9 @@ export default function AccountDetailsPage() {
 
   const opportunities = opportunitiesData?.data || [];
 
-  const { data: workspaceEmailAccounts = [] } = useQuery({
-    queryKey: ['workspace-email-accounts', workspace?.id],
-    queryFn: () => getWorkspaceEmailAccountService(workspace?.id || ''),
+  const { data: coreEmailAccounts = [] } = useQuery({
+    queryKey: ['core-email-accounts', workspace?.id],
+    queryFn: () => getCoreEmailAccountsService(workspace!.id),
     enabled: !!workspace?.id,
   });
 
@@ -250,16 +258,23 @@ export default function AccountDetailsPage() {
 
   return (
     <ModuleGuard module="accounts">
-      <div className="pt-4 pb-2 flex justify-between items-center w-full">
+      <div className="flex w-full items-center justify-between pt-4 pb-2">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" asChild className="border p-0 border-leadgaze-border">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="border-leadgaze-border border p-0"
+          >
             <Link href="/home/accounts">
-              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
+              <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
             </Link>
           </Button>
           <div className="flex flex-col">
             <h1 className="text-lg font-semibold">Account details</h1>
-            <p className="text-leadgaze-muted text-sm">View and edit lead information</p>
+            <p className="text-leadgaze-muted text-sm">
+              View and edit lead information
+            </p>
           </div>
         </div>
         {canEdit && (
@@ -617,9 +632,13 @@ export default function AccountDetailsPage() {
                           }
                           metadata={
                             <span>
-                              {opp.expected_close_date && `Expected Close: ${new Date(opp.expected_close_date).toLocaleDateString()}`}
-                              {opp.expected_close_date && opp.probability !== undefined && ' • '}
-                              {opp.probability !== undefined && `Probability: ${opp.probability}%`}
+                              {opp.expected_close_date &&
+                                `Expected Close: ${new Date(opp.expected_close_date).toLocaleDateString()}`}
+                              {opp.expected_close_date &&
+                                opp.probability !== undefined &&
+                                ' • '}
+                              {opp.probability !== undefined &&
+                                `Probability: ${opp.probability}%`}
                             </span>
                           }
                           actions={
@@ -648,7 +667,7 @@ export default function AccountDetailsPage() {
             </CardWidgetContainer>
             {/* Notes Section */}
             <EntityNotes entityType="account" entityId={id} />
- 
+
             {/* Danger Zone */}
             {rbacCanAccess('accounts', 'delete') && (
               <Card className="border-destructive/50 border-solid">
@@ -690,7 +709,7 @@ export default function AccountDetailsPage() {
               </Card>
             )}
           </div>
- 
+
           {/* Sidebar */}
           <div className="space-y-6">
             <Card>
@@ -734,7 +753,7 @@ export default function AccountDetailsPage() {
                     </span>
                   </div>
                 </div>
- 
+
                 {account.twitter_handle && (
                   <>
                     <Separator />
@@ -776,12 +795,12 @@ export default function AccountDetailsPage() {
                 )}
               </CardContent>
             </Card>
- 
+
             {/* Account Assignees Section */}
             {workspace?.id && (
               <AccountAssignees accountId={id} workspaceId={workspace.id} />
             )}
- 
+
             {/* Activity Sections */}
             <EntityCalls entityType="account" entityId={id} />
             <EntityEmails
@@ -833,14 +852,17 @@ export default function AccountDetailsPage() {
         />
       )}
 
-      <EmailLeadDialog
+      <CoreEmailComposeDialog
         open={isEmailDialogOpen}
         onOpenChange={setIsEmailDialogOpen}
-        leadName={account.account_name}
-        recipientOptions={accountEmailRecipients}
-        workspaceEmailAccounts={workspaceEmailAccounts}
-        entityId={id}
+        workspaceId={workspace?.id || ''}
+        accounts={coreEmailAccounts}
         entityType="account"
+        entityId={id}
+        initialTo={accountEmailRecipients[0]?.email}
+        templateContext={{
+          account_name: account.account_name,
+        }}
       />
     </ModuleGuard>
   );

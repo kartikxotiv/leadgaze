@@ -20,10 +20,14 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { CoreEmailComposeDialog } from '@kit/core/pages';
+import { getCoreEmailAccountsService } from '@kit/core/services';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CustomInputForView } from '@kit/ui/custom-input-for-view';
 import { DetailHeader } from '@kit/ui/detail-header';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
@@ -42,7 +46,6 @@ import {
 } from '~/lib/permissions/use-permissions';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
-import { getWorkspaceEmailAccountService } from '~/services/email.service';
 import {
   getLeadByIdService,
   getLeadStatusesService,
@@ -61,12 +64,8 @@ import { EntityNotes } from '../../_components/entity-notes';
 import { ChangeStatusDialog } from '../components/change-status-dialog';
 import { ConvertLeadDialog } from '../components/convert-lead-dialog';
 import EditLeadDialog from '../components/edit-lead-dialog';
-import { EmailLeadDialog } from '../components/email-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
 import { LogCallDialog } from '../components/log-call-dialog';
-
-import { CardWidgetContainer } from '@kit/ui/card-widget-container';
-import { CustomInputForView } from '@kit/ui/custom-input-for-view';
 
 function LeadDetailsSkeleton() {
   return (
@@ -95,7 +94,9 @@ function LeadDetailsSkeleton() {
               }
             />
             <Card>
-              <CardHeader><Skeleton className="h-5 w-24" /></CardHeader>
+              <CardHeader>
+                <Skeleton className="h-5 w-24" />
+              </CardHeader>
               <CardContent className="grid gap-6 sm:grid-cols-2">
                 {[...Array(8)].map((_, i) => (
                   <div key={i} className="space-y-1">
@@ -106,7 +107,9 @@ function LeadDetailsSkeleton() {
               </CardContent>
             </Card>
             <Card>
-              <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
+              <CardHeader>
+                <Skeleton className="h-5 w-32" />
+              </CardHeader>
               <CardContent className="space-y-3">
                 {[...Array(3)].map((_, i) => (
                   <Skeleton key={i} className="h-8 w-full rounded-md" />
@@ -116,7 +119,9 @@ function LeadDetailsSkeleton() {
           </div>
           <div className="space-y-6">
             <Card>
-              <CardHeader><Skeleton className="h-4 w-24" /></CardHeader>
+              <CardHeader>
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
               <CardContent className="space-y-4">
                 {[...Array(4)].map((_, i) => (
                   <div key={i} className="space-y-1">
@@ -144,7 +149,6 @@ export default function LeadDetailsPage() {
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedDraft, setSelectedDraft] = useState<any>(null);
 
   const queryClient = useQueryClient();
 
@@ -163,12 +167,9 @@ export default function LeadDetailsPage() {
     },
     enabled: !!leadId && !!workspace,
   });
-  const { data: workspaceEmailAccount } = useQuery({
-    queryKey: ['workspace_id', workspace?.id],
-    queryFn: () => {
-      if (!workspace?.id) throw new Error('Workspace ID is required');
-      return getWorkspaceEmailAccountService(workspace.id);
-    },
+  const { data: coreEmailAccounts = [] } = useQuery({
+    queryKey: ['core-email-accounts', workspace?.id],
+    queryFn: () => getCoreEmailAccountsService(workspace!.id),
     enabled: !!workspace?.id,
   });
 
@@ -295,16 +296,23 @@ export default function LeadDetailsPage() {
 
   return (
     <ModuleGuard module="leads">
-      <div className="pt-4 pb-2 flex justify-between items-center w-full">
+      <div className="flex w-full items-center justify-between pt-4 pb-2">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" asChild className="border p-0 border-leadgaze-border">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="border-leadgaze-border border p-0"
+          >
             <Link href="/home/sales/leads">
-              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
+              <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
             </Link>
           </Button>
           <div className="flex flex-col">
             <h1 className="text-lg font-semibold">Lead details</h1>
-            <p className="text-leadgaze-muted text-sm">View and edit lead information</p>
+            <p className="text-leadgaze-muted text-sm">
+              View and edit lead information
+            </p>
           </div>
         </div>
         {canEdit && (
@@ -359,14 +367,11 @@ export default function LeadDetailsPage() {
                     <Clock className="h-3 w-3" />
                     <span>
                       Created on{' '}
-                      {new Date(lead.created_at).toLocaleDateString(
-                        undefined,
-                        {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        },
-                      )}
+                      {new Date(lead.created_at).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
                     </span>
                   </div>
                 </>
@@ -407,7 +412,9 @@ export default function LeadDetailsPage() {
                     disabled={!lead.email}
                     onClick={() => lead.email && setIsEmailDialogOpen(true)}
                     title={
-                      !lead.email ? 'Lead has no email address' : 'Send email to lead'
+                      !lead.email
+                        ? 'Lead has no email address'
+                        : 'Send email to lead'
                     }
                   >
                     <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
@@ -426,133 +433,154 @@ export default function LeadDetailsPage() {
                       Convert Lead
                     </Button>
                   )}
-
-                 
                 </div>
               }
             />
-{/* $$$$$$$$$$$$$*/}
+            {/* $$$$$$$$$$$$$*/}
 
             {/* Comapny */}
-            <CardWidgetContainer title="Company" icon={<User className="w-5 h-5 text-leadgaze-dark dark:text-white" />}>
-            <div className="flex-1">
-              <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
-                {lead.company_name && (
-                  <CustomInputForView
-                    label="Company"
-                    value={lead.company_name}                    
-                  />                  
-                )}
-                
-                {lead.job_title && (
-                  <CustomInputForView
-                    label="Job Title"
-                    value={lead.job_title}                    
-                  />                                    
-                )}
-                {lead.industry && (
-                  <CustomInputForView
-                    label="Industry"
-                    value={lead.industry.industry_name}                    
-                  />
-                )}
-                {lead.company_size && (
-                  <CustomInputForView
-                    label="Company Size"
-                    value={lead.company_size}                    
-                  />
-                )}
-                {lead.company_website ? (
-                  <CustomInputForView
-                    label="Website"
-                    value={<a
-                        href={lead.company_website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
-                      >{lead.company_website}</a>}
-                  />
-                  
-                ) : null}
-                {lead.company_linkedin_url ? (
-                  <CustomInputForView
-                    label="Company LinkedIn"
-                    value={<a
-                        href={lead.company_linkedin_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
-                      >{lead.company_linkedin_url}</a>}
-                  />                  
-                ) : null}
-                {lead.department && (
-                  <CustomInputForView
-                    label="Department"
-                    value={lead.department}                    
-                  />
-                )}
-                {lead.notes && (
-                  <CustomInputForView
-                    label="Notes"
-                    value={lead.notes}                    
-                    as="textarea"
-                  />                  
-                )}
+            <CardWidgetContainer
+              title="Company"
+              icon={
+                <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+              }
+            >
+              <div className="flex-1">
+                <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
+                  {lead.company_name && (
+                    <CustomInputForView
+                      label="Company"
+                      value={lead.company_name}
+                    />
+                  )}
+
+                  {lead.job_title && (
+                    <CustomInputForView
+                      label="Job Title"
+                      value={lead.job_title}
+                    />
+                  )}
+                  {lead.industry && (
+                    <CustomInputForView
+                      label="Industry"
+                      value={lead.industry.industry_name}
+                    />
+                  )}
+                  {lead.company_size && (
+                    <CustomInputForView
+                      label="Company Size"
+                      value={lead.company_size}
+                    />
+                  )}
+                  {lead.company_website ? (
+                    <CustomInputForView
+                      label="Website"
+                      value={
+                        <a
+                          href={lead.company_website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {lead.company_website}
+                        </a>
+                      }
+                    />
+                  ) : null}
+                  {lead.company_linkedin_url ? (
+                    <CustomInputForView
+                      label="Company LinkedIn"
+                      value={
+                        <a
+                          href={lead.company_linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {lead.company_linkedin_url}
+                        </a>
+                      }
+                    />
+                  ) : null}
+                  {lead.department && (
+                    <CustomInputForView
+                      label="Department"
+                      value={lead.department}
+                    />
+                  )}
+                  {lead.notes && (
+                    <CustomInputForView
+                      label="Notes"
+                      value={lead.notes}
+                      as="textarea"
+                    />
+                  )}
+                </div>
               </div>
-              
-            </div>
             </CardWidgetContainer>
-            
 
             {/* Contact Information Section */}
-            <CardWidgetContainer title="Contact" icon={<User className="w-5 h-5 text-leadgaze-dark dark:text-white" />}>
+            <CardWidgetContainer
+              title="Contact"
+              icon={
+                <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+              }
+            >
               <div className="flex-1">
                 <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
                   {lead.email && (
                     <CustomInputForView
                       label="Primary Email"
-                      value={<a
+                      value={
+                        <a
                           href={`mailto:${lead.email}`}
                           className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
                         >
                           {lead.email}
-                        </a>}
-                    />                  
+                        </a>
+                      }
+                    />
                   )}
 
                   {lead.alt_email && (
                     <CustomInputForView
                       label="Alternative Email"
-                      value={<a
+                      value={
+                        <a
                           href={`mailto:${lead.alt_email}`}
                           className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
                         >
                           {lead.alt_email}
-                        </a>}
+                        </a>
+                      }
                     />
                   )}
 
                   {lead.phone_number && (
                     <CustomInputForView
                       label="Phone"
-                      value={<a
+                      value={
+                        <a
                           href={`tel:${lead.phone_number}`}
                           className="block text-sm text-gray-700 dark:text-gray-300"
                         >
                           {lead.phone_number}
-                        </a>}
-                    />                  
+                        </a>
+                      }
+                    />
                   )}
 
                   {lead.mobile_number && (
                     <CustomInputForView
                       label="Mobile"
-                      value={<a
+                      value={
+                        <a
                           href={`tel:${lead.mobile_number}`}
                           className="block text-sm text-gray-700 dark:text-gray-300"
                         >
                           {lead.mobile_number}
-                        </a>}
+                        </a>
+                      }
                     />
                   )}
 
@@ -560,7 +588,7 @@ export default function LeadDetailsPage() {
                     <CustomInputForView
                       label="Location"
                       value={lead.location}
-                    />                  
+                    />
                   )}
 
                   {lead.timezone && (
@@ -573,23 +601,24 @@ export default function LeadDetailsPage() {
                   {lead.linkedin_url && (
                     <CustomInputForView
                       label="LinkedIn"
-                      value={<a
+                      value={
+                        <a
                           href={lead.linkedin_url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
                         >
                           {lead.linkedin_url}
-                        </a>}
-                    />                  
+                        </a>
+                      }
+                    />
                   )}
-
                 </div>
               </div>
             </CardWidgetContainer>
-            
+
             {/* Notes Section */}
-            <EntityNotes entityType="lead" entityId={leadId} />            
+            <EntityNotes entityType="lead" entityId={leadId} />
 
             {/* Danger Zone */}
             {canAccess('leads', 'delete') && (
@@ -641,8 +670,8 @@ export default function LeadDetailsPage() {
                 <CardContent className="pt-6">
                   <div className="flex flex-row items-start justify-between gap-6">
                     {/* Left side: Breakdown */}
-                    <div className="flex-1 space-y-4 w-full">
-                      <h3 className="text-base font-semibold text-zinc-950 dark:text-white mb-2">
+                    <div className="w-full flex-1 space-y-4">
+                      <h3 className="mb-2 text-base font-semibold text-zinc-950 dark:text-white">
                         Lead Score
                       </h3>
                       <div className="flex items-center justify-between text-sm">
@@ -750,7 +779,7 @@ export default function LeadDetailsPage() {
                     </div>
 
                     {/* Right side: Circular Progress Indicator */}
-                    <div className="flex items-center justify-center flex-shrink-0 self-center sm:self-start">
+                    <div className="flex flex-shrink-0 items-center justify-center self-center sm:self-start">
                       <div className="relative h-24 w-24">
                         <svg
                           className="h-full w-full -rotate-90 transform"
@@ -802,12 +831,8 @@ export default function LeadDetailsPage() {
               entityType="lead"
               entityName={fullName}
               entityEmail={lead.email || undefined}
-              onOpenDraft={(draft) => {
-                setSelectedDraft(draft);
-                setIsEmailDialogOpen(true);
-              }}
             />
-            
+
             {/* Call Logs Section */}
             <EntityCalls entityType="lead" entityId={leadId} />
 
@@ -815,7 +840,7 @@ export default function LeadDetailsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-leadgaze-dark dark:text-white" />
+                  <Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                   <CardTitle className="text-lg">Activity</CardTitle>
                 </div>
               </CardHeader>
@@ -875,10 +900,6 @@ export default function LeadDetailsPage() {
 
             {/* Reminders */}
             <EntityReminders entityType="lead" entityId={leadId} />
-
-            
-
-            
 
             {/* Documents */}
             <EntityDocuments entityType="lead" entityId={leadId} />
@@ -977,19 +998,20 @@ export default function LeadDetailsPage() {
           defaultPhoneNumber={lead.phone_number || lead.mobile_number}
         />
       )}
-      {/* Email Lead Dialog */}
+      {/* Email Compose Dialog */}
       {lead && (
-        <EmailLeadDialog
+        <CoreEmailComposeDialog
           open={isEmailDialogOpen}
-          onOpenChange={(open) => {
-            setIsEmailDialogOpen(open);
-            if (!open) setSelectedDraft(null);
+          onOpenChange={setIsEmailDialogOpen}
+          workspaceId={workspace?.id || ''}
+          accounts={coreEmailAccounts}
+          entityType="lead"
+          entityId={leadId}
+          initialTo={lead.email || undefined}
+          templateContext={{
+            lead_name: fullName,
+            lead_email: lead.email,
           }}
-          leadId={leadId}
-          leadEmail={lead.email || ''}
-          leadName={fullName}
-          initialDraft={selectedDraft}
-          workspaceEmailAccounts={workspaceEmailAccount || []}
         />
       )}
     </ModuleGuard>

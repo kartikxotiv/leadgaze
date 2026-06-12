@@ -13,8 +13,6 @@ import {
 } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
-import { CardWidgetContainer } from '@kit/ui/card-widget-container';
-import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import {
   Card,
   CardContent,
@@ -22,6 +20,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import { Skeleton } from '@kit/ui/skeleton';
 
 import { getServiceCloudDashboardService } from '../../services';
@@ -160,7 +160,10 @@ export function ServiceCloudDashboardPage({
         {cards.map((card) => {
           const Icon = card.icon;
           return (
-            <Card key={card.label} className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+            <Card
+              key={card.label}
+              className="flex h-32 flex-col justify-between xl:h-28 2xl:h-32"
+            >
               <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
                 <div className="space-y-1">
                   <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
@@ -170,7 +173,9 @@ export function ServiceCloudDashboardPage({
                     {card.value}
                   </div>
                 </div>
-                <div className={`flex h-8 w-8 items-center justify-center rounded ${card.iconBg}`}>
+                <div
+                  className={`flex h-8 w-8 items-center justify-center rounded ${card.iconBg}`}
+                >
                   <Icon className="h-4 w-4 text-white" />
                 </div>
               </CardHeader>
@@ -208,9 +213,9 @@ export function ServiceCloudDashboardPage({
                         {status.count}
                       </div>
                     </div>
-                    <div className="h-2 w-full overflow-hidden bar-bg rounded-full">
+                    <div className="bar-bg h-2 w-full overflow-hidden rounded-full">
                       <div
-                        className="h-full rounded-full bg-leadgaze-success transition-all duration-500"
+                        className="bg-leadgaze-success h-full rounded-full transition-all duration-500"
                         style={{ width: percent(status.count, statusMax) }}
                       />
                     </div>
@@ -220,7 +225,10 @@ export function ServiceCloudDashboardPage({
             </div>
           </CardWidgetContainer>
 
-          <CardWidgetContainer title="Recent Tickets" description="Newest customer issues entering the queue.">
+          <CardWidgetContainer
+            title="Recent Tickets"
+            description="Newest customer issues entering the queue."
+          >
             <div className="px-6 py-4">
               {(data?.recentTickets ?? []).length === 0 ? (
                 <EmptyState label="No tickets yet." />
@@ -270,7 +278,9 @@ export function ServiceCloudDashboardPage({
                       key={priority.id}
                       title={priority.name}
                       subtitle={`${priority.openCount} open tickets`}
-                      badge={<Badge variant="secondary">{priority.count}</Badge>}
+                      badge={
+                        <Badge variant="secondary">{priority.count}</Badge>
+                      }
                     />
                   ))}
                 </CardWidgetList>
@@ -382,7 +392,7 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
-function ServiceCloudDashboardSkeleton() {
+export function ServiceCloudDashboardSkeleton() {
   return (
     <div className="space-y-6">
       {/* Hero banner skeleton */}
@@ -407,7 +417,10 @@ function ServiceCloudDashboardSkeleton() {
       {/* Stat cards skeleton */}
       <div className="grid gap-4 md:grid-cols-5">
         {[1, 2, 3, 4, 5].map((i) => (
-          <Card key={i} className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+          <Card
+            key={i}
+            className="flex h-32 flex-col justify-between xl:h-28 2xl:h-32"
+          >
             <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
               <div className="space-y-2">
                 <Skeleton className="h-3 w-20" />
@@ -430,7 +443,7 @@ function ServiceCloudDashboardSkeleton() {
           <Card>
             <CardHeader className="border-b">
               <Skeleton className="h-5 w-36" />
-              <Skeleton className="h-3 w-52 mt-1" />
+              <Skeleton className="mt-1 h-3 w-52" />
             </CardHeader>
             <div className="space-y-4 px-6 py-4">
               {[1, 2, 3, 4].map((i) => (
@@ -452,12 +465,12 @@ function ServiceCloudDashboardSkeleton() {
           <Card>
             <CardHeader className="border-b">
               <Skeleton className="h-5 w-36" />
-              <Skeleton className="h-3 w-52 mt-1" />
+              <Skeleton className="mt-1 h-3 w-52" />
             </CardHeader>
-            <div className="px-6 py-4 space-y-3">
+            <div className="space-y-3 px-6 py-4">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="flex items-center gap-3 py-2">
-                  <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
+                  <Skeleton className="h-8 w-8 flex-shrink-0 rounded-full" />
                   <div className="flex-1 space-y-1.5">
                     <Skeleton className="h-4 w-48" />
                     <Skeleton className="h-3 w-32" />
@@ -471,13 +484,17 @@ function ServiceCloudDashboardSkeleton() {
 
         {/* Right aside skeleton */}
         <aside className="space-y-6">
-          {["Priority Pressure", "Customer Pressure", "Oldest Open Tickets"].map((title) => (
+          {[
+            'Priority Pressure',
+            'Customer Pressure',
+            'Oldest Open Tickets',
+          ].map((title) => (
             <Card key={title}>
               <CardHeader>
                 <Skeleton className="h-5 w-36" />
-                <Skeleton className="h-3 w-44 mt-1" />
+                <Skeleton className="mt-1 h-3 w-44" />
               </CardHeader>
-              <div className="px-6 py-4 space-y-3">
+              <div className="space-y-3 px-6 py-4">
                 {[1, 2, 3, 4].map((i) => (
                   <div key={i} className="flex items-center gap-3 py-2">
                     <div className="flex-1 space-y-1.5">
