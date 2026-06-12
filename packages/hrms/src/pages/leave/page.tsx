@@ -60,8 +60,8 @@ export function LeavePage(props: {
   const activeCount = getLeaveTabCount(page, page.activeTab);
 
   return (
-    <section className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col">
-      <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col">
+    <>
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
           title={`Leave (${activeCount})`}
           description={
@@ -72,10 +72,11 @@ export function LeavePage(props: {
         >
           {props.headerActions}
         </PageHeader>
+      </div>
 
         {!page.isRbacLoading && page.availableTabs.length > 0 ? (
           <>
-            <div className="w-full min-w-0 max-w-full overflow-x-auto pb-2">
+            <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2 pt-2">
               <div className="flex flex-wrap items-center gap-2">
                 {page.availableTabs.map((tab) => (
                   <TableStatusMetricTab
@@ -92,7 +93,7 @@ export function LeavePage(props: {
             </div>
 
             {primaryAction ? (
-              <div className="w-full min-w-0 max-w-full shrink-0 border-b pb-2">
+              <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
                 <ListToolBar
                   actions={[
                     {
@@ -109,10 +110,10 @@ export function LeavePage(props: {
             ) : null}
           </>
         ) : null}
-      </div>
+      
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col pt-3">
-        <div className="flex w-full min-w-0 max-w-full flex-col gap-4 pb-6">
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col">
+        <div className="flex w-full min-w-0 max-w-full flex-col gap-2">
           {!page.isRbacLoading && page.availableTabs.length === 0 ? (
             <Card>
               <CardContent className="text-muted-foreground p-6 text-sm">
@@ -125,6 +126,7 @@ export function LeavePage(props: {
                 title="Leave Year"
                 desc="Review balances, approvals, holidays, and reports for the selected year."
                 contentClassName="hidden"
+                className='border-b-0'
                 icon2={
                   <Input
                     className="h-9 w-full sm:w-32"
@@ -230,7 +232,7 @@ export function LeavePage(props: {
           holiday={page.editingHoliday}
         />
       ) : null}
-    </section>
+    </>
   );
 }
 

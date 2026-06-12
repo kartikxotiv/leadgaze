@@ -24,20 +24,20 @@ export function LeaveHolidaysTab(props: {
   onEditHoliday: (holiday: LeaveHoliday) => void;
 }) {
   return (
-    <TabsContent value="holidays" className="mt-0">
+    <TabsContent value="holidays" className="mt-2">
       <LeaveTableHeader
         title="Holiday Calendar"
         description="Organization holidays are excluded from leave day calculations."
       />
       <CustomTableContainer>
         <Table>
-          <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+          <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Description</TableHead>
-              <TableHead className="bg-card sticky right-0 px-4 text-right">
+              <TableHead className="sticky right-0 px-4 text-right">
                 Action
               </TableHead>
             </TableRow>
@@ -58,7 +58,7 @@ export function LeaveHolidaysTab(props: {
                   <TableCell className="max-w-[320px] truncate">
                     {holiday.description ?? 'No description'}
                   </TableCell>
-                  <TableCell className="bg-card sticky right-0 px-4 text-right">
+                  <TableCell className="sticky right-0 px-4 text-right">
                     {props.canManageHolidays ? (
                       <div className="flex justify-end gap-2">
                         <Button
@@ -105,14 +105,14 @@ export function LeaveTypesTab(props: {
   onEditLeaveType: (leaveType: LeaveType) => void;
 }) {
   return (
-    <TabsContent value="types" className="mt-0">
+    <TabsContent value="types" className="mt-2">
       <LeaveTableHeader
         title="Leave Types"
         description="Configure leave categories, allocations, and approval rules."
       />
       <CustomTableContainer>
         <Table>
-          <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+          <TableHeader>
             <TableRow>
               <TableHead>Code</TableHead>
               <TableHead>Name</TableHead>
@@ -121,7 +121,7 @@ export function LeaveTypesTab(props: {
               <TableHead>Approval</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Description</TableHead>
-              <TableHead className="bg-card sticky right-0 px-4 text-right">
+              <TableHead className="sticky right-0 px-4 text-right">
                 Action
               </TableHead>
             </TableRow>
@@ -151,7 +151,7 @@ export function LeaveTypesTab(props: {
                   <TableCell className="max-w-[320px] truncate">
                     {leaveType.description ?? 'No description'}
                   </TableCell>
-                  <TableCell className="bg-card sticky right-0 px-4 text-right">
+                  <TableCell className="sticky right-0 px-4 text-right">
                     {props.canManageLeaveTypes ? (
                       <div className="flex justify-end gap-2">
                         <Button
@@ -197,8 +197,8 @@ export function LeaveTypesTab(props: {
 function LeaveTableHeader(props: { description: string; title: string }) {
   return (
     <div className="mb-3 px-1">
-      <h2 className="text-base leading-tight font-semibold">{props.title}</h2>
-      <p className="text-muted-foreground mt-1 text-sm">{props.description}</p>
+      <h2 className="primary-heading leading-tight text-leadgaze-dark dark:text-white">{props.title}</h2>
+      <p className="primary-text-regular text-muted-foreground mt-1">{props.description}</p>
     </div>
   );
 }

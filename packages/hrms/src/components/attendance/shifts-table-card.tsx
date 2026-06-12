@@ -34,14 +34,14 @@ export function ShiftsTableCard(props: {
   return (
     <CustomTableContainer>
       <Table>
-        <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+        <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Start</TableHead>
             <TableHead>End</TableHead>
             <TableHead>Grace</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="bg-card sticky right-0 px-4 text-right">
+            <TableHead className="sticky right-0 px-4 text-right">
               Actions
             </TableHead>
           </TableRow>
@@ -79,7 +79,7 @@ export function ShiftsTableCard(props: {
                   {shift.is_active ? 'Active' : 'Inactive'}
                 </Badge>
               </TableCell>
-              <TableCell className="bg-card sticky right-0 px-4 text-right">
+              <TableCell className="sticky right-0 px-4 text-right">
                 {props.canManageShifts ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

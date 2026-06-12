@@ -15,7 +15,7 @@ export function ReportsAttendanceTab(props: {
     <>
       <ReportsMetricGrid items={data.metrics} />
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-2">
         <ReportTableCard
           title="Daily Attendance Summary"
           description="Day-wise attendance view for the selected employee scope."
@@ -63,7 +63,7 @@ export function ReportsAttendanceTab(props: {
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-2">
         <ReportTableCard
           title="Late Coming / Early Going"
           description="Employees with the highest shift start and shift end deviations."

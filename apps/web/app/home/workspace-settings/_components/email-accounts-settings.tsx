@@ -253,7 +253,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
       ) : null}
 
       <Tabs defaultValue="accounts" className="space-y-6">
-        <TabsList className="mb-1">
+        <TabsList className="mb-0">
           <TabsTrigger value="accounts">Email Accounts</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="variables">Variables</TabsTrigger>

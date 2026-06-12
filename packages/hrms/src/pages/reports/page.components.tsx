@@ -182,9 +182,9 @@ export function ReportTableCard(props: {
   title: string;
 }) {
   return (
-    <div className="flex min-h-0 flex-col gap-3">
+    <div className="flex min-h-0 flex-col gap-2">
       <div className="px-1">
-        <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
+        <h2 className="primary-heading leading-tight text-leadgaze-dark dark:text-white">{props.title}</h2>
         {props.description ? (
           <p className="text-muted-foreground mt-1 text-sm">
             {props.description}
@@ -194,7 +194,7 @@ export function ReportTableCard(props: {
 
       <CustomTableContainer>
         <Table>
-          <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+          <TableHeader>
             <TableRow>
               {props.columns.map((column) => (
                 <TableHead

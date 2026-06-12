@@ -25,21 +25,21 @@ export function RecruitmentOnboardingTab(props: {
   onboardingTasks: RecruitmentOnboardingTaskSummary[];
 }) {
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-2">
       <RecruitmentTableHeader
         title="Onboarding Checklist"
         description="Track pre-joining tasks, owners, blockers, and completion dates."
       />
       <CustomTableContainer>
         <Table>
-          <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+          <TableHeader>
             <TableRow>
               <TableHead>Candidate</TableHead>
               <TableHead>Task</TableHead>
               <TableHead>Owner</TableHead>
               <TableHead>Due Date</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="bg-card sticky right-0 px-4 text-right">
+              <TableHead className="sticky right-0 px-4 text-right">
                 Actions
               </TableHead>
             </TableRow>
@@ -62,7 +62,7 @@ export function RecruitmentOnboardingTab(props: {
                   <TableCell>
                     <RecruitmentStatusBadge label={formatLabel(task.status)} />
                   </TableCell>
-                  <TableCell className="bg-card sticky right-0 px-4 text-right">
+                  <TableCell className="sticky right-0 px-4 text-right">
                     {props.canManageOnboarding ? (
                       <div className="flex justify-end gap-1">
                         <Button
@@ -102,8 +102,8 @@ export function RecruitmentOnboardingTab(props: {
 function RecruitmentTableHeader(props: { description: string; title: string }) {
   return (
     <div className="px-1">
-      <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
-      <p className="text-muted-foreground mt-1 text-sm">{props.description}</p>
+      <h2 className="primary-heading leading-tight text-leadgaze-dark dark:text-white">{props.title}</h2>
+      <p className="primary-text-regular text-muted-foreground mt-1">{props.description}</p>
     </div>
   );
 }
