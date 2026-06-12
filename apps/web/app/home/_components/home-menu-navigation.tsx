@@ -527,6 +527,19 @@ function getLauncherMeta(moduleKey: string) {
   );
 }
 
+function getModuleDisplayName(originalName: string): string {
+  switch (originalName) {
+    case 'Sales CRM':
+      return 'Sales Desk';
+    case 'Service Cloud':
+      return 'Service Desk';
+    case 'HR Management':
+      return 'HRMS Desk';
+    default:
+      return originalName;
+  }
+}
+
 export function HomeMenuNavigation() {
   const { canAccess, currentWorkspace } = useRBAC();
   const { data: authUser } = useUser();
@@ -989,6 +1002,8 @@ export function HomeMenuNavigation() {
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {launcherModules.map((mod) => {
                     const meta = getLauncherMeta(mod.module_key);
+                    const displayName = getModuleDisplayName(mod.module_name);
+
                     return (
                       <Link
                         key={mod.module_id}
@@ -1014,7 +1029,7 @@ export function HomeMenuNavigation() {
                               {meta.icon}
                             </div>
                             <span className="font-bold text-zinc-900 transition-colors group-hover:text-blue-600 dark:text-white">
-                              {mod.module_name}
+                              {displayName}
                             </span>
                           </div>
                           <ArrowUpRight className="h-3.5 w-3.5 text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100" />
