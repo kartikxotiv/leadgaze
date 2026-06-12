@@ -12,7 +12,6 @@ export const SERVICE_CLOUD_MODULE_KEYS = {
   customers: 'service_cloud_customers',
   tickets: 'service_cloud_tickets',
   inboxes: 'service_cloud_inboxes',
-  teams: 'service_cloud_teams',
   timeTracking: 'service_cloud_time_tracking',
   reports: 'service_cloud_reports',
   settings: 'service_cloud_settings',
@@ -40,7 +39,10 @@ export type ServiceCloudModuleKey =
 export type ServiceCloudFeatureKey =
   (typeof SERVICE_CLOUD_FEATURE_KEYS)[keyof typeof SERVICE_CLOUD_FEATURE_KEYS];
 
-export type ServiceCloudCanAccess = (moduleKey: string, featureKey?: string) => boolean;
+export type ServiceCloudCanAccess = (
+  moduleKey: string,
+  featureKey?: string,
+) => boolean;
 
 type ServiceCloudPermission = {
   module: string;
@@ -61,7 +63,9 @@ export function useServiceCloudPermissions(workspaceId?: string) {
   const supabase = useSupabase();
   const { data: user } = useUser();
 
-  const { data: permissions = [], isLoading } = useQuery<ServiceCloudPermission[]>({
+  const { data: permissions = [], isLoading } = useQuery<
+    ServiceCloudPermission[]
+  >({
     queryKey: ['service-cloud', 'permissions', workspaceId, user?.id],
     queryFn: async () => {
       if (!workspaceId || !user?.id) return [];
@@ -105,13 +109,14 @@ export function useServiceCloudPermissions(workspaceId?: string) {
   });
 
   const canAccess = useMemo<ServiceCloudCanAccess>(
-    () => (moduleKey: string, featureKey = SERVICE_CLOUD_FEATURE_KEYS.view) =>
-      permissions.some(
-        (permission) =>
-          permission.module === moduleKey &&
-          permission.feature === featureKey &&
-          permission.can_access,
-      ),
+    () =>
+      (moduleKey: string, featureKey = SERVICE_CLOUD_FEATURE_KEYS.view) =>
+        permissions.some(
+          (permission) =>
+            permission.module === moduleKey &&
+            permission.feature === featureKey &&
+            permission.can_access,
+        ),
     [permissions],
   );
 
