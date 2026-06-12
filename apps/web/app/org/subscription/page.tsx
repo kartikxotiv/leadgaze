@@ -332,16 +332,13 @@ export default function OrgSubscriptionPage() {
   // Checkout mutation (for trial -> paid, new modules, or combined)
   const checkoutMutation = useMutation({
     mutationFn: () => {
-      // Combine changed existing modules + selected new modules
-      const existingItems =
-        changedItems.length > 0
-          ? changedItems
-          : seats.length > 0
-            ? seats.map((s) => ({
-                productKey: s.subscription_products?.product_key ?? '',
-                seats: pendingChanges[s.product_id] ?? s.seats_purchased,
-              }))
-            : [];
+      // Always include ALL existing modules with their pending seat counts
+      // (not just the ones that changed — unchanged modules must also be
+      //  included so they convert from trial to paid)
+      const existingItems = seats.map((s) => ({
+        productKey: s.subscription_products?.product_key ?? '',
+        seats: pendingChanges[s.product_id] ?? s.seats_purchased,
+      }));
 
       const allItems = [
         ...existingItems.filter((i) => i.productKey),
