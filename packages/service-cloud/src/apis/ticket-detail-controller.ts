@@ -35,8 +35,7 @@ export const getServiceCloudTicketDetailController = catchAsync(
       priority:ticket_priorities(*),
       category:ticket_categories(*),
       customer:customers(*),
-      organization:organizations(*),
-      assigned_team:teams(*)
+      organization:organizations(*)
     `,
       )
       .eq('workspace_id', workspaceId)
@@ -58,7 +57,6 @@ export const getServiceCloudTicketDetailController = catchAsync(
       statuses,
       priorities,
       categories,
-      teams,
       workspaceMembers,
       ticketAssignees,
       ticketEmailThreads,
@@ -100,12 +98,6 @@ export const getServiceCloudTicketDetailController = catchAsync(
         .eq('workspace_id', workspaceId)
         .eq('is_active', true)
         .order('display_order', { ascending: true }),
-      client
-        .from('teams')
-        .select('id, name, email_alias')
-        .eq('workspace_id', workspaceId)
-        .eq('is_active', true)
-        .order('name', { ascending: true }),
       supabase
         .from('workspace_members')
         .select('user_id')
@@ -130,7 +122,6 @@ export const getServiceCloudTicketDetailController = catchAsync(
     if (statuses.error) throw statuses.error;
     if (priorities.error) throw priorities.error;
     if (categories.error) throw categories.error;
-    if (teams.error) throw teams.error;
     if (workspaceMembers.error) throw workspaceMembers.error;
     if (ticketAssignees.error) throw ticketAssignees.error;
     if (ticketEmailThreads.error) throw ticketEmailThreads.error;
@@ -262,7 +253,6 @@ export const getServiceCloudTicketDetailController = catchAsync(
         statuses: statuses.data ?? [],
         priorities: priorities.data ?? [],
         categories: categories.data ?? [],
-        teams: teams.data ?? [],
         members: memberAccounts ?? [],
       },
     });

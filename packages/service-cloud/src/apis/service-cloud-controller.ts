@@ -18,12 +18,6 @@ const RESOURCE_CONFIG = {
     orderBy: 'created_at',
     searchColumns: ['name', 'email', 'phone', 'job_title'],
   },
-  teams: {
-    table: 'teams',
-    softDelete: false,
-    orderBy: 'created_at',
-    searchColumns: ['name', 'email_alias'],
-  },
   'ticket-statuses': {
     table: 'ticket_statuses',
     softDelete: false,
@@ -75,7 +69,7 @@ function cleanPayload(payload: Record<string, unknown>) {
   return Object.fromEntries(
     Object.entries(payload)
       .filter(([, value]) => value !== undefined)
-      .map(([key, value]) => [key, value === '' ? null : value])
+      .map(([key, value]) => [key, value === '' ? null : value]),
   );
 }
 
@@ -438,7 +432,6 @@ export const getServiceCloudDashboardController = catchAsync(
       reportTickets,
       statuses,
       priorities,
-      teams,
     ] = await Promise.all([
       client
         .from('tickets')
@@ -481,8 +474,7 @@ export const getServiceCloudDashboardController = catchAsync(
           priority:ticket_priorities(id, name, color, severity_order),
           category:ticket_categories(id, name),
           customer:customers(id, name, email),
-          organization:organizations(id, name),
-          assigned_team:teams(id, name)
+          organization:organizations(id, name)
         `,
         )
         .eq('workspace_id', workspaceId)
@@ -498,11 +490,6 @@ export const getServiceCloudDashboardController = catchAsync(
         .select('id, name, color, severity_order')
         .eq('workspace_id', workspaceId)
         .order('severity_order', { ascending: true }),
-      client
-        .from('teams')
-        .select('id, name')
-        .eq('workspace_id', workspaceId)
-        .order('name', { ascending: true }),
     ]);
 
     const totalLoggedSeconds = (timeEntries.data ?? []).reduce(
@@ -513,7 +500,6 @@ export const getServiceCloudDashboardController = catchAsync(
     const reportRows: any[] = reportTickets.data ?? [];
     const statusRows: any[] = statuses.data ?? [];
     const priorityRows: any[] = priorities.data ?? [];
-    const teamRows: any[] = teams.data ?? [];
     const timeRows: any[] = timeEntries.data ?? [];
     const ticketById = new Map<string, any>(
       reportRows.map((ticket: any) => [ticket.id, ticket]),
@@ -691,42 +677,6 @@ export const getServiceCloudDashboardController = catchAsync(
         right.actualLoggedSeconds - left.actualLoggedSeconds,
     );
 
-    const teamBreakdown = [
-      ...teamRows.map((team: any) => {
-        const matching = reportRows.filter(
-          (ticket: any) => ticket.assigned_team_id === team.id,
-        );
-        return {
-          id: team.id,
-          name: team.name,
-          totalTickets: matching.length,
-          openTickets: matching.filter(isOpenTicket).length,
-          loggedSeconds: matching.reduce(
-            (sum: number, ticket: any) =>
-              sum + Number(ticket.total_logged_seconds ?? 0),
-            0,
-          ),
-        };
-      }),
-      {
-        id: 'unassigned',
-        name: 'No team',
-        totalTickets: reportRows.filter(
-          (ticket: any) => !ticket.assigned_team_id,
-        ).length,
-        openTickets: reportRows.filter(
-          (ticket: any) => !ticket.assigned_team_id && isOpenTicket(ticket),
-        ).length,
-        loggedSeconds: reportRows
-          .filter((ticket: any) => !ticket.assigned_team_id)
-          .reduce(
-            (sum: number, ticket: any) =>
-              sum + Number(ticket.total_logged_seconds ?? 0),
-            0,
-          ),
-      },
-    ].filter((item) => item.totalTickets > 0);
-
     const openTicketAging = reportRows
       .filter(isOpenTicket)
       .map((ticket: any) => ({
@@ -786,7 +736,6 @@ export const getServiceCloudDashboardController = catchAsync(
           customerBreakdown,
           ticketTimeBreakdown,
           assigneeWorkload,
-          teamBreakdown,
           openTicketAging,
           timeByTicket,
         },
