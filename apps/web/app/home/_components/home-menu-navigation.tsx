@@ -640,11 +640,11 @@ export function HomeMenuNavigation() {
   const isServiceCloudModule = pathname.startsWith('/home/services');
 
   const currentAppName = useMemo(() => {
-    if (isHrmsModule) return 'HRMS';
+    if (isHrmsModule) return 'HRMS Desk';
     if (isFundraiseModule) return 'Fundraising';
     if (isInventoryModule) return 'Stocks';
-    if (isServiceCloudModule) return 'Service Cloud';
-    return 'Sales';
+    if (isServiceCloudModule) return 'Service Desk';
+    return 'Sales Desk';
   }, [
     isHrmsModule,
     isFundraiseModule,
