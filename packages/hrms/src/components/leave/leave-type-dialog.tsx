@@ -68,72 +68,95 @@ export function LeaveTypeDialog(props: {
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className={'sm:max-w-[560px]'}>
-        <div className={'flex flex-col gap-6'}>
-          <DialogHeader>
-            <DialogTitle className={'text-2xl'}>
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[560px] dark:border-slate-800 dark:bg-slate-950">
+        <div className="flex max-h-[90vh] flex-col gap-0">
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle className="text-2xl pr-12">
               {props.leaveType ? 'Edit Leave Type' : 'Create Leave Type'}
             </DialogTitle>
-            <DialogDescription className={'text-base'}>
+            <DialogDescription className="text-base">
               Configure available leave categories and approval rules.
             </DialogDescription>
           </DialogHeader>
 
-          <div className={'grid gap-4'}>
-            <div className={'grid gap-4 sm:grid-cols-2'}>
-              <div className={'grid gap-2'}>
-                <p className={'text-sm font-medium'}>Code</p>
-                <Input
-                  value={form.code}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      code: event.target.value,
-                    }))
-                  }
-                  placeholder={'CASUAL'}
-                />
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className={'grid gap-4'}>
+              <div className={'grid gap-4 sm:grid-cols-2'}>
+                <div className={'grid gap-2'}>
+                  <p className={'text-sm font-medium'}>Code</p>
+                  <Input
+                    value={form.code}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        code: event.target.value,
+                      }))
+                    }
+                    placeholder={'CASUAL'}
+                  />
+                </div>
+
+                <div className={'grid gap-2'}>
+                  <p className={'text-sm font-medium'}>Name</p>
+                  <Input
+                    value={form.name}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        name: event.target.value,
+                      }))
+                    }
+                    placeholder={'Casual Leave'}
+                  />
+                </div>
+              </div>
+
+              <div className={'grid gap-4 sm:grid-cols-2'}>
+                <div className={'grid gap-2'}>
+                  <p className={'text-sm font-medium'}>Annual Allocation</p>
+                  <Input
+                    min={0}
+                    type={'number'}
+                    value={form.annual_allocation}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        annual_allocation: Number(event.target.value || 0),
+                      }))
+                    }
+                  />
+                </div>
+
+                <div className={'grid gap-2'}>
+                  <p className={'text-sm font-medium'}>Requires HR Approval</p>
+                  <Select
+                    value={form.requires_hr_approval ? 'yes' : 'no'}
+                    onValueChange={(value) =>
+                      setForm((current) => ({
+                        ...current,
+                        requires_hr_approval: value === 'yes',
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={'no'}>No</SelectItem>
+                      <SelectItem value={'yes'}>Yes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className={'grid gap-2'}>
-                <p className={'text-sm font-medium'}>Name</p>
-                <Input
-                  value={form.name}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      name: event.target.value,
-                    }))
-                  }
-                  placeholder={'Casual Leave'}
-                />
-              </div>
-            </div>
-
-            <div className={'grid gap-4 sm:grid-cols-2'}>
-              <div className={'grid gap-2'}>
-                <p className={'text-sm font-medium'}>Annual Allocation</p>
-                <Input
-                  min={0}
-                  type={'number'}
-                  value={form.annual_allocation}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      annual_allocation: Number(event.target.value || 0),
-                    }))
-                  }
-                />
-              </div>
-
-              <div className={'grid gap-2'}>
-                <p className={'text-sm font-medium'}>Requires HR Approval</p>
+                <p className={'text-sm font-medium'}>Carry Forward</p>
                 <Select
-                  value={form.requires_hr_approval ? 'yes' : 'no'}
+                  value={form.can_carry_forward ? 'yes' : 'no'}
                   onValueChange={(value) =>
                     setForm((current) => ({
                       ...current,
-                      requires_hr_approval: value === 'yes',
+                      can_carry_forward: value === 'yes',
                     }))
                   }
                 >
@@ -146,46 +169,25 @@ export function LeaveTypeDialog(props: {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            <div className={'grid gap-2'}>
-              <p className={'text-sm font-medium'}>Carry Forward</p>
-              <Select
-                value={form.can_carry_forward ? 'yes' : 'no'}
-                onValueChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    can_carry_forward: value === 'yes',
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={'no'}>No</SelectItem>
-                  <SelectItem value={'yes'}>Yes</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className={'grid gap-2'}>
-              <p className={'text-sm font-medium'}>Description</p>
-              <Textarea
-                rows={4}
-                value={form.description ?? ''}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    description: event.target.value,
-                  }))
-                }
-                placeholder={'Describe when this leave type should be used'}
-              />
+              <div className={'grid gap-2'}>
+                <p className={'text-sm font-medium'}>Description</p>
+                <Textarea
+                  rows={4}
+                  value={form.description ?? ''}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      description: event.target.value,
+                    }))
+                  }
+                  placeholder={'Describe when this leave type should be used'}
+                />
+              </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
             <Button
               variant={'outline'}
               onClick={() => props.onOpenChange(false)}

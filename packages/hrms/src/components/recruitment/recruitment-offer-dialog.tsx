@@ -77,10 +77,10 @@ export function RecruitmentOfferDialog(
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[680px]">
-        <div className="space-y-6">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[680px] dark:border-slate-800 dark:bg-slate-950">
+        <div className="flex max-h-[90vh] flex-col">
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle className="text-2xl pr-12">
               {props.initialData ? 'Edit Offer' : 'Create Offer'}
             </DialogTitle>
             <DialogDescription className="text-base">
@@ -89,162 +89,164 @@ export function RecruitmentOfferDialog(
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2 sm:col-span-2">
-              <Label>Candidate</Label>
-              <Select
-                value={form.candidate_id || '__none__'}
-                onValueChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    candidate_id: value === '__none__' ? '' : value,
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select candidate" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Select candidate</SelectItem>
-                  {props.options.candidates.map((candidate) => (
-                    <SelectItem key={candidate.id} value={candidate.id}>
-                      {candidate.full_name} ({candidate.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2 sm:col-span-2">
+                <Label>Candidate</Label>
+                <Select
+                  value={form.candidate_id || '__none__'}
+                  onValueChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      candidate_id: value === '__none__' ? '' : value,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select candidate" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Select candidate</SelectItem>
+                    {props.options.candidates.map((candidate) => (
+                      <SelectItem key={candidate.id} value={candidate.id}>
+                        {candidate.full_name} ({candidate.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid gap-2 sm:col-span-2">
-              <Label htmlFor="offered-designation">Offered Designation</Label>
-              <Input
-                id="offered-designation"
-                value={form.offered_designation}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    offered_designation: event.target.value,
-                  }))
-                }
-                placeholder="Senior Frontend Engineer"
-              />
-            </div>
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="offered-designation">Offered Designation</Label>
+                <Input
+                  id="offered-designation"
+                  value={form.offered_designation}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      offered_designation: event.target.value,
+                    }))
+                  }
+                  placeholder="Senior Frontend Engineer"
+                />
+              </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="salary-amount">Salary Amount</Label>
-              <Input
-                id="salary-amount"
-                min={0}
-                type="number"
-                value={form.salary_amount}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    salary_amount: Number(event.target.value || 0),
-                  }))
-                }
-              />
-            </div>
+              <div className="grid gap-2">
+                <Label htmlFor="salary-amount">Salary Amount</Label>
+                <Input
+                  id="salary-amount"
+                  min={0}
+                  type="number"
+                  value={form.salary_amount}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      salary_amount: Number(event.target.value || 0),
+                    }))
+                  }
+                />
+              </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="currency-code">Currency</Label>
-              <Input
-                id="currency-code"
-                maxLength={3}
-                value={form.currency_code ?? 'INR'}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    currency_code: event.target.value.toUpperCase(),
-                  }))
-                }
-                placeholder="INR"
-              />
-            </div>
+              <div className="grid gap-2">
+                <Label htmlFor="currency-code">Currency</Label>
+                <Input
+                  id="currency-code"
+                  maxLength={3}
+                  value={form.currency_code ?? 'INR'}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      currency_code: event.target.value.toUpperCase(),
+                    }))
+                  }
+                  placeholder="INR"
+                />
+              </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="joining-date">Joining Date</Label>
-              <Input
-                id="joining-date"
-                type="date"
-                value={toDateInputValue(form.joining_date)}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    joining_date: event.target.value || null,
-                  }))
-                }
-              />
-            </div>
+              <div className="grid gap-2">
+                <Label htmlFor="joining-date">Joining Date</Label>
+                <Input
+                  id="joining-date"
+                  type="date"
+                  value={toDateInputValue(form.joining_date)}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      joining_date: event.target.value || null,
+                    }))
+                  }
+                />
+              </div>
 
-            <div className="grid gap-2">
-              <Label>Status</Label>
-              <Select
-                value={form.status}
-                onValueChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    status: value as RecruitmentOfferPayload['status'],
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {offerStatusOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="grid gap-2">
+                <Label>Status</Label>
+                <Select
+                  value={form.status}
+                  onValueChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      status: value as RecruitmentOfferPayload['status'],
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {offerStatusOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid gap-2 sm:col-span-2">
-              <Label>Approved By</Label>
-              <Select
-                value={form.approved_by_employee_id ?? '__none__'}
-                onValueChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    approved_by_employee_id:
-                      value === '__none__' ? null : value,
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select approver" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">No approver</SelectItem>
-                  {props.options.employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {employee.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="grid gap-2 sm:col-span-2">
+                <Label>Approved By</Label>
+                <Select
+                  value={form.approved_by_employee_id ?? '__none__'}
+                  onValueChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      approved_by_employee_id:
+                        value === '__none__' ? null : value,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select approver" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">No approver</SelectItem>
+                    {props.options.employees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {employee.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid gap-2 sm:col-span-2">
-              <Label htmlFor="offer-notes">Notes</Label>
-              <Textarea
-                id="offer-notes"
-                rows={4}
-                value={form.notes ?? ''}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    notes: event.target.value,
-                  }))
-                }
-                placeholder="Approval comments, offer conditions, or follow-up notes."
-              />
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="offer-notes">Notes</Label>
+                <Textarea
+                  id="offer-notes"
+                  rows={4}
+                  value={form.notes ?? ''}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      notes: event.target.value,
+                    }))
+                  }
+                  placeholder="Approval comments, offer conditions, or follow-up notes."
+                />
+              </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
             <Button
               type="button"
               variant="outline"

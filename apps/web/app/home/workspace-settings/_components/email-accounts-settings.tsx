@@ -269,8 +269,8 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                     <Plus className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[500px]">
-                  <DialogHeader>
+                <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[500px]">
+                  <DialogHeader className="border-b p-6 pb-4">
                     <DialogTitle>Connect Email Account</DialogTitle>
                   </DialogHeader>
                   <Tabs defaultValue="google" className="w-full">

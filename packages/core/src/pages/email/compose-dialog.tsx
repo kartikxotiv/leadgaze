@@ -128,12 +128,14 @@ export function CoreEmailComposeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>New Email</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-2xl dark:border-slate-800 dark:bg-slate-950">
+        <div className="flex max-h-[90vh] flex-col">
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle>New Email</DialogTitle>
+          </DialogHeader>
 
-        <div className="grid gap-4">
+          <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
+            <div className="grid gap-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label>Template</Label>
@@ -248,45 +250,47 @@ export function CoreEmailComposeDialog({
               placeholder="Write your email..."
             />
           </div>
-        </div>
+            </div>
+          </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            disabled={
-              !emailAccountId ||
-              toEmails.length === 0 ||
-              !subject.trim() ||
-              !body.trim() ||
-              mutation.isPending
-            }
-            onClick={() =>
-              mutation.mutate({
-                workspaceId,
-                emailAccountId: Number(emailAccountId),
-                toEmails,
-                cc: splitEmails(cc),
-                bcc: splitEmails(bcc),
-                subject: renderEmailContent(
-                  subject,
-                  variables,
-                  templateContext,
-                ),
-                body: renderEmailContent(body, variables, templateContext),
-                templateId: templateId ? Number(templateId) : undefined,
-              })
-            }
-          >
-            {mutation.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="mr-2 h-4 w-4" />
-            )}
-            Send Email
-          </Button>
-        </DialogFooter>
+          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={
+                !emailAccountId ||
+                toEmails.length === 0 ||
+                !subject.trim() ||
+                !body.trim() ||
+                mutation.isPending
+              }
+              onClick={() =>
+                mutation.mutate({
+                  workspaceId,
+                  emailAccountId: Number(emailAccountId),
+                  toEmails,
+                  cc: splitEmails(cc),
+                  bcc: splitEmails(bcc),
+                  subject: renderEmailContent(
+                    subject,
+                    variables,
+                    templateContext,
+                  ),
+                  body: renderEmailContent(body, variables, templateContext),
+                  templateId: templateId ? Number(templateId) : undefined,
+                })
+              }
+            >
+              {mutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
+              )}
+              Send Email
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

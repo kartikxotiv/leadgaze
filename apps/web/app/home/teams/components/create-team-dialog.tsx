@@ -82,8 +82,8 @@ export function CreateTeamDialog({ open, onOpenChange }: CreateTeamDialogProps) 
         if (!open) form.reset();
       }}
     >
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0">
+        <DialogHeader className="border-b p-6 pb-4">
           <DialogTitle>Create Team</DialogTitle>
           <DialogDescription>
             Create a new team to organize your SDRs and Managers.
@@ -91,7 +91,7 @@ export function CreateTeamDialog({ open, onOpenChange }: CreateTeamDialogProps) 
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -124,7 +124,10 @@ export function CreateTeamDialog({ open, onOpenChange }: CreateTeamDialogProps) 
               )}
             />
 
-            <DialogFooter className="pt-4">
+            
+          </form>
+        </Form>
+      <DialogFooter className="pt-4 border-t p-6 mt-auto">
               <Button
                 type="button"
                 variant="outline"
@@ -133,12 +136,10 @@ export function CreateTeamDialog({ open, onOpenChange }: CreateTeamDialogProps) 
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
+              <Button type="submit" form="dialog-form" disabled={createMutation.isPending}>
                 {createMutation.isPending ? 'Creating...' : 'Create Team'}
               </Button>
             </DialogFooter>
-          </form>
-        </Form>
       </DialogContent>
     </Dialog>
   );

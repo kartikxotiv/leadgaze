@@ -970,8 +970,8 @@ export function HomeMenuNavigation() {
               </button>
             </DialogTrigger>
 
-            <DialogContent className="max-w-2xl rounded-lg border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
-              <DialogHeader className="mb-4 border-b pb-4">
+            <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-2xl rounded-lg border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
+              <DialogHeader className="mb-4 border-b pb-4 border-b p-6 pb-4">
                 <DialogTitle className="flex items-center gap-2 text-xl font-bold text-zinc-900 dark:text-white">
                   <Grip className="h-5 w-5 text-blue-600" />
                   App Launcher

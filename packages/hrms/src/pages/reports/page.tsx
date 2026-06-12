@@ -102,7 +102,7 @@ export function ReportsPage(props: {
         ) : null}
       </div>
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col pt-3">
+      <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col pt-3">
         <div className="flex w-full min-w-0 max-w-full flex-col gap-4 pb-6">
           {!page.isRbacLoading && !page.canViewReports ? (
             <ReportsAccessCard />

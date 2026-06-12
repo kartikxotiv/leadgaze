@@ -277,9 +277,9 @@ export default function EditLeadDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
         <div className="flex max-h-[90vh] flex-col">
-          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950 border-b p-6 pb-4">
             <DialogTitle className="pr-12">
               Edit Lead
             </DialogTitle>
@@ -288,7 +288,7 @@ export default function EditLeadDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <form
+          <form id="dialog-form"
             onSubmit={handleSubmit}
             className="flex flex-1 flex-col overflow-hidden"
           >
@@ -683,7 +683,7 @@ export default function EditLeadDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading} className="gap-2">
+              <Button type="submit" form="dialog-form" disabled={isLoading} className="gap-2">
                 {isLoading ? (
                   <>
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

@@ -741,8 +741,8 @@ export default function OrgSubscriptionPage() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-md">
+          <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle className="flex items-center gap-2">
               <Users className="text-primary h-5 w-5" />
               {seatUpdateDialog.newSeats > seatUpdateDialog.currentSeats
@@ -780,7 +780,8 @@ export default function OrgSubscriptionPage() {
               </div>
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
+          
+        <DialogFooter className="gap-2 sm:gap-0 border-t p-6 mt-auto">
             <Button
               variant="outline"
               onClick={() =>
@@ -813,7 +814,7 @@ export default function OrgSubscriptionPage() {
               Confirm Update
             </Button>
           </DialogFooter>
-        </DialogContent>
+      </DialogContent>
       </Dialog>
 
       {/* Cancel Subscription Confirmation Dialog */}
@@ -823,8 +824,8 @@ export default function OrgSubscriptionPage() {
           if (!open) setCancelDialogOpen(false);
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-md">
+          <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle className="text-destructive flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" />
               Cancel Subscription
@@ -886,7 +887,40 @@ export default function OrgSubscriptionPage() {
               )}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        <DialogFooter className="gap-2 sm:gap-0 border-t p-6 mt-auto">
+            <Button
+              variant="outline"
+              onClick={() =>
+                setSeatUpdateDialog({
+                  open: false,
+                  seatId: '',
+                  displayName: '',
+                  currentSeats: 0,
+                  newSeats: 0,
+                })
+              }
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                await handleDirectUpdate(
+                  seatUpdateDialog.seatId,
+                  seatUpdateDialog.newSeats,
+                );
+                setSeatUpdateDialog({
+                  open: false,
+                  seatId: '',
+                  displayName: '',
+                  currentSeats: 0,
+                  newSeats: 0,
+                });
+              }}
+            >
+              Confirm Update
+            </Button>
+          </DialogFooter>
+      </DialogContent>
       </Dialog>
 
       {/* Remove Module Confirmation Dialog */}
@@ -902,8 +936,8 @@ export default function OrgSubscriptionPage() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-md">
+          <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle className="flex items-center gap-2">
               <Trash2 className="text-destructive h-5 w-5" />
               Remove Module
@@ -971,7 +1005,40 @@ export default function OrgSubscriptionPage() {
               )}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        <DialogFooter className="gap-2 sm:gap-0 border-t p-6 mt-auto">
+            <Button
+              variant="outline"
+              onClick={() =>
+                setSeatUpdateDialog({
+                  open: false,
+                  seatId: '',
+                  displayName: '',
+                  currentSeats: 0,
+                  newSeats: 0,
+                })
+              }
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                await handleDirectUpdate(
+                  seatUpdateDialog.seatId,
+                  seatUpdateDialog.newSeats,
+                );
+                setSeatUpdateDialog({
+                  open: false,
+                  seatId: '',
+                  displayName: '',
+                  currentSeats: 0,
+                  newSeats: 0,
+                });
+              }}
+            >
+              Confirm Update
+            </Button>
+          </DialogFooter>
+      </DialogContent>
       </Dialog>
     </div>
   );

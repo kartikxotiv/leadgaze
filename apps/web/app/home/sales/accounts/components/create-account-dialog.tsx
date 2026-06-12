@@ -114,7 +114,7 @@ export function CreateAccountDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 py-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-4 space-y-6 py-4">
           <div className="space-y-4">
             <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase">
               Basic Information

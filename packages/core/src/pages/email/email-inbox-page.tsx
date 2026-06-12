@@ -44,7 +44,7 @@ export function CoreEmailInboxPage({
         title="Inbox"
         description="View inbound and outbound workspace email conversations."
       />
-      <PageBody className="bg-sidebar sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pb-6 pt-6">
+      <PageBody className="sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pb-6 pt-6">
         {content}
       </PageBody>
     </>
