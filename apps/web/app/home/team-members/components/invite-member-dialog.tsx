@@ -50,9 +50,9 @@ export function InviteMemberDialog({
 
   // Fetch roles for selection
   const { data: roles = [], isLoading: rolesLoading } = useQuery({
-    queryKey: ['workspaceRoles', currentWorkspace?.id],
+    queryKey: ['workspaceRoles', currentWorkspace?.id, productKey],
     queryFn: async () => {
-      const res = await getRolesService(currentWorkspace?.id || '');
+      const res = await getRolesService(currentWorkspace?.id || '', productKey);
       return res?.data;
     },
     enabled: open && !!currentWorkspace?.id,
