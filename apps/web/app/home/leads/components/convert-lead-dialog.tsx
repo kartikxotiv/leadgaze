@@ -236,8 +236,8 @@ export function ConvertLeadDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-2xl">
+        <DialogHeader className="border-b p-6 pb-4">
           <DialogTitle>Convert Lead</DialogTitle>
           <DialogDescription>
             Convert this lead into an Account, Contact, and Opportunity.
@@ -245,7 +245,7 @@ export function ConvertLeadDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
             {/* Account Section */}
             <div className="space-y-4 rounded-lg border p-4">
               <h3 className="flex items-center gap-2 font-semibold">
@@ -629,7 +629,10 @@ export function ConvertLeadDialog({
               />
             </div>
 
-            <DialogFooter>
+            
+          </form>
+        </Form>
+      <DialogFooter className="border-t p-6 mt-auto">
               <Button
                 type="button"
                 variant="outline"
@@ -638,12 +641,10 @@ export function ConvertLeadDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" form="dialog-form" disabled={isSubmitting}>
                 {isSubmitting ? 'Converting...' : 'Convert'}
               </Button>
             </DialogFooter>
-          </form>
-        </Form>
       </DialogContent>
     </Dialog>
   );

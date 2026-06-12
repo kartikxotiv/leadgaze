@@ -856,11 +856,11 @@ export default function MeetingsPage() {
 
       {/* Create Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[700px]">
+          <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Schedule New Meeting</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="flex-1 overflow-y-auto px-6 py-4 grid gap-4">
             <div className="space-y-4">
               <Label>Associate with</Label>
               <RadioGroup
@@ -1009,6 +1009,8 @@ export default function MeetingsPage() {
                 placeholder="Zoom, Google Meet, or Office..."
               />
             </div>
+          </div>
+          <div className="border-t p-6 mt-auto">
             <Button
               onClick={handleCreate}
               disabled={
@@ -1032,8 +1034,8 @@ export default function MeetingsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[425px]">
+          <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Edit Meeting</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">

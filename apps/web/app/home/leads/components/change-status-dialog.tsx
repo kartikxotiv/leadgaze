@@ -103,14 +103,14 @@ export function ChangeStatusDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[425px]">
+        <DialogHeader className="border-b p-6 pb-4">
           <DialogTitle>Change Status</DialogTitle>
           <DialogDescription>
             Select a new status for this lead.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-4 px-6 py-4 flex-1 overflow-y-auto">
           <div className="grid gap-2">
             <Label htmlFor="status">Lead Status</Label>
             <Select
@@ -136,7 +136,8 @@ export function ChangeStatusDialog({
             </Select>
           </div>
         </div>
-        <DialogFooter>
+        
+      <DialogFooter className="border-t p-6 mt-auto">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

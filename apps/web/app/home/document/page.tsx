@@ -695,11 +695,11 @@ export default function DocumentPage() {
 
       {/* Upload Dialog */}
       <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-[600px]">
+          <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Upload Document</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             <div className="space-y-4">
               <Label>Associate with</Label>
               <RadioGroup
@@ -786,7 +786,8 @@ export default function DocumentPage() {
                 type="file"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
               />
-            </div>
+            </div></div>
+          <div className="border-t p-6 mt-auto">
             <Button
               onClick={handleUpload}
               disabled={!file || !entityId || createMutation.isPending}
@@ -804,8 +805,8 @@ export default function DocumentPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="flex max-h-[90vh] flex-col p-0">
+          <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Rename Document</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">

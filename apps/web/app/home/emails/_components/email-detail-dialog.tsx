@@ -36,8 +36,8 @@ export function EmailDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden">
-        <DialogHeader className="px-6 py-4 border-b shrink-0">
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="px-6 py-4 border-b shrink-0 border-b p-6 pb-4">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-bold truncate pr-8">
               {email.subject || '(No Subject)'}

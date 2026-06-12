@@ -208,15 +208,15 @@ export function EditRoleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-fit max-h-[95vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[700px]">
-        <DialogHeader className="shrink-0 border-b px-6 py-4">
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 flex h-fit flex-col gap-0 overflow-hidden p-0 sm:max-w-[700px]">
+        <DialogHeader className="shrink-0 border-b px-6 py-4 border-b p-6 pb-4">
           <DialogTitle>Edit Role</DialogTitle>
           <DialogDescription>
             Update the role details and settings
           </DialogDescription>
         </DialogHeader>
 
-        <form
+        <form id="dialog-form"
           onSubmit={handleSubmit}
           className="flex flex-1 flex-col overflow-hidden"
         >
@@ -382,7 +382,9 @@ export function EditRoleDialog({
             </div>
           </div>
 
-          <DialogFooter className="shrink-0 border-t bg-white px-6 py-4">
+          
+        </form>
+      <DialogFooter className="shrink-0 border-t bg-white px-6 py-4 border-t p-6 mt-auto">
             <Button
               type="button"
               variant="outline"
@@ -392,7 +394,7 @@ export function EditRoleDialog({
               Cancel
             </Button>
             <Button
-              type="submit"
+              type="submit" form="dialog-form"
               disabled={
                 updateRoleMutation.isPending ||
                 permissionsLoading ||
@@ -406,7 +408,6 @@ export function EditRoleDialog({
               Save Changes
             </Button>
           </DialogFooter>
-        </form>
       </DialogContent>
     </Dialog>
   );
