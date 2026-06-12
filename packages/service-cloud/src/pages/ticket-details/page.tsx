@@ -738,7 +738,7 @@ export function ServiceCloudTicketDetailPage({
           </CardWidgetContainer>
 
           <CardWidgetContainer
-            title="Customer Context"
+            title="Customer Details"
             icon={<UserRound className="h-4 w-4" />}
             hideHeaderBorder={true}
           >
