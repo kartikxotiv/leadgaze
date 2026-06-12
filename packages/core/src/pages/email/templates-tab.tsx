@@ -262,13 +262,14 @@ function CoreTemplateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[95vh] max-w-3xl flex-col overflow-hidden p-0">
-        <DialogHeader className="border-b px-6 py-4">
-          <DialogTitle>
-            {template ? 'Edit Template' : 'Create Template'}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="flex-1 space-y-4 overflow-y-auto p-6">
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-3xl dark:border-slate-800 dark:bg-slate-950">
+        <div className="flex max-h-[90vh] flex-col">
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle>
+              {template ? 'Edit Template' : 'Create Template'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
           <div className="space-y-2">
             <Label>Template Name</Label>
             <Input
@@ -336,24 +337,25 @@ function CoreTemplateDialog({
               />
             </div>
           </div>
+          </div>
+          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Save
+            </Button>
+          </DialogFooter>
         </div>
-        <DialogFooter className="border-t bg-zinc-50 px-6 py-4 dark:bg-zinc-900/50">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSaving}
-          >
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="mr-2 h-4 w-4" />
-            )}
-            Save
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

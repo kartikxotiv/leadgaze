@@ -203,13 +203,15 @@ export function ServiceCloudResourcePage({
                   New
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[560px]">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editing ? `Edit ${title}` : `New ${title}`}
-                  </DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4">
+              <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[560px] dark:border-slate-800 dark:bg-slate-950">
+                <div className="flex max-h-[90vh] flex-col">
+                  <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+                    <DialogTitle>
+                      {editing ? `Edit ${title}` : `New ${title}`}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
+                    <div className="grid gap-4">
                   {fields.map((field) => (
                     <div key={field.key} className="space-y-2">
                       <Label>{field.label}</Label>
@@ -314,12 +316,18 @@ export function ServiceCloudResourcePage({
                       )}
                     </div>
                   ))}
-                  <Button onClick={save} disabled={saving}>
-                    {saving ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    Save
-                  </Button>
+                    </div>
+                  </div>
+                  <div className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+                    <div className="flex justify-end gap-3">
+                      <Button onClick={save} disabled={saving}>
+                        {saving ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : null}
+                        Save
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>

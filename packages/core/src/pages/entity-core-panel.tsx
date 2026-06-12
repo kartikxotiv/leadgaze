@@ -67,14 +67,16 @@ export function CoreEntityPanel(props: CoreEntityPanelProps) {
 
   return (
     <Tabs defaultValue={first} className="grid gap-4">
-      <TabsList className="flex h-auto flex-wrap justify-start">
-        {capabilities.includes('notes') && <TabsTrigger value="notes">Notes</TabsTrigger>}
-        {capabilities.includes('meetings') && <TabsTrigger value="meetings">Meetings</TabsTrigger>}
-        {capabilities.includes('emails') && <TabsTrigger value="emails">Emails</TabsTrigger>}
-        {capabilities.includes('documents') && <TabsTrigger value="documents">Documents</TabsTrigger>}
-        {capabilities.includes('activities') && <TabsTrigger value="activities">Activities</TabsTrigger>}
-        {capabilities.includes('reminders') && <TabsTrigger value="reminders">Follow-Ups</TabsTrigger>}
-      </TabsList>
+      {capabilities.length > 1 && (
+        <TabsList className="flex h-auto flex-wrap justify-start">
+          {capabilities.includes('notes') && <TabsTrigger value="notes">Notes</TabsTrigger>}
+          {capabilities.includes('meetings') && <TabsTrigger value="meetings">Meetings</TabsTrigger>}
+          {capabilities.includes('emails') && <TabsTrigger value="emails">Emails</TabsTrigger>}
+          {capabilities.includes('documents') && <TabsTrigger value="documents">Documents</TabsTrigger>}
+          {capabilities.includes('activities') && <TabsTrigger value="activities">Activities</TabsTrigger>}
+          {capabilities.includes('reminders') && <TabsTrigger value="reminders">Follow-Ups</TabsTrigger>}
+        </TabsList>
+      )}
 
       {capabilities.includes('notes') && <TabsContent value="notes"><NotesPanel {...props} /></TabsContent>}
       {capabilities.includes('meetings') && <TabsContent value="meetings"><MeetingsPanel {...props} /></TabsContent>}

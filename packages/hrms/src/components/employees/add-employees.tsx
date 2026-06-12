@@ -83,11 +83,11 @@ export function AddEmployessDialog(props: {
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent
-        className={'max-h-[90vh] overflow-y-auto sm:max-w-[720px]'}
+        className={'max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[720px] dark:border-slate-800 dark:bg-slate-950'}
       >
-        <form className={'space-y-5'} onSubmit={onSubmit}>
-          <DialogHeader>
-            <DialogTitle className={'text-3xl'}>
+        <form className={'flex max-h-[90vh] flex-col'} onSubmit={onSubmit}>
+          <DialogHeader className={'border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950'}>
+            <DialogTitle className={'text-3xl pr-12'}>
               {isEditing ? 'Edit Employee' : 'Add Employee'}
             </DialogTitle>
             <DialogDescription className={'text-base'}>
@@ -97,7 +97,7 @@ export function AddEmployessDialog(props: {
             </DialogDescription>
           </DialogHeader>
 
-          <div className={'space-y-4'}>
+          <div className={'flex-1 overflow-y-auto p-6 space-y-4'}>
             <div className={'grid gap-4 sm:grid-cols-2'}>
               <div className={'space-y-2'}>
                 <Label htmlFor={'first_name'}>First Name</Label>
@@ -369,7 +369,7 @@ export function AddEmployessDialog(props: {
             </div>
           </div>
 
-          <DialogFooter className={'pt-3'}>
+          <DialogFooter className={'border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950'}>
             <Button
               type={'button'}
               variant={'outline'}

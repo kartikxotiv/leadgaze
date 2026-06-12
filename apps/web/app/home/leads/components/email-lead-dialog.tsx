@@ -491,8 +491,8 @@ export function EmailLeadDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-auto max-h-[95vh] max-w-2xl flex-col overflow-hidden border-none bg-white p-0 shadow-2xl dark:bg-slate-950">
-        <DialogHeader className="sr-only">
+      <DialogContent className="flex h-[90vh] max-h-[90vh] max-w-2xl flex-col overflow-hidden border-none bg-white p-0 shadow-2xl dark:bg-slate-950">
+        <DialogHeader className="sr-only border-b p-6 pb-4">
           <DialogTitle>Email Lead</DialogTitle>
         </DialogHeader>
 

@@ -90,138 +90,140 @@ export function DepartmentFormDialog(props: DepartmentFormDialogProps) {
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className={'sm:max-w-[620px]'}>
-        <form className={'space-y-5'} onSubmit={onSubmit}>
-          <DialogHeader>
-            <DialogTitle className={'text-2xl'}>
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[620px] dark:border-slate-800 dark:bg-slate-950">
+        <form className="flex max-h-[90vh] flex-col" onSubmit={onSubmit}>
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle className="text-2xl pr-12">
               {props.department ? 'Edit Department' : 'Add Department'}
             </DialogTitle>
-            <DialogDescription className={'text-base'}>
+            <DialogDescription className="text-base">
               {props.department
                 ? 'Update the department details and hierarchy.'
                 : 'Create a department under your organization.'}
             </DialogDescription>
           </DialogHeader>
 
-          <div className={'grid gap-4 sm:grid-cols-2'}>
-            <div className={'space-y-2'}>
-              <Label htmlFor={'department-name'}>Department Name</Label>
-              <Input
-                id={'department-name'}
-                placeholder={'Engineering'}
-                required
-                value={form.name}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, name: event.target.value }))
-                }
-              />
-            </div>
-
-            <div className={'space-y-2'}>
-              <Label htmlFor={'department-code'}>Code</Label>
-              <Input
-                id={'department-code'}
-                placeholder={'ENG'}
-                required
-                maxLength={20}
-                value={form.code}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    code: event.target.value.toUpperCase(),
-                  }))
-                }
-              />
-            </div>
-
-            <div className={'space-y-2'}>
-              <Label>Parent Department</Label>
-              <Select
-                value={form.parent_department_id ?? '__none__'}
-                onValueChange={(value) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    parent_department_id: value === '__none__' ? null : value,
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={'Select parent department'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={'__none__'}>No Parent</SelectItem>
-                  {parentDepartmentOptions.map((department) => (
-                    <SelectItem key={department.id} value={department.id}>
-                      {department.name} ({department.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className={'space-y-2'}>
-              <Label>Department Head</Label>
-              <Select
-                value={form.head_account_id ?? '__none__'}
-                onValueChange={(value) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    head_account_id: value === '__none__' ? null : value,
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={'Select department head'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={'__none__'}>No Head Assigned</SelectItem>
-                  {props.options.headAccounts.map((account) => (
-                    <SelectItem key={account.id} value={account.id}>
-                      {account.name}
-                      {account.email ? ` (${account.email})` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className={'space-y-2 sm:col-span-2'}>
-              <Label htmlFor={'cost-center-code'}>Cost Center Code</Label>
-              <Input
-                id={'cost-center-code'}
-                placeholder={'CC-ENG-01'}
-                value={form.cost_center_code ?? ''}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    cost_center_code: event.target.value,
-                  }))
-                }
-              />
-            </div>
-
-            <div
-              className={
-                'flex items-center justify-between rounded-lg border px-4 py-3 sm:col-span-2'
-              }
-            >
-              <div>
-                <p className={'font-medium'}>Active Department</p>
-                <p className={'text-muted-foreground text-sm'}>
-                  Inactive departments remain in history but are hidden from
-                  active operations.
-                </p>
+          <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            <div className={'grid gap-4 sm:grid-cols-2'}>
+              <div className={'space-y-2'}>
+                <Label htmlFor={'department-name'}>Department Name</Label>
+                <Input
+                  id={'department-name'}
+                  placeholder={'Engineering'}
+                  required
+                  value={form.name}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, name: event.target.value }))
+                  }
+                />
               </div>
-              <Switch
-                checked={form.is_active ?? true}
-                onCheckedChange={(checked) =>
-                  setForm((prev) => ({ ...prev, is_active: checked }))
+
+              <div className={'space-y-2'}>
+                <Label htmlFor={'department-code'}>Code</Label>
+                <Input
+                  id={'department-code'}
+                  placeholder={'ENG'}
+                  required
+                  maxLength={20}
+                  value={form.code}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      code: event.target.value.toUpperCase(),
+                    }))
+                  }
+                />
+              </div>
+
+              <div className={'space-y-2'}>
+                <Label>Parent Department</Label>
+                <Select
+                  value={form.parent_department_id ?? '__none__'}
+                  onValueChange={(value) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      parent_department_id: value === '__none__' ? null : value,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={'Select parent department'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={'__none__'}>No Parent</SelectItem>
+                    {parentDepartmentOptions.map((department) => (
+                      <SelectItem key={department.id} value={department.id}>
+                        {department.name} ({department.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className={'space-y-2'}>
+                <Label>Department Head</Label>
+                <Select
+                  value={form.head_account_id ?? '__none__'}
+                  onValueChange={(value) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      head_account_id: value === '__none__' ? null : value,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={'Select department head'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={'__none__'}>No Head Assigned</SelectItem>
+                    {props.options.headAccounts.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.name}
+                        {account.email ? ` (${account.email})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className={'space-y-2 sm:col-span-2'}>
+                <Label htmlFor={'cost-center-code'}>Cost Center Code</Label>
+                <Input
+                  id={'cost-center-code'}
+                  placeholder={'CC-ENG-01'}
+                  value={form.cost_center_code ?? ''}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      cost_center_code: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div
+                className={
+                  'flex items-center justify-between rounded-lg border px-4 py-3 sm:col-span-2'
                 }
-              />
+              >
+                <div>
+                  <p className={'font-medium'}>Active Department</p>
+                  <p className={'text-muted-foreground text-sm'}>
+                    Inactive departments remain in history but are hidden from
+                    active operations.
+                  </p>
+                </div>
+                <Switch
+                  checked={form.is_active ?? true}
+                  onCheckedChange={(checked) =>
+                    setForm((prev) => ({ ...prev, is_active: checked }))
+                  }
+                />
+              </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
             <Button
               type={'button'}
               variant={'outline'}

@@ -112,7 +112,7 @@ export function LeavePage(props: {
         ) : null}
       
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col">
+      <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col">
         <div className="flex w-full min-w-0 max-w-full flex-col gap-2">
           {!page.isRbacLoading && page.availableTabs.length === 0 ? (
             <Card>

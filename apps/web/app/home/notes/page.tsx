@@ -81,8 +81,8 @@ import { getOpportunitiesService } from '~/services/opportunities.service';
 function NotesPageSkeleton() {
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden">
-      <div className="bg-sidebar flex shrink-0 flex-col gap-2">
-        <div className="bg-sidebar flex items-center justify-between px-6 py-4">
+      <div className="flex shrink-0 flex-col gap-2">
+        <div className="flex items-center justify-between px-6 py-4">
           <div className="space-y-1">
             <Skeleton className="h-6 w-32" />
             <Skeleton className="h-4 w-52" />
@@ -94,7 +94,7 @@ function NotesPageSkeleton() {
           </div>
         </div>
       </div>
-      <div className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
         <div className="flex min-h-0 flex-1 flex-col px-4 lg:px-8">
           <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
             <Table className="w-max min-w-full border-separate border-spacing-0 text-sm">
@@ -430,7 +430,7 @@ export default function NotesPage() {
         />
       </div>
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
+      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
           <CustomTableContainer
             pagination={totalCount > 0 && (
@@ -651,11 +651,11 @@ export default function NotesPage() {
 
       {/* Create Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-[600px]">
+          <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Add New Note</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             <div className="space-y-4">
               <Label>Associate with</Label>
               <RadioGroup
@@ -746,63 +746,63 @@ export default function NotesPage() {
                 rows={6}
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsCreateDialogOpen(false)}
-                disabled={createMutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCreate}
-                disabled={
-                  createMutation.isPending ||
-                  !newNoteContent.trim() ||
-                  !entityId
-                }
-              >
-                {createMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Save Note
-              </Button>
-            </div>
+          </div>
+          <div className="border-t p-6 mt-auto flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateDialogOpen(false)}
+              disabled={createMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreate}
+              disabled={
+                createMutation.isPending ||
+                !newNoteContent.trim() ||
+                !entityId
+              }
+            >
+              {createMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Save Note
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="flex max-h-[90vh] flex-col p-0">
+          <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Edit Note</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             <Textarea
               placeholder="Enter note content..."
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
               rows={6}
             />
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsEditDialogOpen(false)}
-                disabled={updateMutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleUpdate}
-                disabled={updateMutation.isPending || !editContent.trim()}
-              >
-                {updateMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Update Note
-              </Button>
-            </div>
+          </div>
+          <div className="border-t p-6 mt-auto flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={updateMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdate}
+              disabled={updateMutation.isPending || !editContent.trim()}
+            >
+              {updateMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Update Note
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

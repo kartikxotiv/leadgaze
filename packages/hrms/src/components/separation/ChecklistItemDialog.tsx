@@ -92,40 +92,42 @@ export function ChecklistItemDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Add Checklist Item</DialogTitle>
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[500px] dark:border-slate-800 dark:bg-slate-950">
+        <form className="flex max-h-[90vh] flex-col" onSubmit={handleSubmit}>
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle className="text-2xl pr-12">Add Checklist Item</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-2">
-            <Label htmlFor="checklist-item-title">Title</Label>
-            <Input
-              id="checklist-item-title"
-              required
-              maxLength={255}
-              value={form.title}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, title: event.target.value }))
-              }
-            />
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="checklist-item-title">Title</Label>
+              <Input
+                id="checklist-item-title"
+                required
+                maxLength={255}
+                value={form.title}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, title: event.target.value }))
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="checklist-item-description">Description</Label>
+              <Textarea
+                id="checklist-item-description"
+                value={form.description}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    description: event.target.value,
+                  }))
+                }
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="checklist-item-description">Description</Label>
-            <Textarea
-              id="checklist-item-description"
-              value={form.description}
-              onChange={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  description: event.target.value,
-                }))
-              }
-            />
-          </div>
-
-          <DialogFooter>
+          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
             <Button
               type="button"
               variant="outline"

@@ -265,6 +265,11 @@ export function ServiceCloudTicketDetailPage({
     Number(timeForm.hours || 0) > 0 || Number(timeForm.minutes || 0) > 0;
   const isUpdating = updateMutation.isPending;
   const dueValue = ticket.due_date ?? ticket.due_at;
+  const responseDueAt = ticket.response_due_at || (
+    ticket.created_at && ticket.priority?.resolution_due_minutes
+      ? new Date(new Date(ticket.created_at).getTime() + ticket.priority.resolution_due_minutes * 60 * 1000).toISOString()
+      : null
+  );
 
   const updateTicket = (payload: Record<string, unknown>) =>
     updateMutation.mutate(payload);
@@ -361,10 +366,11 @@ export function ServiceCloudTicketDetailPage({
           >
             <div className="px-6 py-4">
               <Tabs defaultValue="conversation" className="space-y-5">
-                <TabsList className="grid h-auto grid-cols-2 rounded-2xl bg-slate-100 p-1 md:w-fit md:grid-cols-4 dark:bg-slate-900">
+                <TabsList className="grid h-auto grid-cols-2 rounded-2xl bg-slate-100 p-1 md:w-fit md:grid-cols-5 dark:bg-slate-900">
                   <TabsTrigger value="conversation">Conversation</TabsTrigger>
-                  <TabsTrigger value="work">Work</TabsTrigger>
-                  <TabsTrigger value="files">Notes & Files</TabsTrigger>
+                  <TabsTrigger value="work">Time Log</TabsTrigger>
+                  <TabsTrigger value="notes">Notes</TabsTrigger>
+                  <TabsTrigger value="documents">Documents</TabsTrigger>
                   <TabsTrigger value="activity">Activity</TabsTrigger>
                 </TabsList>
 
@@ -545,10 +551,10 @@ export function ServiceCloudTicketDetailPage({
                   </div>
                 </TabsContent>
 
-                <TabsContent value="files">
+                <TabsContent value="notes">
                   <CardWidgetContainer
-                    title="Notes & Attachments"
-                    description="Core notes and documents attached to this ticket."
+                    title="Notes"
+                    description="Internal notes attached to this ticket."
                     icon={<Paperclip className="h-4 w-4" />}
                     hideHeaderBorder={true}
                   >
@@ -557,7 +563,25 @@ export function ServiceCloudTicketDetailPage({
                         workspaceId={workspaceId}
                         entityType="service_cloud_ticket"
                         entityId={ticketId}
-                        capabilities={['notes', 'documents']}
+                        capabilities={['notes']}
+                      />
+                    </div>
+                  </CardWidgetContainer>
+                </TabsContent>
+
+                <TabsContent value="documents">
+                  <CardWidgetContainer
+                    title="Documents"
+                    description="Attachments and files uploaded to this ticket."
+                    icon={<Paperclip className="h-4 w-4" />}
+                    hideHeaderBorder={true}
+                  >
+                    <div className="px-6 pb-4">
+                      <CoreEntityPanel
+                        workspaceId={workspaceId}
+                        entityType="service_cloud_ticket"
+                        entityId={ticketId}
+                        capabilities={['documents']}
                       />
                     </div>
                   </CardWidgetContainer>
@@ -702,7 +726,7 @@ export function ServiceCloudTicketDetailPage({
               />
               <Metric
                 label="Response due"
-                value={formatDateTime(ticket.response_due_at)}
+                value={formatDateTime(responseDueAt)}
               />
               <Metric label="Resolution due" value={formatDateOnly(dueValue)} />
             </div>

@@ -62,87 +62,89 @@ export function HolidayDialog(props: {
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className={'sm:max-w-[560px]'}>
-        <div className={'flex flex-col gap-6'}>
-          <DialogHeader>
-            <DialogTitle className={'text-2xl'}>
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[560px] dark:border-slate-800 dark:bg-slate-950">
+        <div className="flex max-h-[90vh] flex-col gap-0">
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle className="text-2xl pr-12">
               {props.holiday ? 'Edit Holiday' : 'Add Holiday'}
             </DialogTitle>
-            <DialogDescription className={'text-base'}>
+            <DialogDescription className="text-base">
               Keep the holiday calendar in sync so leave calculations stay
               accurate.
             </DialogDescription>
           </DialogHeader>
 
-          <div className={'grid gap-4'}>
-            <div className={'grid gap-4 sm:grid-cols-2'}>
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className={'grid gap-4'}>
+              <div className={'grid gap-4 sm:grid-cols-2'}>
+                <div className={'grid gap-2'}>
+                  <p className={'text-sm font-medium'}>Holiday Date</p>
+                  <Input
+                    type={'date'}
+                    value={form.holiday_date}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        holiday_date: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div className={'grid gap-2'}>
+                  <p className={'text-sm font-medium'}>Optional Holiday</p>
+                  <Select
+                    value={form.is_optional ? 'yes' : 'no'}
+                    onValueChange={(value) =>
+                      setForm((current) => ({
+                        ...current,
+                        is_optional: value === 'yes',
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={'no'}>No</SelectItem>
+                      <SelectItem value={'yes'}>Yes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className={'grid gap-2'}>
-                <p className={'text-sm font-medium'}>Holiday Date</p>
+                <p className={'text-sm font-medium'}>Holiday Name</p>
                 <Input
-                  type={'date'}
-                  value={form.holiday_date}
+                  value={form.name}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
-                      holiday_date: event.target.value,
+                      name: event.target.value,
                     }))
                   }
+                  placeholder={'Republic Day'}
                 />
               </div>
 
               <div className={'grid gap-2'}>
-                <p className={'text-sm font-medium'}>Optional Holiday</p>
-                <Select
-                  value={form.is_optional ? 'yes' : 'no'}
-                  onValueChange={(value) =>
+                <p className={'text-sm font-medium'}>Description</p>
+                <Textarea
+                  rows={4}
+                  value={form.description ?? ''}
+                  onChange={(event) =>
                     setForm((current) => ({
                       ...current,
-                      is_optional: value === 'yes',
+                      description: event.target.value,
                     }))
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={'no'}>No</SelectItem>
-                    <SelectItem value={'yes'}>Yes</SelectItem>
-                  </SelectContent>
-                </Select>
+                  placeholder={'Optional note for the holiday calendar'}
+                />
               </div>
-            </div>
-
-            <div className={'grid gap-2'}>
-              <p className={'text-sm font-medium'}>Holiday Name</p>
-              <Input
-                value={form.name}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    name: event.target.value,
-                  }))
-                }
-                placeholder={'Republic Day'}
-              />
-            </div>
-
-            <div className={'grid gap-2'}>
-              <p className={'text-sm font-medium'}>Description</p>
-              <Textarea
-                rows={4}
-                value={form.description ?? ''}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    description: event.target.value,
-                  }))
-                }
-                placeholder={'Optional note for the holiday calendar'}
-              />
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
             <Button
               variant={'outline'}
               onClick={() => props.onOpenChange(false)}
