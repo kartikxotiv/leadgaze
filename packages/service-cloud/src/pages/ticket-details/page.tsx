@@ -265,6 +265,11 @@ export function ServiceCloudTicketDetailPage({
     Number(timeForm.hours || 0) > 0 || Number(timeForm.minutes || 0) > 0;
   const isUpdating = updateMutation.isPending;
   const dueValue = ticket.due_date ?? ticket.due_at;
+  const responseDueAt = ticket.response_due_at || (
+    ticket.created_at && ticket.priority?.resolution_due_minutes
+      ? new Date(new Date(ticket.created_at).getTime() + ticket.priority.resolution_due_minutes * 60 * 1000).toISOString()
+      : null
+  );
 
   const updateTicket = (payload: Record<string, unknown>) =>
     updateMutation.mutate(payload);
@@ -721,7 +726,7 @@ export function ServiceCloudTicketDetailPage({
               />
               <Metric
                 label="Response due"
-                value={formatDateTime(ticket.response_due_at)}
+                value={formatDateTime(responseDueAt)}
               />
               <Metric label="Resolution due" value={formatDateOnly(dueValue)} />
             </div>

@@ -77,7 +77,6 @@ export function ServiceCloudSettingsPage({ workspaceId }: { workspaceId: string 
             { key: 'name', label: 'Name', required: true },
             { key: 'priority_key', label: 'Key', required: true },
             { key: 'severity_order', label: 'Severity Order', type: 'number' },
-            { key: 'response_due_minutes', label: 'Response Due Minutes', type: 'number' },
             { key: 'resolution_due_minutes', label: 'Resolution Due Minutes', type: 'number' },
             { key: 'color', label: 'Color', type: 'color' },
           ]}
@@ -97,7 +96,7 @@ export function ServiceCloudSettingsPage({ workspaceId }: { workspaceId: string 
             },
             { key: 'priority_key', label: 'Key' },
             { key: 'severity_order', label: 'Severity' },
-            { key: 'response_due_minutes', label: 'Response SLA' },
+            { key: 'resolution_due_minutes', label: 'Resolution SLA' },
           ]}
         />
       </TabsContent>
