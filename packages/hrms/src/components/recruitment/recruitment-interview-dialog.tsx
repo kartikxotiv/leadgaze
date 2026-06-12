@@ -85,10 +85,10 @@ export function RecruitmentInterviewDialog(
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[680px]">
-        <div className="space-y-6">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[680px] dark:border-slate-800 dark:bg-slate-950">
+        <div className="flex max-h-[90vh] flex-col">
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle className="text-2xl pr-12">
               {props.initialData ? 'Edit Interview' : 'Schedule Interview'}
             </DialogTitle>
             <DialogDescription className="text-base">
@@ -97,201 +97,203 @@ export function RecruitmentInterviewDialog(
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2 sm:col-span-2">
-              <Label>Candidate</Label>
-              <Select
-                value={form.candidate_id || '__none__'}
-                onValueChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    candidate_id: value === '__none__' ? '' : value,
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select candidate" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Select candidate</SelectItem>
-                  {props.options.candidates.map((candidate) => (
-                    <SelectItem key={candidate.id} value={candidate.id}>
-                      {candidate.full_name} ({candidate.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2 sm:col-span-2">
+                <Label>Candidate</Label>
+                <Select
+                  value={form.candidate_id || '__none__'}
+                  onValueChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      candidate_id: value === '__none__' ? '' : value,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select candidate" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Select candidate</SelectItem>
+                    {props.options.candidates.map((candidate) => (
+                      <SelectItem key={candidate.id} value={candidate.id}>
+                        {candidate.full_name} ({candidate.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid gap-2 sm:col-span-2">
-              <Label htmlFor="interview-title">Interview Title</Label>
-              <Input
-                id="interview-title"
-                value={form.title}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    title: event.target.value,
-                  }))
-                }
-                placeholder="Technical Round"
-              />
-            </div>
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="interview-title">Interview Title</Label>
+                <Input
+                  id="interview-title"
+                  value={form.title}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      title: event.target.value,
+                    }))
+                  }
+                  placeholder="Technical Round"
+                />
+              </div>
 
-            <div className="grid gap-2">
-              <Label>Round Type</Label>
-              <Select
-                value={form.round_type}
-                onValueChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    round_type:
-                      value as RecruitmentInterviewPayload['round_type'],
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {interviewRoundTypeOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="grid gap-2">
+                <Label>Round Type</Label>
+                <Select
+                  value={form.round_type}
+                  onValueChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      round_type:
+                        value as RecruitmentInterviewPayload['round_type'],
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {interviewRoundTypeOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid gap-2">
-              <Label>Status</Label>
-              <Select
-                value={form.status}
-                onValueChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    status: value as RecruitmentInterviewPayload['status'],
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {interviewStatusOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="grid gap-2">
+                <Label>Status</Label>
+                <Select
+                  value={form.status}
+                  onValueChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      status: value as RecruitmentInterviewPayload['status'],
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {interviewStatusOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="interview-scheduled-at">Scheduled At</Label>
-              <Input
-                id="interview-scheduled-at"
-                type="datetime-local"
-                value={form.scheduled_at}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    scheduled_at: event.target.value,
-                  }))
-                }
-              />
-            </div>
+              <div className="grid gap-2">
+                <Label htmlFor="interview-scheduled-at">Scheduled At</Label>
+                <Input
+                  id="interview-scheduled-at"
+                  type="datetime-local"
+                  value={form.scheduled_at}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      scheduled_at: event.target.value,
+                    }))
+                  }
+                />
+              </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="interview-duration">Duration (Minutes)</Label>
-              <Input
-                id="interview-duration"
-                min={1}
-                type="number"
-                value={form.duration_minutes}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    duration_minutes: Number(event.target.value || 45),
-                  }))
-                }
-              />
-            </div>
+              <div className="grid gap-2">
+                <Label htmlFor="interview-duration">Duration (Minutes)</Label>
+                <Input
+                  id="interview-duration"
+                  min={1}
+                  type="number"
+                  value={form.duration_minutes}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      duration_minutes: Number(event.target.value || 45),
+                    }))
+                  }
+                />
+              </div>
 
-            <div className="grid gap-2 sm:col-span-2">
-              <Label>Interviewer</Label>
-              <Select
-                value={form.interviewer_employee_id ?? '__none__'}
-                onValueChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    interviewer_employee_id:
-                      value === '__none__' ? null : value,
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select interviewer" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">No interviewer</SelectItem>
-                  {props.options.employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {employee.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="grid gap-2 sm:col-span-2">
+                <Label>Interviewer</Label>
+                <Select
+                  value={form.interviewer_employee_id ?? '__none__'}
+                  onValueChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      interviewer_employee_id:
+                        value === '__none__' ? null : value,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select interviewer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">No interviewer</SelectItem>
+                    {props.options.employees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {employee.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="meeting-link">Meeting Link</Label>
-              <Input
-                id="meeting-link"
-                value={form.meeting_link ?? ''}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    meeting_link: event.target.value,
-                  }))
-                }
-                placeholder="https://meet..."
-              />
-            </div>
+              <div className="grid gap-2">
+                <Label htmlFor="meeting-link">Meeting Link</Label>
+                <Input
+                  id="meeting-link"
+                  value={form.meeting_link ?? ''}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      meeting_link: event.target.value,
+                    }))
+                  }
+                  placeholder="https://meet..."
+                />
+              </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="interview-location">Location</Label>
-              <Input
-                id="interview-location"
-                value={form.location ?? ''}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    location: event.target.value,
-                  }))
-                }
-                placeholder="Conference Room A"
-              />
-            </div>
+              <div className="grid gap-2">
+                <Label htmlFor="interview-location">Location</Label>
+                <Input
+                  id="interview-location"
+                  value={form.location ?? ''}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      location: event.target.value,
+                    }))
+                  }
+                  placeholder="Conference Room A"
+                />
+              </div>
 
-            <div className="grid gap-2 sm:col-span-2">
-              <Label htmlFor="interview-outcome">Outcome</Label>
-              <Textarea
-                id="interview-outcome"
-                rows={3}
-                value={form.outcome ?? ''}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    outcome: event.target.value,
-                  }))
-                }
-                placeholder="Optional decision summary or next-step note"
-              />
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="interview-outcome">Outcome</Label>
+                <Textarea
+                  id="interview-outcome"
+                  rows={3}
+                  value={form.outcome ?? ''}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      outcome: event.target.value,
+                    }))
+                  }
+                  placeholder="Optional decision summary or next-step note"
+                />
+              </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
             <Button
               type="button"
               variant="outline"

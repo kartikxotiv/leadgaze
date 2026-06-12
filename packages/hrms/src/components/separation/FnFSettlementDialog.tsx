@@ -163,220 +163,222 @@ export function FnFSettlementDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-3xl dark:border-slate-800 dark:bg-slate-950">
+        <form className="flex max-h-[90vh] flex-col" onSubmit={handleSubmit}>
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle className="text-2xl pr-12">
               {editingFnf ? 'Edit FnF Record' : 'Add FnF Record'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-base">
               Enter the settlement details for the employee exit.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Employee</Label>
-              <Select
-                value={form.employee_id}
-                onValueChange={(value) =>
-                  setForm((prev) => ({ ...prev, employee_id: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select employee" />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {[employee.first_name, employee.last_name]
-                        .filter(Boolean)
-                        .join(' ') || employee.id}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Employee</Label>
+                <Select
+                  value={form.employee_id}
+                  onValueChange={(value) =>
+                    setForm((prev) => ({ ...prev, employee_id: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {[employee.first_name, employee.last_name]
+                          .filter(Boolean)
+                          .join(' ') || employee.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Payroll Run</Label>
+                <Select
+                  value={form.payroll_run_id}
+                  onValueChange={(value) =>
+                    setForm((prev) => ({ ...prev, payroll_run_id: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select payroll run" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>None</SelectItem>
+                    {payrollRuns.map((run) => (
+                      <SelectItem key={run.id} value={run.id}>
+                        {run.name || run.period || run.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fnf-last-working-day">Last Working Day</Label>
+                <Input
+                  id="fnf-last-working-day"
+                  type="date"
+                  required
+                  value={form.last_working_day}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      last_working_day: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select
+                  value={form.status}
+                  onValueChange={(
+                    value:
+                      | 'DRAFT'
+                      | 'PENDING_APPROVAL'
+                      | 'APPROVED'
+                      | 'PAID'
+                      | 'REJECTED',
+                  ) => setForm((prev) => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DRAFT">DRAFT</SelectItem>
+                    <SelectItem value="PENDING_APPROVAL">
+                      PENDING_APPROVAL
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                    <SelectItem value="APPROVED">APPROVED</SelectItem>
+                    <SelectItem value="PAID">PAID</SelectItem>
+                    <SelectItem value="REJECTED">REJECTED</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label>Payroll Run</Label>
-              <Select
-                value={form.payroll_run_id}
-                onValueChange={(value) =>
-                  setForm((prev) => ({ ...prev, payroll_run_id: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select payroll run" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE}>None</SelectItem>
-                  {payrollRuns.map((run) => (
-                    <SelectItem key={run.id} value={run.id}>
-                      {run.name || run.period || run.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="leave-encashment">Leave Encashment</Label>
+                <Input
+                  id="leave-encashment"
+                  type="number"
+                  step="0.01"
+                  value={form.leave_encashment}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      leave_encashment: formatNumberInput(event.target.value),
+                    }))
+                  }
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="fnf-last-working-day">Last Working Day</Label>
-              <Input
-                id="fnf-last-working-day"
-                type="date"
-                required
-                value={form.last_working_day}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    last_working_day: event.target.value,
-                  }))
-                }
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="gratuity">Gratuity</Label>
+                <Input
+                  id="gratuity"
+                  type="number"
+                  step="0.01"
+                  value={form.gratuity}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      gratuity: formatNumberInput(event.target.value),
+                    }))
+                  }
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select
-                value={form.status}
-                onValueChange={(
-                  value:
-                    | 'DRAFT'
-                    | 'PENDING_APPROVAL'
-                    | 'APPROVED'
-                    | 'PAID'
-                    | 'REJECTED',
-                ) => setForm((prev) => ({ ...prev, status: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="DRAFT">DRAFT</SelectItem>
-                  <SelectItem value="PENDING_APPROVAL">
-                    PENDING_APPROVAL
-                  </SelectItem>
-                  <SelectItem value="APPROVED">APPROVED</SelectItem>
-                  <SelectItem value="PAID">PAID</SelectItem>
-                  <SelectItem value="REJECTED">REJECTED</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="notice-recovery">Notice Recovery</Label>
+                <Input
+                  id="notice-recovery"
+                  type="number"
+                  step="0.01"
+                  value={form.notice_recovery}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      notice_recovery: formatNumberInput(event.target.value),
+                    }))
+                  }
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="leave-encashment">Leave Encashment</Label>
-              <Input
-                id="leave-encashment"
-                type="number"
-                step="0.01"
-                value={form.leave_encashment}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    leave_encashment: formatNumberInput(event.target.value),
-                  }))
-                }
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="total-payable">Total Payable</Label>
+                <Input
+                  id="total-payable"
+                  type="number"
+                  step="0.01"
+                  value={form.total_payable}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      total_payable: formatNumberInput(event.target.value),
+                    }))
+                  }
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="gratuity">Gratuity</Label>
-              <Input
-                id="gratuity"
-                type="number"
-                step="0.01"
-                value={form.gratuity}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    gratuity: formatNumberInput(event.target.value),
-                  }))
-                }
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="tds-on-fnf">TDS on FnF</Label>
+                <Input
+                  id="tds-on-fnf"
+                  type="number"
+                  step="0.01"
+                  value={form.tds_on_fnf}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      tds_on_fnf: formatNumberInput(event.target.value),
+                    }))
+                  }
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="notice-recovery">Notice Recovery</Label>
-              <Input
-                id="notice-recovery"
-                type="number"
-                step="0.01"
-                value={form.notice_recovery}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    notice_recovery: formatNumberInput(event.target.value),
-                  }))
-                }
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="net-payable">Net Payable</Label>
+                <Input
+                  id="net-payable"
+                  type="number"
+                  step="0.01"
+                  value={form.net_payable}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      net_payable: formatNumberInput(event.target.value),
+                    }))
+                  }
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="total-payable">Total Payable</Label>
-              <Input
-                id="total-payable"
-                type="number"
-                step="0.01"
-                value={form.total_payable}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    total_payable: formatNumberInput(event.target.value),
-                  }))
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="tds-on-fnf">TDS on FnF</Label>
-              <Input
-                id="tds-on-fnf"
-                type="number"
-                step="0.01"
-                value={form.tds_on_fnf}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    tds_on_fnf: formatNumberInput(event.target.value),
-                  }))
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="net-payable">Net Payable</Label>
-              <Input
-                id="net-payable"
-                type="number"
-                step="0.01"
-                value={form.net_payable}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    net_payable: formatNumberInput(event.target.value),
-                  }))
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="settlement-date">Settlement Date</Label>
-              <Input
-                id="settlement-date"
-                type="date"
-                value={form.settlement_date}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    settlement_date: event.target.value,
-                  }))
-                }
-              />
+              <div className="space-y-2">
+                <Label htmlFor="settlement-date">Settlement Date</Label>
+                <Input
+                  id="settlement-date"
+                  type="date"
+                  value={form.settlement_date}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      settlement_date: event.target.value,
+                    }))
+                  }
+                />
+              </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
             <Button
               type="button"
               variant="outline"

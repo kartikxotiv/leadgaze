@@ -44,7 +44,7 @@ export function CoreEmailPage({ workspace, permissions }: CoreEmailPageProps) {
         title="Emails"
         description="Manage shared Core email inboxes, replies, templates, and variables."
       />
-      <PageBody className="bg-sidebar sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pb-6 pt-6">
+      <PageBody className="sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pb-6 pt-6">
         {!workspaceId ? (
           <div className="text-muted-foreground flex h-48 items-center justify-center rounded-lg border-2 border-dashed">
             Select a workspace to manage emails.
