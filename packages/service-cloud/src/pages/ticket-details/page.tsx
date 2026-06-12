@@ -311,9 +311,9 @@ export function ServiceCloudTicketDetailPage({
                 <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
                   Created {formatDateTime(ticket.created_at)}
                 </span>
-                {responseDueAt ? (
+                {ticket.priority?.resolution_due_minutes ? (
                   <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
-                    SLA: {formatDateTime(responseDueAt)}
+                    SLA: {ticket.priority.resolution_due_minutes} mins
                   </span>
                 ) : null}
               </div>
