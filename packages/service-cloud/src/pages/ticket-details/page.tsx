@@ -343,10 +343,14 @@ export function ServiceCloudTicketDetailPage({
   const canLogTime =
     Number(timeForm.hours || 0) > 0 || Number(timeForm.minutes || 0) > 0;
   const isUpdating = updateMutation.isPending;
-  const dueValue = ticket.due_date ?? ticket.due_at;
-  const responseDueAt = ticket.response_due_at || (
+  const dueValue = ticket.due_date ?? ticket.due_at ?? (
     ticket.created_at && ticket.priority?.resolution_due_minutes
       ? new Date(new Date(ticket.created_at).getTime() + ticket.priority.resolution_due_minutes * 60 * 1000).toISOString()
+      : null
+  );
+  const responseDueAt = ticket.response_due_at || (
+    ticket.created_at && ticket.priority?.response_due_minutes
+      ? new Date(new Date(ticket.created_at).getTime() + ticket.priority.response_due_minutes * 60 * 1000).toISOString()
       : null
   );
 
@@ -386,15 +390,16 @@ export function ServiceCloudTicketDetailPage({
                 <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
                   Created {formatDateTime(ticket.created_at)}
                 </span>
+                {ticket.priority?.resolution_due_minutes ? (
+                  <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
+                    SLA: {ticket.priority.resolution_due_minutes} mins
+                  </span>
+                ) : null}
               </div>
               <div>
                 <h1 className="text-3xl font-semibold tracking-tight lg:text-4xl">
                   {ticket.subject}
                 </h1>
-                <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-200">
-                  {ticket.description ||
-                    'No description has been added for this ticket yet.'}
-                </p>
               </div>
             </div>
           </div>
@@ -865,7 +870,7 @@ export function ServiceCloudTicketDetailPage({
           </CardWidgetContainer>
 
           <CardWidgetContainer
-            title="Customer Context"
+            title="Customer Details"
             icon={<UserRound className="h-4 w-4" />}
             hideHeaderBorder={true}
           >
