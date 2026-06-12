@@ -200,7 +200,12 @@ export function ServiceCloudReportsPage({
               empty="No customer ticket data yet."
               rows={customerBreakdown.slice(0, 12).map((customer: any) => [
                 <div key="customer">
-                  <div className="font-medium">{customer.name}</div>
+                  <Link
+                    href="/home/services/customers"
+                    className="font-medium hover:underline "
+                  >
+                    {customer.name}
+                  </Link>
                   <div className="text-muted-foreground text-xs">
                     {[customer.email, customer.organization]
                       .filter(Boolean)
@@ -334,7 +339,13 @@ export function ServiceCloudReportsPage({
               >
                 #{ticket.ticketNumber} {ticket.subject}
               </Link>,
-              ticket.customer,
+              <Link
+                key={`customer-${ticket.id}`}
+                href="/home/services/customers"
+                className="hover:underline hover:text-primary"
+              >
+                {ticket.customer}
+              </Link>,
               ticket.assignee,
               `${ticket.daysOpen}d`,
               formatDate(ticket.dueDate),
@@ -362,7 +373,13 @@ export function ServiceCloudReportsPage({
               ) : (
                 ticket.subject
               ),
-              ticket.customer,
+              <Link
+                key={`customer-${ticket.id || ticket.subject}`}
+                href="/home/services/customers"
+                className="hover:underline hover:text-primary"
+              >
+                {ticket.customer}
+              </Link>,
               ticket.entries,
               formatHours(ticket.loggedSeconds),
               formatDate(ticket.latestLoggedDate),

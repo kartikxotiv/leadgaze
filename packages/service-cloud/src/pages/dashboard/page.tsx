@@ -299,22 +299,27 @@ export function ServiceCloudDashboardPage({
               ) : (
                 <CardWidgetList>
                   {customerBreakdown.slice(0, 6).map((customer: any) => (
-                    <CardWidgetListItem
+                    <Link
                       key={customer.id}
-                      title={customer.name}
-                      subtitle={
-                        customer.email ||
-                        customer.organization ||
-                        'No contact context'
-                      }
-                      badge={<Badge>{customer.openTickets} open</Badge>}
-                      metadata={
-                        <span>
-                          {customer.totalTickets} total ·{' '}
-                          {formatHours(customer.loggedSeconds)} logged
-                        </span>
-                      }
-                    />
+                      href="/home/services/customers"
+                      className="block"
+                    >
+                      <CardWidgetListItem
+                        title={customer.name}
+                        subtitle={
+                          customer.email ||
+                          customer.organization ||
+                          'No contact context'
+                        }
+                        badge={<Badge>{customer.openTickets} open</Badge>}
+                        metadata={
+                          <span>
+                            {customer.totalTickets} total ·{' '}
+                            {formatHours(customer.loggedSeconds)} logged
+                          </span>
+                        }
+                      />
+                    </Link>
                   ))}
                 </CardWidgetList>
               )}

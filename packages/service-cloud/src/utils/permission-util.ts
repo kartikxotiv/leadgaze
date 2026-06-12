@@ -31,6 +31,7 @@ export const SERVICE_CLOUD_FEATURE_KEYS = {
   manageStatuses: 'manage_statuses',
   managePriorities: 'manage_priorities',
   manageCategories: 'manage_categories',
+  manageNotifications: 'manage_notifications',
 } as const;
 
 export type ServiceCloudModuleKey =
@@ -57,6 +58,25 @@ export function canAccessServiceCloudFeature(
 ) {
   if (!canAccess) return true;
   return Boolean(canAccess(moduleKey, featureKey));
+}
+
+const SERVICE_CLOUD_SETTINGS_FEATURES = [
+  SERVICE_CLOUD_FEATURE_KEYS.manageStatuses,
+  SERVICE_CLOUD_FEATURE_KEYS.managePriorities,
+  SERVICE_CLOUD_FEATURE_KEYS.manageCategories,
+  SERVICE_CLOUD_FEATURE_KEYS.manageNotifications,
+] as const;
+
+export function canAccessServiceCloudSettings(
+  canAccess: ServiceCloudCanAccess | undefined,
+) {
+  return SERVICE_CLOUD_SETTINGS_FEATURES.some((featureKey) =>
+    canAccessServiceCloudFeature(
+      canAccess,
+      SERVICE_CLOUD_MODULE_KEYS.settings,
+      featureKey,
+    ),
+  );
 }
 
 export function useServiceCloudPermissions(workspaceId?: string) {
