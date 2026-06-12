@@ -307,15 +307,16 @@ export function ServiceCloudTicketDetailPage({
                 <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
                   Created {formatDateTime(ticket.created_at)}
                 </span>
+                {responseDueAt ? (
+                  <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
+                    SLA: {formatDateTime(responseDueAt)}
+                  </span>
+                ) : null}
               </div>
               <div>
                 <h1 className="text-3xl font-semibold tracking-tight lg:text-4xl">
                   {ticket.subject}
                 </h1>
-                <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-200">
-                  {ticket.description ||
-                    'No description has been added for this ticket yet.'}
-                </p>
               </div>
             </div>
           </div>
