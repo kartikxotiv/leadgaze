@@ -70,35 +70,37 @@ export function useServiceCloudPermissions(workspaceId?: string) {
     queryFn: async () => {
       if (!workspaceId || !user?.id) return [];
 
-      const { data: member, error: memberError } = await supabase
+      // Single combined join query
+      const { data: member, error } = await supabase
         .from('workspace_members')
-        .select('role_id')
+        .select(
+          `
+          role_id(
+            role_permissions(
+              can_access,
+              crm_module_features!module_feature_id (
+                feature_key,
+                crm_modules!module_id (
+                  module_key
+                )
+              )
+            )
+          )
+        `,
+        )
         .eq('workspace_id', workspaceId)
         .eq('user_id', user.id)
         .eq('status', 'accepted')
         .maybeSingle();
 
-      if (memberError) throw memberError;
-      if (!member?.role_id) return [];
-
-      const { data, error } = await supabase
-        .from('role_permissions')
-        .select(
-          `
-          can_access,
-          crm_module_features!module_feature_id (
-            feature_key,
-            crm_modules!module_id (
-              module_key
-            )
-          )
-        `,
-        )
-        .eq('role_id', member.role_id);
-
       if (error) throw error;
 
-      return (data ?? []).map((permission: any) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const role = member?.role_id as any;
+      const permissionsData = role?.role_permissions || [];
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return permissionsData.map((permission: any) => ({
         module: permission.crm_module_features?.crm_modules?.module_key ?? '',
         feature: permission.crm_module_features?.feature_key ?? '',
         can_access: Boolean(permission.can_access),
