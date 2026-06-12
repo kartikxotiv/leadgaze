@@ -2,32 +2,38 @@ import { SupabaseClient } from '@supabase/supabase-js';
 
 import { Database } from '../database.types';
 
-export type HierarchyFilter = 
+export type HierarchyFilter =
   | { type: 'all' }
   | { type: 'restricted'; userIds: string[] };
+
+type HierarchyVisibilityOptions = {
+  requireSharedTeam?: boolean;
+};
 
 export async function getHierarchyVisibleUserIds(
   supabase: SupabaseClient<Database>,
   workspaceId: string,
   userId: string,
+  options: HierarchyVisibilityOptions = {},
 ): Promise<HierarchyFilter> {
-  const resolveEffectiveLevel = (
-    hierarchyLevel: number | null | undefined,
-  ) => {
+  const { requireSharedTeam = true } = options;
+  const resolveEffectiveLevel = (hierarchyLevel: number | null | undefined) => {
     return hierarchyLevel ?? 0;
   };
 
   // 1. Get the current user's role and hierarchy level
   const { data: member, error: memberError } = await supabase
     .from('workspace_members')
-    .select(`
+    .select(
+      `
       role_id,
       role:workspace_roles!workspace_members_role_id_fkey(
         id,
         role_key,
         hierarchy_level
       )
-    `)
+    `,
+    )
     .eq('workspace_id', workspaceId)
     .eq('user_id', userId)
     .eq('status', 'accepted')
@@ -40,7 +46,7 @@ export async function getHierarchyVisibleUserIds(
 
   const roleData = Array.isArray(member.role) ? member.role[0] : member.role;
   const userLevel = resolveEffectiveLevel(roleData?.hierarchy_level);
-  
+
   // Admins get full visibility
   if (roleData?.role_key === 'admin' || userLevel >= 100) {
     console.log(`[HIERARCHY] User ${userId} is admin, granting 'all' access.`);
@@ -50,10 +56,12 @@ export async function getHierarchyVisibleUserIds(
   // 2. Load roles in workspace and find subordinate roles
   const { data: workspaceRoles, error: rolesError } = await supabase
     .from('workspace_roles')
-    .select(`
+    .select(
+      `
       id,
       hierarchy_level
-    `)
+    `,
+    )
     .eq('workspace_id', workspaceId);
 
   if (rolesError) {
@@ -74,7 +82,38 @@ export async function getHierarchyVisibleUserIds(
     return { type: 'restricted', userIds: [userId] };
   }
 
-  // 3. Find teams where user is a member
+  // 3. Fetch all subordinate users in the entire workspace
+  const { data: subordinateMembers, error: membersError } = await supabase
+    .from('workspace_members')
+    .select('user_id')
+    .eq('workspace_id', workspaceId)
+    .eq('status', 'accepted')
+    .in('role_id', subordinateRoleIds);
+
+  if (membersError) {
+    console.error('Failed to fetch subordinate members:', membersError);
+    return { type: 'restricted', userIds: [userId] };
+  }
+
+  const subordinateUserIds = new Set(
+    subordinateMembers?.map((m) => m.user_id) || [],
+  );
+
+  if (!requireSharedTeam) {
+    const visibleUserIds = new Set<string>();
+    visibleUserIds.add(userId);
+    subordinateUserIds.forEach((id) => visibleUserIds.add(id));
+
+    const visibleArray = Array.from(visibleUserIds);
+    console.log(
+      `[HIERARCHY] User ${userId} can see lower hierarchy users across workspace:`,
+      visibleArray,
+    );
+
+    return { type: 'restricted', userIds: visibleArray };
+  }
+
+  // 4. Find teams where user is a member
   const { data: userTeams, error: userTeamsError } = await supabase
     .from('workspace_team_members')
     .select('team_id')
@@ -93,21 +132,6 @@ export async function getHierarchyVisibleUserIds(
     return { type: 'restricted', userIds: [userId] };
   }
 
-  // 4. Fetch all subordinate users in the entire workspace
-  const { data: subordinateMembers, error: membersError } = await supabase
-    .from('workspace_members')
-    .select('user_id')
-    .eq('workspace_id', workspaceId)
-    .eq('status', 'accepted')
-    .in('role_id', subordinateRoleIds);
-
-  if (membersError) {
-    console.error('Failed to fetch subordinate members:', membersError);
-    return { type: 'restricted', userIds: [userId] };
-  }
-
-  const subordinateUserIds = new Set(subordinateMembers?.map(m => m.user_id) || []);
-
   // 5. Fetch all users in the managed teams
   const { data: teamMembers, error: teamMembersError } = await supabase
     .from('workspace_team_members')
@@ -119,20 +143,23 @@ export async function getHierarchyVisibleUserIds(
     return { type: 'restricted', userIds: [userId] };
   }
 
-  const teamMemberUserIds = new Set(teamMembers?.map(m => m.user_id) || []);
+  const teamMemberUserIds = new Set(teamMembers?.map((m) => m.user_id) || []);
 
   // 6. Intersect: visible users must be in managed team AND be subordinates
   const visibleUserIds = new Set<string>();
   visibleUserIds.add(userId); // always see own data
 
-  teamMemberUserIds.forEach(id => {
+  teamMemberUserIds.forEach((id) => {
     if (subordinateUserIds.has(id)) {
       visibleUserIds.add(id);
     }
   });
 
   const visibleArray = Array.from(visibleUserIds);
-  console.log(`[HIERARCHY] User ${userId} is manager of teams [${managedTeamIds.join(',')}]. Visible subordinate users:`, visibleArray);
+  console.log(
+    `[HIERARCHY] User ${userId} is manager of teams [${managedTeamIds.join(',')}]. Visible subordinate users:`,
+    visibleArray,
+  );
 
   return { type: 'restricted', userIds: visibleArray };
 }
