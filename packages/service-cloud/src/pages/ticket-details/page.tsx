@@ -264,10 +264,14 @@ export function ServiceCloudTicketDetailPage({
   const canLogTime =
     Number(timeForm.hours || 0) > 0 || Number(timeForm.minutes || 0) > 0;
   const isUpdating = updateMutation.isPending;
-  const dueValue = ticket.due_date ?? ticket.due_at;
-  const responseDueAt = ticket.response_due_at || (
+  const dueValue = ticket.due_date ?? ticket.due_at ?? (
     ticket.created_at && ticket.priority?.resolution_due_minutes
       ? new Date(new Date(ticket.created_at).getTime() + ticket.priority.resolution_due_minutes * 60 * 1000).toISOString()
+      : null
+  );
+  const responseDueAt = ticket.response_due_at || (
+    ticket.created_at && ticket.priority?.response_due_minutes
+      ? new Date(new Date(ticket.created_at).getTime() + ticket.priority.response_due_minutes * 60 * 1000).toISOString()
       : null
   );
 
