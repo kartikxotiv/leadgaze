@@ -217,7 +217,7 @@ function ModuleSelectorPage() {
     return (
       <div className="bg-background flex h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <AppLogo href={null} collapsed />
+          {/* <AppLogo href={null} variant="marketing" /> */}
           <Loader2 className="text-primary h-5 w-5 animate-spin" />
           <p className="text-muted-foreground text-sm">Loading workspace...</p>
         </div>
@@ -296,11 +296,8 @@ function ModuleSelectorPage() {
       <header className="border-border bg-card/80 sticky top-0 z-40 border-b backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <AppLogo href={null} collapsed />
+            <AppLogo href={null} variant="marketing" className="w-[100px]"/>
             <div className="flex items-center gap-2">
-              <span className="text-foreground text-sm font-semibold">
-                Leadgaze
-              </span>
               <span className="text-muted-foreground text-xs">/</span>
               <span className="text-muted-foreground text-xs">Platform</span>
             </div>
