@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -77,6 +77,7 @@ import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
 import { getSeatAssignmentsService } from '~/services/subscription.service';
+import { getTeamsService } from '~/services/teams.service';
 
 import {
   type AnyDropdownLabel,
@@ -215,11 +216,14 @@ function getDetailPath(
   if (module === 'sales') {
     const salesType = type as SalesDropdownLabel;
     if (salesType === 'Opportunities') return `/home/sales/opportunities/${id}`;
+    if (salesType === 'Teams') return `/home/sales/teams`;
     return `/home/sales/${salesType.toLowerCase()}/${id}`;
   }
   if (module === 'services') {
     const servicesType = type as ServicesDropdownLabel;
     if (servicesType === 'Tickets') return `/home/services/tickets/${id}`;
+    if (servicesType === 'Customers') return `/home/services/customers`;
+    if (servicesType === 'Teams') return `/home/services/workspace-teams`;
   }
   return '#';
 }
@@ -232,10 +236,12 @@ function getViewAllPath(
   if (module === 'sales') {
     const salesType = type as SalesDropdownLabel;
     if (salesType === 'Opportunities') return '/home/sales/opportunities';
+    if (salesType === 'Teams') return '/home/sales/teams';
     return `/home/sales/${salesType.toLowerCase()}`;
   }
   if (module === 'services') {
     const servicesType = type as ServicesDropdownLabel;
+    if (servicesType === 'Teams') return `/home/services/workspace-teams`;
     return `/home/services/${servicesType.toLowerCase()}`;
   }
   return '#';
@@ -264,6 +270,10 @@ async function fetchDropdownRecords(
       return getAccountsService({ workspaceId, limit: 5 });
     if (salesType === 'Opportunities')
       return getOpportunitiesService({ workspaceId, limit: 5 });
+    if (salesType === 'Teams') {
+      const rows = await getTeamsService(workspaceId);
+      return { data: rows?.data ?? [] };
+    }
   }
   if (module === 'services') {
     const servicesType = type as ServicesDropdownLabel;
@@ -275,6 +285,18 @@ async function fetchDropdownRecords(
         { limit: '5' },
       );
       return { data: rows ?? [] };
+    }
+    if (servicesType === 'Customers') {
+      const rows = await getServiceCloudResourceService(
+        'customers',
+        workspaceId,
+        { limit: '5' },
+      );
+      return { data: rows ?? [] };
+    }
+    if (servicesType === 'Teams') {
+      const rows = await getTeamsService(workspaceId);
+      return { data: rows?.data ?? [] };
     }
   }
   return { data: [] };
@@ -387,6 +409,7 @@ function NavDropdown({
   workspaceId,
   formattedLabel,
 }: NavDropdownProps) {
+  const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -431,7 +454,11 @@ function NavDropdown({
               workspaceId={workspaceId}
               onAddNewClick={() => {
                 setDropdownOpen(false);
-                setDialogOpen(true);
+                if (module === 'services') {
+                  router.push(`/home/services/${formattedLabel.toLowerCase()}`);
+                } else {
+                  setDialogOpen(true);
+                }
               }}
               onItemClick={() => {
                 setDropdownOpen(false);
@@ -526,6 +553,19 @@ function getLauncherMeta(moduleKey: string) {
       description: 'Module',
     }
   );
+}
+
+function getModuleDisplayName(originalName: string): string {
+  switch (originalName) {
+    case 'Sales CRM':
+      return 'Sales Desk';
+    case 'Service Cloud':
+      return 'Service Desk';
+    case 'HR Management':
+      return 'HRMS Desk';
+    default:
+      return originalName;
+  }
 }
 
 export function HomeMenuNavigation() {
@@ -1002,6 +1042,8 @@ export function HomeMenuNavigation() {
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {launcherModules.map((mod) => {
                     const meta = getLauncherMeta(mod.module_key);
+                    const displayName = getModuleDisplayName(mod.module_name);
+
                     return (
                       <Link
                         key={mod.module_id}
@@ -1027,7 +1069,7 @@ export function HomeMenuNavigation() {
                               {meta.icon}
                             </div>
                             <span className="font-bold text-zinc-900 transition-colors group-hover:text-blue-600 dark:text-white">
-                              {mod.module_name}
+                              {displayName}
                             </span>
                           </div>
                           <ArrowUpRight className="h-3.5 w-3.5 text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100" />
