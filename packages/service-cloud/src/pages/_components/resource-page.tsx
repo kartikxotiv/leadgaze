@@ -193,7 +193,7 @@ export function ServiceCloudResourcePage({
   };
 
   return (
-    <CardWidgetContainer className="mt-2" title="Email Accounts" desc="Connect Gmail or SMTP/IMAP accounts for Core email." icon2={<div className="flex items-center gap-2">
+    <CardWidgetContainer className="mt-2" title={title + ' Accounts'} desc="Connect Gmail or SMTP/IMAP accounts for Core email." icon2={<div className="flex items-center gap-2">
           {toolbar}
           {canCreate ? (
             <Dialog open={open} onOpenChange={setOpen}>
