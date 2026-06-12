@@ -188,12 +188,12 @@ export default function TeamMembersPage() {
 
   // Prefetch roles so they're available immediately when invite dialog opens
   useQuery({
-    queryKey: ['workspaceRoles', currentWorkspace?.id],
+    queryKey: ['workspaceRoles', currentWorkspace?.id, productKey],
     queryFn: async () => {
-      const res = await getRolesService(currentWorkspace?.id || '');
+      const res = await getRolesService(currentWorkspace?.id || '', productKey);
       return res?.data;
     },
-    enabled: !!currentWorkspace?.id,
+    enabled: !!currentWorkspace?.id && !!productKey,
   });
 
   // Only show members who have an active seat in the current module.
@@ -583,6 +583,7 @@ export default function TeamMembersPage() {
               open={updateDialogOpen}
               onOpenChange={setUpdateDialogOpen}
               onSuccess={() => setUpdatingMember(null)}
+              productKey={productKey}
             />
           )}
                     </PageBody>

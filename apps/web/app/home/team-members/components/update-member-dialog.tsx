@@ -38,6 +38,7 @@ interface UpdateMemberDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  productKey?: string;
 }
 
 export function UpdateMemberDialog({
@@ -45,6 +46,7 @@ export function UpdateMemberDialog({
   open,
   onOpenChange,
   onSuccess,
+  productKey,
 }: UpdateMemberDialogProps) {
   const { currentWorkspace, canAccess } = useRBAC();
   const queryClient = useQueryClient();
@@ -65,9 +67,9 @@ export function UpdateMemberDialog({
 
   // Fetch roles
   const { data: roles = [], isLoading: rolesLoading } = useQuery({
-    queryKey: ['workspaceRoles', currentWorkspace?.id],
+    queryKey: ['workspaceRoles', currentWorkspace?.id, productKey],
     queryFn: async () => {
-      const res = await getRolesService(currentWorkspace?.id || '');
+      const res = await getRolesService(currentWorkspace?.id || '', productKey);
       return res?.data;
     },
     enabled: open && !!currentWorkspace?.id,
