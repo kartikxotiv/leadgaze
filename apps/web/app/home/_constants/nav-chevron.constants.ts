@@ -31,6 +31,7 @@ export const SALES_DROPDOWN_LABELS = [
   'Contacts',
   'Accounts',
   'Opportunities',
+  'Teams',
 ] as const;
 
 export type SalesDropdownLabel = (typeof SALES_DROPDOWN_LABELS)[number];
@@ -58,7 +59,8 @@ export const HRMS_CHEVRON_LABELS: string[] = [
  */
 export const SERVICES_DROPDOWN_LABELS = [
   'Tickets',
-  // Add more Service Cloud dropdown labels here, e.g. 'Cases'
+  'Customers',
+  'Teams',
 ] as const;
 
 export type ServicesDropdownLabel = (typeof SERVICES_DROPDOWN_LABELS)[number];
