@@ -11,12 +11,12 @@ let client: ReturnType<typeof createBrowserClient<Database>> | undefined;
  */
 export function getSupabaseBrowserClient<GenericSchema = Database>() {
   if (client) {
-    return client as ReturnType<typeof createBrowserClient<GenericSchema>>;
+    return client as unknown as ReturnType<typeof createBrowserClient<GenericSchema>>;
   }
 
   const keys = getSupabaseClientKeys();
 
   client = createBrowserClient<Database>(keys.url, keys.anonKey);
 
-  return client as ReturnType<typeof createBrowserClient<GenericSchema>>;
+  return client as unknown as ReturnType<typeof createBrowserClient<GenericSchema>>;
 }

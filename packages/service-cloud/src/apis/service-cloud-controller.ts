@@ -53,6 +53,7 @@ const RESOURCE_CONFIG = {
     softDelete: false,
     orderBy: 'created_at',
     searchColumns: ['assignment_role'],
+    hasUpdatedBy: false,
   },
   'time-entries': {
     table: 'time_entries',
@@ -264,12 +265,17 @@ export const createServiceCloudResourceController = catchAsync(
       await assertServiceCloudWorkspaceAccess(workspaceId);
     if (error || !user) return error!;
 
-    const payload = cleanPayload({
+    const insertPayload: Record<string, any> = {
       ...body,
       workspace_id: workspaceId,
       created_by: user.id,
-      updated_by: user.id,
-    });
+    };
+
+    if (!('hasUpdatedBy' in config) || config.hasUpdatedBy !== false) {
+      insertPayload.updated_by = user.id;
+    }
+
+    const payload = cleanPayload(insertPayload);
     delete (payload as any).workspaceId;
 
     const { data, error: insertError } = await (supabase as any)
@@ -311,10 +317,15 @@ export const updateServiceCloudResourceController = catchAsync(
       await assertServiceCloudWorkspaceAccess(workspaceId);
     if (error || !user) return error!;
 
-    const payload = cleanPayload({
+    const updatePayload: Record<string, any> = {
       ...body,
-      updated_by: user.id,
-    });
+    };
+
+    if (!('hasUpdatedBy' in config) || config.hasUpdatedBy !== false) {
+      updatePayload.updated_by = user.id;
+    }
+
+    const payload = cleanPayload(updatePayload);
     delete (payload as any).id;
     delete (payload as any).workspaceId;
     delete (payload as any).workspace_id;
