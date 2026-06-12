@@ -35,7 +35,7 @@ import { formatMonthLabel, formatNumber } from '../leave-page.utils';
 export function LeaveReportsTab(props: { reports: LeaveReports | null }) {
   return (
     <TabsContent value="reports" className="mt-0">
-      <div className="grid gap-6">
+      <div className="grid gap-3">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <ReportMetric
             label="Total Requests"
@@ -80,7 +80,7 @@ export function LeaveReportsTab(props: { reports: LeaveReports | null }) {
         >
           <CustomTableContainer>
             <Table>
-              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+              <TableHeader>
                 <TableRow>
                   <TableHead>Employee</TableHead>
                   <TableHead>Department</TableHead>
@@ -121,11 +121,11 @@ export function LeaveReportsTab(props: { reports: LeaveReports | null }) {
           </CustomTableContainer>
         </ReportSection>
 
-        <div className="grid gap-6 xl:grid-cols-2">
+        <div className="grid gap-4 xl:grid-cols-2">
           <ReportSection title="Utilization By Type">
             <CustomTableContainer>
               <Table>
-                <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                <TableHeader>
                   <TableRow>
                     <TableHead>Leave Type</TableHead>
                     <TableHead>Approved</TableHead>
@@ -167,7 +167,7 @@ export function LeaveReportsTab(props: { reports: LeaveReports | null }) {
           <ReportSection title="Department-wise Leave Report">
             <CustomTableContainer>
               <Table>
-                <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                <TableHeader>
                   <TableRow>
                     <TableHead>Department</TableHead>
                     <TableHead>Approved Days</TableHead>
@@ -213,7 +213,7 @@ export function LeaveReportsTab(props: { reports: LeaveReports | null }) {
         >
           <CustomTableContainer>
             <Table>
-              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+              <TableHeader>
                 <TableRow>
                   <TableHead>Month</TableHead>
                   <TableHead>Approved Days</TableHead>
@@ -294,11 +294,11 @@ function ReportSection(props: {
   title: string;
 }) {
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-2 mb-2">
       <div className="px-1">
-        <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
+        <h2 className="primary-heading leading-tight text-leadgaze-dark dark:text-white">{props.title}</h2>
         {props.description ? (
-          <p className="text-muted-foreground mt-1 text-sm">
+          <p className="primary-text-regular text-muted-foreground mt-1">
             {props.description}
           </p>
         ) : null}

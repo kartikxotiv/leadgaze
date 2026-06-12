@@ -288,7 +288,7 @@ export function ServiceCloudTicketDetailPage({
               </Link>
             </Button>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge className="border-white/20 bg-white/15 text-white hover:bg-white/20">
                   #{ticket.ticket_number}
@@ -859,7 +859,7 @@ function TicketAssignees({
   onToggle: (member: LookupOption, assignee?: any) => void;
 }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div>
         <div className="text-sm font-medium">Additional assignees</div>
         <p className="text-muted-foreground text-xs">

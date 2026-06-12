@@ -75,12 +75,12 @@ export function SeparationOperationsTabs({
         <TabsContent key={tab.key} value={tab.key} className="mt-0">
           <CustomTableContainer>
             <Table>
-              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+              <TableHeader>
                 <TableRow>
                   {tab.columns.map((column) => (
                     <TableHead key={column}>{column}</TableHead>
                   ))}
-                  <TableHead className="bg-card sticky right-0 px-4 text-right">
+                  <TableHead className="sticky right-0 px-4 text-right">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -97,7 +97,7 @@ export function SeparationOperationsTabs({
                         )}
                       </TableCell>
                     ))}
-                    <TableCell className="bg-card sticky right-0 px-4 text-right">
+                    <TableCell className="sticky right-0 px-4 text-right">
                       {tab.key === 'exit_checklist' ? (
                         <span className="text-muted-foreground">-</span>
                       ) : (

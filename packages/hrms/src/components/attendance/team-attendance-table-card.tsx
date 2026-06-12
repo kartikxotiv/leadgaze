@@ -38,7 +38,7 @@ export function TeamAttendanceTableCard(props: {
     <div className={cn('flex min-h-0 flex-col', props.className)}>
       <CustomTableContainer>
         <Table>
-          <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+          <TableHeader>
             <TableRow>
               <TableHead>Employee</TableHead>
               <TableHead>Department</TableHead>
@@ -47,7 +47,7 @@ export function TeamAttendanceTableCard(props: {
               <TableHead>Check Out</TableHead>
               <TableHead>Hours</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="bg-card sticky right-0 px-4 text-right">
+              <TableHead className="sticky right-0 px-4 text-right">
                 Actions
               </TableHead>
             </TableRow>
@@ -113,7 +113,7 @@ export function TeamAttendanceTableCard(props: {
                 <TableCell>
                   <StatusBadge status={row.displayStatus} />
                 </TableCell>
-                <TableCell className="bg-card sticky right-0 px-4 text-right">
+                <TableCell className="sticky right-0 px-4 text-right">
                   {props.canApprove ? (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

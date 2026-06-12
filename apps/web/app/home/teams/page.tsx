@@ -228,7 +228,7 @@ export default function TeamsPage() {
           </div>
         </div>
 
-        <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
+        <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
           <div className="flex min-h-0 w-full max-w-full min-w-0 gap-0 flex-col flex-1">
             <Card className="flex min-h-0 flex-col border-none shadow-none">
               <CardHeader className="shrink-0 p-4">

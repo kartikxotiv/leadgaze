@@ -544,7 +544,7 @@ export default function MeetingsPage() {
       </div>
 
       {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2 pt-2">
         <ListToolBar
           showSearch
           searchPlaceholder="Search by title or host..."
@@ -588,7 +588,7 @@ export default function MeetingsPage() {
         />
       </div>
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3 pb-6">
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
           <CustomTableContainer
             pagination={totalCount > 0 && (

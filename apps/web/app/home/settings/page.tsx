@@ -35,7 +35,7 @@ function PersonalAccountSettingsPage() {
 
   return (
     <PageBody className="flex min-w-0 flex-1 shrink-0 flex-col">
-      <div className={'flex w-full flex-1 flex-col'}>
+      <div className={'flex w-full flex-1 flex-col mt-2'}>
         <PersonalAccountSettingsContainer
           userId={userId}
           paths={paths}

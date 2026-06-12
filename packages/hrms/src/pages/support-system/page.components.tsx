@@ -150,7 +150,7 @@ export function SupportSystemRequestsCard(props: {
   requests: SupportSystemRequest[];
 }) {
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-2">
       <SupportSystemTableHeader
         title="HR Requests"
         description="Tickets raised by employees are visible here for HR and admin follow-up."
@@ -158,7 +158,7 @@ export function SupportSystemRequestsCard(props: {
 
       <CustomTableContainer>
         <Table>
-          <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+          <TableHeader>
             <TableRow>
               <TableHead>Employee</TableHead>
               <TableHead>Request</TableHead>
@@ -166,7 +166,7 @@ export function SupportSystemRequestsCard(props: {
               <TableHead>Priority</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Created</TableHead>
-              <TableHead className="bg-card sticky right-0 px-4 text-right">
+              <TableHead className="sticky right-0 px-4 text-right">
                 Action
               </TableHead>
             </TableRow>
@@ -217,7 +217,7 @@ export function SupportSystemRequestsCard(props: {
                 <TableCell className="text-sm">
                   {formatDate(request.created_at)}
                 </TableCell>
-                <TableCell className="bg-card sticky right-0 px-4 text-right">
+                <TableCell className="sticky right-0 px-4 text-right">
                   <Button
                     size="sm"
                     variant="ghost"
@@ -249,8 +249,8 @@ function SupportSystemTableHeader(props: {
 }) {
   return (
     <div className="px-1">
-      <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
-      <p className="text-muted-foreground mt-1 text-sm">{props.description}</p>
+      <h2 className="primary-heading leading-tight text-leadgaze-dark dark:text-white">{props.title}</h2>
+      <p className="primary-text-regular text-muted-foreground mt-1">{props.description}</p>
     </div>
   );
 }

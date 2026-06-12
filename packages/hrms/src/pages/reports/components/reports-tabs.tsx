@@ -22,7 +22,7 @@ export function ReportsTabs(props: { page: ReportsPageController }) {
         page.setActiveTab(value as typeof page.activeTab)
       }
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
           {REPORT_TABS.map((tab) => (
             <TableStatusMetricTab
@@ -40,21 +40,21 @@ export function ReportsTabs(props: { page: ReportsPageController }) {
         <p className="text-muted-foreground px-1 text-sm">
           {REPORT_TABS.find((tab) => tab.value === page.activeTab)?.description}
         </p>
-      </div>
+      </div> 
 
-      <TabsContent value="attendance" className="mt-6 space-y-6">
+      <TabsContent value="attendance" className="mt-3 space-y-4">
         <ReportsAttendanceTab data={page.dashboardData.attendance} />
       </TabsContent>
 
-      <TabsContent value="leave" className="mt-6 space-y-6">
+      <TabsContent value="leave" className="mt-3 space-y-4">
         <ReportsLeaveTab data={page.dashboardData.leave} />
       </TabsContent>
 
-      <TabsContent value="payroll" className="mt-6 space-y-6">
+      <TabsContent value="payroll" className="mt-3 space-y-4">
         <ReportsPayrollTab data={page.dashboardData.payroll} />
       </TabsContent>
 
-      <TabsContent value="custom" className="mt-6 space-y-6">
+      <TabsContent value="custom" className="mt-3 space-y-4">
         <ReportsCustomTab data={page.dashboardData.custom} />
       </TabsContent>
     </Tabs>
