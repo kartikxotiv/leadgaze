@@ -150,6 +150,7 @@ const acceptInvite = catchAsync(
     return successDataResponse('Invitation accepted successfully', {
       workspace,
       member,
+      product_key: invitationProductKey,
       message: 'You now have access to the workspace',
     });
   },

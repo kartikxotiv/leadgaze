@@ -21,6 +21,8 @@ import {
   User,
 } from 'lucide-react';
 
+import { CoreEmailComposeDialog } from '@kit/core/pages';
+import { getCoreEmailAccountsService } from '@kit/core/services';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
@@ -44,7 +46,6 @@ import {
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getContactByIdService } from '~/services/contacts.service';
-import { getWorkspaceEmailAccountService } from '~/services/email.service';
 
 import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
 import {
@@ -55,7 +56,6 @@ import {
 import { EntityCalls } from '../../_components/entity-calls';
 import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
-import { EmailLeadDialog } from '../../leads/components/email-lead-dialog';
 import { LogCallDialog } from '../../leads/components/log-call-dialog';
 import { ContactAssignees } from '../components/contact-assignees';
 import { EditContactDialog } from '../components/edit-contact-dialog';
@@ -89,7 +89,9 @@ function ContactDetailsSkeleton() {
               }
             />
             <Card>
-              <CardHeader><Skeleton className="h-5 w-24" /></CardHeader>
+              <CardHeader>
+                <Skeleton className="h-5 w-24" />
+              </CardHeader>
               <CardContent className="grid gap-6 sm:grid-cols-2">
                 {[...Array(8)].map((_, i) => (
                   <div key={i} className="space-y-1">
@@ -100,7 +102,9 @@ function ContactDetailsSkeleton() {
               </CardContent>
             </Card>
             <Card>
-              <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
+              <CardHeader>
+                <Skeleton className="h-5 w-32" />
+              </CardHeader>
               <CardContent className="space-y-3">
                 {[...Array(3)].map((_, i) => (
                   <Skeleton key={i} className="h-8 w-full rounded-md" />
@@ -110,7 +114,9 @@ function ContactDetailsSkeleton() {
           </div>
           <div className="space-y-6">
             <Card>
-              <CardHeader><Skeleton className="h-4 w-24" /></CardHeader>
+              <CardHeader>
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
               <CardContent className="space-y-4">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="space-y-1">
@@ -170,9 +176,9 @@ export default function ContactDetailsPage() {
     ];
   }, [contact]);
 
-  const { data: workspaceEmailAccounts = [] } = useQuery({
-    queryKey: ['workspace-email-accounts', workspace?.id],
-    queryFn: () => getWorkspaceEmailAccountService(workspace?.id || ''),
+  const { data: coreEmailAccounts = [] } = useQuery({
+    queryKey: ['core-email-accounts', workspace?.id],
+    queryFn: () => getCoreEmailAccountsService(workspace!.id),
     enabled: !!workspace?.id,
   });
 
@@ -186,8 +192,8 @@ export default function ContactDetailsPage() {
         <div className="flex h-screen flex-col items-center justify-center gap-4">
           <h1 className="text-2xl font-bold">Contact Not Found</h1>
           <p className="text-muted-foreground">
-            The contact you&apos;re looking for doesn&apos;t exist or you don&apos;t have
-            permission to view it.
+            The contact you&apos;re looking for doesn&apos;t exist or you
+            don&apos;t have permission to view it.
           </p>
           <Button asChild variant="outline">
             <Link href="/home/contacts">Back to Contacts</Link>
@@ -199,29 +205,36 @@ export default function ContactDetailsPage() {
 
   return (
     <ModuleGuard module="contacts">
-    <div className="pt-4 pb-2 flex justify-between items-center w-full">
+      <div className="flex w-full items-center justify-between pt-4 pb-2">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" asChild className="border p-0 border-leadgaze-border">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="border-leadgaze-border border p-0"
+          >
             <Link href="/home/contacts">
-              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
+              <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
             </Link>
           </Button>
           <div className="flex flex-col">
             <h1 className="text-lg font-semibold">Contact details</h1>
-            <p className="text-leadgaze-muted text-sm">View and edit lead information</p>
+            <p className="text-leadgaze-muted text-sm">
+              View and edit lead information
+            </p>
           </div>
         </div>
-       {canEdit && (
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => setIsEditDialogOpen(true)}
-                      className="gap-2"
-                    >
-                      <Edit2 className="h-4 w-4"/>
-                      Edit Contact
-                    </Button>
-                  )}
+        {canEdit && (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setIsEditDialogOpen(true)}
+            className="gap-2"
+          >
+            <Edit2 className="h-4 w-4" />
+            Edit Contact
+          </Button>
+        )}
       </div>
 
       <PageBody className="pb-6">
@@ -312,7 +325,7 @@ export default function ContactDetailsPage() {
                     <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
                       <Mail className="h-3.5 w-3.5 text-white" />
                     </div>
-                  </Button>                
+                  </Button>
                 </div>
               }
             />
@@ -645,15 +658,19 @@ export default function ContactDetailsPage() {
         />
       )}
 
-      <EmailLeadDialog
+      <CoreEmailComposeDialog
         open={isEmailDialogOpen}
         onOpenChange={setIsEmailDialogOpen}
-        leadName={`${contact.first_name} ${contact.last_name || ''}`.trim()}
-        leadEmail={contact.email || undefined}
-        recipientOptions={contactEmailRecipients}
-        workspaceEmailAccounts={workspaceEmailAccounts}
-        entityId={id}
+        workspaceId={workspace?.id || ''}
+        accounts={coreEmailAccounts}
         entityType="contact"
+        entityId={id}
+        initialTo={contact.email || undefined}
+        templateContext={{
+          contact_name:
+            `${contact.first_name} ${contact.last_name || ''}`.trim(),
+          contact_email: contact.email,
+        }}
       />
     </ModuleGuard>
   );

@@ -46,12 +46,18 @@ export function CoreEmailComposeDialog({
   workspaceId,
   accounts,
   templateContext = {},
+  entityType,
+  entityId,
+  initialTo,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   workspaceId: string;
   accounts: CoreEmailAccount[];
   templateContext?: Record<string, unknown>;
+  entityType?: string;
+  entityId?: string;
+  initialTo?: string;
 }) {
   const queryClient = useQueryClient();
   const sendableAccounts = useMemo(
@@ -84,14 +90,14 @@ export function CoreEmailComposeDialog({
   useEffect(() => {
     if (open) {
       setEmailAccountId(String(sendableAccounts[0]?.id ?? ''));
-      setTo('');
+      setTo(initialTo ?? '');
       setCc('');
       setBcc('');
       setSubject('');
       setBody('');
       setTemplateId('');
     }
-  }, [open, sendableAccounts]);
+  }, [open, sendableAccounts, initialTo]);
 
   const mutation = useMutation({
     mutationFn: sendCoreEmailService,
@@ -136,120 +142,126 @@ export function CoreEmailComposeDialog({
 
           <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
             <div className="grid gap-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label>Template</Label>
-              <Select value={templateId} onValueChange={applyTemplate}>
-                <SelectTrigger>
-                  <div className="flex items-center gap-2">
-                    <LayoutTemplate className="h-4 w-4 text-blue-500" />
-                    <SelectValue placeholder="Use email template" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  {templates.length === 0 ? (
-                    <SelectItem value="no-template" disabled>
-                      No templates found
-                    </SelectItem>
-                  ) : (
-                    templates.map((template: any) => (
-                      <SelectItem key={template.id} value={String(template.id)}>
-                        {template.name}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label>Template</Label>
+                  <Select value={templateId} onValueChange={applyTemplate}>
+                    <SelectTrigger>
+                      <div className="flex items-center gap-2">
+                        <LayoutTemplate className="h-4 w-4 text-blue-500" />
+                        <SelectValue placeholder="Use email template" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templates.length === 0 ? (
+                        <SelectItem value="no-template" disabled>
+                          No templates found
+                        </SelectItem>
+                      ) : (
+                        templates.map((template: any) => (
+                          <SelectItem
+                            key={template.id}
+                            value={String(template.id)}
+                          >
+                            {template.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Insert Variable</Label>
+                  <Select value="" onValueChange={insertVariable}>
+                    <SelectTrigger>
+                      <div className="flex items-center gap-2">
+                        <Variable className="h-4 w-4 text-emerald-500" />
+                        <SelectValue placeholder="Add variable to message" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {variables.length === 0 ? (
+                        <SelectItem value="no-variable" disabled>
+                          No variables found
+                        </SelectItem>
+                      ) : (
+                        variables.map((variable: any) => (
+                          <SelectItem
+                            key={variable.id}
+                            value={`{{${variable.key}}}`}
+                          >
+                            {`{{${variable.key}}}`}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>From</Label>
+                <Select
+                  value={emailAccountId}
+                  onValueChange={setEmailAccountId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose sending account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sendableAccounts.map((account) => (
+                      <SelectItem key={account.id} value={String(account.id)}>
+                        {account.email}
                       </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid gap-2">
-              <Label>Insert Variable</Label>
-              <Select value="" onValueChange={insertVariable}>
-                <SelectTrigger>
-                  <div className="flex items-center gap-2">
-                    <Variable className="h-4 w-4 text-emerald-500" />
-                    <SelectValue placeholder="Add variable to message" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  {variables.length === 0 ? (
-                    <SelectItem value="no-variable" disabled>
-                      No variables found
-                    </SelectItem>
-                  ) : (
-                    variables.map((variable: any) => (
-                      <SelectItem
-                        key={variable.id}
-                        value={`{{${variable.key}}}`}
-                      >
-                        {`{{${variable.key}}}`}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+              <div className="grid gap-2">
+                <Label>To</Label>
+                <Input
+                  value={to}
+                  onChange={(event) => setTo(event.target.value)}
+                  placeholder="customer@example.com, another@example.com"
+                />
+              </div>
 
-          <div className="grid gap-2">
-            <Label>From</Label>
-            <Select value={emailAccountId} onValueChange={setEmailAccountId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose sending account" />
-              </SelectTrigger>
-              <SelectContent>
-                {sendableAccounts.map((account) => (
-                  <SelectItem key={account.id} value={String(account.id)}>
-                    {account.email}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label>Cc</Label>
+                  <Input
+                    value={cc}
+                    onChange={(event) => setCc(event.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Bcc</Label>
+                  <Input
+                    value={bcc}
+                    onChange={(event) => setBcc(event.target.value)}
+                  />
+                </div>
+              </div>
 
-          <div className="grid gap-2">
-            <Label>To</Label>
-            <Input
-              value={to}
-              onChange={(event) => setTo(event.target.value)}
-              placeholder="customer@example.com, another@example.com"
-            />
-          </div>
+              <div className="grid gap-2">
+                <Label>Subject</Label>
+                <Input
+                  value={subject}
+                  onChange={(event) => setSubject(event.target.value)}
+                />
+              </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label>Cc</Label>
-              <Input
-                value={cc}
-                onChange={(event) => setCc(event.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Bcc</Label>
-              <Input
-                value={bcc}
-                onChange={(event) => setBcc(event.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Subject</Label>
-            <Input
-              value={subject}
-              onChange={(event) => setSubject(event.target.value)}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Message</Label>
-            <Textarea
-              value={body}
-              onChange={(event) => setBody(event.target.value)}
-              className="min-h-52"
-              placeholder="Write your email..."
-            />
-          </div>
+              <div className="grid gap-2">
+                <Label>Message</Label>
+                <Textarea
+                  value={body}
+                  onChange={(event) => setBody(event.target.value)}
+                  className="min-h-52"
+                  placeholder="Write your email..."
+                />
+              </div>
             </div>
           </div>
 
@@ -279,6 +291,8 @@ export function CoreEmailComposeDialog({
                   ),
                   body: renderEmailContent(body, variables, templateContext),
                   templateId: templateId ? Number(templateId) : undefined,
+                  entityType,
+                  entityId,
                 })
               }
             >

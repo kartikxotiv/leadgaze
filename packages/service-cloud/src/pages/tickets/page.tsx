@@ -5,7 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 import { useQuery } from '@tanstack/react-query';
-import { UserCheck } from 'lucide-react';
+import { Check, Filter, UserCheck } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@kit/ui/avatar';
 import { Button } from '@kit/ui/button';
@@ -157,7 +157,11 @@ export function ServiceCloudTicketsPage({
           variant={assignedToMeOnly ? 'default' : 'outline'}          
           onClick={() => setAssignedToMeOnly((current) => !current)}
         >
-          <UserCheck className="mr-2 h-4 w-4" />
+          {assignedToMeOnly ? (
+            <Check className="mr-2 h-4 w-4" />
+          ) : (
+            <Filter className="mr-2 h-4 w-4" />
+          )}
           Assigned to me
         </Button>
       }

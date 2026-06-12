@@ -59,6 +59,8 @@ export function SubscriptionGuard({
     retry: 2,
   });
 
+  console.log({ accessData });
+
   // Log access errors for debugging
   if (accessError) {
     console.error(
@@ -76,9 +78,10 @@ export function SubscriptionGuard({
     }
   }, [isRbacLoading, isAccessLoading]);
 
-  // Still loading
+  // Optimistic rendering: Render children while access checks load
+  // to show the page skeleton loader and call APIs immediately.
   if (!checked) {
-    return null;
+    return <>{children}</>;
   }
 
   const hasAccess = accessData?.hasAccess ?? false;
