@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 import type { JwtPayload } from '@supabase/supabase-js';
 
-import { ChevronsUpDown, Home, LogOut } from 'lucide-react';
+import { ChevronsUpDown, Home, LogOut, UserPen } from 'lucide-react';
 
 import {
   DropdownMenu,
@@ -44,6 +44,7 @@ export function PersonalAccountDropdown({
 
   paths: {
     home: string;
+    profile?: string;
   };
 
   features: {
@@ -72,7 +73,7 @@ export function PersonalAccountDropdown({
         aria-label="Open your profile menu"
         data-test={'account-dropdown-trigger'}
         className={cn(
-          'rounded-full animate-in fade-in focus:outline-primary flex cursor-pointer items-center duration-500 group-data-[minimized=true]:px-0',
+          'animate-in fade-in focus:outline-primary flex cursor-pointer items-center rounded-full duration-500 group-data-[minimized=true]:px-0',
           className ?? '',
           {
             ['active:bg-secondary/50 items-center gap-x-4 rounded-full' +
@@ -82,7 +83,9 @@ export function PersonalAccountDropdown({
       >
         <ProfileAvatar
           className={'rounded-full'}
-          fallbackClassName={'rounded-full border border-header-primary bg-header-primary text-primary-foreground dark:border-white dark:text-white'}
+          fallbackClassName={
+            'rounded-full border border-header-primary bg-header-primary text-primary-foreground dark:border-white dark:text-white'
+          }
           displayName={displayName ?? user?.email ?? ''}
           pictureUrl={personalAccountData?.data?.picture_url}
         />
@@ -147,6 +150,25 @@ export function PersonalAccountDropdown({
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />
+
+        {paths.profile ? (
+          <>
+            <DropdownMenuItem asChild>
+              <Link
+                className={'s-full flex cursor-pointer items-center space-x-2'}
+                href={paths.profile}
+              >
+                <UserPen className={'h-5'} />
+
+                <span>
+                  <Trans i18nKey={'common:routes.profile'} />
+                </span>
+              </Link>
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+          </>
+        ) : null}
 
         <If condition={features.enableThemeToggle}>
           <SubMenuModeToggle />

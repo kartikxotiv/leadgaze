@@ -16,7 +16,6 @@ import { Trans } from '@kit/ui/trans';
 
 import { usePersonalAccountData } from '../hooks/use-personal-account-data';
 import { AccountDangerZone } from './account-danger-zone';
-import { UpdateEmailFormContainer } from './email/update-email-form-container';
 import { MultiFactorAuthFactorsList } from './mfa/multi-factor-auth-list';
 import { UpdatePasswordFormContainer } from './password/update-password-container';
 import { UpdateAccountDetailsFormContainer } from './update-account-details-form-container';
@@ -103,22 +102,6 @@ export function PersonalAccountSettingsContainer(
       </If>
 
       <div className={'grid grid-cols-1 gap-10 md:grid-cols-2'}>
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              <Trans i18nKey={'account:updateEmailCardTitle'} />
-            </CardTitle>
-
-            <CardDescription>
-              <Trans i18nKey={'account:updateEmailCardDescription'} />
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent>
-            <UpdateEmailFormContainer callbackPath={props.paths.callback} />
-          </CardContent>
-        </Card>
-
         <If condition={props.features.enablePasswordUpdate}>
           <Card>
             <CardHeader>
