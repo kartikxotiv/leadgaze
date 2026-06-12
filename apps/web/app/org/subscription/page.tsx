@@ -196,6 +196,7 @@ export default function OrgSubscriptionPage() {
     currentSeats: 0,
     newSeats: 0,
   });
+  const [isUpdatingSeats, setIsUpdatingSeats] = useState(false);
 
   // Handle checkout success/cancel query params from Stripe redirect
   useEffect(() => {
@@ -238,7 +239,10 @@ export default function OrgSubscriptionPage() {
     enabled: !!workspaceId,
   });
 
-  const products: SubscriptionProduct[] = productsData?.data ?? [];
+  const products: SubscriptionProduct[] = useMemo(
+    () => productsData?.data ?? [],
+    [productsData],
+  );
   // Filter out cancelled seats — they should not appear in the active UI
   // Wrapped in useMemo to keep a stable reference for useEffect dependencies
   const seats: WorkspaceSeat[] = useMemo(
@@ -467,11 +471,8 @@ export default function OrgSubscriptionPage() {
       <header className="border-border bg-card/80 sticky top-0 z-40 border-b backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <AppLogo href={null} collapsed />
+            <AppLogo href={null} variant="marketing" className="w-[100px]"/>
             <div className="flex items-center gap-2">
-              <span className="text-foreground text-sm font-semibold">
-                Leadgaze
-              </span>
               <span className="text-muted-foreground text-xs">/</span>
               <span className="text-muted-foreground text-xs">
                 Subscription
@@ -797,21 +798,34 @@ export default function OrgSubscriptionPage() {
               Cancel
             </Button>
             <Button
+              disabled={isUpdatingSeats}
               onClick={async () => {
-                await handleDirectUpdate(
-                  seatUpdateDialog.seatId,
-                  seatUpdateDialog.newSeats,
-                );
-                setSeatUpdateDialog({
-                  open: false,
-                  seatId: '',
-                  displayName: '',
-                  currentSeats: 0,
-                  newSeats: 0,
-                });
+                setIsUpdatingSeats(true);
+                try {
+                  await handleDirectUpdate(
+                    seatUpdateDialog.seatId,
+                    seatUpdateDialog.newSeats,
+                  );
+                  setSeatUpdateDialog({
+                    open: false,
+                    seatId: '',
+                    displayName: '',
+                    currentSeats: 0,
+                    newSeats: 0,
+                  });
+                } finally {
+                  setIsUpdatingSeats(false);
+                }
               }}
             >
-              Confirm Update
+              {isUpdatingSeats ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Confirm Update'
+              )}
             </Button>
           </DialogFooter>
       </DialogContent>

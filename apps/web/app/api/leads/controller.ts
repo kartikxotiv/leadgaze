@@ -10,44 +10,6 @@ import {
   successDataResponse,
 } from '../../../utils/response-handler';
 
-type Lead = Database['public']['Tables']['crm_leads']['Row'];
-
-type LeadWithRelations = Lead & {
-  status?: {
-    id: string;
-    status_name: string;
-    status_key: string;
-    color: string;
-    icon: string;
-  } | null;
-  source?: {
-    id: string;
-    source_name: string;
-    source_key: string;
-    color: string;
-    icon: string;
-  } | null;
-  owner?: {
-    id: string;
-    email: string;
-    name: string;
-  } | null;
-  industry?: {
-    id: string;
-    industry_name: string;
-  } | null;
-  created_by_account?: {
-    id: string;
-    email: string;
-    name: string;
-  } | null;
-  updated_by_account?: {
-    id: string;
-    email: string;
-    name: string;
-  } | null;
-};
-
 /**
  * GET /api/leads
  * Fetch all leads for a workspace
@@ -149,16 +111,19 @@ const getLeads = catchAsync(
         adminClient,
         workspaceId,
         actorAccountId,
+        { requireSharedTeam: false },
       );
       if (hierarchyFilter.type === 'restricted') {
-        visibleUserIds = hierarchyFilter.userIds;
+        visibleUserIds = Array.from(
+          new Set([...hierarchyFilter.userIds, actorAccountId, user.id]),
+        );
 
-        // Fetch assigned leads for these users (only active assignments)
+        // Fetch leads assigned to the current user or any lower hierarchy user.
         const { data: assignments } = await adminClient
           .from('lead_assignees')
           .select('lead_id')
           .eq('workspace_id', workspaceId)
-          .eq('assigned_to_user_id', actorAccountId)
+          .in('assigned_to_user_id', visibleUserIds)
           .eq('assignment_status', 'active');
 
         assignedLeadIds = assignments?.map((a) => a.lead_id) || [];
@@ -184,10 +149,11 @@ const getLeads = catchAsync(
       .eq('is_deleted', false);
 
     if (!isOwner && visibleUserIds && visibleUserIds.length > 0) {
-      const assignedIdsFilter = assignedLeadIds.length > 0
-        ? `,id.in.(${assignedLeadIds.join(',')})`
-        : '';
-        
+      const assignedIdsFilter =
+        assignedLeadIds.length > 0
+          ? `,id.in.(${assignedLeadIds.join(',')})`
+          : '';
+
       query = query.or(
         `owner_id.in.(${visibleUserIds.join(',')}),created_by.in.(${visibleUserIds.join(',')})${assignedIdsFilter}`,
       );
@@ -227,7 +193,9 @@ const getLeads = catchAsync(
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    console.log(`[LEADS API] Executing query for user ${user.id} in workspace ${workspaceId}`);
+    console.log(
+      `[LEADS API] Executing query for user ${user.id} in workspace ${workspaceId}`,
+    );
 
     const {
       data: leads,
@@ -253,10 +221,11 @@ const getLeads = catchAsync(
       .eq('is_deleted', false);
 
     if (!isOwner && visibleUserIds && visibleUserIds.length > 0) {
-      const assignedIdsFilter = assignedLeadIds.length > 0
-        ? `,id.in.(${assignedLeadIds.join(',')})`
-        : '';
-        
+      const assignedIdsFilter =
+        assignedLeadIds.length > 0
+          ? `,id.in.(${assignedLeadIds.join(',')})`
+          : '';
+
       breakdownQuery = breakdownQuery.or(
         `owner_id.in.(${visibleUserIds.join(',')}),created_by.in.(${visibleUserIds.join(',')})${assignedIdsFilter}`,
       );

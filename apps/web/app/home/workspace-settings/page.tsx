@@ -18,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,7 +31,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 
 import { EmailAccountsSettings } from './_components/email-accounts-settings';
-import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -91,7 +93,7 @@ function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
 
   if (!currentWorkspace) return null;
 
-  return (    
+  return (
     <Card>
       <CardHeader className="p-4 pb-3">
         <CardTitle className="mb-0">Workspace Management</CardTitle>
@@ -101,12 +103,15 @@ function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
       </CardHeader>
       <CardContent className="p-4 pt-0">
         <div className="flex items-center gap-4">
-          <Button variant="outline" className="w-[300px] justify-between dark:text-white">
-                <span className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  {currentWorkspace.name}
-                </span>                
-              </Button>
+          <Button
+            variant="outline"
+            className="w-[300px] justify-between dark:text-white"
+          >
+            <span className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              {currentWorkspace.name}
+            </span>
+          </Button>
           {/* <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-[300px] justify-between dark:text-white">
@@ -152,7 +157,7 @@ export default function WorkspaceSettingsPage() {
       />
       <PageBody className="sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden">
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="h-auto w-full justify-start gap-8 rounded-none border-b bg-transparent p-0 mb-1">
+          <TabsList className="mb-1 h-auto w-full justify-start gap-8 rounded-none border-b bg-transparent p-0">
             <TabsTrigger
               value="general"
               className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
@@ -174,23 +179,23 @@ export default function WorkspaceSettingsPage() {
           </TabsContent>
 
           <TabsContent value="emails">
-            {shouldUseWebEmailSettings ? (
+            {/* {shouldUseWebEmailSettings ? (
               <EmailAccountsSettings workspace={workspace} />
-            ) : (
-              <CoreEmailSettingsPage
-                workspace={workspace}
-                embedded
-                googleAuthPath="/api/email/google/auth"
-                googleReturnUrl={pathname || '/home/workspace-settings'}
-                permissions={{
-                  manageAccounts:
-                    canAccess('emails', 'manage_accounts') ||
-                    canAccess('emails', 'manage_templates'),
-                  manageTemplates: canAccess('emails', 'manage_templates'),
-                  manageVariables: canAccess('emails', 'manage_variables'),
-                }}
-              />
-            )}
+            ) : ( */}
+            <CoreEmailSettingsPage
+              workspace={workspace}
+              embedded
+              googleAuthPath="/api/email/google/auth"
+              googleReturnUrl={pathname || '/home/workspace-settings'}
+              permissions={{
+                manageAccounts:
+                  canAccess('emails', 'manage_accounts') ||
+                  canAccess('emails', 'manage_templates'),
+                manageTemplates: canAccess('emails', 'manage_templates'),
+                manageVariables: canAccess('emails', 'manage_variables'),
+              }}
+            />
+            {/* )} */}
           </TabsContent>
         </Tabs>
       </PageBody>

@@ -26,6 +26,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { CoreEmailComposeDialog } from '@kit/core/pages';
+import { getCoreEmailAccountsService } from '@kit/core/services';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
@@ -57,7 +59,6 @@ import {
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { type Contact, getContactsService } from '~/services/contacts.service';
-import { getWorkspaceEmailAccountService } from '~/services/email.service';
 import {
   getOpportunityByIdService,
   updateOpportunityService,
@@ -73,7 +74,6 @@ import {
 import { EntityCalls } from '../../_components/entity-calls';
 import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
-import { EmailLeadDialog } from '../../leads/components/email-lead-dialog';
 import { LogCallDialog } from '../../leads/components/log-call-dialog';
 import { EditOpportunityDialog } from '../components/edit-opportunity-dialog';
 import { OpportunityAssignees } from '../components/opportunity-assignees';
@@ -192,9 +192,9 @@ export default function OpportunityDetailsPage() {
     enabled: !!currentWorkspace?.id,
   });
 
-  const { data: workspaceEmailAccounts = [] } = useQuery({
-    queryKey: ['workspace-email-accounts', currentWorkspace?.id],
-    queryFn: () => getWorkspaceEmailAccountService(currentWorkspace?.id || ''),
+  const { data: coreEmailAccounts = [] } = useQuery({
+    queryKey: ['core-email-accounts', currentWorkspace?.id],
+    queryFn: () => getCoreEmailAccountsService(currentWorkspace!.id),
     enabled: !!currentWorkspace?.id,
   });
 
@@ -299,16 +299,23 @@ export default function OpportunityDetailsPage() {
 
   return (
     <ModuleGuard module="opportunities">
-      <div className="pt-4 pb-2 flex justify-between items-center w-full">
+      <div className="flex w-full items-center justify-between pt-4 pb-2">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" asChild className="border p-0 border-leadgaze-border">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="border-leadgaze-border border p-0"
+          >
             <Link href="/home/opportunities">
-              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
+              <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
             </Link>
           </Button>
           <div className="flex flex-col">
             <h1 className="text-lg font-semibold">Opportunity details</h1>
-            <p className="text-leadgaze-muted text-sm">View and edit opportunity information</p>
+            <p className="text-leadgaze-muted text-sm">
+              View and edit opportunity information
+            </p>
           </div>
         </div>
         {canEdit && (
@@ -396,7 +403,9 @@ export default function OpportunityDetailsPage() {
                     variant="outline"
                     size="sm"
                     className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${
-                      opportunityEmailRecipients.length === 0 ? 'opacity-50' : ''
+                      opportunityEmailRecipients.length === 0
+                        ? 'opacity-50'
+                        : ''
                     }`}
                     disabled={opportunityEmailRecipients.length === 0}
                     onClick={() => setIsEmailDialogOpen(true)}
@@ -416,7 +425,9 @@ export default function OpportunityDetailsPage() {
                       value={opportunity.stage_id}
                       onValueChange={async (value) => {
                         try {
-                          await updateOpportunityService(id, { stage_id: value });
+                          await updateOpportunityService(id, {
+                            stage_id: value,
+                          });
                           toast.success('Opportunity stage updated');
                           refetch();
                         } catch (error) {
@@ -435,8 +446,9 @@ export default function OpportunityDetailsPage() {
                               stage.status_name.toLowerCase().includes('won') ||
                               stage.is_won;
                             const isLost =
-                              stage.status_name.toLowerCase().includes('lost') ||
-                              stage.is_lost;
+                              stage.status_name
+                                .toLowerCase()
+                                .includes('lost') || stage.is_lost;
 
                             if (isWon && !canCloseWon) return false;
                             if (isLost && !canCloseLost) return false;
@@ -466,7 +478,8 @@ export default function OpportunityDetailsPage() {
                       onClick={async () => {
                         const wonStage = stages.find(
                           (s: any) =>
-                            s.status_name.toLowerCase().includes('won') || s.is_won,
+                            s.status_name.toLowerCase().includes('won') ||
+                            s.is_won,
                         );
                         if (wonStage) {
                           try {
@@ -496,7 +509,8 @@ export default function OpportunityDetailsPage() {
                       onClick={async () => {
                         const lostStage = stages.find(
                           (s: any) =>
-                            s.status_name.toLowerCase().includes('lost') || s.is_lost,
+                            s.status_name.toLowerCase().includes('lost') ||
+                            s.is_lost,
                         );
                         if (lostStage) {
                           try {
@@ -523,10 +537,12 @@ export default function OpportunityDetailsPage() {
             {/* Sales Pipeline Timeline */}
             <CardWidgetContainer
               title="Opportunity Sales Pipeline"
-              icon={<Workflow className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+              icon={
+                <Workflow className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+              }
               className="w-full border shadow-sm"
             >
-              <div className="px-6 pb-6 pt-4">
+              <div className="px-6 pt-4 pb-6">
                 <OpportunityStatusTimeline
                   opportunityId={id}
                   currentStatusId={opportunity.stage_id}
@@ -540,13 +556,17 @@ export default function OpportunityDetailsPage() {
             {/* Details */}
             <CardWidgetContainer
               title="Details"
-              icon={<User className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+              icon={
+                <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+              }
             >
               <div className="flex-1">
                 <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
                   <CustomInputForView
                     label="Amount"
-                    labelIcon={<Wallet className="text-muted-foreground h-4 w-4" />}
+                    labelIcon={
+                      <Wallet className="text-muted-foreground h-4 w-4" />
+                    }
                     value={new Intl.NumberFormat('en-US', {
                       style: 'currency',
                       currency: opportunity.currency || 'USD',
@@ -555,7 +575,9 @@ export default function OpportunityDetailsPage() {
 
                   <CustomInputForView
                     label="Expected Revenue"
-                    labelIcon={<Target className="text-muted-foreground h-4 w-4" />}
+                    labelIcon={
+                      <Target className="text-muted-foreground h-4 w-4" />
+                    }
                     value={new Intl.NumberFormat('en-US', {
                       style: 'currency',
                       currency: opportunity.currency || 'USD',
@@ -564,22 +586,37 @@ export default function OpportunityDetailsPage() {
 
                   <CustomInputForView
                     label="Expected Close Date"
-                    labelIcon={<Calendar className="text-muted-foreground h-4 w-4" />}
-                    value={opportunity.expected_close_date
-                      ? new Date(opportunity.expected_close_date).toLocaleDateString()
-                      : '-'}
+                    labelIcon={
+                      <Calendar className="text-muted-foreground h-4 w-4" />
+                    }
+                    value={
+                      opportunity.expected_close_date
+                        ? new Date(
+                            opportunity.expected_close_date,
+                          ).toLocaleDateString()
+                        : '-'
+                    }
                   />
 
                   <CustomInputForView
                     label="Probability"
-                    labelIcon={<CheckCircle className="text-muted-foreground h-4 w-4" />}
+                    labelIcon={
+                      <CheckCircle className="text-muted-foreground h-4 w-4" />
+                    }
                     value={`${opportunity.probability}%`}
                   />
 
                   <CustomInputForView
                     label="Priority"
-                    labelIcon={<Flag className="text-muted-foreground h-4 w-4" />}
-                    value={opportunity.priority ? opportunity.priority.charAt(0).toUpperCase() + opportunity.priority.slice(1) : '-'}
+                    labelIcon={
+                      <Flag className="text-muted-foreground h-4 w-4" />
+                    }
+                    value={
+                      opportunity.priority
+                        ? opportunity.priority.charAt(0).toUpperCase() +
+                          opportunity.priority.slice(1)
+                        : '-'
+                    }
                   />
 
                   <CustomInputForView
@@ -760,14 +797,17 @@ export default function OpportunityDetailsPage() {
         />
       )}
 
-      <EmailLeadDialog
+      <CoreEmailComposeDialog
         open={isEmailDialogOpen}
         onOpenChange={setIsEmailDialogOpen}
-        leadName={opportunity.opportunity_name}
-        recipientOptions={opportunityEmailRecipients}
-        workspaceEmailAccounts={workspaceEmailAccounts}
-        entityId={id}
+        workspaceId={currentWorkspace?.id || ''}
+        accounts={coreEmailAccounts}
         entityType="opportunity"
+        entityId={id}
+        initialTo={opportunityEmailRecipients[0]?.email}
+        templateContext={{
+          opportunity_name: opportunity.opportunity_name,
+        }}
       />
     </ModuleGuard>
   );
