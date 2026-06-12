@@ -26,6 +26,7 @@ export const getAuditLogs = catchAsync(
     const entityId = url.searchParams.get('entityId');
     const action = url.searchParams.get('action');
     const actorId = url.searchParams.get('actorId');
+    const productKey = url.searchParams.get('productKey');
 
     // Pagination
     const page = parseInt(url.searchParams.get('page') || '1');
@@ -75,6 +76,10 @@ export const getAuditLogs = catchAsync(
 
     if (actorId) {
       query = query.eq('actor_id', actorId);
+    }
+
+    if (productKey && productKey !== 'all') {
+      query = query.eq('product_key', productKey);
     }
 
     const {
