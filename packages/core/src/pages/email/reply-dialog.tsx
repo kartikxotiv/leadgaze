@@ -193,12 +193,14 @@ export function CoreEmailReplyDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Reply to Email</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-2xl dark:border-slate-800 dark:bg-slate-950">
+        <div className="flex max-h-[90vh] flex-col">
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle>Reply to Email</DialogTitle>
+          </DialogHeader>
 
-        <div className="grid gap-4">
+          <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
+            <div className="grid gap-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label>Template</Label>
@@ -319,55 +321,57 @@ export function CoreEmailReplyDialog({
               placeholder="Write your reply..."
             />
           </div>
-        </div>
+            </div>
+          </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            disabled={
-              recipients.length === 0 ||
-              !emailAccountId ||
-              !subject.trim() ||
-              !body.trim() ||
-              mutation.isPending
-            }
-            onClick={() =>
-              mutation.mutate({
-                workspaceId,
-                emailAccountId: Number(emailAccountId),
-                toEmails: recipients,
-                cc: replyAllCcRecipients,
-                subject: renderEmailContent(
-                  subject,
-                  variables,
-                  templateContext,
-                ),
-                body: renderEmailContent(body, variables, templateContext),
-                templateId: templateId ? Number(templateId) : undefined,
-                threadId: email.thread_id,
-                threadKey:
-                  email.thread_key ||
-                  email.internet_message_id ||
-                  email.provider_message_id,
-                inReplyTo:
-                  email.internet_message_id || email.provider_message_id,
-                references:
-                  email.email_references ||
-                  email.internet_message_id ||
-                  email.provider_message_id,
-              })
-            }
-          >
-            {mutation.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="mr-2 h-4 w-4" />
-            )}
-            Send Reply
-          </Button>
-        </DialogFooter>
+          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={
+                recipients.length === 0 ||
+                !emailAccountId ||
+                !subject.trim() ||
+                !body.trim() ||
+                mutation.isPending
+              }
+              onClick={() =>
+                mutation.mutate({
+                  workspaceId,
+                  emailAccountId: Number(emailAccountId),
+                  toEmails: recipients,
+                  cc: replyAllCcRecipients,
+                  subject: renderEmailContent(
+                    subject,
+                    variables,
+                    templateContext,
+                  ),
+                  body: renderEmailContent(body, variables, templateContext),
+                  templateId: templateId ? Number(templateId) : undefined,
+                  threadId: email.thread_id,
+                  threadKey:
+                    email.thread_key ||
+                    email.internet_message_id ||
+                    email.provider_message_id,
+                  inReplyTo:
+                    email.internet_message_id || email.provider_message_id,
+                  references:
+                    email.email_references ||
+                    email.internet_message_id ||
+                    email.provider_message_id,
+                })
+              }
+            >
+              {mutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
+              )}
+              Send Reply
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
