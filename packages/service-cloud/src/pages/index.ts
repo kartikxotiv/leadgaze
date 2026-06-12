@@ -4,6 +4,5 @@ export * from './ticket-details/page';
 export * from './customers/page';
 export * from './inboxes/page';
 export * from './email-settings/page';
-export * from './teams/page';
 export * from './reports/page';
 export * from './settings/page';

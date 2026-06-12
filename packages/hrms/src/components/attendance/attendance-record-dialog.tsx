@@ -98,10 +98,10 @@ export function AttendanceRecordDialog(props: {
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className={'sm:max-w-[600px]'}>
-        <form className={'space-y-5'} onSubmit={onSubmit}>
-          <DialogHeader>
-            <DialogTitle className={'text-2xl'}>Edit Attendance</DialogTitle>
+      <DialogContent className={'max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[600px] dark:border-slate-800 dark:bg-slate-950'}>
+        <form className={'flex max-h-[90vh] flex-col'} onSubmit={onSubmit}>
+          <DialogHeader className={'border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950'}>
+            <DialogTitle className={'text-2xl pr-12'}>Edit Attendance</DialogTitle>
             <DialogDescription className={'text-base'}>
               {props.row
                 ? `Update attendance for ${getEmployeeName(props.row)} on ${props.date}.`
@@ -109,84 +109,86 @@ export function AttendanceRecordDialog(props: {
             </DialogDescription>
           </DialogHeader>
 
-          <div className={'grid gap-4 sm:grid-cols-2'}>
-            <div className={'space-y-2'}>
-              <Label>Status</Label>
-              <Select
-                value={form.status}
-                onValueChange={(value) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    status: value as 'present' | 'absent',
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={'Select status'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={'present'}>Present</SelectItem>
-                  <SelectItem value={'absent'}>Absent</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className={'flex-1 overflow-y-auto p-6 space-y-4'}>
+            <div className={'grid gap-4 sm:grid-cols-2'}>
+              <div className={'space-y-2'}>
+                <Label>Status</Label>
+                <Select
+                  value={form.status}
+                  onValueChange={(value) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      status: value as 'present' | 'absent',
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={'Select status'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={'present'}>Present</SelectItem>
+                    <SelectItem value={'absent'}>Absent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className={'space-y-2'}>
-              <Label>Shift</Label>
-              <Select
-                value={form.shift_id ?? '__none__'}
-                onValueChange={(value) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    shift_id: value === '__none__' ? null : value,
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={'Select shift'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={'__none__'}>No Shift</SelectItem>
-                  {shiftOptions.map((shift) => (
-                    <SelectItem key={shift.id} value={shift.id}>
-                      {shift.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className={'space-y-2'}>
+                <Label>Shift</Label>
+                <Select
+                  value={form.shift_id ?? '__none__'}
+                  onValueChange={(value) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      shift_id: value === '__none__' ? null : value,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={'Select shift'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={'__none__'}>No Shift</SelectItem>
+                    {shiftOptions.map((shift) => (
+                      <SelectItem key={shift.id} value={shift.id}>
+                        {shift.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className={'space-y-2'}>
-              <Label htmlFor={'check-in'}>Check In</Label>
-              <Input
-                id={'check-in'}
-                type={'datetime-local'}
-                step={1}
-                value={form.check_in}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, check_in: event.target.value }))
-                }
-              />
-            </div>
+              <div className={'space-y-2'}>
+                <Label htmlFor={'check-in'}>Check In</Label>
+                <Input
+                  id={'check-in'}
+                  type={'datetime-local'}
+                  step={1}
+                  value={form.check_in}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, check_in: event.target.value }))
+                  }
+                />
+              </div>
 
-            <div className={'space-y-2'}>
-              <Label htmlFor={'check-out'}>Check Out</Label>
-              <Input
-                id={'check-out'}
-                type={'datetime-local'}
-                step={1}
-                value={form.check_out}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    check_out: event.target.value,
-                  }))
-                }
-              />
+              <div className={'space-y-2'}>
+                <Label htmlFor={'check-out'}>Check Out</Label>
+                <Input
+                  id={'check-out'}
+                  type={'datetime-local'}
+                  step={1}
+                  value={form.check_out}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      check_out: event.target.value,
+                    }))
+                  }
+                />
+              </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className={'border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950'}>
             <Button
               type={'button'}
               variant={'outline'}

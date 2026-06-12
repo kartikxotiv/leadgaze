@@ -83,8 +83,8 @@ export function AttendancePage(props: {
     (shiftFilter !== allAttendanceShifts ? 1 : 0);
 
   return (
-    <section className="flex h-[100dvh] min-h-0 flex-col overflow-hidden">
-      <div className="bg-sidebar flex shrink-0 flex-col overflow-hidden">
+    <>
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
           className="bg-sidebar shrink-0"
           title={`Attendance (${getAttendanceCount({
@@ -101,9 +101,10 @@ export function AttendancePage(props: {
         >
           {props.headerActions}
         </PageHeader>
+      </div>
 
-        <div className="bg-sidebar w-full min-w-0 max-w-full overflow-x-auto pb-2">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2 pt-2">
+            <div className="flex flex-wrap items-center gap-2">
             {!isMemberOnlyView ? (
               <>
                 {canShowTeamView ? (
@@ -148,7 +149,7 @@ export function AttendancePage(props: {
         </div>
 
         {showTeamFilters || (activeView === 'shifts' && canManageShifts) ? (
-          <div className="bg-sidebar w-full shrink-0 border-b pb-2">
+          <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
             <ListToolBar
               showSearch={showTeamFilters}
               searchPlaceholder="Search attendance..."
@@ -219,12 +220,13 @@ export function AttendancePage(props: {
             />
           </div>
         ) : null}
-      </div>
+      
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
-        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-4 overflow-y-auto">
+      <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-2 overflow-y-auto">
           <CardWidgetContainer
             title="Selected Date"
+            className="border-b-0"
             desc={
               isMemberOnlyView
                 ? 'Choose a date to view your attendance.'
@@ -234,7 +236,7 @@ export function AttendancePage(props: {
             icon2={
               <input
                 title="date"
-                className="bg-background h-9 rounded-md border px-3 text-sm"
+                className="bg-background h-9 border px-3 text-sm"
                 type="date"
                 value={selectedDate}
                 onChange={(event) => setSelectedDate(event.target.value)}
@@ -245,7 +247,7 @@ export function AttendancePage(props: {
           </CardWidgetContainer>
 
           {activeView === 'team' ? (
-            <div className="flex min-h-0 flex-1 flex-col gap-4">
+            <div className="flex min-h-0 flex-1 flex-col gap-2 mt-2">
               <div className="w-full min-w-0 max-w-full overflow-x-auto">
                 <div className="flex flex-wrap items-center gap-2">
                   <TableStatusMetricTab
@@ -308,7 +310,7 @@ export function AttendancePage(props: {
           ) : null}
 
           {activeView === 'shifts' ? (
-            <div className="grid gap-4">
+            <div className="grid gap-2">
               <WorkingDaysCard
                 workingDays={workingDays}
                 isLoading={attendanceSettingsQuery.isLoading}
@@ -346,7 +348,7 @@ export function AttendancePage(props: {
         isPending={pendingShiftSave}
         shift={editingShift}
       />
-    </section>
+    </>
   );
 }
 

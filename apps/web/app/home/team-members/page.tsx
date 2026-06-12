@@ -66,7 +66,7 @@ function TeamMembersPageSkeleton() {
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden">
       <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
-        <div className="bg-sidebar flex items-center justify-between px-6 py-4">
+        <div className="flex items-center justify-between px-6 py-4">
           <div className="space-y-1">
             <Skeleton className="h-6 w-36" />
             <Skeleton className="h-4 w-64" />
@@ -188,12 +188,12 @@ export default function TeamMembersPage() {
 
   // Prefetch roles so they're available immediately when invite dialog opens
   useQuery({
-    queryKey: ['workspaceRoles', currentWorkspace?.id],
+    queryKey: ['workspaceRoles', currentWorkspace?.id, productKey],
     queryFn: async () => {
-      const res = await getRolesService(currentWorkspace?.id || '');
+      const res = await getRolesService(currentWorkspace?.id || '', productKey);
       return res?.data;
     },
-    enabled: !!currentWorkspace?.id,
+    enabled: !!currentWorkspace?.id && !!productKey,
   });
 
   // Only show members who have an active seat in the current module.
@@ -583,6 +583,7 @@ export default function TeamMembersPage() {
               open={updateDialogOpen}
               onOpenChange={setUpdateDialogOpen}
               onSuccess={() => setUpdatingMember(null)}
+              productKey={productKey}
             />
           )}
                     </PageBody>

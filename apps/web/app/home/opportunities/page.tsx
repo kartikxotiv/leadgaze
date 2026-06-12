@@ -84,8 +84,8 @@ function OpportunitiesPageSkeleton() {
   return (
     <ModuleGuard module="opportunities">
       <div className="flex h-[100dvh] flex-col overflow-hidden">
-        <div className="bg-sidebar flex shrink-0 flex-col gap-2">
-          <div className="bg-sidebar flex items-center justify-between px-6 py-4">
+        <div className="flex shrink-0 flex-col gap-2">
+          <div className="flex items-center justify-between px-6 py-4">
             <div className="space-y-1">
               <Skeleton className="h-6 w-32" />
               <Skeleton className="h-4 w-52" />
@@ -97,7 +97,7 @@ function OpportunitiesPageSkeleton() {
             </div>
           </div>
         </div>
-        <div className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden px-4 pt-6 pb-0">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pt-6 pb-0">
           <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
             <CardContent className="flex min-h-0 flex-1 flex-col p-0">
               <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
@@ -356,19 +356,19 @@ export default function OpportunitiesPage() {
       </div>
 
       {/* Pipeline Summary Cards */}
-      <div className="w-full max-w-full min-w-0 shrink-0 pb-4">
+      <div className="w-full max-w-full min-w-0 shrink-0 pb-2 pt-2">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           <Card
-            className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStage === 'all' ? 'border-primary ring-primary ring-1' : ''}`}
+            className={`hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer transition-all ${selectedStage === 'all' ? 'border-primary table-status-select-bg dark:dark-table-status-select-bg' : ''}`}
             onClick={() => setSelectedStage('all')}
           >
             <CardContent className="p-3">
               <div className="flex flex-col gap-1">
-                <span className="text-muted-foreground text-[10px] font-medium whitespace-nowrap uppercase">
+                <span className="text-muted-foreground secondary-text-small font-medium whitespace-nowrap uppercase">
                   All Opportunities ({totalCount})
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-[15px] font-bold dark:text-white">
+                  <span className="primary-heading dark:text-white">
                     {new Intl.NumberFormat('en-US', {
                       style: 'currency',
                       currency: 'USD',
@@ -393,7 +393,7 @@ export default function OpportunitiesPage() {
             return (
               <Card
                 key={stage.id}
-                className={`hover:border-primary/50 bg-card cursor-pointer transition-all ${selectedStage === stage.id ? 'border-primary ring-primary ring-1' : ''}`}
+                className={`hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer transition-all ${selectedStage === stage.id ? 'border-primary table-status-select-bg dark:dark-table-status-select-bg' : ''}`}
                 onClick={() => setSelectedStage(stage.id)}
               >
                 <CardContent className="p-3">
@@ -403,12 +403,12 @@ export default function OpportunitiesPage() {
                         className="h-2 w-2 shrink-0 rounded-full"
                         style={{ backgroundColor: stage.color }}
                       />
-                      <span className="text-muted-foreground dark:text-white text-[10px] font-medium whitespace-nowrap uppercase">
+                      <span className="text-muted-foreground dark:text-white secondary-text-small font-medium whitespace-nowrap uppercase">
                         {stage.status_name} ({displayCount})
                       </span>
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-[15px] dark:text-white font-bold">
+                      <span className="primary-heading dark:text-white font-bold">
                         {new Intl.NumberFormat('en-US', {
                           style: 'currency',
                           currency: 'USD',
@@ -457,7 +457,7 @@ export default function OpportunitiesPage() {
         />
       </div>
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3 pb-6">
+      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
           <CustomTableContainer
             pagination={totalCount > 0 && (

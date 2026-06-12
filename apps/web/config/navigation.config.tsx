@@ -1,4 +1,4 @@
-import { Home, User, Mail } from 'lucide-react';
+import { Home, Mail } from 'lucide-react';
 import { z } from 'zod';
 
 import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
@@ -21,16 +21,6 @@ const routes = [
         label: 'Emails',
         path: pathsConfig.app.emails,
         Icon: <Mail className={iconClasses} />,
-      },
-    ],
-  },
-  {
-    label: 'common:routes.settings',
-    children: [
-      {
-        label: 'common:routes.profile',
-        path: pathsConfig.app.profileSettings,
-        Icon: <User className={iconClasses} />,
       },
     ],
   },

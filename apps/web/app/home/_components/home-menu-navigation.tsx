@@ -29,7 +29,6 @@ import {
   ShieldCheck,
   ShoppingCart,
   User,
-  UserPen,
   Users,
   Users as UsersIcon,
 } from 'lucide-react';
@@ -48,6 +47,7 @@ import {
   getServiceCloudRoutesForPermissions,
   useServiceCloudPermissions,
 } from '@kit/service-cloud';
+import { getServiceCloudResourceService } from '@kit/service-cloud';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import {
   Dialog,
@@ -68,13 +68,6 @@ import { cn, isRouteActive } from '@kit/ui/utils';
 import { AppLogo } from '~/components/app-logo';
 import { ProfileAccountDropdownContainer } from '~/components/personal-account-dropdown-container';
 import pathsConfig from '~/config/paths.config';
-import {
-  type AnyDropdownLabel,
-  type SalesDropdownLabel,
-  type ServicesDropdownLabel,
-  hasChevronForModule,
-  isDropdownLabel,
-} from '../_constants/nav-chevron.constants';
 import { usePermissionBasedNavigationConfig } from '~/lib/permissions/use-navigation-permissions';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getNavigationConfig } from '~/lib/rbac/use-dynamic-navigation';
@@ -83,8 +76,14 @@ import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
 import { getSeatAssignmentsService } from '~/services/subscription.service';
-import { getServiceCloudResourceService } from '@kit/service-cloud';
 
+import {
+  type AnyDropdownLabel,
+  type SalesDropdownLabel,
+  type ServicesDropdownLabel,
+  hasChevronForModule,
+  isDropdownLabel,
+} from '../_constants/nav-chevron.constants';
 import { CreateAccountDialog } from '../accounts/components/create-account-dialog';
 import { CreateContactDialog } from '../contacts/components/create-contact-dialog';
 import CreateLeadDialog from '../leads/components/create-lead-dialog';
@@ -191,13 +190,17 @@ function getRecordName(
         `Unnamed ${salesType.slice(0, -1)}`
       );
     }
-    if (salesType === 'Accounts') return record.account_name || 'Unnamed Account';
-    if (salesType === 'Opportunities') return record.opportunity_name || 'Unnamed Opportunity';
+    if (salesType === 'Accounts')
+      return record.account_name || 'Unnamed Account';
+    if (salesType === 'Opportunities')
+      return record.opportunity_name || 'Unnamed Opportunity';
   }
   if (module === 'services') {
     const servicesType = type as ServicesDropdownLabel;
     if (servicesType === 'Tickets')
-      return record.subject || record.title || `Ticket #${record.id?.slice(0, 8)}`;
+      return (
+        record.subject || record.title || `Ticket #${record.id?.slice(0, 8)}`
+      );
   }
   return record.name || record.title || 'Unnamed Record';
 }
@@ -252,16 +255,24 @@ async function fetchDropdownRecords(
 ): Promise<any> {
   if (module === 'sales') {
     const salesType = type as SalesDropdownLabel;
-    if (salesType === 'Leads') return getLeadsService({ workspaceId, limit: 5 });
-    if (salesType === 'Contacts') return getContactsService({ workspaceId, limit: 5 });
-    if (salesType === 'Accounts') return getAccountsService({ workspaceId, limit: 5 });
-    if (salesType === 'Opportunities') return getOpportunitiesService({ workspaceId, limit: 5 });
+    if (salesType === 'Leads')
+      return getLeadsService({ workspaceId, limit: 5 });
+    if (salesType === 'Contacts')
+      return getContactsService({ workspaceId, limit: 5 });
+    if (salesType === 'Accounts')
+      return getAccountsService({ workspaceId, limit: 5 });
+    if (salesType === 'Opportunities')
+      return getOpportunitiesService({ workspaceId, limit: 5 });
   }
   if (module === 'services') {
     const servicesType = type as ServicesDropdownLabel;
     if (servicesType === 'Tickets') {
       // getServiceCloudResourceService returns the array directly
-      const rows = await getServiceCloudResourceService('tickets', workspaceId, { limit: '5' });
+      const rows = await getServiceCloudResourceService(
+        'tickets',
+        workspaceId,
+        { limit: '5' },
+      );
       return { data: rows ?? [] };
     }
   }
@@ -403,7 +414,7 @@ function NavDropdown({
             <button
               type="button"
               aria-label={`Open ${formattedLabel} quick-view`}
-              className="flex cursor-pointer items-center border-0 bg-transparent pr-2 pl-0 py-1.5 outline-none focus:outline-none"
+              className="flex cursor-pointer items-center border-0 bg-transparent py-1.5 pr-2 pl-0 outline-none focus:outline-none"
               onClick={(e) => e.stopPropagation()}
             >
               <ChevronDown className="h-3.5 w-3.5 opacity-70" />
@@ -615,11 +626,6 @@ export function HomeMenuNavigation() {
           label: 'common:routes.settings',
           children: [
             {
-              label: 'common:routes.profile',
-              path: commonPaths.profileSettings,
-              Icon: <UserPen className="h-4 w-4" />,
-            },
-            {
               label: 'common:routes.workspace-settings',
               path: commonPaths.workspaceSettings,
               Icon: <Settings className="h-4 w-4" />,
@@ -649,11 +655,6 @@ export function HomeMenuNavigation() {
         {
           label: 'common:routes.settings',
           children: [
-            {
-              label: 'common:routes.profile',
-              path: commonPaths.profileSettings,
-              Icon: <UserPen className="h-4 w-4" />,
-            },
             {
               label: 'common:routes.workspace-settings',
               path: commonPaths.workspaceSettings,
@@ -685,11 +686,6 @@ export function HomeMenuNavigation() {
           label: 'common:routes.settings',
           children: [
             {
-              label: 'common:routes.profile',
-              path: commonPaths.profileSettings,
-              Icon: <UserPen className="h-4 w-4" />,
-            },
-            {
               label: 'common:routes.workspace-settings',
               path: commonPaths.workspaceSettings,
               Icon: <Settings className="h-4 w-4" />,
@@ -719,11 +715,6 @@ export function HomeMenuNavigation() {
         {
           label: 'common:routes.settings',
           children: [
-            {
-              label: 'common:routes.profile',
-              path: commonPaths.profileSettings,
-              Icon: <UserPen className="h-4 w-4" />,
-            },
             {
               label: 'common:routes.workspace-settings',
               path: commonPaths.workspaceSettings,
@@ -810,11 +801,6 @@ export function HomeMenuNavigation() {
         label: 'common:routes.settings',
         children: [
           {
-            label: 'common:routes.profile',
-            path: pathsConfig.app.profileSettings,
-            Icon: <UserPen className="h-4 w-4" />,
-          },
-          {
             label: 'common:routes.workspace-settings',
             path: pathsConfig.app.workspaceSettings,
             Icon: <Settings className="h-4 w-4" />,
@@ -860,11 +846,17 @@ export function HomeMenuNavigation() {
 
       if ('children' in group && Array.isArray(group.children)) {
         group.children.forEach((child) => {
+          const end = (
+            child as {
+              end?: boolean | ((path: string) => boolean);
+            }
+          ).end;
+
           items.push({
             label: child.label,
             path: child.path,
             Icon: child.Icon,
-            end: child.end,
+            end,
           });
         });
       } else if ('path' in group) {
@@ -917,7 +909,11 @@ export function HomeMenuNavigation() {
     // Active route is in the "More" section. We pull it into the visible section
     // as the last visible item, and shift the rest.
     const visible = allMainRoutes.slice(0, maxVisible - 1);
-    visible.push(allMainRoutes[activeIndex]);
+    const activeRoute = allMainRoutes[activeIndex];
+
+    if (activeRoute) {
+      visible.push(activeRoute);
+    }
 
     const more = allMainRoutes.filter(
       (item) => !visible.some((v) => v.path === item.path),
@@ -974,8 +970,8 @@ export function HomeMenuNavigation() {
               </button>
             </DialogTrigger>
 
-            <DialogContent className="max-w-2xl rounded-lg border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
-              <DialogHeader className="mb-4 border-b pb-4">
+            <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-2xl rounded-lg border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
+              <DialogHeader className="mb-4 border-b pb-4 border-b p-6 pb-4">
                 <DialogTitle className="flex items-center gap-2 text-xl font-bold text-zinc-900 dark:text-white">
                   <Grip className="h-5 w-5 text-blue-600" />
                   App Launcher

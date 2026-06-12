@@ -52,10 +52,25 @@ import {
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { cn } from '@kit/ui/utils';
 
+const PRESET_COLORS = [
+  '#64748b', // Slate
+  '#ef4444', // Red
+  '#f97316', // Orange
+  '#f59e0b', // Amber
+  '#10b981', // Emerald
+  '#14b8a6', // Teal
+  '#06b6d4', // Cyan
+  '#3b82f6', // Blue
+  '#6366f1', // Indigo
+  '#8b5cf6', // Violet
+  '#ec4899', // Pink
+  '#f43f5e', // Rose
+];
+
 export type ResourceField = {
   key: string;
   label: string;
-  type?: 'text' | 'email' | 'number' | 'textarea' | 'select';
+  type?: 'text' | 'email' | 'number' | 'textarea' | 'select' | 'color';
   required?: boolean;
   options?: Array<{ label: string; value: string }>;
 };
@@ -178,7 +193,7 @@ export function ServiceCloudResourcePage({
   };
 
   return (
-    <CardWidgetContainer title="Email Accounts" desc="Connect Gmail or SMTP/IMAP accounts for Core email." icon2={<div className="flex items-center gap-2">
+    <CardWidgetContainer className="mt-2" title="Email Accounts" desc="Connect Gmail or SMTP/IMAP accounts for Core email." icon2={<div className="flex items-center gap-2">
           {toolbar}
           {canCreate ? (
             <Dialog open={open} onOpenChange={setOpen}>
@@ -188,13 +203,15 @@ export function ServiceCloudResourcePage({
                   New
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[560px]">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editing ? `Edit ${title}` : `New ${title}`}
-                  </DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4">
+              <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[560px] dark:border-slate-800 dark:bg-slate-950">
+                <div className="flex max-h-[90vh] flex-col">
+                  <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+                    <DialogTitle>
+                      {editing ? `Edit ${title}` : `New ${title}`}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
+                    <div className="grid gap-4">
                   {fields.map((field) => (
                     <div key={field.key} className="space-y-2">
                       <Label>{field.label}</Label>
@@ -224,6 +241,58 @@ export function ServiceCloudResourcePage({
                             ))}
                           </SelectContent>
                         </Select>
+                      ) : field.type === 'color' ? (
+                        <div className="space-y-3">
+                          <div className="flex flex-wrap gap-2">
+                            {PRESET_COLORS.map((color) => (
+                              <button
+                                key={color}
+                                type="button"
+                                className={cn(
+                                  "h-8 w-8 rounded-full border-2 transition-all hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                                  form[field.key] === color
+                                    ? "border-primary scale-105 shadow-md ring-2 ring-primary"
+                                    : "border-zinc-300 dark:border-zinc-700"
+                                )}
+                                style={{ backgroundColor: color }}
+                                onClick={() =>
+                                  setForm((prev: ServiceCloudRecord) => ({
+                                    ...prev,
+                                    [field.key]: color,
+                                  }))
+                                }
+                                title={color}
+                              />
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="relative h-9 w-9 overflow-hidden rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                              <input
+                                type="color"
+                                className="absolute -left-2 -top-2 h-14 w-14 cursor-pointer border-0 p-0"
+                                value={String(form[field.key] || '#64748b')}
+                                onChange={(event) =>
+                                  setForm((prev: ServiceCloudRecord) => ({
+                                    ...prev,
+                                    [field.key]: event.target.value,
+                                  }))
+                                }
+                              />
+                            </div>
+                            <Input
+                              type="text"
+                              placeholder="#000000"
+                              value={String(form[field.key] ?? '')}
+                              onChange={(event) =>
+                                setForm((prev: ServiceCloudRecord) => ({
+                                  ...prev,
+                                  [field.key]: event.target.value,
+                                }))
+                              }
+                              className="w-32 uppercase font-mono text-sm"
+                            />
+                          </div>
+                        </div>
                       ) : (
                         <Input
                           type={
@@ -247,12 +316,18 @@ export function ServiceCloudResourcePage({
                       )}
                     </div>
                   ))}
-                  <Button onClick={save} disabled={saving}>
-                    {saving ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    Save
-                  </Button>
+                    </div>
+                  </div>
+                  <div className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+                    <div className="flex justify-end gap-3">
+                      <Button onClick={save} disabled={saving}>
+                        {saving ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : null}
+                        Save
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>

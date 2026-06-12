@@ -16,6 +16,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@kit/ui/dialog';
 import {
   Form,
@@ -144,15 +145,15 @@ export function EditOpportunityDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[600px]">
+        <DialogHeader className="border-b p-6 pb-4">
           <DialogTitle>Edit Opportunity</DialogTitle>
           <DialogDescription>
             Update the information for this opportunity.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             <FormField
               control={form.control}
               name="opportunity_name"
@@ -381,7 +382,10 @@ export function EditOpportunityDialog({
 
             </div>
 
-            <div className="flex justify-end gap-2 pt-4">
+            
+          </form>
+        </Form>
+        <DialogFooter className="border-t p-6 mt-auto">
               <Button
                 type="button"
                 variant="outline"
@@ -390,12 +394,10 @@ export function EditOpportunityDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={updateMutation.isPending}>
+              <Button type="submit" form="dialog-form" disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
-            </div>
-          </form>
-        </Form>
+            </DialogFooter>
       </DialogContent>
     </Dialog>
   );

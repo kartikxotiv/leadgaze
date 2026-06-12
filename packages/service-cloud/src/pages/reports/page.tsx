@@ -3,17 +3,9 @@
 import Link from 'next/link';
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  AlertTriangle,
-  Clock3,
-  Inbox,
-  UserRound,
-  UsersRound,
-} from 'lucide-react';
+import { AlertTriangle, Clock3, Inbox, UserRound } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
-import { CardWidgetContainer } from '@kit/ui/card-widget-container';
-import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import {
   Card,
   CardContent,
@@ -21,6 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import { Skeleton } from '@kit/ui/skeleton';
 
 import { getServiceCloudDashboardService } from '../../services';
@@ -79,7 +73,6 @@ export function ServiceCloudReportsPage({
   const customerBreakdown = reports.customerBreakdown ?? [];
   const ticketTimeBreakdown = reports.ticketTimeBreakdown ?? [];
   const assigneeWorkload = reports.assigneeWorkload ?? [];
-  const teamBreakdown = reports.teamBreakdown ?? [];
   const openTicketAging = reports.openTicketAging ?? [];
   const timeByTicket = reports.timeByTicket ?? [];
   const statusMax = maxCount(statusBreakdown, 'count');
@@ -109,13 +102,6 @@ export function ServiceCloudReportsPage({
       iconBg: 'bg-activity-5',
     },
     {
-      label: 'Teams',
-      value: teamBreakdown.length,
-      icon: UsersRound,
-      detail: 'Active support teams',
-      iconBg: 'bg-activity-3',
-    },
-    {
       label: 'Logged Time',
       value: formatHours(data?.totalLoggedSeconds ?? 0),
       icon: Clock3,
@@ -141,11 +127,14 @@ export function ServiceCloudReportsPage({
         </div>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-4">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
-            <Card key={card.label} className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+            <Card
+              key={card.label}
+              className="flex h-32 flex-col justify-between xl:h-28 2xl:h-32"
+            >
               <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
                 <div className="space-y-1">
                   <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
@@ -155,7 +144,9 @@ export function ServiceCloudReportsPage({
                     {card.value}
                   </div>
                 </div>
-                <div className={`flex h-8 w-8 items-center justify-center rounded ${card.iconBg}`}>
+                <div
+                  className={`flex h-8 w-8 items-center justify-center rounded ${card.iconBg}`}
+                >
                   <Icon className="h-4 w-4 text-white" />
                 </div>
               </CardHeader>
@@ -217,7 +208,7 @@ export function ServiceCloudReportsPage({
                   </div>
                   <div className="bar-bg mt-2 h-1.5 overflow-hidden rounded-full">
                     <div
-                      className="h-full rounded-full bg-leadgaze-success"
+                      className="bg-leadgaze-success h-full rounded-full"
                       style={{
                         width: percent(customer.openTickets, customerMax),
                       }}
@@ -250,7 +241,9 @@ export function ServiceCloudReportsPage({
                       key={priority.id}
                       title={priority.name}
                       subtitle={`${priority.openCount} open`}
-                      badge={<Badge variant="secondary">{priority.count}</Badge>}
+                      badge={
+                        <Badge variant="secondary">{priority.count}</Badge>
+                      }
                     />
                   ))}
                 </CardWidgetList>
@@ -276,25 +269,6 @@ export function ServiceCloudReportsPage({
                     assignee.actualLoggedSeconds ||
                       assignee.ticketLoggedSeconds,
                   ),
-                ])}
-            />
-          </CardWidgetContainer>
-
-          <CardWidgetContainer
-            title="Team Workload"
-            description="Tickets and effort by support team."
-            hideHeaderBorder={true}
-          >
-            <ReportTable
-              headers={['Team', 'Open', 'Total', 'Logged']}
-              empty="No team data."
-              rows={teamBreakdown
-                .slice(0, 10)
-                .map((team: any) => [
-                  team.name,
-                  team.openTickets,
-                  team.totalTickets,
-                  formatHours(team.loggedSeconds),
                 ])}
             />
           </CardWidgetContainer>
@@ -329,7 +303,7 @@ export function ServiceCloudReportsPage({
                     </div>
                     <div className="bar-bg mt-3 h-2 overflow-hidden rounded-full">
                       <div
-                        className="h-full rounded-full bg-leadgaze-success"
+                        className="bg-leadgaze-success h-full rounded-full"
                         style={{
                           width: percent(ticket.loggedSeconds, timeMax),
                         }}
@@ -420,9 +394,9 @@ function MetricBar({
         </div>
         <div className="text-2xl font-semibold">{value}</div>
       </div>
-      <div className="h-2 w-full overflow-hidden bar-bg rounded-full">
+      <div className="bar-bg h-2 w-full overflow-hidden rounded-full">
         <div
-          className="h-full rounded-full bg-leadgaze-success transition-all duration-500"
+          className="bg-leadgaze-success h-full rounded-full transition-all duration-500"
           style={{ width }}
         />
       </div>
@@ -499,9 +473,12 @@ function ServiceCloudReportsSkeleton() {
       </section>
 
       {/* Stat cards skeleton */}
-      <div className="grid gap-4 md:grid-cols-5">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <Card key={i} className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+      <div className="grid gap-4 md:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Card
+            key={i}
+            className="flex h-32 flex-col justify-between xl:h-28 2xl:h-32"
+          >
             <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
               <div className="space-y-2">
                 <Skeleton className="h-3 w-20" />
@@ -524,7 +501,7 @@ function ServiceCloudReportsSkeleton() {
           <Card>
             <CardHeader className="border-b">
               <Skeleton className="h-5 w-52" />
-              <Skeleton className="h-3 w-64 mt-1" />
+              <Skeleton className="mt-1 h-3 w-64" />
             </CardHeader>
             <div className="space-y-4 px-6 py-4">
               {[1, 2, 3, 4].map((i) => (
@@ -546,22 +523,32 @@ function ServiceCloudReportsSkeleton() {
           <Card>
             <CardHeader>
               <Skeleton className="h-5 w-48" />
-              <Skeleton className="h-3 w-64 mt-1" />
+              <Skeleton className="mt-1 h-3 w-64" />
             </CardHeader>
             <div className="overflow-x-auto">
               {/* Table header */}
-              <div className="grid grid-cols-6 gap-3 border-b bg-muted/40 px-3 py-2">
-                {['Customer', 'Open', 'Total', 'Closed', 'Logged', 'Latest'].map((h) => (
+              <div className="bg-muted/40 grid grid-cols-6 gap-3 border-b px-3 py-2">
+                {[
+                  'Customer',
+                  'Open',
+                  'Total',
+                  'Closed',
+                  'Logged',
+                  'Latest',
+                ].map((h) => (
                   <Skeleton key={h} className="h-3 w-full max-w-[60px]" />
                 ))}
               </div>
               {/* Table rows */}
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="grid grid-cols-6 gap-3 border-b px-3 py-3 last:border-b-0">
+                <div
+                  key={i}
+                  className="grid grid-cols-6 gap-3 border-b px-3 py-3 last:border-b-0"
+                >
                   <div className="space-y-1.5">
                     <Skeleton className="h-3.5 w-24" />
                     <Skeleton className="h-2.5 w-32" />
-                    <Skeleton className="h-1.5 w-full rounded-full mt-1" />
+                    <Skeleton className="mt-1 h-1.5 w-full rounded-full" />
                   </div>
                   {[1, 2, 3, 4, 5].map((j) => (
                     <Skeleton key={j} className="h-3.5 w-8" />
@@ -578,9 +565,9 @@ function ServiceCloudReportsSkeleton() {
           <Card>
             <CardHeader>
               <Skeleton className="h-5 w-28" />
-              <Skeleton className="h-3 w-36 mt-1" />
+              <Skeleton className="mt-1 h-3 w-36" />
             </CardHeader>
-            <div className="px-6 py-4 space-y-3">
+            <div className="space-y-3 px-6 py-4">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="flex items-center gap-3 py-2">
                   <div className="flex-1 space-y-1.5">
@@ -597,40 +584,20 @@ function ServiceCloudReportsSkeleton() {
           <Card>
             <CardHeader>
               <Skeleton className="h-5 w-40" />
-              <Skeleton className="h-3 w-56 mt-1" />
+              <Skeleton className="mt-1 h-3 w-56" />
             </CardHeader>
             <div className="overflow-x-auto">
-              <div className="grid grid-cols-4 gap-3 border-b bg-muted/40 px-3 py-2">
+              <div className="bg-muted/40 grid grid-cols-4 gap-3 border-b px-3 py-2">
                 {['Agent', 'Open', 'Total', 'Logged'].map((h) => (
                   <Skeleton key={h} className="h-3 w-full max-w-[48px]" />
                 ))}
               </div>
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="grid grid-cols-4 gap-3 border-b px-3 py-3 last:border-b-0">
+                <div
+                  key={i}
+                  className="grid grid-cols-4 gap-3 border-b px-3 py-3 last:border-b-0"
+                >
                   <Skeleton className="h-3.5 w-20" />
-                  <Skeleton className="h-3.5 w-6" />
-                  <Skeleton className="h-3.5 w-6" />
-                  <Skeleton className="h-3.5 w-10" />
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Team Workload table skeleton */}
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-5 w-36" />
-              <Skeleton className="h-3 w-48 mt-1" />
-            </CardHeader>
-            <div className="overflow-x-auto">
-              <div className="grid grid-cols-4 gap-3 border-b bg-muted/40 px-3 py-2">
-                {['Team', 'Open', 'Total', 'Logged'].map((h) => (
-                  <Skeleton key={h} className="h-3 w-full max-w-[48px]" />
-                ))}
-              </div>
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="grid grid-cols-4 gap-3 border-b px-3 py-3 last:border-b-0">
-                  <Skeleton className="h-3.5 w-24" />
                   <Skeleton className="h-3.5 w-6" />
                   <Skeleton className="h-3.5 w-6" />
                   <Skeleton className="h-3.5 w-10" />
@@ -643,13 +610,13 @@ function ServiceCloudReportsSkeleton() {
           <Card>
             <CardHeader>
               <Skeleton className="h-5 w-44" />
-              <Skeleton className="h-3 w-56 mt-1" />
+              <Skeleton className="mt-1 h-3 w-56" />
             </CardHeader>
             <div className="space-y-3 px-6 py-4">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="rounded-xl border p-4 space-y-2">
+                <div key={i} className="space-y-2 rounded-xl border p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="space-y-1 min-w-0">
+                    <div className="min-w-0 space-y-1">
                       <Skeleton className="h-4 w-40" />
                       <Skeleton className="h-3 w-32" />
                     </div>
@@ -669,17 +636,22 @@ function ServiceCloudReportsSkeleton() {
         <Card>
           <CardHeader>
             <Skeleton className="h-5 w-44" />
-            <Skeleton className="h-3 w-56 mt-1" />
+            <Skeleton className="mt-1 h-3 w-56" />
           </CardHeader>
           <div className="overflow-x-auto">
-            <div className="grid grid-cols-5 gap-3 border-b bg-muted/40 px-3 py-2">
+            <div className="bg-muted/40 grid grid-cols-5 gap-3 border-b px-3 py-2">
               {['Ticket', 'Customer', 'Owner', 'Age', 'Due'].map((h) => (
                 <Skeleton key={h} className="h-3 w-full max-w-[48px]" />
               ))}
             </div>
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="grid grid-cols-5 gap-3 border-b px-3 py-3 last:border-b-0">
-                <Skeleton className={`h-3.5 ${i % 2 === 0 ? 'w-32' : 'w-28'}`} />
+              <div
+                key={i}
+                className="grid grid-cols-5 gap-3 border-b px-3 py-3 last:border-b-0"
+              >
+                <Skeleton
+                  className={`h-3.5 ${i % 2 === 0 ? 'w-32' : 'w-28'}`}
+                />
                 <Skeleton className="h-3.5 w-20" />
                 <Skeleton className="h-3.5 w-16" />
                 <Skeleton className="h-3.5 w-8" />
@@ -693,17 +665,24 @@ function ServiceCloudReportsSkeleton() {
         <Card>
           <CardHeader>
             <Skeleton className="h-5 w-40" />
-            <Skeleton className="h-3 w-56 mt-1" />
+            <Skeleton className="mt-1 h-3 w-56" />
           </CardHeader>
           <div className="overflow-x-auto">
-            <div className="grid grid-cols-5 gap-3 border-b bg-muted/40 px-3 py-2">
-              {['Ticket', 'Customer', 'Entries', 'Logged', 'Latest'].map((h) => (
-                <Skeleton key={h} className="h-3 w-full max-w-[48px]" />
-              ))}
+            <div className="bg-muted/40 grid grid-cols-5 gap-3 border-b px-3 py-2">
+              {['Ticket', 'Customer', 'Entries', 'Logged', 'Latest'].map(
+                (h) => (
+                  <Skeleton key={h} className="h-3 w-full max-w-[48px]" />
+                ),
+              )}
             </div>
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="grid grid-cols-5 gap-3 border-b px-3 py-3 last:border-b-0">
-                <Skeleton className={`h-3.5 ${i % 2 === 0 ? 'w-28' : 'w-36'}`} />
+              <div
+                key={i}
+                className="grid grid-cols-5 gap-3 border-b px-3 py-3 last:border-b-0"
+              >
+                <Skeleton
+                  className={`h-3.5 ${i % 2 === 0 ? 'w-28' : 'w-36'}`}
+                />
                 <Skeleton className="h-3.5 w-20" />
                 <Skeleton className="h-3.5 w-8" />
                 <Skeleton className="h-3.5 w-10" />

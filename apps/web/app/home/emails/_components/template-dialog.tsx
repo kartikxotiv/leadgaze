@@ -122,8 +122,8 @@ export function TemplateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl overflow-hidden p-0 max-h-[95vh] h-auto flex flex-col">
-        <DialogHeader className="px-6 py-4 border-b">
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-3xl overflow-hidden p-0 h-auto flex flex-col">
+        <DialogHeader className="px-6 py-4 border-b border-b p-6 pb-4">
           <DialogTitle>{template ? 'Edit Template' : 'Create New Template'}</DialogTitle>
         </DialogHeader>
 
@@ -151,7 +151,7 @@ export function TemplateDialog({
             </p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex flex-col gap-2">
               {/* <div className="flex items-center justify-between">
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">System Variables</Label>
@@ -217,7 +217,8 @@ export function TemplateDialog({
           </div>
         </div>
 
-        <DialogFooter className="px-6 py-4 border-t bg-zinc-50 dark:bg-zinc-900/50">
+        
+      <DialogFooter className="px-6 py-4 border-t bg-zinc-50 dark:bg-zinc-900/50 border-t p-6 mt-auto">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
             Cancel
           </Button>

@@ -98,10 +98,10 @@ export function UpsertDocumentDialog(props: UpsertDocumentDialogProps) {
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className="sm:max-w-[520px]">
-        <form className="space-y-5" onSubmit={onSubmit}>
-          <DialogHeader>
-            <DialogTitle>
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[520px] dark:border-slate-800 dark:bg-slate-950">
+        <form className="flex max-h-[90vh] flex-col" onSubmit={onSubmit}>
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle className="pr-12">
               {isEdit ? 'Edit Document' : 'Add Document'}
             </DialogTitle>
             <DialogDescription>
@@ -109,7 +109,7 @@ export function UpsertDocumentDialog(props: UpsertDocumentDialogProps) {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
             <div className="space-y-2">
               <Label htmlFor="document-name">Document Name</Label>
               <Input
@@ -180,7 +180,7 @@ export function UpsertDocumentDialog(props: UpsertDocumentDialogProps) {
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
             <Button
               disabled={isBusy}
               type="button"

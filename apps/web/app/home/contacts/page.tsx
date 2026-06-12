@@ -46,8 +46,8 @@ function ContactsPageSkeleton() {
   return (
     <ModuleGuard module="contacts">
       <div className="flex h-[100dvh] flex-col overflow-hidden">
-        <div className="bg-sidebar flex shrink-0 flex-col gap-2">
-          <div className="bg-sidebar flex items-center justify-between px-6 py-4">
+        <div className="flex shrink-0 flex-col gap-2">
+          <div className="flex items-center justify-between px-6 py-4">
             <div className="space-y-1">
               <Skeleton className="h-6 w-32" />
               <Skeleton className="h-4 w-48" />
@@ -58,7 +58,7 @@ function ContactsPageSkeleton() {
             </div>
           </div>
         </div>
-        <div className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden pt-6">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-6">
           <div className="flex min-h-0 flex-1 flex-col px-4 lg:px-8">
             <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
               <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
@@ -196,16 +196,16 @@ export default function ContactsPage() {
   }
 
   return (
-    <ModuleGuard module="contacts">
+    <ModuleGuard module="contacts"> 
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader            
           title={`Contacts (${totalCount})`}
           description="Manage your contacts (People)"
-        />          
+        />  
       </div>
 
         {/* Full-width search / filter / actions toolbar */}
-        <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+        <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2 pt-2">
           <ListToolBar
             showSearch
             searchPlaceholder="Search by name, email, or account..."
@@ -232,7 +232,7 @@ export default function ContactsPage() {
           />
         </div>
 
-        <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
+        <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
               <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
                     <CustomTableContainer pagination={totalCount > 0 && (
               <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
@@ -497,6 +497,7 @@ export default function ContactsPage() {
               }}
             />
                 </PageBody>
+          
     </ModuleGuard>
   );
 }

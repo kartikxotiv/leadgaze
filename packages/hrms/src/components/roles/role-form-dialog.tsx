@@ -90,60 +90,25 @@ export function RoleFormDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{initialData ? 'Edit Role' : 'Create Custom Role'}</DialogTitle>
-          <DialogDescription>
-            Defines a new role for your organization. You can configure permissions after creating the role.
-          </DialogDescription>
-        </DialogHeader>
-
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-md dark:border-slate-800 dark:bg-slate-950">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className={'space-y-4'}>
-            <FormField
-              control={form.control}
-              name={'name'}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Role Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder={'e.g. Content Manager'} {...field} disabled={initialData?.is_system} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex max-h-[90vh] flex-col">
+            <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+              <DialogTitle className="text-2xl pr-12">{initialData ? 'Edit Role' : 'Create Custom Role'}</DialogTitle>
+              <DialogDescription className="text-base">
+                Defines a new role for your organization. You can configure permissions after creating the role.
+              </DialogDescription>
+            </DialogHeader>
 
-            <FormField
-              control={form.control}
-              name={'description'}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder={'Describe what this role is for...'}
-                      className={'resize-none'}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className={'grid grid-cols-2 gap-4'}>
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
               <FormField
                 control={form.control}
-                name={'color'}
+                name={'name'}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Theme Color</FormLabel>
+                    <FormLabel>Role Name</FormLabel>
                     <FormControl>
-                      <div className={'flex items-center gap-2'}>
-                        <Input type={'color'} className={'h-10 w-12 p-1'} {...field} />
-                        <Input {...field} placeholder={'#ffffff'} />
-                      </div>
+                      <Input placeholder={'e.g. Content Manager'} {...field} disabled={initialData?.is_system} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -152,20 +117,57 @@ export function RoleFormDialog({
 
               <FormField
                 control={form.control}
-                name={'hierarchy_level'}
+                name={'description'}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Hierarchy Rank</FormLabel>
+                    <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Input type={'number'} min={1} max={100} {...field} />
+                      <Textarea
+                        placeholder={'Describe what this role is for...'}
+                        className={'resize-none'}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              <div className={'grid grid-cols-2 gap-4'}>
+                <FormField
+                  control={form.control}
+                  name={'color'}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Theme Color</FormLabel>
+                      <FormControl>
+                        <div className={'flex items-center gap-2'}>
+                          <Input type={'color'} className={'h-10 w-12 p-1'} {...field} />
+                          <Input {...field} placeholder={'#ffffff'} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name={'hierarchy_level'}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Hierarchy Rank</FormLabel>
+                      <FormControl>
+                        <Input type={'number'} min={1} max={100} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
-            <DialogFooter className={'pt-4'}>
+            <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
               <Button type={'button'} variant={'outline'} onClick={() => setOpen(false)}>
                 Cancel
               </Button>

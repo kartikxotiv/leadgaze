@@ -33,8 +33,8 @@ export function SupportSystemPage(props: {
   const activeCount = getSupportTabRequests(requests, page.activeTab).length;
 
   return (
-    <section className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
-      <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col overflow-hidden">
+    <>
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
           title={`Support System (${activeCount})`}
           description={
@@ -45,9 +45,10 @@ export function SupportSystemPage(props: {
         >
           {props.headerActions}
         </PageHeader>
+      </div>
 
         {!isRbacLoading && canViewSupportSystem ? (
-          <div className="w-full min-w-0 max-w-full overflow-x-auto pb-2">
+          <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2 pt-2">
             <div className="flex flex-wrap items-center gap-2">
               {SUPPORT_SYSTEM_TABS.map((tab) => (
                 <TableStatusMetricTab
@@ -63,10 +64,10 @@ export function SupportSystemPage(props: {
             </div>
           </div>
         ) : null}
-      </div>
+      
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden pt-3">
-        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-4 overflow-y-auto pb-6">
+      <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-2 overflow-y-auto">
           {!isRbacLoading && !canViewSupportSystem ? (
             <SupportSystemAccessCard />
           ) : page.dashboardQuery.isLoading || isRbacLoading ? (
@@ -120,7 +121,7 @@ export function SupportSystemPage(props: {
           });
         }}
       />
-    </section>
+    </>
   );
 }
 

@@ -66,7 +66,7 @@ export function CoreEmailVariablesTab({ workspaceId }: { workspaceId: string }) 
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Full-width search / filter / actions toolbar */}
                           <div className="w-full max-w-full min-w-0 shrink-0 border-b">
                             <ListToolBar
@@ -203,11 +203,12 @@ function CoreVariableDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{variable ? 'Edit Variable' : 'Create Variable'}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-md dark:border-slate-800 dark:bg-slate-950">
+        <div className="flex max-h-[90vh] flex-col">
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle>{variable ? 'Edit Variable' : 'Create Variable'}</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
           <div className="space-y-2">
             <Label>Variable Key</Label>
             <Input value={key} onChange={(event) => setKey(event.target.value)} placeholder="company_address" />
@@ -216,14 +217,15 @@ function CoreVariableDialog({
             <Label>Value</Label>
             <Input value={value} onChange={(event) => setValue(event.target.value)} placeholder="123 Main St" />
           </div>
+          </div>
+          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>Cancel</Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Save
+            </Button>
+          </DialogFooter>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>Cancel</Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            Save
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

@@ -241,7 +241,7 @@ export default function WorkspaceSetupPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleCreateWorkspace} className="space-y-6">
+                <form onSubmit={handleCreateWorkspace} className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
                   <div>
                     <label className="mb-2 block text-sm font-medium text-slate-300">
                       Workspace Name

@@ -54,8 +54,8 @@ export function RecruitmentPage(props: {
   };
 
   return (
-    <section className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
-      <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col overflow-hidden">
+    <>
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
           title={`Recruitment (${activeCount})`}
           description={
@@ -66,9 +66,10 @@ export function RecruitmentPage(props: {
         >
           {props.headerActions}
         </PageHeader>
+      </div>
 
-        <div className="w-full min-w-0 max-w-full overflow-x-auto pb-2">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2 pt-2">
+            <div className="flex flex-wrap items-center gap-2">
             {recruitmentTabDefinitions.map((tab) => (
               <TableStatusMetricTab
                 key={tab.value}
@@ -83,7 +84,7 @@ export function RecruitmentPage(props: {
           </div>
         </div>
 
-        <div className="w-full min-w-0 max-w-full shrink-0 border-b pb-2">
+        <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
           <ListToolBar
             actions={[
               {
@@ -120,11 +121,10 @@ export function RecruitmentPage(props: {
               },
             ]}
           />
-        </div>
-      </div>
+        </div>      
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden pt-3">
-        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-4 overflow-y-auto pb-6">
+      <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-4 overflow-y-auto">
           <RecruitmentOverview
             candidateStageCards={controller.candidateStageCards}
             metricsItems={controller.metricsItems}
@@ -258,7 +258,7 @@ export function RecruitmentPage(props: {
       </PageBody>
 
       <RecruitmentDialogs controller={controller} />
-    </section>
+    </>
   );
 }
 

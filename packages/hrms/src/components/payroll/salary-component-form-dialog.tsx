@@ -110,10 +110,10 @@ export function SalaryComponentFormDialog(props: {
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className="sm:max-w-[560px]">
-        <form className="space-y-5" onSubmit={onSubmit}>
-          <DialogHeader>
-            <DialogTitle className="text-2xl">
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[560px] dark:border-slate-800 dark:bg-slate-950">
+        <form className="flex max-h-[90vh] flex-col" onSubmit={onSubmit}>
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle className="text-2xl pr-12">
               {isEditing ? 'Edit Salary Component' : 'Create Salary Component'}
             </DialogTitle>
             <DialogDescription>
@@ -123,7 +123,7 @@ export function SalaryComponentFormDialog(props: {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="code">Code *</Label>
@@ -170,7 +170,7 @@ export function SalaryComponentFormDialog(props: {
               />
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="taxable">Taxable Income</Label>
                 <Switch
@@ -206,7 +206,7 @@ export function SalaryComponentFormDialog(props: {
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
             <Button
               type="button"
               variant="outline"

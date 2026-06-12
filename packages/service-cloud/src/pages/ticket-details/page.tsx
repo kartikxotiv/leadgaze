@@ -19,7 +19,6 @@ import {
   Timer,
   UserCheck,
   UserRound,
-  UsersRound,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -27,7 +26,6 @@ import { CoreEmailReplyDialog, CoreEntityPanel } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import {
   Card,
   CardContent,
@@ -35,6 +33,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import {
@@ -231,7 +230,6 @@ export function ServiceCloudTicketDetailPage({
   const statuses = lookups.statuses ?? [];
   const priorities = lookups.priorities ?? [];
   const categories = lookups.categories ?? [];
-  const teams = lookups.teams ?? [];
   const members = lookups.members ?? [];
   const assignedAgent = members.find(
     (member: LookupOption) => member.id === ticket.assigned_agent_id,
@@ -267,6 +265,11 @@ export function ServiceCloudTicketDetailPage({
     Number(timeForm.hours || 0) > 0 || Number(timeForm.minutes || 0) > 0;
   const isUpdating = updateMutation.isPending;
   const dueValue = ticket.due_date ?? ticket.due_at;
+  const responseDueAt = ticket.response_due_at || (
+    ticket.created_at && ticket.priority?.resolution_due_minutes
+      ? new Date(new Date(ticket.created_at).getTime() + ticket.priority.resolution_due_minutes * 60 * 1000).toISOString()
+      : null
+  );
 
   const updateTicket = (payload: Record<string, unknown>) =>
     updateMutation.mutate(payload);
@@ -288,7 +291,7 @@ export function ServiceCloudTicketDetailPage({
               </Link>
             </Button>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge className="border-white/20 bg-white/15 text-white hover:bg-white/20">
                   #{ticket.ticket_number}
@@ -363,10 +366,11 @@ export function ServiceCloudTicketDetailPage({
           >
             <div className="px-6 py-4">
               <Tabs defaultValue="conversation" className="space-y-5">
-                <TabsList className="grid h-auto grid-cols-2 rounded-2xl bg-slate-100 p-1 md:w-fit md:grid-cols-4 dark:bg-slate-900">
+                <TabsList className="grid h-auto grid-cols-2 rounded-2xl bg-slate-100 p-1 md:w-fit md:grid-cols-5 dark:bg-slate-900">
                   <TabsTrigger value="conversation">Conversation</TabsTrigger>
-                  <TabsTrigger value="work">Work</TabsTrigger>
-                  <TabsTrigger value="files">Notes & Files</TabsTrigger>
+                  <TabsTrigger value="work">Time Log</TabsTrigger>
+                  <TabsTrigger value="notes">Notes</TabsTrigger>
+                  <TabsTrigger value="documents">Documents</TabsTrigger>
                   <TabsTrigger value="activity">Activity</TabsTrigger>
                 </TabsList>
 
@@ -377,7 +381,7 @@ export function ServiceCloudTicketDetailPage({
                       description="Emails converted into this ticket will appear here."
                     />
                   ) : (
-                    <div className="space-y-4 h-[calc(100vh-420px)] min-h-[350px] overflow-y-auto pr-2 scrollbar-thin">
+                    <div className="scrollbar-thin h-[calc(100vh-420px)] min-h-[350px] space-y-4 overflow-y-auto pr-2">
                       {emails.map((item: any) => {
                         const email = item.email;
                         return (
@@ -547,10 +551,10 @@ export function ServiceCloudTicketDetailPage({
                   </div>
                 </TabsContent>
 
-                <TabsContent value="files">
+                <TabsContent value="notes">
                   <CardWidgetContainer
-                    title="Notes & Attachments"
-                    description="Core notes and documents attached to this ticket."
+                    title="Notes"
+                    description="Internal notes attached to this ticket."
                     icon={<Paperclip className="h-4 w-4" />}
                     hideHeaderBorder={true}
                   >
@@ -559,7 +563,25 @@ export function ServiceCloudTicketDetailPage({
                         workspaceId={workspaceId}
                         entityType="service_cloud_ticket"
                         entityId={ticketId}
-                        capabilities={['notes', 'documents']}
+                        capabilities={['notes']}
+                      />
+                    </div>
+                  </CardWidgetContainer>
+                </TabsContent>
+
+                <TabsContent value="documents">
+                  <CardWidgetContainer
+                    title="Documents"
+                    description="Attachments and files uploaded to this ticket."
+                    icon={<Paperclip className="h-4 w-4" />}
+                    hideHeaderBorder={true}
+                  >
+                    <div className="px-6 pb-4">
+                      <CoreEntityPanel
+                        workspaceId={workspaceId}
+                        entityType="service_cloud_ticket"
+                        entityId={ticketId}
+                        capabilities={['documents']}
                       />
                     </div>
                   </CardWidgetContainer>
@@ -571,7 +593,7 @@ export function ServiceCloudTicketDetailPage({
                     description="Status, priority, assignment, email, and time-log history for this ticket."
                     hideHeaderBorder={true}
                   >
-                    <div className="space-y-3 px-6 pb-4 max-h-[calc(100vh-450px)] min-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
+                    <div className="scrollbar-thin max-h-[calc(100vh-450px)] min-h-[300px] space-y-3 overflow-y-auto px-6 pb-4 pr-2">
                       {(data.activities ?? []).length === 0 ? (
                         <EmptyState
                           title="No activity yet"
@@ -663,15 +685,6 @@ export function ServiceCloudTicketDetailPage({
                 allowNone
                 onChange={(value) => updateTicket({ assigned_agent_id: value })}
               />
-              <EditableSelect
-                icon={<UsersRound className="h-4 w-4" />}
-                label="Team"
-                value={ticket.assigned_team_id}
-                options={teams}
-                disabled={isUpdating}
-                allowNone
-                onChange={(value) => updateTicket({ assigned_team_id: value })}
-              />
               <Field label="Due date">
                 <div className="flex items-center gap-2">
                   <CalendarDays className="text-muted-foreground h-4 w-4" />
@@ -713,7 +726,7 @@ export function ServiceCloudTicketDetailPage({
               />
               <Metric
                 label="Response due"
-                value={formatDateTime(ticket.response_due_at)}
+                value={formatDateTime(responseDueAt)}
               />
               <Metric label="Resolution due" value={formatDateOnly(dueValue)} />
             </div>
@@ -859,7 +872,7 @@ function TicketAssignees({
   onToggle: (member: LookupOption, assignee?: any) => void;
 }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div>
         <div className="text-sm font-medium">Additional assignees</div>
         <p className="text-muted-foreground text-xs">
@@ -1013,20 +1026,25 @@ function ServiceCloudTicketDetailSkeleton() {
                 <Skeleton className="h-7 w-16 rounded-full" />
               </div>
             </CardHeader>
-            <div className="px-6 py-4 space-y-5">
+            <div className="space-y-5 px-6 py-4">
               {/* Tab bar */}
-              <div className="flex gap-2 rounded-2xl bg-slate-100 p-1 w-fit dark:bg-slate-900">
-                {['Conversation', 'Work', 'Notes & Files', 'Activity'].map((tab) => (
-                  <Skeleton key={tab} className="h-8 w-24 rounded-xl" />
-                ))}
+              <div className="flex w-fit gap-2 rounded-2xl bg-slate-100 p-1 dark:bg-slate-900">
+                {['Conversation', 'Work', 'Notes & Files', 'Activity'].map(
+                  (tab) => (
+                    <Skeleton key={tab} className="h-8 w-24 rounded-xl" />
+                  ),
+                )}
               </div>
               {/* Email cards */}
               {[1, 2, 3].map((i) => (
-                <div key={i} className="overflow-hidden rounded-2xl border shadow-sm">
+                <div
+                  key={i}
+                  className="overflow-hidden rounded-2xl border shadow-sm"
+                >
                   {/* Email header */}
                   <div className="border-b bg-slate-50 p-4 dark:bg-slate-900/60">
                     <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="space-y-1.5 min-w-0">
+                      <div className="min-w-0 space-y-1.5">
                         <Skeleton className="h-4 w-56" />
                         <Skeleton className="h-3 w-40" />
                       </div>
@@ -1038,7 +1056,7 @@ function ServiceCloudTicketDetailSkeleton() {
                     </div>
                   </div>
                   {/* Email body */}
-                  <div className="p-5 space-y-2">
+                  <div className="space-y-2 p-5">
                     <Skeleton className="h-3 w-full" />
                     <Skeleton className="h-3 w-11/12" />
                     <Skeleton className="h-3 w-4/5" />
@@ -1056,19 +1074,21 @@ function ServiceCloudTicketDetailSkeleton() {
           <Card>
             <CardHeader>
               <Skeleton className="h-5 w-36" />
-              <Skeleton className="h-3 w-52 mt-1" />
+              <Skeleton className="mt-1 h-3 w-52" />
             </CardHeader>
             <div className="space-y-4 px-6 py-4">
-              {/* 5 select rows */}
-              {['Status', 'Priority', 'Category', 'Primary owner', 'Team'].map((label) => (
-                <div key={label} className="grid gap-2">
-                  <Skeleton className="h-3 w-20" />
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="h-4 w-4 rounded" />
-                    <Skeleton className="h-9 flex-1 rounded-md" />
+              {/* Select rows */}
+              {['Status', 'Priority', 'Category', 'Primary owner'].map(
+                (label) => (
+                  <div key={label} className="grid gap-2">
+                    <Skeleton className="h-3 w-20" />
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-4 rounded" />
+                      <Skeleton className="h-9 flex-1 rounded-md" />
+                    </div>
                   </div>
-                </div>
-              ))}
+                ),
+              )}
               {/* Due date */}
               <div className="grid gap-2">
                 <Skeleton className="h-3 w-16" />
@@ -1089,7 +1109,7 @@ function ServiceCloudTicketDetailSkeleton() {
                     key={i}
                     className="flex items-center justify-between gap-3 rounded-xl border p-3"
                   >
-                    <div className="space-y-1 min-w-0">
+                    <div className="min-w-0 space-y-1">
                       <Skeleton className="h-3.5 w-28" />
                       <Skeleton className="h-3 w-36" />
                     </div>
@@ -1107,7 +1127,10 @@ function ServiceCloudTicketDetailSkeleton() {
             </CardHeader>
             <div className="space-y-3 px-6 py-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center justify-between gap-4">
+                <div
+                  key={i}
+                  className="flex items-center justify-between gap-4"
+                >
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-4 w-20" />
                 </div>
@@ -1122,14 +1145,20 @@ function ServiceCloudTicketDetailSkeleton() {
             </CardHeader>
             <div className="space-y-3 px-6 py-4">
               {['Name', 'Email', 'Phone'].map((field) => (
-                <div key={field} className="flex items-center justify-between gap-4">
+                <div
+                  key={field}
+                  className="flex items-center justify-between gap-4"
+                >
                   <Skeleton className="h-4 w-12" />
                   <Skeleton className="h-4 w-32" />
                 </div>
               ))}
               <Skeleton className="h-px w-full" />
               {['Company', 'Industry', 'Website'].map((field) => (
-                <div key={field} className="flex items-center justify-between gap-4">
+                <div
+                  key={field}
+                  className="flex items-center justify-between gap-4"
+                >
                   <Skeleton className="h-4 w-16" />
                   <Skeleton className="h-4 w-28" />
                 </div>
@@ -1143,8 +1172,16 @@ function ServiceCloudTicketDetailSkeleton() {
               <Skeleton className="h-5 w-32" />
             </CardHeader>
             <div className="space-y-3 px-6 py-4">
-              {['Source', 'First response', 'Last customer reply', 'Updated'].map((field) => (
-                <div key={field} className="flex items-center justify-between gap-4">
+              {[
+                'Source',
+                'First response',
+                'Last customer reply',
+                'Updated',
+              ].map((field) => (
+                <div
+                  key={field}
+                  className="flex items-center justify-between gap-4"
+                >
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-4 w-32" />
                 </div>

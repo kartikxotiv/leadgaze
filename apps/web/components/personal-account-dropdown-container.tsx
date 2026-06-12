@@ -1,5 +1,7 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
+
 import type { JwtPayload } from '@supabase/supabase-js';
 
 import { PersonalAccountDropdown } from '@kit/accounts/personal-account-dropdown';
@@ -30,6 +32,8 @@ export function ProfileAccountDropdownContainer(props: {
   const signOut = useSignOut();
   const user = useUser(props.user);
   const userData = user.data;
+  const pathname = usePathname() || '';
+  const profilePath = getProfileSettingsPath(pathname);
 
   if (!userData) {
     return null;
@@ -38,7 +42,7 @@ export function ProfileAccountDropdownContainer(props: {
   return (
     <PersonalAccountDropdown
       className={'w-full'}
-      paths={paths}
+      paths={{ ...paths, profile: profilePath }}
       features={features}
       user={userData}
       account={props.account}
@@ -46,4 +50,24 @@ export function ProfileAccountDropdownContainer(props: {
       showProfileName={props.showProfileName}
     />
   );
+}
+
+function getProfileSettingsPath(pathname: string) {
+  if (pathname.startsWith('/home/services')) {
+    return '/home/services/profile-settings';
+  }
+
+  if (pathname.startsWith('/home/hrms')) {
+    return '/home/hrms/profile-settings';
+  }
+
+  if (pathname.startsWith('/home/inventory')) {
+    return '/home/inventory/profile-settings';
+  }
+
+  if (pathname.startsWith('/home/fund')) {
+    return '/home/funds/profile-settings';
+  }
+
+  return pathsConfig.app.profileSettings;
 }

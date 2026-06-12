@@ -21,7 +21,7 @@ export function ServiceCloudSettingsPage({ workspaceId }: { workspaceId: string 
 
   return (
     <Tabs defaultValue="statuses" className="space-y-4">
-      <TabsList className="mb-1">
+      <TabsList className="mb-0">
         <TabsTrigger value="statuses">Statuses</TabsTrigger>
         <TabsTrigger value="priorities">Priorities</TabsTrigger>
         <TabsTrigger value="categories">Categories</TabsTrigger>
@@ -40,11 +40,23 @@ export function ServiceCloudSettingsPage({ workspaceId }: { workspaceId: string 
             { key: 'name', label: 'Name', required: true },
             { key: 'status_key', label: 'Key', required: true },
             { key: 'lifecycle', label: 'Lifecycle', type: 'select', options: ['new', 'open', 'in_progress', 'waiting', 'resolved', 'closed'].map((value) => ({ label: value, value })) },
-            { key: 'color', label: 'Color' },
+            { key: 'color', label: 'Color', type: 'color' },
             { key: 'display_order', label: 'Display Order', type: 'number' },
           ]}
           columns={[
-            { key: 'name', label: 'Name' },
+            {
+              key: 'name',
+              label: 'Name',
+              render: (status) => (
+                <div className="flex items-center gap-2">
+                  <div
+                    className="h-3 w-3 rounded-full border border-black/10 dark:border-white/10 shrink-0"
+                    style={{ backgroundColor: status.color || '#64748b' }}
+                  />
+                  <span className="font-medium">{status.name}</span>
+                </div>
+              ),
+            },
             { key: 'status_key', label: 'Key' },
             { key: 'lifecycle', label: 'Lifecycle', render: (status) => <StatusBadge value={status.lifecycle} /> },
             { key: 'display_order', label: 'Order' },
@@ -65,15 +77,26 @@ export function ServiceCloudSettingsPage({ workspaceId }: { workspaceId: string 
             { key: 'name', label: 'Name', required: true },
             { key: 'priority_key', label: 'Key', required: true },
             { key: 'severity_order', label: 'Severity Order', type: 'number' },
-            { key: 'response_due_minutes', label: 'Response Due Minutes', type: 'number' },
             { key: 'resolution_due_minutes', label: 'Resolution Due Minutes', type: 'number' },
-            { key: 'color', label: 'Color' },
+            { key: 'color', label: 'Color', type: 'color' },
           ]}
           columns={[
-            { key: 'name', label: 'Name' },
+            {
+              key: 'name',
+              label: 'Name',
+              render: (priority) => (
+                <div className="flex items-center gap-2">
+                  <div
+                    className="h-3 w-3 rounded-full border border-black/10 dark:border-white/10 shrink-0"
+                    style={{ backgroundColor: priority.color || '#64748b' }}
+                  />
+                  <span className="font-medium">{priority.name}</span>
+                </div>
+              ),
+            },
             { key: 'priority_key', label: 'Key' },
             { key: 'severity_order', label: 'Severity' },
-            { key: 'response_due_minutes', label: 'Response SLA' },
+            { key: 'resolution_due_minutes', label: 'Resolution SLA' },
           ]}
         />
       </TabsContent>

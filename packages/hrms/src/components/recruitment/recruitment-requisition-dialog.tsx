@@ -87,10 +87,10 @@ export function RecruitmentRequisitionDialog(
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[760px]">
-        <div className="space-y-6">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[760px] dark:border-slate-800 dark:bg-slate-950">
+        <div className="flex max-h-[90vh] flex-col">
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle className="text-2xl pr-12">
               {props.initialData ? 'Edit Requisition' : 'Create Requisition'}
             </DialogTitle>
             <DialogDescription className="text-base">
@@ -99,313 +99,315 @@ export function RecruitmentRequisitionDialog(
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="requisition-code">Requisition Code</Label>
-              <Input
-                id="requisition-code"
-                value={form.requisition_code}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    requisition_code: event.target.value.toUpperCase(),
-                  }))
-                }
-                placeholder="REQ-2026-001"
-              />
-            </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="requisition-code">Requisition Code</Label>
+                <Input
+                  id="requisition-code"
+                  value={form.requisition_code}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      requisition_code: event.target.value.toUpperCase(),
+                    }))
+                  }
+                  placeholder="REQ-2026-001"
+                />
+              </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="requisition-title">Job Title</Label>
-              <Input
-                id="requisition-title"
-                value={form.title}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    title: event.target.value,
-                  }))
-                }
-                placeholder="Senior Frontend Engineer"
-              />
-            </div>
+              <div className="grid gap-2">
+                <Label htmlFor="requisition-title">Job Title</Label>
+                <Input
+                  id="requisition-title"
+                  value={form.title}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      title: event.target.value,
+                    }))
+                  }
+                  placeholder="Senior Frontend Engineer"
+                />
+              </div>
 
-            <div className="grid gap-2">
-              <Label>Department</Label>
-              <Select
-                value={form.department_id ?? '__none__'}
-                onValueChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    department_id: value === '__none__' ? null : value,
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">No department</SelectItem>
-                  {props.options.departments.map((department) => (
-                    <SelectItem key={department.id} value={department.id}>
-                      {department.name} ({department.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="grid gap-2">
+                <Label>Department</Label>
+                <Select
+                  value={form.department_id ?? '__none__'}
+                  onValueChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      department_id: value === '__none__' ? null : value,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">No department</SelectItem>
+                    {props.options.departments.map((department) => (
+                      <SelectItem key={department.id} value={department.id}>
+                        {department.name} ({department.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid gap-2">
-              <Label>Employment Type</Label>
-              <Select
-                value={form.employment_type}
-                onValueChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    employment_type:
-                      value as RecruitmentRequisitionPayload['employment_type'],
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {employmentTypeOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="grid gap-2">
+                <Label>Employment Type</Label>
+                <Select
+                  value={form.employment_type}
+                  onValueChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      employment_type:
+                        value as RecruitmentRequisitionPayload['employment_type'],
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employmentTypeOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid gap-2">
-              <Label>Priority</Label>
-              <Select
-                value={form.priority}
-                onValueChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    priority:
-                      value as RecruitmentRequisitionPayload['priority'],
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {priorityOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="grid gap-2">
+                <Label>Priority</Label>
+                <Select
+                  value={form.priority}
+                  onValueChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      priority:
+                        value as RecruitmentRequisitionPayload['priority'],
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {priorityOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid gap-2">
-              <Label>Status</Label>
-              <Select
-                value={form.status}
-                onValueChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    status: value as RecruitmentRequisitionPayload['status'],
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {requisitionStatusOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="grid gap-2">
+                <Label>Status</Label>
+                <Select
+                  value={form.status}
+                  onValueChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      status: value as RecruitmentRequisitionPayload['status'],
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {requisitionStatusOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="target-start-date">Target Start Date</Label>
-              <Input
-                id="target-start-date"
-                type="date"
-                value={toDateInputValue(form.target_start_date)}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    target_start_date: event.target.value || null,
-                  }))
-                }
-              />
-            </div>
+              <div className="grid gap-2">
+                <Label htmlFor="target-start-date">Target Start Date</Label>
+                <Input
+                  id="target-start-date"
+                  type="date"
+                  value={toDateInputValue(form.target_start_date)}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      target_start_date: event.target.value || null,
+                    }))
+                  }
+                />
+              </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="requisition-location">Location</Label>
-              <Input
-                id="requisition-location"
-                value={form.location ?? ''}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    location: event.target.value,
-                  }))
-                }
-                placeholder="Bengaluru / Hybrid"
-              />
-            </div>
+              <div className="grid gap-2">
+                <Label htmlFor="requisition-location">Location</Label>
+                <Input
+                  id="requisition-location"
+                  value={form.location ?? ''}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      location: event.target.value,
+                    }))
+                  }
+                  placeholder="Bengaluru / Hybrid"
+                />
+              </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="requisition-openings">Openings</Label>
-              <Input
-                id="requisition-openings"
-                min={1}
-                type="number"
-                value={form.openings}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    openings: Number(event.target.value || 1),
-                  }))
-                }
-              />
-            </div>
+              <div className="grid gap-2">
+                <Label htmlFor="requisition-openings">Openings</Label>
+                <Input
+                  id="requisition-openings"
+                  min={1}
+                  type="number"
+                  value={form.openings}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      openings: Number(event.target.value || 1),
+                    }))
+                  }
+                />
+              </div>
 
-            <div className="grid gap-2">
-              <Label>Owner</Label>
-              <Select
-                value={form.owner_employee_id ?? '__none__'}
-                onValueChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    owner_employee_id: value === '__none__' ? null : value,
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select owner" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">No owner</SelectItem>
-                  {props.options.employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {employee.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="grid gap-2">
+                <Label>Owner</Label>
+                <Select
+                  value={form.owner_employee_id ?? '__none__'}
+                  onValueChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      owner_employee_id: value === '__none__' ? null : value,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select owner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">No owner</SelectItem>
+                    {props.options.employees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {employee.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid gap-2">
-              <Label>Requested By</Label>
-              <Select
-                value={form.requested_by_employee_id ?? '__none__'}
-                onValueChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    requested_by_employee_id:
-                      value === '__none__' ? null : value,
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select requester" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">No requester</SelectItem>
-                  {props.options.employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {employee.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="grid gap-2">
+                <Label>Requested By</Label>
+                <Select
+                  value={form.requested_by_employee_id ?? '__none__'}
+                  onValueChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      requested_by_employee_id:
+                        value === '__none__' ? null : value,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select requester" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">No requester</SelectItem>
+                    {props.options.employees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {employee.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid gap-2 sm:col-span-2">
-              <Label>Hiring Manager</Label>
-              <Select
-                value={form.hiring_manager_employee_id ?? '__none__'}
-                onValueChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    hiring_manager_employee_id:
-                      value === '__none__' ? null : value,
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select hiring manager" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">No hiring manager</SelectItem>
-                  {props.options.employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {employee.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="grid gap-2 sm:col-span-2">
+                <Label>Hiring Manager</Label>
+                <Select
+                  value={form.hiring_manager_employee_id ?? '__none__'}
+                  onValueChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      hiring_manager_employee_id:
+                        value === '__none__' ? null : value,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select hiring manager" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">No hiring manager</SelectItem>
+                    {props.options.employees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {employee.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="compensation-min">Min Compensation</Label>
-              <Input
-                id="compensation-min"
-                min={0}
-                type="number"
-                value={form.compensation_min ?? ''}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    compensation_min: event.target.value
-                      ? Number(event.target.value)
-                      : null,
-                  }))
-                }
-              />
-            </div>
+              <div className="grid gap-2">
+                <Label htmlFor="compensation-min">Min Compensation</Label>
+                <Input
+                  id="compensation-min"
+                  min={0}
+                  type="number"
+                  value={form.compensation_min ?? ''}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      compensation_min: event.target.value
+                        ? Number(event.target.value)
+                        : null,
+                    }))
+                  }
+                />
+              </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="compensation-max">Max Compensation</Label>
-              <Input
-                id="compensation-max"
-                min={0}
-                type="number"
-                value={form.compensation_max ?? ''}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    compensation_max: event.target.value
-                      ? Number(event.target.value)
-                      : null,
-                  }))
-                }
-              />
-            </div>
+              <div className="grid gap-2">
+                <Label htmlFor="compensation-max">Max Compensation</Label>
+                <Input
+                  id="compensation-max"
+                  min={0}
+                  type="number"
+                  value={form.compensation_max ?? ''}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      compensation_max: event.target.value
+                        ? Number(event.target.value)
+                        : null,
+                    }))
+                  }
+                />
+              </div>
 
-            <div className="grid gap-2 sm:col-span-2">
-              <Label htmlFor="requisition-description">Description</Label>
-              <Textarea
-                id="requisition-description"
-                rows={4}
-                value={form.description ?? ''}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    description: event.target.value,
-                  }))
-                }
-                placeholder="Role scope, hiring context, must-have skills, and business impact."
-              />
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="requisition-description">Description</Label>
+                <Textarea
+                  id="requisition-description"
+                  rows={4}
+                  value={form.description ?? ''}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      description: event.target.value,
+                    }))
+                  }
+                  placeholder="Role scope, hiring context, must-have skills, and business impact."
+                />
+              </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
             <Button
               type="button"
               variant="outline"

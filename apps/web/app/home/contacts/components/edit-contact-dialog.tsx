@@ -17,6 +17,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@kit/ui/dialog';
 import {
   Form,
@@ -145,15 +146,15 @@ export function EditContactDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[700px]">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[700px]">
+        <DialogHeader className="border-b p-6 pb-4">
           <DialogTitle>Edit Contact</DialogTitle>
           <DialogDescription>
             Update the information for this contact.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             <Tabs defaultValue="general" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="general">Data</TabsTrigger>
@@ -434,7 +435,10 @@ export function EditContactDialog({
               </TabsContent>
             </Tabs>
 
-            <div className="flex justify-end gap-2 pt-4">
+            
+          </form>
+        </Form>
+        <DialogFooter className="border-t p-6 mt-auto">
               <Button
                 type="button"
                 variant="outline"
@@ -443,12 +447,10 @@ export function EditContactDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={updateMutation.isPending}>
+              <Button type="submit" form="dialog-form" disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
-            </div>
-          </form>
-        </Form>
+            </DialogFooter>
       </DialogContent>
     </Dialog>
   );

@@ -156,134 +156,36 @@ export function ResignationDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-2xl dark:border-slate-800 dark:bg-slate-950">
+        <form className="flex max-h-[90vh] flex-col" onSubmit={handleSubmit}>
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle className="text-2xl pr-12">
               {editingResignation
                 ? 'Edit Resignation'
                 : canManageResignations
                   ? 'Add Resignation'
                   : 'Apply Resignation'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-base">
               {canManageResignations
                 ? 'Update resignation review, notice, approver, and remarks.'
                 : 'Submit your resignation request for HR review.'}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {canManageResignations && (
-              <div className="space-y-2">
-                <Label>Employee</Label>
-                <Select
-                  value={form.employee_id}
-                  onValueChange={(value) => setForm((prev) => ({ ...prev, employee_id: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select employee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {employees.map((employee) => (
-                      <SelectItem key={employee.id} value={employee.id}>
-                        {[employee.first_name, employee.last_name].filter(Boolean).join(' ') || employee.id}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="resignation-date">Resignation Date</Label>
-              <Input
-                id="resignation-date"
-                type="date"
-                required
-                min={new Date().toISOString().split("T")[0]}
-                value={form.resignation_date}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, resignation_date: event.target.value }))
-                }
-              />
-            </div>
-
-            {canManageResignations && (
-              <>
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {canManageResignations && (
                 <div className="space-y-2">
-                  <Label htmlFor="last-working-day">Last Working Day</Label>
-                  <Input
-                    id="last-working-day"
-                    type="date"
-                    value={form.last_working_day}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, last_working_day: event.target.value }))
-                    }
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="notice-period-days">Notice Period Days</Label>
-                  <Input
-                    id="notice-period-days"
-                    type="number"
-                    min={0}
-                    value={form.notice_period_days}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        notice_period_days: formatNumberInput(event.target.value),
-                      }))
-                    }
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="notice-waiver-days">Notice Waiver Days</Label>
-                  <Input
-                    id="notice-waiver-days"
-                    type="number"
-                    min={0}
-                    value={form.notice_waiver_days}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        notice_waiver_days: formatNumberInput(event.target.value),
-                      }))
-                    }
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Status</Label>
+                  <Label>Employee</Label>
                   <Select
-                    value={form.status}
-                    onValueChange={(value: 'SUBMITTED' | 'UNDER_REVIEW' | 'ACCEPTED' | 'RETRACTED') => setForm((prev) => ({ ...prev, status: value }))}
+                    value={form.employee_id}
+                    onValueChange={(value) => setForm((prev) => ({ ...prev, employee_id: value }))}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
+                      <SelectValue placeholder="Select employee" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="SUBMITTED">Submitted</SelectItem>
-                      <SelectItem value="UNDER_REVIEW">Under Review</SelectItem>
-                      <SelectItem value="ACCEPTED">Accepted</SelectItem>
-                      <SelectItem value="RETRACTED">Retracted</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Accepted By</Label>
-                  <Select
-                    value={form.accepted_by}
-                    onValueChange={(value) => setForm((prev) => ({ ...prev, accepted_by: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select approver" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE}>None</SelectItem>
                       {employees.map((employee) => (
                         <SelectItem key={employee.id} value={employee.id}>
                           {[employee.first_name, employee.last_name].filter(Boolean).join(' ') || employee.id}
@@ -292,44 +194,144 @@ export function ResignationDialog({
                     </SelectContent>
                   </Select>
                 </div>
+              )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="accepted-at">Accepted At</Label>
-                  <Input
-                    id="accepted-at"
-                    type="datetime-local"
-                    value={form.accepted_at}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, accepted_at: event.target.value }))
-                    }
-                  />
-                </div>
-              </>
-            )}
-
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="resignation-reason">Reason</Label>
-              <Textarea
-                id="resignation-reason"
-                required
-                value={form.reason}
-                onChange={(event) => setForm((prev) => ({ ...prev, reason: event.target.value }))}
-              />
-            </div>
-
-            {canManageResignations && (
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="resignation-remarks">Remarks</Label>
-                <Textarea
-                  id="resignation-remarks"
-                  value={form.remarks}
-                  onChange={(event) => setForm((prev) => ({ ...prev, remarks: event.target.value }))}
+              <div className="space-y-2">
+                <Label htmlFor="resignation-date">Resignation Date</Label>
+                <Input
+                  id="resignation-date"
+                  type="date"
+                  required
+                  min={new Date().toISOString().split("T")[0]}
+                  value={form.resignation_date}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, resignation_date: event.target.value }))
+                  }
                 />
               </div>
-            )}
+
+              {canManageResignations && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="last-working-day">Last Working Day</Label>
+                    <Input
+                      id="last-working-day"
+                      type="date"
+                      value={form.last_working_day}
+                      onChange={(event) =>
+                        setForm((prev) => ({ ...prev, last_working_day: event.target.value }))
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="notice-period-days">Notice Period Days</Label>
+                    <Input
+                      id="notice-period-days"
+                      type="number"
+                      min={0}
+                      value={form.notice_period_days}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          notice_period_days: formatNumberInput(event.target.value),
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="notice-waiver-days">Notice Waiver Days</Label>
+                    <Input
+                      id="notice-waiver-days"
+                      type="number"
+                      min={0}
+                      value={form.notice_waiver_days}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          notice_waiver_days: formatNumberInput(event.target.value),
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select
+                      value={form.status}
+                      onValueChange={(value: 'SUBMITTED' | 'UNDER_REVIEW' | 'ACCEPTED' | 'RETRACTED') => setForm((prev) => ({ ...prev, status: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="SUBMITTED">Submitted</SelectItem>
+                        <SelectItem value="UNDER_REVIEW">Under Review</SelectItem>
+                        <SelectItem value="ACCEPTED">Accepted</SelectItem>
+                        <SelectItem value="RETRACTED">Retracted</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Accepted By</Label>
+                    <Select
+                      value={form.accepted_by}
+                      onValueChange={(value) => setForm((prev) => ({ ...prev, accepted_by: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select approver" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NONE}>None</SelectItem>
+                        {employees.map((employee) => (
+                          <SelectItem key={employee.id} value={employee.id}>
+                            {[employee.first_name, employee.last_name].filter(Boolean).join(' ') || employee.id}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="accepted-at">Accepted At</Label>
+                    <Input
+                      id="accepted-at"
+                      type="datetime-local"
+                      value={form.accepted_at}
+                      onChange={(event) =>
+                        setForm((prev) => ({ ...prev, accepted_at: event.target.value }))
+                      }
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="resignation-reason">Reason</Label>
+                <Textarea
+                  id="resignation-reason"
+                  required
+                  value={form.reason}
+                  onChange={(event) => setForm((prev) => ({ ...prev, reason: event.target.value }))}
+                />
+              </div>
+
+              {canManageResignations && (
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="resignation-remarks">Remarks</Label>
+                  <Textarea
+                    id="resignation-remarks"
+                    value={form.remarks}
+                    onChange={(event) => setForm((prev) => ({ ...prev, remarks: event.target.value }))}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
             <Button
               type="button"
               variant="outline"
