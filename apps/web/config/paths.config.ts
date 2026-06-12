@@ -37,7 +37,7 @@ const pathsConfig = PathsSchema.parse({
   },
   app: {
     home: '/org/home',
-    profileSettings: '/home/sales/settings',
+    profileSettings: '/home/sales/profile-settings',
     workspaceSetup: '/workspace-setup',
     leads: '/home/sales/leads',
     contacts: '/home/sales/contacts',

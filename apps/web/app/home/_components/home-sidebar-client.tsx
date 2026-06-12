@@ -15,7 +15,6 @@ import {
   Settings,
   ShieldCheck,
   Ticket,
-  UserPen,
   Users,
 } from 'lucide-react';
 
@@ -144,11 +143,6 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
           label: 'common:routes.settings',
           children: [
             {
-              label: 'common:routes.profile',
-              path: commonPaths.profileSettings,
-              Icon: <UserPen className="h-4 w-4" />,
-            },
-            {
               label: 'common:routes.workspace-settings',
               path: commonPaths.workspaceSettings,
               Icon: <Settings className="h-4 w-4" />,
@@ -178,11 +172,6 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
         {
           label: 'common:routes.settings',
           children: [
-            {
-              label: 'common:routes.profile',
-              path: commonPaths.profileSettings,
-              Icon: <UserPen className="h-4 w-4" />,
-            },
             {
               label: 'common:routes.workspace-settings',
               path: commonPaths.workspaceSettings,
@@ -219,11 +208,6 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
           label: 'common:routes.settings',
           children: [
             {
-              label: 'common:routes.profile',
-              path: commonPaths.profileSettings,
-              Icon: <UserPen className="h-4 w-4" />,
-            },
-            {
               label: 'common:routes.workspace-settings',
               path: commonPaths.workspaceSettings,
               Icon: <Settings className="h-4 w-4" />,
@@ -253,11 +237,6 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
         {
           label: 'common:routes.settings',
           children: [
-            {
-              label: 'common:routes.profile',
-              path: commonPaths.profileSettings,
-              Icon: <UserPen className="h-4 w-4" />,
-            },
             {
               label: 'common:routes.workspace-settings',
               path: commonPaths.workspaceSettings,
@@ -332,11 +311,6 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
           label: 'common:routes.settings',
           children: [
             {
-              label: 'common:routes.profile',
-              path: pathsConfig.app.profileSettings,
-              Icon: <UserPen className="h-4 w-4" />,
-            },
-            {
               label: 'common:routes.workspace-settings',
               path: pathsConfig.app.workspaceSettings,
               Icon: <Settings className="h-4 w-4" />,
@@ -410,11 +384,6 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
       {
         label: 'common:routes.settings',
         children: [
-          {
-            label: 'common:routes.profile',
-            path: pathsConfig.app.profileSettings,
-            Icon: <UserPen className="h-4 w-4" />,
-          },
           {
             label: 'common:routes.workspace-settings',
             path: pathsConfig.app.workspaceSettings,
