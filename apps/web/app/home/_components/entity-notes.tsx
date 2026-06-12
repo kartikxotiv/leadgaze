@@ -3,11 +3,12 @@
 import { useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, MessageSquare, Pencil, Plus, Trash2 } from 'lucide-react';
+import { FileText, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import {
   Dialog,
   DialogContent,
@@ -131,13 +132,12 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="h-5 w-5 text-gray-400" />
-          <CardTitle className="text-lg">Notes</CardTitle>
-        </div>
-        {canAddNote && (
+    <CardWidgetContainer
+      title="Notes"
+      hideHeaderBorder={true}
+      icon={<FileText className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+      icon2={
+        canAddNote ? (
           <Dialog
             open={isOpen}
             onOpenChange={(open) => {
@@ -149,18 +149,22 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
             }}
           >
             <DialogTrigger asChild>
-              <Button size="sm" variant="ghost" className="gap-1 text-xs">
-                <Plus className="h-3 w-3" />
+              <Button
+                size="sm"
+                variant="ghost"
+                className="gap-1 text-sm text-blue-500 hover:text-blue-600"
+              >
+                <Plus className="h-4 w-4" />
                 Add
               </Button>
             </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
+            <DialogContent className="flex max-h-[90vh] flex-col p-0">
+              <DialogHeader className="border-b p-6 pb-4">
                 <DialogTitle>
                   {editingNote ? 'Edit Note' : 'Add Note'}
                 </DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 pt-4">
+              <div className="space-y-4 px-4 pb-4">
                 <Textarea
                   placeholder="Enter note content..."
                   value={newNoteContent}
@@ -192,45 +196,57 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
               </div>
             </DialogContent>
           </Dialog>
-        )}
-      </CardHeader>
-      <CardContent>
+        ) : null
+      }
+    >
+      <div className="px-6 py-3">
         {isLoading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
         ) : notes.length > 0 ? (
-          <div className="space-y-4">
+          <CardWidgetList>
             {notes.map((note: Note) => (
-              <div key={note.id}>
-                <div className="group relative rounded-lg border border-gray-100 bg-gray-50 p-3 transition-colors hover:bg-gray-100 dark:border-gray-800 dark:bg-slate-900 dark:hover:bg-slate-800">
+              <CardWidgetListItem
+                key={note.id}
+                className="items-start"
+                content={
                   <p
-                    className="cursor-pointer pr-12 text-sm whitespace-pre-wrap text-gray-700 dark:text-gray-300"
+                    className="cursor-pointer pr-8 text-sm whitespace-pre-wrap text-gray-700 dark:text-gray-300"
                     onClick={() => openEditDialog(note)}
                   >
                     {note.content}
                   </p>
-                  <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                    <div className="flex flex-wrap gap-2">
-                      <span>{new Date(note.created_at).toLocaleString()}</span>
-                      {note.created_by_user && (
-                        <span>by {note.created_by_user.name}</span>
-                      )}
-                      {note.entity_type !== entityType && (
-                        <span className="text-blue-600 dark:text-blue-400">
-                          From {note.entity_type.charAt(0).toUpperCase() + note.entity_type.slice(1)}{note.entity_name ? `: ${note.entity_name}` : ''}
-                        </span>
-                      )}
-                    </div>
+                }
+                metadata={
+                  <div className="flex flex-wrap gap-2">
+                    <span>{new Date(note.created_at).toLocaleString()}</span>
+                    {note.created_by_user && (
+                      <span>by {note.created_by_user.name}</span>
+                    )}
+                    {note.entity_type !== entityType && (
+                      <span className="text-blue-600 dark:text-blue-400">
+                        From{' '}
+                        {note.entity_type.charAt(0).toUpperCase() +
+                          note.entity_type.slice(1)}
+                        {note.entity_name ? `: ${note.entity_name}` : ''}
+                      </span>
+                    )}
                   </div>
-                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button
+                }
+                actions={
+                  <>
+                    <Button
+                      size="icon"
+                      variant="ghost"
                       onClick={() => openEditDialog(note)}
-                      className="p-1 text-gray-400 hover:text-blue-500"
+                      className="h-7 w-7 text-gray-400 hover:text-blue-500"
                     >
                       <Pencil className="h-3 w-3" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
                       onClick={() => {
                         if (
                           confirm('Are you sure you want to delete this note?')
@@ -238,22 +254,22 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
                           deleteMutation.mutate(note.id);
                         }
                       }}
-                      className="p-1 text-gray-400 hover:text-red-500"
+                      className="h-7 w-7 text-gray-400 hover:text-red-500"
                     >
                       <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+                    </Button>
+                  </>
+                }
+              />
             ))}
-          </div>
+          </CardWidgetList>
         ) : (
           <div className="py-8 text-center">
-            <MessageSquare className="mx-auto mb-2 h-8 w-8 text-gray-300" />
+            <FileText className="mx-auto mb-2 h-8 w-8 text-gray-300" />
             <p className="text-sm text-gray-500">No notes yet</p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </CardWidgetContainer>
   );
 }

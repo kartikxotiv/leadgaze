@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import INVITE_MEMBER_TEMPLATE from '~/constants/email.templates/member-invite.template';
@@ -183,9 +184,10 @@ const inviteMember = catchAsync(
     params?: Record<string, string>;
   }) => {
     const supabase = getSupabaseServerClient();
-    const url = new URL(request.url);
+    const adminClient = getSupabaseServerAdminClient();
+    // const url = new URL(request.url);
     // const workspaceId = url.searchParams.get('workspaceId');
-    const { email, role_id, workspaceId } = await request.json();
+    const { email, role_id, workspaceId, productKey } = await request.json();
 
     if (!workspaceId || !email || !role_id) {
       return NextResponse.json(
@@ -201,6 +203,38 @@ const inviteMember = catchAsync(
         { message: 'Invalid email format' },
         { status: 400 },
       );
+    }
+
+    // ── Seat availability check ──────────────────────────────────
+    // If a productKey is provided, verify there is at least one free seat
+    // in that module before allowing the invitation.
+    if (productKey) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: productRow } = await (adminClient as any)
+        .from('subscription_products')
+        .select('id')
+        .eq('product_key', productKey)
+        .maybeSingle();
+
+      if (productRow) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: seatRow } = await (adminClient as any)
+          .from('workspace_module_seats')
+          .select('id, seats_purchased, seats_used, status')
+          .eq('workspace_id', workspaceId)
+          .eq('product_id', productRow.id)
+          .in('status', ['active', 'trialing'])
+          .maybeSingle();
+
+        if (seatRow && seatRow.seats_used >= seatRow.seats_purchased) {
+          return NextResponse.json(
+            {
+              message: `No seats available in this module. All ${seatRow.seats_purchased} seat(s) are already in use. Please increase your seat count from the subscription page before inviting new members.`,
+            },
+            { status: 403 },
+          );
+        }
+      }
     }
 
     // Check if role exists and belongs to workspace
@@ -256,6 +290,9 @@ const inviteMember = catchAsync(
         status: 'pending',
         token,
         token_expires_at: expiresAt.toISOString(),
+        // Store the module product key so seat assignment on accept
+        // only targets the module the invite was sent from.
+        ...(productKey ? { product_key: productKey } : {}),
       })
       .select()
       .single();
@@ -412,7 +449,7 @@ const updateMember = catchAsync(
 
 const removeMember = catchAsync(
   async ({
-    request,
+    request: _request,
     params,
   }: {
     request: NextRequest;
@@ -442,6 +479,10 @@ const removeMember = catchAsync(
       );
     }
 
+    // ── Auto-revoke ALL seat assignments for this user in this workspace ──
+    // When a member is removed, they lose access to all modules.
+    await autoRevokeSeats(member.workspace_id, member.user_id);
+
     // Update status to 'removed' instead of deleting
     const { error } = await supabase
       .from('workspace_members')
@@ -457,6 +498,28 @@ const removeMember = catchAsync(
   },
 );
 
+// ─── Helper: Revoke ALL seat assignments for a removed member ──────────
+
+async function autoRevokeSeats(workspaceId: string, userId: string) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const adminClient = getSupabaseServerAdminClient() as any;
+
+    await adminClient
+      .from('seat_assignments')
+      .update({
+        is_active: false,
+        revoked_at: new Date().toISOString(),
+        revoked_by: userId,
+      })
+      .eq('workspace_id', workspaceId)
+      .eq('user_id', userId)
+      .eq('is_active', true);
+  } catch (error) {
+    console.error('Auto-revoke seats error:', error);
+  }
+}
+
 const resendInvitation = catchAsync(
   async ({
     request,
@@ -467,7 +530,7 @@ const resendInvitation = catchAsync(
   }) => {
     const supabase = getSupabaseServerClient();
     const url = new URL(request.url);
-    const workspaceId = url.searchParams.get('workspaceId');
+    const _workspaceId = url.searchParams.get('workspaceId');
     const memberId = params?.memberId;
 
     if (!memberId) {

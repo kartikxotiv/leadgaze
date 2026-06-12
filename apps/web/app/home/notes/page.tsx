@@ -1,21 +1,16 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Briefcase,
   Building2,
-  ChevronLeft,
-  ChevronRight,
   Edit,
-  Filter,
   Loader2,
   MoreHorizontal,
   Plus,
-  Search,
   Trash2,
   User,
   Users,
@@ -24,7 +19,6 @@ import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import {
   Dialog,
@@ -49,7 +43,6 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@kit/ui/pagination';
-import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@kit/ui/radio-group';
 import {
   Select,
@@ -59,6 +52,7 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import {
+  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -66,13 +60,10 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { Textarea } from '@kit/ui/textarea';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { Skeleton } from '@kit/ui/skeleton';
+import { ListToolBar } from '@kit/ui/list-toolbar';
+import CustomTableContainer from '@kit/ui/custom-table-container';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
@@ -87,17 +78,58 @@ import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+function NotesPageSkeleton() {
+  return (
+    <div className="flex h-[100dvh] flex-col overflow-hidden">
+      <div className="flex shrink-0 flex-col gap-2">
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="space-y-1">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-4 w-52" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+          </div>
+        </div>
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
+        <div className="flex min-h-0 flex-1 flex-col px-4 lg:px-8">
+          <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
+            <Table className="w-max min-w-full border-separate border-spacing-0 text-sm">
+              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                <TableRow>
+                  <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Associate With</TableHead>
+                  <TableHead>Note Content</TableHead>
+                  <TableHead>Author</TableHead>
+                  <TableHead className="sticky right-0 text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...Array(12)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="h-[52px] px-4 py-2" colSpan={6}>
+                      <Skeleton className="h-7 w-full" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function NotesPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [filterView, setFilterView] = useState<'main' | 'entity'>('main');
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
@@ -327,408 +359,82 @@ export default function NotesPage() {
     }
   };
 
+  const filterGroups = useMemo(() => {
+    return [
+      {
+        key: 'entity',
+        label: 'Entity',
+        selectedValue: categoryFilter === 'all' ? '' : categoryFilter,
+        selectedLabel: categoryFilter === 'all'
+          ? 'All entities'
+          : categoryFilter.charAt(0).toUpperCase() + categoryFilter.slice(1) + 's',
+        options: [
+          { value: 'lead', label: 'Leads' },
+          { value: 'contact', label: 'Contacts' },
+          { value: 'account', label: 'Accounts' },
+          { value: 'opportunity', label: 'Opportunities' },
+        ],
+        onSelect: (val: string) => setCategoryFilter(val || 'all'),
+      },
+    ];
+  }, [categoryFilter]);
+
   if (!workspace) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    );
+    return <NotesPageSkeleton />;
   }
 
   return (
     <>
-      <div className="flex h-[100dvh] flex-col">
-        <div className="bg-sidebar flex shrink-0 flex-col gap-2">
-          <PageHeader
-            className='bg-sidebar'
-            title={`Notes (${notes.length})`}
-            description="Capture and organize your important thoughts and information"
-          >
-            <div className="flex items-center gap-2">
-              <div className="flex items-center">
-                <div
-                  className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${isSearchOpen ? 'w-64 lg:w-72' : 'w-9'
-                    }`}
-                >
-                  {isSearchOpen ? (
-                    <div className="relative w-full">
-                      <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        ref={searchInputRef}
-                        placeholder="Search by note content"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-8 pl-10"
-                        onBlur={() => {
-                          if (!searchTerm) setIsSearchOpen(false);
-                        }}
-                        autoFocus
-                      />
-                    </div>
-                  ) : (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          className="border-input hover:bg-accent -mr-6 flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white text-gray-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
-                          onClick={() => setIsSearchOpen(true)}
-                        >
-                          <Search className="h-4 w-4 text-gray-500 dark:text-white" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p>Search</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                </div>
-              </div>
-              <Popover
-                open={isFilterOpen}
-                onOpenChange={(open) => {
-                  setIsFilterOpen(open);
-                  if (!open) setFilterView('main');
-                }}
-              >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <PopoverTrigger asChild>
-                      <button
-                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white dark:border-zinc-700 dark:bg-zinc-900 ${isFilterOpen ? 'bg-accent' : ''
-                          }`}
-                      >
-                        <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
-                        {categoryFilter !== 'all' && (
-                          <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
-                            1
-                          </span>
-                        )}
-                      </button>
-                    </PopoverTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p>Filter</p>
-                  </TooltipContent>
-                </Tooltip>
-                <PopoverContent className="w-80 p-0" align="end">
-                  <div className="flex items-center justify-between border-b px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {filterView !== 'main' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={() => setFilterView('main')}
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <span className="text-sm font-semibold">
-                        {filterView === 'main' ? 'Filters' : 'Filter by Entity'}
-                      </span>
-                    </div>
-                    <button
-                      className="text-muted-foreground hover:text-foreground text-xs underline"
-                      onClick={() => {
-                        setCategoryFilter('all');
-                      }}
-                    >
-                      Clear all
-                    </button>
-                  </div>
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+        <PageHeader
+          title={`Notes (${notes.length})`}
+          description="Capture and organize your important thoughts and information"
+        />
+      </div>
 
-                  <div className="p-2">
-                    {filterView === 'main' && (
-                      <div className="flex flex-col gap-1">
-                        <button
-                          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
-                          onClick={() => setFilterView('entity')}
-                        >
-                          <div className="flex flex-col gap-1">
-                            <span>Entity</span>
-                            <span className="text-muted-foreground text-xs font-normal">
-                              {categoryFilter === 'all'
-                                ? 'All entities'
-                                : categoryFilter.charAt(0).toUpperCase() +
-                                categoryFilter.slice(1) +
-                                's'}
-                            </span>
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-gray-400" />
-                        </button>
-                      </div>
-                    )}
+      {/* Full-width search / filter / actions toolbar */}
+      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2 pt-2">
+        <ListToolBar
+          showSearch
+          searchPlaceholder="Search notes..."
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          showFilter
+          filterLabel="Show Filters"
+          filterGroups={filterGroups}
+          activeFilterCount={categoryFilter !== 'all' ? 1 : 0}
+          onClearFilters={() => setCategoryFilter('all')}
+          actions={[
+            {
+              key: 'add',
+              label: 'New Note',
+              icon: Plus,
+              onClick: () => {
+                setNewNoteContent('');
+                setEntityType('lead');
+                setEntityId('');
+                setIsCreateDialogOpen(true);
+              },
+              show: true,
+              buttonVariant: 'default',
+            },
+          ]}
+          columnVisibilitySlot={
+            <ColumnVisibilitySelector
+              columns={noteColumns}
+              visibility={visibility}
+              onToggle={toggleVisibility}
+              onReset={reset}
+            />
+          }
+        />
+      </div>
 
-                    {filterView === 'entity' && (
-                      <div className="flex flex-col gap-1 p-1">
-                        {[
-                          { id: 'all', label: 'All Entities' },
-                          { id: 'lead', label: 'Leads' },
-                          { id: 'contact', label: 'Contacts' },
-                          { id: 'account', label: 'Accounts' },
-                          { id: 'opportunity', label: 'Opportunities' },
-                        ].map((e) => {
-                          const isChecked = categoryFilter === e.id;
-                          return (
-                            <label
-                              key={e.id}
-                              className={`group hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-all ${isChecked ? 'bg-muted/40' : ''
-                                }`}
-                            >
-                              <input
-                                type="radio"
-                                name="entity-filter"
-                                className="sr-only"
-                                checked={isChecked}
-                                onChange={() => setCategoryFilter(e.id)}
-                              />
-                              <div
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${isChecked
-                                  ? 'border-black bg-transparent dark:border-white'
-                                  : 'border-black/20 bg-transparent group-hover:border-white/50 dark:border-white/30'
-                                  }`}
-                              >
-                                {isChecked && (
-                                  <div className="animate-in fade-in zoom-in h-2 w-2 rounded-full bg-black duration-200 dark:bg-white" />
-                                )}
-                              </div>
-                              <span className="truncate font-medium text-black dark:text-gray-200">
-                                {e.label}
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-              {/* <Button
-                className="h-9 gap-2"
-                onClick={() => {
-                  setNewNoteContent('');
-                  setEntityType('lead');
-                  setEntityId('');
-                  setIsCreateDialogOpen(true);
-                }}
-              >
-                <Plus className="h-4 w-4" />
-                New Note
-              </Button> */}
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="h-8 w-8 bg-white p-0 text-black dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
-                    onClick={() => {
-                      setNewNoteContent('');
-                      setEntityType('lead');
-                      setEntityId('');
-                      setIsCreateDialogOpen(true);
-                    }}
-                  >
-                    <Plus className="h-4 w-4 text-gray-500 dark:text-white" />
-                  </Button>
-                </TooltipTrigger>
-
-                <TooltipContent side="bottom">
-                  <p>New Note</p>
-                </TooltipContent>
-              </Tooltip>
-
-              {/* <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" /> */}
-
-              <ColumnVisibilitySelector
-                columns={noteColumns}
-                visibility={visibility}
-                onToggle={toggleVisibility}
-                onReset={reset}
-              />
-            </div>
-          </PageHeader>
-        </div>
-        <PageBody className="bg-sidebar sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pt-6 pb-6">
-          <div className="flex min-h-0 flex-1 flex-col space-y-6">
-            {/* Notes Table */}
-            <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
-              <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-                <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
-                  <table className="w-max min-w-full border-separate border-spacing-0 caption-bottom text-sm">
-                    <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
-                      <TableRow>
-                        {isVisible('sno') && (
-                          <TableHead className="w-12 whitespace-nowrap">
-                            S. No.
-                          </TableHead>
-                        )}
-                        {isVisible('category') && (
-                          <TableHead>Category</TableHead>
-                        )}
-                        {isVisible('associate') && (
-                          <TableHead>Associate With</TableHead>
-                        )}
-                        {isVisible('content') && (
-                          <TableHead className="min-w-[300px]">
-                            Note Content
-                          </TableHead>
-                        )}
-                        {isVisible('author') && <TableHead>Author</TableHead>}
-                        {isVisible('updated_at') && (
-                          <TableHead>Updated At</TableHead>
-                        )}
-                        {isVisible('created_by') && (
-                          <TableHead>Created By</TableHead>
-                        )}
-                        {isVisible('created_at') && (
-                          <TableHead>Created On</TableHead>
-                        )}
-                        {isVisible('updated_by') && (
-                          <TableHead>Last Updated By</TableHead>
-                        )}
-                        <TableHead className="bg-card sticky right-0 text-right">
-                          Actions
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoading ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={
-                              visibility
-                                ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
-                                : 6
-                            }
-                            className="h-24 text-center"
-                          >
-                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
-                          </TableCell>
-                        </TableRow>
-                      ) : paginatedNotes.length > 0 ? (
-                        paginatedNotes.map((note: Note, index: number) => (
-                          <TableRow key={note.id} className="hover:bg-muted/50">
-                            {isVisible('sno') && (
-                              <TableCell className="text-muted-foreground w-12">
-                                {(currentPage - 1) * itemsPerPage + index + 1}
-                              </TableCell>
-                            )}
-                            {isVisible('category') && (
-                              <TableCell>
-                                {getCategoryBadge(note.entity_type)}
-                              </TableCell>
-                            )}
-                            {isVisible('associate') && (
-                              <TableCell>
-                                {note.entity_id ? (
-                                  <Link
-                                    href={`/home/${note.entity_type === 'opportunity' ? 'opportunities' : `${note.entity_type}s`}/${note.entity_id}`}
-                                    className="hover:text-primary inline-block max-w-[150px] truncate text-sm font-medium hover:underline"
-                                    title={note.entity_name || 'General'}
-                                  >
-                                    {note.entity_name || '-'}
-                                  </Link>
-                                ) : (
-                                  <span
-                                    className="inline-block max-w-[150px] truncate text-sm font-medium"
-                                    title={note.entity_name || 'General'}
-                                  >
-                                    {note.entity_name || '-'}
-                                  </span>
-                                )}
-                              </TableCell>
-                            )}
-                            {isVisible('content') && (
-                              <TableCell>
-                                <p className="line-clamp-2 max-w-[400px] text-sm whitespace-pre-wrap">
-                                  {note.content}
-                                </p>
-                              </TableCell>
-                            )}
-                            {isVisible('author') && (
-                              <TableCell className="text-muted-foreground text-sm">
-                                {note.created_by_user?.name || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('updated_at') && (
-                              <TableCell className="text-muted-foreground text-sm">
-                                {new Date(
-                                  note.updated_at || note.created_at,
-                                ).toLocaleDateString()}
-                              </TableCell>
-                            )}
-                            {isVisible('created_by') && (
-                              <TableCell className="text-muted-foreground text-sm">
-                                {note.created_by_user?.name || '-'}
-                              </TableCell>
-                            )}
-                            {isVisible('created_at') && (
-                              <TableCell className="text-muted-foreground text-sm">
-                                {new Date(note.created_at).toLocaleDateString()}
-                              </TableCell>
-                            )}
-                            {isVisible('updated_by') && (
-                              <TableCell className="text-muted-foreground text-sm">
-                                {note.updated_by || '-'}
-                              </TableCell>
-                            )}
-                            <TableCell className="bg-card sticky right-0 text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                  >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    className="gap-2"
-                                    onClick={() => handleEdit(note)}
-                                  >
-                                    <Edit className="h-4 w-4" /> Edit Note
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    className="gap-2 text-red-500"
-                                    onClick={() => handleDelete(note.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" /> Delete Note
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell
-                            colSpan={
-                              visibility
-                                ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
-                                : 6
-                            }
-                            className="text-muted-foreground h-24 text-center"
-                          >
-                            {searchTerm || categoryFilter !== 'all'
-                              ? 'No notes match your search.'
-                              : 'No notes found for this workspace.'}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Pagination */}
-            {totalCount > 1 && (
-              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t py-1.5 px-4 lg:-mx-8 lg:px-8">
+      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+          <CustomTableContainer
+            pagination={totalCount > 0 && (
+              <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
                 <div>
                   Showing{' '}
                   <span className="text-foreground font-medium">
@@ -787,17 +493,169 @@ export default function NotesPage() {
                 </Pagination>
               </div>
             )}
-          </div>
-        </PageBody>
-      </div>
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {isVisible('sno') && (
+                    <TableHead className="w-12 whitespace-nowrap">
+                      S. No.
+                    </TableHead>
+                  )}
+                  {isVisible('category') && <TableHead>Category</TableHead>}
+                  {isVisible('associate') && <TableHead>Associate With</TableHead>}
+                  {isVisible('content') && <TableHead className="min-w-[300px]">Note Content</TableHead>}
+                  {isVisible('author') && <TableHead>Author</TableHead>}
+                  {isVisible('updated_at') && <TableHead>Updated At</TableHead>}
+                  {isVisible('created_by') && <TableHead>Created By</TableHead>}
+                  {isVisible('created_at') && <TableHead>Created On</TableHead>}
+                  {isVisible('updated_by') && <TableHead>Last Updated By</TableHead>}
+                  <TableHead className="sticky-right-header">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <>
+                    {[...Array(10)].map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell
+                          className="h-[52px] px-4 py-2"
+                          colSpan={
+                            visibility
+                              ? Object.values(visibility).filter((v) => v !== false).length + 1
+                              : 6
+                          }
+                        >
+                          <Skeleton className="h-7 w-full" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </>
+                ) : paginatedNotes.length > 0 ? (
+                  paginatedNotes.map((note: Note, index: number) => (
+                    <TableRow key={note.id} className="hover:bg-muted/50">
+                      {isVisible('sno') && (
+                        <TableCell className="text-muted-foreground w-12">
+                          {(currentPage - 1) * itemsPerPage + index + 1}
+                        </TableCell>
+                      )}
+                      {isVisible('category') && (
+                        <TableCell>
+                          {getCategoryBadge(note.entity_type)}
+                        </TableCell>
+                      )}
+                      {isVisible('associate') && (
+                        <TableCell>
+                          {note.entity_id ? (
+                            <Link
+                              href={`/home/${note.entity_type === 'opportunity' ? 'opportunities' : `${note.entity_type}s`}/${note.entity_id}`}
+                              className="hover:text-primary inline-block max-w-[150px] truncate text-sm font-medium hover:underline text-leadgaze-primary dark:text-leadgaze-primary"
+                              title={note.entity_name || 'General'}
+                            >
+                              {note.entity_name || '-'}
+                            </Link>
+                          ) : (
+                            <span
+                              className="inline-block max-w-[150px] truncate text-sm font-medium"
+                              title={note.entity_name || 'General'}
+                            >
+                              {note.entity_name || '-'}
+                            </span>
+                          )}
+                        </TableCell>
+                      )}
+                      {isVisible('content') && (
+                        <TableCell className="primary-text-medium">
+                          <p className="line-clamp-2 max-w-[400px] text-sm whitespace-pre-wrap">
+                            {note.content}
+                          </p>
+                        </TableCell>
+                      )}
+                      {isVisible('author') && (
+                        <TableCell className="text-muted-foreground text-sm">
+                          {note.created_by_user?.name || '-'}
+                        </TableCell>
+                      )}
+                      {isVisible('updated_at') && (
+                        <TableCell className="text-muted-foreground text-sm">
+                          {new Date(
+                            note.updated_at || note.created_at,
+                          ).toLocaleDateString()}
+                        </TableCell>
+                      )}
+                      {isVisible('created_by') && (
+                        <TableCell className="text-muted-foreground text-sm">
+                          {note.created_by_user?.name || '-'}
+                        </TableCell>
+                      )}
+                      {isVisible('created_at') && (
+                        <TableCell className="text-muted-foreground text-sm">
+                          {new Date(note.created_at).toLocaleDateString()}
+                        </TableCell>
+                      )}
+                      {isVisible('updated_by') && (
+                        <TableCell className="text-muted-foreground text-sm">
+                          {note.updated_by || '-'}
+                        </TableCell>
+                      )}
+                      <TableCell className="bg-card sticky right-0 px-4 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="gap-2"
+                              onClick={() => handleEdit(note)}
+                            >
+                              <Edit className="h-4 w-4" /> Edit Note
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="gap-2 text-red-500"
+                              onClick={() => handleDelete(note.id)}
+                            >
+                              <Trash2 className="h-4 w-4" /> Delete Note
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={
+                        visibility
+                          ? Object.values(visibility).filter((v) => v !== false).length + 1
+                          : 10
+                      }
+                      className="text-muted-foreground h-24 text-center"
+                    >
+                      {searchTerm || categoryFilter !== 'all'
+                        ? 'No notes match your search.'
+                        : 'No notes found for this workspace.'}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CustomTableContainer>
+        </div>
+      </PageBody>
 
       {/* Create Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-[600px]">
+          <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Add New Note</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             <div className="space-y-4">
               <Label>Associate with</Label>
               <RadioGroup
@@ -888,63 +746,63 @@ export default function NotesPage() {
                 rows={6}
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsCreateDialogOpen(false)}
-                disabled={createMutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCreate}
-                disabled={
-                  createMutation.isPending ||
-                  !newNoteContent.trim() ||
-                  !entityId
-                }
-              >
-                {createMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Save Note
-              </Button>
-            </div>
+          </div>
+          <div className="border-t p-6 mt-auto flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateDialogOpen(false)}
+              disabled={createMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreate}
+              disabled={
+                createMutation.isPending ||
+                !newNoteContent.trim() ||
+                !entityId
+              }
+            >
+              {createMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Save Note
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="flex max-h-[90vh] flex-col p-0">
+          <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Edit Note</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             <Textarea
               placeholder="Enter note content..."
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
               rows={6}
             />
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsEditDialogOpen(false)}
-                disabled={updateMutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleUpdate}
-                disabled={updateMutation.isPending || !editContent.trim()}
-              >
-                {updateMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Update Note
-              </Button>
-            </div>
+          </div>
+          <div className="border-t p-6 mt-auto flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={updateMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdate}
+              disabled={updateMutation.isPending || !editContent.trim()}
+            >
+              {updateMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Update Note
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

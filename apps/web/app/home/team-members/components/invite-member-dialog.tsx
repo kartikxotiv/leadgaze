@@ -32,11 +32,13 @@ import { inviteMemberService } from '~/services/team-members.service';
 interface InviteMemberDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  productKey?: string;
 }
 
 export function InviteMemberDialog({
   open,
   onOpenChange,
+  productKey,
 }: InviteMemberDialogProps) {
   const { currentWorkspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -48,9 +50,9 @@ export function InviteMemberDialog({
 
   // Fetch roles for selection
   const { data: roles = [], isLoading: rolesLoading } = useQuery({
-    queryKey: ['workspaceRoles', currentWorkspace?.id],
+    queryKey: ['workspaceRoles', currentWorkspace?.id, productKey],
     queryFn: async () => {
-      const res = await getRolesService(currentWorkspace?.id || '');
+      const res = await getRolesService(currentWorkspace?.id || '', productKey);
       return res?.data;
     },
     enabled: open && !!currentWorkspace?.id,
@@ -61,6 +63,7 @@ export function InviteMemberDialog({
       inviteMemberService(currentWorkspace?.id || '', {
         email: formData.email,
         role_id: formData.role_id,
+        productKey,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -70,6 +73,7 @@ export function InviteMemberDialog({
       setFormData({ email: '', role_id: '' });
       onOpenChange(false);
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (error: any) => {
       toast.error(error?.message || 'Failed to send invitation');
     },
@@ -86,15 +90,15 @@ export function InviteMemberDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[450px]">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[450px]">
+        <DialogHeader className="border-b p-6 pb-4">
           <DialogTitle>Invite Team Member</DialogTitle>
           <DialogDescription>
             Invite a new member to your workspace and assign them a role
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email Address *</Label>
             <Input
@@ -122,6 +126,7 @@ export function InviteMemberDialog({
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
               <SelectContent>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {roles.map((role: any) => (
                   <SelectItem key={role.id} value={role.id}>
                     <div className="flex items-center gap-2">
@@ -139,7 +144,9 @@ export function InviteMemberDialog({
             </Select>
           </div>
 
-          <DialogFooter>
+          
+        </form>
+      <DialogFooter className="border-t p-6 mt-auto">
             <Button
               type="button"
               variant="outline"
@@ -149,7 +156,7 @@ export function InviteMemberDialog({
               Cancel
             </Button>
             <Button
-              type="submit"
+              type="submit" form="dialog-form"
               disabled={inviteMutation.isPending}
               className="gap-2"
             >
@@ -159,7 +166,6 @@ export function InviteMemberDialog({
               Send Invitation
             </Button>
           </DialogFooter>
-        </form>
       </DialogContent>
     </Dialog>
   );

@@ -10,7 +10,7 @@ import { SiteNavigation } from './site-navigation';
 export function SiteHeader(props: { user?: JwtPayload | null }) {
   return (
     <Header
-      logo={<AppLogo />}
+      logo={<AppLogo variant="marketing" />}
       navigation={<SiteNavigation />}
       actions={<SiteHeaderAccountSection user={props.user ?? null} />}
     />

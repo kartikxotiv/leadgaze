@@ -3,10 +3,11 @@
 
 import { useEffect, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 import { Building2, Check, ChevronDown, Mail, Settings2 } from 'lucide-react';
 
+import { CoreEmailSettingsPage } from '@kit/core/pages';
 import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Button } from '@kit/ui/button';
@@ -29,14 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 
 import { EmailAccountsSettings } from './_components/email-accounts-settings';
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -97,19 +91,25 @@ function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
 
   if (!currentWorkspace) return null;
 
-  return (
+  return (    
     <Card>
-      <CardHeader>
-        <CardTitle>Workspace Management</CardTitle>
+      <CardHeader className="p-4 pb-3">
+        <CardTitle className="mb-0">Workspace Management</CardTitle>
         <CardDescription>
           Select and manage your active workspace.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4 pt-0">
         <div className="flex items-center gap-4">
-          <DropdownMenu>
+          <Button variant="outline" className="w-[300px] justify-between dark:text-white">
+                <span className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  {currentWorkspace.name}
+                </span>                
+              </Button>
+          {/* <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-[300px] justify-between">
+              <Button variant="outline" className="w-[300px] justify-between dark:text-white">
                 <span className="flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
                   {currentWorkspace.name}
@@ -117,12 +117,12 @@ function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
                 <ChevronDown className="h-4 w-4 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[300px]">
+            <DropdownMenuContent align="start" className="w-[300px] h-[32px]">
               {workspaces.map((ws) => (
                 <DropdownMenuItem
                   key={ws.id}
                   onClick={() => handleWorkspaceChange(ws.id)}
-                  className="cursor-pointer gap-2"
+                  className="cursor-pointer gap-2 w-[290px] pt-0"
                 >
                   <Building2 className="h-4 w-4" />
                   <span className="flex-1 truncate">{ws.name}</span>
@@ -132,7 +132,7 @@ function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu> */}
         </div>
       </CardContent>
     </Card>
@@ -140,18 +140,19 @@ function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
 }
 
 export default function WorkspaceSettingsPage() {
-  const { currentWorkspace: workspace } = useRBAC();
+  const { currentWorkspace: workspace, canAccess } = useRBAC();
+  const pathname = usePathname();
+  const shouldUseWebEmailSettings = pathname === '/home/workspace-settings';
 
   return (
     <>
       <PageHeader
-        className='bg-sidebar'
         title="Workspace"
         description="Manage your workspace configuration, email accounts, and templates."
       />
-      <PageBody className="bg-sidebar sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pt-6 pb-6">
+      <PageBody className="sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden">
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="h-auto w-full justify-start gap-8 rounded-none border-b bg-transparent p-0">
+          <TabsList className="h-auto w-full justify-start gap-8 rounded-none border-b bg-transparent p-0 mb-1">
             <TabsTrigger
               value="general"
               className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
@@ -173,7 +174,23 @@ export default function WorkspaceSettingsPage() {
           </TabsContent>
 
           <TabsContent value="emails">
-            <EmailAccountsSettings workspace={workspace} />
+            {shouldUseWebEmailSettings ? (
+              <EmailAccountsSettings workspace={workspace} />
+            ) : (
+              <CoreEmailSettingsPage
+                workspace={workspace}
+                embedded
+                googleAuthPath="/api/email/google/auth"
+                googleReturnUrl={pathname || '/home/workspace-settings'}
+                permissions={{
+                  manageAccounts:
+                    canAccess('emails', 'manage_accounts') ||
+                    canAccess('emails', 'manage_templates'),
+                  manageTemplates: canAccess('emails', 'manage_templates'),
+                  manageVariables: canAccess('emails', 'manage_variables'),
+                }}
+              />
+            )}
           </TabsContent>
         </Tabs>
       </PageBody>

@@ -23,7 +23,6 @@ import {
 } from '@kit/ui/dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
-
 import {
   Select,
   SelectContent,
@@ -42,6 +41,7 @@ import {
 interface CreateRoleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  productKey?: string;
 }
 
 const ROLE_COLORS = [
@@ -57,6 +57,7 @@ const ROLE_COLORS = [
 export function CreateRoleDialog({
   open,
   onOpenChange,
+  productKey,
 }: CreateRoleDialogProps) {
   const { currentWorkspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -74,12 +75,10 @@ export function CreateRoleDialog({
     color: '#3b82f6',
   });
 
-
-
-  // Fetch modules and features
+  // Fetch modules and features filtered by current product
   const { data: modulesData, isLoading: modulesLoading } = useQuery({
-    queryKey: ['modules'],
-    queryFn: () => getModulesService(),
+    queryKey: ['modules', productKey],
+    queryFn: () => getModulesService(productKey),
     enabled: open,
   });
 
@@ -99,12 +98,13 @@ export function CreateRoleDialog({
         role_key: formData.role_key,
         description: formData.description,
         color: formData.color,
+        product_key: productKey,
         permissions,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['workspaceRoles', currentWorkspace?.id],
+        queryKey: ['workspaceRoles', currentWorkspace?.id, productKey],
       });
       toast.success('Role created successfully');
       setFormData({
@@ -158,15 +158,15 @@ export function CreateRoleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-fit max-h-[95vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[700px]">
-        <DialogHeader className="shrink-0 border-b px-6 py-4">
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 flex h-fit flex-col gap-0 overflow-hidden p-0 sm:max-w-[700px]">
+        <DialogHeader className="shrink-0 border-b px-6 py-4 border-b p-6 pb-4">
           <DialogTitle>New Role</DialogTitle>
           <DialogDescription>
             Create a new role and assign permissions to it
           </DialogDescription>
         </DialogHeader>
 
-        <form
+        <form id="dialog-form"
           onSubmit={handleSubmit}
           className="flex flex-1 flex-col overflow-hidden"
         >
@@ -216,7 +216,6 @@ export function CreateRoleDialog({
                 </div>
 
                 <div className="grid grid-cols-1 gap-4">
-
                   <div className="space-y-2">
                     <Label htmlFor="color">Color</Label>
                     <Select
@@ -265,8 +264,9 @@ export function CreateRoleDialog({
                           <div className="flex items-center gap-2">
                             <CollapsibleTrigger className="flex items-center gap-2">
                               <ChevronDown
-                                className={`h-4 w-4 transition-transform ${expandedModules[module.id] ? '' : '-rotate-90'
-                                  }`}
+                                className={`h-4 w-4 transition-transform ${
+                                  expandedModules[module.id] ? '' : '-rotate-90'
+                                }`}
                               />
                             </CollapsibleTrigger>
                             <Checkbox
@@ -335,7 +335,9 @@ export function CreateRoleDialog({
             </div>
           </div>
 
-          <DialogFooter className="shrink-0 border-t  px-6 py-4">
+          
+        </form>
+      <DialogFooter className="shrink-0 border-t px-6 py-4 border-t p-6 mt-auto">
             <Button
               type="button"
               variant="outline"
@@ -345,7 +347,7 @@ export function CreateRoleDialog({
               Cancel
             </Button>
             <Button
-              type="submit"
+              type="submit" form="dialog-form"
               disabled={createRoleMutation.isPending || modulesLoading}
               className="gap-2"
             >
@@ -355,7 +357,6 @@ export function CreateRoleDialog({
               Save Changes
             </Button>
           </DialogFooter>
-        </form>
       </DialogContent>
     </Dialog>
   );

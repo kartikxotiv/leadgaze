@@ -2,6 +2,7 @@ import * as React from 'react';
 
 import { cn } from '../lib/utils';
 import { If } from './if';
+import { TooltipProvider } from '../shadcn/tooltip';
 import {
   PageDescription,
   PageHeader,
@@ -68,40 +69,54 @@ function PageWithSidebar(props: PageProps) {
 }
 
 function PageWithHeader(props: PageProps) {
-  const { Navigation, Children, MobileNavigation } = getSlotsFromPage(props);
+  const { Navigation, Children } = getSlotsFromPage(props);
 
   return (
-    <div
-      className={cn(
-        'flex h-screen flex-1 flex-col overflow-y-auto',
-        props.className,
-      )}
-    >
+    <TooltipProvider>
+      {/*
+        Outer shell: fixed full-viewport height, NO scroll.
+        The header sticks at the top; the content area below it scrolls.
+      */}
       <div
-        className={
-          props.contentContainerClassName ?? 'flex flex-1 flex-col space-y-4'
-        }
+        className={cn(
+          'flex h-dvh flex-col overflow-hidden',
+          props.className,
+        )}
       >
         <div
-          className={cn(
-            'bg-background/80 supports-[backdrop-filter]:bg-background/60 dark:border-border dark:shadow-primary/10 flex h-14 items-center justify-between border-b px-4 lg:justify-start lg:shadow-xs',
-            {
-              'sticky top-0 z-10 backdrop-blur-md': props.sticky ?? true,
-            },
-          )}
+          className={
+            props.contentContainerClassName ??
+            'flex flex-1 flex-col min-h-0'
+          }
         >
+          {/* ── Sticky Header ── */}
           <div
-            className={'hidden w-full flex-1 items-center space-x-8 lg:flex'}
+            className={cn(
+              'bg-leadgaze-primary text-white flex h-16 shrink-0 items-center justify-between border-b border-header-primary/20 px-6 justify-start',
+              {
+                'sticky top-0 z-50 backdrop-blur-md': props.sticky ?? true,
+              },
+            )}
           >
-            {Navigation}
+            <div className={'flex w-full flex-1 items-center space-x-8'}>
+              {Navigation}
+            </div>
           </div>
 
-          {MobileNavigation}
+          {/*
+            ── Scrollable Content Area ──
+            flex-1 + min-h-0 is the key: lets the flex child shrink below its
+            intrinsic height so overflow-y-auto can take over instead of the
+            parent growing and creating a second scrollbar.
+          */}
+          <div className={'flex flex-1 flex-col min-h-0 bg-graylight dark:dark-background-color'}>
+            <div className="flex flex-1 flex-col min-h-0 overflow-y-auto px-12 py-4">
+              {Children}
+            </div>
+          </div>
         </div>
-
-        <div className={'container flex flex-1 flex-col'}>{Children}</div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
 
@@ -110,7 +125,7 @@ export function PageBody(
     className?: string;
   }>,
 ) {
-  const className = cn('flex w-full flex-1 flex-col px-6', props.className);
+  const className = cn('flex w-full flex-1 flex-col px-0', props.className);
 
   return <div className={className}>{props.children}</div>;
 }

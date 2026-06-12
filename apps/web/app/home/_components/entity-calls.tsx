@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Clock, Loader2, Phone, PhoneIncoming, PhoneOutgoing, Trash2 } from 'lucide-react';
+import { Loader2, Phone, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getCallsService, deleteCallService } from '~/services/calls.service';
@@ -23,7 +24,7 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
     const [isOpen, setIsOpen] = useState(false);
     const queryClient = useQueryClient();
 
-    const { data: calls = [], isLoading, refetch, isRefetching } = useQuery({
+    const { data: calls = [], isLoading } = useQuery({
         queryKey: ['calls', workspace?.id, entityType, entityId],
         queryFn: () => {
             if (!workspace?.id) return Promise.resolve([]);
@@ -62,20 +63,12 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
         });
     };
 
-    const getCallTypeIcon = (callType: string) => {
-        return callType === 'inbound' ? (
-            <PhoneIncoming className="h-4 w-4 text-green-600" />
-        ) : (
-            <PhoneOutgoing className="h-4 w-4 text-blue-600" />
-        );
-    };
-
     const getCallStatusBadge = (status: string) => {
         const statusConfig = {
             completed: {
                 variant: 'default' as const,
                 className: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-                label: 'Completed',
+                label: 'Connected',
             },
             no_answer: {
                 variant: 'secondary' as const,
@@ -120,125 +113,86 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
 
 
     return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <div className="flex items-center gap-2">
-                    <Phone className="h-5 w-5 text-gray-400" />
-                    <div>
-                        <CardTitle className="text-base flex items-center gap-2">
-                            Call Logs
-                            {isRefetching && <Loader2 className="h-3 w-3 animate-spin text-gray-400" />}
-                        </CardTitle>
-                    </div>
-                </div>
+        <CardWidgetContainer
+            title="Call Logs"
+            hideHeaderBorder={true}
+            icon={<Phone className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+            icon2={
                 <Button
                     size="sm"
-                    variant="outline"
-                    className="gap-2"
-                    onClick={() => {
-                        setIsOpen(true);
-                    }}
+                    variant="ghost"
+                    className="gap-1 text-sm text-blue-500 hover:text-blue-600"
+                    onClick={() => setIsOpen(true)}
                 >
-                    <Phone className="h-4 w-4" />
+                    <Plus className="h-4 w-4" />
                     Log Call
                 </Button>
-            </CardHeader>
-            <CardContent>
+            }
+        >
+            <div className="px-6 py-3">
                 {isLoading ? (
                     <div className="flex justify-center py-4">
                         <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
                     </div>
                 ) : calls.length > 0 ? (
-                    <div className="space-y-3">
+                    <CardWidgetList>
                         {calls.map((call: any) => (
-                            <div
+                            <CardWidgetListItem
                                 key={call.id}
-                                className="group relative rounded-lg border border-transparent bg-gray-50 p-3 transition-colors hover:border-gray-200 dark:bg-slate-900"
-                            >
-                                <div className="">
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between gap-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex items-center gap-1">
-                                                    {getCallTypeIcon(call.call_type)}
-                                                    <span className="text-[10px] font-semibold uppercase text-gray-400">
-                                                        {call.call_type}
-                                                    </span>
-                                                </div>
-                                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 ">
-                                                    {call.subject}
-                                                </p>
-                                            </div>
-                                            <div className="flex mr-5 items-center">
-
-                                                {getCallStatusBadge(call.status)}
-                                            </div>
-
-                                        </div>
-
-                                        {/* Name & Duration - Removed duration as it's not in schema currently */}
-                                        <div className="flex items-center justify-between text-xs">
-                                            <div className="text-gray-500">
-                                                {call.contact_name ? (
-                                                    <p>Contact: <span className="font-medium text-gray-700 dark:text-gray-300">{call.contact_name}</span></p>
-                                                ) : (
-                                                    <p className="italic">No Contact Name</p>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center gap-1 font-medium text-gray-400">
-                                                <span className="text-[10px]">{call.created_by_user?.name}</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Date & Time */}
-                                        <div className="text-xs text-gray-500">
-                                            <p>Date & Time: {new Date(call.date_time).toLocaleString()}</p>
-                                        </div>
-
-                                        {/* Notes/Comments */}
-                                        {call.comments && (
-                                            <div className="mt-1 rounded border border-gray-100 bg-white p-2 dark:border-gray-800 dark:bg-gray-800/50">
-                                                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Comments:</p>
-                                                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                                                    {call.comments}
-                                                </p>
-                                            </div>
+                                icon={<Phone className="h-4 w-4 text-blue-600" />}
+                                iconAlignTop={true}
+                                title={call.call_type === 'inbound' ? 'Inbound Call' : 'Outbound Call'}
+                                badge={getCallStatusBadge(call.status)}
+                                content={
+                                    <>
+                                        {call.subject && (
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                                                {call.subject}
+                                            </p>
                                         )}
+                                        {call.comments && (
+                                            <p className="text-sm text-gray-500 whitespace-pre-wrap">
+                                                {call.comments}
+                                            </p>
+                                        )}
+                                    </>
+                                }
+                                metadata={
+                                    <div className="flex flex-wrap gap-2">
+                                        <span>{new Date(call.date_time).toLocaleString()}</span>
                                     </div>
-
-                                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                                        <button
-                                            onClick={() => handleDelete(call.id)}
-                                            className="p-1 text-gray-400 hover:text-red-500"
-                                        >
-                                            <Trash2 className=" h-4 w-4" />
-                                        </button>
-                                    </div>
-                                </div>
-
-                            </div>
+                                }
+                                actions={
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        onClick={() => handleDelete(call.id)}
+                                        className="h-7 w-7 text-gray-400 hover:text-red-500"
+                                    >
+                                        <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                }
+                            />
                         ))}
-                    </div>
+                    </CardWidgetList>
                 ) : (
                     <div className="py-8 text-center">
                         <Phone className="mx-auto mb-2 h-8 w-8 text-gray-300" />
                         <p className="text-sm text-gray-500">No call logs</p>
                     </div>
                 )}
-            </CardContent>
+            </div>
 
             {workspace?.id && (
                 <LogCallDialog
                     open={isOpen}
                     onOpenChange={setIsOpen}
-                    onSuccess={() => {
-                        handleSuccess();
-                    }}
+                    onSuccess={handleSuccess}
                     entityType={entityType}
                     entityId={entityId}
                     workspaceId={workspace.id}
                 />
             )}
-        </Card>
+        </CardWidgetContainer>
     );
 }

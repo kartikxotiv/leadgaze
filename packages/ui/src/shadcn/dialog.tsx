@@ -83,7 +83,7 @@ const DialogTitle: React.FC<
 > = ({ className, ...props }) => (
   <DialogPrimitive.Title
     className={cn(
-      'text-lg leading-none font-semibold tracking-tight',
+      'primary-heading text-leadgaze-dark dark:text-white leading-none tracking-tight',
       className,
     )}
     {...props}
@@ -95,7 +95,7 @@ const DialogDescription: React.FC<
   React.ComponentPropsWithRef<typeof DialogPrimitive.Description>
 > = ({ className, ...props }) => (
   <DialogPrimitive.Description
-    className={cn('text-muted-foreground text-sm', className)}
+    className={cn('text-sm text-leadgaze-muted dark:text-white', className)}
     {...props}
   />
 );
