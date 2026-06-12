@@ -79,7 +79,7 @@ function SidebarLayout({
 
   return (
     <SidebarProvider defaultOpen={sidebarDefaultOpen}>
-      <Page style={'sidebar'} className={'bg-sidebar'}>
+      <Page style={'sidebar'}>
         <PageNavigation>
           <HomeSidebar user={user} />
         </PageNavigation>

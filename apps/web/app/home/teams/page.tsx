@@ -50,8 +50,8 @@ import CustomTableContainer from '@kit/ui/custom-table-container';
 function TeamsPageSkeleton() {
   return (
     <ModuleGuard module="team_members">      
-        <div className="bg-sidebar flex shrink-0 flex-col gap-2 overflow-hidden">
-          <div className="bg-sidebar flex items-center justify-between px-6 py-4">
+        <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4">
             <div className="space-y-1">
               <Skeleton className="h-6 w-28" />
               <Skeleton className="h-4 w-60" />
@@ -61,14 +61,14 @@ function TeamsPageSkeleton() {
               <Skeleton className="h-8 w-8 rounded-md" />
             </div>
           </div>
-          <div className="bg-sidebar -mt-1 w-full overflow-x-auto px-6 pb-7">
+          <div className="-mt-1 w-full overflow-x-auto px-6 pb-7">
             <div className="-mb-3 flex items-center gap-3">
               <Skeleton className="h-10 w-52 rounded-lg" />
               <Skeleton className="h-10 w-52 rounded-lg" />
             </div>
           </div>
         </div>
-        <div className="bg-sidebar flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
           <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6 mx-4 lg:mx-8">
             <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
               <thead className="bg-muted sticky top-0 z-10">

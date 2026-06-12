@@ -121,11 +121,11 @@ export function LogCallDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[550px]">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[550px]">
+        <DialogHeader className="border-b p-6 pb-4">
           <DialogTitle>Call Log</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-4 px-6 py-4 flex-1 overflow-y-auto">
           {/* Subject */}
           <div className="grid gap-2">
             <Label htmlFor="subject">
@@ -224,7 +224,8 @@ export function LogCallDialog({
             />
           </div>
         </div>
-        <DialogFooter>
+        
+      <DialogFooter className="border-t p-6 mt-auto">
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}

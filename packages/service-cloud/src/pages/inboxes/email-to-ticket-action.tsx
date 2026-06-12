@@ -172,12 +172,14 @@ export function ServiceCloudEmailToTicketAction({
           Convert to Ticket
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Convert Email to Ticket</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-2xl dark:border-slate-800 dark:bg-slate-950">
+        <div className="flex max-h-[90vh] flex-col">
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle>Convert Email to Ticket</DialogTitle>
+          </DialogHeader>
 
-        <div className="grid gap-4">
+          <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
+            <div className="grid gap-4">
           {suggestedCustomer ? (
             <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
               Suggested customer found: <strong>{suggestedCustomer.name}</strong> ({suggestedCustomer.email})
@@ -287,14 +289,16 @@ export function ServiceCloudEmailToTicketAction({
               <Input value={organizationName} onChange={(event) => setOrganizationName(event.target.value)} />
             </div>
           ) : null}
-        </div>
+            </div>
+          </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={submit} disabled={mutation.isPending}>
-            Convert
-          </Button>
-        </DialogFooter>
+          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button onClick={submit} disabled={mutation.isPending}>
+              Convert
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

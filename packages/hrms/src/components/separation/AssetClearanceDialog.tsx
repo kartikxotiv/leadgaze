@@ -148,182 +148,184 @@ export function AssetClearanceDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>{editingAsset ? 'Edit Asset Clearance' : 'Add Asset Clearance'}</DialogTitle>
-            <DialogDescription>
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-2xl dark:border-slate-800 dark:bg-slate-950">
+        <form className="flex max-h-[90vh] flex-col" onSubmit={handleSubmit}>
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle className="text-2xl pr-12">{editingAsset ? 'Edit Asset Clearance' : 'Add Asset Clearance'}</DialogTitle>
+            <DialogDescription className="text-base">
               All asset clearance fields are available below.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Employee</Label>
-              <Select
-                value={form.employee_id}
-                onValueChange={async (value) => {
-                  setForm((prev) => ({ ...prev, employee_id: value }));
-                  if (!editingAsset) {
-                    const resId = await fetchResignationIdForEmployee(value);
-                    if (resId !== NONE) {
-                      setForm((prev) => ({ ...prev, resignation_id: resId }));
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Employee</Label>
+                <Select
+                  value={form.employee_id}
+                  onValueChange={async (value) => {
+                    setForm((prev) => ({ ...prev, employee_id: value }));
+                    if (!editingAsset) {
+                      const resId = await fetchResignationIdForEmployee(value);
+                      if (resId !== NONE) {
+                        setForm((prev) => ({ ...prev, resignation_id: resId }));
+                      }
                     }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {[employee.first_name, employee.last_name].filter(Boolean).join(' ') || employee.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Resignation</Label>
+                <Select
+                  value={form.resignation_id}
+                  onValueChange={(value) => setForm((prev) => ({ ...prev, resignation_id: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select resignation" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>None</SelectItem>
+                    {resignationOptions.map((resignation) => (
+                      <SelectItem key={resignation.id} value={resignation.id}>
+                        {resignation.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="asset-name">Asset Name</Label>
+                <Input
+                  id="asset-name"
+                  required
+                  maxLength={255}
+                  value={form.asset_name}
+                  onChange={(event) => setForm((prev) => ({ ...prev, asset_name: event.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="asset-tag">Asset Tag</Label>
+                <Input
+                  id="asset-tag"
+                  maxLength={100}
+                  value={form.asset_tag}
+                  onChange={(event) => setForm((prev) => ({ ...prev, asset_tag: event.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="issued-date">Issued Date</Label>
+                <Input
+                  id="issued-date"
+                  type="date"
+                  value={form.issued_date}
+                  onChange={(event) => setForm((prev) => ({ ...prev, issued_date: event.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="returned-date">Returned Date</Label>
+                <Input
+                  id="returned-date"
+                  type="date"
+                  value={form.returned_date}
+                  onChange={(event) => setForm((prev) => ({ ...prev, returned_date: event.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Condition At Return</Label>
+                <Select
+                  value={form.condition_at_return}
+                  onValueChange={(value: 'PENDING' | 'GOOD' | 'DAMAGED' | 'LOST') =>
+                    setForm((prev) => ({ ...prev, condition_at_return: value }))
                   }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select employee" />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {[employee.first_name, employee.last_name].filter(Boolean).join(' ') || employee.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select condition" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PENDING">PENDING</SelectItem>
+                    <SelectItem value="GOOD">GOOD</SelectItem>
+                    <SelectItem value="DAMAGED">DAMAGED</SelectItem>
+                    <SelectItem value="LOST">LOST</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label>Resignation</Label>
-              <Select
-                value={form.resignation_id}
-                onValueChange={(value) => setForm((prev) => ({ ...prev, resignation_id: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select resignation" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE}>None</SelectItem>
-                  {resignationOptions.map((resignation) => (
-                    <SelectItem key={resignation.id} value={resignation.id}>
-                      {resignation.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select
+                  value={form.status}
+                  onValueChange={(value: 'PENDING' | 'RETURNED' | 'WAIVED') => setForm((prev) => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PENDING">PENDING</SelectItem>
+                    <SelectItem value="RETURNED">RETURNED</SelectItem>
+                    <SelectItem value="WAIVED">WAIVED</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="asset-name">Asset Name</Label>
-              <Input
-                id="asset-name"
-                required
-                maxLength={255}
-                value={form.asset_name}
-                onChange={(event) => setForm((prev) => ({ ...prev, asset_name: event.target.value }))}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label>Cleared By</Label>
+                <Select
+                  value={form.cleared_by}
+                  onValueChange={(value) => setForm((prev) => ({ ...prev, cleared_by: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>None</SelectItem>
+                    {activeEmployees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {[employee.first_name, employee.last_name].filter(Boolean).join(' ') || employee.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="asset-tag">Asset Tag</Label>
-              <Input
-                id="asset-tag"
-                maxLength={100}
-                value={form.asset_tag}
-                onChange={(event) => setForm((prev) => ({ ...prev, asset_tag: event.target.value }))}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="cleared-at">Cleared At</Label>
+                <Input
+                  id="cleared-at"
+                  type="datetime-local"
+                  value={form.cleared_at}
+                  onChange={(event) => setForm((prev) => ({ ...prev, cleared_at: event.target.value }))}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="issued-date">Issued Date</Label>
-              <Input
-                id="issued-date"
-                type="date"
-                value={form.issued_date}
-                onChange={(event) => setForm((prev) => ({ ...prev, issued_date: event.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="returned-date">Returned Date</Label>
-              <Input
-                id="returned-date"
-                type="date"
-                value={form.returned_date}
-                onChange={(event) => setForm((prev) => ({ ...prev, returned_date: event.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Condition At Return</Label>
-              <Select
-                value={form.condition_at_return}
-                onValueChange={(value: 'PENDING' | 'GOOD' | 'DAMAGED' | 'LOST') =>
-                  setForm((prev) => ({ ...prev, condition_at_return: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select condition" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PENDING">PENDING</SelectItem>
-                  <SelectItem value="GOOD">GOOD</SelectItem>
-                  <SelectItem value="DAMAGED">DAMAGED</SelectItem>
-                  <SelectItem value="LOST">LOST</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select
-                value={form.status}
-                onValueChange={(value: 'PENDING' | 'RETURNED' | 'WAIVED') => setForm((prev) => ({ ...prev, status: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PENDING">PENDING</SelectItem>
-                  <SelectItem value="RETURNED">RETURNED</SelectItem>
-                  <SelectItem value="WAIVED">WAIVED</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Cleared By</Label>
-              <Select
-                value={form.cleared_by}
-                onValueChange={(value) => setForm((prev) => ({ ...prev, cleared_by: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select employee" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE}>None</SelectItem>
-                  {activeEmployees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {[employee.first_name, employee.last_name].filter(Boolean).join(' ') || employee.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cleared-at">Cleared At</Label>
-              <Input
-                id="cleared-at"
-                type="datetime-local"
-                value={form.cleared_at}
-                onChange={(event) => setForm((prev) => ({ ...prev, cleared_at: event.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="asset-remarks">Remarks</Label>
-              <Textarea
-                id="asset-remarks"
-                value={form.remarks}
-                onChange={(event) => setForm((prev) => ({ ...prev, remarks: event.target.value }))}
-              />
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="asset-remarks">Remarks</Label>
+                <Textarea
+                  id="asset-remarks"
+                  value={form.remarks}
+                  onChange={(event) => setForm((prev) => ({ ...prev, remarks: event.target.value }))}
+                />
+              </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
             <Button
               type="button"
               variant="outline"

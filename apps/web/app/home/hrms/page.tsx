@@ -26,7 +26,7 @@ export default function HrmsHomePage() {
           </PageHeaderActions>
         </PageHeader>
 
-        <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
+        <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3">
           <HrmsDashboardHome workspaceName={currentWorkspace?.name} />
         </PageBody>
       </div>

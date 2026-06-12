@@ -153,164 +153,166 @@ export function ExitLetterDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>{editingLetter ? 'Edit Letter Request' : 'Add Letter Request'}</DialogTitle>
-            <DialogDescription>
+      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-2xl dark:border-slate-800 dark:bg-slate-950">
+        <form className="flex max-h-[90vh] flex-col" onSubmit={handleSubmit}>
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogTitle className="text-2xl pr-12">{editingLetter ? 'Edit Letter Request' : 'Add Letter Request'}</DialogTitle>
+            <DialogDescription className="text-base">
               All exit letter fields are available below.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Employee</Label>
-              <Select
-                value={form.employee_id}
-                onValueChange={async (value) => {
-                  setForm((prev) => ({ ...prev, employee_id: value }));
-                  if (!editingLetter) {
-                    const resId = await fetchResignationIdForEmployee(value);
-                    if (resId !== NONE) {
-                      setForm((prev) => ({ ...prev, resignation_id: resId }));
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Employee</Label>
+                <Select
+                  value={form.employee_id}
+                  onValueChange={async (value) => {
+                    setForm((prev) => ({ ...prev, employee_id: value }));
+                    if (!editingLetter) {
+                      const resId = await fetchResignationIdForEmployee(value);
+                      if (resId !== NONE) {
+                        setForm((prev) => ({ ...prev, resignation_id: resId }));
+                      }
                     }
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select employee" />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {[employee.first_name, employee.last_name].filter(Boolean).join(' ') || employee.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {[employee.first_name, employee.last_name].filter(Boolean).join(' ') || employee.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* <div className="space-y-2">
-              <Label>Resignation</Label>
-              <Select
-                value={form.resignation_id}
-                onValueChange={(value) => setForm((prev) => ({ ...prev, resignation_id: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select resignation" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE}>None</SelectItem>
-                  {resignationOptions.map((resignation) => (
-                    <SelectItem key={resignation.id} value={resignation.id}>
-                      {resignation.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div> */}
+              {/* <div className="space-y-2">
+                <Label>Resignation</Label>
+                <Select
+                  value={form.resignation_id}
+                  onValueChange={(value) => setForm((prev) => ({ ...prev, resignation_id: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select resignation" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>None</SelectItem>
+                    {resignationOptions.map((resignation) => (
+                      <SelectItem key={resignation.id} value={resignation.id}>
+                        {resignation.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div> */}
 
-            <div className="space-y-2">
-              <Label>Letter Type</Label>
-              <Select
-                value={form.letter_type}
-                onValueChange={(value: 'RELIEVING' | 'EXPERIENCE') => setForm((prev) => ({ ...prev, letter_type: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="RELIEVING">Relieving</SelectItem>
-                  <SelectItem value="EXPERIENCE">Experience</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <Label>Letter Type</Label>
+                <Select
+                  value={form.letter_type}
+                  onValueChange={(value: 'RELIEVING' | 'EXPERIENCE') => setForm((prev) => ({ ...prev, letter_type: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="RELIEVING">Relieving</SelectItem>
+                    <SelectItem value="EXPERIENCE">Experience</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select
-                value={form.status}
-                onValueChange={(value: 'DRAFT' | 'ISSUED' | 'CANCELLED') => setForm((prev) => ({ ...prev, status: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="DRAFT">Draft</SelectItem>
-                  <SelectItem value="ISSUED">Issued</SelectItem>
-                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select
+                  value={form.status}
+                  onValueChange={(value: 'DRAFT' | 'ISSUED' | 'CANCELLED') => setForm((prev) => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DRAFT">Draft</SelectItem>
+                    <SelectItem value="ISSUED">Issued</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* <div className="space-y-2">
-              <Label>Issued By</Label>
-              <Select
-                value={form.issued_by}
-                onValueChange={(value) => setForm((prev) => ({ ...prev, issued_by: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select issuer" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE}>None</SelectItem>
-                  {activeEmployees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {[employee.first_name, employee.last_name].filter(Boolean).join(' ') || employee.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div> */}
+              {/* <div className="space-y-2">
+                <Label>Issued By</Label>
+                <Select
+                  value={form.issued_by}
+                  onValueChange={(value) => setForm((prev) => ({ ...prev, issued_by: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select issuer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>None</SelectItem>
+                    {activeEmployees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {[employee.first_name, employee.last_name].filter(Boolean).join(' ') || employee.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div> */}
 
-            <div className="space-y-2">
-              <Label htmlFor="issued-at">Issued On</Label>
-              <Input
-                id="issued-at"
-                type="datetime-local"
-                value={form.issued_at}
-                onChange={(event) => setForm((prev) => ({ ...prev, issued_at: event.target.value }))}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="issued-at">Issued On</Label>
+                <Input
+                  id="issued-at"
+                  type="datetime-local"
+                  value={form.issued_at}
+                  onChange={(event) => setForm((prev) => ({ ...prev, issued_at: event.target.value }))}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="letter-number">Letter Number</Label>
-              <Input
-                id="letter-number"
-                maxLength={100}
-                value={form.letter_number}
-                onChange={(event) => setForm((prev) => ({ ...prev, letter_number: event.target.value }))}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="letter-number">Letter Number</Label>
+                <Input
+                  id="letter-number"
+                  maxLength={100}
+                  value={form.letter_number}
+                  onChange={(event) => setForm((prev) => ({ ...prev, letter_number: event.target.value }))}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="letter-url">Letter Document</Label>
-              <Input
-                id="letter-url"
-                type="file"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  setSelectedFile(file || null);
-                }}
-              />
-              {editingLetter && !selectedFile && form.letter_url && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Current file: <a href={form.letter_url} target="_blank" rel="noreferrer" className="text-brand hover:underline">View</a>
-                </p>
-              )}
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="letter-url">Letter Document</Label>
+                <Input
+                  id="letter-url"
+                  type="file"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    setSelectedFile(file || null);
+                  }}
+                />
+                {editingLetter && !selectedFile && form.letter_url && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Current file: <a href={form.letter_url} target="_blank" rel="noreferrer" className="text-brand hover:underline">View</a>
+                  </p>
+                )}
+              </div>
 
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="letter-remarks">Remarks</Label>
-              <Textarea
-                id="letter-remarks"
-                value={form.remarks}
-                onChange={(event) => setForm((prev) => ({ ...prev, remarks: event.target.value }))}
-              />
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="letter-remarks">Remarks</Label>
+                <Textarea
+                  id="letter-remarks"
+                  value={form.remarks}
+                  onChange={(event) => setForm((prev) => ({ ...prev, remarks: event.target.value }))}
+                />
+              </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
             <Button
               type="button"
               variant="outline"

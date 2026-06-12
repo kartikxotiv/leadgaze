@@ -120,8 +120,8 @@ export function IndustrySelect({
             </Select>
 
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
+                <DialogContent className="flex max-h-[90vh] flex-col p-0">
+                    <DialogHeader className="border-b p-6 pb-4">
                         <DialogTitle>Add New Industry</DialogTitle>
                         <DialogDescription>
                             Create a new industry for this workspace
@@ -145,7 +145,8 @@ export function IndustrySelect({
                             />
                         </div>
                     </div>
-                    <DialogFooter>
+                    
+                <DialogFooter className="border-t p-6 mt-auto">
                         <Button
                             variant="outline"
                             onClick={() => {
@@ -170,7 +171,7 @@ export function IndustrySelect({
                             )}
                         </Button>
                     </DialogFooter>
-                </DialogContent>
+      </DialogContent>
             </Dialog>
         </>
     );

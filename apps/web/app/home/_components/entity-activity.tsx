@@ -199,13 +199,13 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
               Set
             </Button>
           </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
+          <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[400px]">
+            <DialogHeader className="border-b p-6 pb-4">
               <DialogTitle>
                 {editingReminder ? 'Edit Reminder' : 'Set Reminder'}
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 pt-4">
+            <div className="flex-1 space-y-4 px-6 py-4">
               <div className="space-y-2">
                 <Label>Title</Label>
                 <Input
@@ -226,6 +226,8 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                   }
                 />
               </div>
+            </div>
+            <div className="border-t p-6 pt-4">
               <Button
                 onClick={handleSave}
                 disabled={
@@ -496,13 +498,13 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
                 Schedule
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
+            <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[425px]">
+              <DialogHeader className="border-b p-6 pb-4">
                 <DialogTitle>
                   {editingMeeting ? 'Edit Meeting' : 'Schedule Meeting'}
                 </DialogTitle>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
+              <div className="flex-1 space-y-4 px-6 py-4 overflow-y-auto">
                 <div className="space-y-2">
                   <Label>Title</Label>
                   <Input
@@ -545,6 +547,8 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
                     placeholder="Zoom, Google Meet, or Office..."
                   />
                 </div>
+              </div>
+              <div className="border-t p-6 mt-auto">
                 <Button
                   onClick={handleSave}
                   disabled={
@@ -761,13 +765,13 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
               Upload
             </Button>
           </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
+          <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[400px]">
+            <DialogHeader className="border-b p-6 pb-4">
               <DialogTitle>
                 {editingDoc ? 'Rename Document' : 'Upload Document'}
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 pt-4">
+            <div className="flex-1 space-y-4 px-6 py-4">
               {editingDoc ? (
                 <div className="space-y-2">
                   <Label>Document Name</Label>
@@ -785,6 +789,8 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                   />
                 </div>
               )}
+            </div>
+            <div className="border-t p-6 pt-4">
               <Button
                 onClick={handleSave}
                 disabled={

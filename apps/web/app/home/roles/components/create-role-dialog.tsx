@@ -158,15 +158,15 @@ export function CreateRoleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-fit max-h-[95vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[700px]">
-        <DialogHeader className="shrink-0 border-b px-6 py-4">
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 flex h-fit flex-col gap-0 overflow-hidden p-0 sm:max-w-[700px]">
+        <DialogHeader className="shrink-0 border-b px-6 py-4 border-b p-6 pb-4">
           <DialogTitle>New Role</DialogTitle>
           <DialogDescription>
             Create a new role and assign permissions to it
           </DialogDescription>
         </DialogHeader>
 
-        <form
+        <form id="dialog-form"
           onSubmit={handleSubmit}
           className="flex flex-1 flex-col overflow-hidden"
         >
@@ -335,7 +335,9 @@ export function CreateRoleDialog({
             </div>
           </div>
 
-          <DialogFooter className="shrink-0 border-t px-6 py-4">
+          
+        </form>
+      <DialogFooter className="shrink-0 border-t px-6 py-4 border-t p-6 mt-auto">
             <Button
               type="button"
               variant="outline"
@@ -345,7 +347,7 @@ export function CreateRoleDialog({
               Cancel
             </Button>
             <Button
-              type="submit"
+              type="submit" form="dialog-form"
               disabled={createRoleMutation.isPending || modulesLoading}
               className="gap-2"
             >
@@ -355,7 +357,6 @@ export function CreateRoleDialog({
               Save Changes
             </Button>
           </DialogFooter>
-        </form>
       </DialogContent>
     </Dialog>
   );

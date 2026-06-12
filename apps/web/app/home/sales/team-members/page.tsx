@@ -271,7 +271,7 @@
 //           </div>
 //         </div>
 
-//         <PageBody className="bg-sidebar sticky flex min-h-0 flex-1 flex-col overflow-hidden pt-4 pb-6">
+//         <PageBody className="sticky flex min-h-0 flex-1 flex-col overflow-hidden pt-4 pb-6">
 //           <div className="flex min-h-0 flex-1 flex-col space-y-6">
 //             {/* Team Members Table - Scrollable area */}
 //             <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
