@@ -7,7 +7,6 @@ import {
   BarChart3,
   Inbox,
   Settings,
-  Tags,
   Ticket,
   Users,
 } from 'lucide-react';
@@ -61,14 +60,6 @@ const serviceCloudRouteChildren: ServiceCloudRoute[] = [
     path: '/home/services/inboxes',
     Icon: <Inbox className="h-4 w-4" />,
     moduleKey: SERVICE_CLOUD_MODULE_KEYS.inboxes,
-    featureKey: SERVICE_CLOUD_FEATURE_KEYS.view,
-  },
-  {
-    end: true,
-    label: 'Teams',
-    path: '/home/services/teams',
-    Icon: <Tags className="h-4 w-4" />,
-    moduleKey: SERVICE_CLOUD_MODULE_KEYS.teams,
     featureKey: SERVICE_CLOUD_FEATURE_KEYS.view,
   },
   {

@@ -26,11 +26,6 @@ const routeHeaders = [
       'View and reply to support email conversations powered by Core Email.',
   },
   {
-    segment: '/teams',
-    title: 'Support Teams',
-    description: 'Manage support teams and ownership.',
-  },
-  {
     segment: '/reports',
     title: 'Reports',
     description: 'Analyze support volume, workload, and logged time.',
@@ -74,10 +69,7 @@ export default function ServiceCloudLayout({
 
   return (
     <ModuleAccessGuardWrapper moduleKey="service_cloud">
-      <PageHeader        
-        title={header.title}
-        description={header.description}
-      />
+      <PageHeader title={header.title} description={header.description} />
       {children}
     </ModuleAccessGuardWrapper>
   );
