@@ -52,10 +52,25 @@ import {
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { cn } from '@kit/ui/utils';
 
+const PRESET_COLORS = [
+  '#64748b', // Slate
+  '#ef4444', // Red
+  '#f97316', // Orange
+  '#f59e0b', // Amber
+  '#10b981', // Emerald
+  '#14b8a6', // Teal
+  '#06b6d4', // Cyan
+  '#3b82f6', // Blue
+  '#6366f1', // Indigo
+  '#8b5cf6', // Violet
+  '#ec4899', // Pink
+  '#f43f5e', // Rose
+];
+
 export type ResourceField = {
   key: string;
   label: string;
-  type?: 'text' | 'email' | 'number' | 'textarea' | 'select';
+  type?: 'text' | 'email' | 'number' | 'textarea' | 'select' | 'color';
   required?: boolean;
   options?: Array<{ label: string; value: string }>;
 };
@@ -224,6 +239,58 @@ export function ServiceCloudResourcePage({
                             ))}
                           </SelectContent>
                         </Select>
+                      ) : field.type === 'color' ? (
+                        <div className="space-y-3">
+                          <div className="flex flex-wrap gap-2">
+                            {PRESET_COLORS.map((color) => (
+                              <button
+                                key={color}
+                                type="button"
+                                className={cn(
+                                  "h-8 w-8 rounded-full border-2 transition-all hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                                  form[field.key] === color
+                                    ? "border-primary scale-105 shadow-md ring-2 ring-primary"
+                                    : "border-zinc-300 dark:border-zinc-700"
+                                )}
+                                style={{ backgroundColor: color }}
+                                onClick={() =>
+                                  setForm((prev: ServiceCloudRecord) => ({
+                                    ...prev,
+                                    [field.key]: color,
+                                  }))
+                                }
+                                title={color}
+                              />
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="relative h-9 w-9 overflow-hidden rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                              <input
+                                type="color"
+                                className="absolute -left-2 -top-2 h-14 w-14 cursor-pointer border-0 p-0"
+                                value={String(form[field.key] || '#64748b')}
+                                onChange={(event) =>
+                                  setForm((prev: ServiceCloudRecord) => ({
+                                    ...prev,
+                                    [field.key]: event.target.value,
+                                  }))
+                                }
+                              />
+                            </div>
+                            <Input
+                              type="text"
+                              placeholder="#000000"
+                              value={String(form[field.key] ?? '')}
+                              onChange={(event) =>
+                                setForm((prev: ServiceCloudRecord) => ({
+                                  ...prev,
+                                  [field.key]: event.target.value,
+                                }))
+                              }
+                              className="w-32 uppercase font-mono text-sm"
+                            />
+                          </div>
+                        </div>
                       ) : (
                         <Input
                           type={
