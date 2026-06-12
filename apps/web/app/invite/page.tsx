@@ -26,6 +26,7 @@ import {
 interface InvitationData {
   id: string;
   email: string;
+  product_key?: string | null;
   workspace: {
     id: string;
     name: string;
@@ -35,6 +36,20 @@ interface InvitationData {
     id: string;
     role_name: string;
   };
+}
+
+const INVITE_PRODUCT_ROUTES: Record<string, string> = {
+  sales: '/home/sales',
+  hrms: '/home/hrms',
+  inventory: '/home/inventory',
+  service_cloud: '/home/services',
+  funds: '/home/funds',
+};
+
+function getInviteRedirectPath(productKey?: string | null) {
+  if (!productKey) return '/home';
+
+  return INVITE_PRODUCT_ROUTES[productKey] ?? '/home';
 }
 
 export default function InviteAcceptancePage() {
@@ -100,10 +115,17 @@ export default function InviteAcceptancePage() {
       // Redirect to workspace
       const workspace = data.data?.workspace;
       if (workspace) {
+        const productKey = data.data?.product_key ?? invitation?.product_key;
+        const redirectPath = getInviteRedirectPath(productKey);
+
+        if (productKey) {
+          localStorage.setItem('selected_module', productKey);
+        }
+
         // Use window.location.assign for a full page refresh which ensures
         // all client-side and server-side state is correctly updated.
         setTimeout(() => {
-          window.location.assign('/home');
+          window.location.assign(redirectPath);
         }, 1500);
       }
     },
