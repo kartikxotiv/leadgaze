@@ -228,6 +228,70 @@ export function ServiceCloudReportsPage({
               ])}
             />
           </CardWidgetContainer>
+
+          <CardWidgetContainer
+            title="Oldest Open Tickets"
+            description="Open tickets sorted by age so overdue work is visible."
+            hideHeaderBorder={true}
+          >
+            <ReportTable
+              headers={['Ticket', 'Customer', 'Owner', 'Age', 'Due']}
+              empty="No open tickets."
+              rows={openTicketAging.map((ticket: any) => [
+                <Link
+                  key="ticket"
+                  href={`/home/services/tickets/${ticket.id}`}
+                  className="font-medium hover:underline"
+                >
+                  #{ticket.ticketNumber} {ticket.subject}
+                </Link>,
+                <Link
+                  key={`customer-${ticket.id}`}
+                  href="/home/services/customers"
+                  className="hover:underline hover:text-primary"
+                >
+                  {ticket.customer}
+                </Link>,
+                ticket.assignee,
+                `${ticket.daysOpen}d`,
+                formatDate(ticket.dueDate),
+              ])}
+            />
+          </CardWidgetContainer>
+
+          <CardWidgetContainer
+            title="Time Logs By Ticket"
+            description="Where time is being spent, based on individual time entries."
+            hideHeaderBorder={true}
+          >
+            <ReportTable
+              headers={['Ticket', 'Customer', 'Entries', 'Logged', 'Latest']}
+              empty="No time entries logged yet."
+              rows={timeByTicket.map((ticket: any) => [
+                ticket.id ? (
+                  <Link
+                    key="ticket"
+                    href={`/home/services/tickets/${ticket.id}`}
+                    className="font-medium hover:underline"
+                  >
+                    #{ticket.ticketNumber} {ticket.subject}
+                  </Link>
+                ) : (
+                  ticket.subject
+                ),
+                <Link
+                  key={`customer-${ticket.id || ticket.subject}`}
+                  href="/home/services/customers"
+                  className="hover:underline hover:text-primary"
+                >
+                  {ticket.customer}
+                </Link>,
+                ticket.entries,
+                formatHours(ticket.loggedSeconds),
+                formatDate(ticket.latestLoggedDate),
+              ])}
+            />
+          </CardWidgetContainer>
         </div>
 
         <aside className="space-y-6">
@@ -320,72 +384,6 @@ export function ServiceCloudReportsPage({
             </div>
           </CardWidgetContainer>
         </aside>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <CardWidgetContainer
-          title="Oldest Open Tickets"
-          description="Open tickets sorted by age so overdue work is visible."
-          hideHeaderBorder={true}
-        >
-          <ReportTable
-            headers={['Ticket', 'Customer', 'Owner', 'Age', 'Due']}
-            empty="No open tickets."
-            rows={openTicketAging.map((ticket: any) => [
-              <Link
-                key="ticket"
-                href={`/home/services/tickets/${ticket.id}`}
-                className="font-medium hover:underline"
-              >
-                #{ticket.ticketNumber} {ticket.subject}
-              </Link>,
-              <Link
-                key={`customer-${ticket.id}`}
-                href="/home/services/customers"
-                className="hover:underline hover:text-primary"
-              >
-                {ticket.customer}
-              </Link>,
-              ticket.assignee,
-              `${ticket.daysOpen}d`,
-              formatDate(ticket.dueDate),
-            ])}
-          />
-        </CardWidgetContainer>
-
-        <CardWidgetContainer
-          title="Time Logs By Ticket"
-          description="Where time is being spent, based on individual time entries."
-          hideHeaderBorder={true}
-        >
-          <ReportTable
-            headers={['Ticket', 'Customer', 'Entries', 'Logged', 'Latest']}
-            empty="No time entries logged yet."
-            rows={timeByTicket.map((ticket: any) => [
-              ticket.id ? (
-                <Link
-                  key="ticket"
-                  href={`/home/services/tickets/${ticket.id}`}
-                  className="font-medium hover:underline"
-                >
-                  #{ticket.ticketNumber} {ticket.subject}
-                </Link>
-              ) : (
-                ticket.subject
-              ),
-              <Link
-                key={`customer-${ticket.id || ticket.subject}`}
-                href="/home/services/customers"
-                className="hover:underline hover:text-primary"
-              >
-                {ticket.customer}
-              </Link>,
-              ticket.entries,
-              formatHours(ticket.loggedSeconds),
-              formatDate(ticket.latestLoggedDate),
-            ])}
-          />
-        </CardWidgetContainer>
       </div>
     </div>
   );
@@ -574,6 +572,66 @@ function ServiceCloudReportsSkeleton() {
               ))}
             </div>
           </Card>
+
+          {/* Oldest Open Tickets skeleton */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-44" />
+              <Skeleton className="mt-1 h-3 w-56" />
+            </CardHeader>
+            <div className="overflow-x-auto">
+              <div className="bg-muted/40 grid grid-cols-5 gap-3 border-b px-3 py-2">
+                {['Ticket', 'Customer', 'Owner', 'Age', 'Due'].map((h) => (
+                  <Skeleton key={h} className="h-3 w-full max-w-[48px]" />
+                ))}
+              </div>
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div
+                  key={i}
+                  className="grid grid-cols-5 gap-3 border-b px-3 py-3 last:border-b-0"
+                >
+                  <Skeleton
+                    className={`h-3.5 ${i % 2 === 0 ? 'w-32' : 'w-28'}`}
+                  />
+                  <Skeleton className="h-3.5 w-20" />
+                  <Skeleton className="h-3.5 w-16" />
+                  <Skeleton className="h-3.5 w-8" />
+                  <Skeleton className="h-3.5 w-20" />
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Time Logs By Ticket skeleton */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="mt-1 h-3 w-56" />
+            </CardHeader>
+            <div className="overflow-x-auto">
+              <div className="bg-muted/40 grid grid-cols-5 gap-3 border-b px-3 py-2">
+                {['Ticket', 'Customer', 'Entries', 'Logged', 'Latest'].map(
+                  (h) => (
+                    <Skeleton key={h} className="h-3 w-full max-w-[48px]" />
+                  ),
+                )}
+              </div>
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div
+                  key={i}
+                  className="grid grid-cols-5 gap-3 border-b px-3 py-3 last:border-b-0"
+                >
+                  <Skeleton
+                    className={`h-3.5 ${i % 2 === 0 ? 'w-28' : 'w-36'}`}
+                  />
+                  <Skeleton className="h-3.5 w-20" />
+                  <Skeleton className="h-3.5 w-8" />
+                  <Skeleton className="h-3.5 w-10" />
+                  <Skeleton className="h-3.5 w-20" />
+                </div>
+              ))}
+            </div>
+          </Card>
         </div>
 
         {/* Right aside */}
@@ -645,69 +703,6 @@ function ServiceCloudReportsSkeleton() {
             </div>
           </Card>
         </aside>
-      </div>
-
-      {/* Bottom two-column tables */}
-      <div className="grid gap-6 xl:grid-cols-2">
-        {/* Oldest Open Tickets */}
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-5 w-44" />
-            <Skeleton className="mt-1 h-3 w-56" />
-          </CardHeader>
-          <div className="overflow-x-auto">
-            <div className="bg-muted/40 grid grid-cols-5 gap-3 border-b px-3 py-2">
-              {['Ticket', 'Customer', 'Owner', 'Age', 'Due'].map((h) => (
-                <Skeleton key={h} className="h-3 w-full max-w-[48px]" />
-              ))}
-            </div>
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={i}
-                className="grid grid-cols-5 gap-3 border-b px-3 py-3 last:border-b-0"
-              >
-                <Skeleton
-                  className={`h-3.5 ${i % 2 === 0 ? 'w-32' : 'w-28'}`}
-                />
-                <Skeleton className="h-3.5 w-20" />
-                <Skeleton className="h-3.5 w-16" />
-                <Skeleton className="h-3.5 w-8" />
-                <Skeleton className="h-3.5 w-20" />
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* Time Logs By Ticket */}
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-5 w-40" />
-            <Skeleton className="mt-1 h-3 w-56" />
-          </CardHeader>
-          <div className="overflow-x-auto">
-            <div className="bg-muted/40 grid grid-cols-5 gap-3 border-b px-3 py-2">
-              {['Ticket', 'Customer', 'Entries', 'Logged', 'Latest'].map(
-                (h) => (
-                  <Skeleton key={h} className="h-3 w-full max-w-[48px]" />
-                ),
-              )}
-            </div>
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={i}
-                className="grid grid-cols-5 gap-3 border-b px-3 py-3 last:border-b-0"
-              >
-                <Skeleton
-                  className={`h-3.5 ${i % 2 === 0 ? 'w-28' : 'w-36'}`}
-                />
-                <Skeleton className="h-3.5 w-20" />
-                <Skeleton className="h-3.5 w-8" />
-                <Skeleton className="h-3.5 w-10" />
-                <Skeleton className="h-3.5 w-20" />
-              </div>
-            ))}
-          </div>
-        </Card>
       </div>
     </div>
   );
