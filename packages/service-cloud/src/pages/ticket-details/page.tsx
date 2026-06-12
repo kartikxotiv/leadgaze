@@ -15,8 +15,10 @@ import {
   Inbox,
   Mail,
   Paperclip,
+  Pencil,
   Tag,
   Timer,
+  Trash2,
   UserCheck,
   UserRound,
 } from 'lucide-react';
@@ -24,6 +26,16 @@ import { toast } from 'sonner';
 
 import { CoreEmailReplyDialog, CoreEntityPanel } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@kit/ui/alert-dialog';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import {
@@ -34,6 +46,7 @@ import {
   CardTitle,
 } from '@kit/ui/card';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@kit/ui/dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import {
@@ -45,6 +58,14 @@ import {
 } from '@kit/ui/select';
 import { Separator } from '@kit/ui/separator';
 import { Skeleton } from '@kit/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@kit/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
 
@@ -55,6 +76,8 @@ import {
   logServiceCloudTicketTimeService,
   updateServiceCloudResourceService,
 } from '../../services';
+import CustomTableContainer from '@kit/ui/custom-table-container';
+import { PageBody } from '@kit/ui/page';
 
 type LookupOption = {
   id: string;
@@ -131,6 +154,15 @@ export function ServiceCloudTicketDetailPage({
     hours: '',
     minutes: '',
     description: '',
+    activities: '',
+  });
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
+  const [deletingLogId, setDeletingLogId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    hours: '',
+    minutes: '',
+    description: '',
+    activities: '',
   });
   const [replyEmail, setReplyEmail] = useState<any | null>(null);
 
@@ -169,15 +201,62 @@ export function ServiceCloudTicketDetailPage({
       return logServiceCloudTicketTimeService(workspaceId, ticketId, {
         durationSeconds,
         description: timeForm.description,
+        activities: timeForm.activities,
       });
     },
     onSuccess: async () => {
       toast.success('Time logged');
-      setTimeForm({ hours: '', minutes: '', description: '' });
+      setTimeForm({ hours: '', minutes: '', description: '', activities: '' });
       await queryClient.invalidateQueries({ queryKey });
     },
     onError: (error: any) => toast.error(error.message || 'Failed to log time'),
   });
+
+  const deleteTimeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return deleteServiceCloudResourceService('time-entries', workspaceId, id);
+    },
+    onSuccess: async () => {
+      toast.success('Time entry deleted successfully');
+      setDeletingLogId(null);
+      await queryClient.invalidateQueries({ queryKey });
+    },
+    onError: () => toast.error('Failed to delete time entry'),
+  });
+
+  const updateTimeMutation = useMutation({
+    mutationFn: () => {
+      const durationSeconds =
+        Number(editForm.hours || 0) * 3600 + Number(editForm.minutes || 0) * 60;
+
+      return updateServiceCloudResourceService('time-entries', {
+        id: editingLogId,
+        workspace_id: workspaceId,
+        duration_seconds: durationSeconds,
+        description: editForm.description,
+        activities: editForm.activities,
+      });
+    },
+    onSuccess: async () => {
+      toast.success('Time entry updated');
+      setEditingLogId(null);
+      await queryClient.invalidateQueries({ queryKey });
+    },
+    onError: (error: any) =>
+      toast.error(error.message || 'Failed to update time entry'),
+  });
+
+  const handleEditClick = (entry: any) => {
+    const hours = Math.floor((entry.duration_seconds || 0) / 3600);
+    const minutes = Math.round(((entry.duration_seconds || 0) % 3600) / 60);
+    setEditForm({
+      hours: hours > 0 ? String(hours) : '',
+      minutes: minutes > 0 ? String(minutes) : '',
+      description: entry.description || '',
+      activities: entry.activities || '',
+    });
+    setEditingLogId(entry.id);
+  };
 
   const assigneeMutation = useMutation({
     mutationFn: async ({
@@ -494,6 +573,18 @@ export function ServiceCloudTicketDetailPage({
                             />
                           </Field>
                         </div>
+                        <Field label="Activities">
+                          <Input
+                            value={timeForm.activities}
+                            onChange={(event) =>
+                              setTimeForm((prev) => ({
+                                ...prev,
+                                activities: event.target.value,
+                              }))
+                            }
+                            placeholder="What activities did you perform?"
+                          />
+                        </Field>
                         <Field label="Description">
                           <Textarea
                             value={timeForm.description}
@@ -530,26 +621,67 @@ export function ServiceCloudTicketDetailPage({
                             compact
                           />
                         ) : (
-                          timeEntries.map((entry: any) => (
-                            <div
-                              key={entry.id}
-                              className="rounded-xl border p-4"
-                            >
-                              <div className="flex items-center justify-between gap-3">
-                                <span className="font-semibold">
-                                  {formatDuration(entry.duration_seconds)}
-                                </span>
-                                <span className="text-muted-foreground text-xs">
-                                  {entry.logged_date}
-                                </span>
-                              </div>
-                              {entry.description ? (
-                                <p className="text-muted-foreground mt-2 text-sm">
-                                  {entry.description}
-                                </p>
-                              ) : null}
-                            </div>
-                          ))
+                          <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+            <CustomTableContainer>
+              <div className="max-h-[295px] overflow-y-auto scrollbar-thin">
+                <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="w-[80px]">S. No.</TableHead>
+                                  <TableHead className="max-w-[150px]">Activities</TableHead>
+                                  <TableHead className="max-w-[200px]">Description</TableHead>
+                                  <TableHead className="w-[180px]">Date &amp; Time Log</TableHead>
+                                  <TableHead className="w-[100px] text-center"></TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {timeEntries.map((entry: any, index: number) => (
+                                  <TableRow key={entry.id}>
+                                    <TableCell>{index + 1}</TableCell>
+                                    <TableCell className="max-w-[150px] truncate" title={entry.activities || ''}>
+                                      {entry.activities || '-'}
+                                    </TableCell>
+                                    <TableCell className="max-w-[200px] truncate" title={entry.description || ''}>
+                                      {entry.description || '-'}
+                                    </TableCell>
+                                    <TableCell className="w-[180px]">
+                                      <div className="flex items-center gap-2">
+                                        <span className="whitespace-nowrap">
+                                          {entry.logged_date || formatDateTime(entry.created_at)}
+                                        </span>
+                                        <Badge variant="secondary" className="whitespace-nowrap">
+                                          {formatDuration(entry.duration_seconds)}
+                                        </Badge>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="w-[100px] text-center">
+                                      <div className="flex items-center justify-end gap-1">
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => handleEditClick(entry)}
+                                        >
+                                          <Pencil className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="text-destructive hover:bg-destructive/10"
+                                          onClick={() => setDeletingLogId(entry.id)}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                </Table>
+              </div>
+            </CustomTableContainer>
+                          </div>
+                          </PageBody> 
                         )}
                       </div>
                     </CardWidgetContainer>
@@ -799,6 +931,108 @@ export function ServiceCloudTicketDetailPage({
         accounts={emailAccounts}
         templateContext={ticketTemplateContext}
       />
+
+      <Dialog
+        open={Boolean(editingLogId)}
+        onOpenChange={(open) => {
+          if (!open) setEditingLogId(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Time Entry</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Hours">
+                <Input
+                  type="number"
+                  min="0"
+                  value={editForm.hours}
+                  onChange={(event) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      hours: event.target.value,
+                    }))
+                  }
+                />
+              </Field>
+              <Field label="Minutes">
+                <Input
+                  type="number"
+                  min="0"
+                  value={editForm.minutes}
+                  onChange={(event) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      minutes: event.target.value,
+                    }))
+                  }
+                />
+              </Field>
+            </div>
+            <Field label="Activities">
+              <Input
+                value={editForm.activities}
+                onChange={(event) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    activities: event.target.value,
+                  }))
+                }
+                placeholder="What activities did you perform?"
+              />
+            </Field>
+            <Field label="Description">
+              <Textarea
+                value={editForm.description}
+                onChange={(event) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    description: event.target.value,
+                  }))
+                }
+                placeholder="What did you work on?"
+              />
+            </Field>
+            <Button
+              className="w-full"
+              disabled={updateTimeMutation.isPending}
+              onClick={() => updateTimeMutation.mutate()}
+            >
+              <Clock3 className="mr-2 h-4 w-4" />
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={Boolean(deletingLogId)}
+        onOpenChange={(open) => !open && setDeletingLogId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the time entry. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingLogId) {
+                  deleteTimeMutation.mutate(deletingLogId);
+                }
+              }}
+            >
+              Yes, delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

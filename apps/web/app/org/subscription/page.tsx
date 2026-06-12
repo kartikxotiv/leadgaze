@@ -467,11 +467,8 @@ export default function OrgSubscriptionPage() {
       <header className="border-border bg-card/80 sticky top-0 z-40 border-b backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <AppLogo href={null} collapsed />
+            <AppLogo href={null} variant="marketing" className="w-[100px]"/>
             <div className="flex items-center gap-2">
-              <span className="text-foreground text-sm font-semibold">
-                Leadgaze
-              </span>
               <span className="text-muted-foreground text-xs">/</span>
               <span className="text-muted-foreground text-xs">
                 Subscription
