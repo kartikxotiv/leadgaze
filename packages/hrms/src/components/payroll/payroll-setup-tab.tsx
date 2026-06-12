@@ -42,14 +42,14 @@ export function PayrollSetupTab(props: {
 }) {
   return (
     <TabsContent value="setup" className="mt-0">
-      <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        <div className="grid gap-3">
+      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+        <div className="grid gap-2">
           <PayrollTableHeader
             title="Components"
             description="Reusable payroll heads like Basic, HRA, PF, bonus, and reimbursements."
             action={
               props.canEdit ? (
-                <Button size="sm" onClick={props.onCreateComponent}>
+                <Button onClick={props.onCreateComponent}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add Component
                 </Button>
@@ -59,13 +59,13 @@ export function PayrollSetupTab(props: {
 
           <CustomTableContainer>
             <Table>
-              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+              <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Taxable?</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="bg-card sticky right-0 px-4 text-right">
+                  <TableHead className="sticky right-0 px-4 text-right">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -84,7 +84,7 @@ export function PayrollSetupTab(props: {
                           label={component.is_active ? 'Live' : 'Inactive'}
                         />
                       </TableCell>
-                      <TableCell className="bg-card sticky right-0 px-4 text-right">
+                      <TableCell className="sticky right-0 px-4 text-right">
                         {props.canEdit && (
                           <div className="flex justify-end gap-1">
                             <Button
@@ -128,7 +128,7 @@ export function PayrollSetupTab(props: {
             description="Default templates for common roles before employee-level overrides."
             action={
               props.canEdit ? (
-                <Button size="sm" onClick={props.onCreateStructure}>
+                <Button onClick={props.onCreateStructure}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add Structure
                 </Button>
@@ -138,19 +138,20 @@ export function PayrollSetupTab(props: {
 
           <CustomTableContainer>
             <Table>
-              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+              <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Currency</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="bg-card sticky right-0 px-4 text-right">
+                  <TableHead className="sticky right-0 px-4 text-right">
                     Actions
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {props.salaryStructures.map((item) => (
+                {props.salaryComponents.length > 0 ? (
+                  props.salaryStructures.map((item) => (
                   <TableRow key={item.id} className="hover:bg-muted/50">
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell>{item.description ?? '-'}</TableCell>
@@ -160,7 +161,7 @@ export function PayrollSetupTab(props: {
                         label={item.is_active ? 'Live' : 'Inactive'}
                       />
                     </TableCell>
-                    <TableCell className="bg-card sticky right-0 px-4 text-right">
+                    <TableCell className="sticky right-0 px-4 text-right">
                       {props.canEdit && (
                         <div className="flex justify-end gap-1">
                           <Button
@@ -194,7 +195,13 @@ export function PayrollSetupTab(props: {
                       )}
                     </TableCell>
                   </TableRow>
-                ))}
+                ))) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-6 text-center">
+                      No Data found
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </CustomTableContainer>
@@ -212,8 +219,8 @@ function PayrollTableHeader(props: {
   return (
     <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-start sm:justify-between">
       <div>
-        <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <h2 className="primary-heading leading-tight text-leadgaze-dark dark:text-white">{props.title}</h2>
+        <p className="primary-text-regular text-muted-foreground mt-1">
           {props.description}
         </p>
       </div>

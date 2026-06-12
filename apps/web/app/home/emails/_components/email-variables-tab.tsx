@@ -75,7 +75,7 @@ export function EmailVariablesTab() {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Full-width search / filter / actions toolbar */}
                     <div className="w-full max-w-full min-w-0 shrink-0 border-b">
                       <ListToolBar

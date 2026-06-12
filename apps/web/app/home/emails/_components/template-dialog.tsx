@@ -151,7 +151,7 @@ export function TemplateDialog({
             </p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex flex-col gap-2">
               {/* <div className="flex items-center justify-between">
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">System Variables</Label>

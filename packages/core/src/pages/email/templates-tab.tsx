@@ -89,7 +89,7 @@ export function CoreEmailTemplatesTab({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Full-width search / filter / actions toolbar */}
               <div className="w-full max-w-full min-w-0 shrink-0 border-b">
                 <ListToolBar
@@ -283,7 +283,7 @@ function CoreTemplateDialog({
               onChange={(event) => setSubject(event.target.value)}
             />
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               {customVariables.length > 0 ? (
                 customVariables.map((variable: any) => {

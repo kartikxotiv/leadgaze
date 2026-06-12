@@ -27,21 +27,21 @@ export function RecruitmentInterviewsTab(props: {
   onEdit: (interview: RecruitmentInterviewSummary) => void;
 }) {
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-2">
       <RecruitmentTableHeader
         title="Interviews"
         description="Schedule interview rounds, assign interviewers, and monitor pending feedback."
       />
       <CustomTableContainer>
         <Table>
-          <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+          <TableHeader>
             <TableRow>
               <TableHead>Interview</TableHead>
               <TableHead>Candidate</TableHead>
               <TableHead>Schedule</TableHead>
               <TableHead>Interviewer</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="bg-card sticky right-0 px-4 text-right">
+              <TableHead className="sticky right-0 px-4 text-right">
                 Actions
               </TableHead>
             </TableRow>
@@ -71,7 +71,7 @@ export function RecruitmentInterviewsTab(props: {
                       label={formatLabel(interview.status)}
                     />
                   </TableCell>
-                  <TableCell className="bg-card sticky right-0 px-4 text-right">
+                  <TableCell className="sticky right-0 px-4 text-right">
                     <div className="flex justify-end gap-1">
                       {props.canScheduleInterviews ? (
                         <>
@@ -122,8 +122,8 @@ export function RecruitmentInterviewsTab(props: {
 function RecruitmentTableHeader(props: { description: string; title: string }) {
   return (
     <div className="px-1">
-      <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
-      <p className="text-muted-foreground mt-1 text-sm">{props.description}</p>
+      <h2 className="primary-heading leading-tight text-leadgaze-dark dark:text-white">{props.title}</h2>
+      <p className="primary-text-regular text-muted-foreground mt-1">{props.description}</p>
     </div>
   );
 }

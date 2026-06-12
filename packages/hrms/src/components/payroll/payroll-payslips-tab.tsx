@@ -38,7 +38,7 @@ export function PayrollPayslipsTab(props: {
 
   return (
     <TabsContent value="payslips" className="mt-0">
-      <div className="grid gap-3">
+      <div className="grid gap-2">
         <PayrollTableHeader
           title="Generated Payslips"
           description="Official payroll records for your employees. Click any row to see the breakdown."
@@ -46,14 +46,14 @@ export function PayrollPayslipsTab(props: {
 
         <CustomTableContainer>
           <Table>
-            <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+            <TableHeader>
               <TableRow>
                 <TableHead>Employee</TableHead>
                 <TableHead>Period</TableHead>
                 <TableHead>Gross Pay</TableHead>
                 <TableHead>Net Pay</TableHead>
                 <TableHead>Generated At</TableHead>
-                <TableHead className="bg-card sticky right-0 px-4 text-right">
+                <TableHead className="sticky right-0 px-4 text-right">
                   Action
                 </TableHead>
               </TableRow>
@@ -76,7 +76,7 @@ export function PayrollPayslipsTab(props: {
                   <TableCell>
                     {new Date(item.generated_at).toLocaleDateString()}
                   </TableCell>
-                  <TableCell className="bg-card sticky right-0 px-4 text-right">
+                  <TableCell className="sticky right-0 px-4 text-right">
                     <Button size="sm" variant="ghost">
                       View Details
                     </Button>
@@ -101,8 +101,8 @@ export function PayrollPayslipsTab(props: {
 function PayrollTableHeader(props: { description: string; title: string }) {
   return (
     <div className="px-1">
-      <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
-      <p className="text-muted-foreground mt-1 text-sm">{props.description}</p>
+      <h2 className="primary-heading leading-tight text-leadgaze-dark dark:text-white">{props.title}</h2>
+      <p className="primary-text-regular text-muted-foreground mt-1">{props.description}</p>
     </div>
   );
 }

@@ -33,15 +33,15 @@ export function PayrollRunsTab(props: {
 
   return (
     <TabsContent value="runs" className="mt-0">
-      <div className="grid gap-6">
-        <div className="grid gap-3">
+      <div className="grid gap-4">
+        <div className="grid gap-2">
           <PayrollTableHeader
             title="Payroll Runs"
             description="A payroll run processes one period and creates employee-level entries before payslips are published."
           />
           <CustomTableContainer>
             <Table>
-              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+              <TableHeader>
                 <TableRow>
                   <TableHead>Period</TableHead>
                   <TableHead>Dates</TableHead>
@@ -49,7 +49,7 @@ export function PayrollRunsTab(props: {
                   <TableHead>Entries</TableHead>
                   <TableHead>Payout</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="bg-card sticky right-0 px-4 text-right">
+                  <TableHead className="sticky right-0 px-4 text-right">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -76,7 +76,7 @@ export function PayrollRunsTab(props: {
                       <TableCell>
                         <PayrollStatusBadge label={item.status} />
                       </TableCell>
-                      <TableCell className="bg-card sticky right-0 px-4 text-right">
+                      <TableCell className="sticky right-0 px-4 text-right">
                         {props.canApprove && item.status === 'draft' && (
                           <Button
                             size="sm"
@@ -106,7 +106,7 @@ export function PayrollRunsTab(props: {
           </CustomTableContainer>
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+        <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
           <CardWidgetContainer
             title="Selected Run Summary"
             desc="Click a payroll run above to review its totals and employee-level calculations."
@@ -174,14 +174,14 @@ export function PayrollRunsTab(props: {
             )}
           </CardWidgetContainer>
 
-          <div className="grid gap-3">
+          <div className="grid gap-2">
             <PayrollTableHeader
               title="Employee Breakdown"
               description="Detailed employee calculations for the selected payroll run."
             />
             <CustomTableContainer>
               <Table>
-                <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                <TableHeader>
                   <TableRow>
                     <TableHead>Employee</TableHead>
                     <TableHead>Earnings</TableHead>
@@ -241,7 +241,7 @@ export function PayrollRunsTab(props: {
                   <PayrollStatusBadge label={entry.status} />
                 </div>
                 <Table>
-                  <TableHeader className="bg-card">
+                  <TableHeader>
                     <TableRow>
                       <TableHead>Component</TableHead>
                       <TableHead>Source</TableHead>
@@ -292,8 +292,8 @@ export function PayrollRunsTab(props: {
 function PayrollTableHeader(props: { description: string; title: string }) {
   return (
     <div className="px-1">
-      <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
-      <p className="text-muted-foreground mt-1 text-sm">{props.description}</p>
+      <h2 className="primary-heading leading-tight text-leadgaze-dark dark:text-white">{props.title}</h2>
+      <p className="primary-text-regular text-muted-foreground mt-1">{props.description}</p>
     </div>
   );
 }

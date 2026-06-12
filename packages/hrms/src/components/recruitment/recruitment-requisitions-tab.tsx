@@ -31,14 +31,14 @@ export function RecruitmentRequisitionsTab(props: {
       />
       <CustomTableContainer>
         <Table>
-          <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+          <TableHeader>
             <TableRow>
               <TableHead>Requisition</TableHead>
               <TableHead>Department</TableHead>
               <TableHead>Owner</TableHead>
               <TableHead>Pipeline</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="bg-card sticky right-0 px-4 text-right">
+              <TableHead className="sticky right-0 px-4 text-right">
                 Actions
               </TableHead>
             </TableRow>
@@ -69,7 +69,7 @@ export function RecruitmentRequisitionsTab(props: {
                       label={formatLabel(requisition.status)}
                     />
                   </TableCell>
-                  <TableCell className="bg-card sticky right-0 px-4 text-right">
+                  <TableCell className="sticky right-0 px-4 text-right">
                     {props.canEditRequisition ? (
                       <div className="flex justify-end gap-1">
                         <Button
@@ -109,8 +109,8 @@ export function RecruitmentRequisitionsTab(props: {
 function RecruitmentTableHeader(props: { description: string; title: string }) {
   return (
     <div className="px-1">
-      <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
-      <p className="text-muted-foreground mt-1 text-sm">{props.description}</p>
+      <h2 className="primary-heading leading-tight text-leadgaze-dark dark:text-white">{props.title}</h2>
+      <p className="primary-text-regular text-muted-foreground mt-1">{props.description}</p>
     </div>
   );
 }

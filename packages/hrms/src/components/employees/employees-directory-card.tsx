@@ -128,7 +128,7 @@ export function EmployeesDirectoryCard(props: {
       }
     >
       <Table>
-        <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+        <TableHeader>
           <TableRow>
             {props.isColumnVisible('sno') && (
               <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
@@ -153,7 +153,7 @@ export function EmployeesDirectoryCard(props: {
             )}
             {props.isColumnVisible('email') && <TableHead>Email</TableHead>}
             {props.isColumnVisible('phone') && <TableHead>Phone</TableHead>}
-            <TableHead className="bg-card sticky right-0 px-4 text-right">
+            <TableHead className="sticky right-0 px-4 text-right">
               Actions
             </TableHead>
           </TableRow>
@@ -271,7 +271,7 @@ export function EmployeesDirectoryCard(props: {
                   {employee.phone ?? '-'}
                 </TableCell>
               )}
-              <TableCell className="bg-card sticky right-0 px-4 text-right">
+              <TableCell className="sticky right-0 px-4 text-right">
                 {canEdit || canDelete ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
