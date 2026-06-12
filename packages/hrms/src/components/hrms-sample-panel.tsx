@@ -61,7 +61,7 @@ function Metric(props: { label: string; value: string; hint: string }) {
     <div className="rounded-lg border p-4">
       <p className="text-muted-foreground text-xs uppercase tracking-wide">{props.label}</p>
       <p className="mt-2 text-2xl font-semibold">{props.value}</p>
-      <p className="text-muted-foreground mt-1 text-sm">{props.hint}</p>
+      <p className="primary-text-regular text-muted-foreground mt-1">{props.hint}</p>
     </div>
   );
 }

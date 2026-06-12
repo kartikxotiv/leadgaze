@@ -29,13 +29,13 @@ export function PayrollPayItemsTab(props: {
 }) {
   return (
     <TabsContent value="pay-items" className="mt-0">
-      <div className="grid gap-3">
+      <div className="grid gap-2">
         <PayrollTableHeader
           title="One-Time Pay Items"
           description="Use this for bonus, arrears, reimbursements, and recoveries. Do not mix these into recurring salary breakup."
           action={
             props.canEdit ? (
-              <Button size="sm" onClick={props.onCreateItem}>
+              <Button onClick={props.onCreateItem}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Item
               </Button>
@@ -45,14 +45,14 @@ export function PayrollPayItemsTab(props: {
 
         <CustomTableContainer>
           <Table>
-            <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+            <TableHeader>
               <TableRow>
                 <TableHead>Employee</TableHead>
                 <TableHead>Item</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Payable In</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="bg-card sticky right-0 px-4 text-right">
+                <TableHead className="sticky right-0 px-4 text-right">
                   Actions
                 </TableHead>
               </TableRow>
@@ -70,7 +70,7 @@ export function PayrollPayItemsTab(props: {
                     <TableCell>
                       <PayrollStatusBadge label={item.status} />
                     </TableCell>
-                    <TableCell className="bg-card sticky right-0 px-4 text-right">
+                    <TableCell className="sticky right-0 px-4 text-right">
                       {props.canEdit && (
                         <div className="flex justify-end gap-1">
                           <Button
@@ -119,8 +119,8 @@ function PayrollTableHeader(props: {
   return (
     <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-start sm:justify-between">
       <div>
-        <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <h2 className="primary-heading leading-tight text-leadgaze-dark dark:text-white">{props.title}</h2>
+        <p className="primary-text-regular text-muted-foreground mt-1">
           {props.description}
         </p>
       </div>

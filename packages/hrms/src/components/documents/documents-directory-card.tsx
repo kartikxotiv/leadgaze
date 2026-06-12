@@ -45,7 +45,7 @@ export function DocumentsDirectoryCard(props: {
   return (
     <CustomTableContainer>
       <Table>
-        <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+        <TableHeader>
           <TableRow>
             {props.isColumnVisible('sno') && (
               <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
@@ -64,7 +64,7 @@ export function DocumentsDirectoryCard(props: {
             )}
             {props.isColumnVisible('status') && <TableHead>Status</TableHead>}
             {props.isColumnVisible('view') && <TableHead>View</TableHead>}
-            <TableHead className="bg-card sticky right-0 px-4 text-right">
+            <TableHead className="sticky right-0 px-4 text-right">
               Actions
             </TableHead>
           </TableRow>
@@ -162,7 +162,7 @@ export function DocumentsDirectoryCard(props: {
                     </Button>
                   </TableCell>
                 )}
-                <TableCell className="bg-card sticky right-0 px-4 text-right">
+                <TableCell className="sticky right-0 px-4 text-right">
                   {canEdit || canDelete ? (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

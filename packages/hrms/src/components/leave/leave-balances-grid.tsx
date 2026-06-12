@@ -15,6 +15,7 @@ export function LeaveBalancesGrid(props: { balances: LeaveBalance[] }) {
             key={balance.leave_type.id}
             title={balance.leave_type.name}
             contentClassName="space-y-3 p-5"
+            className='border-b-0'
             icon2={
               balance.leave_type.requires_hr_approval ? (
                 <Badge variant={'outline'}>Needs HR Approval</Badge>
@@ -69,10 +70,11 @@ export function LeaveBalancesGrid(props: { balances: LeaveBalance[] }) {
         ))
       ) : (
         <CardWidgetContainer
-          className="md:col-span-2 xl:col-span-4"
+          className="md:col-span-2 xl:col-span-4 border-b-0"
           title="No leave balances available"
           desc="Balances appear once leave types are configured and your account is linked to an employee profile."
           contentClassName="hidden"
+          
         >
           <div />
         </CardWidgetContainer>

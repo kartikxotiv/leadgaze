@@ -38,7 +38,7 @@ export function LeaveRequestsTab(props: {
       />
       <CustomTableContainer>
         <Table>
-          <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+          <TableHeader>
             <TableRow>
               <TableHead>Type</TableHead>
               <TableHead>From</TableHead>
@@ -47,7 +47,7 @@ export function LeaveRequestsTab(props: {
               <TableHead>Reason</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Approver</TableHead>
-              <TableHead className="bg-card sticky right-0 px-4 text-right">
+              <TableHead className="sticky right-0 px-4 text-right">
                 Action
               </TableHead>
             </TableRow>
@@ -126,7 +126,7 @@ export function LeaveApprovalsTab(props: {
       />
       <CustomTableContainer>
         <Table>
-          <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+          <TableHeader>
             <TableRow>
               <TableHead>Employee</TableHead>
               <TableHead>Type</TableHead>
@@ -135,7 +135,7 @@ export function LeaveApprovalsTab(props: {
               <TableHead>Days</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Reason</TableHead>
-              <TableHead className="bg-card sticky right-0 px-4 text-right">
+              <TableHead className="sticky right-0 px-4 text-right">
                 Action
               </TableHead>
             </TableRow>
@@ -219,9 +219,9 @@ export function LeaveApprovalsTab(props: {
 
 function LeaveTableHeader(props: { description: string; title: string }) {
   return (
-    <div className="mb-3 px-1">
-      <h2 className="text-base leading-tight font-semibold">{props.title}</h2>
-      <p className="text-muted-foreground mt-1 text-sm">{props.description}</p>
+    <div className="mb-2 px-1">
+      <h2 className="primary-heading leading-tight text-leadgaze-dark dark:text-white">{props.title}</h2>
+      <p className="primary-text-regular text-muted-foreground mt-1">{props.description}</p>
     </div>
   );
 }

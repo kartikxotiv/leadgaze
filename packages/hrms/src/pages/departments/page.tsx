@@ -214,8 +214,8 @@ export function DepartmentsPage(props: {
   };
 
   return (
-    <section className="flex h-[100dvh] min-h-0 flex-col overflow-hidden">
-      <div className="bg-sidebar flex shrink-0 flex-col overflow-hidden">
+    <>
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
           className="bg-sidebar shrink-0"
           title={`Departments (${filteredDepartments.length})`}
@@ -227,9 +227,10 @@ export function DepartmentsPage(props: {
         >
           {props.headerActions}
         </PageHeader>
+      </div>
 
-        <div className="bg-sidebar w-full max-w-full min-w-0 overflow-x-auto pb-2">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2 pt-2">
+            <div className="flex flex-wrap items-center gap-2">
             <TableStatusMetricTab
               id="all"
               color="#4eacff"
@@ -265,7 +266,7 @@ export function DepartmentsPage(props: {
           </div>
         </div>
 
-        <div className="bg-sidebar w-full shrink-0 border-b pb-2">
+        <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
           <ListToolBar
             showSearch
             searchPlaceholder="Search departments..."
@@ -293,9 +294,9 @@ export function DepartmentsPage(props: {
             }
           />
         </div>
-      </div>
+      
 
-      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-3 pb-0">
+      <PageBody className="bg-sidebar sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
           <DepartmentsDirectoryCard
             departments={departments}
@@ -342,7 +343,7 @@ export function DepartmentsPage(props: {
         }}
         open={Boolean(departmentToDelete)}
       />
-    </section>
+    </>
   );
 }
 

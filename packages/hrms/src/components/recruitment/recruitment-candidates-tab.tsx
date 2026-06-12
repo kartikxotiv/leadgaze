@@ -29,21 +29,21 @@ export function RecruitmentCandidatesTab(props: {
   onEdit: (candidate: RecruitmentCandidateSummary) => void;
 }) {
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-2">
       <RecruitmentTableHeader
         title="Candidates"
         description="Track status-wise candidate progress, ownership, notes, and feedback context."
       />
       <CustomTableContainer>
         <Table>
-          <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+          <TableHeader>
             <TableRow>
               <TableHead>Candidate</TableHead>
               <TableHead>Requisition</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Activity</TableHead>
               <TableHead>Owner</TableHead>
-              <TableHead className="bg-card sticky right-0 px-4 text-right">
+              <TableHead className="sticky right-0 px-4 text-right">
                 Actions
               </TableHead>
             </TableRow>
@@ -72,7 +72,7 @@ export function RecruitmentCandidatesTab(props: {
                     feedback
                   </TableCell>
                   <TableCell>{candidate.owner_employee?.name ?? '-'}</TableCell>
-                  <TableCell className="bg-card sticky right-0 px-4 text-right">
+                  <TableCell className="sticky right-0 px-4 text-right">
                     <div className="flex justify-end gap-1">
                       {props.canManageCandidates ? (
                         <>
@@ -136,8 +136,8 @@ export function RecruitmentCandidatesTab(props: {
 function RecruitmentTableHeader(props: { description: string; title: string }) {
   return (
     <div className="px-1">
-      <h2 className="text-base font-semibold leading-tight">{props.title}</h2>
-      <p className="text-muted-foreground mt-1 text-sm">{props.description}</p>
+      <h2 className="primary-heading leading-tight text-leadgaze-dark dark:text-white">{props.title}</h2>
+      <p className="primary-text-regular text-muted-foreground mt-1">{props.description}</p>
     </div>
   );
 }

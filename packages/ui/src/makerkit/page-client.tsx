@@ -91,7 +91,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        'flex items-center justify-between pt-3 pb-0 backdrop-blur-md',
+        'flex items-center justify-between pt-0 pb-0 backdrop-blur-md',
         {
           'top-0': !isHeaderLayout,
           'top-14': isHeaderLayout,

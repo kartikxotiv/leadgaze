@@ -408,7 +408,7 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
                 return (
                   <div
                     key={task.id}
-                    className="flex items-center justify-between p-5 transition-colors hover:bg-slate-50/30 xl:p-3 2xl:p-5 dark:hover:bg-zinc-800/30 border-b border-gray-100 last:border-0"
+                    className="flex items-center justify-between p-5 transition-colors hover:bg-slate-50/30 xl:p-3 2xl:p-5 dark:hover:bg-zinc-800/30 border-b border-gray-300 last:border-0"
                   >
                     <div className="flex items-start gap-4">
                       <div className="mt-0.5">
