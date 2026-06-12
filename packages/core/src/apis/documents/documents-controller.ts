@@ -103,6 +103,29 @@ async function parseDocumentRequest(request: Request): Promise<ParsedDocumentReq
       }
     }
 
+    const relations = Array.isArray(parsedRelations)
+      ? parsedRelations
+          .map((relation) => {
+            const relationRecord = relation as Record<string, any>;
+            return {
+              entity_type: relationRecord.entity_type ?? relationRecord.entityType,
+              entity_id: relationRecord.entity_id ?? relationRecord.entityId,
+            };
+          })
+          .filter((relation: DocumentRelation) => relation.entity_type && relation.entity_id)
+      : [];
+
+    const entityType = (formData.get('entity_type') ?? formData.get('entityType'))?.toString() ?? null;
+    const entityId = (formData.get('entity_id') ?? formData.get('entityId'))?.toString() ?? null;
+    if (entityType && entityId) {
+      relations.unshift({ entity_type: entityType, entity_id: entityId });
+    }
+
+    const unique = new Map<string, DocumentRelation>();
+    relations.forEach((relation) => {
+      unique.set(`${relation.entity_type}:${relation.entity_id}`, relation);
+    });
+
     return {
       workspaceId: (formData.get('workspace_id') ?? formData.get('workspaceId'))?.toString() ?? null,
       id: (formData.get('id') ?? formData.get('document_id'))?.toString() ?? null,
@@ -118,17 +141,7 @@ async function parseDocumentRequest(request: Request): Promise<ParsedDocumentReq
       })(),
       filePath: (formData.get('file_path') ?? formData.get('filePath'))?.toString() ?? null,
       file: file instanceof File ? file : null,
-      relations: Array.isArray(parsedRelations)
-        ? parsedRelations
-            .map((relation) => {
-              const relationRecord = relation as Record<string, any>;
-              return {
-                entity_type: relationRecord.entity_type ?? relationRecord.entityType,
-                entity_id: relationRecord.entity_id ?? relationRecord.entityId,
-              };
-            })
-            .filter((relation: DocumentRelation) => relation.entity_type && relation.entity_id)
-        : [],
+      relations: Array.from(unique.values()),
     };
   }
 
