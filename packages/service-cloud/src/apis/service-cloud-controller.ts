@@ -2,8 +2,18 @@
 
 import { NextResponse } from 'next/server';
 
-import { catchAsync, successDataResponse } from '../utils/response-handler';
+import {
+  ApiError,
+  catchAsync,
+  successDataResponse,
+} from '../utils/response-handler';
 import { assertServiceCloudWorkspaceAccess } from './_shared/workspace-access';
+
+type UniqueResourceField = {
+  field: string;
+  label: string;
+  defaultValue?: string | number | null;
+};
 
 const RESOURCE_CONFIG = {
   organizations: {
@@ -23,18 +33,23 @@ const RESOURCE_CONFIG = {
     softDelete: false,
     orderBy: 'display_order',
     searchColumns: ['name', 'status_key'],
+    uniqueFields: [{ field: 'display_order', label: 'Order', defaultValue: 0 }],
   },
   'ticket-priorities': {
     table: 'ticket_priorities',
     softDelete: false,
     orderBy: 'severity_order',
     searchColumns: ['name', 'priority_key'],
+    uniqueFields: [
+      { field: 'severity_order', label: 'Severity', defaultValue: 0 },
+    ],
   },
   'ticket-categories': {
     table: 'ticket_categories',
     softDelete: false,
     orderBy: 'display_order',
     searchColumns: ['name', 'category_key'],
+    uniqueFields: [{ field: 'display_order', label: 'Order', defaultValue: 0 }],
   },
   tickets: {
     table: 'tickets',
@@ -58,6 +73,7 @@ const RESOURCE_CONFIG = {
 } as const;
 
 type ResourceKey = keyof typeof RESOURCE_CONFIG;
+type ResourceConfig = (typeof RESOURCE_CONFIG)[ResourceKey];
 
 const ALLOWED_RESOURCES = Object.keys(RESOURCE_CONFIG) as ResourceKey[];
 
@@ -72,6 +88,65 @@ function cleanPayload(payload: Record<string, unknown>) {
       .filter(([, value]) => value !== undefined)
       .map(([key, value]) => [key, value === '' ? null : value]),
   );
+}
+
+function getUniqueFields(
+  config: ResourceConfig,
+): readonly UniqueResourceField[] {
+  return 'uniqueFields' in config ? config.uniqueFields : [];
+}
+
+async function assertUniqueResourceFields({
+  supabase,
+  config,
+  workspaceId,
+  payload,
+  currentId,
+}: {
+  supabase: any;
+  config: ResourceConfig;
+  workspaceId: string;
+  payload: Record<string, any>;
+  currentId?: string;
+}) {
+  for (const uniqueField of getUniqueFields(config)) {
+    const hasPayloadValue = Object.prototype.hasOwnProperty.call(
+      payload,
+      uniqueField.field,
+    );
+
+    if (
+      !hasPayloadValue &&
+      (currentId || uniqueField.defaultValue === undefined)
+    ) {
+      continue;
+    }
+
+    const value = hasPayloadValue
+      ? payload[uniqueField.field]
+      : uniqueField.defaultValue;
+
+    if (value === undefined || value === null || value === '') continue;
+
+    let query = supabase
+      .schema('service_cloud')
+      .from(config.table)
+      .select('id')
+      .eq('workspace_id', workspaceId)
+      .eq(uniqueField.field, value)
+      .limit(1);
+
+    if (currentId) {
+      query = query.neq('id', currentId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    if ((data ?? []).length > 0) {
+      throw new ApiError(`${uniqueField.label} cannot be repeated`, 409);
+    }
+  }
 }
 
 export const getServiceCloudResourceController = catchAsync(
@@ -272,6 +347,13 @@ export const createServiceCloudResourceController = catchAsync(
     const payload = cleanPayload(insertPayload);
     delete (payload as any).workspaceId;
 
+    await assertUniqueResourceFields({
+      supabase,
+      config,
+      workspaceId,
+      payload,
+    });
+
     const { data, error: insertError } = await (supabase as any)
       .schema('service_cloud')
       .from(config.table)
@@ -323,6 +405,14 @@ export const updateServiceCloudResourceController = catchAsync(
     delete (payload as any).id;
     delete (payload as any).workspaceId;
     delete (payload as any).workspace_id;
+
+    await assertUniqueResourceFields({
+      supabase,
+      config,
+      workspaceId,
+      payload,
+      currentId: body.id,
+    });
 
     const { data, error: updateError } = await (supabase as any)
       .schema('service_cloud')
