@@ -10,7 +10,6 @@ import {
   ArrowRight,
   ArrowUpRight,
   Box,
-  Clock,
   CreditCard,
   DollarSign,
   Headphones,
@@ -34,7 +33,6 @@ import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
 import { cn } from '@kit/ui/utils';
 
-import { AppLogo } from '~/components/app-logo';
 import { WorkspaceCheckWrapper } from '~/home/_components/workspace-check-wrapper';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getDashboardMetricsService } from '~/services/dashboard.service';
@@ -326,46 +324,11 @@ function ModuleSelectorPage() {
 
   // Multiple modules — show selector
   return (
-    <div className="bg-background min-h-screen">
-      {/* Top bar */}
-      <header className="border-border bg-card/80 sticky top-0 z-40 border-b backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <AppLogo href={null} variant="marketing" className="w-[100px]" />
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground text-xs">/</span>
-              <span className="text-muted-foreground text-xs">Platform</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {data.subscription?.status === 'trialing' &&
-              data.trial_days_remaining != null && (
-                <Badge
-                  variant="warning"
-                  className="cursor-pointer gap-1.5"
-                  onClick={() => router.push('/org/subscription')}
-                >
-                  <Clock className="h-3 w-3" />
-                  {data.trial_days_remaining}d trial left
-                </Badge>
-              )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => router.push('/org/subscription')}
-            >
-              <CreditCard className="h-3.5 w-3.5" />
-              Manage Plan
-            </Button>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen">
       {/* Hero */}
-      <div className="border-border from-primary/[0.03] border-b bg-gradient-to-b to-transparent">
-        <div className="mx-auto max-w-6xl px-6 py-10">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+      <div className="border-border from-primary/[0.03] border-b">
+        <div className="mx-auto">
+          {/* <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <div className="mb-2 flex items-center gap-2">
                 <Sparkles className="text-primary h-4 w-4" />
@@ -391,10 +354,10 @@ function ModuleSelectorPage() {
                 {enabledModules.length !== 1 ? 's' : ''} active
               </span>
             </div>
-          </div>
+          </div> */}
 
           {/* Module summary pills */}
-          <div className="mt-8 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
             {enabledModules.map((mod) => {
               const meta = getModuleMeta(mod.module_key);
               return (
@@ -437,7 +400,7 @@ function ModuleSelectorPage() {
       </div>
 
       {/* Module grid */}
-      <div className="mx-auto max-w-6xl px-6 py-8">
+      <div className="mx-auto py-8">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="primary-heading text-foreground">Available Modules</h2>
           <Button

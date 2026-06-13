@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 
 import { usePathname, useRouter } from 'next/navigation';
 
-import { Building2, Check, ChevronDown, Mail, Settings2 } from 'lucide-react';
+import { Building2, CreditCard, Mail, Settings2 } from 'lucide-react';
 
 import { CoreEmailSettingsPage } from '@kit/core/pages';
 import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
@@ -29,8 +29,15 @@ import { PageBody, PageHeader } from '@kit/ui/page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import OrgSubscriptionPage from '~/org/subscription/page';
 
 import { EmailAccountsSettings } from './_components/email-accounts-settings';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -146,6 +153,8 @@ function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
 
 export default function WorkspaceSettingsPage() {
   const { currentWorkspace: workspace, canAccess } = useRBAC();
+  const isAdmin = workspace?.role?.role_key === 'admin';
+
   const pathname = usePathname();
   const shouldUseWebEmailSettings = pathname === '/home/workspace-settings';
 
@@ -165,6 +174,15 @@ export default function WorkspaceSettingsPage() {
               <Settings2 className="mr-2 h-4 w-4" />
               General
             </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger
+                value="billing"
+                className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+              >
+                <CreditCard className="mr-2 h-4 w-4" />
+                Billing
+              </TabsTrigger>
+            )}
             <TabsTrigger
               value="emails"
               className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
@@ -176,6 +194,10 @@ export default function WorkspaceSettingsPage() {
 
           <TabsContent value="general">
             <WorkspaceManagement currentWorkspace={workspace} />
+          </TabsContent>
+
+          <TabsContent value="billing">
+            <OrgSubscriptionPage />
           </TabsContent>
 
           <TabsContent value="emails">
