@@ -1,2 +1,1 @@
-export {default} from '../../../opportunities/[id]/page'
-'
+export { default } from '../../../opportunities/[id]/page';
