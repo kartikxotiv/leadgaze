@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
   ArrowRight,
@@ -27,6 +27,7 @@ import {
   type WorkspaceSubscriptionStatus,
   getWorkspaceSubscriptionService,
 } from '@kit/core/services';
+import { getServiceCloudDashboardService } from '@kit/service-cloud';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
@@ -36,7 +37,10 @@ import { cn } from '@kit/ui/utils';
 import { AppLogo } from '~/components/app-logo';
 import { WorkspaceCheckWrapper } from '~/home/_components/workspace-check-wrapper';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { getDashboardMetricsService } from '~/services/dashboard.service';
 import { getSeatAssignmentsService } from '~/services/subscription.service';
+
+import { FullScreenLoader } from '../_components/Loader';
 
 // ─── Constants ───────────────────────────────────────────────────
 
@@ -140,6 +144,8 @@ function ModuleSelectorPage() {
   const { currentWorkspace } = useRBAC();
   const workspaceId = currentWorkspace?.id ?? '';
   const { data: authUser } = useUser();
+  const queryClient = useQueryClient();
+  const [isPageLoading, setIsPageLoading] = useState(true);
 
   const isOwner = Boolean(
     currentWorkspace?.owner_id &&
@@ -151,12 +157,16 @@ function ModuleSelectorPage() {
     queryKey: ['workspace-subscription', workspaceId],
     queryFn: () => getWorkspaceSubscriptionService(workspaceId),
     enabled: Boolean(workspaceId),
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
   });
 
   const { data: assignmentsData } = useQuery({
     queryKey: ['user-seat-assignments', workspaceId],
     queryFn: () => getSeatAssignmentsService(workspaceId),
-    enabled: Boolean(workspaceId),
+    enabled: Boolean(workspaceId && authUser?.id),
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
   });
 
   const userAssignedProductIds = useMemo(() => {
@@ -183,46 +193,71 @@ function ModuleSelectorPage() {
 
   // Auto-redirect logic
   useEffect(() => {
-    if (isLoading || !data) return;
-    if (!data.is_subscription_valid && data.is_trial_expired) return;
+    const handleRedirect = async () => {
+      if (isLoading || !data) return;
+      if (!data.is_subscription_valid && data.is_trial_expired) return;
 
-    const savedModule =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('selected_module')
-        : null;
+      const savedModule =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('selected_module')
+          : null;
 
-    if (savedModule) {
-      const isStillEnabled = enabledModules.some(
-        (m) => m.module_key === savedModule,
-      );
-      if (isStillEnabled) {
-        router.replace(getModuleRoute(savedModule));
-        return;
-      } else {
+      if (savedModule) {
+        const isStillEnabled = enabledModules.some(
+          (m) => m.module_key === savedModule,
+        );
+
+        if (isStillEnabled) {
+          router.replace(getModuleRoute(savedModule));
+          return;
+        }
+
         localStorage.removeItem('selected_module');
       }
-    }
 
-    if (enabledModules.length === 1) {
-      const mod = enabledModules[0];
-      if (mod) {
-        localStorage.setItem('selected_module', mod.module_key);
-        router.replace(getModuleRoute(mod.module_key));
+      if (enabledModules.length === 1) {
+        const mod = enabledModules[0];
+
+        if (mod) {
+          localStorage.setItem('selected_module', mod.module_key);
+          router.replace(getModuleRoute(mod.module_key));
+          return;
+        }
       }
-    }
-  }, [data, isLoading, enabledModules, router]);
+
+      setIsPageLoading(false);
+    };
+
+    handleRedirect();
+  }, [data, isLoading, enabledModules, router, workspaceId, queryClient]);
+
+  useEffect(() => {
+    if (!enabledModules.length && !workspaceId) return;
+
+    enabledModules.forEach((module) => {
+      switch (module.module_key) {
+        case 'sales':
+          queryClient.prefetchQuery({
+            queryKey: ['dashboard-metrics', workspaceId],
+            queryFn: () => getDashboardMetricsService(workspaceId),
+            staleTime: 5 * 60 * 1000,
+          });
+          break;
+
+        case 'service_cloud':
+          queryClient.prefetchQuery({
+            queryKey: ['service-cloud', 'dashboard', workspaceId],
+            queryFn: () => getServiceCloudDashboardService(workspaceId),
+            staleTime: 5 * 60 * 1000,
+          });
+          break;
+      }
+    });
+  }, [enabledModules, workspaceId, queryClient]);
 
   // Loading
-  if (isLoading || !data) {
-    return (
-      <div className="bg-background flex h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          {/* <AppLogo href={null} variant="marketing" /> */}
-          <Loader2 className="text-primary h-5 w-5 animate-spin" />
-          <p className="text-muted-foreground text-sm">Loading workspace...</p>
-        </div>
-      </div>
-    );
+  if (isLoading || !data || isPageLoading) {
+    return <FullScreenLoader />;
   }
 
   // No active subscription
@@ -296,7 +331,7 @@ function ModuleSelectorPage() {
       <header className="border-border bg-card/80 sticky top-0 z-40 border-b backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <AppLogo href={null} variant="marketing" className="w-[100px]"/>
+            <AppLogo href={null} variant="marketing" className="w-[100px]" />
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground text-xs">/</span>
               <span className="text-muted-foreground text-xs">Platform</span>
