@@ -4,7 +4,6 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '../../../lib/database.types';
-import { getHierarchyVisibleUserIds } from '../../../lib/permissions/hierarchy-utils';
 import {
   catchAsync,
   successDataResponse,
@@ -13,6 +12,8 @@ import {
 /**
  * GET /api/contacts
  * Fetch all contacts for a workspace
+ * Optimized: uses resolve_workspace_access RPC (1 DB call) instead of 5-8 sequential auth/hierarchy queries.
+ * Search pre-queries (account name + name match) run in parallel via Promise.all.
  */
 export const getContacts = catchAsync(
   async ({
@@ -47,34 +48,39 @@ export const getContacts = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check permissions (Workspace Access)
-    const { data: workspace, error: workspaceError } = await adminClient
-      .from('workspaces')
-      .select('owner_id')
-      .eq('id', workspaceId)
-      .single();
+    // Single RPC call replaces: workspace owner check, membership check,
+    // and 3-5 queries inside getHierarchyVisibleUserIds
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const { data: accessResult, error: accessError } = await (
+      adminClient as any
+    ).rpc('resolve_workspace_access', {
+      p_workspace_id: workspaceId,
+      p_user_id: user.id,
+      p_user_email: user.email || null,
+      p_require_shared_team: true, // contacts use default requireSharedTeam
+    });
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
-    if (workspaceError) {
-      console.error('Workspace fetch error:', workspaceError);
-      throw workspaceError;
+    if (accessError) {
+      console.error('Workspace access resolution error:', accessError);
+      throw accessError;
     }
 
-    const isOwner = workspace?.owner_id === user.id;
+    const {
+      is_owner: isOwner,
+      is_member: isMember,
+      hierarchy_type: hierarchyType,
+      visible_user_ids: rpcVisibleUserIds,
+    } = accessResult;
 
-    const { data: membership } = await adminClient
-      .from('workspace_members')
-      .select('id')
-      .eq('workspace_id', workspaceId)
-      .eq('user_id', user.id)
-      .eq('status', 'accepted')
-      .maybeSingle();
-
-    if (!isOwner && !membership) {
+    if (!isOwner && !isMember) {
       return NextResponse.json(
         { message: 'Forbidden: You are not a member of this workspace' },
         { status: 403 },
       );
     }
+
+    const visibleUserIds: string[] | null = rpcVisibleUserIds ?? null;
 
     // Build the query
     let query = adminClient
@@ -92,47 +98,71 @@ export const getContacts = catchAsync(
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
 
-    // Apply hierarchy-based visibility filtering.
-    // Workspace owners bypass all hierarchy restrictions.
-    if (!isOwner) {
-      const hierarchyFilter = await getHierarchyVisibleUserIds(
-        adminClient,
-        workspaceId,
-        user.id,
+    // Apply hierarchy-based visibility filtering
+    if (
+      !isOwner &&
+      hierarchyType === 'restricted' &&
+      visibleUserIds &&
+      visibleUserIds.length > 0
+    ) {
+      // Fetch assigned contacts for this user (only active assignments)
+      const { data: assignments } = await adminClient
+        .from('contact_assignees')
+        .select('contact_id')
+        .eq('workspace_id', workspaceId)
+        .eq('assigned_to_user_id', user.id)
+        .eq('assignment_status', 'active');
+
+      const assignedIds = assignments?.map((a) => a.contact_id) || [];
+      const assignedIdsFilter =
+        assignedIds.length > 0 ? `,id.in.(${assignedIds.join(',')})` : '';
+
+      query = query.or(
+        `owner_id.in.(${visibleUserIds.join(',')}),created_by.in.(${visibleUserIds.join(',')})${assignedIdsFilter}`,
       );
-      if (hierarchyFilter.type === 'restricted') {
-        const userIds = hierarchyFilter.userIds;
-
-        // Fetch assigned contacts for this user (only active assignments)
-        const { data: assignments } = await adminClient
-          .from('contact_assignees')
-          .select('contact_id')
-          .eq('workspace_id', workspaceId)
-          .eq('assigned_to_user_id', user.id)
-          .eq('assignment_status', 'active');
-
-        const assignedIds = assignments?.map((a) => a.contact_id) || [];
-        const assignedIdsFilter = assignedIds.length > 0 
-          ? `,id.in.(${assignedIds.join(',')})` 
-          : '';
-
-        query = query.or(`owner_id.in.(${userIds.join(',')}),created_by.in.(${userIds.join(',')})${assignedIdsFilter}`);
-      }
     }
 
     if (accountId) {
       query = query.eq('account_id', accountId);
     }
 
-    // Search term
+    // Search term - run account name search and name-match in parallel
     if (searchTerm) {
-      // First, find accounts that match the search term in this workspace
-      const { data: matchedAccounts } = await adminClient
-        .from('crm_accounts')
-        .select('id')
-        .eq('workspace_id', workspaceId)
-        .ilike('account_name', `%${searchTerm}%`);
+      const parts = searchTerm.split(' ').filter(Boolean);
 
+      // Build name-match promise (if multi-part search)
+      /* eslint-disable @typescript-eslint/no-explicit-any */
+      let nameSearchPromise: Promise<any> | null = null;
+      if (parts.length >= 2) {
+        const conditions: string[] = [];
+        for (let i = 1; i < parts.length; i++) {
+          const part1 = parts.slice(0, i).join(' ');
+          const part2 = parts.slice(i).join(' ');
+          conditions.push(
+            `and(first_name.ilike.%${part1}%,last_name.ilike.%${part2}%)`,
+          );
+          conditions.push(
+            `and(first_name.ilike.%${part2}%,last_name.ilike.%${part1}%)`,
+          );
+        }
+        nameSearchPromise = adminClient
+          .from('crm_contacts')
+          .select('id')
+          .eq('workspace_id', workspaceId)
+          .or(conditions.join(',')) as unknown as Promise<any>;
+      }
+
+      // Run account search and name-match in parallel
+      const results = await Promise.all([
+        adminClient
+          .from('crm_accounts')
+          .select('id')
+          .eq('workspace_id', workspaceId)
+          .ilike('account_name', `%${searchTerm}%`),
+        ...(nameSearchPromise ? [nameSearchPromise] : []),
+      ]);
+
+      const matchedAccounts = results[0].data;
       const accountIds = matchedAccounts?.map((a) => a.id) || [];
 
       let orFilter = `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`;
@@ -141,40 +171,18 @@ export const getContacts = catchAsync(
         orFilter += `,account_id.in.(${accountIds.join(',')})`;
       }
 
-      // Full name search logic - try multiple splits and combinations
-      const parts = searchTerm.split(' ').filter(Boolean);
-      if (parts.length >= 2) {
-        const conditions: string[] = [];
-        
-        for (let i = 1; i < parts.length; i++) {
-          const part1 = parts.slice(0, i).join(' ');
-          const part2 = parts.slice(i).join(' ');
-
-          conditions.push(
-            `and(first_name.ilike.%${part1}%,last_name.ilike.%${part2}%)`,
-          );
-          conditions.push(
-            `and(first_name.ilike.%${part2}%,last_name.ilike.%${part1}%)`,
-          );
-        }
-
-        const { data: nameMatched } = await adminClient
-          .from('crm_contacts')
-          .select('id')
-          .eq('workspace_id', workspaceId)
-          .or(conditions.join(','));
-
-        const matchedIds = nameMatched?.map((c) => c.id) || [];
+      /* eslint-disable @typescript-eslint/no-explicit-any */
+      if (nameSearchPromise && results.length > 1) {
+        const nameMatched = (results[1] as any).data;
+        const matchedIds = nameMatched?.map((c: any) => c.id) || [];
         if (matchedIds.length > 0) {
           orFilter += `,id.in.(${matchedIds.join(',')})`;
         }
       }
+      /* eslint-enable @typescript-eslint/no-explicit-any */
 
       query = query.or(orFilter);
     }
-  
-
-
 
     // Pagination
     const from = (page - 1) * limit;
@@ -189,11 +197,6 @@ export const getContacts = catchAsync(
         ascending: false,
       })
       .range(from, to);
-
-    if (error) {
-      console.error('Get contacts error:', error);
-      throw error;
-    }
 
     if (error) {
       console.error('Get contacts error:', error);

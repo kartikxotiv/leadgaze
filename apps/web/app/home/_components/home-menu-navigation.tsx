@@ -11,24 +11,18 @@ import {
   ArrowUpRight,
   Bell,
   Box,
-  Briefcase,
   Calendar,
   ChevronDown,
   DollarSign,
   FileText,
   Grip,
   Headphones,
-  History,
   Loader2,
-  Mail,
   NotebookPen,
   Package,
   Plus,
-  Search,
   Settings,
-  ShieldCheck,
   ShoppingCart,
-  User,
   Users,
   Users as UsersIcon,
 } from 'lucide-react';
@@ -76,7 +70,10 @@ import { getAccountsService } from '~/services/accounts.service';
 import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
-import { getSeatAssignmentsService } from '~/services/subscription.service';
+import {
+  getSeatAssignmentsService,
+  getWorkspaceEntitlementsService,
+} from '~/services/subscription.service';
 import { getTeamsService } from '~/services/teams.service';
 
 import {
@@ -608,6 +605,13 @@ export function HomeMenuNavigation() {
     enabled: !!currentWorkspace?.id,
   });
 
+  // Fetch workspace entitlements (free access grants that bypass seat assignments)
+  const { data: entitlementsData } = useQuery({
+    queryKey: ['workspace-entitlements', currentWorkspace?.id],
+    queryFn: () => getWorkspaceEntitlementsService(currentWorkspace?.id || ''),
+    enabled: !!currentWorkspace?.id,
+  });
+
   const userAssignedProductIds = useMemo(() => {
     const assignments = (assignmentsData?.data ?? []) as Array<{
       is_active: boolean;
@@ -622,13 +626,33 @@ export function HomeMenuNavigation() {
     );
   }, [assignmentsData, authUser?.id]);
 
+  // Product IDs that have active entitlements (workspace-wide access)
+  const entitledProductIds = useMemo(() => {
+    const entitlements = (entitlementsData?.data ?? []) as Array<{
+      product_id: string;
+      is_active: boolean;
+      valid_until: string | null;
+    }>;
+    const now = new Date();
+    return new Set(
+      entitlements
+        .filter(
+          (e) =>
+            e.is_active && (!e.valid_until || new Date(e.valid_until) > now),
+        )
+        .map((e) => e.product_id),
+    );
+  }, [entitlementsData]);
+
   const launcherModules = useMemo(() => {
     const allEnabled = subscriptionStatus?.enabled_modules ?? [];
-    // Only show modules where the user has an active seat assignment
-    return allEnabled.filter((mod) =>
-      userAssignedProductIds.has(mod.module_id),
+    // Show modules where user has seat assignment OR workspace has entitlement
+    return allEnabled.filter(
+      (mod) =>
+        userAssignedProductIds.has(mod.module_id) ||
+        entitledProductIds.has(mod.module_id),
     );
-  }, [subscriptionStatus, userAssignedProductIds]);
+  }, [subscriptionStatus, userAssignedProductIds, entitledProductIds]);
 
   // Use permission-based navigation
   const permissionNavConfig = usePermissionBasedNavigationConfig();
@@ -638,6 +662,7 @@ export function HomeMenuNavigation() {
   const isHrmsModule = pathname.startsWith('/home/hrms');
   const isInventoryModule = pathname.startsWith('/home/inventory');
   const isServiceCloudModule = pathname.startsWith('/home/services');
+  const isOrgRoute = pathname.startsWith('/org');
 
   const currentAppName = useMemo(() => {
     if (isHrmsModule) return 'HRMS Desk';
@@ -785,44 +810,31 @@ export function HomeMenuNavigation() {
       ];
     }
 
-    // 5. Default: Sales CRM Module (Exactly 10 Items as specified)
-    const { teamItems } = getNavigationConfig(canAccess);
+    // 5. Default: Sales CRM Module — permission-filtered
+    const { salesItems, teamItems } =
+      permissionNavConfig ?? getNavigationConfig(canAccess);
 
     return [
       {
         label: '',
         children: [
-          {
-            label: 'common:routes.dashboard',
-            path: '/home/sales',
-            Icon: <Activity className="h-4 w-4" />,
-            end: true,
-          },
-          {
-            label: 'Leads',
-            path: '/home/sales/leads',
-            Icon: <Briefcase className="h-4 w-4" />,
-          },
-          {
-            label: 'Contacts',
-            path: '/home/sales/contacts',
-            Icon: <User className="h-4 w-4" />,
-          },
-          {
-            label: 'Accounts',
-            path: '/home/sales/accounts',
-            Icon: <Users className="h-4 w-4" />,
-          },
-          {
-            label: 'Opportunities',
-            path: '/home/sales/opportunities',
-            Icon: <Activity className="h-4 w-4" />,
-          },
-          // {
-          //   label: 'Emails',
-          //   path: '/home/emails',
-          //   Icon: <Mail className="h-4 w-4" />,
-          // },
+          ...(salesItems.length > 0
+            ? [
+                {
+                  label: 'common:routes.dashboard',
+                  path: '/home/sales',
+                  Icon: <Activity className="h-4 w-4" />,
+                  end: true,
+                },
+                ...salesItems.map((item) => {
+                  const IconComponent = item.Icon;
+                  return {
+                    ...item,
+                    Icon: <IconComponent className="h-4 w-4" />,
+                  };
+                }),
+              ]
+            : []),
           {
             label: 'Meetings',
             path: '/home/sales/meetings',
@@ -858,13 +870,15 @@ export function HomeMenuNavigation() {
             path: pathsConfig.app.workspaceSettings,
             Icon: <Settings className="h-4 w-4" />,
           },
-          ...teamItems.map((item) => {
-            const IconComponent = item.Icon;
-            return {
-              ...item,
-              Icon: <IconComponent className="h-4 w-4" />,
-            };
-          }),
+          ...(teamItems.length > 0
+            ? teamItems.map((item) => {
+                const IconComponent = item.Icon;
+                return {
+                  ...item,
+                  Icon: <IconComponent className="h-4 w-4" />,
+                };
+              })
+            : []),
         ],
       },
     ];
@@ -1012,172 +1026,176 @@ export function HomeMenuNavigation() {
       <div className="flex items-center space-x-6 lg:space-x-8">
         <div className="flex items-center space-x-4">
           <AppLogo className="max-h-8 w-auto" />
-          <div className="h-6 w-px bg-white/25" />
+          {!isOrgRoute && <div className="h-6 w-px bg-white/25" />}
 
           {/* App Launcher Trigger Modal */}
-          <Dialog open={isLauncherOpen} onOpenChange={setIsLauncherOpen}>
-            <DialogTrigger asChild>
-              <button className="flex cursor-pointer items-center space-x-2 bg-transparent px-3 py-1.5 text-white transition-colors hover:bg-transparent">
-                <Grip className="h-5 w-5" />
-                <span className="primary-heading-big">{currentAppName}</span>
-              </button>
-            </DialogTrigger>
+          {!isOrgRoute && (
+            <Dialog open={isLauncherOpen} onOpenChange={setIsLauncherOpen}>
+              <DialogTrigger asChild>
+                <button className="flex cursor-pointer items-center space-x-2 bg-transparent px-3 py-1.5 text-white transition-colors hover:bg-transparent">
+                  <Grip className="h-5 w-5" />
+                  <span className="primary-heading-big">{currentAppName}</span>
+                </button>
+              </DialogTrigger>
 
-            <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-2xl rounded-lg border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
-              <DialogHeader className="mb-4 border-b pb-4 border-b p-6 pb-4">
-                <DialogTitle className="flex items-center gap-2 text-xl font-bold text-zinc-900 dark:text-white">
-                  <Grip className="h-5 w-5 text-blue-600" />
-                  App Launcher
-                </DialogTitle>
-              </DialogHeader>
+              <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col rounded-lg border border-zinc-200 bg-white p-0 p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
+                <DialogHeader className="mb-4 border-b p-6 pb-4">
+                  <DialogTitle className="flex items-center gap-2 text-xl font-bold text-zinc-900 dark:text-white">
+                    <Grip className="h-5 w-5 text-blue-600" />
+                    App Launcher
+                  </DialogTitle>
+                </DialogHeader>
 
-              {launcherModules.length === 0 ? (
-                <div className="py-8 text-center">
-                  <Loader2 className="mx-auto h-5 w-5 animate-spin text-zinc-400" />
-                  <p className="mt-2 text-sm text-zinc-500">
-                    Loading modules...
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  {launcherModules.map((mod) => {
-                    const meta = getLauncherMeta(mod.module_key);
-                    const displayName = getModuleDisplayName(mod.module_name);
+                {launcherModules.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-zinc-400" />
+                    <p className="mt-2 text-sm text-zinc-500">
+                      Loading modules...
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {launcherModules.map((mod) => {
+                      const meta = getLauncherMeta(mod.module_key);
+                      const displayName = getModuleDisplayName(mod.module_name);
 
-                    return (
-                      <Link
-                        key={mod.module_id}
-                        href={meta.route}
-                        onClick={() => {
-                          localStorage.setItem(
-                            'selected_module',
-                            mod.module_key,
-                          );
-                          setIsLauncherOpen(false);
-                        }}
-                        className="group flex flex-col rounded-lg border border-zinc-200 bg-zinc-50 p-4 transition-all hover:border-blue-400 hover:bg-blue-50/50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-blue-950/20"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="flex h-7 w-7 items-center justify-center rounded-md"
-                              style={{
-                                backgroundColor: `${meta.color}20`,
-                                color: meta.color,
-                              }}
-                            >
-                              {meta.icon}
+                      return (
+                        <Link
+                          key={mod.module_id}
+                          href={meta.route}
+                          onClick={() => {
+                            localStorage.setItem(
+                              'selected_module',
+                              mod.module_key,
+                            );
+                            setIsLauncherOpen(false);
+                          }}
+                          className="group flex flex-col rounded-lg border border-zinc-200 bg-zinc-50 p-4 transition-all hover:border-blue-400 hover:bg-blue-50/50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-blue-950/20"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="flex h-7 w-7 items-center justify-center rounded-md"
+                                style={{
+                                  backgroundColor: `${meta.color}20`,
+                                  color: meta.color,
+                                }}
+                              >
+                                {meta.icon}
+                              </div>
+                              <span className="font-bold text-zinc-900 transition-colors group-hover:text-blue-600 dark:text-white">
+                                {displayName}
+                              </span>
                             </div>
-                            <span className="font-bold text-zinc-900 transition-colors group-hover:text-blue-600 dark:text-white">
-                              {displayName}
-                            </span>
+                            <ArrowUpRight className="h-3.5 w-3.5 text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100" />
                           </div>
-                          <ArrowUpRight className="h-3.5 w-3.5 text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100" />
-                        </div>
-                        <span className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                          {meta.description}
-                        </span>
-                        <span className="mt-1 text-[10px] text-zinc-400 dark:text-zinc-500">
-                          {mod.used_seats} / {mod.purchased_seats} seats used
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
-          <div className="h-6 w-px bg-white/25" />
+                          <span className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                            {meta.description}
+                          </span>
+                          <span className="mt-1 text-[10px] text-zinc-400 dark:text-zinc-500">
+                            {mod.used_seats} / {mod.purchased_seats} seats used
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+          )}
+          {!isOrgRoute && <div className="h-6 w-px bg-white/25" />}
         </div>
 
         {/* Dynamic Navigation Menu Items */}
-        <nav className="flex items-center space-x-1 lg:space-x-2">
-          {visibleRoutes.map((item) => {
-            const formatted = formatLabel(item.label);
-            const active = isRouteActive(
-              item.path,
-              pathname,
-              item.end ?? false,
-            );
-
-            // Resolve the current module so we look up the right config entry.
-            const activeModule = isHrmsModule
-              ? 'hrms'
-              : isServiceCloudModule
-                ? 'services'
-                : isInventoryModule
-                  ? 'inventory'
-                  : isFundraiseModule
-                    ? 'funds'
-                    : 'sales';
-
-            // If this label is configured as a full data-fetch dropdown for
-            // the active module, render NavDropdown (works for both Sales & Services).
-            if (isDropdownLabel(activeModule, formatted)) {
-              return (
-                <NavDropdown
-                  key={item.path}
-                  module={activeModule as 'sales' | 'services'}
-                  label={item.label}
-                  path={item.path}
-                  active={active}
-                  workspaceId={currentWorkspace?.id}
-                  formattedLabel={formatted as AnyDropdownLabel}
-                />
+        {!isOrgRoute && (
+          <nav className="flex items-center space-x-1 lg:space-x-2">
+            {visibleRoutes.map((item) => {
+              const formatted = formatLabel(item.label);
+              const active = isRouteActive(
+                item.path,
+                pathname,
+                item.end ?? false,
               );
-            }
 
-            // Otherwise, just show a chevron-only icon if configured.
-            const showChevron = hasChevronForModule(activeModule, formatted);
+              // Resolve the current module so we look up the right config entry.
+              const activeModule = isHrmsModule
+                ? 'hrms'
+                : isServiceCloudModule
+                  ? 'services'
+                  : isInventoryModule
+                    ? 'inventory'
+                    : isFundraiseModule
+                      ? 'funds'
+                      : 'sales';
 
-            return (
-              <Link
-                key={item.path}
-                href={item.path}
-                className={cn(
-                  'flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                  active
-                    ? 'bg-header-primary text-white'
-                    : 'text-blue-100 hover:bg-white/10 hover:text-white',
-                )}
-              >
-                <span>
-                  <Trans i18nKey={item.label} defaults={formatted} />
-                </span>
-                {showChevron && (
-                  <ChevronDown className="h-3.5 w-3.5 opacity-70" />
-                )}
-              </Link>
-            );
-          })}
+              // If this label is configured as a full data-fetch dropdown for
+              // the active module, render NavDropdown (works for both Sales & Services).
+              if (isDropdownLabel(activeModule, formatted)) {
+                return (
+                  <NavDropdown
+                    key={item.path}
+                    module={activeModule as 'sales' | 'services'}
+                    label={item.label}
+                    path={item.path}
+                    active={active}
+                    workspaceId={currentWorkspace?.id}
+                    formattedLabel={formatted as AnyDropdownLabel}
+                  />
+                );
+              }
 
-          {/* More Dropdown Menu */}
-          {moreRoutes.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex cursor-pointer items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium text-blue-100 transition-colors hover:bg-white/10 hover:text-white">
-                  <span>More</span>
-                  <ChevronDown className="h-3.5 w-3.5 opacity-70" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="mt-1 w-48">
-                {moreRoutes.map((item) => {
-                  const formatted = formatLabel(item.label);
-                  return (
-                    <DropdownMenuItem key={item.path} asChild>
-                      <Link
-                        href={item.path}
-                        className="w-full cursor-pointer px-3 py-2"
-                      >
-                        <Trans i18nKey={item.label} defaults={formatted} />
-                      </Link>
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </nav>
+              // Otherwise, just show a chevron-only icon if configured.
+              const showChevron = hasChevronForModule(activeModule, formatted);
+
+              return (
+                <Link
+                  key={item.path}
+                  href={item.path}
+                  className={cn(
+                    'flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                    active
+                      ? 'bg-header-primary text-white'
+                      : 'text-blue-100 hover:bg-white/10 hover:text-white',
+                  )}
+                >
+                  <span>
+                    <Trans i18nKey={item.label} defaults={formatted} />
+                  </span>
+                  {showChevron && (
+                    <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                  )}
+                </Link>
+              );
+            })}
+
+            {/* More Dropdown Menu */}
+            {moreRoutes.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex cursor-pointer items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium text-blue-100 transition-colors hover:bg-white/10 hover:text-white">
+                    <span>More</span>
+                    <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="mt-1 w-48">
+                  {moreRoutes.map((item) => {
+                    const formatted = formatLabel(item.label);
+                    return (
+                      <DropdownMenuItem key={item.path} asChild>
+                        <Link
+                          href={item.path}
+                          className="w-full cursor-pointer px-3 py-2"
+                        >
+                          <Trans i18nKey={item.label} defaults={formatted} />
+                        </Link>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </nav>
+        )}
       </div>
 
       {/* Right side: Search, Notifications, Settings, Profile */}
@@ -1201,7 +1219,7 @@ export function HomeMenuNavigation() {
         </button> */}
 
         {/* Settings gear dropdown */}
-        {settingsMenuItems.length > 0 && (
+        {!isOrgRoute && settingsMenuItems.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="cursor-pointer rounded-full p-2 text-blue-100 transition-colors hover:bg-white/10 hover:text-white">

@@ -340,26 +340,35 @@ async function addItemsToExistingSubscription(
       .eq('product_id', product.id)
       .maybeSingle();
 
+    let seatId: string;
+
     if (!existingProductSeat) {
       // Create new seat row for this module
-      await adminClient.from('workspace_module_seats').insert({
-        workspace_id: workspaceId,
-        product_id: product.id,
-        seats_purchased: item.seats,
-        seats_used: 0,
-        status: 'active',
-        billing_cycle: billingCycle,
-        payment_provider: 'stripe',
-        provider_subscription_id: subscriptionId,
-        provider_metadata: {
+      const { data: newSeat } = await adminClient
+        .from('workspace_module_seats')
+        .insert({
+          workspace_id: workspaceId,
+          product_id: product.id,
+          seats_purchased: item.seats,
+          seats_used: 0,
+          status: 'active',
           billing_cycle: billingCycle,
-          added_via: 'subscription_update',
-        },
-        created_by: userId,
-        updated_by: userId,
-      });
+          payment_provider: 'stripe',
+          provider_subscription_id: subscriptionId,
+          provider_metadata: {
+            billing_cycle: billingCycle,
+            added_via: 'subscription_update',
+          },
+          created_by: userId,
+          updated_by: userId,
+        })
+        .select('id')
+        .single();
+
+      seatId = newSeat?.id;
     } else {
       // Update existing seat row
+      seatId = existingProductSeat.id;
       await adminClient
         .from('workspace_module_seats')
         .update({
@@ -369,6 +378,55 @@ async function addItemsToExistingSubscription(
           updated_by: userId,
         })
         .eq('id', existingProductSeat.id);
+    }
+
+    // Auto-assign the buyer (workspace owner) to the new module
+    if (seatId && userId) {
+      // Check if buyer already has an active assignment for this product
+      const { data: existingAssignment } = await adminClient
+        .from('seat_assignments')
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', userId)
+        .eq('product_id', product.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!existingAssignment) {
+        // Check for a previously revoked assignment to reactivate
+        const { data: inactiveAssignment } = await adminClient
+          .from('seat_assignments')
+          .select('id')
+          .eq('workspace_id', workspaceId)
+          .eq('user_id', userId)
+          .eq('product_id', product.id)
+          .eq('is_active', false)
+          .maybeSingle();
+
+        if (inactiveAssignment) {
+          await adminClient
+            .from('seat_assignments')
+            .update({
+              is_active: true,
+              seat_id: seatId,
+              assigned_at: new Date().toISOString(),
+              assigned_by: userId,
+              revoked_at: null,
+              revoked_by: null,
+            })
+            .eq('id', inactiveAssignment.id);
+        } else {
+          // Create new assignment
+          await adminClient.from('seat_assignments').insert({
+            seat_id: seatId,
+            workspace_id: workspaceId,
+            user_id: userId,
+            product_id: product.id,
+            is_active: true,
+            assigned_by: userId,
+          });
+        }
+      }
     }
   }
 

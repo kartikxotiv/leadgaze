@@ -53,7 +53,7 @@ function SignUpPage() {
             {[
               {
                 icon: Shield,
-                title: 'Free 14-day trial',
+                title: 'Free 7-day trial',
                 body: 'No credit card required. Cancel anytime',
               },
               {
@@ -135,7 +135,7 @@ function SignUpPage() {
               </h2>
 
               <p className="mt-2 text-sm text-slate-500">
-                Start your free 14-day trial. No credit card required.
+                Start your free 7-day trial. No credit card required.
               </p>
             </div>
 
