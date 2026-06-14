@@ -4,7 +4,6 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '../../../lib/database.types';
-import { getHierarchyVisibleUserIds } from '../../../lib/permissions/hierarchy-utils';
 import {
   catchAsync,
   successDataResponse,
@@ -13,6 +12,8 @@ import {
 /**
  * GET /api/opportunities
  * Fetch all opportunities for a workspace
+ * Optimized: uses resolve_workspace_access RPC (1 DB call) instead of 5-8 sequential auth/hierarchy queries.
+ * Account-search pre-query results are cached and reused for breakdown. Main + breakdown run in Promise.all.
  */
 export const getOpportunities = catchAsync(
   async ({
@@ -48,179 +49,159 @@ export const getOpportunities = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check permissions (Workspace Access)
-    const { data: workspace, error: workspaceError } = await adminClient
-      .from('workspaces')
-      .select('owner_id')
-      .eq('id', workspaceId)
-      .single();
+    // Single RPC call replaces: workspace owner check, membership check,
+    // and 3-5 queries inside getHierarchyVisibleUserIds
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const { data: accessResult, error: accessError } = await (
+      adminClient as any
+    ).rpc('resolve_workspace_access', {
+      p_workspace_id: workspaceId,
+      p_user_id: user.id,
+      p_user_email: user.email || null,
+      p_require_shared_team: false,
+    });
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
-    if (workspaceError) {
-      console.error('Workspace fetch error:', workspaceError);
-      throw workspaceError;
+    if (accessError) {
+      console.error('Workspace access resolution error:', accessError);
+      throw accessError;
     }
 
-    const isOwner = workspace?.owner_id === user.id;
+    const {
+      is_owner: isOwner,
+      is_member: isMember,
+      hierarchy_type: hierarchyType,
+      visible_user_ids: rpcVisibleUserIds,
+    } = accessResult;
 
-    const { data: membership } = await adminClient
-      .from('workspace_members')
-      .select('id')
-      .eq('workspace_id', workspaceId)
-      .eq('user_id', user.id)
-      .eq('status', 'accepted')
-      .maybeSingle();
-
-    if (!isOwner && !membership) {
+    if (!isOwner && !isMember) {
       return NextResponse.json(
         { message: 'Forbidden: You are not a member of this workspace' },
         { status: 403 },
       );
     }
 
-    // Build the query
-    let query = adminClient
-      .from('crm_opportunities')
-      .select(
-        `
-          *,
-          stage:entity_statuses(id, status_name, status_key, color, icon),
-          account:crm_accounts(id, account_name),
-          owner:accounts!crm_opportunities_owner_id_fkey(id, email, name),
-          created_by_account:accounts!crm_opportunities_created_by_fkey(id, email, name),
-          updated_by_account:accounts!crm_opportunities_updated_by_fkey(id, email, name)
-        `,
-        { count: 'exact' },
-      )
-      .eq('workspace_id', workspaceId)
-      .eq('is_deleted', false);
-
-    let hierarchyFilter:
-      | { type: 'all' }
-      | { type: 'restricted'; userIds: string[] } = { type: 'all' };
+    const visibleUserIds: string[] | null = rpcVisibleUserIds ?? null;
     let assignedOpportunityIds: string[] = [];
 
-    if (!isOwner) {
-      hierarchyFilter = await getHierarchyVisibleUserIds(
-        adminClient,
-        workspaceId,
-        user.id,
-      );
-      if (hierarchyFilter.type === 'restricted') {
-        const userIds = hierarchyFilter.userIds;
+    if (
+      !isOwner &&
+      hierarchyType === 'restricted' &&
+      visibleUserIds &&
+      visibleUserIds.length > 0
+    ) {
+      // Fetch assigned opportunities for this user (only active assignments)
+      const { data: assignments } = await adminClient
+        .from('opportunity_assignees')
+        .select('opportunity_id')
+        .eq('workspace_id', workspaceId)
+        .eq('assigned_to_user_id', user.id)
+        .eq('assignment_status', 'active');
 
-        // Fetch assigned opportunities for this user (only active assignments)
-        const { data: assignments } = await adminClient
-          .from('opportunity_assignees')
-          .select('opportunity_id')
-          .eq('workspace_id', workspaceId)
-          .eq('assigned_to_user_id', user.id)
-          .eq('assignment_status', 'active');
-
-        assignedOpportunityIds = assignments?.map((a) => a.opportunity_id) || [];
-        const assignedIdsFilter = assignedOpportunityIds.length > 0 
-          ? `,id.in.(${assignedOpportunityIds.join(',')})` 
-          : '';
-
-        query = query.or(
-          `owner_id.in.(${userIds.join(',')}),created_by.in.(${userIds.join(',')})${assignedIdsFilter}`,
-        );
-      }
+      assignedOpportunityIds = assignments?.map((a) => a.opportunity_id) || [];
     }
 
-    if (accountId) {
-      query = query.eq('account_id', accountId);
-    }
-
-    // Filter by stage if provided
-    if (stageId && stageId !== 'all') {
-      query = query.eq('stage_id', stageId);
-    }
-
-    // Search term
+    // Pre-compute account-search matched IDs once (was running twice: for main + breakdown)
+    let matchedAccountIds: string[] = [];
     if (searchTerm) {
-      // Find accounts that match the search term
       const { data: matchedAccounts } = await adminClient
         .from('crm_accounts')
         .select('id')
         .eq('workspace_id', workspaceId)
         .ilike('account_name', `%${searchTerm}%`);
-
-      const accountIds = matchedAccounts?.map((a) => a.id) || [];
-
-      let orFilter = `opportunity_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`;
-
-      if (accountIds.length > 0) {
-        orFilter += `,account_id.in.(${accountIds.join(',')})`;
-      }
-
-      query = query.or(orFilter);
+      matchedAccountIds = matchedAccounts?.map((a) => a.id) || [];
     }
 
+    // Helper to build the common search filter string
+    const buildSearchOrFilter = () => {
+      let orFilter = `opportunity_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`;
+      if (matchedAccountIds.length > 0) {
+        orFilter += `,account_id.in.(${matchedAccountIds.join(',')})`;
+      }
+      return orFilter;
+    };
 
+    // Helper to apply hierarchy + assignee filter to a query
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const applyAccessFilter = (q: any) => {
+      if (!isOwner && visibleUserIds && visibleUserIds.length > 0) {
+        const assignedIdsFilter =
+          assignedOpportunityIds.length > 0
+            ? `,id.in.(${assignedOpportunityIds.join(',')})`
+            : '';
+        q = q.or(
+          `owner_id.in.(${visibleUserIds.join(',')}),created_by.in.(${visibleUserIds.join(',')})${assignedIdsFilter}`,
+        );
+      }
+      return q;
+    };
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+
+    // Build main query
+    let mainQuery = applyAccessFilter(
+      adminClient
+        .from('crm_opportunities')
+        .select(
+          `
+            *,
+            stage:entity_statuses(id, status_name, status_key, color, icon),
+            account:crm_accounts(id, account_name),
+            owner:accounts!crm_opportunities_owner_id_fkey(id, email, name),
+            created_by_account:accounts!crm_opportunities_created_by_fkey(id, email, name),
+            updated_by_account:accounts!crm_opportunities_updated_by_fkey(id, email, name)
+          `,
+          { count: 'exact' },
+        )
+        .eq('workspace_id', workspaceId)
+        .eq('is_deleted', false),
+    );
+
+    if (accountId) {
+      mainQuery = mainQuery.eq('account_id', accountId);
+    }
+
+    if (stageId && stageId !== 'all') {
+      mainQuery = mainQuery.eq('stage_id', stageId);
+    }
+
+    if (searchTerm) {
+      mainQuery = mainQuery.or(buildSearchOrFilter());
+    }
 
     // Pagination
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    const {
-      data: opportunities,
-      error,
-      count,
-    } = await query
-      .order('created_at', {
-        ascending: false,
-      })
-      .range(from, to);
-
-    if (error) {
-      console.error('Get opportunities error:', error);
-      throw error;
-    }
-
-    // For stage breakdown, we need a query grouped by stage_id
-    // We ignore the selected stageId filter here to show the whole pipeline
-    let breakdownQuery = adminClient
-      .from('crm_opportunities')
-      .select('stage_id, amount')
-      .eq('workspace_id', workspaceId)
-      .eq('is_deleted', false);
-
-    // Reuse the same filter from above
-    if (!isOwner && hierarchyFilter.type === 'restricted') {
-      const userIds = hierarchyFilter.userIds;
-      const assignedIdsFilter = assignedOpportunityIds.length > 0 
-        ? `,id.in.(${assignedOpportunityIds.join(',')})` 
-        : '';
-        
-      breakdownQuery = breakdownQuery.or(`owner_id.in.(${userIds.join(',')}),created_by.in.(${userIds.join(',')})${assignedIdsFilter}`);
-    }
+    // Build breakdown query (no stage filter, no pagination)
+    let breakdownQuery = applyAccessFilter(
+      adminClient
+        .from('crm_opportunities')
+        .select('stage_id, amount')
+        .eq('workspace_id', workspaceId)
+        .eq('is_deleted', false),
+    );
 
     if (accountId) {
       breakdownQuery = breakdownQuery.eq('account_id', accountId);
     }
 
     if (searchTerm) {
-      const { data: matchedAccounts } = await adminClient
-        .from('crm_accounts')
-        .select('id')
-        .eq('workspace_id', workspaceId)
-        .ilike('account_name', `%${searchTerm}%`);
-
-      const accountIds = matchedAccounts?.map((a) => a.id) || [];
-
-      let orFilter = `opportunity_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`;
-
-      if (accountIds.length > 0) {
-        orFilter += `,account_id.in.(${accountIds.join(',')})`;
-      }
-
-      breakdownQuery = breakdownQuery.or(orFilter);
+      breakdownQuery = breakdownQuery.or(buildSearchOrFilter());
     }
 
-    // RLS handles visibility for breakdown as well.
+    // Run main + breakdown queries in parallel
+    const [mainResult, breakdownResult] = await Promise.all([
+      mainQuery.order('created_at', { ascending: false }).range(from, to),
+      breakdownQuery,
+    ]);
 
-    const { data: breakdownData, error: breakdownError } = await breakdownQuery;
+    const { data: opportunities, error, count } = mainResult;
+    if (error) {
+      console.error('Get opportunities error:', error);
+      throw error;
+    }
 
+    const { data: breakdownData, error: breakdownError } = breakdownResult;
     if (breakdownError) {
       console.error('Get stage breakdown error:', breakdownError);
       throw breakdownError;
@@ -230,14 +211,16 @@ export const getOpportunities = catchAsync(
       string,
       { total_amount: number; count: number }
     > = {};
-    (breakdownData || []).forEach((opp) => {
-      const stageId = opp.stage_id;
-      if (!stageBreakdownMap[stageId]) {
-        stageBreakdownMap[stageId] = { total_amount: 0, count: 0 };
-      }
-      stageBreakdownMap[stageId].total_amount += opp.amount || 0;
-      stageBreakdownMap[stageId].count += 1;
-    });
+    (breakdownData || []).forEach(
+      (opp: { stage_id: string; amount: number | null }) => {
+        const sid = opp.stage_id;
+        if (!stageBreakdownMap[sid]) {
+          stageBreakdownMap[sid] = { total_amount: 0, count: 0 };
+        }
+        stageBreakdownMap[sid].total_amount += opp.amount || 0;
+        stageBreakdownMap[sid].count += 1;
+      },
+    );
 
     const totalAmount = Object.values(stageBreakdownMap).reduce(
       (sum, s) => sum + s.total_amount,

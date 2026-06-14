@@ -4,7 +4,6 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '../../../lib/database.types';
-import { getHierarchyVisibleUserIds } from '../../../lib/permissions/hierarchy-utils';
 import {
   catchAsync,
   successDataResponse,
@@ -13,6 +12,7 @@ import {
 /**
  * GET /api/accounts
  * Fetch all accounts for a workspace
+ * Optimized: uses resolve_workspace_access RPC (1 DB call) instead of 5-8 sequential auth/hierarchy queries.
  */
 export const getAccounts = catchAsync(
   async ({
@@ -46,34 +46,39 @@ export const getAccounts = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user is workspace owner
-    const { data: workspace, error: workspaceError } = await adminClient
-      .from('workspaces')
-      .select('owner_id')
-      .eq('id', workspaceId)
-      .single();
+    // Single RPC call replaces: workspace owner check, membership check,
+    // and 3-5 queries inside getHierarchyVisibleUserIds
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const { data: accessResult, error: accessError } = await (
+      adminClient as any
+    ).rpc('resolve_workspace_access', {
+      p_workspace_id: workspaceId,
+      p_user_id: user.id,
+      p_user_email: user.email || null,
+      p_require_shared_team: true,
+    });
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
-    if (workspaceError) {
-      console.error('Workspace fetch error:', workspaceError);
-      throw workspaceError;
+    if (accessError) {
+      console.error('Workspace access resolution error:', accessError);
+      throw accessError;
     }
 
-    const isOwner = workspace?.owner_id === user.id;
+    const {
+      is_owner: isOwner,
+      is_member: isMember,
+      hierarchy_type: hierarchyType,
+      visible_user_ids: rpcVisibleUserIds,
+    } = accessResult;
 
-    const { data: membership } = await adminClient
-      .from('workspace_members')
-      .select('id')
-      .eq('workspace_id', workspaceId)
-      .eq('user_id', user.id)
-      .eq('status', 'accepted')
-      .maybeSingle();
-
-    if (!isOwner && !membership) {
+    if (!isOwner && !isMember) {
       return NextResponse.json(
         { message: 'Forbidden: You are not a member of this workspace' },
         { status: 403 },
       );
     }
+
+    const visibleUserIds: string[] | null = rpcVisibleUserIds ?? null;
 
     // Build the query
     let query = adminClient
@@ -91,34 +96,28 @@ export const getAccounts = catchAsync(
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
 
-    // Apply hierarchy-based visibility filtering.
-    // Workspace owners bypass all hierarchy restrictions.
-    if (!isOwner) {
-      const hierarchyFilter = await getHierarchyVisibleUserIds(
-        adminClient,
-        workspaceId,
-        user.id,
+    // Apply hierarchy-based visibility filtering
+    if (
+      !isOwner &&
+      hierarchyType === 'restricted' &&
+      visibleUserIds &&
+      visibleUserIds.length > 0
+    ) {
+      // Fetch assigned accounts for this user (only active assignments)
+      const { data: assignments } = await adminClient
+        .from('account_assignees')
+        .select('account_id')
+        .eq('workspace_id', workspaceId)
+        .eq('assigned_to_user_id', user.id)
+        .eq('assignment_status', 'active');
+
+      const assignedIds = assignments?.map((a) => a.account_id) || [];
+      const assignedIdsFilter =
+        assignedIds.length > 0 ? `,id.in.(${assignedIds.join(',')})` : '';
+
+      query = query.or(
+        `owner_id.in.(${visibleUserIds.join(',')}),created_by.in.(${visibleUserIds.join(',')})${assignedIdsFilter}`,
       );
-      if (hierarchyFilter.type === 'restricted') {
-        const userIds = hierarchyFilter.userIds;
-
-        // Fetch assigned accounts for this user (only active assignments)
-        const { data: assignments } = await adminClient
-          .from('account_assignees')
-          .select('account_id')
-          .eq('workspace_id', workspaceId)
-          .eq('assigned_to_user_id', user.id)
-          .eq('assignment_status', 'active');
-
-        const assignedIds = assignments?.map((a) => a.account_id) || [];
-        const assignedIdsFilter = assignedIds.length > 0 
-          ? `,id.in.(${assignedIds.join(',')})` 
-          : '';
-
-        query = query.or(
-          `owner_id.in.(${userIds.join(',')}),created_by.in.(${userIds.join(',')})${assignedIdsFilter}`,
-        );
-      }
     }
 
     // Search term
@@ -127,8 +126,6 @@ export const getAccounts = catchAsync(
         `account_name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%`,
       );
     }
-
-
 
     // Pagination
     const from = (page - 1) * limit;

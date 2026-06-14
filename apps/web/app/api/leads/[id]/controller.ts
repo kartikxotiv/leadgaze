@@ -4,7 +4,6 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '~/lib/database.types';
-import { getHierarchyVisibleUserIds } from '~/lib/permissions/hierarchy-utils';
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
 
 type Lead = Database['public']['Tables']['crm_leads']['Row'];
@@ -65,25 +64,7 @@ const getLeadById = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    let actorAccountId = user.id;
-    const { data: accountById } = await adminClient
-      .from('accounts')
-      .select('id')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    if (!accountById?.id && user.email) {
-      const { data: accountByEmail } = await adminClient
-        .from('accounts')
-        .select('id')
-        .eq('email', user.email)
-        .maybeSingle();
-
-      if (accountByEmail?.id) {
-        actorAccountId = accountByEmail.id;
-      }
-    }
-
+    // Fetch the lead first to get workspace_id for the RPC access check
     const { data: lead, error } = await adminClient
       .from('crm_leads')
       .select(
@@ -111,53 +92,45 @@ const getLeadById = catchAsync(
       return NextResponse.json({ message: 'Lead not found' }, { status: 404 });
     }
 
-    const { data: workspace, error: workspaceError } = await adminClient
-      .from('workspaces')
-      .select('owner_id')
-      .eq('id', lead.workspace_id)
-      .single();
+    // Single RPC call replaces: accounts lookup, workspace owner check, membership check,
+    // and 3-5 queries inside getHierarchyVisibleUserIds
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const { data: accessResult, error: accessError } = await (
+      adminClient as any
+    ).rpc('resolve_workspace_access', {
+      p_workspace_id: lead.workspace_id,
+      p_user_id: user.id,
+      p_user_email: user.email || null,
+      p_require_shared_team: false,
+    });
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
-    if (workspaceError) {
-      console.error('Workspace fetch error:', workspaceError);
-      throw workspaceError;
+    if (accessError) {
+      console.error('Workspace access resolution error:', accessError);
+      throw accessError;
     }
 
-    const isWorkspaceOwner =
-      workspace?.owner_id === actorAccountId || workspace?.owner_id === user.id;
+    const {
+      is_owner: isOwner,
+      is_member: isMember,
+      hierarchy_type: hierarchyType,
+      visible_user_ids: rpcVisibleUserIds,
+    } = accessResult;
 
-    const { data: membership } = await adminClient
-      .from('workspace_members')
-      .select('id')
-      .eq('workspace_id', lead.workspace_id)
-      .eq('user_id', actorAccountId)
-      .eq('status', 'accepted')
-      .maybeSingle();
-
-    if (!isWorkspaceOwner && !membership) {
+    if (!isOwner && !isMember) {
       return NextResponse.json(
         { message: 'Forbidden: You are not a member of this workspace' },
         { status: 403 },
       );
     }
 
-    let canViewLead = isWorkspaceOwner;
+    let canViewLead = isOwner;
 
     if (!canViewLead) {
-      const hierarchyFilter = await getHierarchyVisibleUserIds(
-        adminClient,
-        lead.workspace_id,
-        actorAccountId,
-        { requireSharedTeam: false },
-      );
-
-      if (hierarchyFilter.type === 'all') {
+      if (hierarchyType === 'all') {
         canViewLead = true;
       } else {
-        const visibleUserIds = new Set([
-          ...hierarchyFilter.userIds,
-          actorAccountId,
-          user.id,
-        ]);
+        const visibleUserIds = new Set<string>(rpcVisibleUserIds || []);
 
         canViewLead =
           (lead.owner_id ? visibleUserIds.has(lead.owner_id) : false) ||

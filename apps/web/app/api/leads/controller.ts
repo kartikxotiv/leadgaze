@@ -4,7 +4,6 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '../../../lib/database.types';
-import { getHierarchyVisibleUserIds } from '../../../lib/permissions/hierarchy-utils';
 import {
   catchAsync,
   successDataResponse,
@@ -13,6 +12,8 @@ import {
 /**
  * GET /api/leads
  * Fetch all leads for a workspace
+ * Optimized: uses resolve_workspace_access RPC (1 DB call) instead of 5-8 sequential auth/hierarchy queries.
+ * Name-search pre-query results are cached and reused for breakdown. Main + breakdown run in Promise.all.
  */
 const getLeads = catchAsync(
   async ({
@@ -48,127 +49,65 @@ const getLeads = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // Resolve account id used by CRM tables/workspace_members.
-    // In some setups auth user id and accounts.id may differ.
-    let actorAccountId = user.id;
-    const { data: accountById } = await adminClient
-      .from('accounts')
-      .select('id')
-      .eq('id', user.id)
-      .maybeSingle();
+    // Single RPC call replaces: accounts lookup, workspace owner check, membership check,
+    // and 3-5 queries inside getHierarchyVisibleUserIds
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const { data: accessResult, error: accessError } = await (
+      adminClient as any
+    ).rpc('resolve_workspace_access', {
+      p_workspace_id: workspaceId,
+      p_user_id: user.id,
+      p_user_email: user.email || null,
+      p_require_shared_team: false, // leads use requireSharedTeam: false
+    });
 
-    if (!accountById?.id && user.email) {
-      const { data: accountByEmail } = await adminClient
-        .from('accounts')
-        .select('id')
-        .eq('email', user.email)
-        .maybeSingle();
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
-      if (accountByEmail?.id) {
-        actorAccountId = accountByEmail.id;
-      }
+    if (accessError) {
+      console.error('Workspace access resolution error:', accessError);
+      throw accessError;
     }
 
-    // Check if user is workspace owner
-    const { data: workspace, error: workspaceError } = await adminClient
-      .from('workspaces')
-      .select('owner_id')
-      .eq('id', workspaceId)
-      .single();
+    const {
+      actor_account_id: actorAccountId,
+      is_owner: isOwner,
+      is_member: isMember,
+      hierarchy_type: hierarchyType,
+      visible_user_ids: rpcVisibleUserIds,
+    } = accessResult;
 
-    if (workspaceError) {
-      console.error('Workspace fetch error:', workspaceError);
-      throw workspaceError;
-    }
-
-    const isOwner =
-      workspace?.owner_id === actorAccountId || workspace?.owner_id === user.id;
-
-    // Validate workspace membership when user is not owner
-    const { data: membership } = await adminClient
-      .from('workspace_members')
-      .select('id')
-      .eq('workspace_id', workspaceId)
-      .eq('user_id', actorAccountId)
-      .eq('status', 'accepted')
-      .maybeSingle();
-
-    if (!isOwner && !membership) {
+    if (!isOwner && !isMember) {
       return NextResponse.json(
         { message: 'Forbidden: You are not a member of this workspace' },
         { status: 403 },
       );
     }
 
-    let hierarchyFilter:
-      | { type: 'all' }
-      | { type: 'restricted'; userIds: string[] } = { type: 'all' };
-    let visibleUserIds: string[] | null = null;
+    const visibleUserIds: string[] | null = rpcVisibleUserIds ?? null;
     let assignedLeadIds: string[] = [];
 
-    if (!isOwner) {
-      hierarchyFilter = await getHierarchyVisibleUserIds(
-        adminClient,
-        workspaceId,
-        actorAccountId,
-        { requireSharedTeam: false },
-      );
-      if (hierarchyFilter.type === 'restricted') {
-        visibleUserIds = Array.from(
-          new Set([...hierarchyFilter.userIds, actorAccountId, user.id]),
-        );
+    if (
+      !isOwner &&
+      hierarchyType === 'restricted' &&
+      visibleUserIds &&
+      visibleUserIds.length > 0
+    ) {
+      // Fetch leads assigned to the current user or any lower hierarchy user.
+      const { data: assignments } = await adminClient
+        .from('lead_assignees')
+        .select('lead_id')
+        .eq('workspace_id', workspaceId)
+        .in('assigned_to_user_id', visibleUserIds)
+        .eq('assignment_status', 'active');
 
-        // Fetch leads assigned to the current user or any lower hierarchy user.
-        const { data: assignments } = await adminClient
-          .from('lead_assignees')
-          .select('lead_id')
-          .eq('workspace_id', workspaceId)
-          .in('assigned_to_user_id', visibleUserIds)
-          .eq('assignment_status', 'active');
-
-        assignedLeadIds = assignments?.map((a) => a.lead_id) || [];
-      }
+      assignedLeadIds =
+        assignments?.map((a: { lead_id: string }) => a.lead_id) || [];
     }
 
-    // Build the query
-    let query = adminClient
-      .from('crm_leads')
-      .select(
-        `
-          *,
-          status:entity_statuses(id, status_name, status_key, color, icon),
-          source:lead_sources(id, source_name, source_key, color, icon),
-          owner:accounts!crm_leads_owner_id_fkey(id, email, name),
-          created_by_account:accounts!crm_leads_created_by_fkey(id, email, name),
-          updated_by_account:accounts!crm_leads_updated_by_fkey(id, email, name),
-          industry:crm_industries(id, industry_name)
-        `,
-        { count: 'exact' },
-      )
-      .eq('workspace_id', workspaceId)
-      .eq('is_deleted', false);
-
-    if (!isOwner && visibleUserIds && visibleUserIds.length > 0) {
-      const assignedIdsFilter =
-        assignedLeadIds.length > 0
-          ? `,id.in.(${assignedLeadIds.join(',')})`
-          : '';
-
-      query = query.or(
-        `owner_id.in.(${visibleUserIds.join(',')}),created_by.in.(${visibleUserIds.join(',')})${assignedIdsFilter}`,
-      );
-    }
-
-    // Filter by status if provided
-    if (statusId && statusId !== 'all') {
-      query = query.eq('status_id', statusId);
-    }
-
-    // Search term
+    // Pre-compute name-search matched IDs once (was running twice: for main + breakdown)
+    let nameMatchedIds: string[] = [];
     if (searchTerm) {
       const parts = searchTerm.split(' ').filter(Boolean);
-      let orFilter = `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%,mobile_number.ilike.%${searchTerm}%`;
-
       if (parts.length >= 2) {
         const part1 = parts[0];
         const part2 = parts[1];
@@ -179,98 +118,109 @@ const getLeads = catchAsync(
           .or(
             `and(first_name.ilike.%${part1}%,last_name.ilike.%${part2}%),and(first_name.ilike.%${part2}%,last_name.ilike.%${part1}%)`,
           );
-
-        const matchedIds = nameMatched?.map((l) => l.id) || [];
-        if (matchedIds.length > 0) {
-          orFilter += `,id.in.(${matchedIds.join(',')})`;
-        }
+        nameMatchedIds = nameMatched?.map((l: { id: string }) => l.id) || [];
       }
+    }
 
-      query = query.or(orFilter);
+    // Helper to build the common search filter string
+    const buildSearchOrFilter = () => {
+      let orFilter = `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%,mobile_number.ilike.%${searchTerm}%`;
+      if (nameMatchedIds.length > 0) {
+        orFilter += `,id.in.(${nameMatchedIds.join(',')})`;
+      }
+      return orFilter;
+    };
+
+    // Helper to apply hierarchy + assignee filter to a query
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const applyAccessFilter = (q: any) => {
+      if (!isOwner && visibleUserIds && visibleUserIds.length > 0) {
+        const assignedIdsFilter =
+          assignedLeadIds.length > 0
+            ? `,id.in.(${assignedLeadIds.join(',')})`
+            : '';
+        q = q.or(
+          `owner_id.in.(${visibleUserIds.join(',')}),created_by.in.(${visibleUserIds.join(',')})${assignedIdsFilter}`,
+        );
+      }
+      return q;
+    };
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+
+    // Build main query
+    let mainQuery = applyAccessFilter(
+      adminClient
+        .from('crm_leads')
+        .select(
+          `
+            *,
+            status:entity_statuses(id, status_name, status_key, color, icon),
+            source:lead_sources(id, source_name, source_key, color, icon),
+            owner:accounts!crm_leads_owner_id_fkey(id, email, name),
+            created_by_account:accounts!crm_leads_created_by_fkey(id, email, name),
+            updated_by_account:accounts!crm_leads_updated_by_fkey(id, email, name),
+            industry:crm_industries(id, industry_name)
+          `,
+          { count: 'exact' },
+        )
+        .eq('workspace_id', workspaceId)
+        .eq('is_deleted', false),
+    );
+
+    if (statusId && statusId !== 'all') {
+      mainQuery = mainQuery.eq('status_id', statusId);
+    }
+
+    if (searchTerm) {
+      mainQuery = mainQuery.or(buildSearchOrFilter());
     }
 
     // Pagination
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    console.log(
-      `[LEADS API] Executing query for user ${user.id} in workspace ${workspaceId}`,
+    // Build breakdown query (no status filter, no pagination)
+    let breakdownQuery = applyAccessFilter(
+      adminClient
+        .from('crm_leads')
+        .select('status_id')
+        .eq('workspace_id', workspaceId)
+        .eq('is_deleted', false),
     );
 
-    const {
-      data: leads,
-      error,
-      count,
-    } = await query
-      .order('created_at', {
-        ascending: false,
-      })
-      .range(from, to);
+    if (searchTerm) {
+      breakdownQuery = breakdownQuery.or(buildSearchOrFilter());
+    }
 
+    // Run main + breakdown queries in parallel
+    console.log(
+      `[LEADS API] Executing parallel queries for user ${user.id} in workspace ${workspaceId}`,
+    );
+
+    const [mainResult, breakdownResult] = await Promise.all([
+      mainQuery.order('created_at', { ascending: false }).range(from, to),
+      breakdownQuery,
+    ]);
+
+    const { data: leads, error, count } = mainResult;
     if (error) {
       console.error('Get leads error:', error);
       throw error;
     }
 
-    // For status breakdown, we need a query grouped by status_id
-    // We ignore the selected statusId filter here to show the whole distribution
-    let breakdownQuery = adminClient
-      .from('crm_leads')
-      .select('status_id')
-      .eq('workspace_id', workspaceId)
-      .eq('is_deleted', false);
-
-    if (!isOwner && visibleUserIds && visibleUserIds.length > 0) {
-      const assignedIdsFilter =
-        assignedLeadIds.length > 0
-          ? `,id.in.(${assignedLeadIds.join(',')})`
-          : '';
-
-      breakdownQuery = breakdownQuery.or(
-        `owner_id.in.(${visibleUserIds.join(',')}),created_by.in.(${visibleUserIds.join(',')})${assignedIdsFilter}`,
-      );
-    }
-
-    if (searchTerm) {
-      const parts = searchTerm.split(' ').filter(Boolean);
-      let orFilter = `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%,mobile_number.ilike.%${searchTerm}%`;
-
-      if (parts.length >= 2) {
-        const part1 = parts[0];
-        const part2 = parts[1];
-        const { data: nameMatched } = await adminClient
-          .from('crm_leads')
-          .select('id')
-          .eq('workspace_id', workspaceId)
-          .or(
-            `and(first_name.ilike.%${part1}%,last_name.ilike.%${part2}%),and(first_name.ilike.%${part2}%,last_name.ilike.%${part1}%)`,
-          );
-
-        const matchedIds = nameMatched?.map((l) => l.id) || [];
-        if (matchedIds.length > 0) {
-          orFilter += `,id.in.(${matchedIds.join(',')})`;
-        }
-      }
-
-      breakdownQuery = breakdownQuery.or(orFilter);
-    }
-
-    // RLS handles visibility for breakdownQuery too
-
-    const { data: breakdownData, error: breakdownError } = await breakdownQuery;
-
+    const { data: breakdownData, error: breakdownError } = breakdownResult;
     if (breakdownError) {
       console.error('Get status breakdown error:', breakdownError);
       throw breakdownError;
     }
 
     const statusBreakdownMap: Record<string, { count: number }> = {};
-    (breakdownData || []).forEach((lead) => {
-      const statusId = lead.status_id;
-      if (!statusBreakdownMap[statusId]) {
-        statusBreakdownMap[statusId] = { count: 0 };
+    (breakdownData || []).forEach((lead: { status_id: string }) => {
+      const sid = lead.status_id;
+      if (!statusBreakdownMap[sid]) {
+        statusBreakdownMap[sid] = { count: 0 };
       }
-      statusBreakdownMap[statusId].count += 1;
+      statusBreakdownMap[sid].count += 1;
     });
 
     return NextResponse.json({
@@ -285,9 +235,8 @@ const getLeads = catchAsync(
               userId: user.id,
               actorAccountId,
               isOwner,
-              hasAllHierarchyAccess: hierarchyFilter.type === 'all',
+              hasAllHierarchyAccess: hierarchyType === 'all',
               visibleUserIds: visibleUserIds || [],
-              membershipStatus: membership ? 'accepted' : null,
             },
           }
         : {}),

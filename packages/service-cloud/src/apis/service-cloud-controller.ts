@@ -542,3 +542,61 @@ export const getServiceCloudDashboardController = catchAsync(
     );
   },
 );
+
+/**
+ * GET /api/service-cloud/ticket-lookups
+ * Optimized: fetches ticket statuses, priorities, and categories in a single API call
+ * using Promise.all on the server side, replacing 3 separate HTTP round-trips with 1.
+ */
+export const getServiceCloudTicketLookupsController = catchAsync(
+  async ({ request }) => {
+    const url = new URL(request.url);
+    const workspaceId =
+      url.searchParams.get('workspaceId') ??
+      url.searchParams.get('workspace_id');
+    if (!workspaceId)
+      return NextResponse.json(
+        { success: false, message: 'workspaceId is required' },
+        { status: 400 },
+      );
+
+    const { supabase, user, error } =
+      await assertServiceCloudWorkspaceAccess(workspaceId);
+    if (error || !user) return error!;
+
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const client = (supabase as any).schema('service_cloud');
+
+    const [statuses, priorities, categories] = await Promise.all([
+      client
+        .from('ticket_statuses')
+        .select('*')
+        .eq('workspace_id', workspaceId)
+        .eq('is_active', true)
+        .order('display_order', { ascending: true }),
+      client
+        .from('ticket_priorities')
+        .select('*')
+        .eq('workspace_id', workspaceId)
+        .eq('is_active', true)
+        .order('severity_order', { ascending: true }),
+      client
+        .from('ticket_categories')
+        .select('*')
+        .eq('workspace_id', workspaceId)
+        .eq('is_active', true)
+        .order('display_order', { ascending: true }),
+    ]);
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+
+    if (statuses.error) throw statuses.error;
+    if (priorities.error) throw priorities.error;
+    if (categories.error) throw categories.error;
+
+    return successDataResponse('Ticket lookups retrieved successfully', {
+      statuses: statuses.data ?? [],
+      priorities: priorities.data ?? [],
+      categories: categories.data ?? [],
+    });
+  },
+);
