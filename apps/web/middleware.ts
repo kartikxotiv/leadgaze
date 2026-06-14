@@ -137,6 +137,26 @@ function getPatterns() {
           return NextResponse.redirect(new URL(redirectPath, origin).href);
         }
 
+        // Redirect legacy bare /home/* routes to /org/home.
+        // Only module-scoped routes are allowed: /home/sales, /home/hrms,
+        // /home/services, /home/inventory, /home/funds.
+        const allowedModulePrefixes = [
+          '/home/sales',
+          '/home/hrms',
+          '/home/services',
+          '/home/inventory',
+          '/home/funds',
+        ];
+        const isAllowedRoute = allowedModulePrefixes.some(
+          (prefix) => next === prefix || next.startsWith(`${prefix}/`),
+        );
+
+        if (!isAllowedRoute) {
+          return NextResponse.redirect(
+            new URL(pathsConfig.app.home, origin).href,
+          );
+        }
+
         const supabase = createMiddlewareClient(req, res);
 
         const requiresMultiFactorAuthentication =

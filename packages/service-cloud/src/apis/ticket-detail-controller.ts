@@ -134,24 +134,48 @@ export const getServiceCloudTicketDetailController = catchAsync(
       ),
     );
 
-    let emailById = new Map<string, any>();
-    let linkedEmails: any[] = [];
+    const memberIds = Array.from(
+      new Set(
+        [
+          ...(workspaceMembers.data ?? []).map((member: any) => member.user_id),
+          ...(ticketAssignees.data ?? []).map(
+            (assignee: any) => assignee.account_id,
+          ),
+          ...(activities.data ?? []).map(
+            (activity: any) => activity.actor_account_id,
+          ),
+        ].filter(Boolean),
+      ),
+    );
 
-    if (emailIds.length > 0) {
-      const { data: coreEmails, error: coreEmailError } = await (
-        supabase as any
-      )
-        .schema('core')
-        .from('emails')
-        .select('*')
-        .eq('workspace_id', workspaceId)
-        .in('id', emailIds);
+    // Optimized: run core emails + member accounts in parallel (they're independent)
+    const [coreEmailsResult, memberAccountsResult] = await Promise.all([
+      emailIds.length > 0
+        ? (supabase as any)
+            .schema('core')
+            .from('emails')
+            .select('*')
+            .eq('workspace_id', workspaceId)
+            .in('id', emailIds)
+        : Promise.resolve({ data: [], error: null }),
+      memberIds.length > 0
+        ? supabase
+            .from('accounts')
+            .select('id, name, email, picture_url')
+            .in('id', memberIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
 
-      if (coreEmailError) throw coreEmailError;
-      linkedEmails = coreEmails ?? [];
-      emailById = new Map(linkedEmails.map((email: any) => [email.id, email]));
-    }
+    if (coreEmailsResult.error) throw coreEmailsResult.error;
+    const linkedEmails: any[] = coreEmailsResult.data ?? [];
+    const emailById = new Map(
+      linkedEmails.map((email: any) => [email.id, email]),
+    );
 
+    if (memberAccountsResult.error) throw memberAccountsResult.error;
+    const memberAccounts = memberAccountsResult.data;
+
+    // Thread emails depend on core emails (need thread_keys), so run separately
     const threadKeys = Array.from(
       new Set(
         [
@@ -180,28 +204,6 @@ export const getServiceCloudTicketDetailController = catchAsync(
       );
     }
 
-    const memberIds = Array.from(
-      new Set(
-        [
-          ...(workspaceMembers.data ?? []).map((member: any) => member.user_id),
-          ...(ticketAssignees.data ?? []).map(
-            (assignee: any) => assignee.account_id,
-          ),
-          ...(activities.data ?? []).map(
-            (activity: any) => activity.actor_account_id,
-          ),
-        ].filter(Boolean),
-      ),
-    );
-    const { data: memberAccounts, error: memberAccountsError } =
-      memberIds.length > 0
-        ? await supabase
-            .from('accounts')
-            .select('id, name, email, picture_url')
-            .in('id', memberIds)
-        : { data: [], error: null };
-
-    if (memberAccountsError) throw memberAccountsError;
     const memberAccountById = new Map(
       (memberAccounts ?? []).map((account: any) => [account.id, account]),
     );

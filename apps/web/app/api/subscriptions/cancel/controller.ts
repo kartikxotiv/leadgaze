@@ -86,7 +86,7 @@ export const cancelSubscription = catchAsync(
     }
 
     // ── Fetch seat(s) ──────────────────────────────────────────
-    let seatQuery = adminClient
+    const seatQuery = adminClient
       .from('workspace_module_seats')
       .select(
         'id, product_id, seats_used, seats_purchased, status, provider_subscription_id, provider_metadata, subscription_products(product_key)',
@@ -94,16 +94,29 @@ export const cancelSubscription = catchAsync(
       .eq('workspace_id', workspaceId)
       .neq('status', 'cancelled');
 
-    if (productKey) {
-      // Filter to specific product via join
-      seatQuery = seatQuery.eq('subscription_products.product_key', productKey);
-    }
+    const { data: allSeats, error: seatsError } = await seatQuery;
 
-    const { data: seats, error: seatsError } = await seatQuery;
-
-    if (seatsError || !seats || seats.length === 0) {
+    if (seatsError || !allSeats || allSeats.length === 0) {
       return NextResponse.json(
         { success: false, message: 'No active subscription found' },
+        { status: 404 },
+      );
+    }
+
+    // Filter by productKey in JS to avoid unreliable FK-relationship filtering
+    const seats = productKey
+      ? allSeats.filter(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (s: any) => s.subscription_products?.product_key === productKey,
+        )
+      : allSeats;
+
+    if (seats.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'No active subscription found for this module',
+        },
         { status: 404 },
       );
     }

@@ -7,7 +7,6 @@ import { useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
-  ArrowLeft,
   ArrowRight,
   Check,
   ChevronDown,
@@ -21,7 +20,6 @@ import {
   Package,
   Plus,
   ShoppingCart,
-  Sparkles,
   Trash2,
   Users,
   X,
@@ -34,7 +32,7 @@ import {
 } from '@kit/core/services';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { Card, CardContent } from '@kit/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -43,11 +41,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@kit/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@kit/ui/table';
 import { cn } from '@kit/ui/utils';
 
-import { AppLogo } from '~/components/app-logo';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
+  type ModuleEntitlement,
   type SeatAssignment,
   type SubscriptionProduct,
   type WorkspaceSeat,
@@ -55,6 +61,7 @@ import {
   createMultiProductCheckoutService,
   getSeatAssignmentsService,
   getSubscriptionProductsService,
+  getWorkspaceEntitlementsService,
   getWorkspaceSeatsService,
   updateSeatsViaStripeService,
 } from '~/services/subscription.service';
@@ -76,6 +83,7 @@ const PRODUCT_STYLES: Record<
     iconColor: string;
     gradient: string;
     accent: string;
+    accentHex: string;
     features: string[];
   }
 > = {
@@ -84,11 +92,11 @@ const PRODUCT_STYLES: Record<
     iconColor: 'text-blue-600 dark:text-blue-400',
     gradient: 'from-blue-500/10 to-indigo-500/5',
     accent: 'bg-blue-600 hover:bg-blue-700',
+    accentHex: '#2563eb',
     features: [
       'Lead & contact management',
       'Sales pipeline tracking',
       'Email campaigns & templates',
-      'Activity timeline & notes',
     ],
   },
   hrms: {
@@ -96,11 +104,11 @@ const PRODUCT_STYLES: Record<
     iconColor: 'text-violet-600 dark:text-violet-400',
     gradient: 'from-violet-500/10 to-purple-500/5',
     accent: 'bg-violet-600 hover:bg-violet-700',
+    accentHex: '#7c3aed',
     features: [
       'Employee directory',
       'Attendance & leave tracking',
       'Payroll management',
-      'Onboarding workflows',
     ],
   },
   inventory: {
@@ -108,11 +116,11 @@ const PRODUCT_STYLES: Record<
     iconColor: 'text-emerald-600 dark:text-emerald-400',
     gradient: 'from-emerald-500/10 to-green-500/5',
     accent: 'bg-emerald-600 hover:bg-emerald-700',
+    accentHex: '#059669',
     features: [
       'Product catalog',
       'Stock management',
       'Purchase & sales orders',
-      'Warehouse tracking',
     ],
   },
   service_cloud: {
@@ -120,24 +128,16 @@ const PRODUCT_STYLES: Record<
     iconColor: 'text-amber-600 dark:text-amber-400',
     gradient: 'from-amber-500/10 to-orange-500/5',
     accent: 'bg-amber-600 hover:bg-amber-700',
-    features: [
-      'Ticket management',
-      'Shared inbox',
-      'SLA tracking',
-      'Knowledge base',
-    ],
+    accentHex: '#d97706',
+    features: ['Ticket management', 'Shared inbox', 'SLA tracking'],
   },
   funds: {
     iconBg: 'bg-teal-50 dark:bg-teal-500/10',
     iconColor: 'text-teal-600 dark:text-teal-400',
     gradient: 'from-teal-500/10 to-cyan-500/5',
     accent: 'bg-teal-600 hover:bg-teal-700',
-    features: [
-      'Investor CRM',
-      'Deal pipeline',
-      'Fundraise tracking',
-      'Portfolio management',
-    ],
+    accentHex: '#0d9488',
+    features: ['Investor CRM', 'Deal pipeline', 'Fundraise tracking'],
   },
 };
 
@@ -148,6 +148,7 @@ function getProductStyle(key: string) {
       iconColor: 'text-slate-600 dark:text-slate-400',
       gradient: 'from-slate-500/10 to-gray-500/5',
       accent: 'bg-slate-600 hover:bg-slate-700',
+      accentHex: '#475569',
       features: [],
     }
   );
@@ -161,28 +162,21 @@ export default function OrgSubscriptionPage() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
-  // Local state for pending seat changes (before checkout/apply)
   const [pendingChanges, setPendingChanges] = useState<Record<string, number>>(
     {},
   );
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>(
     'monthly',
   );
-
-  // Track which available modules are selected for subscription (productKey -> seats)
   const [availableSelections, setAvailableSelections] = useState<
     Record<string, number>
   >({});
-
-  // Cancel / remove confirmation state
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [removeModuleDialog, setRemoveModuleDialog] = useState<{
     open: boolean;
     productKey: string;
     displayName: string;
   }>({ open: false, productKey: '', displayName: '' });
-
-  // Seat update confirmation dialog state
   const [seatUpdateDialog, setSeatUpdateDialog] = useState<{
     open: boolean;
     seatId: string;
@@ -196,9 +190,7 @@ export default function OrgSubscriptionPage() {
     currentSeats: 0,
     newSeats: 0,
   });
-  const [isUpdatingSeats, setIsUpdatingSeats] = useState(false);
 
-  // Handle checkout success/cancel query params from Stripe redirect
   useEffect(() => {
     const checkout = searchParams.get('checkout');
     if (checkout === 'success') {
@@ -221,7 +213,6 @@ export default function OrgSubscriptionPage() {
     }
   }, [searchParams, workspaceId, queryClient]);
 
-  // Fetch workspace subscription status (trial info)
   const { data: subscriptionStatus } = useQuery<WorkspaceSubscriptionStatus>({
     queryKey: ['workspace-subscription', workspaceId],
     queryFn: () => getWorkspaceSubscriptionService(workspaceId),
@@ -239,12 +230,14 @@ export default function OrgSubscriptionPage() {
     enabled: !!workspaceId,
   });
 
-  const products: SubscriptionProduct[] = useMemo(
-    () => productsData?.data ?? [],
-    [productsData],
-  );
-  // Filter out cancelled seats — they should not appear in the active UI
-  // Wrapped in useMemo to keep a stable reference for useEffect dependencies
+  // Fetch workspace entitlements (free access grants)
+  const { data: entitlementsData } = useQuery({
+    queryKey: ['workspace-entitlements', workspaceId],
+    queryFn: () => getWorkspaceEntitlementsService(workspaceId),
+    enabled: !!workspaceId,
+  });
+
+  const products: SubscriptionProduct[] = productsData?.data ?? [];
   const seats: WorkspaceSeat[] = useMemo(
     () =>
       (seatsData?.data ?? []).filter(
@@ -265,16 +258,66 @@ export default function OrgSubscriptionPage() {
       !s.provider_subscription_id.startsWith('trial_sub_'),
   );
 
+  // Detect existing billing cycle from user's active subscription
+  const existingBillingCycle: 'monthly' | 'yearly' | null = useMemo(() => {
+    if (!isPaid) return null;
+    // Check first paid seat's billing_cycle
+    const paidSeat = seats.find(
+      (s) =>
+        s.billing_cycle &&
+        s.status === 'active' &&
+        !s.provider_subscription_id?.startsWith('trial_sub_'),
+    );
+    if (paidSeat) {
+      const cycle = paidSeat.billing_cycle?.toLowerCase();
+      if (cycle === 'yearly' || cycle === 'year') return 'yearly';
+      if (cycle === 'monthly' || cycle === 'month') return 'monthly';
+    }
+    // Fallback to subscription status
+    const subCycle =
+      subscriptionStatus?.subscription?.billing_cycle?.toLowerCase();
+    if (subCycle === 'yearly' || subCycle === 'year') return 'yearly';
+    if (subCycle === 'monthly' || subCycle === 'month') return 'monthly';
+    return null;
+  }, [isPaid, seats, subscriptionStatus]);
+
+  // Lock billing cycle to match existing subscription (can't switch between monthly/yearly)
+  useEffect(() => {
+    if (existingBillingCycle && billingCycle !== existingBillingCycle) {
+      setBillingCycle(existingBillingCycle);
+    }
+  }, [existingBillingCycle, billingCycle]);
+
   const subscribedProductIds = useMemo(
     () => new Set(seats.map((s) => s.product_id)),
     [seats],
   );
 
-  const availableProducts = products.filter(
-    (p) => !subscribedProductIds.has(p.id),
+  // Entitlement-based modules (free access without paid subscription)
+  const entitledModules = useMemo(() => {
+    const entitlements = (entitlementsData?.data ?? []) as ModuleEntitlement[];
+    const now = new Date();
+    return entitlements
+      .filter(
+        (e) => e.is_active && (!e.valid_until || new Date(e.valid_until) > now),
+      )
+      .map((e) => ({
+        ...e,
+        product: products.find((p) => p.id === e.product_id),
+      }))
+      .filter((e) => e.product && !subscribedProductIds.has(e.product_id));
+  }, [entitlementsData, products, subscribedProductIds]);
+
+  // Product IDs that already have entitlements (to hide from available modules)
+  const entitledProductIds = useMemo(
+    () => new Set(entitledModules.map((e) => e.product_id)),
+    [entitledModules],
   );
 
-  // Initialize pending changes from current seats
+  const availableProducts = products.filter(
+    (p) => !subscribedProductIds.has(p.id) && !entitledProductIds.has(p.id),
+  );
+
   useEffect(() => {
     setPendingChanges((prev) => {
       const updated = { ...prev };
@@ -287,7 +330,6 @@ export default function OrgSubscriptionPage() {
     });
   }, [seats]);
 
-  // Calculate totals from pending changes + available selections
   const { totalMonthly, totalSeats, changedItems, selectedNewItems } =
     useMemo(() => {
       let monthly = 0;
@@ -298,7 +340,10 @@ export default function OrgSubscriptionPage() {
         const pending = pendingChanges[seat.product_id] ?? seat.seats_purchased;
         const product = seat.subscription_products;
         if (product) {
-          const price = product.monthly_price_per_seat ?? 0;
+          const price =
+            billingCycle === 'yearly'
+              ? (product.yearly_price_per_seat ?? 0)
+              : (product.monthly_price_per_seat ?? 0);
           monthly += price * pending;
           seatsTotal += pending;
           if (pending !== seat.seats_purchased) {
@@ -307,14 +352,16 @@ export default function OrgSubscriptionPage() {
         }
       }
 
-      // Add totals from selected available modules
       const newItems: Array<{ productKey: string; seats: number }> = [];
       for (const [productKey, seatCount] of Object.entries(
         availableSelections,
       )) {
         const product = products.find((p) => p.product_key === productKey);
         if (product) {
-          const price = product.monthly_price_per_seat ?? 0;
+          const price =
+            billingCycle === 'yearly'
+              ? (product.yearly_price_per_seat ?? 0)
+              : (product.monthly_price_per_seat ?? 0);
           monthly += price * seatCount;
           seatsTotal += seatCount;
           newItems.push({ productKey, seats: seatCount });
@@ -327,28 +374,21 @@ export default function OrgSubscriptionPage() {
         changedItems: changed,
         selectedNewItems: newItems,
       };
-    }, [seats, pendingChanges, availableSelections, products]);
+    }, [seats, pendingChanges, availableSelections, products, billingCycle]);
 
-  // Trial info
   const trialDaysRemaining = subscriptionStatus?.trial_days_remaining ?? null;
   const isTrialExpired = subscriptionStatus?.is_trial_expired ?? false;
 
-  // Checkout mutation (for trial -> paid, new modules, or combined)
   const checkoutMutation = useMutation({
     mutationFn: () => {
-      // Always include ALL existing modules with their pending seat counts
-      // (not just the ones that changed — unchanged modules must also be
-      //  included so they convert from trial to paid)
       const existingItems = seats.map((s) => ({
         productKey: s.subscription_products?.product_key ?? '',
         seats: pendingChanges[s.product_id] ?? s.seats_purchased,
       }));
-
       const allItems = [
         ...existingItems.filter((i) => i.productKey),
         ...selectedNewItems,
       ];
-
       return createMultiProductCheckoutService({
         workspaceId,
         items: allItems,
@@ -375,7 +415,6 @@ export default function OrgSubscriptionPage() {
     },
   });
 
-  // Direct seat update (for paid subscriptions) — shows confirmation first
   const handleDirectUpdate = async (seatId: string, newQuantity: number) => {
     try {
       const result = await updateSeatsViaStripeService(seatId, newQuantity);
@@ -403,7 +442,6 @@ export default function OrgSubscriptionPage() {
     }
   };
 
-  // Show confirmation dialog before updating seats on paid subscription
   const requestSeatUpdate = (seat: WorkspaceSeat, newQuantity: number) => {
     setSeatUpdateDialog({
       open: true,
@@ -420,7 +458,6 @@ export default function OrgSubscriptionPage() {
 
   const hasChanges = changedItems.length > 0 || selectedNewItems.length > 0;
 
-  // Cancel subscription mutation (full cancellation)
   const cancelMutation = useMutation({
     mutationFn: () => cancelSubscriptionService({ workspaceId }),
     onSuccess: (data) => {
@@ -438,7 +475,6 @@ export default function OrgSubscriptionPage() {
     },
   });
 
-  // Remove single module mutation
   const removeModuleMutation = useMutation({
     mutationFn: (productKey: string) =>
       cancelSubscriptionService({ workspaceId, productKey }),
@@ -466,223 +502,312 @@ export default function OrgSubscriptionPage() {
   });
 
   return (
-    <div className="bg-background min-h-screen pb-24">
-      {/* Header */}
-      <header className="border-border bg-card/80 sticky top-0 z-40 border-b backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <AppLogo href={null} variant="marketing" className="w-[100px]"/>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground text-xs">/</span>
-              <span className="text-muted-foreground text-xs">
-                Subscription
-              </span>
-            </div>
-          </div>
-          <a href="/org/home">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Back to Home
-            </Button>
-          </a>
-        </div>
-      </header>
-
-      {/* Page header */}
-      <div className="border-border from-primary/[0.03] border-b bg-gradient-to-b to-transparent">
-        <div className="mx-auto max-w-6xl px-6 py-8">
-          <div className="flex items-center gap-2">
-            <CreditCard className="text-primary h-4 w-4" />
-            <span className="secondary-text-small text-primary font-medium tracking-widest uppercase">
-              Account &middot; Billing
-            </span>
-          </div>
-          <h1 className="text-foreground mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-            Subscription & Modules
-          </h1>
-          <p className="primary-text-regular text-muted-foreground mt-2">
-            Manage your active modules, seat allocations, and billing.
-          </p>
-
-          {/* Billing cycle toggle */}
-          {(!isPaid || isTrial) && (
-            <div className="mt-5 flex items-center gap-3">
-              <span className="secondary-text-small text-muted-foreground">
-                Billing:
-              </span>
-              <div className="border-border flex overflow-hidden rounded-lg border">
-                {(['monthly', 'yearly'] as const).map((cycle) => (
-                  <button
-                    key={cycle}
-                    type="button"
+    <div className="space-y-6 pb-8">
+      {/* Billing cycle toggle — only for trial/new users, not existing subscribers */}
+      {!existingBillingCycle && (
+        <div className="flex items-center gap-4">
+          <span className="text-muted-foreground text-sm font-medium">
+            Billing Cycle
+          </span>
+          <div className="inline-flex overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+            {(['monthly', 'yearly'] as const).map((cycle) => (
+              <Button
+                key={cycle}
+                type="button"
+                variant={billingCycle === cycle ? 'default' : 'outline'}
+                size="sm"
+                className={cn(
+                  'gap-1.5 rounded-none border-y-0 first:rounded-l-md first:border-l last:rounded-r-md last:border-r',
+                  billingCycle === cycle
+                    ? ''
+                    : 'bg-background text-muted-foreground hover:bg-muted',
+                )}
+                onClick={() => setBillingCycle(cycle)}
+              >
+                {cycle === 'monthly' ? 'Monthly' : 'Yearly'}
+                {cycle === 'yearly' && (
+                  <Badge
+                    variant="secondary"
                     className={cn(
-                      'px-4 py-1.5 text-xs font-medium transition-colors',
-                      billingCycle === cycle
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-card text-muted-foreground hover:bg-muted',
+                      'ml-1 px-1.5 py-0 text-[10px] font-semibold',
+                      billingCycle === 'yearly'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
                     )}
-                    onClick={() => setBillingCycle(cycle)}
                   >
-                    {cycle === 'monthly' ? 'Monthly' : 'Yearly'}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+                    -10%
+                  </Badge>
+                )}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Trial Banner */}
+      {(isTrial || isTrialExpired) && (
+        <TrialBanner
+          trialDaysRemaining={trialDaysRemaining}
+          isExpired={isTrialExpired}
+        />
+      )}
+
+      {/* Quick stats */}
+      <div className="flex flex-wrap items-center gap-5">
+        <div className="flex items-center gap-2">
+          <Package className="text-primary h-4 w-4" />
+          <span className="text-muted-foreground text-sm">Active modules</span>
+          <span className="text-foreground text-sm font-bold">
+            {seats.length}
+          </span>
+        </div>
+        <div className="bg-border h-4 w-px" />
+        <div className="flex items-center gap-2">
+          <Users className="text-primary h-4 w-4" />
+          <span className="text-muted-foreground text-sm">Total seats</span>
+          <span className="text-foreground text-sm font-bold">
+            {totalSeats}
+          </span>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="mx-auto max-w-6xl space-y-8 px-6 py-6">
-        {/* Trial Banner */}
-        {(isTrial || isTrialExpired) && (
-          <TrialBanner
-            trialDaysRemaining={trialDaysRemaining}
-            isExpired={isTrialExpired}
-          />
-        )}
+      {/* Active Subscriptions — Table layout */}
+      {seats.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
+            <CardTitle className="text-lg">Your Modules</CardTitle>
+            <span className="text-muted-foreground text-sm">
+              {seats.length} module{seats.length !== 1 ? 's' : ''}
+              {isTrial && ' (Trial)'}
+            </span>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Module</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Seats</TableHead>
+                  <TableHead>Price / Seat</TableHead>
+                  <TableHead>Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {seats.map((seat) => (
+                  <ActiveModuleRow
+                    key={seat.id}
+                    seat={seat}
+                    workspaceId={workspaceId}
+                    isPaid={isPaid}
+                    isTrial={isTrial}
+                    pendingSeats={
+                      pendingChanges[seat.product_id] ?? seat.seats_purchased
+                    }
+                    billingCycle={billingCycle}
+                    onPendingChange={(count) =>
+                      updatePending(seat.product_id, count)
+                    }
+                    onDirectUpdate={(count) => requestSeatUpdate(seat, count)}
+                    onRemove={() =>
+                      setRemoveModuleDialog({
+                        open: true,
+                        productKey:
+                          seat.subscription_products?.product_key ?? '',
+                        displayName:
+                          seat.subscription_products?.display_name ?? 'Module',
+                      })
+                    }
+                  />
+                ))}
+              </TableBody>
+            </Table>
 
-        {/* Quick stats */}
-        <div className="flex flex-wrap gap-3">
-          <div className="border-border bg-card flex items-center gap-2 rounded-full border px-4 py-2">
-            <Package className="text-primary h-4 w-4" />
-            <span className="secondary-text-small text-muted-foreground">
-              Active modules
-            </span>
-            <span className="primary-text-medium text-foreground font-bold">
-              {seats.length}
-            </span>
-          </div>
-          <div className="border-border bg-card flex items-center gap-2 rounded-full border px-4 py-2">
-            <Users className="text-primary h-4 w-4" />
-            <span className="secondary-text-small text-muted-foreground">
-              Total seats
-            </span>
-            <span className="primary-text-medium text-foreground font-bold">
-              {totalSeats}
-            </span>
-          </div>
-          {isPaid && monthlyTotalDisplay(totalMonthly) && (
-            <div className="border-border bg-card flex items-center gap-2 rounded-full border px-4 py-2">
-              <DollarSign className="text-primary h-4 w-4" />
-              <span className="secondary-text-small text-muted-foreground">
-                Monthly total
-              </span>
-              <span className="primary-text-medium text-foreground font-bold">
-                ${totalMonthly}/mo
-              </span>
-            </div>
-          )}
-        </div>
+            {/* Pricing breakdown rows */}
+            {seats.map((seat) => {
+              const product = seat.subscription_products;
+              const pricePerSeat =
+                billingCycle === 'yearly'
+                  ? product?.yearly_price_per_seat
+                  : product?.monthly_price_per_seat;
+              const pending =
+                pendingChanges[seat.product_id] ?? seat.seats_purchased;
+              const displaySeats = isPaid ? seat.seats_purchased : pending;
+              const style = getProductStyle(product?.product_key ?? '');
 
-        {/* Active Subscriptions */}
-        {seats.length > 0 && (
-          <section>
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="primary-heading text-foreground">Your Modules</h2>
-              <Badge variant="secondary" className="text-xs">
-                {seats.length} module{seats.length !== 1 ? 's' : ''}
-                {isTrial && ' (Trial)'}
-              </Badge>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {seats.map((seat) => (
-                <ActiveModuleCard
-                  key={seat.id}
+              if (!pricePerSeat) return null;
+
+              return (
+                <PricingBreakdownRow
+                  key={`breakdown-${seat.id}`}
                   seat={seat}
                   workspaceId={workspaceId}
-                  isPaid={isPaid}
-                  isTrial={isTrial}
-                  pendingSeats={
-                    pendingChanges[seat.product_id] ?? seat.seats_purchased
-                  }
+                  pricePerSeat={Number(pricePerSeat)}
+                  displaySeats={displaySeats}
                   billingCycle={billingCycle}
-                  onPendingChange={(count) =>
-                    updatePending(seat.product_id, count)
-                  }
-                  onDirectUpdate={(count) => requestSeatUpdate(seat, count)}
-                  onRemove={() =>
-                    setRemoveModuleDialog({
-                      open: true,
-                      productKey: seat.subscription_products?.product_key ?? '',
-                      displayName:
-                        seat.subscription_products?.display_name ?? 'Module',
-                    })
-                  }
+                  accentColor={style.accentHex}
+                />
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Entitlement-based Modules (free access grants) */}
+      {entitledModules.length > 0 && (
+        <Card className="border-blue-200 dark:border-blue-800">
+          <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
+            <CardTitle className="text-lg">Entitled Modules</CardTitle>
+            <Badge
+              variant="secondary"
+              className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+            >
+              Free Access
+            </Badge>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Module</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Seats</TableHead>
+                  <TableHead>Valid Until</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {entitledModules.map((ent) => {
+                  const product = ent.product;
+                  const style = getProductStyle(product?.product_key ?? '');
+                  const icon = PRODUCT_ICONS[product?.product_key ?? ''] ?? (
+                    <Package className="h-5 w-5" />
+                  );
+
+                  return (
+                    <TableRow
+                      key={ent.product_id}
+                      className="hover:bg-muted/50"
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={cn(
+                              'flex h-9 w-9 items-center justify-center rounded-lg',
+                              style.iconBg,
+                              style.iconColor,
+                            )}
+                          >
+                            {icon}
+                          </div>
+                          <div>
+                            <p className="text-foreground text-sm font-semibold">
+                              {product?.display_name ?? 'Module'}
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                              Via entitlement
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className="bg-purple-100 text-purple-700 capitalize dark:bg-purple-900/30 dark:text-purple-400"
+                        >
+                          {ent.entitlement_type.replace(/_/g, ' ')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm font-medium">
+                          {ent.granted_seats
+                            ? `${ent.granted_seats} seats`
+                            : 'Unlimited'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-muted-foreground text-sm">
+                          {ent.valid_until
+                            ? new Date(ent.valid_until).toLocaleDateString()
+                            : 'Never expires'}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Available Products */}
+      {availableProducts.length > 0 && (
+        <div>
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-foreground text-lg font-bold">
+                Available Modules
+              </h2>
+              <p className="text-muted-foreground mt-0.5 text-sm">
+                Add modules to expand your workspace capabilities
+              </p>
+            </div>
+            <Badge
+              variant="secondary"
+              className="gap-1.5 text-green-700 dark:text-green-400"
+            >
+              <Check className="h-3 w-3" />
+              {availableProducts.length} available
+            </Badge>
+          </div>
+
+          {productsLoading ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="text-primary h-6 w-6 animate-spin" />
+              <p className="text-muted-foreground mt-3 text-sm">
+                Loading modules...
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {availableProducts.map((product) => (
+                <AvailableModuleCard
+                  key={product.id}
+                  product={product}
+                  billingCycle={billingCycle}
+                  isSelected={product.product_key in availableSelections}
+                  selectedSeats={availableSelections[product.product_key] ?? 1}
+                  onSelect={() => {
+                    setAvailableSelections((prev) => ({
+                      ...prev,
+                      [product.product_key]: 1,
+                    }));
+                  }}
+                  onDeselect={() => {
+                    setAvailableSelections((prev) => {
+                      const next = { ...prev };
+                      delete next[product.product_key];
+                      return next;
+                    });
+                  }}
+                  onSeatsChange={(seats) => {
+                    setAvailableSelections((prev) => ({
+                      ...prev,
+                      [product.product_key]: seats,
+                    }));
+                  }}
                 />
               ))}
             </div>
-          </section>
-        )}
+          )}
+        </div>
+      )}
 
-        {/* Available Products */}
-        {availableProducts.length > 0 && (
-          <section>
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h2 className="primary-heading text-foreground">
-                  Available Modules
-                </h2>
-                <p className="secondary-text-small text-muted-foreground mt-1">
-                  Add modules to expand your workspace capabilities
-                </p>
-              </div>
-              <Badge variant="info" className="gap-1 text-xs">
-                <Sparkles className="h-3 w-3" />
-                {availableProducts.length} available
-              </Badge>
-            </div>
-            {productsLoading ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <Loader2 className="text-primary h-6 w-6 animate-spin" />
-                <p className="secondary-text-small text-muted-foreground mt-3">
-                  Loading modules...
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {availableProducts.map((product) => (
-                  <AvailableModuleCard
-                    key={product.id}
-                    product={product}
-                    billingCycle={billingCycle}
-                    isSelected={product.product_key in availableSelections}
-                    selectedSeats={
-                      availableSelections[product.product_key] ?? 1
-                    }
-                    onSelect={() => {
-                      setAvailableSelections((prev) => ({
-                        ...prev,
-                        [product.product_key]: 1,
-                      }));
-                    }}
-                    onDeselect={() => {
-                      setAvailableSelections((prev) => {
-                        const next = { ...prev };
-                        delete next[product.product_key];
-                        return next;
-                      });
-                    }}
-                    onSeatsChange={(seats) => {
-                      setAvailableSelections((prev) => ({
-                        ...prev,
-                        [product.product_key]: seats,
-                      }));
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-        )}
-      </div>
-
-      {/* Checkout Bar (for trial/non-paid states or when new modules are selected) */}
+      {/* Checkout Bar */}
       {(((!isPaid || isTrial) && seats.length > 0) ||
         selectedNewItems.length > 0) && (
         <CheckoutBar
           totalMonthly={totalMonthly}
           totalSeats={totalSeats}
+          billingCycle={billingCycle}
           hasChanges={hasChanges}
           isTrial={isTrial}
           isTrialExpired={isTrialExpired}
@@ -693,38 +818,36 @@ export default function OrgSubscriptionPage() {
 
       {/* Cancel Subscription Section (only for paid subscriptions) */}
       {isPaid && seats.length > 0 && (
-        <div className="mx-auto max-w-6xl px-6 pb-8">
-          <div className="border-destructive/20 rounded-xl border p-6">
-            <div className="flex items-center gap-3">
-              <div className="bg-destructive/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-                <AlertTriangle className="text-destructive h-4 w-4" />
-              </div>
-              <div className="flex-1">
-                <h3 className="primary-heading text-destructive">
-                  Cancel Subscription
-                </h3>
-                <p className="secondary-text-small text-muted-foreground mt-1">
-                  Cancelling will revoke access to all modules at the end of
-                  your current billing period. This action cannot be undone.
-                </p>
-              </div>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="shrink-0 gap-1.5"
-                disabled={cancelMutation.isPending}
-                onClick={() => setCancelDialogOpen(true)}
-              >
-                {cancelMutation.isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <X className="h-3.5 w-3.5" />
-                )}
-                Cancel All
-              </Button>
+        <Card className="border-destructive/20">
+          <CardContent className="flex items-center gap-3 p-6">
+            <div className="bg-destructive/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+              <AlertTriangle className="text-destructive h-4 w-4" />
             </div>
-          </div>
-        </div>
+            <div className="flex-1">
+              <h3 className="text-destructive font-semibold">
+                Cancel Subscription
+              </h3>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Cancelling will revoke access to all modules at the end of your
+                current billing period. This action cannot be undone.
+              </p>
+            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="shrink-0 gap-1.5"
+              disabled={cancelMutation.isPending}
+              onClick={() => setCancelDialogOpen(true)}
+            >
+              {cancelMutation.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <X className="h-3.5 w-3.5" />
+              )}
+              Cancel All
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {/* Seat Update Confirmation Dialog */}
@@ -781,127 +904,7 @@ export default function OrgSubscriptionPage() {
               </div>
             </DialogDescription>
           </DialogHeader>
-          
-        <DialogFooter className="gap-2 sm:gap-0 border-t p-6 mt-auto">
-            <Button
-              variant="outline"
-              onClick={() =>
-                setSeatUpdateDialog({
-                  open: false,
-                  seatId: '',
-                  displayName: '',
-                  currentSeats: 0,
-                  newSeats: 0,
-                })
-              }
-            >
-              Cancel
-            </Button>
-            <Button
-              disabled={isUpdatingSeats}
-              onClick={async () => {
-                setIsUpdatingSeats(true);
-                try {
-                  await handleDirectUpdate(
-                    seatUpdateDialog.seatId,
-                    seatUpdateDialog.newSeats,
-                  );
-                  setSeatUpdateDialog({
-                    open: false,
-                    seatId: '',
-                    displayName: '',
-                    currentSeats: 0,
-                    newSeats: 0,
-                  });
-                } finally {
-                  setIsUpdatingSeats(false);
-                }
-              }}
-            >
-              {isUpdatingSeats ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                'Confirm Update'
-              )}
-            </Button>
-          </DialogFooter>
-      </DialogContent>
-      </Dialog>
-
-      {/* Cancel Subscription Confirmation Dialog */}
-      <Dialog
-        open={cancelDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) setCancelDialogOpen(false);
-        }}
-      >
-        <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-md">
-          <DialogHeader className="border-b p-6 pb-4">
-            <DialogTitle className="text-destructive flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Cancel Subscription
-            </DialogTitle>
-            <DialogDescription asChild>
-              <div className="space-y-3 pt-1">
-                <p>
-                  Are you sure you want to cancel your subscription? All{' '}
-                  <strong>
-                    {seats.length} active module
-                    {seats.length !== 1 ? 's' : ''}
-                  </strong>{' '}
-                  will be deactivated and your team members will lose access to
-                  their assigned modules.
-                </p>
-                <div className="bg-muted rounded-lg border p-3">
-                  <div className="flex items-start gap-2">
-                    <CreditCard className="text-primary mt-0.5 h-4 w-4 shrink-0" />
-                    <div className="space-y-1">
-                      <p className="text-foreground text-sm font-medium">
-                        Billing & Access
-                      </p>
-                      <p className="text-muted-foreground text-xs">
-                        Your subscription will be cancelled immediately in
-                        Stripe. Access to all modules will be revoked. A{' '}
-                        <strong>prorated credit</strong> for any unused portion
-                        of your current billing period will be applied to your
-                        account.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-destructive text-xs">
-                  This action cannot be undone. You will need to re-subscribe to
-                  regain access.
-                </p>
-              </div>
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setCancelDialogOpen(false)}
-            >
-              Keep Subscription
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={cancelMutation.isPending}
-              onClick={() => cancelMutation.mutate()}
-            >
-              {cancelMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Cancelling...
-                </>
-              ) : (
-                'Yes, Cancel Subscription'
-              )}
-            </Button>
-          </DialogFooter>
-        <DialogFooter className="gap-2 sm:gap-0 border-t p-6 mt-auto">
+          <DialogFooter className="mt-auto gap-2 border-t p-6 sm:gap-0">
             <Button
               variant="outline"
               onClick={() =>
@@ -934,7 +937,80 @@ export default function OrgSubscriptionPage() {
               Confirm Update
             </Button>
           </DialogFooter>
-      </DialogContent>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Subscription Confirmation Dialog */}
+      <Dialog
+        open={cancelDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) setCancelDialogOpen(false);
+        }}
+      >
+        <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-md">
+          <DialogHeader className="border-b p-6 pb-4">
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Cancel Subscription
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-3 pt-1">
+                <p>
+                  Are you sure you want to cancel your subscription? All{' '}
+                  <strong>
+                    {seats.length} active module
+                    {seats.length !== 1 ? 's' : ''}
+                  </strong>{' '}
+                  will be deactivated and your team members will lose access to
+                  their assigned modules.
+                </p>
+                <div className="bg-muted rounded-lg border p-3">
+                  <div className="flex items-start gap-2">
+                    <CreditCard className="text-primary mt-0.5 h-4 w-4 shrink-0" />
+                    <div className="space-y-1">
+                      <p className="text-foreground text-sm font-medium">
+                        Billing &amp; Access
+                      </p>
+                      <p className="text-muted-foreground text-xs">
+                        Your subscription will be cancelled immediately in
+                        Stripe. Access to all modules will be revoked. A{' '}
+                        <strong>prorated credit</strong> for any unused portion
+                        of your current billing period will be applied to your
+                        account.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-destructive text-xs">
+                  This action cannot be undone. You will need to re-subscribe to
+                  regain access.
+                </p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-auto gap-2 border-t p-6 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setCancelDialogOpen(false)}
+            >
+              Keep Subscription
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={cancelMutation.isPending}
+              onClick={() => cancelMutation.mutate()}
+            >
+              {cancelMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Cancelling...
+                </>
+              ) : (
+                'Yes, Cancel Subscription'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
 
       {/* Remove Module Confirmation Dialog */}
@@ -989,7 +1065,7 @@ export default function OrgSubscriptionPage() {
               </div>
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="mt-auto gap-2 border-t p-6 sm:gap-0">
             <Button
               variant="outline"
               onClick={() =>
@@ -1019,40 +1095,7 @@ export default function OrgSubscriptionPage() {
               )}
             </Button>
           </DialogFooter>
-        <DialogFooter className="gap-2 sm:gap-0 border-t p-6 mt-auto">
-            <Button
-              variant="outline"
-              onClick={() =>
-                setSeatUpdateDialog({
-                  open: false,
-                  seatId: '',
-                  displayName: '',
-                  currentSeats: 0,
-                  newSeats: 0,
-                })
-              }
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={async () => {
-                await handleDirectUpdate(
-                  seatUpdateDialog.seatId,
-                  seatUpdateDialog.newSeats,
-                );
-                setSeatUpdateDialog({
-                  open: false,
-                  seatId: '',
-                  displayName: '',
-                  currentSeats: 0,
-                  newSeats: 0,
-                });
-              }}
-            >
-              Confirm Update
-            </Button>
-          </DialogFooter>
-      </DialogContent>
+        </DialogContent>
       </Dialog>
     </div>
   );
@@ -1069,53 +1112,50 @@ function TrialBanner({
 }) {
   if (isExpired) {
     return (
-      <div className="border-destructive/30 bg-destructive/5 rounded-xl border p-4">
-        <div className="flex items-start gap-3">
+      <Card className="border-destructive/30">
+        <CardContent className="flex items-start gap-3 p-4">
           <div className="bg-destructive/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
             <AlertTriangle className="text-destructive h-4 w-4" />
           </div>
           <div className="flex-1">
-            <p className="primary-heading text-destructive">Trial Expired</p>
-            <p className="secondary-text-small text-muted-foreground mt-1">
+            <p className="text-destructive font-semibold">Trial Expired</p>
+            <p className="text-muted-foreground mt-1 text-sm">
               Your 7-day trial has ended. Subscribe now to keep access to all
               modules and continue using Leadgaze without interruption.
             </p>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-500/5">
-      <div className="flex items-start gap-3">
+    <Card className="border-amber-200 bg-amber-50 dark:border-amber-500/20 dark:bg-amber-500/5">
+      <CardContent className="flex items-center gap-3 p-4">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-500/10">
           <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
         </div>
         <div className="flex-1">
-          <p className="primary-heading text-amber-800 dark:text-amber-300">
+          <p className="font-semibold text-amber-800 dark:text-amber-300">
             {trialDaysRemaining != null
               ? `${trialDaysRemaining} day${trialDaysRemaining !== 1 ? 's' : ''} left in your trial`
               : 'Trial active'}
           </p>
-          <p className="secondary-text-small mt-1 text-amber-700 dark:text-amber-400">
+          <p className="mt-0.5 text-sm text-amber-700 dark:text-amber-400">
             You have full access to all modules during your trial. Subscribe now
-            to keep your access and adjust seat counts for your team.
+            to keep your access.
           </p>
         </div>
-        <Badge variant="warning" className="shrink-0 text-xs">
-          Trial
-        </Badge>
-      </div>
-    </div>
+        <Badge className="shrink-0 bg-amber-500 text-white">Trial</Badge>
+      </CardContent>
+    </Card>
   );
 }
 
-// ─── Active Module Card ──────────────────────────────────────────
+// ─── Active Module Row (Table row layout) ────────────────────────
 
-function ActiveModuleCard({
+function ActiveModuleRow({
   seat,
-  workspaceId,
   isPaid,
   isTrial,
   pendingSeats,
@@ -1134,7 +1174,6 @@ function ActiveModuleCard({
   onDirectUpdate: (count: number) => void;
   onRemove: () => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
   const [updating, setUpdating] = useState(false);
   const product = seat.subscription_products;
   const style = getProductStyle(product?.product_key ?? '');
@@ -1143,13 +1182,6 @@ function ActiveModuleCard({
   );
 
   const displaySeats = isPaid ? seat.seats_purchased : pendingSeats;
-  const seatPercent =
-    seat.seats_purchased > 0
-      ? Math.min(
-          100,
-          Math.round((seat.seats_used / seat.seats_purchased) * 100),
-        )
-      : 0;
 
   const pricePerSeat =
     billingCycle === 'yearly'
@@ -1193,147 +1225,183 @@ function ActiveModuleCard({
         ? 'Active'
         : seat.status.replace(/_/g, ' ');
 
-  const statusVariant =
-    seat.status === 'active'
-      ? 'success'
-      : seat.status === 'trialing'
-        ? 'warning'
-        : ('secondary' as const);
-
   return (
-    <Card className="overflow-hidden">
-      <div
-        className={cn(
-          'h-1 bg-gradient-to-r',
-          style.gradient.replace('/10', '/60').replace('/5', '/30'),
-        )}
-      />
-      <CardContent className="p-5">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div
-              className={cn(
-                'flex h-10 w-10 items-center justify-center rounded-lg',
-                style.iconBg,
-                style.iconColor,
-              )}
-            >
-              {icon}
-            </div>
-            <div>
-              <h3 className="primary-heading text-foreground">
-                {product?.display_name ?? 'Module'}
-              </h3>
-              <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                <Badge variant={statusVariant} className="text-[10px]">
-                  {statusLabel}
-                </Badge>
-                <span className="secondary-text-small text-muted-foreground">
-                  {seat.seats_used}/{seat.seats_purchased} used
-                </span>
-              </div>
-            </div>
+    <TableRow className="hover:bg-muted/50">
+      {/* Module name + icon */}
+      <TableCell>
+        <div className="flex items-center gap-3">
+          <div
+            className={cn(
+              'flex h-9 w-9 items-center justify-center rounded-lg',
+              style.iconBg,
+              style.iconColor,
+            )}
+          >
+            {icon}
           </div>
+          <div>
+            <p className="text-foreground text-sm font-semibold">
+              {product?.display_name ?? 'Module'}
+            </p>
+            <p className="text-muted-foreground text-xs">
+              {seat.seats_used}/{seat.seats_purchased} used
+            </p>
+          </div>
+        </div>
+      </TableCell>
 
-          {/* Remove module button — only when owner is the sole user */}
-          {seat.seats_used <= 1 && (
-            <button
-              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors"
-              onClick={onRemove}
-              title="Remove this module from your subscription"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Remove</span>
-            </button>
+      {/* Status badge */}
+      <TableCell>
+        <Badge
+          variant="secondary"
+          className={cn(
+            seat.status === 'trialing'
+              ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'
+              : seat.status === 'active'
+                ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400'
+                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
+          )}
+        >
+          {statusLabel}
+        </Badge>
+      </TableCell>
+
+      {/* Seat adjuster */}
+      <TableCell>
+        <div className="flex items-center gap-1.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-7 w-7"
+            disabled={displaySeats <= 1 || updating}
+            onClick={handleDecrement}
+          >
+            <Minus className="h-3 w-3" />
+          </Button>
+          <span className="text-foreground w-6 text-center text-sm font-semibold">
+            {displaySeats}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-7 w-7"
+            disabled={updating}
+            onClick={handleIncrement}
+          >
+            <Plus className="h-3 w-3" />
+          </Button>
+          {updating && (
+            <Loader2 className="text-primary h-3.5 w-3.5 animate-spin" />
           )}
         </div>
+      </TableCell>
 
-        {/* Seat adjuster */}
-        <div className="mt-4 flex items-center justify-between">
-          <div>
-            <span className="secondary-text-small text-muted-foreground">
-              Seats
+      {/* Price per seat */}
+      <TableCell className="text-foreground text-sm whitespace-nowrap">
+        {pricePerSeat ? (
+          <>
+            <span className="font-semibold">${pricePerSeat}</span>
+            <span className="text-muted-foreground text-xs">
+              /{billingCycle === 'yearly' ? 'yr' : 'mo'}
             </span>
-            {pricePerSeat && (
-              <span className="secondary-text-small text-foreground ml-2 font-medium">
-                ${total}/{billingCycle === 'yearly' ? 'yr' : 'mo'}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 w-8 p-0"
-              disabled={displaySeats <= 1 || updating}
-              onClick={handleDecrement}
-            >
-              <Minus className="h-3 w-3" />
-            </Button>
-            <span className="text-foreground w-8 text-center text-lg font-bold">
-              {displaySeats}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 w-8 p-0"
-              disabled={updating}
-              onClick={handleIncrement}
-            >
-              <Plus className="h-3 w-3" />
-            </Button>
-            {updating && (
-              <Loader2 className="text-primary h-3.5 w-3.5 animate-spin" />
-            )}
-          </div>
-        </div>
-
-        {/* Seat usage bar */}
-        <div className="mt-3">
-          <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
-            <div
-              className="h-full rounded-full transition-all duration-300"
-              style={{
-                width: `${seatPercent}%`,
-                backgroundColor:
-                  seatPercent >= 90 ? 'var(--destructive)' : 'var(--primary)',
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Pricing info */}
-        {pricePerSeat && (
-          <div className="mt-3 flex items-center justify-between">
-            <span className="secondary-text-small text-muted-foreground">
-              ${pricePerSeat}/seat/{billingCycle === 'yearly' ? 'yr' : 'mo'}
-            </span>
-            <button
-              className="secondary-text-small text-primary hover:underline"
-              onClick={() => setExpanded(!expanded)}
-            >
-              {expanded ? 'Hide' : 'View'} members{' '}
-              {expanded ? (
-                <ChevronUp className="inline h-3 w-3" />
-              ) : (
-                <ChevronDown className="inline h-3 w-3" />
-              )}
-            </button>
-          </div>
+          </>
+        ) : (
+          <span className="text-muted-foreground text-xs">—</span>
         )}
+      </TableCell>
 
-        {/* Expanded seat assignments */}
-        {expanded && (
-          <div className="border-border mt-3 border-t pt-3">
-            <SeatAssignmentsList
-              workspaceId={workspaceId}
-              productKey={product?.product_key ?? ''}
-            />
+      {/* Total + Remove */}
+      <TableCell>
+        <div className="flex items-center justify-between">
+          <div className="text-foreground text-sm whitespace-nowrap">
+            {pricePerSeat ? (
+              <>
+                <span className="font-semibold">${total}</span>
+                <span className="text-muted-foreground text-xs">
+                  /{billingCycle === 'yearly' ? 'yr' : 'mo'}
+                </span>
+              </>
+            ) : null}
           </div>
-        )}
-      </CardContent>
-    </Card>
+          {seat.seats_used <= 1 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive/80 h-auto px-2 py-1 text-xs"
+              onClick={onRemove}
+            >
+              Remove
+            </Button>
+          )}
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+// ─── Pricing Breakdown Row ────────────────────────────────────────
+
+function PricingBreakdownRow({
+  seat,
+  workspaceId,
+  pricePerSeat,
+  displaySeats,
+  billingCycle,
+  accentColor,
+}: {
+  seat: WorkspaceSeat;
+  workspaceId: string;
+  pricePerSeat: number;
+  displaySeats: number;
+  billingCycle: 'monthly' | 'yearly';
+  accentColor: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const period = billingCycle === 'yearly' ? 'yr' : 'mo';
+
+  return (
+    <div className="bg-muted/30 border-t">
+      <div className="flex items-center justify-between px-5 py-2.5">
+        <div className="flex items-center gap-2">
+          <span
+            className="text-sm font-semibold"
+            style={{ color: accentColor }}
+          >
+            ${pricePerSeat}/seat/{period}
+          </span>
+          <span className="text-muted-foreground text-xs">·</span>
+          <span className="text-muted-foreground text-xs">
+            {displaySeats} seat{displaySeats !== 1 ? 's' : ''} × ${pricePerSeat}
+          </span>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-auto gap-1 px-2 py-1 text-xs"
+          onClick={() => setExpanded(!expanded)}
+        >
+          View members
+          {expanded ? (
+            <ChevronUp className="h-3 w-3" />
+          ) : (
+            <ChevronDown className="h-3 w-3" />
+          )}
+        </Button>
+      </div>
+
+      {expanded && (
+        <div className="border-t px-5 pt-2 pb-3">
+          <SeatAssignmentsList
+            workspaceId={workspaceId}
+            productKey={seat.subscription_products?.product_key ?? ''}
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1366,132 +1434,118 @@ function AvailableModuleCard({
       ? product.yearly_price_per_seat
       : product.monthly_price_per_seat;
 
-  const total = pricePerSeat ? Number(pricePerSeat) * selectedSeats : 0;
+  const period = billingCycle === 'yearly' ? 'yr' : 'mo';
 
   return (
     <Card
       className={cn(
-        'group flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md',
-        isSelected && 'ring-primary border-primary ring-2',
+        'flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md',
+        isSelected && 'ring-primary ring-2',
       )}
     >
-      <div
-        className={cn(
-          'h-1 bg-gradient-to-r',
-          style.gradient.replace('/10', '/60').replace('/5', '/30'),
-        )}
-      />
       <CardContent className="flex flex-1 flex-col p-5">
+        {/* Icon + available badge */}
         <div className="flex items-start justify-between">
           <div
             className={cn(
-              'flex h-11 w-11 items-center justify-center rounded-lg',
+              'flex h-11 w-11 items-center justify-center rounded-xl',
               style.iconBg,
               style.iconColor,
             )}
           >
             {icon}
           </div>
-          {isSelected ? (
-            <Badge variant="success" className="gap-1 text-[10px]">
-              <Check className="h-3 w-3" />
-              Selected
-            </Badge>
-          ) : (
-            <Badge variant="secondary" className="text-[10px]">
-              Available
-            </Badge>
-          )}
+          <Badge
+            variant="secondary"
+            className={cn(
+              isSelected
+                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+            )}
+          >
+            {isSelected ? 'Selected' : 'Available'}
+          </Badge>
         </div>
 
+        {/* Name + description */}
         <div className="mt-4 flex-1">
-          <h3 className="primary-heading text-foreground">
+          <h3 className="text-foreground font-semibold">
             {product.display_name}
           </h3>
-          <p className="secondary-text-small text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 text-sm">
             {product.description}
           </p>
         </div>
 
-        <div className="border-border bg-muted/30 mt-4 rounded-lg border p-3">
-          <div className="flex items-baseline gap-1">
-            {pricePerSeat ? (
-              <>
-                <span className="text-foreground text-2xl font-bold">
-                  ${pricePerSeat}
-                </span>
-                <span className="secondary-text-small text-muted-foreground">
-                  /seat/{billingCycle === 'yearly' ? 'yr' : 'mo'}
-                </span>
-              </>
-            ) : (
-              <span className="primary-text-medium text-foreground">
-                Contact sales
+        {/* Price */}
+        <div className="mt-4">
+          {pricePerSeat ? (
+            <div className="flex items-baseline gap-0.5">
+              <span className="text-foreground text-2xl font-bold">
+                ${pricePerSeat}
               </span>
-            )}
-          </div>
+              <span className="text-muted-foreground text-sm">
+                /seat/{period}
+              </span>
+            </div>
+          ) : (
+            <span className="text-foreground font-medium">Contact sales</span>
+          )}
         </div>
 
+        {/* Features */}
         {style.features.length > 0 && (
-          <div className="mt-4 space-y-2">
-            {style.features.slice(0, 3).map((feature) => (
+          <div className="mt-3 space-y-1.5">
+            {style.features.map((feature) => (
               <div key={feature} className="flex items-center gap-2">
-                <Check className="text-primary h-3.5 w-3.5 shrink-0" />
-                <span className="secondary-text-small text-foreground">
-                  {feature}
-                </span>
+                <Check
+                  className="h-3.5 w-3.5 shrink-0"
+                  style={{ color: style.accentHex }}
+                />
+                <span className="text-foreground text-sm">{feature}</span>
               </div>
             ))}
           </div>
         )}
 
-        {/* Seat selector + Select button */}
+        {/* Seat selector + action button */}
         {pricePerSeat ? (
-          <div className="border-border mt-4 space-y-3 border-t pt-4">
+          <div className="mt-4 space-y-3">
             {isSelected && (
-              <>
-                <div className="flex items-center justify-between">
-                  <span className="secondary-text-small text-muted-foreground">
-                    Seats
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground text-sm">Seats</span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7"
+                    disabled={selectedSeats <= 1}
+                    onClick={() =>
+                      onSeatsChange(Math.max(1, selectedSeats - 1))
+                    }
+                  >
+                    <Minus className="h-3 w-3" />
+                  </Button>
+                  <span className="text-foreground w-6 text-center text-sm font-bold">
+                    {selectedSeats}
                   </span>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 w-7 p-0"
-                      disabled={selectedSeats <= 1}
-                      onClick={() =>
-                        onSeatsChange(Math.max(1, selectedSeats - 1))
-                      }
-                    >
-                      <Minus className="h-3 w-3" />
-                    </Button>
-                    <span className="text-foreground w-6 text-center text-base font-bold">
-                      {selectedSeats}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 w-7 p-0"
-                      onClick={() => onSeatsChange(selectedSeats + 1)}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => onSeatsChange(selectedSeats + 1)}
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="secondary-text-small text-muted-foreground">
-                    Total:{' '}
-                    <strong className="text-foreground">
-                      ${total}/{billingCycle === 'yearly' ? 'yr' : 'mo'}
-                    </strong>
-                  </span>
-                </div>
-              </>
+              </div>
             )}
 
             {isSelected ? (
               <Button
+                type="button"
                 variant="destructive"
                 className="w-full gap-2"
                 onClick={onDeselect}
@@ -1501,7 +1555,9 @@ function AvailableModuleCard({
               </Button>
             ) : (
               <Button
-                className={cn('w-full gap-2 text-white', style.accent)}
+                type="button"
+                className="w-full gap-2"
+                style={{ backgroundColor: style.accentHex }}
                 onClick={onSelect}
               >
                 <Plus className="h-4 w-4" />
@@ -1510,7 +1566,7 @@ function AvailableModuleCard({
             )}
           </div>
         ) : (
-          <p className="secondary-text-small text-muted-foreground mt-4 text-center">
+          <p className="text-muted-foreground mt-4 text-center text-sm">
             Contact sales to subscribe to this module.
           </p>
         )}
@@ -1524,6 +1580,7 @@ function AvailableModuleCard({
 function CheckoutBar({
   totalMonthly,
   totalSeats,
+  billingCycle,
   hasChanges,
   isTrial,
   isTrialExpired,
@@ -1532,6 +1589,7 @@ function CheckoutBar({
 }: {
   totalMonthly: number;
   totalSeats: number;
+  billingCycle: 'monthly' | 'yearly';
   hasChanges: boolean;
   isTrial: boolean;
   isTrialExpired: boolean;
@@ -1547,49 +1605,47 @@ function CheckoutBar({
       : 'Proceed to Payment';
 
   return (
-    <div className="border-border bg-card/95 fixed right-0 bottom-0 left-0 z-50 border-t backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+    <Card className="sticky bottom-0 z-10 border-t shadow-lg">
+      <CardContent className="flex h-16 items-center justify-between px-6">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Users className="text-muted-foreground h-4 w-4" />
-            <span className="secondary-text-small text-muted-foreground">
+            <span className="text-muted-foreground text-sm">
               {totalSeats} seat{totalSeats !== 1 ? 's' : ''}
             </span>
           </div>
-          <div className="bg-border h-4 w-px" />
-          <span className="primary-heading text-foreground">
-            ${totalMonthly}
-            <span className="text-muted-foreground font-normal">/mo</span>
+          <span className="text-muted-foreground text-sm">·</span>
+          <span className="text-muted-foreground text-sm">
+            Secure payment via Stripe
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-6">
+          <div className="flex items-baseline gap-0.5">
+            <span className="text-foreground text-xl font-bold">
+              ${totalMonthly}
+            </span>
+            <span className="text-muted-foreground text-sm">
+              {billingCycle === 'yearly' ? '/yr' : '/mo'}
+            </span>
+          </div>
+
           {isPending ? (
             <div className="flex items-center gap-2">
               <Loader2 className="text-primary h-4 w-4 animate-spin" />
-              <span className="secondary-text-small text-muted-foreground">
+              <span className="text-muted-foreground text-sm">
                 Preparing checkout...
               </span>
             </div>
           ) : (
-            <>
-              <span className="secondary-text-small text-muted-foreground hidden sm:block">
-                Secure payment via Stripe
-              </span>
-              <Button
-                className="bg-primary hover:bg-primary/90 gap-2 text-white"
-                onClick={onCheckout}
-                disabled={isPending}
-              >
-                <CreditCard className="h-4 w-4" />
-                {ctaLabel}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </>
+            <Button onClick={onCheckout} disabled={isPending} className="gap-2">
+              {ctaLabel}
+              <ArrowRight className="h-4 w-4" />
+            </Button>
           )}
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1616,16 +1672,14 @@ function SeatAssignmentsList({
     return (
       <div className="flex items-center gap-2 py-3">
         <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
-        <span className="secondary-text-small text-muted-foreground">
-          Loading...
-        </span>
+        <span className="text-muted-foreground text-sm">Loading...</span>
       </div>
     );
   }
 
   if (assignments.length === 0) {
     return (
-      <p className="secondary-text-small text-muted-foreground py-2 text-center">
+      <p className="text-muted-foreground py-2 text-center text-sm">
         No members assigned yet.
       </p>
     );
@@ -1636,22 +1690,25 @@ function SeatAssignmentsList({
       {assignments.map((a) => (
         <div
           key={a.id}
-          className="hover:bg-muted/50 flex items-center justify-between rounded-lg px-3 py-2 transition-colors"
+          className="hover:bg-muted/50 flex items-center justify-between rounded-lg px-2 py-2 transition-colors"
         >
           <div className="flex items-center gap-3">
             <div className="bg-primary/10 text-primary flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold">
               {(a.accounts?.email?.charAt(0) ?? 'U').toUpperCase()}
             </div>
             <div>
-              <p className="primary-text-medium text-foreground text-sm">
+              <p className="text-foreground text-sm font-medium">
                 {a.accounts?.name ?? 'User'}
               </p>
-              <p className="secondary-text-small text-muted-foreground text-xs">
+              <p className="text-muted-foreground text-xs">
                 {a.accounts?.email}
               </p>
             </div>
           </div>
-          <Badge variant="success" className="text-[10px]">
+          <Badge
+            variant="secondary"
+            className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+          >
             Active
           </Badge>
         </div>
@@ -1661,7 +1718,3 @@ function SeatAssignmentsList({
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────
-
-function monthlyTotalDisplay(total: number): boolean {
-  return total > 0;
-}
