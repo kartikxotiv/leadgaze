@@ -70,7 +70,10 @@ import { getAccountsService } from '~/services/accounts.service';
 import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
-import { getSeatAssignmentsService } from '~/services/subscription.service';
+import {
+  getSeatAssignmentsService,
+  getWorkspaceEntitlementsService,
+} from '~/services/subscription.service';
 import { getTeamsService } from '~/services/teams.service';
 
 import {
@@ -602,6 +605,13 @@ export function HomeMenuNavigation() {
     enabled: !!currentWorkspace?.id,
   });
 
+  // Fetch workspace entitlements (free access grants that bypass seat assignments)
+  const { data: entitlementsData } = useQuery({
+    queryKey: ['workspace-entitlements', currentWorkspace?.id],
+    queryFn: () => getWorkspaceEntitlementsService(currentWorkspace?.id || ''),
+    enabled: !!currentWorkspace?.id,
+  });
+
   const userAssignedProductIds = useMemo(() => {
     const assignments = (assignmentsData?.data ?? []) as Array<{
       is_active: boolean;
@@ -616,13 +626,33 @@ export function HomeMenuNavigation() {
     );
   }, [assignmentsData, authUser?.id]);
 
+  // Product IDs that have active entitlements (workspace-wide access)
+  const entitledProductIds = useMemo(() => {
+    const entitlements = (entitlementsData?.data ?? []) as Array<{
+      product_id: string;
+      is_active: boolean;
+      valid_until: string | null;
+    }>;
+    const now = new Date();
+    return new Set(
+      entitlements
+        .filter(
+          (e) =>
+            e.is_active && (!e.valid_until || new Date(e.valid_until) > now),
+        )
+        .map((e) => e.product_id),
+    );
+  }, [entitlementsData]);
+
   const launcherModules = useMemo(() => {
     const allEnabled = subscriptionStatus?.enabled_modules ?? [];
-    // Only show modules where the user has an active seat assignment
-    return allEnabled.filter((mod) =>
-      userAssignedProductIds.has(mod.module_id),
+    // Show modules where user has seat assignment OR workspace has entitlement
+    return allEnabled.filter(
+      (mod) =>
+        userAssignedProductIds.has(mod.module_id) ||
+        entitledProductIds.has(mod.module_id),
     );
-  }, [subscriptionStatus, userAssignedProductIds]);
+  }, [subscriptionStatus, userAssignedProductIds, entitledProductIds]);
 
   // Use permission-based navigation
   const permissionNavConfig = usePermissionBasedNavigationConfig();

@@ -53,6 +53,7 @@ import { cn } from '@kit/ui/utils';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
+  type ModuleEntitlement,
   type SeatAssignment,
   type SubscriptionProduct,
   type WorkspaceSeat,
@@ -60,6 +61,7 @@ import {
   createMultiProductCheckoutService,
   getSeatAssignmentsService,
   getSubscriptionProductsService,
+  getWorkspaceEntitlementsService,
   getWorkspaceSeatsService,
   updateSeatsViaStripeService,
 } from '~/services/subscription.service';
@@ -228,6 +230,13 @@ export default function OrgSubscriptionPage() {
     enabled: !!workspaceId,
   });
 
+  // Fetch workspace entitlements (free access grants)
+  const { data: entitlementsData } = useQuery({
+    queryKey: ['workspace-entitlements', workspaceId],
+    queryFn: () => getWorkspaceEntitlementsService(workspaceId),
+    enabled: !!workspaceId,
+  });
+
   const products: SubscriptionProduct[] = productsData?.data ?? [];
   const seats: WorkspaceSeat[] = useMemo(
     () =>
@@ -284,8 +293,29 @@ export default function OrgSubscriptionPage() {
     [seats],
   );
 
+  // Entitlement-based modules (free access without paid subscription)
+  const entitledModules = useMemo(() => {
+    const entitlements = (entitlementsData?.data ?? []) as ModuleEntitlement[];
+    const now = new Date();
+    return entitlements
+      .filter(
+        (e) => e.is_active && (!e.valid_until || new Date(e.valid_until) > now),
+      )
+      .map((e) => ({
+        ...e,
+        product: products.find((p) => p.id === e.product_id),
+      }))
+      .filter((e) => e.product && !subscribedProductIds.has(e.product_id));
+  }, [entitlementsData, products, subscribedProductIds]);
+
+  // Product IDs that already have entitlements (to hide from available modules)
+  const entitledProductIds = useMemo(
+    () => new Set(entitledModules.map((e) => e.product_id)),
+    [entitledModules],
+  );
+
   const availableProducts = products.filter(
-    (p) => !subscribedProductIds.has(p.id),
+    (p) => !subscribedProductIds.has(p.id) && !entitledProductIds.has(p.id),
   );
 
   useEffect(() => {
@@ -617,6 +647,93 @@ export default function OrgSubscriptionPage() {
                 />
               );
             })}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Entitlement-based Modules (free access grants) */}
+      {entitledModules.length > 0 && (
+        <Card className="border-blue-200 dark:border-blue-800">
+          <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
+            <CardTitle className="text-lg">Entitled Modules</CardTitle>
+            <Badge
+              variant="secondary"
+              className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+            >
+              Free Access
+            </Badge>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Module</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Seats</TableHead>
+                  <TableHead>Valid Until</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {entitledModules.map((ent) => {
+                  const product = ent.product;
+                  const style = getProductStyle(product?.product_key ?? '');
+                  const icon = PRODUCT_ICONS[product?.product_key ?? ''] ?? (
+                    <Package className="h-5 w-5" />
+                  );
+
+                  return (
+                    <TableRow
+                      key={ent.product_id}
+                      className="hover:bg-muted/50"
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={cn(
+                              'flex h-9 w-9 items-center justify-center rounded-lg',
+                              style.iconBg,
+                              style.iconColor,
+                            )}
+                          >
+                            {icon}
+                          </div>
+                          <div>
+                            <p className="text-foreground text-sm font-semibold">
+                              {product?.display_name ?? 'Module'}
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                              Via entitlement
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className="bg-purple-100 text-purple-700 capitalize dark:bg-purple-900/30 dark:text-purple-400"
+                        >
+                          {ent.entitlement_type.replace(/_/g, ' ')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm font-medium">
+                          {ent.granted_seats
+                            ? `${ent.granted_seats} seats`
+                            : 'Unlimited'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-muted-foreground text-sm">
+                          {ent.valid_until
+                            ? new Date(ent.valid_until).toLocaleDateString()
+                            : 'Never expires'}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       )}

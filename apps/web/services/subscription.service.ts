@@ -137,6 +137,17 @@ export interface AssignSeatPayload {
   productKey: string;
 }
 
+export interface ModuleEntitlement {
+  id: string;
+  product_id: string;
+  entitlement_type: string;
+  granted_seats: number | null;
+  valid_from: string;
+  valid_until: string | null;
+  is_active: boolean;
+  reason: string;
+}
+
 // ─── Services ────────────────────────────────────────────────────
 
 const getSubscriptionProductsService = asyncHandlerClient(async () => {
@@ -278,6 +289,18 @@ const checkProductAccessService = asyncHandlerClient(
   },
 );
 
+/**
+ * Fetches active entitlements for a workspace (free access grants).
+ */
+const getWorkspaceEntitlementsService = asyncHandlerClient(
+  async (workspaceId: string): Promise<{ data: ModuleEntitlement[] }> => {
+    const response = await ApiClient.get(
+      `/subscriptions/entitlements?workspaceId=${workspaceId}`,
+    );
+    return response.data;
+  },
+);
+
 // Alias used by org/home page (imported from @kit/core/services)
 const getWorkspaceSubscriptionService = getWorkspaceSubscriptionStatus;
 
@@ -296,4 +319,5 @@ export {
   checkProductAccessService,
   getWorkspaceSubscriptionService,
   cancelSubscriptionService,
+  getWorkspaceEntitlementsService,
 };
