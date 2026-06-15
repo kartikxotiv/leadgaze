@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { formatDate } from '@kit/shared/utils';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
@@ -578,9 +579,7 @@ export default function NotesPage() {
                       )}
                       {isVisible('updated_at') && (
                         <TableCell className="text-muted-foreground text-sm">
-                          {new Date(
-                            note.updated_at || note.created_at,
-                          ).toLocaleDateString()}
+                          {formatDate(note.updated_at || note.created_at)}
                         </TableCell>
                       )}
                       {isVisible('created_by') && (
@@ -590,7 +589,7 @@ export default function NotesPage() {
                       )}
                       {isVisible('created_at') && (
                         <TableCell className="text-muted-foreground text-sm">
-                          {new Date(note.created_at).toLocaleDateString()}
+                          {formatDate(note.created_at)}
                         </TableCell>
                       )}
                       {isVisible('updated_by') && (

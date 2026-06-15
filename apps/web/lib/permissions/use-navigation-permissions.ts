@@ -10,7 +10,6 @@ import {
   BarChart3,
   Briefcase,
   History,
-  Mail,
   ShieldCheck,
   User,
   Users,
@@ -18,6 +17,11 @@ import {
 
 import pathsConfig from '~/config/paths.config';
 import { useAccessibleModules } from '~/lib/permissions';
+
+/**
+ * Permission-based Dynamic Navigation Hook
+ * Filters navigation items based on the new permission system
+ */
 
 /**
  * Permission-based Dynamic Navigation Hook
@@ -115,7 +119,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   //   path: pathsConfig.app.emails,
   //   Icon: Mail,
   //   moduleKey: 'emails',
-  //   featureKey: 'view_inbox',
+  //   featureKey: 'manage_email',
   // },
 ];
 
@@ -154,7 +158,6 @@ export function usePermissionBasedNavigation() {
           'contacts',
           'accounts',
           'opportunities',
-          'emails',
           'team_members',
         ].includes(item.moduleKey) && item.path !== pathsConfig.app.teamMembers, // Members stays in team/settings
     );

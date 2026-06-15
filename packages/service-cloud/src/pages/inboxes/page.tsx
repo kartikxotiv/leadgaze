@@ -13,13 +13,14 @@ import { ServiceCloudEmailToTicketAction } from './email-to-ticket-action';
 
 export function ServiceCloudInboxesPage({ workspace }: { workspace: any }) {
   const { canAccess, isLoading } = useServiceCloudPermissions(workspace?.id);
-  const canView = canAccess(
+  const canManageInbox = canAccess(
     SERVICE_CLOUD_MODULE_KEYS.inboxes,
-    SERVICE_CLOUD_FEATURE_KEYS.view,
+    SERVICE_CLOUD_FEATURE_KEYS.manageInbox,
   );
 
   if (isLoading) return <ServiceCloudInboxSkeleton />;
-  if (!canView) return <ServiceCloudAccessDenied label="support inboxes" />;
+  if (!canManageInbox)
+    return <ServiceCloudAccessDenied label="support inboxes" />;
 
   return (
     <CoreEmailInboxPage
@@ -36,11 +37,8 @@ export function ServiceCloudInboxesPage({ workspace }: { workspace: any }) {
         />
       )}
       permissions={{
-        viewInbox: canView,
-        sendEmails: canAccess(
-          SERVICE_CLOUD_MODULE_KEYS.tickets,
-          SERVICE_CLOUD_FEATURE_KEYS.reply,
-        ),
+        viewInbox: canManageInbox,
+        sendEmails: canManageInbox,
       }}
     />
   );
@@ -75,9 +73,11 @@ function ServiceCloudInboxSkeleton() {
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex min-w-0 items-center gap-3">
-                <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
+                <Skeleton className="h-8 w-8 flex-shrink-0 rounded-full" />
                 <div className="min-w-0 space-y-1.5">
-                  <Skeleton className={`h-4 ${i % 3 === 0 ? 'w-56' : i % 2 === 0 ? 'w-72' : 'w-64'}`} />
+                  <Skeleton
+                    className={`h-4 ${i % 3 === 0 ? 'w-56' : i % 2 === 0 ? 'w-72' : 'w-64'}`}
+                  />
                   <div className="flex items-center gap-2">
                     <Skeleton className="h-3 w-32" />
                     <Skeleton className="h-3 w-1 rounded-full" />
@@ -85,7 +85,7 @@ function ServiceCloudInboxSkeleton() {
                   </div>
                 </div>
               </div>
-              <Skeleton className="h-5 w-16 rounded-full flex-shrink-0" />
+              <Skeleton className="h-5 w-16 flex-shrink-0 rounded-full" />
             </div>
             <Skeleton className={`h-3 ${i % 2 === 0 ? 'w-full' : 'w-11/12'}`} />
             {i % 3 !== 2 && <Skeleton className="h-3 w-4/5" />}

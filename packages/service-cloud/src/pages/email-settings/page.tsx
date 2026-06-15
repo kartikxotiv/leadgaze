@@ -9,11 +9,15 @@ import {
 } from '../../utils';
 import { ServiceCloudAccessDenied } from '../_components/access-denied';
 
-export function ServiceCloudEmailSettingsPage({ workspace }: { workspace: any }) {
+export function ServiceCloudEmailSettingsPage({
+  workspace,
+}: {
+  workspace: any;
+}) {
   const { canAccess, isLoading } = useServiceCloudPermissions(workspace?.id);
-  const canViewInbox = canAccess(
+  const canManageInbox = canAccess(
     SERVICE_CLOUD_MODULE_KEYS.inboxes,
-    SERVICE_CLOUD_FEATURE_KEYS.view,
+    SERVICE_CLOUD_FEATURE_KEYS.manageInbox,
   );
   const canManageSettings = canAccess(
     SERVICE_CLOUD_MODULE_KEYS.settings,
@@ -28,7 +32,7 @@ export function ServiceCloudEmailSettingsPage({ workspace }: { workspace: any })
     );
   }
 
-  if (!canViewInbox && !canManageSettings) {
+  if (!canManageInbox && !canManageSettings) {
     return <ServiceCloudAccessDenied label="email settings" />;
   }
 
@@ -36,13 +40,10 @@ export function ServiceCloudEmailSettingsPage({ workspace }: { workspace: any })
     <CoreEmailPage
       workspace={workspace}
       permissions={{
-        viewInbox: canViewInbox,
-        sendEmails: canAccess(
-          SERVICE_CLOUD_MODULE_KEYS.tickets,
-          SERVICE_CLOUD_FEATURE_KEYS.reply,
-        ),
-        manageTemplates: canManageSettings,
-        manageVariables: canManageSettings,
+        viewInbox: canManageInbox,
+        sendEmails: canManageInbox,
+        manageTemplates: canManageInbox || canManageSettings,
+        manageVariables: canManageInbox || canManageSettings,
       }}
       templateContext={{
         module_name: 'Service Cloud',
@@ -51,4 +52,3 @@ export function ServiceCloudEmailSettingsPage({ workspace }: { workspace: any })
     />
   );
 }
-
