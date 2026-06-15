@@ -3,6 +3,7 @@
 import { NextResponse } from 'next/server';
 
 import { catchAsync, successDataResponse } from '../utils/response-handler';
+import { hasServiceCloudManageInboxPermission } from './_shared/permissions';
 import { assertServiceCloudWorkspaceAccess } from './_shared/workspace-access';
 
 function uniqueValues(values: Array<string | null | undefined>) {
@@ -100,6 +101,11 @@ export const getServiceCloudTicketDetailController = catchAsync(
       await assertServiceCloudWorkspaceAccess(workspaceId);
     if (error || !user) return error!;
 
+    const canManageInbox = await hasServiceCloudManageInboxPermission(
+      supabase,
+      workspaceId,
+      user.id,
+    );
     const client = (supabase as any).schema('service_cloud');
 
     const { data: ticket, error: ticketError } = await client
@@ -137,12 +143,14 @@ export const getServiceCloudTicketDetailController = catchAsync(
       ticketAssignees,
       ticketEmailThreads,
     ] = await Promise.all([
-      client
-        .from('ticket_emails')
-        .select('*')
-        .eq('workspace_id', workspaceId)
-        .eq('ticket_id', ticketId)
-        .order('created_at', { ascending: true }),
+      canManageInbox
+        ? client
+            .from('ticket_emails')
+            .select('*')
+            .eq('workspace_id', workspaceId)
+            .eq('ticket_id', ticketId)
+            .order('created_at', { ascending: true })
+        : Promise.resolve({ data: [], error: null }),
       client
         .from('time_entries')
         .select('*')
@@ -198,12 +206,14 @@ export const getServiceCloudTicketDetailController = catchAsync(
         .eq('workspace_id', workspaceId)
         .eq('ticket_id', ticketId)
         .order('created_at', { ascending: true }),
-      client
-        .from('ticket_email_threads')
-        .select('*')
-        .eq('workspace_id', workspaceId)
-        .eq('ticket_id', ticketId)
-        .order('created_at', { ascending: true }),
+      canManageInbox
+        ? client
+            .from('ticket_email_threads')
+            .select('*')
+            .eq('workspace_id', workspaceId)
+            .eq('ticket_id', ticketId)
+            .order('created_at', { ascending: true })
+        : Promise.resolve({ data: [], error: null }),
     ]);
 
     if (ticketEmails.error) throw ticketEmails.error;
@@ -362,6 +372,7 @@ export const getServiceCloudTicketDetailController = catchAsync(
     ]).filter(Boolean);
 
     if (
+      canManageInbox &&
       emailAccountIds.length > 0 &&
       customerEmails.length > 0 &&
       subjectKeys.length > 0

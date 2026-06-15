@@ -63,7 +63,7 @@ import { EditContactDialog } from '../components/edit-contact-dialog';
 function ContactDetailsSkeleton() {
   return (
     <ModuleGuard module="contacts">
-      <div className="px-6 pt-4 pb-2">
+      <div className="px-6 pb-2 pt-4">
         <div className="mb-2">
           <Skeleton className="h-8 w-20 rounded-md" />
         </div>
@@ -155,6 +155,7 @@ export default function ContactDetailsPage() {
 
   const { data: user } = useUser();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
+  const canManageEmail = canAccess('emails', 'manage_email');
   const editPermission = usePermissionDetail('contacts', 'edit');
   const canEdit = useCanAccessData(editPermission, contact?.owner_id, user?.id);
 
@@ -179,7 +180,7 @@ export default function ContactDetailsPage() {
   const { data: coreEmailAccounts = [] } = useQuery({
     queryKey: ['core-email-accounts', workspace?.id],
     queryFn: () => getCoreEmailAccountsService(workspace!.id),
-    enabled: !!workspace?.id,
+    enabled: canManageEmail && !!workspace?.id,
   });
 
   if (isLoading) {
@@ -205,7 +206,7 @@ export default function ContactDetailsPage() {
 
   return (
     <ModuleGuard module="contacts">
-      <div className="flex w-full items-center justify-between pt-4 pb-2">
+      <div className="flex w-full items-center justify-between pb-2 pt-4">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -214,7 +215,7 @@ export default function ContactDetailsPage() {
             className="border-leadgaze-border border p-0"
           >
             <Link href="/home/contacts">
-              <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
+              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
             </Link>
           </Button>
           <div className="flex flex-col">
@@ -308,24 +309,26 @@ export default function ContactDetailsPage() {
                     </Button>
                   )}
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${
-                      contactEmailRecipients.length === 0 ? 'opacity-50' : ''
-                    }`}
-                    disabled={contactEmailRecipients.length === 0}
-                    onClick={() => setIsEmailDialogOpen(true)}
-                    title={
-                      contactEmailRecipients.length === 0
-                        ? 'Contact has no email address'
-                        : 'Send email to contact'
-                    }
-                  >
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
-                      <Mail className="h-3.5 w-3.5 text-white" />
-                    </div>
-                  </Button>
+                  {canManageEmail && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${
+                        contactEmailRecipients.length === 0 ? 'opacity-50' : ''
+                      }`}
+                      disabled={contactEmailRecipients.length === 0}
+                      onClick={() => setIsEmailDialogOpen(true)}
+                      title={
+                        contactEmailRecipients.length === 0
+                          ? 'Contact has no email address'
+                          : 'Send email to contact'
+                      }
+                    >
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
+                        <Mail className="h-3.5 w-3.5 text-white" />
+                      </div>
+                    </Button>
+                  )}
                 </div>
               }
             />
@@ -347,7 +350,7 @@ export default function ContactDetailsPage() {
                       value={
                         <a
                           href={`mailto:${contact.email}`}
-                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
                         >
                           {contact.email}
                         </a>
@@ -364,7 +367,7 @@ export default function ContactDetailsPage() {
                       value={
                         <a
                           href={`mailto:${contact.alt_email}`}
-                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
                         >
                           {contact.alt_email}
                         </a>
@@ -460,7 +463,7 @@ export default function ContactDetailsPage() {
                           href={contact.linkedin_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
                         >
                           {contact.linkedin_url}
                         </a>
@@ -658,20 +661,22 @@ export default function ContactDetailsPage() {
         />
       )}
 
-      <CoreEmailComposeDialog
-        open={isEmailDialogOpen}
-        onOpenChange={setIsEmailDialogOpen}
-        workspaceId={workspace?.id || ''}
-        accounts={coreEmailAccounts}
-        entityType="contact"
-        entityId={id}
-        initialTo={contact.email || undefined}
-        templateContext={{
-          contact_name:
-            `${contact.first_name} ${contact.last_name || ''}`.trim(),
-          contact_email: contact.email,
-        }}
-      />
+      {canManageEmail && (
+        <CoreEmailComposeDialog
+          open={isEmailDialogOpen}
+          onOpenChange={setIsEmailDialogOpen}
+          workspaceId={workspace?.id || ''}
+          accounts={coreEmailAccounts}
+          entityType="contact"
+          entityId={id}
+          initialTo={contact.email || undefined}
+          templateContext={{
+            contact_name:
+              `${contact.first_name} ${contact.last_name || ''}`.trim(),
+            contact_email: contact.email,
+          }}
+        />
+      )}
     </ModuleGuard>
   );
 }

@@ -73,7 +73,7 @@ import { EditAccountDialog } from '../components/edit-account-dialog';
 function AccountDetailsSkeleton() {
   return (
     <ModuleGuard module="accounts">
-      <div className="px-6 pt-4 pb-2">
+      <div className="px-6 pb-2 pt-4">
         <div className="mb-2">
           <Skeleton className="h-8 w-20 rounded-md" />
         </div>
@@ -163,7 +163,8 @@ export default function AccountDetailsPage() {
   const [isOpportunityDialogOpen, setIsOpportunityDialogOpen] = useState(false);
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
-  const { currentWorkspace: workspace } = useRBAC();
+  const { currentWorkspace: workspace, canAccess } = useRBAC();
+  const canManageEmail = canAccess('emails', 'manage_email');
   const {
     data: account,
     isLoading,
@@ -219,7 +220,7 @@ export default function AccountDetailsPage() {
   const { data: user } = useUser();
   const editPermission = usePermissionDetail('accounts', 'edit');
   const canEdit = useCanAccessData(editPermission, account?.owner_id, user?.id);
-  const { canAccess: rbacCanAccess } = useRBAC();
+  const rbacCanAccess = canAccess;
 
   const { data: opportunitiesData } = useQuery({
     queryKey: ['opportunities', 'account', id],
@@ -232,7 +233,7 @@ export default function AccountDetailsPage() {
   const { data: coreEmailAccounts = [] } = useQuery({
     queryKey: ['core-email-accounts', workspace?.id],
     queryFn: () => getCoreEmailAccountsService(workspace!.id),
-    enabled: !!workspace?.id,
+    enabled: canManageEmail && !!workspace?.id,
   });
 
   if (isLoading) {
@@ -258,7 +259,7 @@ export default function AccountDetailsPage() {
 
   return (
     <ModuleGuard module="accounts">
-      <div className="flex w-full items-center justify-between pt-4 pb-2">
+      <div className="flex w-full items-center justify-between pb-2 pt-4">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -267,7 +268,7 @@ export default function AccountDetailsPage() {
             className="border-leadgaze-border border p-0"
           >
             <Link href="/home/accounts">
-              <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
+              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
             </Link>
           </Button>
           <div className="flex flex-col">
@@ -361,24 +362,26 @@ export default function AccountDetailsPage() {
                     </Button>
                   )}
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${
-                      accountEmailRecipients.length === 0 ? 'opacity-50' : ''
-                    }`}
-                    disabled={accountEmailRecipients.length === 0}
-                    onClick={() => setIsEmailDialogOpen(true)}
-                    title={
-                      accountEmailRecipients.length === 0
-                        ? 'Account has no contact email addresses'
-                        : 'Send email to account contact'
-                    }
-                  >
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
-                      <Mail className="h-3.5 w-3.5 text-white" />
-                    </div>
-                  </Button>
+                  {canManageEmail && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${
+                        accountEmailRecipients.length === 0 ? 'opacity-50' : ''
+                      }`}
+                      disabled={accountEmailRecipients.length === 0}
+                      onClick={() => setIsEmailDialogOpen(true)}
+                      title={
+                        accountEmailRecipients.length === 0
+                          ? 'Account has no contact email addresses'
+                          : 'Send email to account contact'
+                      }
+                    >
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
+                        <Mail className="h-3.5 w-3.5 text-white" />
+                      </div>
+                    </Button>
+                  )}
                 </div>
               }
             />
@@ -449,7 +452,7 @@ export default function AccountDetailsPage() {
                           href={account.linkedin_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
                         >
                           {account.linkedin_url}
                         </a>
@@ -852,18 +855,20 @@ export default function AccountDetailsPage() {
         />
       )}
 
-      <CoreEmailComposeDialog
-        open={isEmailDialogOpen}
-        onOpenChange={setIsEmailDialogOpen}
-        workspaceId={workspace?.id || ''}
-        accounts={coreEmailAccounts}
-        entityType="account"
-        entityId={id}
-        initialTo={accountEmailRecipients[0]?.email}
-        templateContext={{
-          account_name: account.account_name,
-        }}
-      />
+      {canManageEmail && (
+        <CoreEmailComposeDialog
+          open={isEmailDialogOpen}
+          onOpenChange={setIsEmailDialogOpen}
+          workspaceId={workspace?.id || ''}
+          accounts={coreEmailAccounts}
+          entityType="account"
+          entityId={id}
+          initialTo={accountEmailRecipients[0]?.email}
+          templateContext={{
+            account_name: account.account_name,
+          }}
+        />
+      )}
     </ModuleGuard>
   );
 }

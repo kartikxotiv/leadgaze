@@ -42,7 +42,8 @@ export function EntityEmails({
   onOpenDraft: _onOpenDraft,
 }: EntityEmailsProps) {
   const queryClient = useQueryClient();
-  const { currentWorkspace: workspace } = useRBAC();
+  const { currentWorkspace: workspace, canAccess } = useRBAC();
+  const canManageEmail = canAccess('emails', 'manage_email');
   const [mounted, setMounted] = useState(false);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [composeRecipientEmail, setComposeRecipientEmail] = useState('');
@@ -60,13 +61,13 @@ export function EntityEmails({
     queryKey: ['core-entity-emails', workspace?.id, entityType, entityId],
     queryFn: () =>
       getCoreEntityEmailActivityService(workspace!.id, entityType, entityId),
-    enabled: !!entityId && !!workspace?.id,
+    enabled: canManageEmail && !!entityId && !!workspace?.id,
   });
 
   const { data: coreEmailAccounts = [] } = useQuery({
     queryKey: ['core-email-accounts', workspace?.id],
     queryFn: () => getCoreEmailAccountsService(workspace!.id),
-    enabled: !!workspace?.id,
+    enabled: canManageEmail && !!workspace?.id,
   });
 
   const combinedItems = response?.data || [];
@@ -99,6 +100,10 @@ export function EntityEmails({
         </div>
       </CardWidgetContainer>
     );
+  }
+
+  if (!canManageEmail) {
+    return null;
   }
 
   if (isLoading) {
@@ -220,7 +225,7 @@ export function EntityEmails({
                           </Badge>
                           {item.direction !== 'inbound' &&
                             item.status !== 'sent' && (
-                              <span className="ml-1 text-[10px] text-blue-500 italic opacity-0 transition-opacity group-hover:opacity-100">
+                              <span className="ml-1 text-[10px] italic text-blue-500 opacity-0 transition-opacity group-hover:opacity-100">
                                 • Click to Edit
                               </span>
                             )}

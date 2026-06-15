@@ -44,6 +44,11 @@ import { useAccessibleModules } from '~/lib/permissions';
  * Filters navigation items based on the new permission system
  */
 
+/**
+ * Permission-based Dynamic Navigation Hook
+ * Filters navigation items based on the new permission system
+ */
+
 interface NavItem {
   label: string;
   path: string;
@@ -115,7 +120,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
     path: pathsConfig.app.emails,
     Icon: Mail,
     moduleKey: 'emails',
-    featureKey: 'view_inbox',
+    featureKey: 'manage_email',
   },
 ];
 

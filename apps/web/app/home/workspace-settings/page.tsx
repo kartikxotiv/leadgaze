@@ -154,6 +154,7 @@ function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
 export default function WorkspaceSettingsPage() {
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const isAdmin = workspace?.role?.role_key === 'admin';
+  const canManageEmail = canAccess('emails', 'manage_email');
 
   const pathname = usePathname();
   const shouldUseWebEmailSettings = pathname === '/home/workspace-settings';
@@ -210,11 +211,9 @@ export default function WorkspaceSettingsPage() {
               googleAuthPath="/api/email/google/auth"
               googleReturnUrl={pathname || '/home/workspace-settings'}
               permissions={{
-                manageAccounts:
-                  canAccess('emails', 'manage_accounts') ||
-                  canAccess('emails', 'manage_templates'),
-                manageTemplates: canAccess('emails', 'manage_templates'),
-                manageVariables: canAccess('emails', 'manage_variables'),
+                manageAccounts: canManageEmail,
+                manageTemplates: canManageEmail,
+                manageVariables: canManageEmail,
               }}
             />
             {/* )} */}
