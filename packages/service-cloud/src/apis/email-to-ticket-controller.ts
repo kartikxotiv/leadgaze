@@ -17,6 +17,28 @@ function emailBodyPreview(email: any) {
   );
 }
 
+function uniqueThreadKeys(values: Array<string | null | undefined>) {
+  const seen = new Set<string>();
+
+  return values
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value))
+    .filter((value) => {
+      if (seen.has(value)) return false;
+      seen.add(value);
+      return true;
+    });
+}
+
+function emailThreadKeys(email: any) {
+  return uniqueThreadKeys([
+    email?.thread_key,
+    email?.internet_message_id,
+    email?.provider_message_id,
+    email?.gmail_message_id,
+  ]);
+}
+
 async function getDefaultStatusId(supabase: any, workspaceId: string) {
   const { data: openStatus, error: openError } = await supabase
     .schema('service_cloud')
@@ -111,13 +133,16 @@ export const convertCoreEmailToServiceCloudTicketController = catchAsync(
       });
     }
 
-    if (email.thread_key) {
+    const threadKeys = emailThreadKeys(email);
+
+    if (threadKeys.length > 0) {
       const existingThread = await (supabase as any)
         .schema('service_cloud')
         .from('ticket_email_threads')
         .select('ticket_id,tickets(*)')
         .eq('workspace_id', workspaceId)
-        .eq('thread_key', email.thread_key)
+        .in('thread_key', threadKeys)
+        .limit(1)
         .maybeSingle();
 
       if (existingThread.error) throw existingThread.error;
@@ -273,18 +298,18 @@ export const convertCoreEmailToServiceCloudTicketController = catchAsync(
 
     if (linkError) throw linkError;
 
-    if (email.thread_key) {
+    if (threadKeys.length > 0) {
       const { error: threadLinkError } = await (supabase as any)
         .schema('service_cloud')
         .from('ticket_email_threads')
         .upsert(
-          {
+          threadKeys.map((threadKey) => ({
             workspace_id: workspaceId,
             ticket_id: ticket.id,
-            thread_key: email.thread_key,
+            thread_key: threadKey,
             email_account_id: email.email_account_id,
             created_by: user.id,
-          },
+          })),
           { onConflict: 'workspace_id,thread_key' },
         );
 
