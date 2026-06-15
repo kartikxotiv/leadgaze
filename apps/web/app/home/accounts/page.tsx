@@ -408,7 +408,7 @@ export default function AccountsPage() {
                         key={account.id}
                         className="hover:bg-muted/50 cursor-pointer"
                         onClick={() =>
-                          router.push(`/home/accounts/${account.id}`)
+                          router.push(`/home/sales/accounts/${account.id}`)
                         }
                       >
                         {isVisible('sno') && (
@@ -518,7 +518,7 @@ export default function AccountsPage() {
                           <div className="flex items-center justify-end gap-2">
                             <EntityActionsDropdown
                               id={account.id}
-                              viewPath={`/home/accounts/${account.id}`}
+                              viewPath={`/home/sales/accounts/${account.id}`}
                               canDelete={canAccess('accounts', 'delete')}
                               onDelete={() => {
                                 setAccountToDelete(account);
