@@ -24,6 +24,7 @@ import {
 
 import type { EmployeeDocument } from '../../types/document.type';
 import { useRbac } from '../rbac/rbac-context';
+import { formatDate } from '@kit/shared/utils';
 
 export function DocumentsDirectoryCard(props: {
   documents: Array<EmployeeDocument>;
@@ -203,12 +204,4 @@ export function DocumentsDirectoryCard(props: {
   );
 }
 
-function formatDate(value: string | null | undefined) {
-  if (!value) return 'N/A';
-  const date = new Date(value);
-  if (isNaN(date.getTime())) return 'N/A';
 
-  return new Intl.DateTimeFormat('en-IN', {
-    dateStyle: 'medium',
-  }).format(date);
-}

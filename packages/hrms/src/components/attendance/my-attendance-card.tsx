@@ -13,6 +13,7 @@ import type {
   AttendanceRecord,
   Shift,
 } from '../../types/attendance.type';
+import { formatDate } from '@kit/shared/utils';
 
 type AttendanceCardStatus =
   | 'not_checked_in'
@@ -236,11 +237,7 @@ function formatTime(value: string) {
   }).format(new Date(value));
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat('en-IN', {
-    dateStyle: 'full',
-  }).format(new Date(value));
-}
+
 
 function getWorkedMinutes(checkIn: string | null, checkOut: string | null) {
   if (!checkIn || !checkOut) {
