@@ -35,6 +35,7 @@ import type {
 } from '../../types/employee.type';
 import { useRbac } from '../rbac/rbac-context';
 import { EmployeeStatusBadge } from './employee-status-badge';
+import { formatDate } from '@kit/shared/utils';
 
 export function EmployeesDirectoryCard(props: {
   employees: Array<Employee>;
@@ -325,11 +326,7 @@ function getInitials(name: string) {
     .join('');
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat('en-IN', {
-    dateStyle: 'medium',
-  }).format(new Date(value));
-}
+
 
 function formatEmploymentType(value: Employee['employment_type']) {
   return value

@@ -17,6 +17,7 @@ import { TabsContent } from '@kit/ui/tabs';
 
 import { listPayslipsService } from '../../server/services/payroll.service';
 import { formatCurrency } from '../utils';
+import { formatDate } from '@kit/shared/utils';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -74,7 +75,7 @@ export function PayrollPayslipsTab(props: {
                     {formatCurrency(item.net_salary)}
                   </TableCell>
                   <TableCell>
-                    {new Date(item.generated_at).toLocaleDateString()}
+                    {formatDate(item.generated_at)}
                   </TableCell>
                   <TableCell className="sticky right-0 px-4 text-right">
                     <Button size="sm" variant="ghost">
