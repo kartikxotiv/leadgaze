@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Phone, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { formatDate } from '@kit/shared/utils';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
@@ -159,7 +160,7 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
                                 }
                                 metadata={
                                     <div className="flex flex-wrap gap-2">
-                                        <span>{new Date(call.date_time).toLocaleString()}</span>
+                                        <span>{formatDate(call.date_time)}</span>
                                     </div>
                                 }
                                 actions={

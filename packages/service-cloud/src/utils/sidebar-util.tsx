@@ -60,7 +60,7 @@ const serviceCloudRouteChildren: ServiceCloudRoute[] = [
     path: '/home/services/inboxes',
     Icon: <Inbox className="h-4 w-4" />,
     moduleKey: SERVICE_CLOUD_MODULE_KEYS.inboxes,
-    featureKey: SERVICE_CLOUD_FEATURE_KEYS.view,
+    featureKey: SERVICE_CLOUD_FEATURE_KEYS.manageInbox,
   },
   {
     end: true,

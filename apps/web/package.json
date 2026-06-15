@@ -43,6 +43,7 @@
     "@kit/inventory": "workspace:*",
     "@kit/next": "workspace:*",
     "@kit/service-cloud": "workspace:*",
+    "@kit/shared": "workspace:*",
     "@kit/supabase": "workspace:*",
     "@kit/ui": "workspace:*",
     "@makerkit/data-loader-supabase-core": "^0.0.10",

@@ -155,8 +155,9 @@ const getModulesWithFeatures = catchAsync(
     const url = new URL(request.url);
     const productKey = url.searchParams.get('productKey');
 
-    // Get modules filtered by product_key directly on crm_modules table
-    // Include 'common' modules (shared across all products like roles, audit_logs, etc.)
+    // Get modules filtered by product_key directly on crm_modules table.
+    // Include 'common' modules plus the shared emails module for service roles,
+    // where it exposes only emails:manage_inbox.
     let modulesQuery = supabase
       .from('crm_modules')
       .select('*')
@@ -168,8 +169,28 @@ const getModulesWithFeatures = catchAsync(
       modulesQuery = modulesQuery.in('product_key', [productKey, 'common']);
     }
 
-    const { data: modules, error: modulesError } = await modulesQuery;
+    let { data: modules, error: modulesError } = await modulesQuery;
     if (modulesError) throw modulesError;
+
+    if (productKey === 'service_cloud') {
+      const { data: emailModule, error: emailModuleError } = await supabase
+        .from('crm_modules')
+        .select('*')
+        .eq('module_key', 'emails')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (emailModuleError) throw emailModuleError;
+
+      if (
+        emailModule &&
+        !(modules ?? []).some((module: any) => module.id === emailModule.id)
+      ) {
+        modules = [...(modules ?? []), emailModule].sort(
+          (a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0),
+        );
+      }
+    }
 
     const moduleList = modules ?? [];
 
@@ -189,11 +210,38 @@ const getModulesWithFeatures = catchAsync(
       features = featureData ?? [];
     }
 
+    const moduleById = new Map<string, any>(
+      moduleList.map((module: any) => [module.id, module]),
+    );
+
+    features = features.filter((feature: any) => {
+      const module = moduleById.get(feature.module_id);
+
+      if (module?.module_key !== 'emails' || !productKey) {
+        return true;
+      }
+
+      if (productKey === 'service_cloud') {
+        return feature.feature_key === 'manage_inbox';
+      }
+
+      if (productKey === 'sales') {
+        return feature.feature_key === 'manage_email';
+      }
+
+      return false;
+    });
+
     // Group features by module
-    const modulesWithFeatures = moduleList.map((module: any) => ({
-      ...module,
-      features: features.filter((f: any) => f.module_id === module.id),
-    }));
+    const modulesWithFeatures = moduleList
+      .map((module: any) => ({
+        ...module,
+        features: features.filter((f: any) => f.module_id === module.id),
+      }))
+      .filter(
+        (module: any) =>
+          module.module_key !== 'emails' || module.features.length > 0,
+      );
 
     return successDataResponse(
       'Modules with features retrieved successfully',

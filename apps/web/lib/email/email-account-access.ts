@@ -79,8 +79,9 @@ export async function listWorkspaceEmailAccounts(
     return [];
   }
 
-  const { data: accounts, error } = await (supabase
-    .from('email_accounts') as any)
+  const { data: accounts, error } = await (
+    supabase.from('email_accounts') as any
+  )
     .select(
       'id,email,created_at,from_name,is_active,provider,workspace_id,owner_user_id,access_scope',
     )
@@ -165,7 +166,7 @@ export async function getAccessibleInboxEmails(
 export async function hasWorkspaceEmailFeatureAccess(
   supabase: any,
   workspaceId: string,
-  featureKey: 'view_inbox' | 'send_emails',
+  featureKey: 'manage_email',
 ) {
   const {
     data: { user },
@@ -214,7 +215,10 @@ export async function getSendableEmailAccountById(
   workspaceId: string,
   emailAccountId?: number,
 ) {
-  const accountSummaries = await listWorkspaceEmailAccounts(supabase, workspaceId);
+  const accountSummaries = await listWorkspaceEmailAccounts(
+    supabase,
+    workspaceId,
+  );
   const sendableAccounts = accountSummaries.filter(
     (account) => account.can_send && account.is_active !== false,
   );
@@ -233,8 +237,9 @@ export async function getSendableEmailAccountById(
     return null;
   }
 
-  const { data: fullAccount, error } = await (supabase
-    .from('email_accounts') as any)
+  const { data: fullAccount, error } = await (
+    supabase.from('email_accounts') as any
+  )
     .select('*')
     .eq('workspace_id', workspaceId)
     .eq('id', targetAccountId)

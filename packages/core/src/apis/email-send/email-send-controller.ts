@@ -5,6 +5,10 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { getSendableEmailAccountById } from '../../lib/email/account-access';
 import { sendMail } from '../../lib/email/mailer';
 import { catchAsync, successDataResponse } from '../../utils/response-handler';
+import {
+  hasSalesManageEmailPermission,
+  isSalesEmailEntityType,
+} from '../_shared/permissions';
 import { assertCoreWorkspaceAccess } from '../_shared/workspace-access';
 
 function normalizeRecipients(value: unknown): string[] {
@@ -53,6 +57,19 @@ export const sendCoreEmailController = catchAsync(async ({ request }) => {
   const { supabase, user, error } =
     await assertCoreWorkspaceAccess(workspaceId);
   if (error || !user) return error!;
+
+  if (
+    isSalesEmailEntityType(entityType) &&
+    !(await hasSalesManageEmailPermission(supabase, workspaceId, user.id))
+  ) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'You do not have permission to manage Sales email',
+      },
+      { status: 403 },
+    );
+  }
 
   const account = await getSendableEmailAccountById(
     supabase,

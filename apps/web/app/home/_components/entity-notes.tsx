@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileText, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { formatDate } from '@kit/shared/utils';
 import { Button } from '@kit/ui/button';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
@@ -220,7 +221,7 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
                 }
                 metadata={
                   <div className="flex flex-wrap gap-2">
-                    <span>{new Date(note.created_at).toLocaleString()}</span>
+                    <span>{formatDate(note.created_at)}</span>
                     {note.created_by_user && (
                       <span>by {note.created_by_user.name}</span>
                     )}
