@@ -3,6 +3,7 @@
 import { NextResponse } from 'next/server';
 
 import { catchAsync, successDataResponse } from '../utils/response-handler';
+import { hasServiceCloudManageInboxPermission } from './_shared/permissions';
 import { assertServiceCloudWorkspaceAccess } from './_shared/workspace-access';
 
 function normalizeEmail(value?: string | null) {
@@ -100,6 +101,22 @@ export const convertCoreEmailToServiceCloudTicketController = catchAsync(
     const { supabase, user, error } =
       await assertServiceCloudWorkspaceAccess(workspaceId);
     if (error || !user) return error!;
+
+    const canManageInbox = await hasServiceCloudManageInboxPermission(
+      supabase,
+      workspaceId,
+      user.id,
+    );
+
+    if (!canManageInbox) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'You do not have permission to manage support inboxes',
+        },
+        { status: 403 },
+      );
+    }
 
     const { data: email, error: emailError } = await (supabase as any)
       .schema('core')

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { formatDate, formatDateTime } from '@kit/shared/utils';
 import { Button } from '@kit/ui/button';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
@@ -281,7 +282,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                     {reminder.due_date && (
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {new Date(reminder.due_date).toLocaleString()}
+                        {formatDate(reminder.due_date)}
                       </span>
                     )}
                     {reminder.created_by_user && (
@@ -603,7 +604,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
                   <div className="flex flex-wrap gap-2">
                     <span className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
-                      {new Date(meeting.start_time).toLocaleString()}
+                      {formatDate(meeting.start_time)}
                     </span>
                     {meeting.created_by_user && (
                       <span>by {meeting.created_by_user.name}</span>
@@ -839,7 +840,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                 metadata={
                   <div className="flex flex-wrap gap-2">
                     <span>
-                      {new Date(doc.created_at).toLocaleDateString()}
+                      {formatDate(doc.created_at)}
                     </span>
                     {doc.created_by_user && (
                       <span>by {doc.created_by_user.name}</span>

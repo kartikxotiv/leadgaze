@@ -10,6 +10,7 @@ import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
+import { formatDate } from '@kit/shared/utils';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import {
   Pagination,
@@ -655,9 +656,7 @@ export default function OpportunitiesPage() {
                         {isVisible('close_date') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.expected_close_date
-                              ? new Date(
-                                  opportunity.expected_close_date,
-                                ).toLocaleDateString()
+                              ? formatDate(opportunity.expected_close_date)
                               : '-'}
                           </TableCell>
                         )}
@@ -712,9 +711,7 @@ export default function OpportunitiesPage() {
                         {isVisible('created_at') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.created_at
-                              ? new Date(
-                                  opportunity.created_at,
-                                ).toLocaleDateString()
+                              ? formatDate(opportunity.created_at)
                               : '-'}
                           </TableCell>
                         )}

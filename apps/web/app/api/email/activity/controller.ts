@@ -12,6 +12,7 @@ import {
   successDataResponse,
   successListDataResponse,
 } from '~/utils/response-handler';
+
 import { getEntityName } from '../../_helpers/get-entity-name';
 import { getRelatedEntityIds } from '../../_helpers/get-related-entities';
 
@@ -35,7 +36,11 @@ export const getEmailActivity = catchAsync(async ({ request }) => {
 
   // ── Entity-scoped path: cross-module fan-out ──────────────────────────────
   if (entityId && entityType) {
-    const relatedEntities = await getRelatedEntityIds(supabase, entityType, entityId);
+    const relatedEntities = await getRelatedEntityIds(
+      supabase,
+      entityType,
+      entityId,
+    );
 
     const emailPromises = relatedEntities.map(({ entity_type, entity_id }) =>
       supabase
@@ -55,8 +60,12 @@ export const getEmailActivity = catchAsync(async ({ request }) => {
 
     // Sort: received_at DESC, fallback to created_at DESC
     unique.sort((a, b) => {
-      const aTime = new Date(a.received_at || a.created_at).getTime();
-      const bTime = new Date(b.received_at || b.created_at).getTime();
+      const aTime = new Date(
+        a.received_at ?? a.created_at ?? 0,
+      ).getTime();
+      const bTime = new Date(
+        b.received_at ?? b.created_at ?? 0,
+      ).getTime();
       return bTime - aTime;
     });
 
@@ -69,7 +78,11 @@ export const getEmailActivity = catchAsync(async ({ request }) => {
     const withNames = await Promise.all(
       paginated.map(async (email) => ({
         ...email,
-        entity_name: await getEntityName(supabase, email.entity_type, email.entity_id),
+        entity_name: await getEntityName(
+          supabase,
+          email.entity_type ?? '',
+          email.entity_id ?? '',
+        ),
       })),
     );
 
@@ -88,7 +101,7 @@ export const getEmailActivity = catchAsync(async ({ request }) => {
     const canViewInbox = await hasWorkspaceEmailFeatureAccess(
       supabase,
       workspaceId,
-      'view_inbox',
+      'manage_email',
     );
 
     if (!canViewInbox) {
