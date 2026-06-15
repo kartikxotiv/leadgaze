@@ -4,6 +4,10 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { getAccessibleInboxAccounts } from '../../lib/email/account-access';
 import { catchAsync, successDataResponse } from '../../utils/response-handler';
+import {
+  hasSalesManageEmailPermission,
+  isSalesEmailEntityType,
+} from '../_shared/permissions';
 import { assertCoreWorkspaceAccess } from '../_shared/workspace-access';
 
 function normalizePositiveInt(
@@ -64,11 +68,13 @@ export const getCoreEmailActivityController = catchAsync(
 
     const supabase = getSupabaseServerClient();
     const resolvedWorkspaceId = workspaceId;
+    let currentUserId: string | null = null;
 
     if (resolvedWorkspaceId) {
       const { user, error } =
         await assertCoreWorkspaceAccess(resolvedWorkspaceId);
       if (error || !user) return error!;
+      currentUserId = user.id;
     }
 
     if (entityId && entityType) {
@@ -79,6 +85,24 @@ export const getCoreEmailActivityController = catchAsync(
             message: 'workspaceId is required for entity email activity',
           },
           { status: 400 },
+        );
+      }
+
+      if (
+        isSalesEmailEntityType(entityType) &&
+        (!currentUserId ||
+          !(await hasSalesManageEmailPermission(
+            supabase,
+            resolvedWorkspaceId,
+            currentUserId,
+          )))
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'You do not have permission to manage Sales email',
+          },
+          { status: 403 },
         );
       }
 
@@ -226,6 +250,22 @@ export const saveCoreEmailActivityController = catchAsync(
       await assertCoreWorkspaceAccess(workspaceId);
     if (error || !user) return error!;
 
+    const entityType = body.entity_type ?? body.entityType;
+    const entityId = body.entity_id ?? body.entityId;
+
+    if (
+      isSalesEmailEntityType(entityType) &&
+      !(await hasSalesManageEmailPermission(supabase, workspaceId, user.id))
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'You do not have permission to manage Sales email',
+        },
+        { status: 403 },
+      );
+    }
+
     const payload = {
       workspace_id: workspaceId,
       email_account_id: body.email_account_id ?? body.emailAccountId ?? null,
@@ -261,8 +301,6 @@ export const saveCoreEmailActivityController = catchAsync(
 
     if (upsertError) throw upsertError;
 
-    const entityType = body.entity_type ?? body.entityType;
-    const entityId = body.entity_id ?? body.entityId;
     if (entityType && entityId) {
       await (supabase as any)
         .schema('core')
@@ -298,6 +336,32 @@ export const deleteCoreEmailActivityController = catchAsync(
     const { supabase, user, error } =
       await assertCoreWorkspaceAccess(workspaceId);
     if (error || !user) return error!;
+
+    const { data: relations, error: relationError } = await (supabase as any)
+      .schema('core')
+      .from('email_relations')
+      .select('entity_type')
+      .eq('workspace_id', workspaceId)
+      .eq('email_id', id);
+
+    if (relationError) throw relationError;
+
+    const hasSalesRelation = (relations ?? []).some((relation: any) =>
+      isSalesEmailEntityType(relation.entity_type),
+    );
+
+    if (
+      hasSalesRelation &&
+      !(await hasSalesManageEmailPermission(supabase, workspaceId, user.id))
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'You do not have permission to manage Sales email',
+        },
+        { status: 403 },
+      );
+    }
 
     const { error: deleteError } = await (supabase as any)
       .schema('core')

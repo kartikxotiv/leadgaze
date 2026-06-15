@@ -26,7 +26,7 @@ import { toast } from 'sonner';
 
 import { CoreEmailReplyDialog, CoreEntityPanel } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
-import { formatDate, formatDateTime, formatDateOnly } from '@kit/shared/utils';
+import { formatDate, formatDateOnly, formatDateTime } from '@kit/shared/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,7 +47,12 @@ import {
   CardTitle,
 } from '@kit/ui/card';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@kit/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@kit/ui/dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import {
@@ -80,6 +85,11 @@ import {
 import CustomTableContainer from '@kit/ui/custom-table-container';
 import { PageBody } from '@kit/ui/page';
 import { cn } from '@kit/ui/utils';
+import {
+  SERVICE_CLOUD_FEATURE_KEYS,
+  SERVICE_CLOUD_MODULE_KEYS,
+  useServiceCloudPermissions,
+} from '../../utils';
 
 type LookupOption = {
   id: string;
@@ -141,6 +151,12 @@ export function ServiceCloudTicketDetailPage({
   ticketId: string;
 }) {
   const queryClient = useQueryClient();
+  const { canAccess, isLoading: permissionsLoading } =
+    useServiceCloudPermissions(workspaceId);
+  const canManageInbox = canAccess(
+    SERVICE_CLOUD_MODULE_KEYS.inboxes,
+    SERVICE_CLOUD_FEATURE_KEYS.manageInbox,
+  );
   const queryKey = ['service-cloud', 'ticket-detail', workspaceId, ticketId];
   const [timeForm, setTimeForm] = useState({
     hours: '',
@@ -167,7 +183,7 @@ export function ServiceCloudTicketDetailPage({
   const { data: emailAccounts = [] } = useQuery({
     queryKey: ['core-email-accounts', workspaceId],
     queryFn: () => getCoreEmailAccountsService(workspaceId),
-    enabled: Boolean(workspaceId),
+    enabled: Boolean(workspaceId && canManageInbox),
   });
 
   const updateMutation = useMutation({
@@ -283,7 +299,7 @@ export function ServiceCloudTicketDetailPage({
       toast.error(error.message || 'Failed to update assignees'),
   });
 
-  if (isLoading) {
+  if (isLoading || permissionsLoading) {
     return <ServiceCloudTicketDetailSkeleton />;
   }
 
@@ -335,16 +351,23 @@ export function ServiceCloudTicketDetailPage({
   const canLogTime =
     Number(timeForm.hours || 0) > 0 || Number(timeForm.minutes || 0) > 0;
   const isUpdating = updateMutation.isPending;
-  const dueValue = ticket.due_date ?? ticket.due_at ?? (
-    ticket.created_at && ticket.priority?.resolution_due_minutes
-      ? new Date(new Date(ticket.created_at).getTime() + ticket.priority.resolution_due_minutes * 60 * 1000).toISOString()
-      : null
-  );
-  const responseDueAt = ticket.response_due_at || (
-    ticket.created_at && ticket.priority?.response_due_minutes
-      ? new Date(new Date(ticket.created_at).getTime() + ticket.priority.response_due_minutes * 60 * 1000).toISOString()
-      : null
-  );
+  const dueValue =
+    ticket.due_date ??
+    ticket.due_at ??
+    (ticket.created_at && ticket.priority?.resolution_due_minutes
+      ? new Date(
+          new Date(ticket.created_at).getTime() +
+            ticket.priority.resolution_due_minutes * 60 * 1000,
+        ).toISOString()
+      : null);
+  const responseDueAt =
+    ticket.response_due_at ||
+    (ticket.created_at && ticket.priority?.response_due_minutes
+      ? new Date(
+          new Date(ticket.created_at).getTime() +
+            ticket.priority.response_due_minutes * 60 * 1000,
+        ).toISOString()
+      : null);
 
   const updateTicket = (payload: Record<string, unknown>) =>
     updateMutation.mutate(payload);
@@ -441,7 +464,7 @@ export function ServiceCloudTicketDetailPage({
             icon={<Inbox className="h-5 w-5 text-cyan-600" />}
             icon2={
               <div className="flex flex-wrap gap-2">
-                {latestThreadEmail ? (
+                {canManageInbox && latestThreadEmail ? (
                   <Button
                     size="sm"
                     onClick={() => setReplyEmail(latestThreadEmail)}
@@ -451,98 +474,111 @@ export function ServiceCloudTicketDetailPage({
                   </Button>
                 ) : null}
                 <StatusPill label={ticket.source ?? 'manual'} />
-                <StatusPill label={`${emails.length} emails`} />
+                {canManageInbox ? (
+                  <StatusPill label={`${emails.length} emails`} />
+                ) : null}
                 <StatusPill label={formatDuration(totalLoggedSeconds)} />
               </div>
             }
           >
             <div className="px-6 py-4">
-              <Tabs defaultValue="conversation" className="space-y-5">
-                <TabsList className="grid h-auto grid-cols-2 rounded-2xl bg-slate-100 p-1 md:w-fit md:grid-cols-5 dark:bg-slate-900">
-                  <TabsTrigger value="conversation">Conversation</TabsTrigger>
+              <Tabs
+                defaultValue={canManageInbox ? 'conversation' : 'work'}
+                className="space-y-5"
+              >
+                <TabsList
+                  className={`grid h-auto grid-cols-2 rounded-2xl bg-slate-100 p-1 md:w-fit ${
+                    canManageInbox ? 'md:grid-cols-5' : 'md:grid-cols-4'
+                  } dark:bg-slate-900`}
+                >
+                  {canManageInbox ? (
+                    <TabsTrigger value="conversation">Conversation</TabsTrigger>
+                  ) : null}
                   <TabsTrigger value="work">Time Log</TabsTrigger>
                   <TabsTrigger value="notes">Notes</TabsTrigger>
                   <TabsTrigger value="documents">Documents</TabsTrigger>
                   <TabsTrigger value="activity">Activity</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="conversation" className="space-y-4">
-                  {emails.length === 0 ? (
-                    <EmptyState
-                      title="No emails linked yet"
-                      description="Emails converted into this ticket will appear here."
-                    />
-                  ) : (
-                    <div className="scrollbar-thin h-[calc(100vh-420px)] min-h-[350px] space-y-4 overflow-y-auto pr-2">
-                      {emails.map((item: any) => {
-                        const email = item.email;
-                        return (
-                          <article
-                            key={item.id}
-                            className="overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-zinc-950"
-                          >
-                            <div className="border-b bg-slate-50 p-4 dark:bg-slate-900/60">
-                              <div className="flex flex-wrap items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <div className="truncate text-base font-semibold">
-                                    {email?.subject || '(No Subject)'}
-                                  </div>
-                                  <div className="text-muted-foreground mt-1 text-xs">
-                                    {email?.direction === 'inbound'
-                                      ? `From ${email?.from_email}`
-                                      : `To ${emailRecipientText(email)}`}
-                                  </div>
-                                  {Array.isArray(email?.cc_emails) &&
-                                  email.cc_emails.length > 0 ? (
-                                    <div className="text-muted-foreground mt-1 text-xs">
-                                      Cc {email.cc_emails.join(', ')}
+                {canManageInbox ? (
+                  <TabsContent value="conversation" className="space-y-4">
+                    {emails.length === 0 ? (
+                      <EmptyState
+                        title="No emails linked yet"
+                        description="Emails converted into this ticket will appear here."
+                      />
+                    ) : (
+                      <div className="scrollbar-thin h-[calc(100vh-420px)] min-h-[350px] space-y-4 overflow-y-auto pr-2">
+                        {emails.map((item: any) => {
+                          const email = item.email;
+                          return (
+                            <article
+                              key={item.id}
+                              className="overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-zinc-950"
+                            >
+                              <div className="border-b bg-slate-50 p-4 dark:bg-slate-900/60">
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <div className="truncate text-base font-semibold">
+                                      {email?.subject || '(No Subject)'}
                                     </div>
-                                  ) : null}
-                                </div>
-                                <div className="flex flex-col items-end gap-2">
-                                  <Badge variant="outline">
-                                    {item.email_role}
-                                  </Badge>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setReplyEmail(email)}
-                                  >
-                                    Reply
-                                  </Button>
-                                  <span className="text-muted-foreground text-xs">
-                                    {formatDateTime(
-                                      email?.received_at ||
-                                        email?.sent_at ||
-                                        email?.created_at,
-                                    )}
-                                  </span>
+                                    <div className="text-muted-foreground mt-1 text-xs">
+                                      {email?.direction === 'inbound'
+                                        ? `From ${email?.from_email}`
+                                        : `To ${emailRecipientText(email)}`}
+                                    </div>
+                                    {Array.isArray(email?.cc_emails) &&
+                                    email.cc_emails.length > 0 ? (
+                                      <div className="text-muted-foreground mt-1 text-xs">
+                                        Cc {email.cc_emails.join(', ')}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                  <div className="flex flex-col items-end gap-2">
+                                    <Badge variant="outline">
+                                      {item.email_role}
+                                    </Badge>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setReplyEmail(email)}
+                                    >
+                                      Reply
+                                    </Button>
+                                    <span className="text-muted-foreground text-xs">
+                                      {formatDateTime(
+                                        email?.received_at ||
+                                          email?.sent_at ||
+                                          email?.created_at,
+                                      )}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            <div className="p-5">
-                              <div className="prose prose-sm dark:prose-invert max-w-none">
-                                {email?.html_body || email?.body ? (
-                                  <div
-                                    dangerouslySetInnerHTML={{
-                                      __html: email.html_body || email.body,
-                                    }}
-                                  />
-                                ) : (
-                                  <p>
-                                    {email?.text_body ||
-                                      email?.snippet ||
-                                      'No content.'}
-                                  </p>
-                                )}
+                              <div className="p-5">
+                                <div className="prose prose-sm dark:prose-invert max-w-none">
+                                  {email?.html_body || email?.body ? (
+                                    <div
+                                      dangerouslySetInnerHTML={{
+                                        __html: email.html_body || email.body,
+                                      }}
+                                    />
+                                  ) : (
+                                    <p>
+                                      {email?.text_body ||
+                                        email?.snippet ||
+                                        'No content.'}
+                                    </p>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          </article>
-                        );
-                      })}
-                    </div>
-                  )}
-                </TabsContent>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </TabsContent>
+                ) : null}
 
                 <TabsContent value="work" className="space-y-4">
                   <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
@@ -630,72 +666,110 @@ export function ServiceCloudTicketDetailPage({
                           />
                         ) : (
                           <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
-            <CustomTableContainer>
-              <div className="max-h-[295px] overflow-y-auto scrollbar-thin">
-                <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead className="w-[80px]">S. No.</TableHead>
-                                  <TableHead className="max-w-[150px]">Activities</TableHead>
-                                  <TableHead className="max-w-[200px]">Description</TableHead>
-                                  <TableHead className="w-[150px]">Author</TableHead>
-                                  <TableHead className="w-[180px]">Date &amp; Time Log</TableHead>
-                                  <TableHead className="w-[100px] text-center"></TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {timeEntries.map((entry: any, index: number) => (
-                                  <TableRow key={entry.id}>
-                                    <TableCell>{index + 1}</TableCell>
-                                    <TableCell className="max-w-[150px] truncate" title={entry.activities || ''}>
-                                      {entry.activities || '-'}
-                                    </TableCell>
-                                    <TableCell className="max-w-[200px] truncate" title={entry.description || ''}>
-                                      {entry.description || '-'}
-                                    </TableCell>
-                                    <TableCell className="w-[150px]">
-                                      <span className="truncate text-sm" title={entry.author?.name || entry.author?.email || ''}>
-                                        {entry.author?.name || entry.author?.email || '-'}
-                                      </span>
-                                    </TableCell>
-                                    <TableCell className="w-[180px]">
-                                      <div className="flex items-center gap-2">
-                                        <span className="whitespace-nowrap">
-                                          {formatDate(entry.logged_date)}
-                                        </span>
-                                        <Badge variant="secondary" className="whitespace-nowrap">
-                                          {formatDuration(entry.duration_seconds)}
-                                        </Badge>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="w-[100px] text-center">
-                                      <div className="flex items-center justify-end gap-1">
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={() => handleEditClick(entry)}
-                                        >
-                                          <Pencil className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="text-destructive hover:bg-destructive/10"
-                                          onClick={() => setDeletingLogId(entry.id)}
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                </Table>
-              </div>
-            </CustomTableContainer>
-                          </div>
-                          </PageBody> 
+                            <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+                              <CustomTableContainer>
+                                <div className="scrollbar-thin max-h-[295px] overflow-y-auto">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead className="w-[80px]">
+                                          S. No.
+                                        </TableHead>
+                                        <TableHead className="max-w-[150px]">
+                                          Activities
+                                        </TableHead>
+                                        <TableHead className="max-w-[200px]">
+                                          Description
+                                        </TableHead>
+                                        <TableHead className="w-[150px]">
+                                          Author
+                                        </TableHead>
+                                        <TableHead className="w-[180px]">
+                                          Date &amp; Time Log
+                                        </TableHead>
+                                        <TableHead className="w-[100px] text-center"></TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {timeEntries.map(
+                                        (entry: any, index: number) => (
+                                          <TableRow key={entry.id}>
+                                            <TableCell>{index + 1}</TableCell>
+                                            <TableCell
+                                              className="max-w-[150px] truncate"
+                                              title={entry.activities || ''}
+                                            >
+                                              {entry.activities || '-'}
+                                            </TableCell>
+                                            <TableCell
+                                              className="max-w-[200px] truncate"
+                                              title={entry.description || ''}
+                                            >
+                                              {entry.description || '-'}
+                                            </TableCell>
+                                            <TableCell className="w-[150px]">
+                                              <span
+                                                className="truncate text-sm"
+                                                title={
+                                                  entry.author?.name ||
+                                                  entry.author?.email ||
+                                                  ''
+                                                }
+                                              >
+                                                {entry.author?.name ||
+                                                  entry.author?.email ||
+                                                  '-'}
+                                              </span>
+                                            </TableCell>
+                                            <TableCell className="w-[180px]">
+                                              <div className="flex items-center gap-2">
+                                                <span className="whitespace-nowrap">
+                                                  {formatDate(
+                                                    entry.logged_date,
+                                                  )}
+                                                </span>
+                                                <Badge
+                                                  variant="secondary"
+                                                  className="whitespace-nowrap"
+                                                >
+                                                  {formatDuration(
+                                                    entry.duration_seconds,
+                                                  )}
+                                                </Badge>
+                                              </div>
+                                            </TableCell>
+                                            <TableCell className="w-[100px] text-center">
+                                              <div className="flex items-center justify-end gap-1">
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  onClick={() =>
+                                                    handleEditClick(entry)
+                                                  }
+                                                >
+                                                  <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="text-destructive hover:bg-destructive/10"
+                                                  onClick={() =>
+                                                    setDeletingLogId(entry.id)
+                                                  }
+                                                >
+                                                  <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                              </div>
+                                            </TableCell>
+                                          </TableRow>
+                                        ),
+                                      )}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </CustomTableContainer>
+                            </div>
+                          </PageBody>
                         )}
                       </div>
                     </CardWidgetContainer>
@@ -744,7 +818,7 @@ export function ServiceCloudTicketDetailPage({
                     description="Status, priority, assignment, email, and time-log history for this ticket."
                     hideHeaderBorder={true}
                   >
-                    <div className="scrollbar-thin max-h-[calc(100vh-450px)] min-h-[300px] space-y-3 overflow-y-auto px-6 pb-4 pr-2">
+                    <div className="scrollbar-thin max-h-[calc(100vh-450px)] min-h-[300px] space-y-3 overflow-y-auto px-6 pr-2 pb-4">
                       {(data.activities ?? []).length === 0 ? (
                         <EmptyState
                           title="No activity yet"
@@ -932,19 +1006,21 @@ export function ServiceCloudTicketDetailPage({
         </aside>
       </div>
 
-      <CoreEmailReplyDialog
-        open={Boolean(replyEmail)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setReplyEmail(null);
-            void queryClient.invalidateQueries({ queryKey });
-          }
-        }}
-        workspaceId={workspaceId}
-        email={replyEmail}
-        accounts={emailAccounts}
-        templateContext={ticketTemplateContext}
-      />
+      {canManageInbox ? (
+        <CoreEmailReplyDialog
+          open={Boolean(replyEmail)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setReplyEmail(null);
+              void queryClient.invalidateQueries({ queryKey });
+            }
+          }}
+          workspaceId={workspaceId}
+          email={replyEmail}
+          accounts={emailAccounts}
+          templateContext={ticketTemplateContext}
+        />
+      ) : null}
 
       <Dialog
         open={Boolean(editingLogId)}
@@ -1029,7 +1105,8 @@ export function ServiceCloudTicketDetailPage({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the time entry. This action cannot be undone.
+              This will permanently delete the time entry. This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
