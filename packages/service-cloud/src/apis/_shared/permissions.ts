@@ -50,7 +50,7 @@ export async function hasServiceCloudFeaturePermission(
   return Boolean(permission?.can_access);
 }
 
-export function hasServiceCloudManageInboxPermission(
+export async function hasServiceCloudManageInboxPermission(
   supabase: any,
   workspaceId: string,
   userId: string,
