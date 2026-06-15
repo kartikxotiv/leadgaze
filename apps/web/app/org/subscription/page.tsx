@@ -206,6 +206,12 @@ export default function OrgSubscriptionPage() {
       queryClient.invalidateQueries({
         queryKey: ['subscription-products'],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['user-seat-assignments', workspaceId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-entitlements', workspaceId],
+      });
       window.history.replaceState({}, '', '/org/subscription');
     } else if (checkout === 'cancel') {
       toast.error('Checkout was cancelled.');
@@ -407,6 +413,15 @@ export default function OrgSubscriptionPage() {
         );
         queryClient.invalidateQueries({
           queryKey: ['workspace-seats', workspaceId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['workspace-subscription', workspaceId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['user-seat-assignments', workspaceId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['workspace-entitlements', workspaceId],
         });
       }
     },
@@ -767,7 +782,7 @@ export default function OrgSubscriptionPage() {
               </p>
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 px-1">
               {availableProducts.map((product) => (
                 <AvailableModuleCard
                   key={product.id}

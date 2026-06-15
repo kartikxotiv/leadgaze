@@ -55,13 +55,13 @@ const SALES_MODULES: NavItem[] = [
     feature: 'view',
     module: 'opportunities',
   },
-  {
-    label: 'Emails',
-    path: pathsConfig.app.emails,
-    Icon: Mail,
-    feature: 'view_inbox',
-    module: 'emails',
-  },
+  // {
+  //   label: 'Emails',
+  //   path: pathsConfig.app.emails,
+  //   Icon: Mail,
+  //   feature: 'view_inbox',
+  //   module: 'emails',
+  // },
   {
     label: 'Teams',
     path: pathsConfig.app.teams,
