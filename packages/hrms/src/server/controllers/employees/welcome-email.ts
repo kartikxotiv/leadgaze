@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import nodemailer from 'nodemailer';
 
+import EMPLOYEE_WELCOME_TEMPLATE from '../../../constants/email.templates/employee-welcome.template';
 import type { EmployeeBody } from './utils';
 
 type WelcomeEmailParams = {
@@ -34,6 +35,7 @@ async function sendEmployeeWelcomeEmail(params: WelcomeEmailParams) {
   });
 
   const workspaceName = params.workspaceName?.trim() || 'Leadgaze';
+  const productName = process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze';
   const employeeName =
     [
       params.employeeBody.first_name?.trim(),
@@ -60,6 +62,7 @@ async function sendEmployeeWelcomeEmail(params: WelcomeEmailParams) {
     html: buildWelcomeEmailHtml({
       employeeName,
       loginUrl: params.loginUrl,
+      productName,
       temporaryPassword: params.temporaryPassword,
       to: params.to,
       workspaceName,
@@ -70,31 +73,12 @@ async function sendEmployeeWelcomeEmail(params: WelcomeEmailParams) {
 function buildWelcomeEmailHtml(params: {
   employeeName: string;
   loginUrl: string;
+  productName: string;
   temporaryPassword: string;
   to: string;
   workspaceName: string;
 }) {
-  return `
-    <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.6;">
-      <p>Hi ${escapeHtml(params.employeeName)},</p>
-      <p>Your ${escapeHtml(params.workspaceName)} employee account has been created.</p>
-      <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 16px 0;">
-        <p style="margin: 0 0 8px;"><strong>Login URL:</strong> <a href="${escapeHtml(params.loginUrl)}">${escapeHtml(params.loginUrl)}</a></p>
-        <p style="margin: 0 0 8px;"><strong>Email:</strong> ${escapeHtml(params.to)}</p>
-        <p style="margin: 0;"><strong>Temporary password:</strong> ${escapeHtml(params.temporaryPassword)}</p>
-      </div>
-      <p>Please sign in and change your password after your first login.</p>
-    </div>
-  `;
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  return EMPLOYEE_WELCOME_TEMPLATE(params);
 }
 
 export { generateTemporaryPassword, sendEmployeeWelcomeEmail };
