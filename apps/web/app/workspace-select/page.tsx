@@ -76,11 +76,11 @@ export default function WorkspaceSelectPage() {
           <div className="mx-auto bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex h-12 w-12 items-center justify-center rounded-xl shadow-inner mb-2">
             <Building2 className="h-6 w-6" />
           </div>
-          <CardTitle className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <CardTitle className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white block text-center justify-center w-full">
             Welcome back!
           </CardTitle>
-          <CardDescription className="text-slate-500 dark:text-zinc-400 text-sm max-w-sm mx-auto">
-            Choose a workspace to launch your Sales, HRMS, or Support dashboard.
+          <CardDescription className="text-slate-500 dark:text-zinc-400 text-xl max-w-sm mx-auto">
+            Choose a workspace
           </CardDescription>
         </CardHeader>
         
