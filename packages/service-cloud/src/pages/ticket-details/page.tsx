@@ -645,7 +645,7 @@ export function ServiceCloudTicketDetailPage({
                                     <TableCell className="w-[180px]">
                                       <div className="flex items-center gap-2">
                                         <span className="whitespace-nowrap">
-                                          {entry.logged_date || formatDateTime(entry.created_at)}
+                                          {formatDate(entry.logged_date)}
                                         </span>
                                         <Badge variant="secondary" className="whitespace-nowrap">
                                           {formatDuration(entry.duration_seconds)}
