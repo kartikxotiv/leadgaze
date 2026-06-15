@@ -50,6 +50,7 @@ import {
 } from '../../services/email-templates.service';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
+import { formatDate } from '@kit/shared/utils';
 
 
 export function CoreEmailTemplatesTab({
@@ -150,7 +151,7 @@ export function CoreEmailTemplatesTab({
                       {template.subject}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {new Date(template.updated_at).toLocaleDateString()}
+                      {formatDate(template.updated_at)}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button

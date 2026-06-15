@@ -13,6 +13,7 @@ import {
   getRouteUserId,
   requireEmployeePermission,
 } from '../../../employees/controller.helpers';
+import { formatDate } from '@kit/shared/utils';
 
 const dashboardModuleKey = 'hrms_employees';
 
@@ -382,16 +383,7 @@ function mapRecentJoiner(employee: any) {
   } satisfies HomeDashboardData['recentJoiners'][number];
 }
 
-function formatDate(value: string | null | undefined) {
-  if (!value) {
-    return '-';
-  }
 
-  return new Date(`${value}T00:00:00`).toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-  });
-}
 
 function formatDateRange(
   startDate: string | null | undefined,

@@ -582,7 +582,7 @@ function RecentContactsTable({ workspaceId }: { workspaceId: string }) {
               </TableCell>
               <TableCell className="text-right">
                 <Button variant="ghost" size="sm" asChild>
-                  <Link href={`/home/contacts/${contact.id}`}>View</Link>
+                  <Link href={`/home/sales/contacts/${contact.id}`}>View</Link>
                 </Button>
               </TableCell>
             </TableRow>

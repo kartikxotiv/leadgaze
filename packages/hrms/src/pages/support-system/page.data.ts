@@ -1,3 +1,5 @@
+import { formatDateTime as formatDate } from '@kit/shared/utils';
+export { formatDate };
 import type {
   SupportSystemRequest,
   SupportSystemRequestUpdatePayload,
@@ -29,16 +31,7 @@ export const SUPPORT_SYSTEM_TABS = [
 export type SupportSystemTabValue =
   (typeof SUPPORT_SYSTEM_TABS)[number]['value'];
 
-export function formatDate(value: string | null | undefined) {
-  if (!value) {
-    return '-';
-  }
 
-  return new Intl.DateTimeFormat('en-IN', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value));
-}
 
 export function getSupportRequestCategoryLabel(category: string) {
   return category

@@ -43,6 +43,22 @@ interface UpdateMemberPayload {
   is_primary_contact?: boolean;
 }
 
+interface PendingInvitation {
+  id: string;
+  email: string;
+  status: 'pending';
+  invited_at: string;
+  created_at: string;
+  token_expires_at: string | null;
+  role?: {
+    id: string;
+    role_name: string;
+    role_key: string;
+    hierarchy_level: number;
+    color?: string;
+  } | null;
+}
+
 const getMembersService = asyncHandlerClient(async (workspaceId: string) => {
   const response = await ApiClient.get(
     `/team-members?workspaceId=${workspaceId}`,
@@ -112,6 +128,33 @@ const getInvitationsByEmailService = asyncHandlerClient(
   },
 );
 
+const getPendingInvitationsService = asyncHandlerClient(
+  async (workspaceId: string) => {
+    const response = await ApiClient.get(
+      `/team-members/invitations?workspaceId=${workspaceId}`,
+    );
+    return response.data;
+  },
+);
+
+const deleteInvitationService = asyncHandlerClient(
+  async (invitationId: string) => {
+    const response = await ApiClient.delete(
+      `/team-members/invitations/${invitationId}`,
+    );
+    return response.data;
+  },
+);
+
+const resendInvitationEmailService = asyncHandlerClient(
+  async (invitationId: string) => {
+    const response = await ApiClient.post(
+      `/team-members/invitations/${invitationId}/resend`,
+    );
+    return response.data;
+  },
+);
+
 export {
   getMembersService,
   getMemberByIdService,
@@ -122,7 +165,11 @@ export {
   acceptInviteService,
   validateInviteTokenService,
   getInvitationsByEmailService,
+  getPendingInvitationsService,
+  deleteInvitationService,
+  resendInvitationEmailService,
   type WorkspaceMember,
   type InviteMemberPayload,
   type UpdateMemberPayload,
+  type PendingInvitation,
 };

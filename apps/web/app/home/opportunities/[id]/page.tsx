@@ -290,7 +290,7 @@ export default function OpportunityDetailsPage() {
             permission to view it.
           </p>
           <Button asChild variant="outline">
-            <Link href="/home/opportunities">Back to Opportunities</Link>
+            <Link href="/home/sales/opportunities">Back to Opportunities</Link>
           </Button>
         </div>
       </ModuleGuard>
@@ -307,7 +307,7 @@ export default function OpportunityDetailsPage() {
             asChild
             className="border-leadgaze-border border p-0"
           >
-            <Link href="/home/opportunities">
+            <Link href="/home/sales/opportunities">
               <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
             </Link>
           </Button>
@@ -338,7 +338,7 @@ export default function OpportunityDetailsPage() {
           entityId={id}
           entityType="opportunity"
           entityName={opportunity.opportunity_name}
-          onSuccess={() => router.push('/home/opportunities')}
+          onSuccess={() => router.push('/home/sales/opportunities')}
         />
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
@@ -354,7 +354,7 @@ export default function OpportunityDetailsPage() {
                 <>
                   {opportunity.account && (
                     <Link
-                      href={`/home/accounts/${opportunity.account.id}`}
+                      href={`/home/sales/accounts/${opportunity.account.id}`}
                       className="text-primary flex items-center gap-1 hover:underline"
                     >
                       <Building2 className="h-3 w-3" />

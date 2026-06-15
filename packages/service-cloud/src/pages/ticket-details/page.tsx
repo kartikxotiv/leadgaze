@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 
 import { CoreEmailReplyDialog, CoreEntityPanel } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
+import { formatDate, formatDateTime, formatDateOnly } from '@kit/shared/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -78,6 +79,7 @@ import {
 } from '../../services';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 import { PageBody } from '@kit/ui/page';
+import { cn } from '@kit/ui/utils';
 
 type LookupOption = {
   id: string;
@@ -87,16 +89,6 @@ type LookupOption = {
   lifecycle?: string | null;
   severity_order?: number | null;
 };
-
-function formatDateTime(value?: string | null) {
-  if (!value) return '-';
-  return new Date(value).toLocaleString();
-}
-
-function formatDateOnly(value?: string | null) {
-  if (!value) return '-';
-  return value.includes('T') ? value.slice(0, 10) : value;
-}
 
 function formatDateInput(value?: string | null) {
   if (!value) return '';
@@ -379,11 +371,27 @@ export function ServiceCloudTicketDetailPage({
                 <Badge className="border-white/20 bg-white/15 text-white hover:bg-white/20">
                   #{ticket.ticket_number}
                 </Badge>
-                <Badge className="border-emerald-300/30 bg-emerald-400/15 text-emerald-100">
+                <Badge className="border-emerald-300/30 bg-emerald-400/15 text-emerald-100 flex items-center gap-1.5 font-medium">
+                  {ticket.status?.color ? (
+                    <span
+                      className="h-1.5 w-1.5 rounded-full shrink-0 animate-pulse"
+                      style={{ backgroundColor: ticket.status.color }}
+                    />
+                  ) : (
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
+                  )}
                   {ticket.status?.name ?? 'Open'}
                 </Badge>
                 {ticket.priority?.name ? (
-                  <Badge className="border-white/20 bg-white/15 text-white">
+                  <Badge className="border-white/20 bg-white/15 text-white flex items-center gap-1.5 font-medium">
+                    {ticket.priority?.color ? (
+                      <span
+                        className="h-1.5 w-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: ticket.priority.color }}
+                      />
+                    ) : (
+                      <span className="h-1.5 w-1.5 rounded-full bg-slate-400 shrink-0" />
+                    )}
                     {ticket.priority.name}
                   </Badge>
                 ) : null}
@@ -415,7 +423,7 @@ export function ServiceCloudTicketDetailPage({
               value={optionLabel(assignedAgent)}
               muted
             />
-            <Metric label="Due date" value={formatDateOnly(dueValue)} muted />
+            <Metric label="Due date" value={formatDate(dueValue)} muted />
             <Metric
               label="Logged"
               value={formatDuration(totalLoggedSeconds)}
@@ -631,6 +639,7 @@ export function ServiceCloudTicketDetailPage({
                                   <TableHead className="w-[80px]">S. No.</TableHead>
                                   <TableHead className="max-w-[150px]">Activities</TableHead>
                                   <TableHead className="max-w-[200px]">Description</TableHead>
+                                  <TableHead className="w-[150px]">Author</TableHead>
                                   <TableHead className="w-[180px]">Date &amp; Time Log</TableHead>
                                   <TableHead className="w-[100px] text-center"></TableHead>
                                 </TableRow>
@@ -645,10 +654,15 @@ export function ServiceCloudTicketDetailPage({
                                     <TableCell className="max-w-[200px] truncate" title={entry.description || ''}>
                                       {entry.description || '-'}
                                     </TableCell>
+                                    <TableCell className="w-[150px]">
+                                      <span className="truncate text-sm" title={entry.author?.name || entry.author?.email || ''}>
+                                        {entry.author?.name || entry.author?.email || '-'}
+                                      </span>
+                                    </TableCell>
                                     <TableCell className="w-[180px]">
                                       <div className="flex items-center gap-2">
                                         <span className="whitespace-nowrap">
-                                          {entry.logged_date || formatDateTime(entry.created_at)}
+                                          {formatDate(entry.logged_date)}
                                         </span>
                                         <Badge variant="secondary" className="whitespace-nowrap">
                                           {formatDuration(entry.duration_seconds)}
@@ -1069,10 +1083,18 @@ function EditableSelect({
   allowNone?: boolean;
   onChange: (value: string | null) => void;
 }) {
+  const selectedOption = options.find((opt) => opt.id === value);
+  const selectedColor = selectedOption?.color;
+
   return (
     <Field label={label}>
       <div className="flex items-center gap-2">
-        <span className="text-muted-foreground">{icon}</span>
+        <span 
+          style={selectedColor ? { color: selectedColor } : undefined}
+          className={cn("text-muted-foreground shrink-0", selectedColor && "transition-colors")}
+        >
+          {icon}
+        </span>
         <Select
           value={value ?? 'none'}
           disabled={disabled || (!allowNone && options.length === 0)}
@@ -1080,16 +1102,31 @@ function EditableSelect({
             onChange(nextValue === 'none' ? null : nextValue)
           }
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder={`Select ${label.toLowerCase()}`} />
           </SelectTrigger>
           <SelectContent>
             {allowNone ? (
-              <SelectItem value="none">Unassigned</SelectItem>
+              <SelectItem value="none">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-slate-400 shrink-0" />
+                  <span>Unassigned</span>
+                </div>
+              </SelectItem>
             ) : null}
             {options.map((option) => (
               <SelectItem key={option.id} value={option.id}>
-                {optionLabel(option)}
+                <div className="flex items-center gap-2">
+                  {option.color ? (
+                    <span
+                      className="h-2 w-2 rounded-full border border-black/10 dark:border-white/10 shrink-0"
+                      style={{ backgroundColor: option.color }}
+                    />
+                  ) : (
+                    <span className="h-2 w-2 rounded-full bg-slate-400 shrink-0" />
+                  )}
+                  <span>{optionLabel(option)}</span>
+                </div>
               </SelectItem>
             ))}
           </SelectContent>

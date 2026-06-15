@@ -598,7 +598,7 @@ export default function OpportunitiesPage() {
                         className="hover:bg-muted/50 cursor-pointer"
                         onClick={() =>
                           router.push(
-                            `/home/opportunities/${opportunity.id}`,
+                            `/home/sales/opportunities/${opportunity.id}`,
                           )
                         }
                       >
@@ -729,7 +729,7 @@ export default function OpportunitiesPage() {
                           <div className="flex items-center justify-end gap-2">
                             <EntityActionsDropdown
                               id={opportunity.id}
-                              viewPath={`/home/opportunities/${opportunity.id}`}
+                              viewPath={`/home/sales/opportunities/${opportunity.id}`}
                               canDelete={canAccess(
                                 'opportunities',
                                 'delete',
