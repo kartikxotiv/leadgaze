@@ -72,7 +72,7 @@ export type ResourceField = {
   label: string;
   type?: 'text' | 'email' | 'number' | 'textarea' | 'select' | 'color';
   required?: boolean;
-  options?: Array<{ label: string; value: string }>;
+  options?: Array<{ label: string; value: string; color?: string }>;
 };
 
 export type ResourceColumn = {
@@ -236,7 +236,15 @@ export function ServiceCloudResourcePage({
                                 key={option.value}
                                 value={option.value}
                               >
-                                {option.label}
+                                <div className="flex items-center gap-2">
+                                  {option.color ? (
+                                    <span
+                                      className="h-2 w-2 rounded-full border border-black/10 dark:border-white/10 shrink-0"
+                                      style={{ backgroundColor: option.color }}
+                                    />
+                                  ) : null}
+                                  <span>{option.label}</span>
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -412,6 +420,18 @@ export function ServiceCloudResourcePage({
   );
 }
 
-export function StatusBadge({ value }: { value?: string | null }) {
-  return <Badge variant="secondary">{value || 'Unassigned'}</Badge>;
+export function StatusBadge({ value, color }: { value?: string | null; color?: string | null }) {
+  return (
+    <Badge variant="secondary" className="inline-flex items-center gap-1.5 font-medium">
+      {color ? (
+        <span
+          className="h-2 w-2 rounded-full border border-black/10 dark:border-white/10 shrink-0"
+          style={{ backgroundColor: color }}
+        />
+      ) : (
+        <span className="h-2 w-2 rounded-full bg-slate-400 shrink-0" />
+      )}
+      {value || 'Unassigned'}
+    </Badge>
+  );
 }
