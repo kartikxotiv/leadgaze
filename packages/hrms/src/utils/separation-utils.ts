@@ -1,3 +1,4 @@
+import { formatDate } from '@kit/shared/utils';
 import type { EmployeeOption } from '../types/separation.type';
 
 export const NONE = '__none__';
@@ -86,23 +87,7 @@ export function toDateTimeLocalInput(value: string | null | undefined) {
   return withOffset.toISOString().slice(0, 16);
 }
 
-export function formatDate(value: string | null | undefined) {
-  if (!value) {
-    return '-';
-  }
 
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return '-';
-  }
-
-  return date.toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
 
 export function formatCurrency(value: number | null | undefined) {
   return new Intl.NumberFormat('en-IN', {
@@ -123,3 +108,6 @@ export function startCase(value: string | null | undefined) {
     .toLowerCase()
     .replace(/\b\w/g, (match) => match.toUpperCase());
 }
+
+// Re-export shared date formatter for legacy imports
+export { formatDate } from '@kit/shared/utils';

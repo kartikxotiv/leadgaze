@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 
 import { CoreEmailReplyDialog, CoreEntityPanel } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
+import { formatDate, formatDateTime, formatDateOnly } from '@kit/shared/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -87,16 +88,6 @@ type LookupOption = {
   lifecycle?: string | null;
   severity_order?: number | null;
 };
-
-function formatDateTime(value?: string | null) {
-  if (!value) return '-';
-  return new Date(value).toLocaleString();
-}
-
-function formatDateOnly(value?: string | null) {
-  if (!value) return '-';
-  return value.includes('T') ? value.slice(0, 10) : value;
-}
 
 function formatDateInput(value?: string | null) {
   if (!value) return '';
@@ -415,7 +406,7 @@ export function ServiceCloudTicketDetailPage({
               value={optionLabel(assignedAgent)}
               muted
             />
-            <Metric label="Due date" value={formatDateOnly(dueValue)} muted />
+            <Metric label="Due date" value={formatDate(dueValue)} muted />
             <Metric
               label="Logged"
               value={formatDuration(totalLoggedSeconds)}
@@ -631,6 +622,7 @@ export function ServiceCloudTicketDetailPage({
                                   <TableHead className="w-[80px]">S. No.</TableHead>
                                   <TableHead className="max-w-[150px]">Activities</TableHead>
                                   <TableHead className="max-w-[200px]">Description</TableHead>
+                                  <TableHead className="w-[150px]">Author</TableHead>
                                   <TableHead className="w-[180px]">Date &amp; Time Log</TableHead>
                                   <TableHead className="w-[100px] text-center"></TableHead>
                                 </TableRow>
@@ -645,10 +637,15 @@ export function ServiceCloudTicketDetailPage({
                                     <TableCell className="max-w-[200px] truncate" title={entry.description || ''}>
                                       {entry.description || '-'}
                                     </TableCell>
+                                    <TableCell className="w-[150px]">
+                                      <span className="truncate text-sm" title={entry.author?.name || entry.author?.email || ''}>
+                                        {entry.author?.name || entry.author?.email || '-'}
+                                      </span>
+                                    </TableCell>
                                     <TableCell className="w-[180px]">
                                       <div className="flex items-center gap-2">
                                         <span className="whitespace-nowrap">
-                                          {entry.logged_date || formatDateTime(entry.created_at)}
+                                          {formatDate(entry.logged_date)}
                                         </span>
                                         <Badge variant="secondary" className="whitespace-nowrap">
                                           {formatDuration(entry.duration_seconds)}

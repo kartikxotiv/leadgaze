@@ -185,6 +185,9 @@ export const getServiceCloudTicketDetailController = catchAsync(
           ...(activities.data ?? []).map(
             (activity: any) => activity.actor_account_id,
           ),
+          ...(timeEntries.data ?? []).map(
+            (entry: any) => entry.created_by,
+          ),
         ].filter(Boolean),
       ),
     );
@@ -282,7 +285,10 @@ export const getServiceCloudTicketDetailController = catchAsync(
     return successDataResponse('Ticket detail retrieved successfully', {
       ticket,
       emails,
-      timeEntries: timeEntries.data ?? [],
+      timeEntries: (timeEntries.data ?? []).map((entry: any) => ({
+        ...entry,
+        author: memberAccountById.get(entry.created_by) ?? null,
+      })),
       activities: (activities.data ?? []).map((activity: any) => ({
         ...activity,
         actor: memberAccountById.get(activity.actor_account_id) ?? null,
@@ -336,6 +342,7 @@ export const logServiceCloudTicketTimeController = catchAsync(
         account_id: user.id,
         duration_seconds: durationSeconds,
         description: body?.description || null,
+        activities: body?.activities || null,
         billable: Boolean(body?.billable),
         logged_date:
           body?.logged_date ??

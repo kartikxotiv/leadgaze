@@ -1228,7 +1228,7 @@ function ActiveModuleRow({
   return (
     <TableRow className="hover:bg-muted/50">
       {/* Module name + icon */}
-      <TableCell>
+      <TableCell className="p-3">
         <div className="flex items-center gap-3">
           <div
             className={cn(
@@ -1606,7 +1606,7 @@ function CheckoutBar({
 
   return (
     <Card className="sticky bottom-0 z-10 border-t shadow-lg">
-      <CardContent className="flex h-16 items-center justify-between px-6">
+      <CardContent className="flex h-16 items-center justify-between px-6 pt-6">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Users className="text-muted-foreground h-4 w-4" />

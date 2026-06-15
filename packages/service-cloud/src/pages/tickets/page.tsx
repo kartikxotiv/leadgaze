@@ -21,6 +21,7 @@ import {
   ServiceCloudResourcePage,
   StatusBadge,
 } from '../_components/resource-page';
+import { formatDate } from '@kit/shared/utils';
 
 function assigneeInitials(assignee: any) {
   const account = assignee?.account;
@@ -221,7 +222,7 @@ export function ServiceCloudTicketsPage({
           label: 'Created',
           render: (ticket) =>
             ticket.created_at
-              ? new Date(ticket.created_at).toLocaleDateString()
+              ? formatDate(ticket.created_at)
               : '-',
         },
       ]}
