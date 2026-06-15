@@ -12,7 +12,7 @@ import {
   Building2,
   Calendar,
   Clock,
-  Globe,
+  Edit2,
   Linkedin,
   Mail,
   MapPin,
@@ -21,12 +21,17 @@ import {
   User,
 } from 'lucide-react';
 
+import { CoreEmailComposeDialog } from '@kit/core/pages';
+import { getCoreEmailAccountsService } from '@kit/core/services';
 import { useUser } from '@kit/supabase/hooks/use-user';
-import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CustomInputForView } from '@kit/ui/custom-input-for-view';
+import { DetailHeader } from '@kit/ui/detail-header';
 import { PageBody } from '@kit/ui/page';
 import { Separator } from '@kit/ui/separator';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   Tooltip,
   TooltipContent,
@@ -41,7 +46,6 @@ import {
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getContactByIdService } from '~/services/contacts.service';
-import { getWorkspaceEmailAccountService } from '~/services/email.service';
 
 import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
 import {
@@ -52,10 +56,82 @@ import {
 import { EntityCalls } from '../../_components/entity-calls';
 import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
-import { EmailLeadDialog } from '../../leads/components/email-lead-dialog';
 import { LogCallDialog } from '../../leads/components/log-call-dialog';
 import { ContactAssignees } from '../components/contact-assignees';
 import { EditContactDialog } from '../components/edit-contact-dialog';
+
+function ContactDetailsSkeleton() {
+  return (
+    <ModuleGuard module="contacts">
+      <div className="px-6 pt-4 pb-2">
+        <div className="mb-2">
+          <Skeleton className="h-8 w-20 rounded-md" />
+        </div>
+      </div>
+      <PageBody className="pb-6">
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
+            <DetailHeader
+              avatar={<Skeleton className="h-16 w-16 rounded-full" />}
+              title={<Skeleton className="h-6 w-48" />}
+              subtitle={
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-36" />
+                </div>
+              }
+              actions={
+                <div className="flex gap-2">
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-28 rounded-md" />
+                </div>
+              }
+            />
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-5 w-24" />
+              </CardHeader>
+              <CardContent className="grid gap-6 sm:grid-cols-2">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="space-y-1">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-5 w-32" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-8 w-full rounded-md" />
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="space-y-1">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-28" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </PageBody>
+    </ModuleGuard>
+  );
+}
 
 export default function ContactDetailsPage() {
   const params = useParams();
@@ -100,20 +176,14 @@ export default function ContactDetailsPage() {
     ];
   }, [contact]);
 
-  const { data: workspaceEmailAccounts = [] } = useQuery({
-    queryKey: ['workspace-email-accounts', workspace?.id],
-    queryFn: () => getWorkspaceEmailAccountService(workspace?.id || ''),
+  const { data: coreEmailAccounts = [] } = useQuery({
+    queryKey: ['core-email-accounts', workspace?.id],
+    queryFn: () => getCoreEmailAccountsService(workspace!.id),
     enabled: !!workspace?.id,
   });
 
   if (isLoading) {
-    return (
-      <ModuleGuard module="contacts">
-        <div className="flex h-screen items-center justify-center">
-          <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
-        </div>
-      </ModuleGuard>
-    );
+    return <ContactDetailsSkeleton />;
   }
 
   if (error || !contact) {
@@ -122,8 +192,8 @@ export default function ContactDetailsPage() {
         <div className="flex h-screen flex-col items-center justify-center gap-4">
           <h1 className="text-2xl font-bold">Contact Not Found</h1>
           <p className="text-muted-foreground">
-            The contact you're looking for doesn't exist or you don't have
-            permission to view it.
+            The contact you&apos;re looking for doesn&apos;t exist or you
+            don&apos;t have permission to view it.
           </p>
           <Button asChild variant="outline">
             <Link href="/home/contacts">Back to Contacts</Link>
@@ -135,108 +205,39 @@ export default function ContactDetailsPage() {
 
   return (
     <ModuleGuard module="contacts">
-      <div className="bg-background border-b px-6 py-4">
-        <div className="mb-4 flex items-center justify-between">
-          <Button variant="ghost" size="sm" asChild className="-ml-2">
+      <div className="flex w-full items-center justify-between pt-4 pb-2">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="border-leadgaze-border border p-0"
+          >
             <Link href="/home/contacts">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
+              <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
             </Link>
           </Button>
-          <div className="flex gap-2">
-            {canEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsLogCallDialogOpen(true)}
-                className="p-3"
-                title="Log a call"
-              >
-                <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
-                  <Phone className="h-3 w-3 text-white" />
-                </div>
-              </Button>
-            )}
-
-            <Button
-              variant="outline"
-              size="sm"
-              className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${
-                contactEmailRecipients.length === 0 ? 'opacity-50' : ''
-              }`}
-              disabled={contactEmailRecipients.length === 0}
-              onClick={() => setIsEmailDialogOpen(true)}
-              title={
-                contactEmailRecipients.length === 0
-                  ? 'Contact has no email address'
-                  : 'Send email to contact'
-              }
-            >
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
-                <Mail className="h-3.5 w-3.5 text-white" />
-              </div>
-            </Button>
-
-            {canEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditDialogOpen(true)}
-              >
-                Edit Contact
-              </Button>
-            )}
+          <div className="flex flex-col">
+            <h1 className="text-lg font-semibold">Contact details</h1>
+            <p className="text-leadgaze-muted text-sm">
+              View and edit lead information
+            </p>
           </div>
         </div>
-
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-semibold text-white">
-              {contact.first_name.charAt(0)}
-              {contact.last_name?.charAt(0)}
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">
-                {contact.first_name} {contact.last_name}
-              </h1>
-              <div className="text-muted-foreground mt-1 flex items-center gap-3 text-sm">
-                {contact.job_title && (
-                  <span className="flex items-center gap-1">
-                    <Briefcase className="h-3 w-3" />
-                    {contact.job_title}
-                  </span>
-                )}
-                {contact.account && (
-                  <Link
-                    href={`/home/accounts/${contact.account.id}`}
-                    className="text-primary flex items-center gap-1 hover:underline"
-                  >
-                    <Building2 className="h-3 w-3" />
-                    {contact.account.account_name}
-                  </Link>
-                )}
-                <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
-                <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                  <Clock className="h-3 w-3" />
-                  <span>
-                    Created on{' '}
-                    {new Date(contact.created_at).toLocaleDateString(
-                      undefined,
-                      {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      },
-                    )}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {canEdit && (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setIsEditDialogOpen(true)}
+            className="gap-2"
+          >
+            <Edit2 className="h-4 w-4" />
+            Edit Contact
+          </Button>
+        )}
       </div>
 
-      <PageBody>
+      <PageBody className="pb-6">
         <DeleteEntityDialog
           isOpen={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
@@ -248,182 +249,239 @@ export default function ContactDetailsPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="space-y-6 lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Details</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-6 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Email
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Mail className="text-muted-foreground h-4 w-4" />
-                    <a
-                      href={`mailto:${contact.email}`}
-                      className="text-sm hover:underline"
+            <DetailHeader
+              avatar={
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-semibold text-white">
+                  {contact.first_name.charAt(0)}
+                  {contact.last_name?.charAt(0)}
+                </div>
+              }
+              title={`${contact.first_name} ${contact.last_name || ''}`}
+              subtitle={
+                <>
+                  {contact.job_title && (
+                    <span className="flex items-center gap-1">
+                      <Briefcase className="h-3 w-3" />
+                      {contact.job_title}
+                    </span>
+                  )}
+                  {contact.account && (
+                    <Link
+                      href={`/home/accounts/${contact.account.id}`}
+                      className="text-primary flex items-center gap-1 hover:underline"
                     >
-                      {contact.email || '-'}
-                    </a>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Alt Email
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Mail className="text-muted-foreground h-4 w-4" />
-                    <span className="text-sm">{contact.alt_email || '-'}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Phone
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Phone className="text-muted-foreground h-4 w-4" />
-                    <a
-                      href={`tel:${contact.phone_number}`}
-                      className="text-sm hover:underline"
-                    >
-                      {contact.phone_number || '-'}
-                    </a>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Mobile
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Phone className="text-muted-foreground h-4 w-4" />
-                    <a
-                      href={`tel:${contact.mobile_number}`}
-                      className="text-sm hover:underline"
-                    >
-                      {contact.mobile_number || '-'}
-                    </a>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Alt Phone
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Phone className="text-muted-foreground h-4 w-4" />
-                    <a
-                      href={`tel:${contact.alt_phone}`}
-                      className="text-sm hover:underline"
-                    >
-                      {contact.alt_phone || '-'}
-                    </a>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Language
-                  </p>
-                  <span className="text-sm">{contact.language || '-'}</span>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Location
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="text-muted-foreground h-4 w-4" />
-                    <span className="text-sm">
-                      {[contact.location, contact.timezone]
-                        .filter(Boolean)
-                        .join(' • ') || '-'}
+                      <Building2 className="h-3 w-3" />
+                      {contact.account.account_name}
+                    </Link>
+                  )}
+                  <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <Clock className="h-3 w-3" />
+                    <span>
+                      Created on{' '}
+                      {new Date(contact.created_at).toLocaleDateString(
+                        undefined,
+                        {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        },
+                      )}
                     </span>
                   </div>
+                </>
+              }
+              email={contact.email || undefined}
+              actions={
+                <div className="flex gap-2">
+                  {canEdit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsLogCallDialogOpen(true)}
+                      className="p-3"
+                      title="Log a call"
+                    >
+                      <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
+                        <Phone className="h-3 w-3 text-white" />
+                      </div>
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${
+                      contactEmailRecipients.length === 0 ? 'opacity-50' : ''
+                    }`}
+                    disabled={contactEmailRecipients.length === 0}
+                    onClick={() => setIsEmailDialogOpen(true)}
+                    title={
+                      contactEmailRecipients.length === 0
+                        ? 'Contact has no email address'
+                        : 'Send email to contact'
+                    }
+                  >
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
+                      <Mail className="h-3.5 w-3.5 text-white" />
+                    </div>
+                  </Button>
                 </div>
+              }
+            />
 
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Department
-                  </p>
-                  <span className="text-sm">{contact.department || '-'}</span>
+            <CardWidgetContainer
+              title="Details"
+              icon={
+                <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+              }
+            >
+              <div className="flex-1">
+                <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
+                  {contact.email && (
+                    <CustomInputForView
+                      label="Email"
+                      labelIcon={
+                        <Mail className="text-muted-foreground h-4 w-4" />
+                      }
+                      value={
+                        <a
+                          href={`mailto:${contact.email}`}
+                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {contact.email}
+                        </a>
+                      }
+                    />
+                  )}
+
+                  {contact.alt_email && (
+                    <CustomInputForView
+                      label="Alt Email"
+                      labelIcon={
+                        <Mail className="text-muted-foreground h-4 w-4" />
+                      }
+                      value={
+                        <a
+                          href={`mailto:${contact.alt_email}`}
+                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {contact.alt_email}
+                        </a>
+                      }
+                    />
+                  )}
+
+                  {contact.phone_number && (
+                    <CustomInputForView
+                      label="Phone"
+                      labelIcon={
+                        <Phone className="text-muted-foreground h-4 w-4" />
+                      }
+                      value={
+                        <a
+                          href={`tel:${contact.phone_number}`}
+                          className="block text-sm text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {contact.phone_number}
+                        </a>
+                      }
+                    />
+                  )}
+
+                  {contact.mobile_number && (
+                    <CustomInputForView
+                      label="Mobile"
+                      labelIcon={
+                        <Phone className="text-muted-foreground h-4 w-4" />
+                      }
+                      value={
+                        <a
+                          href={`tel:${contact.mobile_number}`}
+                          className="block text-sm text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {contact.mobile_number}
+                        </a>
+                      }
+                    />
+                  )}
+
+                  {contact.alt_phone && (
+                    <CustomInputForView
+                      label="Alt Phone"
+                      labelIcon={
+                        <Phone className="text-muted-foreground h-4 w-4" />
+                      }
+                      value={
+                        <a
+                          href={`tel:${contact.alt_phone}`}
+                          className="block text-sm text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {contact.alt_phone}
+                        </a>
+                      }
+                    />
+                  )}
+
+                  {contact.language && (
+                    <CustomInputForView
+                      label="Language"
+                      value={contact.language}
+                    />
+                  )}
+
+                  {(contact.location || contact.timezone) && (
+                    <CustomInputForView
+                      label="Location"
+                      labelIcon={
+                        <MapPin className="text-muted-foreground h-4 w-4" />
+                      }
+                      value={[contact.location, contact.timezone]
+                        .filter(Boolean)
+                        .join(' • ')}
+                    />
+                  )}
+
+                  {contact.department && (
+                    <CustomInputForView
+                      label="Department"
+                      value={contact.department}
+                    />
+                  )}
+
+                  {contact.linkedin_url && (
+                    <CustomInputForView
+                      label="LinkedIn"
+                      labelIcon={
+                        <Linkedin className="text-muted-foreground h-4 w-4" />
+                      }
+                      value={
+                        <a
+                          href={contact.linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {contact.linkedin_url}
+                        </a>
+                      }
+                    />
+                  )}
+
+                  {contact.notes && (
+                    <CustomInputForView
+                      label="Private Notes"
+                      value={contact.notes}
+                      as="textarea"
+                      className="col-span-2"
+                    />
+                  )}
                 </div>
-
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    LinkedIn
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Linkedin className="text-muted-foreground h-4 w-4" />
-                    {contact.linkedin_url ? (
-                      <a
-                        href={contact.linkedin_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm break-all hover:underline"
-                      >
-                        {contact.linkedin_url}
-                      </a>
-                    ) : (
-                      <span className="text-sm">-</span>
-                    )}
-                  </div>
-                </div>
-
-                {contact.notes && (
-                  <div className="col-span-2 space-y-1">
-                    <p className="text-muted-foreground text-sm font-medium">
-                      Private Notes
-                    </p>
-                    <p className="text-sm whitespace-pre-wrap">
-                      {contact.notes}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Contact Assignees Section */}
-            {workspace?.id && (
-              <ContactAssignees contactId={id} workspaceId={workspace.id} />
-            )}
+              </div>
+            </CardWidgetContainer>
 
             {/* Notes Section */}
             <EntityNotes entityType="contact" entityId={id} />
-
-            {/* Activity Sections */}
-            <EntityCalls entityType="contact" entityId={id} />
-            <EntityEmails
-              entityId={id}
-              entityType="contact"
-              entityName={`${contact.first_name} ${contact.last_name || ''}`.trim()}
-              entityEmail={contact.email || undefined}
-              recipientOptions={[
-                ...(contact.email
-                  ? [
-                      {
-                        email: contact.email,
-                        name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
-                        label: 'Primary Email',
-                      },
-                    ]
-                  : []),
-                ...(contact.alt_email
-                  ? [
-                      {
-                        email: contact.alt_email,
-                        name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
-                        label: 'Alt Email',
-                      },
-                    ]
-                  : []),
-              ]}
-            />
-            <EntityReminders entityType="contact" entityId={id} />
-            <EntityMeetings entityType="contact" entityId={id} />
-            <EntityDocuments entityType="contact" entityId={id} />
 
             {/* Danger Zone */}
             {canAccess('contacts', 'delete') && (
@@ -533,6 +591,43 @@ export default function ContactDetailsPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Contact Assignees Section */}
+            {workspace?.id && (
+              <ContactAssignees contactId={id} workspaceId={workspace.id} />
+            )}
+
+            {/* Activity Sections */}
+            <EntityCalls entityType="contact" entityId={id} />
+            <EntityEmails
+              entityId={id}
+              entityType="contact"
+              entityName={`${contact.first_name} ${contact.last_name || ''}`.trim()}
+              entityEmail={contact.email || undefined}
+              recipientOptions={[
+                ...(contact.email
+                  ? [
+                      {
+                        email: contact.email,
+                        name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
+                        label: 'Primary Email',
+                      },
+                    ]
+                  : []),
+                ...(contact.alt_email
+                  ? [
+                      {
+                        email: contact.alt_email,
+                        name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
+                        label: 'Alt Email',
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+            <EntityReminders entityType="contact" entityId={id} />
+            <EntityMeetings entityType="contact" entityId={id} />
+            <EntityDocuments entityType="contact" entityId={id} />
           </div>
         </div>
       </PageBody>
@@ -563,15 +658,19 @@ export default function ContactDetailsPage() {
         />
       )}
 
-      <EmailLeadDialog
+      <CoreEmailComposeDialog
         open={isEmailDialogOpen}
         onOpenChange={setIsEmailDialogOpen}
-        leadName={`${contact.first_name} ${contact.last_name || ''}`.trim()}
-        leadEmail={contact.email || undefined}
-        recipientOptions={contactEmailRecipients}
-        workspaceEmailAccounts={workspaceEmailAccounts}
-        entityId={id}
+        workspaceId={workspace?.id || ''}
+        accounts={coreEmailAccounts}
         entityType="contact"
+        entityId={id}
+        initialTo={contact.email || undefined}
+        templateContext={{
+          contact_name:
+            `${contact.first_name} ${contact.last_name || ''}`.trim(),
+          contact_email: contact.email,
+        }}
       />
     </ModuleGuard>
   );

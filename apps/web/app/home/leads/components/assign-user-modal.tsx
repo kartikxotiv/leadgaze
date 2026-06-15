@@ -11,6 +11,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@kit/ui/dialog';
@@ -76,15 +77,15 @@ export function AssignUserModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-[600px]">
+        <DialogHeader className="border-b p-6 pb-4">
           <DialogTitle>Assign Team Member</DialogTitle>
           <DialogDescription>
             Select a team member to assign to this lead
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto space-y-4 px-6 py-4">
           {/* Search Input */}
           <div className="relative">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -165,15 +166,15 @@ export function AssignUserModal({
           )}
         </div>
 
-        <div className="flex justify-end gap-2">
+        <DialogFooter className="border-t p-6 mt-auto">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isLoading}
           >
-            Cancel
+            Close
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

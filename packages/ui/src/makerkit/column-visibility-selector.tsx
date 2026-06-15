@@ -46,8 +46,8 @@ export function ColumnVisibilitySelector({
         <Tooltip>
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 w-8 p-2">
-                <Settings2 className="h-4 w-4 text-gray-500" />
+              <Button variant="outline" size="sm" className="h-9 w-9 p-2">
+                <Settings2 className="h-4 w-4 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white" />
               </Button>
             </DropdownMenuTrigger>
           </TooltipTrigger>
@@ -59,16 +59,15 @@ export function ColumnVisibilitySelector({
       </TooltipProvider>
       <DropdownMenuContent align="end" className="w-[220px]">
         <DropdownMenuLabel className="flex items-center justify-between">
-          <span>Toggle Columns</span>
+          <span className='primary-text-medium dark:text-white'>Toggle Columns</span>
           {onReset && (
             <Button
               variant="ghost"
-              size="sm"
               onClick={(e) => {
                 e.preventDefault();
                 onReset();
               }}
-              className="h-auto p-0 text-[11px] font-normal hover:bg-transparent hover:underline"
+              className="h-auto p-0 text-[11px] hover:bg-transparent hover:underline dark:text-white"
             >
               Reset
             </Button>

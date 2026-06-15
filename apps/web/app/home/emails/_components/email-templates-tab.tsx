@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import { Skeleton } from '@kit/ui/skeleton';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
@@ -25,6 +26,8 @@ import {
 } from '~/services/email-templates.service';
 
 import { TemplateDialog } from './template-dialog';
+import { ListToolBar } from '@kit/ui/list-toolbar';
+import CustomTableContainer from '@kit/ui/custom-table-container';
 
 export function EmailTemplatesTab() {
   const queryClient = useQueryClient();
@@ -72,31 +75,28 @@ export function EmailTemplatesTab() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative w-full max-w-sm">
-          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-          <Input
-            placeholder="Search templates..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        {canManage && (
-          <Button
-            onClick={handleCreateTemplate}
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            New Template
-          </Button>
-        )}
-      </div>
+    <div className="space-y-2">
+      {/* Full-width search / filter / actions toolbar */}
+              <div className="w-full max-w-full min-w-0 shrink-0 border-b">
+                <ListToolBar
+                  showSearch
+                  searchPlaceholder="Search templates..."
+                  searchValue={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  actions={[
+                    {
+                      key: 'add',
+                      label: 'New Template',
+                      icon: Plus,
+                      onClick: () => handleCreateTemplate(),
+                      show: canManage,
+                      buttonVariant: 'default',
+                    },
+                  ]}                  
+                />
+              </div>     
 
-      <Card>
-        <CardContent className="p-0">
+       <CustomTableContainer>
           <Table>
             <TableHeader>
               <TableRow>
@@ -112,14 +112,18 @@ export function EmailTemplatesTab() {
             </TableHeader>
             <TableBody>
               {isLoadingTemplates ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={canManage ? 4 : 3}
-                    className="text-muted-foreground h-24 text-center"
-                  >
-                    Loading templates...
-                  </TableCell>
-                </TableRow>
+                [...Array(5)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="h-[52px] px-4 py-2" colSpan={3}>
+                      <Skeleton className="h-7 w-full" />
+                    </TableCell>
+                    {canManage && (
+                      <TableCell className="bg-card px-4 text-right">
+                        <Skeleton className="h-7 ml-auto w-full" />
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))
               ) : filteredTemplates.length === 0 ? (
                 <TableRow>
                   <TableCell
@@ -170,8 +174,9 @@ export function EmailTemplatesTab() {
               )}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+         
+        </CustomTableContainer>
+      
 
       <TemplateDialog
         open={isDialogOpen}

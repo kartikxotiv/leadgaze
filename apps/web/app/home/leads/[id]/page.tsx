@@ -2,10 +2,14 @@
 
 import React, { useMemo, useState } from 'react';
 
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  ArrowLeft,
+  Briefcase,
+  Building2,
   Clock,
   Edit2,
   Mail,
@@ -16,11 +20,17 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { CoreEmailComposeDialog } from '@kit/core/pages';
+import { getCoreEmailAccountsService } from '@kit/core/services';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CustomInputForView } from '@kit/ui/custom-input-for-view';
+import { DetailHeader } from '@kit/ui/detail-header';
 import { PageBody, PageHeader } from '@kit/ui/page';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   Tooltip,
   TooltipContent,
@@ -54,11 +64,79 @@ import { EntityNotes } from '../../_components/entity-notes';
 import { ChangeStatusDialog } from '../components/change-status-dialog';
 import { ConvertLeadDialog } from '../components/convert-lead-dialog';
 import EditLeadDialog from '../components/edit-lead-dialog';
-import { EmailLeadDialog } from '../components/email-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
 import { LogCallDialog } from '../components/log-call-dialog';
 
-import { getWorkspaceEmailAccountService } from '~/services/email.service';
+function LeadDetailsSkeleton() {
+  return (
+    <div className="flex h-full flex-col">
+      <div className="px-6 pt-4 pb-2">
+        <Skeleton className="h-8 w-20 rounded-md" />
+      </div>
+      <PageBody>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
+            <DetailHeader
+              avatar={<Skeleton className="h-16 w-16 rounded-full" />}
+              title={<Skeleton className="h-6 w-48" />}
+              subtitle={
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-36" />
+                </div>
+              }
+              actions={
+                <div className="flex gap-2">
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-28 rounded-md" />
+                </div>
+              }
+            />
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-5 w-24" />
+              </CardHeader>
+              <CardContent className="grid gap-6 sm:grid-cols-2">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="space-y-1">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-5 w-32" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-8 w-full rounded-md" />
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="space-y-1">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-28" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </PageBody>
+    </div>
+  );
+}
 
 export default function LeadDetailsPage() {
   const router = useRouter();
@@ -71,7 +149,6 @@ export default function LeadDetailsPage() {
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedDraft, setSelectedDraft] = useState<any>(null);
 
   const queryClient = useQueryClient();
 
@@ -90,14 +167,9 @@ export default function LeadDetailsPage() {
     },
     enabled: !!leadId && !!workspace,
   });
-  const {
-    data: workspaceEmailAccount,
-  } = useQuery({
-    queryKey: ['workspace_id', workspace?.id],
-    queryFn: () => {
-      if (!workspace?.id) throw new Error('Workspace ID is required');
-      return getWorkspaceEmailAccountService(workspace.id);
-    },
+  const { data: coreEmailAccounts = [] } = useQuery({
+    queryKey: ['core-email-accounts', workspace?.id],
+    queryFn: () => getCoreEmailAccountsService(workspace!.id),
     enabled: !!workspace?.id,
   });
 
@@ -140,10 +212,11 @@ export default function LeadDetailsPage() {
   }, [lead]);
 
   if (!workspace) {
+    // Workspace context still hydrating; show skeleton, same as isLoading.
     return (
-      <div className="flex h-96 items-center justify-center">
-        <p className="text-gray-500">Loading workspace...</p>
-      </div>
+      <ModuleGuard module="leads">
+        <LeadDetailsSkeleton />
+      </ModuleGuard>
     );
   }
 
@@ -174,12 +247,7 @@ export default function LeadDetailsPage() {
   if (isLoading) {
     return (
       <ModuleGuard module="leads">
-        <PageHeader title="Lead Details" />
-        <PageBody>
-          <div className="flex h-96 items-center justify-center">
-            <p className="text-gray-500">Loading lead details...</p>
-          </div>
-        </PageBody>
+        <LeadDetailsSkeleton />
       </ModuleGuard>
     );
   }
@@ -228,463 +296,329 @@ export default function LeadDetailsPage() {
 
   return (
     <ModuleGuard module="leads">
-      <PageHeader title="Lead Details">
-        <div className="flex gap-2">
-          {canEdit && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setStatusModalOpen(true)}
-              className="flex h-8 items-center justify-center px-4"
-              disabled={isSaving}
-            >
-              Change Status
-            </Button>
-          )}
-
-          {canEdit && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsLogCallDialogOpen(true)}
-              className="p-3"
-              title="Log a call"
-            >
-              {/* Phone icon */}
-              {/* Log Call */}
-              <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
-                <Phone className="h-3 w-3 text-white" />
-              </div>
-            </Button>
-          )}
-
+      <div className="flex w-full items-center justify-between pt-4 pb-2">
+        <div className="flex items-center gap-2">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${!lead.email ? 'opacity-50' : ''}`}
-            disabled={!lead.email}
-            onClick={() => lead.email && setIsEmailDialogOpen(true)}
-            title={
-              !lead.email ? 'Lead has no email address' : 'Send email to lead'
-            }
+            asChild
+            className="border-leadgaze-border border p-0"
           >
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
-              <Mail className="h-3.5 w-3.5 text-white" />
-            </div>
+            <Link href="/home/sales/leads">
+              <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
+            </Link>
           </Button>
-          {!lead.is_converted_to_account && canConvert && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleConvertLead}
-              className="flex h-8 items-center justify-center px-4"
-              disabled={isSaving}
-            >
-              Convert Lead
-            </Button>
-          )}
-          {canEdit && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditDialogOpen(true)}
-              className="flex h-8 items-center justify-center gap-2 px-4"
-            >
-              <Edit2 className="h-4 w-4" />
-              Edit Full Profile
-            </Button>
-          )}
+          <div className="flex flex-col">
+            <h1 className="text-lg font-semibold">Lead details</h1>
+            <p className="text-leadgaze-muted text-sm">
+              View and edit lead information
+            </p>
+          </div>
         </div>
-      </PageHeader>
+        {canEdit && (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setIsEditDialogOpen(true)}
+            className="gap-2"
+          >
+            <Edit2 className="h-4 w-4" />
+            Edit Profile
+          </Button>
+        )}
+      </div>
 
-      <PageBody>
+      <PageBody className="pb-6">
         <DeleteEntityDialog
           isOpen={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
           entityId={leadId}
           entityType="lead"
           entityName={`${lead.first_name} ${lead.last_name || ''}`}
-          onSuccess={() => router.push('/home/leads')}
+          onSuccess={() => router.push('/home/sales/leads')}
         />
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="space-y-6 lg:col-span-2">
-            {/* Header Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="mb-2 flex items-center gap-3">
-                  <div
-                    className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br text-lg font-semibold text-white"
-                    style={{
-                      backgroundImage: `linear-gradient(135deg, ${statusColor}80 0%, ${statusColor} 100%)`,
-                    }}
-                  >
-                    {lead.first_name.charAt(0)}
-                    {lead.last_name?.charAt(0)}
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {fullName}
-                    </h1>
-                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-                      {lead.job_title && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {lead.job_title}
-                        </p>
-                      )}
-                      <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
-                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                        <Clock className="h-3 w-3" />
-                        <span>
-                          Created on{' '}
-                          {new Date(lead.created_at).toLocaleDateString(
-                            undefined,
-                            {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            },
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+            <DetailHeader
+              avatar={
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-semibold text-white">
+                  {lead.first_name.charAt(0)}
+                  {lead.last_name?.charAt(0)}
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Status and Source Badges */}
-                <div className="flex flex-wrap gap-2">
-                  {lead.status && (
-                    <Badge
-                      className="px-3 py-1"
-                      style={{
-                        backgroundColor: statusColor + '20',
-                        color: statusColor,
-                        border: `1px solid ${statusColor}40`,
-                      }}
-                    >
-                      {lead.status.status_name}
-                    </Badge>
-                  )}
-                  {lead.source && (
-                    <Badge
-                      variant="outline"
-                      className="px-3 py-1"
-                      style={{
-                        borderColor: sourceColor,
-                        color: sourceColor,
-                      }}
-                    >
-                      {lead.source.source_name}
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Key Information Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                  {lead.email && (
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-gray-400" />
-                      <a
-                        href={`mailto:${lead.email}`}
-                        className="truncate text-sm text-blue-600 hover:underline dark:text-blue-400"
-                      >
-                        {lead.email}
-                      </a>
-                    </div>
-                  )}
-                  {lead.phone_number && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-gray-400" />
-                      <a
-                        href={`tel:${lead.phone_number}`}
-                        className="text-sm text-gray-700 dark:text-gray-300"
-                      >
-                        {lead.phone_number}
-                      </a>
-                    </div>
+              }
+              title={fullName}
+              subtitle={
+                <>
+                  {lead.job_title && (
+                    <span className="flex items-center gap-1">
+                      <Briefcase className="h-3 w-3" />
+                      {lead.job_title}
+                    </span>
                   )}
                   {lead.company_name && (
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {lead.company_name}
-                      </span>
-                    </div>
+                    <span className="flex items-center gap-1">
+                      <Building2 className="h-3 w-3" />
+                      {lead.company_name}
+                    </span>
                   )}
-                  {lead.location && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {lead.location}
-                      </span>
+                  <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <Clock className="h-3 w-3" />
+                    <span>
+                      Created on{' '}
+                      {new Date(lead.created_at).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </span>
+                  </div>
+                </>
+              }
+              email={lead.email || undefined}
+              actions={
+                <div className="flex gap-2">
+                  {canEdit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setStatusModalOpen(true)}
+                      className="flex h-8 items-center justify-center px-4"
+                      disabled={isSaving}
+                    >
+                      Change Status
+                    </Button>
+                  )}
+
+                  {canEdit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsLogCallDialogOpen(true)}
+                      className="p-3"
+                      title="Log a call"
+                    >
+                      <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
+                        <Phone className="h-3 w-3 text-white" />
+                      </div>
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${!lead.email ? 'opacity-50' : ''}`}
+                    disabled={!lead.email}
+                    onClick={() => lead.email && setIsEmailDialogOpen(true)}
+                    title={
+                      !lead.email
+                        ? 'Lead has no email address'
+                        : 'Send email to lead'
+                    }
+                  >
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
+                      <Mail className="h-3.5 w-3.5 text-white" />
                     </div>
+                  </Button>
+
+                  {!lead.is_converted_to_account && canConvert && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleConvertLead}
+                      className="flex h-8 items-center justify-center px-4"
+                      disabled={isSaving}
+                    >
+                      Convert Lead
+                    </Button>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              }
+            />
+            {/* $$$$$$$$$$$$$*/}
 
-            {/* About Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">About</CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {lead.company_name && (
-                  <EditableField
-                    label="Company"
-                    value={lead.company_name}
-                    fieldName="company_name"
-                  />
-                )}
-                {lead.job_title && (
-                  <EditableField
-                    label="Job Title"
-                    value={lead.job_title}
-                    fieldName="job_title"
-                  />
-                )}
-                {lead.industry && (
-                  <EditableField
-                    label="Industry"
-                    value={lead.industry.industry_name}
-                    fieldName="industry_id"
-                  />
-                )}
-                {lead.company_size && (
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                        Company Size
-                      </p>
-                      <p className="mt-1 text-sm text-gray-900 capitalize dark:text-white">
-                        {lead.company_size}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {lead.company_website ? (
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                        Website
-                      </p>
-                      <a
-                        href={lead.company_website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1 block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
-                      >
-                        {lead.company_website}
-                      </a>
-                    </div>
-                  </div>
-                ) : null}
-                {lead.company_linkedin_url ? (
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                        Company LinkedIn
-                      </p>
-                      <a
-                        href={lead.company_linkedin_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1 block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
-                      >
-                        {lead.company_linkedin_url}
-                      </a>
-                    </div>
-                  </div>
-                ) : null}
-                {lead.department && (
-                  <EditableField
-                    label="Department"
-                    value={lead.department}
-                    fieldName="department"
-                  />
-                )}
-                {lead.notes && (
-                  <div className="md:col-span-2">
-                    <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                      Notes
-                    </p>
-                    <p className="mt-1 text-sm whitespace-pre-wrap text-gray-900 dark:text-white">
-                      {lead.notes}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* Comapny */}
+            <CardWidgetContainer
+              title="Company"
+              icon={
+                <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+              }
+            >
+              <div className="flex-1">
+                <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
+                  {lead.company_name && (
+                    <CustomInputForView
+                      label="Company"
+                      value={lead.company_name}
+                    />
+                  )}
+
+                  {lead.job_title && (
+                    <CustomInputForView
+                      label="Job Title"
+                      value={lead.job_title}
+                    />
+                  )}
+                  {lead.industry && (
+                    <CustomInputForView
+                      label="Industry"
+                      value={lead.industry.industry_name}
+                    />
+                  )}
+                  {lead.company_size && (
+                    <CustomInputForView
+                      label="Company Size"
+                      value={lead.company_size}
+                    />
+                  )}
+                  {lead.company_website ? (
+                    <CustomInputForView
+                      label="Website"
+                      value={
+                        <a
+                          href={lead.company_website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {lead.company_website}
+                        </a>
+                      }
+                    />
+                  ) : null}
+                  {lead.company_linkedin_url ? (
+                    <CustomInputForView
+                      label="Company LinkedIn"
+                      value={
+                        <a
+                          href={lead.company_linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {lead.company_linkedin_url}
+                        </a>
+                      }
+                    />
+                  ) : null}
+                  {lead.department && (
+                    <CustomInputForView
+                      label="Department"
+                      value={lead.department}
+                    />
+                  )}
+                  {lead.notes && (
+                    <CustomInputForView
+                      label="Notes"
+                      value={lead.notes}
+                      as="textarea"
+                    />
+                  )}
+                </div>
+              </div>
+            </CardWidgetContainer>
 
             {/* Contact Information Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Contact Information</CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {lead.email && (
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                        Primary Email
-                      </p>
-                      <a
-                        href={`mailto:${lead.email}`}
-                        className="mt-1 block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
-                      >
-                        {lead.email}
-                      </a>
-                    </div>
-                  </div>
-                )}
+            <CardWidgetContainer
+              title="Contact"
+              icon={
+                <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+              }
+            >
+              <div className="flex-1">
+                <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
+                  {lead.email && (
+                    <CustomInputForView
+                      label="Primary Email"
+                      value={
+                        <a
+                          href={`mailto:${lead.email}`}
+                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {lead.email}
+                        </a>
+                      }
+                    />
+                  )}
 
-                {lead.alt_email && (
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                        Alternative Email
-                      </p>
-                      <a
-                        href={`mailto:${lead.alt_email}`}
-                        className="mt-1 block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
-                      >
-                        {lead.alt_email}
-                      </a>
-                    </div>
-                  </div>
-                )}
+                  {lead.alt_email && (
+                    <CustomInputForView
+                      label="Alternative Email"
+                      value={
+                        <a
+                          href={`mailto:${lead.alt_email}`}
+                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {lead.alt_email}
+                        </a>
+                      }
+                    />
+                  )}
 
-                {lead.phone_number && (
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                        Phone
-                      </p>
-                      <a
-                        href={`tel:${lead.phone_number}`}
-                        className="mt-1 block text-sm text-gray-700 dark:text-gray-300"
-                      >
-                        {lead.phone_number}
-                      </a>
-                    </div>
-                  </div>
-                )}
+                  {lead.phone_number && (
+                    <CustomInputForView
+                      label="Phone"
+                      value={
+                        <a
+                          href={`tel:${lead.phone_number}`}
+                          className="block text-sm text-gray-700 dark:text-gray-300"
+                        >
+                          {lead.phone_number}
+                        </a>
+                      }
+                    />
+                  )}
 
-                {lead.mobile_number && (
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                        Mobile
-                      </p>
-                      <a
-                        href={`tel:${lead.mobile_number}`}
-                        className="mt-1 block text-sm text-gray-700 dark:text-gray-300"
-                      >
-                        {lead.mobile_number}
-                      </a>
-                    </div>
-                  </div>
-                )}
+                  {lead.mobile_number && (
+                    <CustomInputForView
+                      label="Mobile"
+                      value={
+                        <a
+                          href={`tel:${lead.mobile_number}`}
+                          className="block text-sm text-gray-700 dark:text-gray-300"
+                        >
+                          {lead.mobile_number}
+                        </a>
+                      }
+                    />
+                  )}
 
-                {lead.location && (
-                  <EditableField
-                    label="Location"
-                    value={lead.location}
-                    fieldName="location"
-                  />
-                )}
+                  {lead.location && (
+                    <CustomInputForView
+                      label="Location"
+                      value={lead.location}
+                    />
+                  )}
 
-                {lead.timezone && (
-                  <div>
-                    <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                      Timezone
-                    </p>
-                    <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                      {lead.timezone}
-                    </p>
-                  </div>
-                )}
+                  {lead.timezone && (
+                    <CustomInputForView
+                      label="Timezone"
+                      value={lead.timezone}
+                    />
+                  )}
 
-                {lead.linkedin_url && (
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
-                        LinkedIn
-                      </p>
-                      <a
-                        href={lead.linkedin_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1 block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
-                      >
-                        {lead.linkedin_url}
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Lead Assignees Section */}
-            {workspace?.id && (
-              <LeadAssignees leadId={leadId} workspaceId={workspace.id} />
-            )}
+                  {lead.linkedin_url && (
+                    <CustomInputForView
+                      label="LinkedIn"
+                      value={
+                        <a
+                          href={lead.linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {lead.linkedin_url}
+                        </a>
+                      }
+                    />
+                  )}
+                </div>
+              </div>
+            </CardWidgetContainer>
 
             {/* Notes Section */}
             <EntityNotes entityType="lead" entityId={leadId} />
-
-            {/* Call Logs Section */}
-            <EntityCalls entityType="lead" entityId={leadId} />
-            {/* Email Activity (Drafts, Scheduled, Sent) */}
-            <EntityEmails
-              entityId={leadId}
-              entityType="lead"
-              entityName={fullName}
-              entityEmail={lead.email || undefined}
-              onOpenDraft={(draft) => {
-                setSelectedDraft(draft);
-                setIsEmailDialogOpen(true);
-              }}
-            />
-
-            {/* Activity Section */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-gray-400" />
-                  <CardTitle className="text-lg">Activity</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                    <div className="h-2 w-2 rounded-full bg-green-500" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        Lead Created
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(lead.created_at).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  {lead.updated_at && lead.updated_at !== lead.created_at && (
-                    <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                      <div className="h-2 w-2 rounded-full bg-blue-500" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          Lead Updated
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(lead.updated_at).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Danger Zone */}
             {canAccess('leads', 'delete') && (
@@ -733,86 +667,54 @@ export default function LeadDetailsPage() {
             {/* Lead Scoring Card */}
             {lead.lead_score !== null && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Lead Score</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-center">
-                    <div className="relative h-24 w-24">
-                      <svg
-                        className="h-full w-full -rotate-90 transform"
-                        viewBox="0 0 100 100"
-                      >
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="45"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          className="text-gray-200 dark:text-gray-700"
-                        />
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="45"
-                          fill="none"
-                          stroke={statusColor}
-                          strokeWidth="2"
-                          strokeDasharray={`${((scoringResult?.totalScore ?? lead.lead_score) / 100) * 283} 283`}
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {scoringResult?.totalScore ?? lead.lead_score}
+                <CardContent className="pt-6">
+                  <div className="flex flex-row items-start justify-between gap-6">
+                    {/* Left side: Breakdown */}
+                    <div className="w-full flex-1 space-y-4">
+                      <h3 className="mb-2 text-base font-semibold text-zinc-950 dark:text-white">
+                        Lead Score
+                      </h3>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Total Score
+                        </span>
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {scoringResult?.totalScore ?? lead.lead_score} / 100
                         </span>
                       </div>
-                    </div>
-                  </div>
 
-                  <div className="mt-4 space-y-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600 dark:text-gray-400">
-                        Total Score
-                      </span>
-                      <span className="font-semibold text-gray-900 dark:text-white">
-                        {scoringResult?.totalScore ?? lead.lead_score} / 100
-                      </span>
-                    </div>
+                      {scoringResult && (
+                        <div className="space-y-3 border-t pt-4">
+                          <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
+                            Breakdown
+                          </p>
 
-                    {scoringResult && (
-                      <div className="space-y-3 border-t pt-4">
-                        <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
-                          Breakdown
-                        </p>
-
-                        {/* Fit Score Breakdown */}
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-xs font-semibold text-gray-400">
-                            <span>Fit Coverage</span>
-                            <span>{scoringResult.fitScore} / 60</span>
+                          {/* Fit Score Breakdown */}
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs font-semibold text-gray-400">
+                              <span>Fit Coverage</span>
+                              <span>{scoringResult.fitScore} / 60</span>
+                            </div>
+                            {Object.entries(scoringResult.breakdown.fit).map(
+                              ([label, score]) => (
+                                <div
+                                  key={label}
+                                  className="flex justify-between text-xs"
+                                >
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    {label}
+                                  </span>
+                                  <span className="font-medium text-green-600">
+                                    +{score}
+                                  </span>
+                                </div>
+                              ),
+                            )}
                           </div>
-                          {Object.entries(scoringResult.breakdown.fit).map(
-                            ([label, score]) => (
-                              <div
-                                key={label}
-                                className="flex justify-between text-xs"
-                              >
-                                <span className="text-gray-600 dark:text-gray-400">
-                                  {label}
-                                </span>
-                                <span className="font-medium text-green-600">
-                                  +{score}
-                                </span>
-                              </div>
-                            ),
-                          )}
-                        </div>
 
-                        {/* Engagement Score Breakdown */}
-                        {Object.keys(scoringResult.breakdown.engagement)
-                          .length > 0 && (
+                          {/* Engagement Score Breakdown */}
+                          {Object.keys(scoringResult.breakdown.engagement)
+                            .length > 0 && (
                             <div className="space-y-1 pt-2">
                               <p className="text-xs font-semibold text-gray-400">
                                 Engagement
@@ -835,9 +737,9 @@ export default function LeadDetailsPage() {
                             </div>
                           )}
 
-                        {/* Adjustments (Status) */}
-                        {Object.keys(scoringResult.breakdown.adjustments)
-                          .length > 0 && (
+                          {/* Adjustments (Status) */}
+                          {Object.keys(scoringResult.breakdown.adjustments)
+                            .length > 0 && (
                             <div className="space-y-1 pt-2">
                               <p className="text-xs font-semibold text-gray-400">
                                 Status Adjustments
@@ -872,12 +774,105 @@ export default function LeadDetailsPage() {
                               ))}
                             </div>
                           )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right side: Circular Progress Indicator */}
+                    <div className="flex flex-shrink-0 items-center justify-center self-center sm:self-start">
+                      <div className="relative h-24 w-24">
+                        <svg
+                          className="h-full w-full -rotate-90 transform"
+                          viewBox="0 0 100 100"
+                        >
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="45"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            className="text-gray-200 dark:text-gray-700"
+                          />
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="45"
+                            fill="none"
+                            stroke={statusColor}
+                            strokeWidth="2"
+                            strokeDasharray={`${((scoringResult?.totalScore ?? lead.lead_score) / 100) * 283} 283`}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                            {scoringResult?.totalScore ?? lead.lead_score}
+                          </span>
+                        </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             )}
+
+            {/* Lead Assignees Section */}
+            {workspace?.id && (
+              <LeadAssignees leadId={leadId} workspaceId={workspace.id} />
+            )}
+
+            {/* Meetings */}
+            <EntityMeetings entityType="lead" entityId={leadId} />
+
+            {/* Email Activity (Drafts, Scheduled, Sent) */}
+            <EntityEmails
+              entityId={leadId}
+              entityType="lead"
+              entityName={fullName}
+              entityEmail={lead.email || undefined}
+            />
+
+            {/* Call Logs Section */}
+            <EntityCalls entityType="lead" entityId={leadId} />
+
+            {/* Activity Section */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <div className="flex items-center gap-2">
+                  <Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+                  <CardTitle className="text-lg">Activity</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
+                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        Lead Created
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(lead.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  {lead.updated_at && lead.updated_at !== lead.created_at && (
+                    <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
+                      <div className="h-2 w-2 rounded-full bg-blue-500" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          Lead Updated
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(lead.updated_at).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Owner Information */}
             {lead.owner && (
@@ -905,9 +900,6 @@ export default function LeadDetailsPage() {
 
             {/* Reminders */}
             <EntityReminders entityType="lead" entityId={leadId} />
-
-            {/* Meetings */}
-            <EntityMeetings entityType="lead" entityId={leadId} />
 
             {/* Documents */}
             <EntityDocuments entityType="lead" entityId={leadId} />
@@ -1006,19 +998,20 @@ export default function LeadDetailsPage() {
           defaultPhoneNumber={lead.phone_number || lead.mobile_number}
         />
       )}
-      {/* Email Lead Dialog */}
+      {/* Email Compose Dialog */}
       {lead && (
-        <EmailLeadDialog
+        <CoreEmailComposeDialog
           open={isEmailDialogOpen}
-          onOpenChange={(open) => {
-            setIsEmailDialogOpen(open);
-            if (!open) setSelectedDraft(null);
+          onOpenChange={setIsEmailDialogOpen}
+          workspaceId={workspace?.id || ''}
+          accounts={coreEmailAccounts}
+          entityType="lead"
+          entityId={leadId}
+          initialTo={lead.email || undefined}
+          templateContext={{
+            lead_name: fullName,
+            lead_email: lead.email,
           }}
-          leadId={leadId}
-          leadEmail={lead.email || ''}
-          leadName={fullName}
-          initialDraft={selectedDraft}
-          workspaceEmailAccounts={workspaceEmailAccount || []}
         />
       )}
     </ModuleGuard>

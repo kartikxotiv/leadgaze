@@ -34,6 +34,7 @@ interface WorkspaceMember {
 interface InviteMemberPayload {
   email: string;
   role_id: string;
+  productKey?: string;
 }
 
 interface UpdateMemberPayload {
@@ -101,13 +102,15 @@ const validateInviteTokenService = asyncHandlerClient(async (token: string) => {
   return response.data;
 });
 
-const getInvitationsByEmailService = asyncHandlerClient(async (email: string) => {
-  const response = await ApiClient.get(
-    `/team-members/invite/by-email?email=${encodeURIComponent(email)}`,
-  );
+const getInvitationsByEmailService = asyncHandlerClient(
+  async (email: string) => {
+    const response = await ApiClient.get(
+      `/team-members/invite/by-email?email=${encodeURIComponent(email)}`,
+    );
 
-  return response.data;
-});
+    return response.data;
+  },
+);
 
 export {
   getMembersService,

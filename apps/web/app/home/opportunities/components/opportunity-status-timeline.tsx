@@ -46,7 +46,7 @@ export function OpportunityStatusTimeline({
 
     return (
         <div className="w-full py-4 overflow-x-auto">
-            <div className="flex items-center min-w-max px-2">
+            <div className="flex items-center justify-between w-full px-2">
                 {statuses.map((status, index) => {
                     const isCompleted = index < currentStatusIndex;
                     const isCurrent = index === currentStatusIndex;

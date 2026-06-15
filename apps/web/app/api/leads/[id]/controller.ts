@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '~/lib/database.types';
@@ -8,6 +9,8 @@ import { catchAsync, successDataResponse } from '~/utils/response-handler';
 type Lead = Database['public']['Tables']['crm_leads']['Row'];
 
 type LeadWithRelations = Lead & {
+  converted_account_id?: string | null;
+  is_converted_to_account?: boolean;
   status?: {
     id: string;
     status_name: string;
@@ -35,13 +38,14 @@ type LeadWithRelations = Lead & {
 
 const getLeadById = catchAsync(
   async ({
-    request,
+    request: _request,
     params,
   }: {
     request: NextRequest;
     params?: Record<string, string>;
   }) => {
     const supabase = getSupabaseServerClient();
+    const adminClient = getSupabaseServerAdminClient<Database>();
     const leadId = params?.id;
 
     if (!leadId) {
@@ -51,8 +55,19 @@ const getLeadById = catchAsync(
       );
     }
 
-    const { data: lead, error } = await (
-      supabase.from('crm_leads').select(
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Fetch the lead first to get workspace_id for the RPC access check
+    const { data: lead, error } = await adminClient
+      .from('crm_leads')
+      .select(
         `
           *,
           company_website,
@@ -63,36 +78,101 @@ const getLeadById = catchAsync(
           created_by_account:accounts!crm_leads_created_by_fkey(id, email, name),
           industry:crm_industries(id, industry_name)
         `,
-      ) as any
-    )
+      )
       .eq('id', leadId)
       .eq('is_deleted', false)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Get lead error:', error);
       throw error;
     }
 
-    const { data: account } = await supabase
-      .from('crm_accounts')
-      .select()
-      .eq('created_from_lead_id', leadId);
-
     if (!lead) {
       return NextResponse.json({ message: 'Lead not found' }, { status: 404 });
     }
 
-    if (account?.length) {
-      lead.is_converted_to_account = true;
-      lead.converted_account_id = account[0]?.id || null;
-    } else {
-      lead.is_converted_to_account = false;
-      lead.converted_account_id = null;
+    // Single RPC call replaces: accounts lookup, workspace owner check, membership check,
+    // and 3-5 queries inside getHierarchyVisibleUserIds
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const { data: accessResult, error: accessError } = await (
+      adminClient as any
+    ).rpc('resolve_workspace_access', {
+      p_workspace_id: lead.workspace_id,
+      p_user_id: user.id,
+      p_user_email: user.email || null,
+      p_require_shared_team: false,
+    });
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+
+    if (accessError) {
+      console.error('Workspace access resolution error:', accessError);
+      throw accessError;
     }
+
+    const {
+      is_owner: isOwner,
+      is_member: isMember,
+      hierarchy_type: hierarchyType,
+      visible_user_ids: rpcVisibleUserIds,
+    } = accessResult;
+
+    if (!isOwner && !isMember) {
+      return NextResponse.json(
+        { message: 'Forbidden: You are not a member of this workspace' },
+        { status: 403 },
+      );
+    }
+
+    let canViewLead = isOwner;
+
+    if (!canViewLead) {
+      if (hierarchyType === 'all') {
+        canViewLead = true;
+      } else {
+        const visibleUserIds = new Set<string>(rpcVisibleUserIds || []);
+
+        canViewLead =
+          (lead.owner_id ? visibleUserIds.has(lead.owner_id) : false) ||
+          visibleUserIds.has(lead.created_by);
+
+        if (!canViewLead) {
+          const { data: assignment } = await adminClient
+            .from('lead_assignees')
+            .select('id')
+            .eq('workspace_id', lead.workspace_id)
+            .eq('lead_id', leadId)
+            .in('assigned_to_user_id', Array.from(visibleUserIds))
+            .eq('assignment_status', 'active')
+            .limit(1)
+            .maybeSingle();
+
+          canViewLead = Boolean(assignment);
+        }
+      }
+    }
+
+    if (!canViewLead) {
+      return NextResponse.json(
+        { message: 'You do not have permission to view this lead' },
+        { status: 403 },
+      );
+    }
+
+    const { data: account } = await adminClient
+      .from('crm_accounts')
+      .select()
+      .eq('created_from_lead_id', leadId);
+
+    const leadWithConversion = {
+      ...lead,
+      converted_account_id: account?.[0]?.id || null,
+      is_converted_to_account: Boolean(account?.length),
+    } as LeadWithRelations;
+
     return successDataResponse(
       'Lead retrieved successfully',
-      lead as LeadWithRelations,
+      leadWithConversion,
     );
   },
 );
@@ -132,7 +212,7 @@ const updateLead = catchAsync(
     }
 
     // Update lead - support partial updates
-    const updateData: any = {};
+    const updateData: Database['public']['Tables']['crm_leads']['Update'] = {};
 
     // Only include fields that are provided
     if (body.first_name !== undefined) updateData.first_name = body.first_name;
@@ -175,7 +255,7 @@ const updateLead = catchAsync(
     if (body.owner_id !== undefined)
       updateData.owner_id = body.owner_id || null;
     if (body.notes !== undefined) updateData.notes = body.notes || null;
-    
+
     // Get the lead to check permissions
     const { data: existingLead } = await supabase
       .from('crm_leads')
@@ -241,7 +321,6 @@ const updateLead = catchAsync(
       );
     }
 
-
     updateData.updated_by = user.id;
     updateData.updated_at = new Date().toISOString();
 
@@ -285,7 +364,7 @@ const updateLead = catchAsync(
  */
 const deleteLead = catchAsync(
   async ({
-    request,
+    request: _request,
     params,
   }: {
     request: NextRequest;

@@ -1,73 +1,20 @@
 'use client';
 
-import { PageBody, PageHeader } from '@kit/ui/page';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
+import { CoreEmailPage } from '@kit/core/pages';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 
-import { EmailTemplatesTab } from './_components/email-templates-tab';
-import { EmailVariablesTab } from './_components/email-variables-tab';
-import { InboxTab } from './_components/inbox-tab';
-
 export default function EmailsPage() {
-  const { canAccess } = useRBAC();
-
-  const canViewInbox = canAccess('emails', 'view_inbox');
-  const canManageTemplates = canAccess('emails', 'manage_templates');
-  const canManageVariables = canAccess('emails', 'manage_variables');
-
-  const availableTabs = [
-    {
-      value: 'inbox',
-      label: 'Inbox',
-      component: <InboxTab />,
-      allowed: canViewInbox,
-    },
-    {
-      value: 'templates',
-      label: 'Templates',
-      component: <EmailTemplatesTab />,
-      allowed: canManageTemplates,
-    },
-    {
-      value: 'variables',
-      label: 'Variables',
-      component: <EmailVariablesTab />,
-      allowed: canManageVariables,
-    },
-  ].filter((tab) => tab.allowed);
+  const { currentWorkspace, canAccess } = useRBAC();
 
   return (
-    <>
-      <PageHeader
-        className='bg-sidebar'
-        title="Emails"
-        description="Manage your email inbox, templates, and variables."
-      />
-      <PageBody className="bg-sidebar sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pt-6 pb-6">
-        {availableTabs.length > 0 ? (
-          <Tabs defaultValue={availableTabs[0]!.value}>
-            <TabsList>
-              {availableTabs.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value}>
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            {availableTabs.map((tab) => (
-              <TabsContent key={tab.value} value={tab.value}>
-                {tab.component}
-              </TabsContent>
-            ))}
-          </Tabs>
-        ) : (
-          <div className="flex h-48 items-center justify-center rounded-lg border-2 border-dashed">
-            <p className="text-muted-foreground">
-              You do not have permission to access this page.
-            </p>
-          </div>
-        )}
-      </PageBody>
-    </>
+    <CoreEmailPage
+      workspace={currentWorkspace}
+      permissions={{
+        viewInbox: canAccess('emails', 'view_inbox'),
+        manageTemplates: canAccess('emails', 'manage_templates'),
+        manageVariables: canAccess('emails', 'manage_variables'),
+      }}
+    />
   );
 }

@@ -11,6 +11,7 @@ export async function getAuditLogsService(params: {
   actorId?: string;
   page?: number;
   limit?: number;
+  productKey?: string;
 }) {
   const { data } = await axios.get('/api/audit-logs', { params });
   return data.data;

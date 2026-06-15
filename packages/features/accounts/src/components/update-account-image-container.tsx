@@ -110,11 +110,11 @@ function UploadProfileAvatarForm(props: {
   return (
     <ImageUploader value={props.pictureUrl} onValueChange={onValueChange}>
       <div className={'flex flex-col space-y-1'}>
-        <span className={'text-sm'}>
+        <span className={'text-sm dark:text-white'}>
           <Trans i18nKey={'account:profilePictureHeading'} />
         </span>
 
-        <span className={'text-xs'}>
+        <span className={'text-xs dark:text-white'}>
           <Trans i18nKey={'account:profilePictureSubheading'} />
         </span>
       </div>

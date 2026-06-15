@@ -1,25 +1,19 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  AlertCircle,
   Briefcase,
   Building2,
   Calendar as CalendarIcon,
   CheckCircle2,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   Clock,
-  Filter,
   Loader2,
   MoreHorizontal,
   Pencil,
   Plus,
-  Search,
   Trash2,
   User,
   Users,
@@ -29,7 +23,6 @@ import { toast } from 'sonner';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Calendar } from '@kit/ui/calendar';
-import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import {
   Dialog,
@@ -54,7 +47,6 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@kit/ui/pagination';
-import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@kit/ui/radio-group';
 import {
   Select,
@@ -71,13 +63,10 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { Skeleton } from '@kit/ui/skeleton';
+import { ListToolBar } from '@kit/ui/list-toolbar';
+import CustomTableContainer from '@kit/ui/custom-table-container';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
@@ -92,56 +81,60 @@ import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
+function RemindersPageSkeleton() {
+  return (
+    <div className="flex h-[100dvh] flex-col overflow-hidden">
+      <div className="flex shrink-0 flex-col gap-2">
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="space-y-1">
+            <Skeleton className="h-6 w-36" />
+            <Skeleton className="h-4 w-60" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+          </div>
+        </div>
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
+        <div className="flex min-h-0 flex-1 flex-col px-4 lg:px-8">
+          <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
+            <Table className="w-max min-w-full border-separate border-spacing-0 caption-bottom text-sm">
+              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                <TableRow>
+                  <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
+                  <TableHead>Reminder Title</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Entity</TableHead>
+                  <TableHead className="sticky right-0 text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...Array(10)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="h-[52px] px-4 py-2" colSpan={7}>
+                      <Skeleton className="h-7 w-full" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function RemindersPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [filterView, setFilterView] = useState<
-    'main' | 'status' | 'date_range' | 'priority'
-  >('main');
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined;
     to: Date | undefined;
@@ -337,18 +330,6 @@ export default function RemindersPage() {
   const totalPages = Math.ceil(filteredReminders.length / itemsPerPage);
   const totalCount = filteredReminders.length;
 
-  const safeShowPicker = (
-    e: React.MouseEvent<HTMLInputElement> | React.FocusEvent<HTMLInputElement>,
-  ) => {
-    try {
-      if ('showPicker' in e.currentTarget) {
-        (e.currentTarget as any).showPicker();
-      }
-    } catch (error) {
-      console.warn('showPicker not supported or failed:', error);
-    }
-  };
-
   const handleCreate = () => {
     if (!formData.title.trim() || !formData.entityId || !formData.due_date)
       return;
@@ -482,573 +463,179 @@ export default function RemindersPage() {
     );
   };
 
+  const filterGroups = useMemo(() => {
+    return [
+      {
+        key: 'status',
+        label: 'Status',
+        selectedValue: statusFilter === 'all' ? '' : statusFilter,
+        selectedLabel: statusFilter === 'all'
+          ? 'All statuses'
+          : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1),
+        options: [
+          { value: 'pending', label: 'Pending' },
+          { value: 'completed', label: 'Completed' },
+        ],
+        onSelect: (val: string) => setStatusFilter(val || 'all'),
+      },
+      {
+        key: 'priority',
+        label: 'Priority',
+        selectedValue: priorityFilter === 'all' ? '' : priorityFilter,
+        selectedLabel: priorityFilter === 'all'
+          ? 'All priorities'
+          : priorityFilter.charAt(0).toUpperCase() + priorityFilter.slice(1),
+        options: [
+          { value: 'high', label: 'High' },
+          { value: 'medium', label: 'Medium' },
+          { value: 'low', label: 'Low' },
+        ],
+        onSelect: (val: string) => setPriorityFilter(val || 'all'),
+      },
+      {
+        key: 'date_range',
+        label: 'Date Range',
+        selectedValue: (dateRange.from || dateRange.to) ? 'range' : '',
+        selectedLabel: (dateRange.from || dateRange.to)
+          ? `${dateRange.from?.toLocaleDateString() || ''} - ${dateRange.to?.toLocaleDateString() || ''}`
+          : 'All time',
+        options: [],
+        onSelect: () => {},
+        customContent: (
+          <div className="flex flex-col gap-4 p-2">
+            <Calendar
+              mode="range"
+              selected={{
+                from: dateRange.from,
+                to: dateRange.to,
+              }}
+              onSelect={(range) => {
+                const to = range?.to
+                  ? new Date(range.to)
+                  : undefined;
+                if (to) {
+                  to.setHours(23, 59, 59, 999);
+                }
+                setDateRange({
+                  from: range?.from,
+                  to,
+                });
+              }}
+              initialFocus
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={() => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const todayEnd = new Date();
+                  todayEnd.setHours(23, 59, 59, 999);
+                  setDateRange({ from: today, to: todayEnd });
+                }}
+              >
+                Today
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={() => {
+                  const today = new Date();
+                  const todayEnd = new Date();
+                  todayEnd.setHours(23, 59, 59, 999);
+                  const lastWeek = new Date();
+                  lastWeek.setDate(today.getDate() - 7);
+                  lastWeek.setHours(0, 0, 0, 0);
+                  setDateRange({ from: lastWeek, to: todayEnd });
+                }}
+              >
+                Last 7 Days
+              </Button>
+            </div>
+          </div>
+        ),
+      },
+    ];
+  }, [statusFilter, priorityFilter, dateRange]);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (statusFilter !== 'all') count++;
+    if (priorityFilter !== 'all') count++;
+    if (dateRange.from || dateRange.to) count++;
+    return count;
+  }, [statusFilter, priorityFilter, dateRange]);
+
+  const handleClearFilters = () => {
+    setStatusFilter('all');
+    setPriorityFilter('all');
+    setDateRange({ from: undefined, to: undefined });
+  };
+
   if (!workspace) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    );
+    return <RemindersPageSkeleton />;
   }
 
   return (
     <>
-      <div className="flex h-[100dvh] flex-col">
-        <div className="flex shrink-0 flex-col gap-2">
-          <PageHeader
-            className='bg-sidebar'
-            title={`Reminders (${reminders.length})`}
-            description="Keep track of your important tasks and reminders"
-          >
-            <div className="flex items-center gap-2">
-              <div className="flex items-center">
-                <div
-                  className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${isSearchOpen ? 'w-64 lg:w-72' : 'w-9'
-                    }`}
-                >
-                  {isSearchOpen ? (
-                    <div className="relative w-full">
-                      <Search className="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        ref={searchInputRef}
-                        placeholder="Search by task title"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-8 pl-10"
-                        onBlur={() => {
-                          if (!searchTerm) setIsSearchOpen(false);
-                        }}
-                        autoFocus
-                      />
-                    </div>
-                  ) : (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          className="border-input hover:bg-accent -mr-6 flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white text-gray-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
-                          onClick={() => setIsSearchOpen(true)}
-                        >
-                          <Search className="h-4 w-4 text-gray-500 dark:text-white" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p>Search</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                </div>
-              </div>
-              <Popover
-                open={isFilterOpen}
-                onOpenChange={(open) => {
-                  setIsFilterOpen(open);
-                  if (!open) setFilterView('main');
-                }}
-              >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <PopoverTrigger asChild>
-                      <button
-                        className={`border-input hover:bg-accent relative flex h-8 w-8 items-center justify-center rounded-md border bg-transparent bg-white dark:border-zinc-700 dark:bg-zinc-900 ${isFilterOpen ? 'bg-accent' : ''
-                          }`}
-                      >
-                        <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
-                        {(statusFilter !== 'all' ||
-                          priorityFilter !== 'all' ||
-                          dateRange.from ||
-                          dateRange.to) && (
-                            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
-                              {(statusFilter !== 'all' ? 1 : 0) +
-                                (priorityFilter !== 'all' ? 1 : 0) +
-                                (dateRange.from || dateRange.to ? 1 : 0)}
-                            </span>
-                          )}
-                      </button>
-                    </PopoverTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p>Filter</p>
-                  </TooltipContent>
-                </Tooltip>
-                <PopoverContent className="w-80 p-0" align="end">
-                  <div className="flex items-center justify-between border-b px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {filterView !== 'main' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={() => setFilterView('main')}
-                        >
-                          <ChevronLeftIcon className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <span className="text-sm font-semibold">
-                        {filterView === 'main'
-                          ? 'Filters'
-                          : filterView === 'status'
-                            ? 'Filter by Status'
-                            : filterView === 'priority'
-                              ? 'Filter by Priority'
-                              : 'Filter by Date Range'}
-                      </span>
-                    </div>
-                    <button
-                      className="text-muted-foreground hover:text-foreground text-xs underline"
-                      onClick={() => {
-                        setStatusFilter('all');
-                        setPriorityFilter('all');
-                        setDateRange({ from: undefined, to: undefined });
-                      }}
-                    >
-                      Clear all
-                    </button>
-                  </div>
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+        <PageHeader
+          title={`Reminders (${reminders.length})`}
+          description="Keep track of your important tasks and reminders"
+        />
+      </div>
 
-                  <div className="p-2">
-                    {filterView === 'main' && (
-                      <div className="flex flex-col gap-1">
-                        <button
-                          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
-                          onClick={() => setFilterView('status')}
-                        >
-                          <div className="flex flex-col gap-1">
-                            <span>Status</span>
-                            <span className="text-muted-foreground text-xs font-normal">
-                              {statusFilter === 'all'
-                                ? 'All statuses'
-                                : statusFilter.charAt(0).toUpperCase() +
-                                statusFilter.slice(1)}
-                            </span>
-                          </div>
-                          <ChevronRightIcon className="h-4 w-4 text-gray-400" />
-                        </button>
-                        <button
-                          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
-                          onClick={() => setFilterView('priority')}
-                        >
-                          <div className="flex flex-col gap-1">
-                            <span>Priority</span>
-                            <span className="text-muted-foreground text-xs font-normal">
-                              {priorityFilter === 'all'
-                                ? 'All priorities'
-                                : priorityFilter.charAt(0).toUpperCase() +
-                                priorityFilter.slice(1)}
-                            </span>
-                          </div>
-                          <ChevronRightIcon className="h-4 w-4 text-gray-400" />
-                        </button>
-                        <button
-                          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
-                          onClick={() => setFilterView('date_range')}
-                        >
-                          <div className="flex flex-col gap-1">
-                            <span>Date Range</span>
-                            <span className="text-muted-foreground text-xs font-normal">
-                              {dateRange.from || dateRange.to
-                                ? `${dateRange.from?.toLocaleDateString() || ''} - ${dateRange.to?.toLocaleDateString() || ''}`
-                                : 'All time'}
-                            </span>
-                          </div>
-                          <ChevronRightIcon className="h-4 w-4 text-gray-400" />
-                        </button>
-                      </div>
-                    )}
+      {/* Full-width search / filter / actions toolbar */}
+      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2 pt-2">
+        <ListToolBar
+          showSearch
+          searchPlaceholder="Search by task title..."
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          showFilter
+          filterLabel="Show Filters"
+          filterGroups={filterGroups}
+          activeFilterCount={activeFilterCount}
+          onClearFilters={handleClearFilters}
+          actions={[
+            {
+              key: 'add',
+              label: 'New Reminder',
+              icon: Plus,
+              onClick: () => {
+                setFormData({
+                  title: '',
+                  description: '',
+                  due_date: '',
+                  priority: 'medium',
+                  entity_type: 'lead',
+                  entityId: '',
+                });
+                setIsCreateDialogOpen(true);
+              },
+              show: true,
+              buttonVariant: 'default',
+            },
+          ]}
+          columnVisibilitySlot={
+            <ColumnVisibilitySelector
+              columns={reminderColumns}
+              visibility={visibility}
+              onToggle={toggleVisibility}
+              onReset={reset}
+            />
+          }
+        />
+      </div>
 
-                    {filterView === 'status' && (
-                      <div className="flex flex-col gap-1 p-1">
-                        {[
-                          { id: 'all', label: 'All Statuses' },
-                          { id: 'pending', label: 'Pending' },
-                          { id: 'completed', label: 'Completed' },
-                        ].map((s) => {
-                          const isChecked = statusFilter === s.id;
-                          return (
-                            <label
-                              key={s.id}
-                              className={`group hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-all ${isChecked ? 'bg-muted/40' : ''
-                                }`}
-                            >
-                              <input
-                                type="radio"
-                                name="status-filter"
-                                className="sr-only"
-                                checked={isChecked}
-                                onChange={() => setStatusFilter(s.id)}
-                              />
-                              <div
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${isChecked
-                                    ? 'border-primary bg-transparent'
-                                    : 'border-black/20 bg-transparent group-hover:border-white/50 dark:border-white/30'
-                                  }`}
-                              >
-                                {isChecked && (
-                                  <div className="bg-primary animate-in fade-in zoom-in h-2 w-2 rounded-full duration-200" />
-                                )}
-                              </div>
-                              <span className="truncate font-medium text-black dark:text-gray-200">
-                                {s.label}
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {filterView === 'priority' && (
-                      <div className="flex flex-col gap-1 p-1">
-                        {[
-                          { id: 'all', label: 'All Priorities' },
-                          { id: 'high', label: 'High' },
-                          { id: 'medium', label: 'Medium' },
-                          { id: 'low', label: 'Low' },
-                        ].map((p) => {
-                          const isChecked = priorityFilter === p.id;
-                          return (
-                            <label
-                              key={p.id}
-                              className={`group hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-all ${isChecked ? 'bg-muted/40' : ''
-                                }`}
-                            >
-                              <input
-                                type="radio"
-                                name="priority-filter"
-                                className="sr-only"
-                                checked={isChecked}
-                                onChange={() => setPriorityFilter(p.id)}
-                              />
-                              <div
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${isChecked
-                                    ? 'border-primary bg-transparent'
-                                    : 'border-black/20 bg-transparent group-hover:border-white/50 dark:border-white/30'
-                                  }`}
-                              >
-                                {isChecked && (
-                                  <div className="bg-primary animate-in fade-in zoom-in h-2 w-2 rounded-full duration-200" />
-                                )}
-                              </div>
-                              <span className="truncate font-medium text-black dark:text-gray-200">
-                                {p.label}
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {filterView === 'date_range' && (
-                      <div className="flex flex-col gap-4 p-2">
-                        <Calendar
-                          mode="range"
-                          selected={{
-                            from: dateRange.from,
-                            to: dateRange.to,
-                          }}
-                          onSelect={(range) => {
-                            const to = range?.to
-                              ? new Date(range.to)
-                              : undefined;
-                            if (to) {
-                              to.setHours(23, 59, 59, 999);
-                            }
-                            setDateRange({
-                              from: range?.from,
-                              to,
-                            });
-                          }}
-                          initialFocus
-                        />
-                        <div className="grid grid-cols-2 gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs"
-                            onClick={() => {
-                              const today = new Date();
-                              today.setHours(0, 0, 0, 0);
-                              const todayEnd = new Date();
-                              todayEnd.setHours(23, 59, 59, 999);
-                              setDateRange({ from: today, to: todayEnd });
-                            }}
-                          >
-                            Today
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs"
-                            onClick={() => {
-                              const today = new Date();
-                              const todayEnd = new Date();
-                              todayEnd.setHours(23, 59, 59, 999);
-                              const lastWeek = new Date();
-                              lastWeek.setDate(today.getDate() - 7);
-                              lastWeek.setHours(0, 0, 0, 0);
-                              setDateRange({ from: lastWeek, to: todayEnd });
-                            }}
-                          >
-                            Last 7 Days
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-              {/* <Button
-                className="h-9 gap-2"
-                onClick={() => {
-                  setFormData({
-                    title: '',
-                    description: '',
-                    due_date: '',
-                    priority: 'medium',
-                    entity_type: 'lead',
-                    entityId: '',
-                  });
-                  setIsCreateDialogOpen(true);
-                }}
-              >
-                <Plus className="h-4 w-4" />
-                New Reminder
-              </Button> */}
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="h-8 w-8 bg-white p-0 text-black dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
-                    onClick={() => {
-                      setFormData({
-                        title: '',
-                        description: '',
-                        due_date: '',
-                        priority: 'medium',
-                        entity_type: 'lead',
-                        entityId: '',
-                      });
-                      setIsCreateDialogOpen(true);
-                    }}
-                  >
-                    <Plus className="h-4 w-4 text-gray-500 dark:text-white" />
-                  </Button>
-                </TooltipTrigger>
-
-                <TooltipContent side="bottom">
-                  <p>New Reminder</p>
-                </TooltipContent>
-              </Tooltip>
-
-              {/* <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" /> */}
-
-              <ColumnVisibilitySelector
-                columns={reminderColumns}
-                visibility={visibility}
-                onToggle={toggleVisibility}
-                onReset={reset}
-              />
-            </div>
-          </PageHeader>
-        </div>
-
-        <PageBody className="bg-sidebar sticky flex min-h-0 flex-1 shrink-0 flex-col overflow-hidden pt-6 pb-6">
-          <div className="flex min-h-0 flex-1 flex-col space-y-6">
-            {/* Reminders List Table */}
-            <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
-              <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-                <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
-                  <Table className="w-max min-w-full border-separate border-spacing-0 caption-bottom text-sm">
-                    <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
-                      <TableRow>
-                        {isVisible('sno') && (
-                          <TableHead className="w-12 whitespace-nowrap">
-                            S. No.
-                          </TableHead>
-                        )}
-                        {isVisible('title') && (
-                          <TableHead>Task Title</TableHead>
-                        )}
-                        {isVisible('description') && (
-                          <TableHead>Description</TableHead>
-                        )}
-                        {isVisible('priority') && (
-                          <TableHead>Priority</TableHead>
-                        )}
-                        {isVisible('due_date') && (
-                          <TableHead>Due Date</TableHead>
-                        )}
-                        {isVisible('status') && <TableHead>Status</TableHead>}
-                        {isVisible('entity') && <TableHead>Entity</TableHead>}
-                        {isVisible('created_by') && (
-                          <TableHead>Created By</TableHead>
-                        )}
-                        {isVisible('created_at') && (
-                          <TableHead>Created On</TableHead>
-                        )}
-                        {isVisible('updated_by') && (
-                          <TableHead>Last Updated By</TableHead>
-                        )}
-                        <TableHead className="bg-card sticky right-0 px-4 text-right">
-                          Actions
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoading ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={
-                              visibility
-                                ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
-                                : 6
-                            }
-                            className="h-24 text-center"
-                          >
-                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
-                          </TableCell>
-                        </TableRow>
-                      ) : paginatedReminders.length > 0 ? (
-                        paginatedReminders.map(
-                          (reminder: Reminder, index: number) => (
-                            <TableRow
-                              key={reminder.id}
-                              className="hover:bg-muted/50"
-                            >
-                              {isVisible('sno') && (
-                                <TableCell className="text-muted-foreground w-12">
-                                  {(currentPage - 1) * itemsPerPage + index + 1}
-                                </TableCell>
-                              )}
-                              {isVisible('title') && (
-                                <TableCell className="font-medium">
-                                  <div className="">{reminder.title}</div>
-                                </TableCell>
-                              )}
-                              {isVisible('description') && (
-                                <TableCell className="text-muted-foreground">
-                                  {reminder.description ? (
-                                    <p
-                                      className="max-w-[200px] truncate"
-                                      title={reminder.description}
-                                    >
-                                      {reminder.description}
-                                    </p>
-                                  ) : (
-                                    '-'
-                                  )}
-                                </TableCell>
-                              )}
-                              {isVisible('priority') && (
-                                <TableCell>
-                                  {getPriorityBadge(reminder.priority)}
-                                </TableCell>
-                              )}
-                              {isVisible('due_date') && (
-                                <TableCell className="text-muted-foreground">
-                                  {reminder.due_date
-                                    ? formatDueDateShort(reminder.due_date)
-                                    : '-'}
-                                </TableCell>
-                              )}
-                              {isVisible('status') && (
-                                <TableCell>
-                                  {getStatusBadge(reminder.is_completed)}
-                                </TableCell>
-                              )}
-                              {isVisible('entity') && (
-                                <TableCell>
-                                  {reminder.entity_name && (
-                                    <Link
-                                      href={`/home/${reminder.entity_type === 'opportunity' ? 'opportunities' : `${reminder.entity_type}s`}/${reminder.entity_id}`}
-                                      className="hover:text-primary text-muted-foreground text-xs hover:underline"
-                                      title={`${reminder.entity_type}: ${reminder.entity_name}`}
-                                    >
-                                      {reminder.entity_name}
-                                    </Link>
-                                  )}
-                                </TableCell>
-                              )}
-                              {isVisible('created_by') && (
-                                <TableCell className="text-muted-foreground">
-                                  {reminder.created_by_user?.name || '-'}
-                                </TableCell>
-                              )}
-                              {isVisible('created_at') && (
-                                <TableCell className="text-muted-foreground">
-                                  {reminder.created_at
-                                    ? new Date(
-                                      reminder.created_at,
-                                    ).toLocaleDateString()
-                                    : '-'}
-                                </TableCell>
-                              )}
-                              {isVisible('updated_by') && (
-                                <TableCell className="text-muted-foreground">
-                                  {reminder.updated_by || '-'}
-                                </TableCell>
-                              )}
-                              <TableCell className="bg-card sticky right-0 px-4 text-right">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                      className="gap-2"
-                                      onClick={() => handleEdit(reminder)}
-                                    >
-                                      <Pencil className="h-4 w-4" /> Edit Task
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      className="gap-2 text-green-600"
-                                      onClick={() => toggleCompletion(reminder)}
-                                    >
-                                      <CheckCircle2 className="h-4 w-4" />{' '}
-                                      {reminder.is_completed
-                                        ? 'Mark as Pending'
-                                        : 'Mark as Completed'}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      className="gap-2 text-red-500"
-                                      onClick={() => handleDelete(reminder.id)}
-                                    >
-                                      <Trash2 className="h-4 w-4" /> Delete
-                                      Reminder
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          ),
-                        )
-                      ) : (
-                        <TableRow>
-                          <TableCell
-                            colSpan={
-                              visibility
-                                ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
-                                : 6
-                            }
-                            className="text-muted-foreground h-24 text-center"
-                          >
-                            No reminders match your search.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Pagination */}
-            {totalCount > 1 && (
-              <div className="text-muted-foreground bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t py-1.5 px-4 lg:-mx-8 lg:px-8">
+      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+          <CustomTableContainer
+            pagination={totalCount > 0 && (
+              <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
                 <div>
                   Showing{' '}
                   <span className="text-foreground font-medium">
@@ -1107,17 +694,188 @@ export default function RemindersPage() {
                 </Pagination>
               </div>
             )}
-          </div>
-        </PageBody>
-      </div>
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {isVisible('sno') && (
+                    <TableHead className="w-12 whitespace-nowrap">
+                      S. No.
+                    </TableHead>
+                  )}
+                  {isVisible('title') && <TableHead>Task Title</TableHead>}
+                  {isVisible('description') && <TableHead>Description</TableHead>}
+                  {isVisible('priority') && <TableHead>Priority</TableHead>}
+                  {isVisible('due_date') && <TableHead>Due Date</TableHead>}
+                  {isVisible('status') && <TableHead>Status</TableHead>}
+                  {isVisible('entity') && <TableHead>Entity</TableHead>}
+                  {isVisible('created_by') && <TableHead>Created By</TableHead>}
+                  {isVisible('created_at') && <TableHead>Created On</TableHead>}
+                  {isVisible('updated_by') && <TableHead>Last Updated By</TableHead>}
+                  <TableHead className="sticky-right-header">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <>
+                    {[...Array(10)].map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell
+                          className="h-[52px] px-4 py-2"
+                          colSpan={
+                            visibility
+                              ? Object.values(visibility).filter((v) => v !== false).length + 1
+                              : 7
+                          }
+                        >
+                          <Skeleton className="h-7 w-full" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </>
+                ) : paginatedReminders.length > 0 ? (
+                  paginatedReminders.map(
+                    (reminder: Reminder, index: number) => (
+                      <TableRow
+                        key={reminder.id}
+                        className="hover:bg-muted/50"
+                      >
+                        {isVisible('sno') && (
+                          <TableCell className="text-muted-foreground w-12">
+                            {(currentPage - 1) * itemsPerPage + index + 1}
+                          </TableCell>
+                        )}
+                        {isVisible('title') && (
+                          <TableCell className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
+                            <span>{reminder.title}</span>
+                          </TableCell>
+                        )}
+                        {isVisible('description') && (
+                          <TableCell className="text-muted-foreground">
+                            {reminder.description ? (
+                              <p
+                                className="max-w-[200px] truncate"
+                                title={reminder.description}
+                              >
+                                {reminder.description}
+                              </p>
+                            ) : (
+                              '-'
+                            )}
+                          </TableCell>
+                        )}
+                        {isVisible('priority') && (
+                          <TableCell>
+                            {getPriorityBadge(reminder.priority)}
+                          </TableCell>
+                        )}
+                        {isVisible('due_date') && (
+                          <TableCell className="text-muted-foreground">
+                            {reminder.due_date
+                              ? formatDueDateShort(reminder.due_date)
+                              : '-'}
+                          </TableCell>
+                        )}
+                        {isVisible('status') && (
+                          <TableCell>
+                            {getStatusBadge(reminder.is_completed)}
+                          </TableCell>
+                        )}
+                        {isVisible('entity') && (
+                          <TableCell>
+                            {reminder.entity_name && (
+                              <Link
+                                href={`/home/${reminder.entity_type === 'opportunity' ? 'opportunities' : `${reminder.entity_type}s`}/${reminder.entity_id}`}
+                                className="hover:text-primary text-muted-foreground text-xs hover:underline"
+                                title={`${reminder.entity_type}: ${reminder.entity_name}`}
+                              >
+                                {reminder.entity_name}
+                              </Link>
+                            )}
+                          </TableCell>
+                        )}
+                        {isVisible('created_by') && (
+                          <TableCell className="text-muted-foreground">
+                            {reminder.created_by_user?.name || '-'}
+                          </TableCell>
+                        )}
+                        {isVisible('created_at') && (
+                          <TableCell className="text-muted-foreground">
+                            {reminder.created_at
+                              ? new Date(
+                                reminder.created_at,
+                              ).toLocaleDateString()
+                              : '-'}
+                          </TableCell>
+                        )}
+                        {isVisible('updated_by') && (
+                          <TableCell className="text-muted-foreground">
+                            {reminder.updated_by || '-'}
+                          </TableCell>
+                        )}
+                        <TableCell className="bg-card sticky right-0 px-4 text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                className="gap-2"
+                                onClick={() => handleEdit(reminder)}
+                              >
+                                <Pencil className="h-4 w-4" /> Edit Task
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="gap-2 text-green-600"
+                                onClick={() => toggleCompletion(reminder)}
+                              >
+                                <CheckCircle2 className="h-4 w-4" />{' '}
+                                {reminder.is_completed
+                                  ? 'Mark as Pending'
+                                  : 'Mark as Completed'}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="gap-2 text-red-500"
+                                onClick={() => handleDelete(reminder.id)}
+                              >
+                                <Trash2 className="h-4 w-4" /> Delete
+                                Reminder
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  )
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={
+                        visibility
+                          ? Object.values(visibility).filter((v) => v !== false).length + 1
+                          : 10
+                      }
+                      className="text-muted-foreground h-24 text-center"
+                    >
+                      No reminders match your search.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CustomTableContainer>
+        </div>
+      </PageBody>
 
       {/* Create Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-[600px]">
+          <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Add New Reminder</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             <div className="space-y-4">
               <Label>Associate with</Label>
               <RadioGroup
@@ -1257,6 +1015,8 @@ export default function RemindersPage() {
                 />
               </div>
             </div>
+          </div>
+          <div className="border-t p-6 mt-auto">
             <Button
               onClick={handleCreate}
               disabled={
@@ -1279,8 +1039,8 @@ export default function RemindersPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="flex max-h-[90vh] flex-col p-0">
+          <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Edit Reminder</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">

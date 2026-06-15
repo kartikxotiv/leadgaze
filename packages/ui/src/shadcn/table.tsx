@@ -8,7 +8,7 @@ const Table: React.FC<React.HTMLAttributes<HTMLTableElement>> = ({
 }) => (
   <div className="relative w-full overflow-auto">
     <table
-      className={cn('w-full caption-bottom text-sm', className)}
+      className={cn('w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm', className)}
       {...props}
     />
   </div>
@@ -18,7 +18,7 @@ Table.displayName = 'Table';
 const TableHeader: React.FC<React.HTMLAttributes<HTMLTableSectionElement>> = ({
   className,
   ...props
-}) => <thead className={cn('[&_tr]:border-b', className)} {...props} />;
+}) => <thead className={cn('bg-graylight sticky top-0 z-10 shadow-sm', className)} {...props} />;
 TableHeader.displayName = 'TableHeader';
 
 const TableBody: React.FC<React.HTMLAttributes<HTMLTableSectionElement>> = ({
@@ -49,7 +49,7 @@ const TableRow: React.FC<React.HTMLAttributes<HTMLTableRowElement>> = ({
 }) => (
   <tr
     className={cn(
-      'hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors',
+      'table-row-border hover:bg-muted/50 data-[state=selected]:bg-muted transition-colors',
       className,
     )}
     {...props}
@@ -63,7 +63,7 @@ const TableHead: React.FC<React.ThHTMLAttributes<HTMLTableCellElement>> = ({
 }) => (
   <th
     className={cn(
-      'text-muted-foreground h-12 px-4 text-left align-middle font-medium [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+      'table-header-border table-row-border primary-text-medium text-leadgaze-dark dark:text-white first:border-l-0 last:border-r-0 h-[42px] px-4 text-left align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px] dark:dark-black-light-bg',
       className,
     )}
     {...props}
@@ -77,7 +77,7 @@ const TableCell: React.FC<React.TdHTMLAttributes<HTMLTableCellElement>> = ({
 }) => (
   <td
     className={cn(
-      'py-3 px-4 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+      'table-row-border text-leadgaze-dark dark:text-white h-[42px] px-4 py-0 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
       className,
     )}
     {...props}
