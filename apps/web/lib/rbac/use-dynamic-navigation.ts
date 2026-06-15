@@ -6,7 +6,6 @@ import {
   BarChart3,
   Briefcase,
   History,
-  Mail,
   ShieldCheck,
   User,
   Users,
@@ -59,7 +58,7 @@ const SALES_MODULES: NavItem[] = [
   //   label: 'Emails',
   //   path: pathsConfig.app.emails,
   //   Icon: Mail,
-  //   feature: 'view_inbox',
+  //   feature: 'manage_email',
   //   module: 'emails',
   // },
   {

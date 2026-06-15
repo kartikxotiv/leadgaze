@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { formatDate } from '@kit/shared/utils';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Calendar } from '@kit/ui/calendar';
@@ -802,9 +803,7 @@ export default function RemindersPage() {
                         {isVisible('created_at') && (
                           <TableCell className="text-muted-foreground">
                             {reminder.created_at
-                              ? new Date(
-                                reminder.created_at,
-                              ).toLocaleDateString()
+                              ? formatDate(reminder.created_at)
                               : '-'}
                           </TableCell>
                         )}

@@ -49,6 +49,7 @@ import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import CreateLeadDialog from './components/create-lead-dialog';
 import {CustomTableContainer} from '@kit/ui/custom-table-container';
 import {TableStatusMetricTab} from '@kit/ui/table-status-metric-tab';
+import { formatDate } from '@kit/shared/utils';
 
 export default function LeadsPage() {
   const router = useRouter();
@@ -712,9 +713,7 @@ export default function LeadsPage() {
                               {isVisible('created_at') && (
                                 <TableCell className="whitespace-nowrap">
                                   {lead.created_at
-                                    ? new Date(
-                                        lead.created_at,
-                                      ).toLocaleDateString()
+                                    ? formatDate(lead.created_at)
                                     : '-'}
                                 </TableCell>
                               )}

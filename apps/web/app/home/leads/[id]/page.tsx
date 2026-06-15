@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 
 import { CoreEmailComposeDialog } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
+import { formatDate, formatDateTime } from '@kit/shared/utils';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
@@ -70,7 +71,7 @@ import { LogCallDialog } from '../components/log-call-dialog';
 function LeadDetailsSkeleton() {
   return (
     <div className="flex h-full flex-col">
-      <div className="px-6 pt-4 pb-2">
+      <div className="px-6 pb-2 pt-4">
         <Skeleton className="h-8 w-20 rounded-md" />
       </div>
       <PageBody>
@@ -153,6 +154,7 @@ export default function LeadDetailsPage() {
   const queryClient = useQueryClient();
 
   const leadId = params?.id as string;
+  const canManageEmail = canAccess('emails', 'manage_email');
 
   const {
     data: lead,
@@ -170,7 +172,7 @@ export default function LeadDetailsPage() {
   const { data: coreEmailAccounts = [] } = useQuery({
     queryKey: ['core-email-accounts', workspace?.id],
     queryFn: () => getCoreEmailAccountsService(workspace!.id),
-    enabled: !!workspace?.id,
+    enabled: canManageEmail && !!workspace?.id,
   });
 
   const { data: user } = useUser();
@@ -284,7 +286,7 @@ export default function LeadDetailsPage() {
   }) => (
     <div className="flex items-start justify-between">
       <div>
-        <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
           {label}
         </p>
         <p className="mt-1 text-sm text-gray-900 dark:text-white">
@@ -296,7 +298,7 @@ export default function LeadDetailsPage() {
 
   return (
     <ModuleGuard module="leads">
-      <div className="flex w-full items-center justify-between pt-4 pb-2">
+      <div className="flex w-full items-center justify-between pb-2 pt-4">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -305,7 +307,7 @@ export default function LeadDetailsPage() {
             className="border-leadgaze-border border p-0"
           >
             <Link href="/home/sales/leads">
-              <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
+              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
             </Link>
           </Button>
           <div className="flex flex-col">
@@ -405,22 +407,24 @@ export default function LeadDetailsPage() {
                     </Button>
                   )}
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${!lead.email ? 'opacity-50' : ''}`}
-                    disabled={!lead.email}
-                    onClick={() => lead.email && setIsEmailDialogOpen(true)}
-                    title={
-                      !lead.email
-                        ? 'Lead has no email address'
-                        : 'Send email to lead'
-                    }
-                  >
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
-                      <Mail className="h-3.5 w-3.5 text-white" />
-                    </div>
-                  </Button>
+                  {canManageEmail && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${!lead.email ? 'opacity-50' : ''}`}
+                      disabled={!lead.email}
+                      onClick={() => lead.email && setIsEmailDialogOpen(true)}
+                      title={
+                        !lead.email
+                          ? 'Lead has no email address'
+                          : 'Send email to lead'
+                      }
+                    >
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
+                        <Mail className="h-3.5 w-3.5 text-white" />
+                      </div>
+                    </Button>
+                  )}
 
                   {!lead.is_converted_to_account && canConvert && (
                     <Button
@@ -480,7 +484,7 @@ export default function LeadDetailsPage() {
                           href={lead.company_website}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
                         >
                           {lead.company_website}
                         </a>
@@ -495,7 +499,7 @@ export default function LeadDetailsPage() {
                           href={lead.company_linkedin_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
                         >
                           {lead.company_linkedin_url}
                         </a>
@@ -534,7 +538,7 @@ export default function LeadDetailsPage() {
                       value={
                         <a
                           href={`mailto:${lead.email}`}
-                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
                         >
                           {lead.email}
                         </a>
@@ -548,7 +552,7 @@ export default function LeadDetailsPage() {
                       value={
                         <a
                           href={`mailto:${lead.alt_email}`}
-                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
                         >
                           {lead.alt_email}
                         </a>
@@ -606,7 +610,7 @@ export default function LeadDetailsPage() {
                           href={lead.linkedin_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="block text-sm break-all text-blue-600 hover:underline dark:text-blue-400"
+                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
                         >
                           {lead.linkedin_url}
                         </a>
@@ -685,7 +689,7 @@ export default function LeadDetailsPage() {
 
                       {scoringResult && (
                         <div className="space-y-3 border-t pt-4">
-                          <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
+                          <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
                             Breakdown
                           </p>
 
@@ -853,7 +857,7 @@ export default function LeadDetailsPage() {
                         Lead Created
                       </p>
                       <p className="text-xs text-gray-500">
-                        {new Date(lead.created_at).toLocaleString()}
+                        {formatDate(lead.created_at)}
                       </p>
                     </div>
                   </div>
@@ -865,7 +869,7 @@ export default function LeadDetailsPage() {
                           Lead Updated
                         </p>
                         <p className="text-xs text-gray-500">
-                          {new Date(lead.updated_at).toLocaleString()}
+                          {formatDate(lead.updated_at)}
                         </p>
                       </div>
                     </div>
@@ -911,24 +915,24 @@ export default function LeadDetailsPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
                     Created
                   </p>
                   <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {new Date(lead.created_at).toLocaleDateString()}
+                    {formatDate(lead.created_at)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
                     Last Updated
                   </p>
                   <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {new Date(lead.updated_at).toLocaleDateString()}
+                    {formatDate(lead.updated_at)}
                   </p>
                 </div>
                 {lead.lead_score !== null && (
                   <div>
-                    <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
                       Lead Score
                     </p>
                     <p className="text-sm text-gray-700 dark:text-gray-300">
@@ -999,7 +1003,7 @@ export default function LeadDetailsPage() {
         />
       )}
       {/* Email Compose Dialog */}
-      {lead && (
+      {lead && canManageEmail && (
         <CoreEmailComposeDialog
           open={isEmailDialogOpen}
           onOpenChange={setIsEmailDialogOpen}

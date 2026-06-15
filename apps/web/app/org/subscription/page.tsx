@@ -30,6 +30,7 @@ import {
   type WorkspaceSubscriptionStatus,
   getWorkspaceSubscriptionService,
 } from '@kit/core/services';
+import { formatDate } from '@kit/shared/utils';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
@@ -740,7 +741,7 @@ export default function OrgSubscriptionPage() {
                       <TableCell>
                         <span className="text-muted-foreground text-sm">
                           {ent.valid_until
-                            ? new Date(ent.valid_until).toLocaleDateString()
+                            ? formatDate(ent.valid_until)
                             : 'Never expires'}
                         </span>
                       </TableCell>
