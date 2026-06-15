@@ -47,7 +47,6 @@ import {
   CardTitle,
 } from '@kit/ui/card';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
-import CustomTableContainer from '@kit/ui/custom-table-container';
 import {
   Dialog,
   DialogContent,
@@ -56,7 +55,6 @@ import {
 } from '@kit/ui/dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
-import { PageBody } from '@kit/ui/page';
 import {
   Select,
   SelectContent,
@@ -84,6 +82,9 @@ import {
   logServiceCloudTicketTimeService,
   updateServiceCloudResourceService,
 } from '../../services';
+import CustomTableContainer from '@kit/ui/custom-table-container';
+import { PageBody } from '@kit/ui/page';
+import { cn } from '@kit/ui/utils';
 import {
   SERVICE_CLOUD_FEATURE_KEYS,
   SERVICE_CLOUD_MODULE_KEYS,
@@ -393,11 +394,27 @@ export function ServiceCloudTicketDetailPage({
                 <Badge className="border-white/20 bg-white/15 text-white hover:bg-white/20">
                   #{ticket.ticket_number}
                 </Badge>
-                <Badge className="border-emerald-300/30 bg-emerald-400/15 text-emerald-100">
+                <Badge className="border-emerald-300/30 bg-emerald-400/15 text-emerald-100 flex items-center gap-1.5 font-medium">
+                  {ticket.status?.color ? (
+                    <span
+                      className="h-1.5 w-1.5 rounded-full shrink-0 animate-pulse"
+                      style={{ backgroundColor: ticket.status.color }}
+                    />
+                  ) : (
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
+                  )}
                   {ticket.status?.name ?? 'Open'}
                 </Badge>
                 {ticket.priority?.name ? (
-                  <Badge className="border-white/20 bg-white/15 text-white">
+                  <Badge className="border-white/20 bg-white/15 text-white flex items-center gap-1.5 font-medium">
+                    {ticket.priority?.color ? (
+                      <span
+                        className="h-1.5 w-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: ticket.priority.color }}
+                      />
+                    ) : (
+                      <span className="h-1.5 w-1.5 rounded-full bg-slate-400 shrink-0" />
+                    )}
                     {ticket.priority.name}
                   </Badge>
                 ) : null}
@@ -1143,10 +1160,18 @@ function EditableSelect({
   allowNone?: boolean;
   onChange: (value: string | null) => void;
 }) {
+  const selectedOption = options.find((opt) => opt.id === value);
+  const selectedColor = selectedOption?.color;
+
   return (
     <Field label={label}>
       <div className="flex items-center gap-2">
-        <span className="text-muted-foreground">{icon}</span>
+        <span 
+          style={selectedColor ? { color: selectedColor } : undefined}
+          className={cn("text-muted-foreground shrink-0", selectedColor && "transition-colors")}
+        >
+          {icon}
+        </span>
         <Select
           value={value ?? 'none'}
           disabled={disabled || (!allowNone && options.length === 0)}
@@ -1154,16 +1179,31 @@ function EditableSelect({
             onChange(nextValue === 'none' ? null : nextValue)
           }
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder={`Select ${label.toLowerCase()}`} />
           </SelectTrigger>
           <SelectContent>
             {allowNone ? (
-              <SelectItem value="none">Unassigned</SelectItem>
+              <SelectItem value="none">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-slate-400 shrink-0" />
+                  <span>Unassigned</span>
+                </div>
+              </SelectItem>
             ) : null}
             {options.map((option) => (
               <SelectItem key={option.id} value={option.id}>
-                {optionLabel(option)}
+                <div className="flex items-center gap-2">
+                  {option.color ? (
+                    <span
+                      className="h-2 w-2 rounded-full border border-black/10 dark:border-white/10 shrink-0"
+                      style={{ backgroundColor: option.color }}
+                    />
+                  ) : (
+                    <span className="h-2 w-2 rounded-full bg-slate-400 shrink-0" />
+                  )}
+                  <span>{optionLabel(option)}</span>
+                </div>
               </SelectItem>
             ))}
           </SelectContent>

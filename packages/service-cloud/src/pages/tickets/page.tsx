@@ -116,22 +116,24 @@ export function ServiceCloudTicketsPage({
   const statusOptions = statuses.map((status: any) => ({
     label: status.name,
     value: status.id,
+    color: status.color,
   }));
   const openStatus =
     statuses.find((status: any) => status.lifecycle === 'open') ?? statuses[0];
   const priorityOptions = priorities.map((priority: any) => ({
     label: priority.name,
     value: priority.id,
+    color: priority.color,
   }));
   const categoryOptions = categories.map((category: any) => ({
     label: category.name,
     value: category.id,
   }));
-  const statusById = new Map(
-    statuses.map((status: any) => [status.id, status.name]),
+  const statusById = new Map<string, any>(
+    statuses.map((status: any) => [status.id, status]),
   );
-  const priorityById = new Map(
-    priorities.map((priority: any) => [priority.id, priority.name]),
+  const priorityById = new Map<string, any>(
+    priorities.map((priority: any) => [priority.id, priority]),
   );
 
   return (
@@ -204,18 +206,28 @@ export function ServiceCloudTicketsPage({
         {
           key: 'status_id',
           label: 'Status',
-          render: (ticket) => (
-            <StatusBadge value={statusById.get(ticket.status_id) as string} />
-          ),
+          render: (ticket) => {
+            const status = statusById.get(ticket.status_id);
+            return (
+              <StatusBadge
+                value={status?.name || 'Unassigned'}
+                color={status?.color}
+              />
+            );
+          },
         },
         {
           key: 'priority_id',
           label: 'Priority',
-          render: (ticket) => (
-            <StatusBadge
-              value={priorityById.get(ticket.priority_id) as string}
-            />
-          ),
+          render: (ticket) => {
+            const priority = priorityById.get(ticket.priority_id);
+            return (
+              <StatusBadge
+                value={priority?.name || 'Unassigned'}
+                color={priority?.color}
+              />
+            );
+          },
         },
         {
           key: 'created_at',

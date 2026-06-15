@@ -166,7 +166,7 @@ export default function WorkspaceSettingsPage() {
         description="Manage your workspace configuration, email accounts, and templates."
       />
       <PageBody className="sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden">
-        <Tabs defaultValue="general" className="space-y-6">
+        <Tabs defaultValue="general" className="space-y-6 overflow-auto">
           <TabsList className="mb-1 h-auto w-full justify-start gap-8 rounded-none border-b bg-transparent p-0">
             <TabsTrigger
               value="general"

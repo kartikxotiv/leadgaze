@@ -65,7 +65,7 @@ export type ResourceField = {
   label: string;
   type?: 'text' | 'email' | 'number' | 'textarea' | 'select' | 'color';
   required?: boolean;
-  options?: Array<{ label: string; value: string }>;
+  options?: Array<{ label: string; value: string; color?: string }>;
 };
 
 export type ResourceColumn = {
@@ -209,7 +209,7 @@ export function ServiceCloudResourcePage({
   };
 
   return (
-    <CardWidgetContainer className="mt-2" title={title + ' Accounts'} desc="Connect Gmail or SMTP/IMAP accounts for Core email." icon2={<div className="flex items-center gap-2">
+    <CardWidgetContainer className="mt-2" title={title} desc="Connect Gmail or SMTP/IMAP accounts for Core email." icon2={<div className="flex items-center gap-2">
           {toolbar}
           {canCreate ? (
             <Dialog open={open} onOpenChange={setOpen}>
@@ -228,110 +228,118 @@ export function ServiceCloudResourcePage({
                   </DialogHeader>
                   <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
                     <div className="grid gap-4">
-                      {fields.map((field) => (
-                        <div key={field.key} className="space-y-2">
-                          <Label>{field.label}</Label>
-                          {field.type === 'select' ? (
-                            <Select
-                              value={String(form[field.key] ?? '')}
-                              onValueChange={(value) =>
-                                setForm((prev: ServiceCloudRecord) => ({
-                                  ...prev,
-                                  [field.key]: value,
-                                }))
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue
-                                  placeholder={`Select ${field.label}`}
-                                />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {(field.options ?? []).map((option) => (
-                                  <SelectItem
-                                    key={option.value}
-                                    value={option.value}
-                                  >
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          ) : field.type === 'color' ? (
-                            <div className="space-y-3">
-                              <div className="flex flex-wrap gap-2">
-                                {PRESET_COLORS.map((color) => (
-                                  <button
-                                    key={color}
-                                    type="button"
-                                    className={cn(
-                                      'focus:ring-ring h-8 w-8 rounded-full border-2 transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95',
-                                      form[field.key] === color
-                                        ? 'border-primary ring-primary scale-105 shadow-md ring-2'
-                                        : 'border-zinc-300 dark:border-zinc-700',
-                                    )}
-                                    style={{ backgroundColor: color }}
-                                    onClick={() =>
-                                      setForm((prev: ServiceCloudRecord) => ({
-                                        ...prev,
-                                        [field.key]: color,
-                                      }))
-                                    }
-                                    title={color}
-                                  />
-                                ))}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="border-input focus-within:ring-ring relative h-9 w-9 overflow-hidden rounded-md border focus-within:ring-2 focus-within:ring-offset-2">
-                                  <input
-                                    type="color"
-                                    className="absolute -left-2 -top-2 h-14 w-14 cursor-pointer border-0 p-0"
-                                    value={String(form[field.key] || '#64748b')}
-                                    onChange={(event) =>
-                                      setForm((prev: ServiceCloudRecord) => ({
-                                        ...prev,
-                                        [field.key]: event.target.value,
-                                      }))
-                                    }
-                                  />
+                  {fields.map((field) => (
+                    <div key={field.key} className="space-y-2">
+                      <Label>{field.label}</Label>
+                      {field.type === 'select' ? (
+                        <Select
+                          value={String(form[field.key] ?? '')}
+                          onValueChange={(value) =>
+                            setForm((prev: ServiceCloudRecord) => ({
+                              ...prev,
+                              [field.key]: value,
+                            }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={`Select ${field.label}`}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(field.options ?? []).map((option) => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                <div className="flex items-center gap-2">
+                                  {option.color ? (
+                                    <span
+                                      className="h-2 w-2 rounded-full border border-black/10 dark:border-white/10 shrink-0"
+                                      style={{ backgroundColor: option.color }}
+                                    />
+                                  ) : null}
+                                  <span>{option.label}</span>
                                 </div>
-                                <Input
-                                  type="text"
-                                  placeholder="#000000"
-                                  value={String(form[field.key] ?? '')}
-                                  onChange={(event) =>
-                                    setForm((prev: ServiceCloudRecord) => ({
-                                      ...prev,
-                                      [field.key]: event.target.value,
-                                    }))
-                                  }
-                                  className="w-32 font-mono text-sm uppercase"
-                                />
-                              </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : field.type === 'color' ? (
+                        <div className="space-y-3">
+                          <div className="flex flex-wrap gap-2">
+                            {PRESET_COLORS.map((color) => (
+                              <button
+                                key={color}
+                                type="button"
+                                className={cn(
+                                  "h-8 w-8 rounded-full border-2 transition-all hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                                  form[field.key] === color
+                                    ? "border-primary scale-105 shadow-md ring-2 ring-primary"
+                                    : "border-zinc-300 dark:border-zinc-700"
+                                )}
+                                style={{ backgroundColor: color }}
+                                onClick={() =>
+                                  setForm((prev: ServiceCloudRecord) => ({
+                                    ...prev,
+                                    [field.key]: color,
+                                  }))
+                                }
+                                title={color}
+                              />
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="relative h-9 w-9 overflow-hidden rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                              <input
+                                type="color"
+                                className="absolute -left-2 -top-2 h-14 w-14 cursor-pointer border-0 p-0"
+                                value={String(form[field.key] || '#64748b')}
+                                onChange={(event) =>
+                                  setForm((prev: ServiceCloudRecord) => ({
+                                    ...prev,
+                                    [field.key]: event.target.value,
+                                  }))
+                                }
+                              />
                             </div>
-                          ) : (
                             <Input
-                              type={
-                                field.type === 'number'
-                                  ? 'number'
-                                  : field.type === 'email'
-                                    ? 'email'
-                                    : 'text'
-                              }
+                              type="text"
+                              placeholder="#000000"
                               value={String(form[field.key] ?? '')}
                               onChange={(event) =>
                                 setForm((prev: ServiceCloudRecord) => ({
                                   ...prev,
-                                  [field.key]:
-                                    field.type === 'number'
-                                      ? Number(event.target.value)
-                                      : event.target.value,
+                                  [field.key]: event.target.value,
                                 }))
                               }
+                              className="w-32 uppercase font-mono text-sm"
                             />
-                          )}
+                          </div>
                         </div>
-                      ))}
+                      ) : (
+                        <Input
+                          type={
+                            field.type === 'number'
+                              ? 'number'
+                              : field.type === 'email'
+                                ? 'email'
+                                : 'text'
+                          }
+                          value={String(form[field.key] ?? '')}
+                          onChange={(event) =>
+                            setForm((prev: ServiceCloudRecord) => ({
+                              ...prev,
+                              [field.key]:
+                                field.type === 'number'
+                                  ? Number(event.target.value)
+                                  : event.target.value,
+                            }))
+                          }
+                        />
+                      )}
+                    </div>
+                  ))}
                     </div>
                   </div>
                   <div className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
@@ -439,6 +447,18 @@ export function ServiceCloudResourcePage({
   );
 }
 
-export function StatusBadge({ value }: { value?: string | null }) {
-  return <Badge variant="secondary">{value || 'Unassigned'}</Badge>;
+export function StatusBadge({ value, color }: { value?: string | null; color?: string | null }) {
+  return (
+    <Badge variant="secondary" className="inline-flex items-center gap-1.5 font-medium">
+      {color ? (
+        <span
+          className="h-2 w-2 rounded-full border border-black/10 dark:border-white/10 shrink-0"
+          style={{ backgroundColor: color }}
+        />
+      ) : (
+        <span className="h-2 w-2 rounded-full bg-slate-400 shrink-0" />
+      )}
+      {value || 'Unassigned'}
+    </Badge>
+  );
 }
