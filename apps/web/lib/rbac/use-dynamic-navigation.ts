@@ -6,7 +6,6 @@ import {
   BarChart3,
   Briefcase,
   History,
-  Mail,
   ShieldCheck,
   User,
   Users,

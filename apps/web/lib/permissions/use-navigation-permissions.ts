@@ -10,7 +10,6 @@ import {
   BarChart3,
   Briefcase,
   History,
-  Mail,
   ShieldCheck,
   User,
   Users,
@@ -115,13 +114,13 @@ const ALL_NAV_ITEMS: NavItem[] = [
     moduleKey: 'audit_logs',
     featureKey: 'view',
   },
-  {
-    label: 'Emails',
-    path: pathsConfig.app.emails,
-    Icon: Mail,
-    moduleKey: 'emails',
-    featureKey: 'manage_email',
-  },
+  // {
+  //   label: 'Emails',
+  //   path: pathsConfig.app.emails,
+  //   Icon: Mail,
+  //   moduleKey: 'emails',
+  //   featureKey: 'manage_email',
+  // },
 ];
 
 /**
@@ -159,7 +158,6 @@ export function usePermissionBasedNavigation() {
           'contacts',
           'accounts',
           'opportunities',
-          'emails',
           'team_members',
         ].includes(item.moduleKey) && item.path !== pathsConfig.app.teamMembers, // Members stays in team/settings
     );
