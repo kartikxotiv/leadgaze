@@ -1,7 +1,37 @@
 'use client';
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
+import { useState } from 'react';
 
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { Loader2, Plus, Ticket } from 'lucide-react';
+import { toast } from 'sonner';
+
+import { Button } from '@kit/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@kit/ui/dialog';
+import { Input } from '@kit/ui/input';
+import { Label } from '@kit/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@kit/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
+import { Textarea } from '@kit/ui/textarea';
+
+import {
+  type ServiceCloudRecord,
+  createServiceCloudResourceService,
+  getServiceCloudResourceService,
+  getServiceCloudTicketLookupsService,
+} from '../../services';
 import {
   SERVICE_CLOUD_FEATURE_KEYS,
   SERVICE_CLOUD_MODULE_KEYS,
@@ -10,15 +40,144 @@ import {
 import { ServiceCloudAccessDenied } from '../_components/access-denied';
 import { ServiceCloudResourcePage } from '../_components/resource-page';
 
-export function ServiceCloudCustomersPage({ workspaceId }: { workspaceId: string }) {
+export function ServiceCloudCustomersPage({
+  workspaceId,
+}: {
+  workspaceId: string;
+}) {
   const { canAccess, isLoading } = useServiceCloudPermissions(workspaceId);
-  const canView = canAccess(SERVICE_CLOUD_MODULE_KEYS.customers, SERVICE_CLOUD_FEATURE_KEYS.view);
-  const canCreate = canAccess(SERVICE_CLOUD_MODULE_KEYS.customers, SERVICE_CLOUD_FEATURE_KEYS.create);
-  const canEdit = canAccess(SERVICE_CLOUD_MODULE_KEYS.customers, SERVICE_CLOUD_FEATURE_KEYS.edit);
-  const canDelete = canAccess(SERVICE_CLOUD_MODULE_KEYS.customers, SERVICE_CLOUD_FEATURE_KEYS.delete);
+  const canView = canAccess(
+    SERVICE_CLOUD_MODULE_KEYS.customers,
+    SERVICE_CLOUD_FEATURE_KEYS.view,
+  );
+  const canCreate = canAccess(
+    SERVICE_CLOUD_MODULE_KEYS.customers,
+    SERVICE_CLOUD_FEATURE_KEYS.create,
+  );
+  const canEdit = canAccess(
+    SERVICE_CLOUD_MODULE_KEYS.customers,
+    SERVICE_CLOUD_FEATURE_KEYS.edit,
+  );
+  const canDelete = canAccess(
+    SERVICE_CLOUD_MODULE_KEYS.customers,
+    SERVICE_CLOUD_FEATURE_KEYS.delete,
+  );
+  const canCreateTickets = canAccess(
+    SERVICE_CLOUD_MODULE_KEYS.tickets,
+    SERVICE_CLOUD_FEATURE_KEYS.create,
+  );
 
-  if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Checking permissions...</div>;
+  // --- Create Ticket from Customer state ---
+  const [createOpen, setCreateOpen] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [ticketSubject, setTicketSubject] = useState('');
+  const [ticketDescription, setTicketDescription] = useState('');
+  const [ticketStatusId, setTicketStatusId] = useState('');
+  const [ticketPriorityId, setTicketPriorityId] = useState('');
+  const [ticketCategoryId, setTicketCategoryId] = useState('');
+
+  const { data: customers = [] } = useQuery<ServiceCloudRecord[]>({
+    queryKey: ['service-cloud', 'customer-ticket-customers', workspaceId],
+    queryFn: () => getServiceCloudResourceService('customers', workspaceId),
+    enabled: createOpen && Boolean(workspaceId),
+  });
+
+  const { data: lookups } = useQuery({
+    queryKey: ['service-cloud', 'ticket-lookups', workspaceId],
+    queryFn: () => getServiceCloudTicketLookupsService(workspaceId),
+    enabled: createOpen && Boolean(workspaceId),
+  });
+
+  const statuses: any[] = lookups?.statuses ?? [];
+  const priorities: any[] = lookups?.priorities ?? [];
+  const categories: any[] = lookups?.categories ?? [];
+
+  const statusOptions = statuses.map((s: any) => ({
+    label: s.name,
+    value: s.id,
+  }));
+  const openStatus =
+    statuses.find((s: any) => s.lifecycle === 'open') ?? statuses[0];
+  const priorityOptions = priorities.map((p: any) => ({
+    label: p.name,
+    value: p.id,
+  }));
+  const categoryOptions = categories.map((c: any) => ({
+    label: c.name,
+    value: c.id,
+  }));
+
+  const selectedCustomer = customers.find(
+    (c) => String(c.id) === selectedCustomerId,
+  );
+
+  const resetForm = () => {
+    setSelectedCustomerId('');
+    setTicketSubject('');
+    setTicketDescription('');
+    setTicketStatusId('');
+    setTicketPriorityId('');
+    setTicketCategoryId('');
+  };
+
+  const openDialog = () => {
+    resetForm();
+    setCreateOpen(true);
+  };
+
+  const createTicketMutation = useMutation({
+    mutationFn: async () => {
+      const customerId = selectedCustomerId || null;
+      const organizationId = selectedCustomer?.organization_id || null;
+
+      return createServiceCloudResourceService('tickets', {
+        subject: ticketSubject,
+        description: ticketDescription || null,
+        status_id: ticketStatusId || openStatus?.id || null,
+        priority_id: ticketPriorityId || null,
+        category_id: ticketCategoryId || null,
+        customer_id: customerId,
+        organization_id: organizationId,
+        source: 'manual',
+        workspace_id: workspaceId,
+      });
+    },
+    onSuccess: () => {
+      toast.success('Ticket created');
+      setCreateOpen(false);
+      resetForm();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to create ticket');
+    },
+  });
+
+  const submitCreateTicket = () => {
+    if (!ticketSubject) {
+      toast.error('Subject is required');
+      return;
+    }
+    if (!selectedCustomerId) {
+      toast.error('Select a customer');
+      return;
+    }
+    createTicketMutation.mutate();
+  };
+
+  if (isLoading)
+    return (
+      <div className="text-muted-foreground p-6 text-sm">
+        Checking permissions...
+      </div>
+    );
   if (!canView) return <ServiceCloudAccessDenied label="customers" />;
+
+  const newTicketToolbar = canCreateTickets ? (
+    <Button type="button" onClick={openDialog}>
+      <Plus className="mr-2 h-4 w-4" />
+      New Ticket
+    </Button>
+  ) : null;
 
   return (
     <Tabs defaultValue="customers" className="space-y-4">
@@ -35,6 +194,7 @@ export function ServiceCloudCustomersPage({ workspaceId }: { workspaceId: string
           canCreate={canCreate}
           canEdit={canEdit}
           canDelete={canDelete}
+          toolbar={newTicketToolbar}
           fields={[
             { key: 'name', label: 'Name', required: true },
             { key: 'email', label: 'Email', type: 'email' },
@@ -74,6 +234,155 @@ export function ServiceCloudCustomersPage({ workspaceId }: { workspaceId: string
           ]}
         />
       </TabsContent>
+
+      {/* Create Ticket from Customer Dialog */}
+      <Dialog
+        open={createOpen}
+        onOpenChange={(v) => {
+          setCreateOpen(v);
+          if (!v) resetForm();
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-2xl dark:border-slate-800 dark:bg-slate-950">
+          <div className="flex max-h-[90vh] flex-col">
+            <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+              <DialogTitle className="flex items-center gap-2">
+                <Ticket className="h-5 w-5" />
+                New Ticket for Customer
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
+              <div className="grid gap-4">
+                {/* Customer Selection */}
+                <div className="grid gap-2">
+                  <Label>
+                    Customer <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={selectedCustomerId}
+                    onValueChange={setSelectedCustomerId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select customer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers.map((customer) => (
+                        <SelectItem
+                          key={customer.id}
+                          value={String(customer.id)}
+                        >
+                          {customer.name}{' '}
+                          {customer.email ? `(${customer.email})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedCustomer?.organization_id ? (
+                    <p className="text-muted-foreground text-xs">
+                      Organization will be auto-linked from the customer record.
+                    </p>
+                  ) : null}
+                </div>
+
+                {/* Subject */}
+                <div className="grid gap-2">
+                  <Label>
+                    Subject <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    value={ticketSubject}
+                    onChange={(e) => setTicketSubject(e.target.value)}
+                  />
+                </div>
+
+                {/* Description */}
+                <div className="grid gap-2">
+                  <Label>Description</Label>
+                  <Textarea
+                    value={ticketDescription}
+                    onChange={(e) => setTicketDescription(e.target.value)}
+                    className="min-h-24"
+                  />
+                </div>
+
+                {/* Status / Priority / Category */}
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="grid gap-2">
+                    <Label>Status</Label>
+                    <Select
+                      value={ticketStatusId || String(openStatus?.id ?? '')}
+                      onValueChange={setTicketStatusId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Priority</Label>
+                    <Select
+                      value={ticketPriorityId}
+                      onValueChange={setTicketPriorityId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {priorityOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Category</Label>
+                    <Select
+                      value={ticketCategoryId}
+                      onValueChange={setTicketCategoryId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categoryOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+              <Button variant="outline" onClick={() => setCreateOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={submitCreateTicket}
+                disabled={createTicketMutation.isPending}
+              >
+                {createTicketMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Create Ticket
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Tabs>
   );
 }
