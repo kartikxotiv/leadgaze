@@ -307,7 +307,7 @@ export function CoreEmailSettingsPage({
                           <Plus className="h-4 w-4" />
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-[540px]">
+                      <DialogContent className="sm:max-w-[540px] overflow-auto max-h-[90vh]">
                         <DialogHeader>
                           <DialogTitle>Connect Email Account</DialogTitle>
                         </DialogHeader>
