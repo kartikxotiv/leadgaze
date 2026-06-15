@@ -4,18 +4,12 @@ import { useState } from 'react';
 import type React from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { Edit2, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Edit2, Loader2, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import {
   Dialog,
   DialogContent,
@@ -32,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@kit/ui/select';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -40,7 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import { Skeleton } from '@kit/ui/skeleton';
+import { cn } from '@kit/ui/utils';
 
 import {
   type ServiceCloudRecord,
@@ -49,8 +44,6 @@ import {
   getServiceCloudResourceService,
   updateServiceCloudResourceService,
 } from '../../services';
-import { CardWidgetContainer } from '@kit/ui/card-widget-container';
-import { cn } from '@kit/ui/utils';
 
 const PRESET_COLORS = [
   '#64748b', // Slate
@@ -81,6 +74,11 @@ export type ResourceColumn = {
   render?: (record: ServiceCloudRecord) => React.ReactNode;
 };
 
+export type ResourceUniqueField = {
+  key: string;
+  label: string;
+};
+
 type ResourcePageProps = {
   workspaceId: string;
   resource: string;
@@ -88,6 +86,7 @@ type ResourcePageProps = {
   description: string;
   fields: ResourceField[];
   columns: ResourceColumn[];
+  uniqueFields?: ResourceUniqueField[];
   defaults?: ServiceCloudRecord;
   canCreate?: boolean;
   canEdit?: boolean;
@@ -114,6 +113,7 @@ export function ServiceCloudResourcePage({
   description,
   fields,
   columns,
+  uniqueFields = [],
   defaults = {},
   canCreate = true,
   canEdit = true,
@@ -156,6 +156,22 @@ export function ServiceCloudResourcePage({
     for (const field of fields) {
       if (field.required && !form[field.key]) {
         toast.error(`${field.label} is required`);
+        return;
+      }
+    }
+
+    for (const field of uniqueFields) {
+      const value = form[field.key];
+      if (value === undefined || value === null || value === '') continue;
+
+      const hasDuplicate = data.some(
+        (record) =>
+          record.id !== editing?.id &&
+          String(record[field.key] ?? '') === String(value),
+      );
+
+      if (hasDuplicate) {
+        toast.error(`${field.label} cannot be repeated`);
         return;
       }
     }
@@ -340,8 +356,10 @@ export function ServiceCloudResourcePage({
               </DialogContent>
             </Dialog>
           ) : null}
-        </div>}>
-        <div className='mb-2'>
+        </div>
+      }
+    >
+      <div className="mb-2">
         <Table>
           <TableHeader>
             <TableRow>
@@ -357,12 +375,15 @@ export function ServiceCloudResourcePage({
             {isLoading ? (
               [...Array(5)].map((_, i) => (
                 <TableRow key={`skeleton-${i}`}>
-                  <TableCell colSpan={columns.length} className="h-[52px] px-4 py-2">
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-[52px] px-4 py-2"
+                  >
                     <Skeleton className="h-7 w-full" />
                   </TableCell>
                   {canEdit || canDelete ? (
                     <TableCell className="bg-card px-4 text-right">
-                      <Skeleton className="h-7 ml-auto w-full" />
+                      <Skeleton className="ml-auto h-7 w-full" />
                     </TableCell>
                   ) : null}
                 </TableRow>
@@ -380,7 +401,13 @@ export function ServiceCloudResourcePage({
               data.map((record) => (
                 <TableRow key={record.id}>
                   {columns.map((column) => (
-                    <TableCell key={column.key} className={cn(column.key === 'name' && 'primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary')}>
+                    <TableCell
+                      key={column.key}
+                      className={cn(
+                        column.key === 'name' &&
+                          'primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary',
+                      )}
+                    >
                       {column.render
                         ? column.render(record)
                         : String(record[column.key] ?? '-')}
@@ -396,7 +423,7 @@ export function ServiceCloudResourcePage({
                             onClick={() => openEdit(record)}
                           >
                             <Edit2 className="h-4 w-4" />
-                          </Button>                          
+                          </Button>
                         ) : null}
                         {canDelete ? (
                           <Button

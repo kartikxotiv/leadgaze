@@ -1,10 +1,6 @@
 import type { LeaveRequestStatus } from '../types/leave.type';
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat('en-IN', {
-    dateStyle: 'medium',
-  }).format(new Date(`${value}T00:00:00`));
-}
+import { formatDate } from '@kit/shared/utils';
 
 function formatMonthLabel(value: string) {
   return new Intl.DateTimeFormat('en-IN', {

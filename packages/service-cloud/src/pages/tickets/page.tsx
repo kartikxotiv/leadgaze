@@ -10,7 +10,7 @@ import { Check, Filter, UserCheck } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@kit/ui/avatar';
 import { Button } from '@kit/ui/button';
 
-import { getServiceCloudResourceService } from '../../services';
+import { getServiceCloudTicketLookupsService } from '../../services';
 import {
   SERVICE_CLOUD_FEATURE_KEYS,
   SERVICE_CLOUD_MODULE_KEYS,
@@ -21,6 +21,7 @@ import {
   ServiceCloudResourcePage,
   StatusBadge,
 } from '../_components/resource-page';
+import { formatDate } from '@kit/shared/utils';
 
 function assigneeInitials(assignee: any) {
   const account = assignee?.account;
@@ -93,24 +94,16 @@ export function ServiceCloudTicketsPage({
     SERVICE_CLOUD_FEATURE_KEYS.delete,
   );
 
-  const { data: statuses = [] } = useQuery({
-    queryKey: ['service-cloud', 'ticket-statuses', workspaceId],
-    queryFn: () =>
-      getServiceCloudResourceService('ticket-statuses', workspaceId),
+  // Optimized: single API call fetches statuses + priorities + categories in parallel on server
+  const { data: lookups } = useQuery({
+    queryKey: ['service-cloud', 'ticket-lookups', workspaceId],
+    queryFn: () => getServiceCloudTicketLookupsService(workspaceId),
     enabled: Boolean(workspaceId),
   });
-  const { data: priorities = [] } = useQuery({
-    queryKey: ['service-cloud', 'ticket-priorities', workspaceId],
-    queryFn: () =>
-      getServiceCloudResourceService('ticket-priorities', workspaceId),
-    enabled: Boolean(workspaceId),
-  });
-  const { data: categories = [] } = useQuery({
-    queryKey: ['service-cloud', 'ticket-categories', workspaceId],
-    queryFn: () =>
-      getServiceCloudResourceService('ticket-categories', workspaceId),
-    enabled: Boolean(workspaceId),
-  });
+
+  const statuses: any[] = lookups?.statuses ?? [];
+  const priorities: any[] = lookups?.priorities ?? [];
+  const categories: any[] = lookups?.categories ?? [];
 
   if (isLoading)
     return (
@@ -144,7 +137,7 @@ export function ServiceCloudTicketsPage({
   );
 
   return (
-    <ServiceCloudResourcePage 
+    <ServiceCloudResourcePage
       workspaceId={workspaceId}
       resource="tickets"
       title="Tickets"
@@ -156,7 +149,7 @@ export function ServiceCloudTicketsPage({
       toolbar={
         <Button
           type="button"
-          variant={assignedToMeOnly ? 'default' : 'outline'}          
+          variant={assignedToMeOnly ? 'default' : 'outline'}
           onClick={() => setAssignedToMeOnly((current) => !current)}
         >
           {assignedToMeOnly ? (
@@ -241,7 +234,7 @@ export function ServiceCloudTicketsPage({
           label: 'Created',
           render: (ticket) =>
             ticket.created_at
-              ? new Date(ticket.created_at).toLocaleDateString()
+              ? formatDate(ticket.created_at)
               : '-',
         },
       ]}

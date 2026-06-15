@@ -1,3 +1,4 @@
+import { formatDate } from '@kit/shared/utils';
 export function formatPayrollEmployeeName(
   employee:
     | {
@@ -27,16 +28,8 @@ export function formatPayrollRunPeriod(
     return '';
   }
 
-  const start = new Date(run.period_start).toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-  const end = new Date(run.period_end).toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+  const start = formatDate(run.period_start);
+  const end = formatDate(run.period_end);
 
   return `${start} to ${end}`;
 }

@@ -98,10 +98,24 @@ export const getServiceCloudTicketDetailController = catchAsync(
         .eq('workspace_id', workspaceId)
         .eq('is_active', true)
         .order('display_order', { ascending: true }),
-      supabase
+      // Only fetch members who have service cloud module access
+      (supabase as any)
         .from('workspace_members')
-        .select('user_id')
-        .eq('workspace_id', workspaceId),
+        .select(
+          `
+          user_id,
+          role_id(
+            role_permissions(
+              can_access,
+              crm_module_features!module_feature_id(
+                crm_modules!module_id(module_key)
+              )
+            )
+          )
+        `,
+        )
+        .eq('workspace_id', workspaceId)
+        .eq('status', 'accepted'),
       client
         .from('ticket_assignees')
         .select('*')
@@ -126,6 +140,33 @@ export const getServiceCloudTicketDetailController = catchAsync(
     if (ticketAssignees.error) throw ticketAssignees.error;
     if (ticketEmailThreads.error) throw ticketEmailThreads.error;
 
+    // Filter workspace members to only those with service cloud module access
+    const filteredMemberIds = (workspaceMembers.data ?? [])
+      .filter((member: any) => {
+        const role = member.role_id;
+        const permissions = role?.role_permissions || [];
+        return permissions.some((p: any) => {
+          const moduleKey = p.crm_module_features?.crm_modules?.module_key;
+          return p.can_access && moduleKey?.startsWith('service_cloud');
+        });
+      })
+      .map((member: any) => member.user_id);
+
+    // Include workspace owner (they have implicit full access to all modules)
+    const { data: workspace } = await supabase
+      .from('workspaces')
+      .select('owner_id')
+      .eq('id', workspaceId)
+      .maybeSingle();
+
+    const serviceCloudMemberIds = Array.from(
+      new Set(
+        workspace?.owner_id
+          ? [...filteredMemberIds, workspace.owner_id]
+          : filteredMemberIds,
+      ),
+    );
+
     const emailIds = Array.from(
       new Set(
         (ticketEmails.data ?? [])
@@ -134,24 +175,51 @@ export const getServiceCloudTicketDetailController = catchAsync(
       ),
     );
 
-    let emailById = new Map<string, any>();
-    let linkedEmails: any[] = [];
+    const memberIds = Array.from(
+      new Set(
+        [
+          ...serviceCloudMemberIds,
+          ...(ticketAssignees.data ?? []).map(
+            (assignee: any) => assignee.account_id,
+          ),
+          ...(activities.data ?? []).map(
+            (activity: any) => activity.actor_account_id,
+          ),
+          ...(timeEntries.data ?? []).map(
+            (entry: any) => entry.created_by,
+          ),
+        ].filter(Boolean),
+      ),
+    );
 
-    if (emailIds.length > 0) {
-      const { data: coreEmails, error: coreEmailError } = await (
-        supabase as any
-      )
-        .schema('core')
-        .from('emails')
-        .select('*')
-        .eq('workspace_id', workspaceId)
-        .in('id', emailIds);
+    // Optimized: run core emails + member accounts in parallel (they're independent)
+    const [coreEmailsResult, memberAccountsResult] = await Promise.all([
+      emailIds.length > 0
+        ? (supabase as any)
+            .schema('core')
+            .from('emails')
+            .select('*')
+            .eq('workspace_id', workspaceId)
+            .in('id', emailIds)
+        : Promise.resolve({ data: [], error: null }),
+      memberIds.length > 0
+        ? supabase
+            .from('accounts')
+            .select('id, name, email, picture_url')
+            .in('id', memberIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
 
-      if (coreEmailError) throw coreEmailError;
-      linkedEmails = coreEmails ?? [];
-      emailById = new Map(linkedEmails.map((email: any) => [email.id, email]));
-    }
+    if (coreEmailsResult.error) throw coreEmailsResult.error;
+    const linkedEmails: any[] = coreEmailsResult.data ?? [];
+    const emailById = new Map(
+      linkedEmails.map((email: any) => [email.id, email]),
+    );
 
+    if (memberAccountsResult.error) throw memberAccountsResult.error;
+    const memberAccounts = memberAccountsResult.data;
+
+    // Thread emails depend on core emails (need thread_keys), so run separately
     const threadKeys = Array.from(
       new Set(
         [
@@ -180,28 +248,6 @@ export const getServiceCloudTicketDetailController = catchAsync(
       );
     }
 
-    const memberIds = Array.from(
-      new Set(
-        [
-          ...(workspaceMembers.data ?? []).map((member: any) => member.user_id),
-          ...(ticketAssignees.data ?? []).map(
-            (assignee: any) => assignee.account_id,
-          ),
-          ...(activities.data ?? []).map(
-            (activity: any) => activity.actor_account_id,
-          ),
-        ].filter(Boolean),
-      ),
-    );
-    const { data: memberAccounts, error: memberAccountsError } =
-      memberIds.length > 0
-        ? await supabase
-            .from('accounts')
-            .select('id, name, email, picture_url')
-            .in('id', memberIds)
-        : { data: [], error: null };
-
-    if (memberAccountsError) throw memberAccountsError;
     const memberAccountById = new Map(
       (memberAccounts ?? []).map((account: any) => [account.id, account]),
     );
@@ -239,7 +285,10 @@ export const getServiceCloudTicketDetailController = catchAsync(
     return successDataResponse('Ticket detail retrieved successfully', {
       ticket,
       emails,
-      timeEntries: timeEntries.data ?? [],
+      timeEntries: (timeEntries.data ?? []).map((entry: any) => ({
+        ...entry,
+        author: memberAccountById.get(entry.created_by) ?? null,
+      })),
       activities: (activities.data ?? []).map((activity: any) => ({
         ...activity,
         actor: memberAccountById.get(activity.actor_account_id) ?? null,
@@ -253,7 +302,9 @@ export const getServiceCloudTicketDetailController = catchAsync(
         statuses: statuses.data ?? [],
         priorities: priorities.data ?? [],
         categories: categories.data ?? [],
-        members: memberAccounts ?? [],
+        members: (memberAccounts ?? []).filter((account: any) =>
+          serviceCloudMemberIds.includes(account.id),
+        ),
       },
     });
   },
@@ -291,6 +342,7 @@ export const logServiceCloudTicketTimeController = catchAsync(
         account_id: user.id,
         duration_seconds: durationSeconds,
         description: body?.description || null,
+        activities: body?.activities || null,
         billable: Boolean(body?.billable),
         logged_date:
           body?.logged_date ??

@@ -67,6 +67,15 @@ export function PersonalAccountDropdown({
   const displayName =
     personalAccountData?.data?.name ?? account?.name ?? user?.email ?? '';
 
+  const selectedModule = localStorage.getItem('selected_module');
+
+  const profilePath =
+    selectedModule === 'hrms'
+      ? '/home/hrms/profile-settings'
+      : selectedModule === 'sales'
+        ? '/home/sales/profile-settings'
+        : '/home/services/profile-settings';
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -151,12 +160,12 @@ export function PersonalAccountDropdown({
 
         <DropdownMenuSeparator />
 
-        {paths.profile ? (
+        {selectedModule ? (
           <>
             <DropdownMenuItem asChild>
               <Link
                 className={'s-full flex cursor-pointer items-center space-x-2'}
-                href={paths.profile}
+                href={profilePath}
               >
                 <UserPen className={'h-5'} />
 
