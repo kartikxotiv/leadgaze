@@ -110,13 +110,13 @@ const ALL_NAV_ITEMS: NavItem[] = [
     moduleKey: 'audit_logs',
     featureKey: 'view',
   },
-  {
-    label: 'Emails',
-    path: pathsConfig.app.emails,
-    Icon: Mail,
-    moduleKey: 'emails',
-    featureKey: 'view_inbox',
-  },
+  // {
+  //   label: 'Emails',
+  //   path: pathsConfig.app.emails,
+  //   Icon: Mail,
+  //   moduleKey: 'emails',
+  //   featureKey: 'view_inbox',
+  // },
 ];
 
 /**

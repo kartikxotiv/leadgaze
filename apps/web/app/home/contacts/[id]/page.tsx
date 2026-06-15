@@ -196,7 +196,7 @@ export default function ContactDetailsPage() {
             don&apos;t have permission to view it.
           </p>
           <Button asChild variant="outline">
-            <Link href="/home/contacts">Back to Contacts</Link>
+            <Link href="/home/sales/contacts">Back to Contacts</Link>
           </Button>
         </div>
       </ModuleGuard>
@@ -213,7 +213,7 @@ export default function ContactDetailsPage() {
             asChild
             className="border-leadgaze-border border p-0"
           >
-            <Link href="/home/contacts">
+            <Link href="/home/sales/contacts">
               <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
             </Link>
           </Button>
@@ -244,7 +244,7 @@ export default function ContactDetailsPage() {
           entityId={id}
           entityType="contact"
           entityName={`${contact.first_name} ${contact.last_name || ''}`}
-          onSuccess={() => router.push('/home/contacts')}
+          onSuccess={() => router.push('/home/sales/contacts')}
         />
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
@@ -267,7 +267,7 @@ export default function ContactDetailsPage() {
                   )}
                   {contact.account && (
                     <Link
-                      href={`/home/accounts/${contact.account.id}`}
+                      href={`/home/sales/accounts/${contact.account.id}`}
                       className="text-primary flex items-center gap-1 hover:underline"
                     >
                       <Building2 className="h-3 w-3" />

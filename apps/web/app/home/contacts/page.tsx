@@ -374,7 +374,7 @@ export default function ContactsPage() {
                               key={contact.id}
                               className="hover:bg-muted/50 cursor-pointer"
                               onClick={() =>
-                                router.push(`/home/contacts/${contact.id}`)
+                                router.push(`/home/sales/contacts/${contact.id}`)
                               }
                             >
                               {isVisible('sno') && (
@@ -457,7 +457,7 @@ export default function ContactsPage() {
                                 <div className="flex items-center justify-end gap-2">
                                   <EntityActionsDropdown
                                     id={contact.id}
-                                    viewPath={`/home/contacts/${contact.id}`}
+                                    viewPath={`/home/sales/contacts/${contact.id}`}
                                     canDelete={canAccess('contacts', 'delete')}
                                     onDelete={() => {
                                       setContactToDelete(contact);

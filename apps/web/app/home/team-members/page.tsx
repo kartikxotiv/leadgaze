@@ -14,7 +14,6 @@ import {
   RotateCcw,
   Shield,
   Trash2,
-  Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -24,9 +23,6 @@ import { Button } from '@kit/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { PageBody, PageHeader } from '@kit/ui/page';
@@ -52,9 +48,13 @@ import {
 } from '~/services/subscription.service';
 import {
   type WorkspaceMember,
+  type PendingInvitation,
   getMembersService,
   removeMemberService,
   resendInvitationService,
+  getPendingInvitationsService,
+  deleteInvitationService,
+  resendInvitationEmailService,
 } from '~/services/team-members.service';
 
 import { InviteMemberDialog } from './components/invite-member-dialog';
@@ -125,6 +125,7 @@ export default function TeamMembersPage() {
     null,
   );
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'accepted' | 'pending'>('all');
 
   // Fetch workspace subscription status for seat capacity
   const { data: subscriptionData } = useQuery({
@@ -163,7 +164,6 @@ export default function TeamMembersPage() {
   const {
     data: membersData = [],
     isLoading,
-    error,
   } = useQuery({
     queryKey: ['workspaceMembers', currentWorkspace?.id],
     queryFn: () => getMembersService(currentWorkspace?.id || ''),
@@ -198,18 +198,30 @@ export default function TeamMembersPage() {
 
   // Only show members who have an active seat in the current module.
   // Pending members (not yet accepted) are always shown so admins can manage invites.
-  const members = (membersData?.data || [])
+  const allMembers = (membersData?.data || [])
     .filter((m: WorkspaceMember) => m.status !== 'removed')
     .filter(
       (m: WorkspaceMember) =>
         m.status === 'pending' || moduleAssignedUserIds.has(m.user_id),
     );
-  const activeMembers = members.filter(
+  const activeMembers = allMembers.filter(
     (m: WorkspaceMember) => m.status === 'accepted',
   );
-  const pendingMembers = members.filter(
+  const pendingMembers = allMembers.filter(
     (m: WorkspaceMember) => m.status === 'pending',
   );
+
+  // Apply the active status filter to the member list shown in the table
+  const members = useMemo(() => {
+    switch (statusFilter) {
+      case 'accepted':
+        return activeMembers;
+      case 'pending':
+        return pendingMembers;
+      default:
+        return allMembers;
+    }
+  }, [statusFilter, allMembers, activeMembers, pendingMembers]);
 
   // Remove member mutation
   const removeMutation = useMutation({
@@ -225,7 +237,7 @@ export default function TeamMembersPage() {
     },
   });
 
-  // Resend invitation mutation
+  // Resend invitation mutation (legacy workspace_members-based)
   const resendMutation = useMutation({
     mutationFn: resendInvitationService,
     onSuccess: () => {
@@ -236,6 +248,47 @@ export default function TeamMembersPage() {
     },
     onError: (error: Error) => {
       toast.error(error?.message || 'Failed to resend invitation');
+    },
+  });
+
+  // ── Pending invitations from workspace_invitations table ──────────────────
+  const {
+    data: pendingInvitationsData,
+    isLoading: isLoadingInvitations,
+  } = useQuery({
+    queryKey: ['pendingInvitations', currentWorkspace?.id],
+    queryFn: () => getPendingInvitationsService(currentWorkspace?.id || ''),
+    enabled: !!currentWorkspace?.id && statusFilter === 'pending',
+  });
+
+  const pendingInvitations: PendingInvitation[] =
+    (pendingInvitationsData?.data as PendingInvitation[]) || [];
+
+  // Delete invitation mutation
+  const deleteInvitationMutation = useMutation({
+    mutationFn: deleteInvitationService,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['pendingInvitations', currentWorkspace?.id],
+      });
+      toast.success('Invitation deleted successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error?.message || 'Failed to delete invitation');
+    },
+  });
+
+  // Resend invitation email mutation (workspace_invitations-based)
+  const resendInvitationEmailMutation = useMutation({
+    mutationFn: resendInvitationEmailService,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['pendingInvitations', currentWorkspace?.id],
+      });
+      toast.success('Invitation email resent successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error?.message || 'Failed to resend invitation email');
     },
   });
 
@@ -297,8 +350,14 @@ export default function TeamMembersPage() {
     <ModuleGuard module="team_members"> 
         <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
           <PageHeader
-            title={`Members (${members.length})`}
-            description="Manage your workspace team members and permissions"
+            title={`Members (${statusFilter === 'pending' ? pendingInvitations.length : members.length})`}
+            description={
+              statusFilter === 'all'
+                ? 'Manage your workspace team members and permissions'
+                : statusFilter === 'accepted'
+                  ? 'Showing active members only'
+                  : 'Showing pending invitations only'
+            }
           >
             <div className="flex items-center gap-2">
               {/* {canAccess('team_members', 'create') && (
@@ -342,18 +401,30 @@ export default function TeamMembersPage() {
           {/* Summary Cards - Fixed at top */}
           <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2">
             <div className="flex flex-wrap items-center gap-2">
-              <Card className={cn('hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer rounded-sm-card transition-all')}>
+              <Card
+                onClick={() => setStatusFilter('all')}
+                className={cn(
+                  'hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer rounded-sm-card transition-all',
+                  statusFilter === 'all' && 'border-primary ring-1 ring-primary/30',
+                )}
+              >
                 <CardContent className={cn('flex items-center px-3 py-2')}>
                   <div className="flex items-center gap-2 whitespace-nowrap">
                     <div className="h-2 w-2 shrink-0 rounded-full bg-activity-1" />
                     <span className={cn("primary-text-medium text-leadgaze-dark uppercase dark:text-white")}>
-                      Total Members ({members.length})
+                      Total Members ({allMembers.length})
                     </span>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className={cn('hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer rounded-sm-card transition-all')}>
+              <Card
+                onClick={() => setStatusFilter('accepted')}
+                className={cn(
+                  'hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer rounded-sm-card transition-all',
+                  statusFilter === 'accepted' && 'border-primary ring-1 ring-primary/30',
+                )}
+              >
                 <CardContent className={cn('flex items-center px-3 py-2')}>
                   <div className="flex items-center gap-2 whitespace-nowrap">
                     <div className="h-2 w-2 shrink-0 rounded-full bg-activity-2" />
@@ -364,12 +435,18 @@ export default function TeamMembersPage() {
                 </CardContent>
               </Card>
 
-              <Card className={cn('hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer rounded-sm-card transition-all')}>
+              <Card
+                onClick={() => setStatusFilter('pending')}
+                className={cn(
+                  'hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer rounded-sm-card transition-all',
+                  statusFilter === 'pending' && 'border-primary ring-1 ring-primary/30',
+                )}
+              >
                 <CardContent className={cn('flex items-center px-3 py-2')}>
                   <div className="flex items-center gap-2 whitespace-nowrap">
                     <div className="h-2 w-2 shrink-0 rounded-full bg-activity-4" />
                     <span className={cn("primary-text-medium text-leadgaze-dark uppercase dark:text-white")}>
-                      Pending Invitations ({pendingMembers.length})
+                      Pending Invitations ({pendingInvitationsData?.data ? pendingInvitations.length : pendingMembers.length})
                     </span>
                   </div>
                 </CardContent>
@@ -434,12 +511,23 @@ export default function TeamMembersPage() {
                       <Table>
                         <TableHeader>
                         <TableRow>
-                          {isVisible('member') && <TableHead>Member</TableHead>}
-                          {isVisible('email') && <TableHead>Email</TableHead>}
-                          {isVisible('role') && <TableHead>Role</TableHead>}
-                          {isVisible('status') && <TableHead>Status</TableHead>}
-                          {isVisible('primary_contact') && (
-                            <TableHead>Primary Contact</TableHead>
+                          {statusFilter === 'pending' ? (
+                            <>
+                              <TableHead>Email</TableHead>
+                              {isVisible('role') && <TableHead>Role</TableHead>}
+                              <TableHead>Sent On</TableHead>
+                              {isVisible('status') && <TableHead>Status</TableHead>}
+                            </>
+                          ) : (
+                            <>
+                              {isVisible('member') && <TableHead>Member</TableHead>}
+                              {isVisible('email') && <TableHead>Email</TableHead>}
+                              {isVisible('role') && <TableHead>Role</TableHead>}
+                              {isVisible('status') && <TableHead>Status</TableHead>}
+                              {isVisible('primary_contact') && (
+                                <TableHead>Primary Contact</TableHead>
+                              )}
+                            </>
                           )}
                           <TableHead className="sticky-right-header">
                             Actions
@@ -447,124 +535,279 @@ export default function TeamMembersPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {isLoading ? (
-                          [...Array(8)].map((_, i) => (
-                            <TableRow key={i}>
-                              <TableCell className="h-[52px] px-4 py-2" colSpan={5}>
-                                <Skeleton className="h-7 w-full" />
-                              </TableCell>
-                              <TableCell className="bg-card right-0 px-4 text-right">
-                                <Skeleton className="h-7 ml-auto w-full" />
+                        {statusFilter === 'pending' ? (
+                          // ── Pending Invitations Table ─────────────────────────────
+                          isLoadingInvitations ? (
+                            [...Array(5)].map((_, i) => (
+                              <TableRow key={i}>
+                                <TableCell className="h-[52px] px-4 py-2" colSpan={4}>
+                                  <Skeleton className="h-7 w-full" />
+                                </TableCell>
+                                <TableCell className="bg-card right-0 px-4 text-right">
+                                  <Skeleton className="h-7 ml-auto w-full" />
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          ) : pendingInvitations.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
+                                No pending invitations found
                               </TableCell>
                             </TableRow>
-                          ))
-                        ) : members.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
-                              No members found
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          members.map((member: WorkspaceMember) => (
-                            <TableRow
-                              key={member.id}
-                            className="hover:bg-muted/50"
-                          >
-                            {isVisible('member') && (
-                              <TableCell>
-                                <div className="flex items-center gap-3">
-                                  <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
-                                    {(
-                                      member.user?.email?.charAt(0) || 'M'
-                                    ).toUpperCase()}
+                          ) : (
+                            pendingInvitations.map((invitation) => (
+                              <TableRow
+                                key={invitation.id}
+                                className="hover:bg-muted/50"
+                              >
+                                <TableCell>
+                                  <div className="flex items-center gap-3">
+                                    <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
+                                      {invitation.email.charAt(0).toUpperCase()}
+                                    </div>
+                                    <span className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
+                                      {invitation.email}
+                                    </span>
                                   </div>
-                                  <span className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
-                                    {member.user?.user_metadata?.full_name ||
-                                      'Team Member'}
-                                  </span>
+                                </TableCell>
+                                {isVisible('role') && (
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <div
+                                        className="h-2 w-2 rounded-full"
+                                        style={{
+                                          backgroundColor: getRoleColor(
+                                            invitation.role,
+                                          ),
+                                        }}
+                                      />
+                                      <span className="font-medium">
+                                        {invitation.role?.role_name || '—'}
+                                      </span>
+                                    </div>
+                                  </TableCell>
+                                )}
+                                <TableCell className="text-muted-foreground text-sm">
+                                  {invitation.invited_at
+                                    ? new Date(invitation.invited_at).toLocaleDateString('en-US', {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                      })
+                                    : invitation.created_at
+                                      ? new Date(invitation.created_at).toLocaleDateString('en-US', {
+                                          year: 'numeric',
+                                          month: 'short',
+                                          day: 'numeric',
+                                        })
+                                      : '—'}
+                                </TableCell>
+                                {isVisible('status') && (
+                                  <TableCell>
+                                    {getStatusBadge('pending')}
+                                  </TableCell>
+                                )}
+                                <TableCell className="bg-card sticky right-0 px-4 text-right">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() =>
+                                            resendInvitationEmailMutation.mutate(
+                                              invitation.id,
+                                            )
+                                          }
+                                          className="gap-2"
+                                          disabled={
+                                            resendInvitationEmailMutation.isPending
+                                          }
+                                        >
+                                          <RotateCcw className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="bottom">
+                                        <p>Resend Invitation</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                    {canAccess('team_members', 'delete') && (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                              if (
+                                                confirm(
+                                                  'Are you sure you want to delete this invitation?',
+                                                )
+                                              ) {
+                                                deleteInvitationMutation.mutate(
+                                                  invitation.id,
+                                                );
+                                              }
+                                            }}
+                                            className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
+                                            disabled={
+                                              deleteInvitationMutation.isPending
+                                            }
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="bottom">
+                                          <p>Delete Invitation</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )
+                        ) : (
+                          // ── Members Table ──────────────────────────────────────────
+                          isLoading ? (
+                            [...Array(8)].map((_, i) => (
+                              <TableRow key={i}>
+                                <TableCell className="h-[52px] px-4 py-2" colSpan={5}>
+                                  <Skeleton className="h-7 w-full" />
+                                </TableCell>
+                                <TableCell className="bg-card right-0 px-4 text-right">
+                                  <Skeleton className="h-7 ml-auto w-full" />
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          ) : members.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                                No members found
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            members.map((member: WorkspaceMember) => (
+                              <TableRow
+                                key={member.id}
+                              className="hover:bg-muted/50"
+                            >
+                              {isVisible('member') && (
+                                <TableCell>
+                                  <div className="flex items-center gap-3">
+                                    <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
+                                      {(
+                                        member.user?.email?.charAt(0) || 'M'
+                                      ).toUpperCase()}
+                                    </div>
+                                    <span className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
+                                      {member.user?.user_metadata?.full_name ||
+                                        'Team Member'}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                              )}
+                              {isVisible('email') && (
+                                <TableCell className="text-muted-foreground text-sm">
+                                  {member.user?.email}
+                                </TableCell>
+                              )}
+                              {isVisible('role') && (
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <div
+                                      className="h-2 w-2 rounded-full"
+                                      style={{
+                                        backgroundColor: getRoleColor(
+                                          member.role,
+                                        ),
+                                      }}
+                                    />
+                                    <span className="font-medium">
+                                      {member.role?.role_name}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                              )}
+                              {isVisible('status') && (
+                                <TableCell>
+                                  {getStatusBadge(member.status)}
+                                </TableCell>
+                              )}
+                              {isVisible('primary_contact') && (
+                                <TableCell>
+                                  {member.is_primary_contact ? (
+                                    <Badge variant="secondary">Primary</Badge>
+                                  ) : (
+                                    <span className="text-muted-foreground/50 text-xs">
+                                      —
+                                    </span>
+                                  )}
+                                </TableCell>
+                              )}
+                              <TableCell className="bg-card sticky right-0 px-4 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  {member.status === 'pending' && (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() =>
+                                            handleResendInvitation(member.id)
+                                          }
+                                          className="gap-2"
+                                          disabled={resendMutation.isPending}
+                                        >
+                                          <RotateCcw className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="bottom">
+                                        <p>Resend Invitation</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  )}
+                                  {canAccess('team_members', 'edit') && (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleEditMember(member)}
+                                          className="gap-2"
+                                        >
+                                          <Edit2 className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="bottom">
+                                        <p>Edit Member</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  )}
+                                  {canAccess('team_members', 'delete') && (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() =>
+                                            handleRemoveMember(member.id)
+                                          }
+                                          className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
+                                          disabled={removeMutation.isPending}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="bottom">
+                                        <p>Remove Member</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  )}
                                 </div>
                               </TableCell>
-                            )}
-                            {isVisible('email') && (
-                              <TableCell className="text-muted-foreground text-sm">
-                                {member.user?.email}
-                              </TableCell>
-                            )}
-                            {isVisible('role') && (
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className="h-2 w-2 rounded-full"
-                                    style={{
-                                      backgroundColor: getRoleColor(
-                                        member.role,
-                                      ),
-                                    }}
-                                  />
-                                  <span className="font-medium">
-                                    {member.role?.role_name}
-                                  </span>
-                                </div>
-                              </TableCell>
-                            )}
-                            {isVisible('status') && (
-                              <TableCell>
-                                {getStatusBadge(member.status)}
-                              </TableCell>
-                            )}
-                            {isVisible('primary_contact') && (
-                              <TableCell>
-                                {member.is_primary_contact ? (
-                                  <Badge variant="secondary">Primary</Badge>
-                                ) : (
-                                  <span className="text-muted-foreground/50 text-xs">
-                                    —
-                                  </span>
-                                )}
-                              </TableCell>
-                            )}
-                            <TableCell className="bg-card sticky right-0 px-4 text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                {member.status === 'pending' && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      handleResendInvitation(member.id)
-                                    }
-                                    className="gap-2"
-                                    disabled={resendMutation.isPending}
-                                  >
-                                    <RotateCcw className="h-4 w-4" />
-                                  </Button>
-                                )}
-                                {canAccess('team_members', 'edit') && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEditMember(member)}
-                                    className="gap-2"
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
-                                )}
-                                {canAccess('team_members', 'delete') && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      handleRemoveMember(member.id)
-                                    }
-                                    className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
-                                    disabled={removeMutation.isPending}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )))}
+                            </TableRow>
+                          )))
+                        )}
                       </TableBody>
                       </Table>
                       
