@@ -116,6 +116,9 @@ const MEETING_REMINDER_TEMPLATE = ({
       <p style="margin: 0; color: #a0aec0; font-size: 12px;">
         © ${new Date().getFullYear()} ${productName}. All rights reserved.
       </p>
+      <p style="margin: 12px 0 0 0; color: #a0aec0; font-size: 12px;">
+        A product by <a href="https://programea.com" target="_blank" rel="noopener noreferrer" style="color: #4299e1; text-decoration: none;">Programea LLC</a>
+      </p>
     </div>
   </div>
 </body>
