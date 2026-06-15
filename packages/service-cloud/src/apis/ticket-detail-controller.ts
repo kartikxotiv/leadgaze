@@ -5,6 +5,35 @@ import { NextResponse } from 'next/server';
 import { catchAsync, successDataResponse } from '../utils/response-handler';
 import { assertServiceCloudWorkspaceAccess } from './_shared/workspace-access';
 
+function uniqueValues(values: Array<string | null | undefined>) {
+  const seen = new Set<string>();
+
+  return values
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value))
+    .filter((value) => {
+      if (seen.has(value)) return false;
+      seen.add(value);
+      return true;
+    });
+}
+
+function emailLookupKeys(email: any) {
+  return uniqueValues([
+    email?.thread_key,
+    email?.internet_message_id,
+    email?.provider_message_id,
+    email?.gmail_message_id,
+    email?.in_reply_to,
+  ]);
+}
+
+function postgrestContainsFilter(column: string, value: string) {
+  if (/[,\r\n]/.test(value)) return null;
+
+  return `${column}.ilike.%${value.replace(/%/g, '')}%`;
+}
+
 export const getServiceCloudTicketDetailController = catchAsync(
   async ({ request, params }) => {
     const ticketId = params?.ticketId ?? '';
@@ -185,9 +214,7 @@ export const getServiceCloudTicketDetailController = catchAsync(
           ...(activities.data ?? []).map(
             (activity: any) => activity.actor_account_id,
           ),
-          ...(timeEntries.data ?? []).map(
-            (entry: any) => entry.created_by,
-          ),
+          ...(timeEntries.data ?? []).map((entry: any) => entry.created_by),
         ].filter(Boolean),
       ),
     );
@@ -220,32 +247,55 @@ export const getServiceCloudTicketDetailController = catchAsync(
     const memberAccounts = memberAccountsResult.data;
 
     // Thread emails depend on core emails (need thread_keys), so run separately
-    const threadKeys = Array.from(
-      new Set(
-        [
-          ...(ticketEmailThreads.data ?? []).map(
-            (thread: any) => thread.thread_key,
-          ),
-          ...linkedEmails.map((email: any) => email.thread_key),
-        ].filter(Boolean),
+    const threadKeys = uniqueValues([
+      ...(ticketEmailThreads.data ?? []).map(
+        (thread: any) => thread.thread_key,
       ),
-    );
+      ...linkedEmails.flatMap(emailLookupKeys),
+    ]);
 
     if (threadKeys.length > 0) {
-      const { data: threadEmails, error: threadEmailError } = await (
-        supabase as any
-      )
-        .schema('core')
-        .from('emails')
-        .select('*')
-        .eq('workspace_id', workspaceId)
-        .eq('is_deleted', false)
-        .in('thread_key', threadKeys);
+      const referenceFilters = threadKeys
+        .map((key) => postgrestContainsFilter('email_references', key))
+        .filter(Boolean)
+        .slice(0, 25)
+        .join(',');
 
-      if (threadEmailError) throw threadEmailError;
-      (threadEmails ?? []).forEach((email: any) =>
-        emailById.set(email.id, email),
-      );
+      const [threadKeyEmails, replyEmails, referencedEmails] =
+        await Promise.all([
+          (supabase as any)
+            .schema('core')
+            .from('emails')
+            .select('*')
+            .eq('workspace_id', workspaceId)
+            .eq('is_deleted', false)
+            .in('thread_key', threadKeys),
+          (supabase as any)
+            .schema('core')
+            .from('emails')
+            .select('*')
+            .eq('workspace_id', workspaceId)
+            .eq('is_deleted', false)
+            .in('in_reply_to', threadKeys),
+          referenceFilters
+            ? (supabase as any)
+                .schema('core')
+                .from('emails')
+                .select('*')
+                .eq('workspace_id', workspaceId)
+                .eq('is_deleted', false)
+                .or(referenceFilters)
+            : Promise.resolve({ data: [], error: null }),
+        ]);
+
+      if (threadKeyEmails.error) throw threadKeyEmails.error;
+      if (replyEmails.error) throw replyEmails.error;
+      if (referencedEmails.error) throw referencedEmails.error;
+      [
+        ...(threadKeyEmails.data ?? []),
+        ...(replyEmails.data ?? []),
+        ...(referencedEmails.data ?? []),
+      ].forEach((email: any) => emailById.set(email.id, email));
     }
 
     const memberAccountById = new Map(

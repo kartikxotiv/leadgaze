@@ -255,6 +255,8 @@ export class CoreGmailSyncService {
       .map(extractEmail)
       .filter(Boolean);
     const internetMessageId = headerValue(headers, 'Message-ID');
+    const inReplyTo = headerValue(headers, 'In-Reply-To');
+    const references = headerValue(headers, 'References');
     const subject = headerValue(headers, 'Subject') || '(No Subject)';
     const receivedAt = headerValue(headers, 'Date')
       ? new Date(headerValue(headers, 'Date')).toISOString()
@@ -276,6 +278,8 @@ export class CoreGmailSyncService {
       gmail_message_id: gmailMessage.id,
       internet_message_id: internetMessageId || null,
       thread_key: gmailMessage.threadId ?? internetMessageId ?? gmailMessage.id,
+      in_reply_to: inReplyTo || null,
+      email_references: references || null,
       direction,
       from_email: fromEmail,
       to_email: toEmails[0] ?? null,
