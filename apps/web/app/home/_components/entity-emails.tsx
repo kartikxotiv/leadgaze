@@ -12,6 +12,7 @@ import {
   getCoreEmailAccountsService,
   getCoreEntityEmailActivityService,
 } from '@kit/core/services';
+import { formatDate } from '@kit/shared/utils';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
@@ -246,13 +247,13 @@ export function EntityEmails({
                           <div className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             <span>
-                              {new Date(
+                              {formatDate(
                                 item.received_at ||
                                   item.sent_at ||
                                   item.updated_at ||
                                   item.created_at ||
-                                  new Date(),
-                              ).toLocaleString()}
+                                  new Date().toISOString(),
+                              )}
                             </span>
                           </div>
                           {item.direction === 'inbound' ? (
@@ -272,7 +273,7 @@ export function EntityEmails({
                           {item.status === 'scheduled' && item.scheduled_at && (
                             <span className="font-semibold text-blue-600">
                               Due:{' '}
-                              {new Date(item.scheduled_at).toLocaleString()}
+                              {formatDate(item.scheduled_at)}
                             </span>
                           )}
                         </div>
