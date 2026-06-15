@@ -4,6 +4,7 @@ import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { formatDate } from '@kit/shared/utils';
 import {
   ChevronLeft,
   ChevronRight,
@@ -307,7 +308,7 @@ export function CoreInboxTab({
                           </span>
                           <span>•</span>
                           <span>
-                            {new Date(emailTimestamp(email)).toLocaleString()}
+                            {formatDate(emailTimestamp(email))}
                           </span>
                         </div>
                       </div>

@@ -39,6 +39,7 @@ import {
 } from '@kit/ui/alert-dialog';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
+import { Calendar } from '@kit/ui/calendar';
 import {
   Card,
   CardContent,
@@ -50,6 +51,11 @@ import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@kit/ui/dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@kit/ui/popover';
 import {
   Select,
   SelectContent,
@@ -93,6 +99,19 @@ type LookupOption = {
 function formatDateInput(value?: string | null) {
   if (!value) return '';
   return value.includes('T') ? value.slice(0, 10) : value;
+}
+
+/** Returns a YYYY-MM-DD string using the Date's *local* components (timezone-safe). */
+function toLocalDateString(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/** Returns today as a YYYY-MM-DD string using local time. */
+function todayLocalDate() {
+  return toLocalDateString(new Date());
 }
 
 function formatDuration(seconds: number) {
@@ -147,6 +166,7 @@ export function ServiceCloudTicketDetailPage({
     minutes: '',
     description: '',
     activities: '',
+    logged_date: todayLocalDate(),
   });
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [deletingLogId, setDeletingLogId] = useState<string | null>(null);
@@ -155,6 +175,7 @@ export function ServiceCloudTicketDetailPage({
     minutes: '',
     description: '',
     activities: '',
+    logged_date: todayLocalDate(),
   });
   const [replyEmail, setReplyEmail] = useState<any | null>(null);
 
@@ -194,11 +215,12 @@ export function ServiceCloudTicketDetailPage({
         durationSeconds,
         description: timeForm.description,
         activities: timeForm.activities,
+        logged_date: timeForm.logged_date,
       });
     },
     onSuccess: async () => {
       toast.success('Time logged');
-      setTimeForm({ hours: '', minutes: '', description: '', activities: '' });
+      setTimeForm({ hours: '', minutes: '', description: '', activities: '', logged_date: todayLocalDate() });
       await queryClient.invalidateQueries({ queryKey });
     },
     onError: (error: any) => toast.error(error.message || 'Failed to log time'),
@@ -227,6 +249,7 @@ export function ServiceCloudTicketDetailPage({
         duration_seconds: durationSeconds,
         description: editForm.description,
         activities: editForm.activities,
+        logged_date: editForm.logged_date,
       });
     },
     onSuccess: async () => {
@@ -246,6 +269,7 @@ export function ServiceCloudTicketDetailPage({
       minutes: minutes > 0 ? String(minutes) : '',
       description: entry.description || '',
       activities: entry.activities || '',
+      logged_date: entry.logged_date ? entry.logged_date.slice(0, 10) : todayLocalDate(),
     });
     setEditingLogId(entry.id);
   };
@@ -553,6 +577,43 @@ export function ServiceCloudTicketDetailPage({
                       hideHeaderBorder={true}
                     >
                       <div className="space-y-4 px-6 pb-4">
+                        <Field label="Date">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  'w-full justify-start text-left font-normal',
+                                  !timeForm.logged_date && 'text-muted-foreground',
+                                )}
+                              >
+                                <CalendarDays className="mr-2 h-4 w-4" />
+                                {timeForm.logged_date
+                                  ? formatDateOnly(timeForm.logged_date)
+                                  : 'Pick a date'}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={
+                                  timeForm.logged_date
+                                    ? new Date(timeForm.logged_date + 'T00:00:00')
+                                    : undefined
+                                }
+                                onSelect={(date) =>
+                                  setTimeForm((prev) => ({
+                                    ...prev,
+                                    logged_date: date
+                                      ? toLocalDateString(date)
+                                      : prev.logged_date,
+                                  }))
+                                }
+                                captionLayout="dropdown"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </Field>
                         <div className="grid grid-cols-2 gap-3">
                           <Field label="Hours">
                             <Input
@@ -604,7 +665,7 @@ export function ServiceCloudTicketDetailPage({
                             }
                             placeholder="What did you work on?"
                           />
-                        </Field>
+                        </Field>                        
                         <Button
                           className="w-full"
                           disabled={!canLogTime || timeMutation.isPending}
@@ -957,7 +1018,44 @@ export function ServiceCloudTicketDetailPage({
             <DialogTitle>Edit Time Entry</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <Field label="Date">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !editForm.logged_date && 'text-muted-foreground',
+                    )}
+                  >
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    {editForm.logged_date
+                      ? formatDateOnly(editForm.logged_date)
+                      : 'Pick a date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={
+                      editForm.logged_date
+                        ? new Date(editForm.logged_date + 'T00:00:00')
+                        : undefined
+                    }
+                    onSelect={(date) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        logged_date: date
+                          ? toLocalDateString(date)
+                          : prev.logged_date,
+                      }))
+                    }
+                    captionLayout="dropdown"
+                  />
+                </PopoverContent>
+              </Popover>
+            </Field>
+            <div className="grid grid-cols-2 gap-3">               
               <Field label="Hours">
                 <Input
                   type="number"
@@ -1008,7 +1106,7 @@ export function ServiceCloudTicketDetailPage({
                 }
                 placeholder="What did you work on?"
               />
-            </Field>
+            </Field>           
             <Button
               className="w-full"
               disabled={updateTimeMutation.isPending}

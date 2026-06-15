@@ -77,6 +77,9 @@ importers:
       '@kit/service-cloud':
         specifier: workspace:*
         version: link:../../packages/service-cloud
+      '@kit/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@kit/supabase':
         specifier: workspace:*
         version: link:../../packages/supabase

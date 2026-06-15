@@ -18,6 +18,7 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { Skeleton } from '@kit/ui/skeleton';
+import { formatDate } from '@kit/shared/utils';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
@@ -146,7 +147,7 @@ export function EmailTemplatesTab() {
                       {template.subject}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {new Date(template.updated_at).toLocaleDateString()}
+                      {formatDate(template.updated_at)}
                     </TableCell>
                     {canManage && (
                       <TableCell className="text-right">

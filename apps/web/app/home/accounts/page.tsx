@@ -41,6 +41,7 @@ import { Account, getAccountsService } from '~/services/accounts.service';
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { CreateAccountDialog } from './components/create-account-dialog';
+import { formatDate } from '@kit/shared/utils';
 
 function AccountsPageSkeleton() {
   return (
@@ -501,9 +502,7 @@ export default function AccountsPage() {
                         {isVisible('created_at') && (
                           <TableCell className="">
                             {account.created_at
-                              ? new Date(
-                                  account.created_at,
-                                ).toLocaleDateString()
+                              ? formatDate(account.created_at)
                               : '-'}
                           </TableCell>
                         )}

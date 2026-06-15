@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { formatDate } from '@kit/shared/utils';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Calendar } from '@kit/ui/calendar';
@@ -768,9 +769,7 @@ export default function MeetingsPage() {
                         {isVisible('created_at') && (
                           <TableCell className="text-muted-foreground">
                             {meeting.created_at
-                              ? new Date(
-                                meeting.created_at,
-                              ).toLocaleDateString()
+                              ? formatDate(meeting.created_at)
                               : '-'}
                           </TableCell>
                         )}
