@@ -101,7 +101,8 @@ export const getServiceCloudTicketDetailController = catchAsync(
       // Only fetch members who have service cloud module access
       (supabase as any)
         .from('workspace_members')
-        .select(`
+        .select(
+          `
           user_id,
           role_id(
             role_permissions(
@@ -111,7 +112,8 @@ export const getServiceCloudTicketDetailController = catchAsync(
               )
             )
           )
-        `)
+        `,
+        )
         .eq('workspace_id', workspaceId)
         .eq('status', 'accepted'),
       client
@@ -294,8 +296,8 @@ export const getServiceCloudTicketDetailController = catchAsync(
         statuses: statuses.data ?? [],
         priorities: priorities.data ?? [],
         categories: categories.data ?? [],
-        members: (memberAccounts ?? []).filter(
-          (account: any) => serviceCloudMemberIds.includes(account.id),
+        members: (memberAccounts ?? []).filter((account: any) =>
+          serviceCloudMemberIds.includes(account.id),
         ),
       },
     });
