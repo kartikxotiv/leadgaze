@@ -83,7 +83,7 @@ import { OpportunityStatusTimeline } from '../components/opportunity-status-time
 function OpportunityDetailsSkeleton() {
   return (
     <ModuleGuard module="opportunities">
-      <div className="px-6 pt-4 pb-2">
+      <div className="px-6 pb-2 pt-4">
         <div className="mb-2">
           <Skeleton className="h-8 w-20 rounded-md" />
         </div>
@@ -187,6 +187,7 @@ export default function OpportunityDetailsPage() {
   }, [opportunity]);
 
   const { currentWorkspace, canAccess: rbacCanAccess } = useRBAC();
+  const canManageEmail = rbacCanAccess('emails', 'manage_email');
   const { data: stages = [] } = useQuery({
     queryKey: ['opportunity-stages', currentWorkspace?.id],
     queryFn: () => getOpportunityStatusesService(currentWorkspace!.id),
@@ -196,7 +197,7 @@ export default function OpportunityDetailsPage() {
   const { data: coreEmailAccounts = [] } = useQuery({
     queryKey: ['core-email-accounts', currentWorkspace?.id],
     queryFn: () => getCoreEmailAccountsService(currentWorkspace!.id),
-    enabled: !!currentWorkspace?.id,
+    enabled: canManageEmail && !!currentWorkspace?.id,
   });
 
   const { data: accountContactsData } = useQuery({
@@ -300,7 +301,7 @@ export default function OpportunityDetailsPage() {
 
   return (
     <ModuleGuard module="opportunities">
-      <div className="flex w-full items-center justify-between pt-4 pb-2">
+      <div className="flex w-full items-center justify-between pb-2 pt-4">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -400,26 +401,28 @@ export default function OpportunityDetailsPage() {
                     </Button>
                   )}
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${
-                      opportunityEmailRecipients.length === 0
-                        ? 'opacity-50'
-                        : ''
-                    }`}
-                    disabled={opportunityEmailRecipients.length === 0}
-                    onClick={() => setIsEmailDialogOpen(true)}
-                    title={
-                      opportunityEmailRecipients.length === 0
-                        ? 'Opportunity account has no contact email addresses'
-                        : 'Send email to opportunity contact'
-                    }
-                  >
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
-                      <Mail className="h-3.5 w-3.5 text-white" />
-                    </div>
-                  </Button>
+                  {canManageEmail && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${
+                        opportunityEmailRecipients.length === 0
+                          ? 'opacity-50'
+                          : ''
+                      }`}
+                      disabled={opportunityEmailRecipients.length === 0}
+                      onClick={() => setIsEmailDialogOpen(true)}
+                      title={
+                        opportunityEmailRecipients.length === 0
+                          ? 'Opportunity account has no contact email addresses'
+                          : 'Send email to opportunity contact'
+                      }
+                    >
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
+                        <Mail className="h-3.5 w-3.5 text-white" />
+                      </div>
+                    </Button>
+                  )}
 
                   {rbacCanAccess('opportunities', 'change_stage') && (
                     <Select
@@ -543,7 +546,7 @@ export default function OpportunityDetailsPage() {
               }
               className="w-full border shadow-sm"
             >
-              <div className="px-6 pt-4 pb-6">
+              <div className="px-6 pb-6 pt-4">
                 <OpportunityStatusTimeline
                   opportunityId={id}
                   currentStatusId={opportunity.stage_id}
@@ -796,18 +799,20 @@ export default function OpportunityDetailsPage() {
         />
       )}
 
-      <CoreEmailComposeDialog
-        open={isEmailDialogOpen}
-        onOpenChange={setIsEmailDialogOpen}
-        workspaceId={currentWorkspace?.id || ''}
-        accounts={coreEmailAccounts}
-        entityType="opportunity"
-        entityId={id}
-        initialTo={opportunityEmailRecipients[0]?.email}
-        templateContext={{
-          opportunity_name: opportunity.opportunity_name,
-        }}
-      />
+      {canManageEmail && (
+        <CoreEmailComposeDialog
+          open={isEmailDialogOpen}
+          onOpenChange={setIsEmailDialogOpen}
+          workspaceId={currentWorkspace?.id || ''}
+          accounts={coreEmailAccounts}
+          entityType="opportunity"
+          entityId={id}
+          initialTo={opportunityEmailRecipients[0]?.email}
+          templateContext={{
+            opportunity_name: opportunity.opportunity_name,
+          }}
+        />
+      )}
     </ModuleGuard>
   );
 }

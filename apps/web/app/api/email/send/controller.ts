@@ -3,11 +3,11 @@ import { NextResponse } from 'next/server';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-import { sendMail } from '~/lib/email/mailer';
 import {
   getSendableEmailAccountById,
   hasWorkspaceEmailFeatureAccess,
 } from '~/lib/email/email-account-access';
+import { sendMail } from '~/lib/email/mailer';
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
 
 export const sendEmail = catchAsync(async ({ request }) => {
@@ -59,17 +59,23 @@ export const sendEmail = catchAsync(async ({ request }) => {
   }
 
   if (!workspaceId) {
-    return NextResponse.json({ error: 'Missing workspace_id' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Missing workspace_id' },
+      { status: 400 },
+    );
   }
 
   if (!toEmails) {
-    return NextResponse.json({ error: 'Missing recipient email' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Missing recipient email' },
+      { status: 400 },
+    );
   }
 
   const canSendEmails = await hasWorkspaceEmailFeatureAccess(
     supabase,
     workspaceId,
-    'send_emails',
+    'manage_email',
   );
 
   if (!canSendEmails) {
