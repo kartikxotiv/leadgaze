@@ -249,7 +249,7 @@ export default function AccountDetailsPage() {
             permission to view it.
           </p>
           <Button asChild variant="outline">
-            <Link href="/home/accounts">Back to Accounts</Link>
+            <Link href="/home/sales/accounts">Back to Accounts</Link>
           </Button>
         </div>
       </ModuleGuard>
@@ -266,7 +266,7 @@ export default function AccountDetailsPage() {
             asChild
             className="border-leadgaze-border border p-0"
           >
-            <Link href="/home/accounts">
+            <Link href="/home/sales/accounts">
               <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
             </Link>
           </Button>
@@ -297,7 +297,7 @@ export default function AccountDetailsPage() {
           entityId={id}
           entityType="account"
           entityName={account.account_name}
-          onSuccess={() => router.push('/home/accounts')}
+          onSuccess={() => router.push('/home/sales/accounts')}
         />
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
@@ -565,7 +565,7 @@ export default function AccountDetailsPage() {
                           actions={
                             rbacCanAccess('contacts', 'view') && (
                               <Button size="sm" variant="ghost" asChild>
-                                <Link href={`/home/contacts/${contact.id}`}>
+                                <Link href={`/home/sales/contacts/${contact.id}`}>
                                   View
                                 </Link>
                               </Button>
@@ -644,7 +644,7 @@ export default function AccountDetailsPage() {
                           actions={
                             rbacCanAccess('opportunities', 'view') && (
                               <Button size="sm" variant="ghost" asChild>
-                                <Link href={`/home/opportunities/${opp.id}`}>
+                                <Link href={`/home/sales/opportunities/${opp.id}`}>
                                   View
                                 </Link>
                               </Button>

@@ -548,8 +548,8 @@ export default function NotesPage() {
                         <TableCell>
                           {note.entity_id ? (
                             <Link
-                              href={`/home/${note.entity_type === 'opportunity' ? 'opportunities' : `${note.entity_type}s`}/${note.entity_id}`}
-                              className="hover:text-primary inline-block max-w-[150px] truncate text-sm font-medium hover:underline text-leadgaze-primary dark:text-leadgaze-primary"
+                              href={`/home/sales/${note.entity_type === 'opportunity' ? 'opportunities' : `${note.entity_type}s`}/${note.entity_id}`}
+                              className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary inline-block max-w-[150px] truncate text-sm"
                               title={note.entity_name || 'General'}
                             >
                               {note.entity_name || '-'}

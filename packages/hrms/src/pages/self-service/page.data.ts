@@ -7,6 +7,8 @@ import type {
   SelfServiceRequestStatus,
 } from '../../types/self-service.type';
 
+export { formatDate } from '@kit/shared/utils';
+
 export const SELF_SERVICE_REQUEST_CATEGORY_OPTIONS: Array<{
   label: string;
   value: SelfServiceRequestCategory;
@@ -39,20 +41,6 @@ export function formatCurrency(value: number | null | undefined) {
     maximumFractionDigits: 0,
     style: 'currency',
   }).format(value);
-}
-
-export function formatDate(
-  value: string | null | undefined,
-  options?: Intl.DateTimeFormatOptions,
-) {
-  if (!value) {
-    return '-';
-  }
-
-  return new Intl.DateTimeFormat('en-IN', {
-    dateStyle: 'medium',
-    ...options,
-  }).format(new Date(value));
 }
 
 export function getRequestStatusLabel(status: SelfServiceRequestStatus) {

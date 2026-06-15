@@ -785,8 +785,8 @@ export default function RemindersPage() {
                           <TableCell>
                             {reminder.entity_name && (
                               <Link
-                                href={`/home/${reminder.entity_type === 'opportunity' ? 'opportunities' : `${reminder.entity_type}s`}/${reminder.entity_id}`}
-                                className="hover:text-primary text-muted-foreground text-xs hover:underline"
+                                href={`/home/sales/${reminder.entity_type === 'opportunity' ? 'opportunities' : `${reminder.entity_type}s`}/${reminder.entity_id}`}
+                                className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary text-xs"
                                 title={`${reminder.entity_type}: ${reminder.entity_name}`}
                               >
                                 {reminder.entity_name}

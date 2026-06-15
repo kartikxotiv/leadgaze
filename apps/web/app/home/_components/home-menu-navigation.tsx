@@ -417,14 +417,18 @@ function NavDropdown({
         className={cn(
           'flex items-center rounded-md text-sm font-medium transition-colors',
           active
-            ? 'bg-header-primary text-white'
-            : 'text-blue-100 hover:bg-white/10 hover:text-white',
+            ? 'bg-header-primary !text-white'
+            : '!text-blue-100 hover:bg-white/10 hover:text-white',
         )}
       >
         {/* Text label — navigates to the main list page */}
         <Link
           href={path}
-          className="px-3 py-1.5 outline-none focus:outline-none"
+          className={cn('px-3 py-1.5 outline-none focus:outline-none',
+                    active
+                      ? 'bg-header-primary !text-white'
+                      : '!text-blue-100 hover:bg-white/10 hover:text-white',
+                  )}
         >
           <Trans i18nKey={label} defaults={formattedLabel} />
         </Link>
@@ -855,11 +859,11 @@ export function HomeMenuNavigation() {
             path: '/home/sales/document',
             Icon: <FileText className="h-4 w-4" />,
           },
-          {
-            label: 'Teams',
-            path: pathsConfig.app.teams,
-            Icon: <Users className="h-4 w-4" />,
-          },
+          // {
+          //   label: 'Teams',
+          //   path: pathsConfig.app.teams,
+          //   Icon: <Users className="h-4 w-4" />,
+          // },
         ],
       },
       {
@@ -1154,8 +1158,8 @@ export function HomeMenuNavigation() {
                   className={cn(
                     'flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
                     active
-                      ? 'bg-header-primary text-white'
-                      : 'text-blue-100 hover:bg-white/10 hover:text-white',
+                      ? 'bg-header-primary !text-white'
+                      : '!text-blue-100 hover:bg-white/10 hover:text-white',
                   )}
                 >
                   <span>

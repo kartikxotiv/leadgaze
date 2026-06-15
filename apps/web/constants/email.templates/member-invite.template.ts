@@ -73,6 +73,9 @@ const INVITE_MEMBER_TEMPLATE = ({
           <a href="${appUrl}" style="color: #4eacff; text-decoration: none;">Visit ${productName}</a> | 
           <a href="${appUrl}/help" style="color: #4eacff; text-decoration: none; margin-left: 12px;">Help Center</a>
         </p>
+        <p style="margin: 12px 0 0 0; font-size: 12px; color: #999999;">
+          A product by <a href="https://programea.com" target="_blank" rel="noopener noreferrer" style="color: #4eacff; text-decoration: none;">Programea LLC</a>
+        </p>
       </div>
     </div>
   </div>

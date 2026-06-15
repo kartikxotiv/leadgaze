@@ -10,6 +10,7 @@ import {
   formatPayrollRunPeriod,
   isAssignmentEligibleForPayrollRun,
 } from './utils';
+import { formatDate } from '@kit/shared/utils';
 
 export const listPayrollDashboardController = catchAsync(
   async ({ request, user }) => {
@@ -135,17 +136,8 @@ export const listPayrollDashboardController = catchAsync(
         openPayItems: employeePayItems?.length ?? 0,
         currentRunWindow:
           payrollRuns?.[0] &&
-          `${new Date(payrollRuns[0].period_start).toLocaleDateString('en-IN', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-          })} - ${new Date(payrollRuns[0].period_end).toLocaleDateString(
-            'en-IN',
-            {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric',
-            },
+          `${formatDate(payrollRuns[0].period_start)} - ${formatDate(
+            payrollRuns[0].period_end,
           )}`,
         publishedPayslips: payslips?.length ?? 0,
       },
@@ -172,20 +164,10 @@ export const listPayrollDashboardController = catchAsync(
           effective_to: item.effective_to,
           notes: item.notes,
           period: item.effective_to
-            ? `${new Date(item.effective_from).toLocaleDateString('en-IN', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              })} - ${new Date(item.effective_to).toLocaleDateString('en-IN', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              })}`
-            : `${new Date(item.effective_from).toLocaleDateString('en-IN', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              })} onward`,
+            ? `${formatDate(item.effective_from)} - ${formatDate(
+                item.effective_to,
+              )}`
+            : `${formatDate(item.effective_from)} onward`,
           status: item.status,
         })) ?? [],
       payItems:
@@ -199,11 +181,7 @@ export const listPayrollDashboardController = catchAsync(
           effective_date: item.effective_date,
           notes: item.notes,
           payable: item.effective_date
-            ? new Date(item.effective_date).toLocaleDateString('en-IN', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              })
+            ? formatDate(item.effective_date)
             : 'Unknown',
           status: item.status,
         })) ?? [],

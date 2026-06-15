@@ -414,7 +414,7 @@ function ModuleSelectorPage() {
           </Button>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 px-1">
           {enabledModules.map((mod) => (
             <ModuleCard
               key={mod.module_id}
