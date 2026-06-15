@@ -7,24 +7,10 @@ import {
   successDataResponse,
 } from '../../../../utils/response-handler';
 import { getPayrollContext } from '../payroll-context';
+import { formatDate } from '@kit/shared/utils';
 
 function formatRunPeriod(run: { period_start: string; period_end: string }) {
-  const start = new Date(`${run.period_start}T00:00:00`);
-  const end = new Date(`${run.period_end}T00:00:00`);
-
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return `${run.period_start} - ${run.period_end}`;
-  }
-
-  return `${start.toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })} - ${end.toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })}`;
+  return `${formatDate(run.period_start)} - ${formatDate(run.period_end)}`;
 }
 
 const listPayrollRunsController = catchAsync(async ({ request, user }) => {

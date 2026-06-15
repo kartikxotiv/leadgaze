@@ -23,6 +23,7 @@ import {
 
 import type { Department } from '../../types/department.type';
 import { useRbac } from '../rbac/rbac-context';
+import { formatDate } from '@kit/shared/utils';
 
 export function DepartmentsDirectoryCard(props: {
   departments: Array<Department>;
@@ -197,8 +198,4 @@ export function DepartmentsDirectoryCard(props: {
   );
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat('en-IN', {
-    dateStyle: 'medium',
-  }).format(new Date(value));
-}
+

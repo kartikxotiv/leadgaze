@@ -96,6 +96,7 @@
   },
   "dependencies": {
     "@kit/next": "workspace:*",
+    "@kit/shared": "workspace:*",
     "@kit/supabase": "workspace:*",
     "@kit/tsconfig": "workspace:*",
     "@kit/ui": "workspace:*",

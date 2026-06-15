@@ -23,6 +23,7 @@ import {
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import { Skeleton } from '@kit/ui/skeleton';
+import { formatDate } from '@kit/shared/utils';
 
 import { getServiceCloudDashboardService } from '../../services';
 import {
@@ -34,11 +35,6 @@ import { ServiceCloudAccessDenied } from '../_components/access-denied';
 
 function formatHours(seconds: number) {
   return `${Math.round((Number(seconds || 0) / 3600) * 10) / 10}h`;
-}
-
-function formatDate(value?: string | null) {
-  if (!value) return '-';
-  return new Date(value).toLocaleDateString();
 }
 
 function maxCount(rows: any[], key: string) {
