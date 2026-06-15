@@ -324,8 +324,9 @@ const inviteMember = catchAsync(
 
     try {
       await transporter.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        from: process.env.SMTP_USER,
         to: email,
+        replyTo: user?.email || process.env.SMTP_USER,
         subject: `${inviterName} invited you to join ${workspace?.name || 'Workspace'} on ${process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze'}`,
         html: INVITE_MEMBER_TEMPLATE({
           inviteLink: inviteUrl,
@@ -614,6 +615,248 @@ const resendInvitation = catchAsync(
   },
 );
 
+// ─── Pending Invitations: Fetch, Delete, Resend ────────────────────────────
+
+const getPendingInvitations = catchAsync(
+  async ({
+    request,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const url = new URL(request.url);
+    const workspaceId = url.searchParams.get('workspaceId');
+
+    if (!workspaceId) {
+      return NextResponse.json(
+        { message: 'workspaceId is required' },
+        { status: 400 },
+      );
+    }
+
+    const { data: invitations, error } = await supabase
+      .from('workspace_invitations')
+      .select(
+        `
+        id,
+        email,
+        status,
+        invited_at,
+        created_at,
+        token_expires_at,
+        role:workspace_roles(id, role_name, role_key, hierarchy_level, color)
+      `,
+      )
+      .eq('workspace_id', workspaceId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Get pending invitations error:', error);
+      throw error;
+    }
+
+    return successDataResponse(
+      'Pending invitations retrieved successfully',
+      invitations || [],
+    );
+  },
+);
+
+const deleteInvitation = catchAsync(
+  async ({
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const invitationId = params?.invitationId;
+
+    if (!invitationId) {
+      return NextResponse.json(
+        { message: 'invitationId is required' },
+        { status: 400 },
+      );
+    }
+
+    // Verify the invitation exists and is still pending
+    const { data: invitation, error: fetchError } = await supabase
+      .from('workspace_invitations')
+      .select('id, status')
+      .eq('id', invitationId)
+      .single();
+
+    if (fetchError || !invitation) {
+      return NextResponse.json(
+        { message: 'Invitation not found' },
+        { status: 404 },
+      );
+    }
+
+    if (invitation.status !== 'pending') {
+      return NextResponse.json(
+        { message: 'Only pending invitations can be deleted' },
+        { status: 400 },
+      );
+    }
+
+    const { error } = await supabase
+      .from('workspace_invitations')
+      .delete()
+      .eq('id', invitationId);
+
+    if (error) {
+      console.error('Delete invitation error:', error);
+      throw error;
+    }
+
+    return successDataResponse('Invitation deleted successfully');
+  },
+);
+
+const resendInvitationEmail = catchAsync(
+  async ({
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const invitationId = params?.invitationId;
+
+    if (!invitationId) {
+      return NextResponse.json(
+        { message: 'invitationId is required' },
+        { status: 400 },
+      );
+    }
+
+    // Fetch the invitation with all needed fields
+    const { data: invitation, error: fetchError } = await supabase
+      .from('workspace_invitations')
+      .select('id, email, token, status, workspace_id, invited_at, token_expires_at')
+      .eq('id', invitationId)
+      .single();
+
+    if (fetchError || !invitation) {
+      return NextResponse.json(
+        { message: 'Invitation not found' },
+        { status: 404 },
+      );
+    }
+
+    if (invitation.status !== 'pending') {
+      return NextResponse.json(
+        { message: 'Only pending invitations can be resent' },
+        { status: 400 },
+      );
+    }
+
+    // If token has expired, regenerate a fresh token and extend the expiry
+    let activeToken = invitation.token;
+    const now = new Date();
+    const isExpired =
+      invitation.token_expires_at &&
+      new Date(invitation.token_expires_at) < now;
+
+    if (isExpired || !activeToken) {
+      const generateToken = () =>
+        Math.random().toString(36).substring(2, 15) +
+        Math.random().toString(36).substring(2, 15) +
+        Math.random().toString(36).substring(2, 15);
+
+      activeToken = generateToken();
+      const newExpiresAt = new Date(
+        now.getTime() + 7 * 24 * 60 * 60 * 1000,
+      ).toISOString();
+
+      const { error: tokenUpdateError } = await supabase
+        .from('workspace_invitations')
+        .update({ token: activeToken, token_expires_at: newExpiresAt })
+        .eq('id', invitationId);
+
+      if (tokenUpdateError) {
+        console.error('Regenerate token error:', tokenUpdateError);
+        throw tokenUpdateError;
+      }
+    }
+
+    // Fetch workspace details for email
+    const { data: workspace } = await supabase
+      .from('workspaces')
+      .select('id, name')
+      .eq('id', invitation.workspace_id)
+      .single();
+
+    // Get inviter info
+    const { data: { user } = {} } = await supabase.auth.getUser();
+    let inviterName = user?.user_metadata?.email || 'Someone';
+    if (user) {
+      const { data: userData } = await supabase
+        .from('accounts')
+        .select('name')
+        .eq('id', user.id)
+        .single();
+      inviterName = userData?.name || inviterName;
+    }
+
+    // Re-send the invitation email (use activeToken which may have been regenerated)
+    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/invite?token=${activeToken}`;
+
+    try {
+      await transporter.sendMail({
+        from: process.env.SMTP_USER,
+        to: invitation.email,
+        replyTo: user?.email || process.env.SMTP_USER,
+        subject: `${inviterName} invited you to join ${workspace?.name || 'Workspace'} on ${process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze'}`,
+        html: INVITE_MEMBER_TEMPLATE({
+          inviteLink: inviteUrl,
+          workspaceName: workspace?.name || 'Workspace',
+          inviterName,
+          productName: process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze',
+          appUrl: process.env.NEXT_PUBLIC_APP_URL,
+        }),
+      });
+    } catch (error) {
+      console.error('Resend invitation email error:', error);
+      return NextResponse.json(
+        { message: 'Failed to send invitation email' },
+        { status: 500 },
+      );
+    }
+
+    // Update invited_at timestamp
+    const { data: updatedInvitation, error: updateError } = await supabase
+      .from('workspace_invitations')
+      .update({ invited_at: new Date().toISOString() })
+      .eq('id', invitationId)
+      .select(
+        `
+        id,
+        email,
+        status,
+        invited_at,
+        created_at,
+        token_expires_at,
+        role:workspace_roles(id, role_name, role_key, hierarchy_level, color)
+      `,
+      )
+      .single();
+
+    if (updateError) {
+      console.error('Update invitation timestamp error:', updateError);
+      throw updateError;
+    }
+
+    return successDataResponse(
+      'Invitation resent successfully',
+      updatedInvitation,
+    );
+  },
+);
+
 export {
   getMembers,
   getMemberById,
@@ -621,4 +864,7 @@ export {
   updateMember,
   removeMember,
   resendInvitation,
+  getPendingInvitations,
+  deleteInvitation,
+  resendInvitationEmail,
 };

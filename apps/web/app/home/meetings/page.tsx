@@ -792,8 +792,8 @@ export default function MeetingsPage() {
                           <TableCell>
                             {meeting.entity_name && (
                               <Link
-                                href={`/home/${meeting.entity_type === 'opportunity' ? 'opportunities' : `${meeting.entity_type}s`}/${meeting.entity_id}`}
-                                className="hover:text-primary text-muted-foreground text-xs hover:underline"
+                                href={`/home/sales/${meeting.entity_type === 'opportunity' ? 'opportunities' : `${meeting.entity_type}s`}/${meeting.entity_id}`}
+                                className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary text-xs"
                                 title={`${meeting.entity_type}: ${meeting.entity_name}`}
                               >
                                 {meeting.entity_name}
