@@ -339,9 +339,9 @@ export default function LeadDetailsPage() {
           entityName={`${lead.first_name} ${lead.last_name || ''}`}
           onSuccess={() => router.push('/home/sales/leads')}
         />
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="flex flex-col lg:flex-row gap-4 w-full">
           {/* Main Content */}
-          <div className="space-y-6 lg:col-span-2">
+          <div className="space-y-4 w-full lg:w-[65%]">
             <DetailHeader
               avatar={
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-semibold text-white">
@@ -631,8 +631,8 @@ export default function LeadDetailsPage() {
                   <CardTitle className="text-destructive text-lg"></CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
+                  <div className="flex flex-col md:flex-row items-center justify-between">
+                    <div className="mb-4 space-y-1">
                       <p className="font-medium">Delete Lead</p>
                       <p className="text-muted-foreground text-sm">
                         Once you delete a lead, there is no going back. Please
@@ -667,7 +667,7 @@ export default function LeadDetailsPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-4 w-full lg:w-[35%]">
             {/* Lead Scoring Card */}
             {lead.lead_score !== null && (
               <Card>

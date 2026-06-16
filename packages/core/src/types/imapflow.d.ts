@@ -3,6 +3,13 @@ declare module 'imapflow' {
     constructor(config: Record<string, unknown>);
     connect(): Promise<void>;
     logout(): Promise<void>;
+    list(): Promise<
+      Array<{
+        path?: string;
+        name?: string;
+        specialUse?: string;
+      }>
+    >;
     getMailboxLock(mailbox: string): Promise<{ release(): void }>;
     search(criteria: Record<string, unknown>): Promise<number[]>;
     fetchOne(

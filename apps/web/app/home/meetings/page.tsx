@@ -12,6 +12,7 @@ import {
   Loader2,
   MapPin,
   MoreHorizontal,
+  MoreVertical,
   Pencil,
   Plus,
   Trash2,
@@ -804,7 +805,7 @@ export default function MeetingsPage() {
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
+                                <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -1037,7 +1038,7 @@ export default function MeetingsPage() {
           <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Edit Meeting</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-4 px-6">
             <div className="space-y-2">
               <Label>Title</Label>
               <Input

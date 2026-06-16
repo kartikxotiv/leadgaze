@@ -1,6 +1,6 @@
 'use client';
 
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, MoreVertical } from 'lucide-react';
 
 import { Button } from '@kit/ui/button';
 import {
@@ -88,7 +88,7 @@ export function SeparationActionMenu({
           className="h-8 w-8"
           disabled={isSubmitting}
         >
-          <MoreHorizontal className="h-4 w-4" />
+          <MoreVertical className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
