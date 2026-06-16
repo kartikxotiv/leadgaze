@@ -28,7 +28,6 @@ import {
   useInventoryPermissions,
 } from '@kit/inventory';
 import {
-  canAccessServiceCloudSettings,
   getServiceCloudRoutesForPermissions,
   useServiceCloudPermissions,
 } from '@kit/service-cloud';
@@ -228,31 +227,27 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
     // 4. Service Cloud Module
     if (isServiceCloudModule) {
       const commonPaths = getModuleCommonPaths('/home/services');
-      const canManageServiceSettings = canAccessServiceCloudSettings(
-        canAccessServiceCloud,
-      );
+      const canViewWorkspaceSettings = canAccess('settings', 'view');
       const teamItems =
         permissionNavConfig?.teamItems ||
         getNavigationConfig(canAccess).teamItems;
       const scopedTeamItems = scopeCommonItems(teamItems, '/home/services');
-      const settingsChildren = [
-        ...(canManageServiceSettings
-          ? [
-              {
-                label: 'common:routes.workspace-settings',
-                path: commonPaths.workspaceSettings,
-                Icon: <Settings className="h-4 w-4" />,
-              },
-            ]
-          : []),
-        ...scopedTeamItems.map((item) => {
-          const IconComponent = item.Icon;
-          return {
-            ...item,
-            Icon: <IconComponent className="h-4 w-4" />,
-          };
-        }),
-      ];
+      const settingsChildren = canViewWorkspaceSettings
+        ? [
+            {
+              label: 'common:routes.workspace-settings',
+              path: commonPaths.workspaceSettings,
+              Icon: <Settings className="h-4 w-4" />,
+            },
+            ...scopedTeamItems.map((item) => {
+              const IconComponent = item.Icon;
+              return {
+                ...item,
+                Icon: <IconComponent className="h-4 w-4" />,
+              };
+            }),
+          ]
+        : [];
 
       return [
         ...getServiceCloudRoutesForPermissions(canAccessServiceCloud),

@@ -38,7 +38,6 @@ import {
   useInventoryPermissions,
 } from '@kit/inventory';
 import {
-  canAccessServiceCloudSettings,
   getServiceCloudRoutesForPermissions,
   useServiceCloudPermissions,
 } from '@kit/service-cloud';
@@ -424,11 +423,12 @@ function NavDropdown({
         {/* Text label — navigates to the main list page */}
         <Link
           href={path}
-          className={cn('px-3 py-1.5 outline-none focus:outline-none',
-                    active
-                      ? 'bg-header-primary !text-white'
-                      : '!text-blue-100 hover:bg-white/10 hover:text-white',
-                  )}
+          className={cn(
+            'px-3 py-1.5 outline-none focus:outline-none',
+            active
+              ? 'bg-header-primary !text-white'
+              : '!text-blue-100 hover:bg-white/10 hover:text-white',
+          )}
         >
           <Trans i18nKey={label} defaults={formattedLabel} />
         </Link>
@@ -775,31 +775,27 @@ export function HomeMenuNavigation() {
     // 4. Service Cloud Module
     if (isServiceCloudModule) {
       const commonPaths = getModuleCommonPaths('/home/services');
-      const canManageServiceSettings = canAccessServiceCloudSettings(
-        canAccessServiceCloud,
-      );
+      const canViewWorkspaceSettings = canAccess('settings', 'view');
       const teamItems =
         permissionNavConfig?.teamItems ||
         getNavigationConfig(canAccess).teamItems;
       const scopedTeamItems = scopeCommonItems(teamItems, '/home/services');
-      const settingsChildren = [
-        ...(canManageServiceSettings
-          ? [
-              {
-                label: 'common:routes.workspace-settings',
-                path: commonPaths.workspaceSettings,
-                Icon: <Settings className="h-4 w-4" />,
-              },
-            ]
-          : []),
-        ...scopedTeamItems.map((item) => {
-          const IconComponent = item.Icon;
-          return {
-            ...item,
-            Icon: <IconComponent className="h-4 w-4" />,
-          };
-        }),
-      ];
+      const settingsChildren = canViewWorkspaceSettings
+        ? [
+            {
+              label: 'common:routes.workspace-settings',
+              path: commonPaths.workspaceSettings,
+              Icon: <Settings className="h-4 w-4" />,
+            },
+            ...scopedTeamItems.map((item) => {
+              const IconComponent = item.Icon;
+              return {
+                ...item,
+                Icon: <IconComponent className="h-4 w-4" />,
+              };
+            }),
+          ]
+        : [];
 
       return [
         ...getServiceCloudRoutesForPermissions(canAccessServiceCloud),
