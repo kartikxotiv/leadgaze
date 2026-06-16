@@ -14,7 +14,6 @@ import {
   NotebookPen,
   Settings,
   ShieldCheck,
-  Ticket,
   Users,
 } from 'lucide-react';
 
@@ -227,7 +226,10 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
     // 4. Service Cloud Module
     if (isServiceCloudModule) {
       const commonPaths = getModuleCommonPaths('/home/services');
-      const canViewWorkspaceSettings = canAccess('settings', 'view');
+      const canViewWorkspaceSettings =
+        canAccess('settings', 'view') ||
+        canAccess('subscription', 'view') ||
+        canAccess('emails', 'manage_email');
       const teamItems =
         permissionNavConfig?.teamItems ||
         getNavigationConfig(canAccess).teamItems;
