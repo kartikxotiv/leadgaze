@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import { requireSubscriptionManagePermission } from '~/lib/server/subscription-permissions';
 import { getStripeClient } from '~/lib/stripe/stripe-client';
 
 import { catchAsync } from '../../../../utils/response-handler';
@@ -75,15 +76,10 @@ export const cancelSubscription = catchAsync(
       );
     }
 
-    if (workspace.owner_id !== user.id) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Only the workspace owner can cancel subscriptions',
-        },
-        { status: 403 },
-      );
-    }
+    await requireSubscriptionManagePermission({
+      accountId: user.id,
+      workspaceId,
+    });
 
     // ── Fetch seat(s) ──────────────────────────────────────────
     const seatQuery = adminClient

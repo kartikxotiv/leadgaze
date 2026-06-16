@@ -18,6 +18,7 @@ import {
   type ServiceCloudFeatureKey,
   type ServiceCloudModuleKey,
   canAccessServiceCloudFeature,
+  canAccessServiceCloudSettings,
 } from './permission-util';
 
 type ServiceCloudRoute = {
@@ -84,9 +85,17 @@ export function getServiceCloudRoutesForPermissions(
   canAccess?: ServiceCloudCanAccess,
 ) {
   const children = serviceCloudRouteChildren
-    .filter((item) =>
-      canAccessServiceCloudFeature(canAccess, item.moduleKey, item.featureKey),
-    )
+    .filter((item) => {
+      if (item.moduleKey === SERVICE_CLOUD_MODULE_KEYS.settings) {
+        return canAccessServiceCloudSettings(canAccess);
+      }
+
+      return canAccessServiceCloudFeature(
+        canAccess,
+        item.moduleKey,
+        item.featureKey,
+      );
+    })
     .map(({ moduleKey, featureKey, ...item }) => item);
 
   return [
