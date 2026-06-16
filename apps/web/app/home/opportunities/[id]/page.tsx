@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 
 import { CoreEmailComposeDialog } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
+import { formatDate } from '@kit/shared/utils';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
@@ -594,9 +595,7 @@ export default function OpportunityDetailsPage() {
                     }
                     value={
                       opportunity.expected_close_date
-                        ? new Date(
-                            opportunity.expected_close_date,
-                          ).toLocaleDateString()
+                        ? formatDate(opportunity.expected_close_date)
                         : '-'
                     }
                   />
@@ -722,7 +721,7 @@ export default function OpportunityDetailsPage() {
                   <div className="flex items-center gap-2">
                     <Calendar className="h-3 w-3" />
                     <span className="text-sm">
-                      {new Date(opportunity.created_at).toLocaleDateString()}
+                      {formatDate(opportunity.created_at)}
                     </span>
                   </div>
                 </div>
@@ -747,7 +746,7 @@ export default function OpportunityDetailsPage() {
                   <div className="flex items-center gap-2">
                     <Calendar className="h-3 w-3" />
                     <span className="text-sm">
-                      {new Date(opportunity.updated_at).toLocaleDateString()}
+                      {formatDate(opportunity.updated_at)}
                     </span>
                   </div>
                 </div>

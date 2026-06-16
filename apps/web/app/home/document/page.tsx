@@ -77,6 +77,7 @@ import {
 import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
+import { formatDate } from '@kit/shared/utils';
 
 function DocumentPageSkeleton() {
   return (
@@ -628,9 +629,7 @@ export default function DocumentPage() {
                       )}
                       {isVisible('last_modified') && (
                         <TableCell className="text-muted-foreground">
-                          {new Date(
-                            doc.updated_at || doc.created_at,
-                          ).toLocaleDateString()}
+                          {formatDate(doc.updated_at || doc.created_at)}
                         </TableCell>
                       )}
                       {isVisible('created_by') && (
@@ -640,7 +639,7 @@ export default function DocumentPage() {
                       )}
                       {isVisible('created_at') && (
                         <TableCell className="text-muted-foreground">
-                          {new Date(doc.created_at).toLocaleDateString()}
+                          {formatDate(doc.created_at)}
                         </TableCell>
                       )}
                       {isVisible('updated_by') && (

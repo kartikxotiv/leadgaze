@@ -29,6 +29,7 @@ import {
 
 import { TemplateDialog } from './template-dialog';
 
+
 export function EmailTemplatesTab() {
   const queryClient = useQueryClient();
   const { currentWorkspace: workspace, canAccess } = useRBAC();

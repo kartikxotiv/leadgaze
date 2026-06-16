@@ -41,6 +41,7 @@ import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { CreateContactDialog } from './components/create-contact-dialog';
 import CustomTableContainer from '@kit/ui/custom-table-container';
+import { formatDate } from '@kit/shared/utils';
 
 function ContactsPageSkeleton() {
   return (
@@ -440,9 +441,7 @@ export default function ContactsPage() {
                               {isVisible('created_at') && (
                                 <TableCell className="">
                                   {contact.created_at
-                                    ? new Date(
-                                        contact.created_at,
-                                      ).toLocaleDateString()
+                                    ? formatDate(contact.created_at)
                                     : '-'}
                                 </TableCell>
                               )}

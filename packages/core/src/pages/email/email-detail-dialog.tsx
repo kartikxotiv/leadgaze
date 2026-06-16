@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 
 import { Calendar, Mail, Reply, User } from 'lucide-react';
 
+import { formatDate } from '@kit/shared/utils';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import {
@@ -17,7 +18,7 @@ import { Separator } from '@kit/ui/separator';
 
 function displayDate(value?: string | null) {
   if (!value) return '-';
-  return new Date(value).toLocaleString();
+  return formatDate(value);
 }
 
 function normalizeRecipients(value: unknown): string[] {

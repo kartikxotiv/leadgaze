@@ -59,6 +59,7 @@ import { EntityNotes } from '../../_components/entity-notes';
 import { LogCallDialog } from '../../leads/components/log-call-dialog';
 import { ContactAssignees } from '../components/contact-assignees';
 import { EditContactDialog } from '../components/edit-contact-dialog';
+import { formatDate } from '@kit/shared/utils';
 
 function ContactDetailsSkeleton() {
   return (
@@ -556,7 +557,7 @@ export default function ContactDetailsPage() {
                   <div className="flex items-center gap-2">
                     <Calendar className="h-3 w-3" />
                     <span className="text-sm">
-                      {new Date(contact.created_at).toLocaleDateString()}
+                      {formatDate(contact.created_at)}
                     </span>
                   </div>
                 </div>

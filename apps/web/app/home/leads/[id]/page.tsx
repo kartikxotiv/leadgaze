@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 
 import { CoreEmailComposeDialog } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
+import { formatDate, formatDateTime } from '@kit/shared/utils';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
@@ -856,7 +857,7 @@ export default function LeadDetailsPage() {
                         Lead Created
                       </p>
                       <p className="text-xs text-gray-500">
-                        {new Date(lead.created_at).toLocaleString()}
+                        {formatDate(lead.created_at)}
                       </p>
                     </div>
                   </div>
@@ -868,7 +869,7 @@ export default function LeadDetailsPage() {
                           Lead Updated
                         </p>
                         <p className="text-xs text-gray-500">
-                          {new Date(lead.updated_at).toLocaleString()}
+                          {formatDate(lead.updated_at)}
                         </p>
                       </div>
                     </div>
@@ -918,7 +919,7 @@ export default function LeadDetailsPage() {
                     Created
                   </p>
                   <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {new Date(lead.created_at).toLocaleDateString()}
+                    {formatDate(lead.created_at)}
                   </p>
                 </div>
                 <div>
@@ -926,7 +927,7 @@ export default function LeadDetailsPage() {
                     Last Updated
                   </p>
                   <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {new Date(lead.updated_at).toLocaleDateString()}
+                    {formatDate(lead.updated_at)}
                   </p>
                 </div>
                 {lead.lead_score !== null && (

@@ -10,6 +10,7 @@ import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
+import { formatDate } from '@kit/shared/utils';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import {
   Pagination,
@@ -357,7 +358,7 @@ export default function OpportunitiesPage() {
 
       {/* Pipeline Summary Cards */}
       <div className="w-full max-w-full min-w-0 shrink-0 pb-2 pt-2">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 max-h-[260px] overflow-auto">
           <Card
             className={`hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer transition-all ${selectedStage === 'all' ? 'border-primary table-status-select-bg dark:dark-table-status-select-bg' : ''}`}
             onClick={() => setSelectedStage('all')}
@@ -655,9 +656,7 @@ export default function OpportunitiesPage() {
                         {isVisible('close_date') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.expected_close_date
-                              ? new Date(
-                                  opportunity.expected_close_date,
-                                ).toLocaleDateString()
+                              ? formatDate(opportunity.expected_close_date)
                               : '-'}
                           </TableCell>
                         )}
@@ -712,9 +711,7 @@ export default function OpportunitiesPage() {
                         {isVisible('created_at') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.created_at
-                              ? new Date(
-                                  opportunity.created_at,
-                                ).toLocaleDateString()
+                              ? formatDate(opportunity.created_at)
                               : '-'}
                           </TableCell>
                         )}

@@ -69,6 +69,7 @@ import { LogCallDialog } from '../../leads/components/log-call-dialog';
 import { OpportunityDialog } from '../../opportunities/components/opportunity-dialog';
 import { AccountAssignees } from '../components/account-assignees';
 import { EditAccountDialog } from '../components/edit-account-dialog';
+import { formatDate } from '@kit/shared/utils';
 
 function AccountDetailsSkeleton() {
   return (
@@ -636,7 +637,7 @@ export default function AccountDetailsPage() {
                           metadata={
                             <span>
                               {opp.expected_close_date &&
-                                `Expected Close: ${new Date(opp.expected_close_date).toLocaleDateString()}`}
+                                `Expected Close: ${formatDate(opp.expected_close_date)}`}
                               {opp.expected_close_date &&
                                 opp.probability !== undefined &&
                                 ' • '}
@@ -741,7 +742,7 @@ export default function AccountDetailsPage() {
                   <div className="flex items-center gap-2">
                     <Calendar className="h-3 w-3" />
                     <span className="text-sm">
-                      {new Date(account.created_at).toLocaleDateString()}
+                      {formatDate(account.created_at)}
                     </span>
                   </div>
                 </div>
@@ -752,7 +753,7 @@ export default function AccountDetailsPage() {
                   <div className="flex items-center gap-2">
                     <Calendar className="h-3 w-3" />
                     <span className="text-sm">
-                      {new Date(account.updated_at).toLocaleDateString()}
+                      {formatDate(account.updated_at)}
                     </span>
                   </div>
                 </div>
