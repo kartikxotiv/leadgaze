@@ -358,7 +358,7 @@ export default function OpportunitiesPage() {
 
       {/* Pipeline Summary Cards */}
       <div className="w-full max-w-full min-w-0 shrink-0 pb-2 pt-2">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 max-h-[260px] overflow-auto">
           <Card
             className={`hover:border-primary/50 bg-card inline-flex w-auto shrink-0 cursor-pointer transition-all ${selectedStage === 'all' ? 'border-primary table-status-select-bg dark:dark-table-status-select-bg' : ''}`}
             onClick={() => setSelectedStage('all')}

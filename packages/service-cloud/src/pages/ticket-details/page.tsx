@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { CoreEmailReplyDialog, CoreEntityPanel } from '@kit/core/pages';
+import { CoreEmailComposeDialog, CoreEmailReplyDialog, CoreEntityPanel } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
 import { formatDate, formatDateOnly, formatDateTime } from '@kit/shared/utils';
 import {
@@ -194,6 +194,7 @@ export function ServiceCloudTicketDetailPage({
     logged_date: todayLocalDate(),
   });
   const [replyEmail, setReplyEmail] = useState<any | null>(null);
+  const [isComposeOpen, setIsComposeOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey,
@@ -495,6 +496,15 @@ export function ServiceCloudTicketDetailPage({
                   >
                     <Mail className="mr-2 h-4 w-4" />
                     Reply in thread
+                  </Button>
+                ) : null}
+                {canManageInbox && !latestThreadEmail ? (
+                  <Button
+                    size="sm"
+                    onClick={() => setIsComposeOpen(true)}
+                  >
+                    <Mail className="mr-2 h-4 w-4" />
+                    Send Email
                   </Button>
                 ) : null}
                 <StatusPill label={ticket.source ?? 'manual'} />
@@ -1068,19 +1078,36 @@ export function ServiceCloudTicketDetailPage({
       </div>
 
       {canManageInbox ? (
-        <CoreEmailReplyDialog
-          open={Boolean(replyEmail)}
-          onOpenChange={(open) => {
-            if (!open) {
-              setReplyEmail(null);
-              void queryClient.invalidateQueries({ queryKey });
-            }
-          }}
-          workspaceId={workspaceId}
-          email={replyEmail}
-          accounts={emailAccounts}
-          templateContext={ticketTemplateContext}
-        />
+        <>
+          <CoreEmailReplyDialog
+            open={Boolean(replyEmail)}
+            onOpenChange={(open) => {
+              if (!open) {
+                setReplyEmail(null);
+                void queryClient.invalidateQueries({ queryKey });
+              }
+            }}
+            workspaceId={workspaceId}
+            email={replyEmail}
+            accounts={emailAccounts}
+            templateContext={ticketTemplateContext}
+          />
+          <CoreEmailComposeDialog
+            open={isComposeOpen}
+            onOpenChange={(open) => {
+              setIsComposeOpen(open);
+              if (!open) {
+                void queryClient.invalidateQueries({ queryKey });
+              }
+            }}
+            workspaceId={workspaceId}
+            accounts={emailAccounts}
+            initialTo={ticket.customer?.email ?? ''}
+            entityType="service_cloud_ticket"
+            entityId={ticketId}
+            templateContext={ticketTemplateContext}
+          />
+        </>
       ) : null}
 
       <Dialog
