@@ -53,6 +53,7 @@ export function ServiceCloudSettingsPage({
           workspaceId={workspaceId}
           resource="ticket-statuses"
           title="Ticket Statuses"
+          createLabel="New Status"
           description="Configure support ticket workflow states."
           canCreate={canManageStatuses}
           canEdit={canManageStatuses}
@@ -107,6 +108,7 @@ export function ServiceCloudSettingsPage({
           workspaceId={workspaceId}
           resource="ticket-priorities"
           title="Ticket Priorities"
+          createLabel="New Priority"
           description="Configure urgency and SLA hints."
           canCreate={canManagePriorities}
           canEdit={canManagePriorities}
@@ -149,6 +151,7 @@ export function ServiceCloudSettingsPage({
           workspaceId={workspaceId}
           resource="ticket-categories"
           title="Ticket Categories"
+          createLabel="New Category"
           description="Classify support issues for reporting and routing."
           canCreate={canManageCategories}
           canEdit={canManageCategories}

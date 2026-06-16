@@ -219,6 +219,7 @@ export function ServiceCloudCustomersPage({
           workspaceId={workspaceId}
           resource="customers"
           title="Customers"
+          createLabel="New Customer"
           description="People who contact support."
           canCreate={canCreate}
           canEdit={canEdit}
@@ -255,6 +256,7 @@ export function ServiceCloudCustomersPage({
           workspaceId={workspaceId}
           resource="organizations"
           title="Organizations"
+          createLabel="New Organization"
           description="Companies and customer accounts supported by the team."
           canCreate={canCreate}
           canEdit={canEdit}
