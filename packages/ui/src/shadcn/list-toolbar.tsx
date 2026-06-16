@@ -81,6 +81,9 @@ export interface ListToolBarProps {
   // ── Column-visibility slot ─────────────────────────────────────────────────
   columnVisibilitySlot?: React.ReactNode;
 
+  // ── Status filter slot (e.g. a dropdown replacing inline metric tabs) ──────
+  statusSlot?: React.ReactNode;
+
   // ── Root ───────────────────────────────────────────────────────────────────
   className?: string;
 }
@@ -101,6 +104,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
   onClearFilters,
   actions = [],
   columnVisibilitySlot,
+  statusSlot,
   className,
 }) => {
   const [isFilterOpen, setIsFilterOpen] = React.useState(false);
@@ -131,29 +135,34 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
           </div>
         )}
 
+        {/* ── Status filter slot (e.g. dropdown replacing metric tabs) ───── */}
+        {statusSlot}
+
         {/* ── Filter button ────────────────────────────────────────────────── */}
         {showFilter && (
-          <Popover open={isFilterOpen} onOpenChange={handleFilterOpenChange}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  'relative shrink-0 gap-1.5',
-                  isFilterOpen && 'bg-accent',
-                )}
-                aria-label="Open filters"
-              >
-                <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
-                <span className="hidden sm:inline">{filterLabel}</span>
-                {activeFilterCount > 0 && (
-                  <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
-                    {activeFilterCount}
-                  </span>
-                )}
-              </Button>
-            </PopoverTrigger>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Popover open={isFilterOpen} onOpenChange={handleFilterOpenChange}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'relative shrink-0 gap-1.5',
+                      isFilterOpen && 'bg-accent',
+                    )}
+                    aria-label="Open filters"
+                  >
+                    <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
+                    {/* <span className="hidden sm:inline">{filterLabel}</span> */}
+                    {activeFilterCount > 0 && (
+                      <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
 
-            <PopoverContent className="w-80 p-0" align="end">
+                <PopoverContent className="w-80 p-0" align="end">
               {/* Header */}
               <div className="flex items-center justify-between border-b px-4 py-3">
                 <div className="flex items-center gap-2">
@@ -257,8 +266,13 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                   </p>
                 )}
               </div>
-            </PopoverContent>
-          </Popover>
+              </PopoverContent>
+              </Popover>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <span>Filters</span>
+            </TooltipContent>
+          </Tooltip>
         )}
 
         {/* ── Action buttons ───────────────────────────────────────────────── */}
@@ -285,9 +299,9 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                   aria-label={action.label}
                 >
                   <Icon className="h-4 w-4" />
-                  {!isIconOnly && (
+                  {/* {!isIconOnly && (
                     <span className="hidden sm:inline">{action.label}</span>
-                  )}
+                  )} */}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">

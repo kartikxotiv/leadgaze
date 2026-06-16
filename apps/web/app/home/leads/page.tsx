@@ -48,8 +48,8 @@ import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import CreateLeadDialog from './components/create-lead-dialog';
 import {CustomTableContainer} from '@kit/ui/custom-table-container';
-import {TableStatusMetricTab} from '@kit/ui/table-status-metric-tab';
-import { formatDate } from '@kit/shared/utils';
+import {StatusFilterDropdown} from '@kit/ui/status-filter-dropdown';
+import {formatDate} from '@kit/shared/utils';
 
 export default function LeadsPage() {
   const router = useRouter();
@@ -226,47 +226,19 @@ export default function LeadsPage() {
           />          
         </div>
         
-          {/* Status Distribution Cards */}
-          <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2 pt-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <TableStatusMetricTab
-                   key={0}
-                   id={0}
-                   statusName='All Leads'
-                   isSelected={selectedStatus === 'all'}
-                   count={totalCount}
-                   onClick={() => setSelectedStatus('all')} />
-              {statuses.map((status: any) => {
-                const stats = leadsData.statusBreakdown[status.id] || {
-                  count: 0,
-                };
-                const isSelected = selectedStatus === status.id;
-                const displayCount =
-                  selectedStatus === 'all'
-                    ? stats.count
-                    : isSelected
-                      ? stats.count
-                      : 0;
-
-                return (
-                  <TableStatusMetricTab
-                   key={status.id}
-                   id={status.id}
-                   color={status.color}
-                   statusName={status.status_name}
-                   count={displayCount}
-                   isSelected={isSelected}
-                   onClick={() => setSelectedStatus(status.id)} />                  
-                );
-              })}
-            </div>
-          </div>
-
-        
-
-        {/* Full-width search / filter / actions toolbar */}
+          {/* Status filter dropdown + toolbar */}
         <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
           <ListToolBar
+            statusSlot={
+              <StatusFilterDropdown
+                statuses={statuses}
+                selectedStatus={selectedStatus}
+                onStatusChange={setSelectedStatus}
+                statusBreakdown={leadsData.statusBreakdown}
+                totalCount={totalCount}
+                allLabel="All Leads"
+              />
+            }
             showSearch
             searchPlaceholder="Search leads..."
             searchValue={searchTerm}
