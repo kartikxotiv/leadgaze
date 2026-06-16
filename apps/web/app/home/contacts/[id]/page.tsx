@@ -248,9 +248,9 @@ export default function ContactDetailsPage() {
           entityName={`${contact.first_name} ${contact.last_name || ''}`}
           onSuccess={() => router.push('/home/sales/contacts')}
         />
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="flex flex-col lg:flex-row gap-4 w-full">
           {/* Main Content */}
-          <div className="space-y-6 lg:col-span-2">
+          <div className="space-y-6 w-full lg:w-[65%]">
             <DetailHeader
               avatar={
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-semibold text-white">
@@ -494,7 +494,7 @@ export default function ContactDetailsPage() {
                   <CardTitle className="text-destructive text-lg"></CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col md:flex-row items-center justify-between">
                     <div className="space-y-1">
                       <p className="font-medium">Delete Contact</p>
                       <p className="text-muted-foreground text-sm">
@@ -530,7 +530,7 @@ export default function ContactDetailsPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-6 w-full lg:w-[35%]">
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm font-medium">

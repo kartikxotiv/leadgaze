@@ -110,7 +110,7 @@ export default function DashboardDemo() {
   }
 
   return (
-    <div className="animate-in fade-in flex flex-col gap-4 pb-4 duration-500">
+    <div className="animate-in fade-in flex flex-col pb-4 duration-500">
       <div
         className={
           'grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-3 xl:pb-4 2xl:grid-cols-4 2xl:gap-4 2xl:pb-6'
@@ -299,7 +299,7 @@ export default function DashboardDemo() {
       />
 
       {/* Section 3: Pipeline & Upcoming Tasks */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 xl:gap-4 2xl:gap-8">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:gap-4 2xl:gap-4">
         <CardWidgetContainer title="Lead Pipeline">
           <div className="flex-1">
             <PipelineOverview metrics={metrics} />
@@ -647,7 +647,7 @@ function SalesDashboardSkeleton() {
       </div>
 
       {/* Lead Pipeline + Upcoming Tasks */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 xl:gap-4 2xl:gap-8">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:gap-4 2xl:gap-4">
         {/* Lead Pipeline skeleton */}
         <Card>
           <CardHeader className="border-b">

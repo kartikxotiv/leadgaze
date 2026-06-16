@@ -603,12 +603,13 @@ export function ServiceCloudTicketsPage({
             </div>
 
             <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-              <Button variant="outline" onClick={() => setCreateOpen(false)}>
+              <Button className='mb-2' variant="outline" onClick={() => setCreateOpen(false)}>
                 Cancel
               </Button>
               <Button
                 onClick={submitCreateTicket}
                 disabled={createTicketMutation.isPending}
+                className='mb-2'
               >
                 {createTicketMutation.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

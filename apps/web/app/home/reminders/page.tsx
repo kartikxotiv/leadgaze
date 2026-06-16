@@ -12,6 +12,7 @@ import {
   Clock,
   Loader2,
   MoreHorizontal,
+  MoreVertical,
   Pencil,
   Plus,
   Trash2,
@@ -816,7 +817,7 @@ export default function RemindersPage() {
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
+                                <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -1042,7 +1043,7 @@ export default function RemindersPage() {
           <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Edit Reminder</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
+          <div className="flex-1 space-y-4 px-6 py-4">
             <div className="space-y-2">
               <Label>Title</Label>
               <Input

@@ -410,11 +410,11 @@ export function ServiceCloudCustomersPage({
             </div>
 
             <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-              <Button variant="outline" onClick={() => setCreateOpen(false)}>
+              <Button variant="outline" onClick={() => setCreateOpen(false)} className='mb-2'>
                 Cancel
               </Button>
               <Button
-                onClick={submitCreateTicket}
+                onClick={submitCreateTicket} className='mb-2'
                 disabled={createTicketMutation.isPending}
               >
                 {createTicketMutation.isPending ? (
