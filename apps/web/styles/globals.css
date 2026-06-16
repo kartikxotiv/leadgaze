@@ -31,7 +31,9 @@
 @layer base {
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
   }
 
   *,
@@ -64,12 +66,12 @@
 }
 
 *::-webkit-scrollbar-thumb {
-  background-color: hsl(var(--border));
+  background-color: var(--border);
   border-radius: 9999px;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background-color: hsl(var(--muted-foreground) / 0.3);
+  background-color: var(--muted-foreground);
 }
 
 /* Custom scrollbar for listing table */
@@ -79,25 +81,35 @@
 }
 
 .listing-table-container::-webkit-scrollbar-thumb {
-  background-color: hsl(var(--muted-foreground) / 0.5);
+  background-color: var(--muted-foreground);
   border-radius: 10px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 
 .listing-table-container::-webkit-scrollbar-thumb:hover {
-  background-color: hsl(var(--muted-foreground) / 0.7);
+  background-color: var(--foreground);
 }
 
 .listing-table-container::-webkit-scrollbar-track {
   background-color: transparent;
 }
 
-/* Utility to hide scrollbar but maintain functionality */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 .no-scrollbar {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
+}
+
+/* Auth pages input style overrides for dark mode compatibility */
+.auth-card input:not([type="checkbox"]):not([type="radio"]) {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.auth-card input:not([type="checkbox"]):not([type="radio"])::placeholder {
+  color: #94a3b8 !important;
 }

@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 import { useQuery } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowDown, ArrowUp, Menu, TrendingUp } from 'lucide-react';
+import { ArrowDown, ArrowUp, File, Menu, TrendingUp } from 'lucide-react';
 import {
   AlertTriangle,
   Briefcase,
@@ -20,6 +20,7 @@ import {
   User,
   Users,
   Video,
+  Calendar,
 } from 'lucide-react';
 import {
   Area,
@@ -68,6 +69,8 @@ import { CreateAccountDialog } from '../accounts/components/create-account-dialo
 import { CreateContactDialog } from '../contacts/components/create-contact-dialog';
 import CreateLeadDialog from '../leads/components/create-lead-dialog';
 import { OpportunityDialog } from '../opportunities/components/opportunity-dialog';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { Skeleton } from '@kit/ui/skeleton';
 
 export default function DashboardDemo() {
   const { currentWorkspace } = useRBAC();
@@ -103,111 +106,79 @@ export default function DashboardDemo() {
   const opportunitiesTrend = useMemo(() => generateDemoData(), []);
 
   if (isLoading || !metrics) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
-      </div>
-    );
+    return <SalesDashboardSkeleton />;
   }
 
   return (
-    <div
-      className={
-        'animate-in fade-in flex h-full flex-col overflow-y-auto p-4 duration-500 xl:overflow-hidden xl:p-3 2xl:overflow-y-auto 2xl:p-4'
-      }
-    >
+    <div className="animate-in fade-in flex flex-col gap-4 pb-4 duration-500">
       <div
         className={
           'grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-3 xl:pb-4 2xl:grid-cols-4 2xl:gap-4 2xl:pb-6'
         }
       >
-        <Card className="h-32 xl:h-28 2xl:h-32">
-          <CardHeader className="xl:p-3 xl:pb-2 2xl:p-6">
-            <CardTitle
-              className={
-                'flex items-center gap-2.5 xl:text-[13px] 2xl:text-base'
-              }
-            >
-              <FileText className="text-muted-foreground h-4 w-4 xl:h-3 xl:w-3 2xl:h-4 2xl:w-4" />
-              <span>Total Leads</span>
-            </CardTitle>
-
-            <CardDescription className="xl:text-[11px] 2xl:text-sm">
-              <span>Potential customers in the funnel</span>
-            </CardDescription>
-
-            <div className="xl:mt-1 2xl:mt-0">
+        <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+            <div className="space-y-1">
+              <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
+                Total Leads
+              </CardTitle>
               <Figure>{metrics.leads.total}</Figure>
             </div>
+            <div className="flex h-8 w-8 items-center justify-center rounded bg-primary dark:bg-primary">
+              <File className="h-4 w-4 text-white" />
+            </div>
           </CardHeader>
-
-          <CardContent className={'space-y-4'}>
-            {/* <Chart data={leadsTrend[0]} /> */}
+          <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
+            <CardDescription className="secondary-text-small text-leadgaze-success">
+              Potential customers in the funnel
+            </CardDescription>
           </CardContent>
         </Card>
 
-        <Card className="h-32 xl:h-28 2xl:h-32">
-          <CardHeader className="xl:p-3 xl:pb-2 2xl:p-6">
-            <CardTitle
-              className={
-                'flex items-center gap-2.5 xl:text-[13px] 2xl:text-base'
-              }
-            >
-              <Users className="text-muted-foreground h-4 w-4 xl:h-3 xl:w-3 2xl:h-4 2xl:w-4" />
-              <span>Contacts</span>
-            </CardTitle>
-
-            <CardDescription className="xl:text-[11px] 2xl:text-sm">
-              <span>Total individual relationships</span>
-            </CardDescription>
-
-            <div className="xl:mt-1 2xl:mt-0">
+        <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+            <div className="space-y-1">
+              <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
+                Contacts
+              </CardTitle>
               <Figure>{metrics.contacts.total}</Figure>
             </div>
-          </CardHeader>
-
-          <CardContent>{/* <Chart data={contactsTrend[0]} /> */}</CardContent>
-        </Card>
-
-        <Card className="h-32 xl:h-28 2xl:h-32">
-          <CardHeader className="xl:p-3 xl:pb-2 2xl:p-6">
-            <CardTitle
-              className={
-                'flex items-center gap-2.5 xl:text-[13px] 2xl:text-base'
-              }
-            >
-              <Building2 className="text-muted-foreground h-4 w-4 xl:h-3 xl:w-3 2xl:h-4 2xl:w-4" />
-              <span>Accounts</span>
-            </CardTitle>
-
-            <CardDescription className="xl:text-[11px] 2xl:text-sm">
-              <span>Total company organizations</span>
-            </CardDescription>
-
-            <div className="xl:mt-1 2xl:mt-0">
-              <Figure>{metrics.accounts.total}</Figure>
+            <div className="flex h-8 w-8 items-center justify-center rounded bg-activity-5">
+              <Users className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
-
-          <CardContent>{/* <Chart data={accountsTrend[0]} /> */}</CardContent>
+          <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
+            <CardDescription className="secondary-text-small text-leadgaze-success">
+              Total individual relationships
+            </CardDescription>
+          </CardContent>
         </Card>
 
-        <Card className="h-32 xl:h-28 2xl:h-32">
-          <CardHeader className="xl:p-3 xl:pb-2 2xl:p-6">
-            <CardTitle
-              className={
-                'flex items-center gap-2.5 xl:text-[13px] 2xl:text-base'
-              }
-            >
-              <Target className="text-muted-foreground h-4 w-4 xl:h-3 xl:w-3 2xl:h-4 2xl:w-4" />
-              <span>Pipeline Value</span>
-            </CardTitle>
-
-            <CardDescription className="xl:text-[11px] 2xl:text-sm">
-              <span>Total value of opportunities</span>
+        <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+            <div className="space-y-1">
+              <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
+                Accounts
+              </CardTitle>
+              <Figure>{metrics.accounts.total}</Figure>
+            </div>
+            <div className="flex h-8 w-8 items-center justify-center rounded bg-activity-3">
+              <Building2 className="h-4 w-4 text-white" />
+            </div>
+          </CardHeader>
+          <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
+            <CardDescription className="secondary-text-small text-leadgaze-success">
+              Total company organizations
             </CardDescription>
+          </CardContent>
+        </Card>
 
-            <div className="xl:mt-1 2xl:mt-0">
+        <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+            <div className="space-y-1">
+              <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
+                Pipeline Value
+              </CardTitle>
               <Figure>
                 {new Intl.NumberFormat('en-US', {
                   style: 'currency',
@@ -216,10 +187,14 @@ export default function DashboardDemo() {
                 }).format(metrics.opportunities.totalAmount)}
               </Figure>
             </div>
+            <div className="flex h-8 w-8 items-center justify-center rounded bg-activity-4">
+              <Target className="h-4 w-4 text-white" />
+            </div>
           </CardHeader>
-
-          <CardContent>
-            {/* <Chart data={opportunitiesTrend[0]} /> */}
+          <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
+            <CardDescription className="secondary-text-small text-leadgaze-success">
+              Total value of opportunities
+            </CardDescription>
           </CardContent>
         </Card>
       </div>
@@ -245,8 +220,8 @@ export default function DashboardDemo() {
 
       {/* section 2 */}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-3 2xl:grid-cols-4 2xl:gap-4">
-        <Button
+      {/* <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-3 2xl:grid-cols-4 2xl:gap-4"> */}
+        {/* <Button
           variant="outline"
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateLeadOpen(true)}
@@ -257,24 +232,22 @@ export default function DashboardDemo() {
               Add Lead
             </span>
           </div>
-        </Button>
-        {/* font-heading text-2xl font-semibold */}
+        </Button>         */}
 
-        <Button
+        {/* <Button
           variant="outline"
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateContactOpen(true)}
         >
-          {/* <Contact /> */}
           <div className="flex items-center gap-2 xl:gap-1.5 2xl:gap-2">
             <User className="h-6 w-6 text-slate-500 xl:h-4 xl:w-4 2xl:h-6 2xl:w-6 dark:text-zinc-400" />
             <span className="text-[16px] font-semibold text-slate-700 xl:text-sm 2xl:text-[16px] dark:text-zinc-200">
               Add Contact
             </span>
           </div>
-        </Button>
+        </Button> */}
 
-        <Button
+        {/* <Button
           variant="outline"
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateAccountOpen(true)}
@@ -285,9 +258,9 @@ export default function DashboardDemo() {
               Add Account
             </span>
           </div>
-        </Button>
+        </Button> */}
 
-        <Button
+        {/* <Button
           variant="outline"
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateOpportunityOpen(true)}
@@ -298,8 +271,8 @@ export default function DashboardDemo() {
               Add Opportunity
             </span>
           </div>
-        </Button>
-      </div>
+        </Button> */}
+      {/* </div> */}
 
       <CreateLeadDialog
         open={isCreateLeadOpen}
@@ -326,20 +299,19 @@ export default function DashboardDemo() {
       />
 
       {/* Section 3: Pipeline & Upcoming Tasks */}
-      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2 xl:mt-4 xl:gap-4 2xl:mt-8 2xl:gap-8">
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-slate-900 xl:text-[16px] 2xl:text-xl dark:text-zinc-100">
-            Pipeline Overview
-          </h2>
-          <PipelineOverview metrics={metrics} />
-        </div>
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 xl:gap-4 2xl:gap-8">
+        <CardWidgetContainer title="Lead Pipeline">
+          <div className="flex-1">
+            <PipelineOverview metrics={metrics} />
+          </div>
+        </CardWidgetContainer>
 
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-slate-900 xl:text-[16px] 2xl:text-xl dark:text-zinc-100">
-            Upcoming Tasks
-          </h2>
-          <UpcomingTasks tasks={metrics.upcomingTasks} />
-        </div>
+        <CardWidgetContainer title="Upcoming Tasks" icon2={<Calendar className="w-5 h-5 text-leadgaze-muted dark:text-white" />}>
+          <div className="flex-1">
+            <UpcomingTasks tasks={metrics.upcomingTasks} />
+          </div>
+        </CardWidgetContainer>
+        
       </div>
     </div>
   );
@@ -365,28 +337,26 @@ function PipelineOverview({ metrics }: { metrics: DashboardMetrics }) {
   const maxValue = Math.max(...stages.map((s) => s.value), 1);
 
   return (
-    <Card className="border-none bg-transparent shadow-none">
-      <CardContent className="space-y-4 p-0">
-        <div className="max-h-[400px] space-y-6 rounded-xl border bg-white p-6 xl:max-h-[300px] xl:space-y-3 xl:p-4 2xl:max-h-[400px] 2xl:space-y-6 2xl:p-6 dark:border-zinc-800 dark:bg-zinc-900">
-          {stages.map((stage) => (
-            <div key={stage.label} className="flex items-center gap-6">
-              <span className="w-32 text-sm font-medium text-slate-700 dark:text-zinc-400">
-                {stage.label}
-              </span>
-              <div className="h-4 flex-1 overflow-hidden rounded-md bg-slate-50">
-                <div
-                  className="h-full rounded-md bg-[#8EADF3] transition-all duration-500"
-                  style={{ width: `${(stage.value / maxValue) * 100}%` }}
-                />
-              </div>
-              <span className="w-10 text-right text-sm font-semibold text-slate-900 dark:text-zinc-200">
-                {stage.value}
-              </span>
-            </div>
-          ))}
+    <div className="max-h-[400px] space-y-6 p-6 xl:max-h-[300px] xl:space-y-4 xl:p-4 2xl:max-h-[400px] 2xl:space-y-6 2xl:p-6">
+      {stages.map((stage, index) => (
+        <div key={stage.label} className="flex flex-col gap-1.5">
+          <div className="flex justify-between items-center">
+            <span className="primary-text-medium text-leadgaze-dark dark:text-white">
+              {stage.label}
+            </span>
+            <span className="primary-text-regular text-leadgaze-muted dark:text-white">
+              {stage.value}
+            </span>
+          </div>
+          <div className="h-2 w-full overflow-hidden bar-bg rounded-full">
+            <div
+              className="h-full transition-all duration-500"
+              style={{ width: `${(stage.value / maxValue) * 100}%`, backgroundColor: `var(--color-activity-${index + 1})` }}
+            />
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      ))}
+    </div>
   );
 }
 
@@ -413,31 +383,19 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const getTaskIcon = (task: DashboardTask) => {
-    if (task.type === 'meeting') {
-      return <Video className="h-5 w-5 text-purple-500" />;
-    }
-
+  const getTaskPriority = (task: DashboardTask) => {
     const title = task.title.toLowerCase();
-    if (title.includes('call'))
-      return <Phone className="h-5 w-5 fill-[#E07A5F] text-[#E07A5F]" />;
-    if (title.includes('email'))
-      return <Mail className="h-5 w-5 text-blue-400" />;
-    if (title.includes('follow') || title.includes('urgent'))
-      return (
-        <AlertTriangle className="h-5 w-5 fill-[#F2CC8F] text-[#F2CC8F]" />
-      );
-    return <FileText className="h-5 w-5 text-slate-400" />;
+    if (title.includes('urgent') || title.includes('follow')) return { label: 'high', bg: 'var(--color-status-danger-bg)', text: 'var(--color-status-danger-text)' };
+    if (title.includes('call') || title.includes('meeting')) return { label: 'medium', bg: 'var(--color-status-warning-bg)', text: 'var(--color-status-warning-text)' };
+    return { label: 'low', bg: 'var(--color-status-neutral-bg)', text: 'var(--color-status-neutral-text)' };
   };
 
   // Limit to latest 3 tasks
   const latestTasks = useMemo(() => tasks.slice(0, 3), [tasks]);
 
   return (
-    <Card className="border-none bg-transparent shadow-none">
-      <CardContent className="p-0">
-        <div className="max-h-[500px] overflow-y-auto rounded-xl border border-slate-100 bg-white xl:max-h-[350px] 2xl:max-h-[500px] dark:border-zinc-800 dark:bg-zinc-900">
-          {latestTasks.length === 0 ? (
+    <div className="max-h-[500px] overflow-y-auto xl:max-h-[350px] 2xl:max-h-[500px]">
+      {latestTasks.length === 0 ? (
             <div className="flex h-40 flex-col items-center justify-center text-slate-400">
               <FileText className="mb-2 h-8 w-8 opacity-20" />
               <p className="text-sm">No upcoming tasks</p>
@@ -446,42 +404,43 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
             <div className="divide-y dark:divide-zinc-800">
               {latestTasks.map((task) => {
                 const relativeDate = formatDueDateShort(task.dueDate);
+                const priority = getTaskPriority(task);
                 return (
                   <div
                     key={task.id}
-                    className="flex items-center justify-between p-5 transition-colors hover:bg-slate-50/30 xl:p-3 2xl:p-5 dark:hover:bg-zinc-800/30"
+                    className="flex items-center justify-between p-5 transition-colors hover:bg-slate-50/30 xl:p-3 2xl:p-5 dark:hover:bg-zinc-800/30 border-b border-gray-300 last:border-0"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-10 w-6 items-center justify-center">
-                        {getTaskIcon(task)}
+                    <div className="flex items-start gap-4">
+                      <div className="mt-0.5">
+                        <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-leadgaze-primary focus:ring-leadgaze-primary" />
                       </div>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[15px] font-medium text-slate-700 dark:text-zinc-200">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="primary-text-medium text-leadgaze-dark dark:text-zinc-200">
                           {task.title}
                           {task.entityName && (
-                            <span className="font-normal text-slate-500">
+                            <span className="font-normal text-leadgaze-muted dark:text-white">
                               {' '}
                               - {task.entityName}
                             </span>
                           )}
                         </span>
-                        <span className="text-[15px] text-slate-400">
-                          {' '}
-                          · {relativeDate}
+                        <span className="secondary-text-small text-leadgaze-muted dark:text-white">
+                          {relativeDate}
                         </span>
                       </div>
                     </div>
-                    <div className="text-[15px] font-bold text-slate-700 dark:text-zinc-200">
-                      {relativeDate}
+                    <div
+                      className="px-2 py-0.5 rounded-md text-xs font-medium uppercase tracking-wider"
+                      style={{ backgroundColor: priority.bg, color: priority.text }}
+                    >
+                      {priority.label}
                     </div>
                   </div>
                 );
               })}
             </div>
           )}
-        </div>
-      </CardContent>
-    </Card>
+    </div>
   );
 }
 
@@ -623,7 +582,7 @@ function RecentContactsTable({ workspaceId }: { workspaceId: string }) {
               </TableCell>
               <TableCell className="text-right">
                 <Button variant="ghost" size="sm" asChild>
-                  <Link href={`/home/contacts/${contact.id}`}>View</Link>
+                  <Link href={`/home/sales/contacts/${contact.id}`}>View</Link>
                 </Button>
               </TableCell>
             </TableRow>
@@ -659,9 +618,81 @@ function RecentContactsTable({ workspaceId }: { workspaceId: string }) {
 function Figure(props: React.PropsWithChildren) {
   return (
     <div
-      className={'font-heading text-2xl font-semibold xl:text-xl 2xl:text-2xl'}
+      className={'primary-heading-number text-leadgaze-dark dark:text-zinc-100'}
     >
       {props.children}
+    </div>
+  );
+}
+
+function SalesDashboardSkeleton() {
+  return (
+    <div className="flex flex-col gap-4 pb-4">
+      {/* 4 stat cards */}
+      <div className="grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-3 xl:pb-4 2xl:grid-cols-4 2xl:gap-4 2xl:pb-6">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-7 w-16" />
+              </div>
+              <Skeleton className="h-8 w-8 rounded" />
+            </CardHeader>
+            <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
+              <Skeleton className="h-3 w-36" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Lead Pipeline + Upcoming Tasks */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 xl:gap-4 2xl:gap-8">
+        {/* Lead Pipeline skeleton */}
+        <Card>
+          <CardHeader className="border-b">
+            <Skeleton className="h-5 w-32" />
+          </CardHeader>
+          <div className="space-y-6 p-6 xl:space-y-4 xl:p-4 2xl:space-y-6 2xl:p-6">
+            {['New Leads', 'Contacted', 'Qualified', 'Proposal Sent', 'Won'].map((stage) => (
+              <div key={stage} className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-6" />
+                </div>
+                <Skeleton className="h-2 w-full rounded-full" />
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Upcoming Tasks skeleton */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between border-b">
+            <Skeleton className="h-5 w-36" />
+            <Skeleton className="h-5 w-5 rounded" />
+          </CardHeader>
+          <div className="divide-y dark:divide-zinc-800">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between p-5 xl:p-3 2xl:p-5"
+              >
+                <div className="flex items-start gap-4">
+                  {/* Checkbox placeholder */}
+                  <Skeleton className="mt-0.5 h-4 w-4 rounded" />
+                  <div className="flex flex-col gap-1.5">
+                    <Skeleton className={`h-4 ${i === 1 ? 'w-48' : i === 2 ? 'w-40' : 'w-52'}`} />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+                {/* Priority badge */}
+                <Skeleton className="h-5 w-14 rounded-md" />
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

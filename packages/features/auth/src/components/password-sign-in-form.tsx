@@ -3,7 +3,7 @@
 import Link from 'next/link';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRight } from 'lucide-react';
+import { LockKeyhole, Mail } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import type { z } from 'zod';
@@ -43,7 +43,7 @@ export function PasswordSignInForm({
   return (
     <Form {...form}>
       <form
-        className={'w-full space-y-2.5'}
+        className={'w-full space-y-4'}
         onSubmit={form.handleSubmit(onSubmit)}
       >
         <FormField
@@ -51,18 +51,22 @@ export function PasswordSignInForm({
           name={'email'}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
+              <FormLabel className="text-xs font-semibold text-slate-800">
                 <Trans i18nKey={'common:emailAddress'} />
               </FormLabel>
 
               <FormControl>
-                <Input
-                  data-test={'email-input'}
-                  required
-                  type="email"
-                  placeholder={t('emailPlaceholder')}
-                  {...field}
-                />
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    data-test={'email-input'}
+                    required
+                    type="email"
+                    placeholder={t('emailPlaceholder')}
+                    className="h-10 rounded-lg border-slate-200 bg-white pr-3 pl-10 text-sm shadow-none placeholder:text-slate-400 focus-visible:ring-[var(--color-leadgaze-auth-7)]"
+                    {...field}
+                  />
+                </div>
               </FormControl>
 
               <FormMessage />
@@ -75,59 +79,62 @@ export function PasswordSignInForm({
           name={'password'}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
-                <Trans i18nKey={'common:password'} />
-              </FormLabel>
+              <div className="flex items-center justify-between gap-3">
+                <FormLabel className="text-xs font-semibold text-slate-800">
+                  <Trans i18nKey={'common:password'} />
+                </FormLabel>
 
-              <FormControl>
-                <Input
-                  required
-                  data-test={'password-input'}
-                  type="password"
-                  placeholder={''}
-                  {...field}
-                />
-              </FormControl>
-
-              <FormMessage />
-
-              <div>
                 <Button
                   asChild
                   type={'button'}
                   size={'sm'}
                   variant={'link'}
-                  className={'text-xs'}
+                  className={
+                    'h-auto p-0 text-xs font-semibold text-[var(--color-leadgaze-auth-7)]'
+                  }
                 >
                   <Link href={'/auth/password-reset'}>
                     <Trans i18nKey={'auth:passwordForgottenQuestion'} />
                   </Link>
                 </Button>
               </div>
+
+              <FormControl>
+                <div className="relative">
+                  <LockKeyhole className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    required
+                    data-test={'password-input'}
+                    type="password"
+                    placeholder={'Enter your password'}
+                    className="h-10 rounded-lg border-slate-200 bg-white pr-3 pl-10 text-sm shadow-none placeholder:text-slate-400 focus-visible:ring-[var(--color-leadgaze-auth-7)]"
+                    {...field}
+                  />
+                </div>
+              </FormControl>
+
+              <FormMessage />
             </FormItem>
           )}
         />
 
+        <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
+          <input
+            type="checkbox"
+            className="h-3.5 w-3.5 rounded border-slate-300 accent-[var(--color-leadgaze-auth-7)]"
+          />
+          <span>Remember me for 30 days</span>
+        </label>
+
         <Button
           data-test="auth-submit-button"
-          className={'group w-full'}
+          className={
+            'group h-10 w-full rounded-lg bg-[var(--color-leadgaze-auth-7)] text-sm font-semibold text-white shadow-none hover:bg-[var(--color-leadgaze-auth-11)]'
+          }
           type="submit"
           disabled={loading}
         >
-          <If
-            condition={loading}
-            fallback={
-              <>
-                <Trans i18nKey={'auth:signInWithEmail'} />
-
-                <ArrowRight
-                  className={
-                    'zoom-in animate-in slide-in-from-left-2 fill-mode-both h-4 delay-500 duration-500'
-                  }
-                />
-              </>
-            }
-          >
+          <If condition={loading} fallback={<Trans i18nKey={'auth:signIn'} />}>
             <Trans i18nKey={'auth:signingIn'} />
           </If>
         </Button>

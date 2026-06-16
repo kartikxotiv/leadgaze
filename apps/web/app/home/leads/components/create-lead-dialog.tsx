@@ -296,25 +296,25 @@ export default function CreateLeadDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
         <div className="flex max-h-[90vh] flex-col">
-          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
-            <DialogTitle className="pr-12 text-2xl text-gray-900 dark:text-white">
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950 border-b p-6 pb-4">
+            <DialogTitle className="pr-12">
               Add New Lead
             </DialogTitle>
-            <DialogDescription className="text-gray-600 dark:text-gray-400">
+            <DialogDescription>
               Fill in the lead information. Required fields are marked with{' '}
               <span className="text-red-500">*</span>
             </DialogDescription>
           </DialogHeader>
 
-          <form
+          <form id="dialog-form"
             onSubmit={handleSubmit}
             className="flex-1 space-y-8 overflow-y-auto p-6 pb-8"
           >
             {/* Contact Information Section */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white">
                 Contact Information
               </h3>
               <Separator className="bg-gray-200 dark:bg-slate-800" />
@@ -322,9 +322,7 @@ export default function CreateLeadDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
-                    htmlFor="first_name"
-                    className="text-gray-900 dark:text-gray-100"
-                  >
+                    htmlFor="first_name">
                     First Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -341,9 +339,7 @@ export default function CreateLeadDialog({
                 </div>
                 <div>
                   <Label
-                    htmlFor="last_name"
-                    className="text-gray-900 dark:text-gray-100"
-                  >
+                    htmlFor="last_name">
                     Last Name (Optional)
                   </Label>
                   <Input
@@ -362,9 +358,7 @@ export default function CreateLeadDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
-                    htmlFor="email"
-                    className="text-gray-900 dark:text-gray-100"
-                  >
+                    htmlFor="email">
                     Email (Optional)
                   </Label>
                   <Input
@@ -379,9 +373,7 @@ export default function CreateLeadDialog({
                 </div>
                 <div>
                   <Label
-                    htmlFor="alt_email"
-                    className="text-gray-900 dark:text-gray-100"
-                  >
+                    htmlFor="alt_email">
                     Alternative Email (Optional)
                   </Label>
                   <Input
@@ -401,9 +393,7 @@ export default function CreateLeadDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
-                    htmlFor="phone_number"
-                    className="text-gray-900 dark:text-gray-100"
-                  >
+                    htmlFor="phone_number">
                     Phone (Optional)
                   </Label>
                   <Input
@@ -419,9 +409,7 @@ export default function CreateLeadDialog({
                 </div>
                 <div>
                   <Label
-                    htmlFor="mobile_number"
-                    className="text-gray-900 dark:text-gray-100"
-                  >
+                    htmlFor="mobile_number">
                     Mobile (Optional)
                   </Label>
                   <Input
@@ -440,7 +428,7 @@ export default function CreateLeadDialog({
 
             {/* Company Information Section */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white">
                 Company Information
               </h3>
               <Separator className="bg-gray-200 dark:bg-slate-800" />
@@ -448,9 +436,7 @@ export default function CreateLeadDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
-                    htmlFor="company_name"
-                    className="text-gray-900 dark:text-gray-100"
-                  >
+                    htmlFor="company_name">
                     Company Name (Optional)
                   </Label>
                   <Input
@@ -466,9 +452,7 @@ export default function CreateLeadDialog({
                 </div>
                 <div>
                   <Label
-                    htmlFor="industry_id"
-                    className="text-gray-900 dark:text-gray-100"
-                  >
+                    htmlFor="industry_id">
                     Industry (Optional)
                   </Label>
                   <div className="mt-2">
@@ -487,9 +471,7 @@ export default function CreateLeadDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
-                    htmlFor="company_website"
-                    className="text-gray-900 dark:text-gray-100"
-                  >
+                    htmlFor="company_website">
                     Website (Optional)
                   </Label>
                   <Input
@@ -505,9 +487,7 @@ export default function CreateLeadDialog({
                 </div>
                 <div>
                   <Label
-                    htmlFor="company_linkedin_url"
-                    className="text-gray-900 dark:text-gray-100"
-                  >
+                    htmlFor="company_linkedin_url">
                     LinkedIn Company (Optional)
                   </Label>
                   <Input
@@ -526,9 +506,7 @@ export default function CreateLeadDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
-                    htmlFor="company_size"
-                    className="text-gray-900 dark:text-gray-100"
-                  >
+                    htmlFor="company_size">
                     Company Size (Optional)
                   </Label>
                   <Select
@@ -552,9 +530,7 @@ export default function CreateLeadDialog({
                 </div>
                 <div>
                   <Label
-                    htmlFor="department"
-                    className="text-gray-900 dark:text-gray-100"
-                  >
+                    htmlFor="department">
                     Department (Optional)
                   </Label>
                   <Input
@@ -573,9 +549,7 @@ export default function CreateLeadDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
-                    htmlFor="linkedin_url"
-                    className="text-gray-900 dark:text-gray-100"
-                  >
+                    htmlFor="linkedin_url">
                     Personal LinkedIn (Optional)
                   </Label>
                   <Input
@@ -594,7 +568,7 @@ export default function CreateLeadDialog({
 
             {/* Professional Information Section */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white">
                 Professional Information
               </h3>
               <Separator className="bg-gray-200 dark:bg-slate-800" />
@@ -602,9 +576,7 @@ export default function CreateLeadDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
-                    htmlFor="job_title"
-                    className="text-gray-900 dark:text-gray-100"
-                  >
+                    htmlFor="job_title">
                     Job Title (Optional)
                   </Label>
                   <Input
@@ -620,9 +592,7 @@ export default function CreateLeadDialog({
                 </div>
                 <div>
                   <Label
-                    htmlFor="location"
-                    className="text-gray-900 dark:text-gray-100"
-                  >
+                    htmlFor="location">
                     Location (Optional)
                   </Label>
                   <Input
@@ -640,9 +610,7 @@ export default function CreateLeadDialog({
 
               <div>
                 <Label
-                  htmlFor="timezone"
-                  className="text-gray-900 dark:text-gray-100"
-                >
+                  htmlFor="timezone">
                   Timezone (Optional)
                 </Label>
                 <Input
@@ -660,7 +628,7 @@ export default function CreateLeadDialog({
 
             {/* Lead Information Section */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white">
                 Lead Information
               </h3>
               <Separator className="bg-gray-200 dark:bg-slate-800" />
@@ -668,9 +636,7 @@ export default function CreateLeadDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
-                    htmlFor="status_id"
-                    className="text-gray-900 dark:text-gray-100"
-                  >
+                    htmlFor="status_id">
                     Status <span className="text-red-500">*</span>
                   </Label>
                   <Select
@@ -700,9 +666,7 @@ export default function CreateLeadDialog({
                 </div>
                 <div>
                   <Label
-                    htmlFor="source_id"
-                    className="text-gray-900 dark:text-gray-100"
-                  >
+                    htmlFor="source_id">
                     Lead Source (Optional)
                   </Label>
                   <div className="mt-2">
@@ -721,9 +685,7 @@ export default function CreateLeadDialog({
 
               <div>
                 <Label
-                  htmlFor="trigger"
-                  className="text-gray-900 dark:text-gray-100"
-                >
+                  htmlFor="trigger">
                   Trigger (Optional)
                 </Label>
                 <Input
@@ -739,16 +701,14 @@ export default function CreateLeadDialog({
 
             {/* Additional Notes Section */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white">
                 Additional Information
               </h3>
               <Separator className="bg-gray-200 dark:bg-slate-800" />
 
               <div>
                 <Label
-                  htmlFor="notes"
-                  className="text-gray-900 dark:text-gray-100"
-                >
+                  htmlFor="notes">
                   Notes (Optional)
                 </Label>
                 <Textarea

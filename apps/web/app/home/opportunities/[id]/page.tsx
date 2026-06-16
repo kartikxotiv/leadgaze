@@ -12,6 +12,7 @@ import {
   Calendar,
   CheckCircle,
   Clock,
+  Edit2,
   FileText,
   Flag,
   Mail,
@@ -21,13 +22,20 @@ import {
   Trash2,
   User,
   Wallet,
+  Workflow,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { CoreEmailComposeDialog } from '@kit/core/pages';
+import { getCoreEmailAccountsService } from '@kit/core/services';
+import { formatDate } from '@kit/shared/utils';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { CustomInputForView } from '@kit/ui/custom-input-for-view';
+import { DetailHeader } from '@kit/ui/detail-header';
 import { PageBody } from '@kit/ui/page';
 import {
   Select,
@@ -37,6 +45,7 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import { Separator } from '@kit/ui/separator';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   Tooltip,
   TooltipContent,
@@ -51,7 +60,6 @@ import {
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { type Contact, getContactsService } from '~/services/contacts.service';
-import { getWorkspaceEmailAccountService } from '~/services/email.service';
 import {
   getOpportunityByIdService,
   updateOpportunityService,
@@ -67,11 +75,89 @@ import {
 import { EntityCalls } from '../../_components/entity-calls';
 import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
-import { EmailLeadDialog } from '../../leads/components/email-lead-dialog';
 import { LogCallDialog } from '../../leads/components/log-call-dialog';
 import { EditOpportunityDialog } from '../components/edit-opportunity-dialog';
 import { OpportunityAssignees } from '../components/opportunity-assignees';
 import { OpportunityStatusTimeline } from '../components/opportunity-status-timeline';
+
+function OpportunityDetailsSkeleton() {
+  return (
+    <ModuleGuard module="opportunities">
+      <div className="px-6 pb-2 pt-4">
+        <div className="mb-2">
+          <Skeleton className="h-8 w-20 rounded-md" />
+        </div>
+      </div>
+      <PageBody className="pb-6">
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
+            <DetailHeader
+              avatar={<Skeleton className="h-16 w-16 rounded-md" />}
+              title={<Skeleton className="h-6 w-48" />}
+              subtitle={
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-36" />
+                </div>
+              }
+              actions={
+                <div className="flex gap-2">
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-28 rounded-md" />
+                </div>
+              }
+            />
+            {/* Pipeline timeline skeleton */}
+            <Card>
+              <CardContent className="p-4">
+                <Skeleton className="h-12 w-full rounded-md" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-5 w-24" />
+              </CardHeader>
+              <CardContent className="grid gap-6 sm:grid-cols-2">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="space-y-1">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-5 w-32" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-8 w-full rounded-md" />
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="space-y-1">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-28" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </PageBody>
+    </ModuleGuard>
+  );
+}
 
 export default function OpportunityDetailsPage() {
   const params = useParams();
@@ -101,16 +187,17 @@ export default function OpportunityDetailsPage() {
   }, [opportunity]);
 
   const { currentWorkspace, canAccess: rbacCanAccess } = useRBAC();
+  const canManageEmail = rbacCanAccess('emails', 'manage_email');
   const { data: stages = [] } = useQuery({
     queryKey: ['opportunity-stages', currentWorkspace?.id],
     queryFn: () => getOpportunityStatusesService(currentWorkspace!.id),
     enabled: !!currentWorkspace?.id,
   });
 
-  const { data: workspaceEmailAccounts = [] } = useQuery({
-    queryKey: ['workspace-email-accounts', currentWorkspace?.id],
-    queryFn: () => getWorkspaceEmailAccountService(currentWorkspace?.id || ''),
-    enabled: !!currentWorkspace?.id,
+  const { data: coreEmailAccounts = [] } = useQuery({
+    queryKey: ['core-email-accounts', currentWorkspace?.id],
+    queryFn: () => getCoreEmailAccountsService(currentWorkspace!.id),
+    enabled: canManageEmail && !!currentWorkspace?.id,
   });
 
   const { data: accountContactsData } = useQuery({
@@ -191,14 +278,8 @@ export default function OpportunityDetailsPage() {
     user?.id,
   );
 
-  if (isLoading) {
-    return (
-      <ModuleGuard module="opportunities">
-        <div className="flex h-screen items-center justify-center">
-          <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
-        </div>
-      </ModuleGuard>
-    );
+  if (!currentWorkspace || isLoading) {
+    return <OpportunityDetailsSkeleton />;
   }
 
   if (error || !opportunity) {
@@ -211,7 +292,7 @@ export default function OpportunityDetailsPage() {
             permission to view it.
           </p>
           <Button asChild variant="outline">
-            <Link href="/home/opportunities">Back to Opportunities</Link>
+            <Link href="/home/sales/opportunities">Back to Opportunities</Link>
           </Button>
         </div>
       </ModuleGuard>
@@ -220,376 +301,353 @@ export default function OpportunityDetailsPage() {
 
   return (
     <ModuleGuard module="opportunities">
-      <div className="bg-background border-b px-6 py-4">
-        <div className="mb-4 flex items-center justify-between">
-          <Button variant="ghost" size="sm" asChild className="-ml-2">
-            <Link href="/home/opportunities">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
+      <div className="flex w-full items-center justify-between pb-2 pt-4">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="border-leadgaze-border border p-0"
+          >
+            <Link href="/home/sales/opportunities">
+              <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
             </Link>
           </Button>
-          <div className="flex gap-2">
-            {canEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsLogCallDialogOpen(true)}
-                className="p-3"
-                title="Log a call"
-              >
-                <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
-                  <Phone className="h-3 w-3 text-white" />
-                </div>
-              </Button>
-            )}
-
-            <Button
-              variant="outline"
-              size="sm"
-              className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${
-                opportunityEmailRecipients.length === 0 ? 'opacity-50' : ''
-              }`}
-              disabled={opportunityEmailRecipients.length === 0}
-              onClick={() => setIsEmailDialogOpen(true)}
-              title={
-                opportunityEmailRecipients.length === 0
-                  ? 'Opportunity account has no contact email addresses'
-                  : 'Send email to opportunity contact'
-              }
-            >
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
-                <Mail className="h-3.5 w-3.5 text-white" />
-              </div>
-            </Button>
-
-            {rbacCanAccess('opportunities', 'change_stage') && (
-              <Select
-                value={opportunity.stage_id}
-                onValueChange={async (value) => {
-                  try {
-                    await updateOpportunityService(id, { stage_id: value });
-                    toast.success('Opportunity stage updated');
-                    refetch();
-                  } catch (error) {
-                    toast.error('Failed to update stage');
-                  }
-                }}
-                disabled={!canChangeStage}
-              >
-                <SelectTrigger className="h-9 w-[180px]">
-                  <SelectValue placeholder="Update Stage" />
-                </SelectTrigger>
-                <SelectContent>
-                  {stages
-                    .filter((stage: any) => {
-                      const isWon =
-                        stage.status_name.toLowerCase().includes('won') ||
-                        stage.is_won;
-                      const isLost =
-                        stage.status_name.toLowerCase().includes('lost') ||
-                        stage.is_lost;
-
-                      if (isWon && !canCloseWon) return false;
-                      if (isLost && !canCloseLost) return false;
-                      return true;
-                    })
-                    .map((stage: any) => (
-                      <SelectItem key={stage.id} value={stage.id}>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="h-2 w-2 rounded-full"
-                            style={{ backgroundColor: stage.color }}
-                          />
-                          {stage.status_name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            )}
-            {rbacCanAccess('opportunities', 'close_won') && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-green-600 text-green-600 hover:bg-green-50"
-                disabled={!canCloseWon}
-                onClick={async () => {
-                  const wonStage = stages.find(
-                    (s: any) =>
-                      s.status_name.toLowerCase().includes('won') || s.is_won,
-                  );
-                  if (wonStage) {
-                    try {
-                      await updateOpportunityService(id, {
-                        stage_id: wonStage.id,
-                        is_closed: true,
-                        is_won: true,
-                      });
-                      toast.success('Opportunity marked as Won');
-                      refetch();
-                    } catch (error) {
-                      toast.error('Failed to update status');
-                    }
-                  }
-                }}
-              >
-                Close as Won
-              </Button>
-            )}
-            {rbacCanAccess('opportunities', 'close_lost') && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-red-600 text-red-600 hover:bg-red-50"
-                disabled={!canCloseLost}
-                onClick={async () => {
-                  const lostStage = stages.find(
-                    (s: any) =>
-                      s.status_name.toLowerCase().includes('lost') || s.is_lost,
-                  );
-                  if (lostStage) {
-                    try {
-                      await updateOpportunityService(id, {
-                        stage_id: lostStage.id,
-                        is_closed: true,
-                        is_won: false,
-                      });
-                      toast.success('Opportunity marked as Lost');
-                      refetch();
-                    } catch (error) {
-                      toast.error('Failed to update status');
-                    }
-                  }
-                }}
-              >
-                Close as Lost
-              </Button>
-            )}
-            {canEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditDialogOpen(true)}
-              >
-                Edit Opportunity
-              </Button>
-            )}
+          <div className="flex flex-col">
+            <h1 className="text-lg font-semibold">Opportunity details</h1>
+            <p className="text-leadgaze-muted text-sm">
+              View and edit opportunity information
+            </p>
           </div>
         </div>
-
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="bg-primary/10 flex h-16 w-16 items-center justify-center rounded-lg">
-              <FileText className="text-primary h-8 w-8" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">
-                {opportunity.opportunity_name}
-              </h1>
-              <div className="text-muted-foreground mt-1 flex items-center gap-3 text-sm">
-                {opportunity.account && (
-                  <Link
-                    href={`/home/accounts/${opportunity.account.id}`}
-                    className="text-primary flex items-center gap-1 hover:underline"
-                  >
-                    <Building2 className="h-3 w-3" />
-                    {opportunity.account.account_name}
-                  </Link>
-                )}
-                {opportunity.type && (
-                  <span className="flex items-center gap-1">
-                    • {opportunity.type}
-                  </span>
-                )}
-                <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
-                <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                  <Clock className="h-3 w-3" />
-                  <span>
-                    Created on{' '}
-                    {new Date(opportunity.created_at).toLocaleDateString(
-                      undefined,
-                      {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      },
-                    )}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {opportunity.stage && (
-              <Badge
-                variant="secondary"
-                style={{
-                  backgroundColor: `${opportunity.stage.color}20`,
-                  color: opportunity.stage.color,
-                  borderColor: opportunity.stage.color,
-                }}
-              >
-                {opportunity.stage.status_name}
-              </Badge>
-            )}
-          </div>
-        </div>
+        {canEdit && (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setIsEditDialogOpen(true)}
+            className="gap-2"
+          >
+            <Edit2 className="h-4 w-4" />
+            Edit Opportunity
+          </Button>
+        )}
       </div>
 
-      <div className="border-b px-6 py-6">
-        <div className="bg-card mx-auto max-w-5xl overflow-hidden rounded-xl border p-4 shadow-sm backdrop-blur-sm">
-          <p className="text-muted-foreground mb-4 text-center text-[10px] font-bold tracking-widest uppercase">
-            Opportunity Sales Pipeline
-          </p>
-          <OpportunityStatusTimeline
-            opportunityId={id}
-            currentStatusId={opportunity.stage_id}
-            statuses={stages}
-            onStatusChange={refetch}
-            canEdit={canEdit}
-          />
-        </div>
-      </div>
-
-      <PageBody>
+      <PageBody className="pb-6">
         <DeleteEntityDialog
           isOpen={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
           entityId={id}
           entityType="opportunity"
           entityName={opportunity.opportunity_name}
-          onSuccess={() => router.push('/home/opportunities')}
+          onSuccess={() => router.push('/home/sales/opportunities')}
         />
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="space-y-6 lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Details</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-6 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Amount
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Wallet className="text-muted-foreground h-4 w-4" />
-                    <span className="text-lg font-semibold">
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: opportunity.currency || 'USD',
-                      }).format(opportunity.amount || 0)}
+            <DetailHeader
+              avatar={
+                <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 text-white">
+                  <FileText className="h-8 w-8 text-white" />
+                </div>
+              }
+              title={opportunity.opportunity_name}
+              subtitle={
+                <>
+                  {opportunity.account && (
+                    <Link
+                      href={`/home/sales/accounts/${opportunity.account.id}`}
+                      className="text-primary flex items-center gap-1 hover:underline"
+                    >
+                      <Building2 className="h-3 w-3" />
+                      {opportunity.account.account_name}
+                    </Link>
+                  )}
+                  {opportunity.type && (
+                    <span className="flex items-center gap-1 text-sm text-gray-500">
+                      • {opportunity.type}
+                    </span>
+                  )}
+                  <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <Clock className="h-3 w-3" />
+                    <span>
+                      Created on{' '}
+                      {new Date(opportunity.created_at).toLocaleDateString(
+                        undefined,
+                        {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        },
+                      )}
                     </span>
                   </div>
+                </>
+              }
+              actions={
+                <div className="flex gap-2">
+                  {canEdit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsLogCallDialogOpen(true)}
+                      className="p-3"
+                      title="Log a call"
+                    >
+                      <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
+                        <Phone className="h-3 w-3 text-white" />
+                      </div>
+                    </Button>
+                  )}
+
+                  {canManageEmail && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${
+                        opportunityEmailRecipients.length === 0
+                          ? 'opacity-50'
+                          : ''
+                      }`}
+                      disabled={opportunityEmailRecipients.length === 0}
+                      onClick={() => setIsEmailDialogOpen(true)}
+                      title={
+                        opportunityEmailRecipients.length === 0
+                          ? 'Opportunity account has no contact email addresses'
+                          : 'Send email to opportunity contact'
+                      }
+                    >
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
+                        <Mail className="h-3.5 w-3.5 text-white" />
+                      </div>
+                    </Button>
+                  )}
+
+                  {rbacCanAccess('opportunities', 'change_stage') && (
+                    <Select
+                      value={opportunity.stage_id}
+                      onValueChange={async (value) => {
+                        try {
+                          await updateOpportunityService(id, {
+                            stage_id: value,
+                          });
+                          toast.success('Opportunity stage updated');
+                          refetch();
+                        } catch (error) {
+                          toast.error('Failed to update stage');
+                        }
+                      }}
+                      disabled={!canChangeStage}
+                    >
+                      <SelectTrigger className="h-9 w-[180px]">
+                        <SelectValue placeholder="Update Stage" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {stages
+                          .filter((stage: any) => {
+                            const isWon =
+                              stage.status_name.toLowerCase().includes('won') ||
+                              stage.is_won;
+                            const isLost =
+                              stage.status_name
+                                .toLowerCase()
+                                .includes('lost') || stage.is_lost;
+
+                            if (isWon && !canCloseWon) return false;
+                            if (isLost && !canCloseLost) return false;
+                            return true;
+                          })
+                          .map((stage: any) => (
+                            <SelectItem key={stage.id} value={stage.id}>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="h-2 w-2 rounded-full"
+                                  style={{ backgroundColor: stage.color }}
+                                />
+                                {stage.status_name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {rbacCanAccess('opportunities', 'close_won') && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-green-600 text-green-600 hover:bg-green-50"
+                      disabled={!canCloseWon}
+                      onClick={async () => {
+                        const wonStage = stages.find(
+                          (s: any) =>
+                            s.status_name.toLowerCase().includes('won') ||
+                            s.is_won,
+                        );
+                        if (wonStage) {
+                          try {
+                            await updateOpportunityService(id, {
+                              stage_id: wonStage.id,
+                              is_closed: true,
+                              is_won: true,
+                            });
+                            toast.success('Opportunity marked as Won');
+                            refetch();
+                          } catch (error) {
+                            toast.error('Failed to update status');
+                          }
+                        }
+                      }}
+                    >
+                      Close as Won
+                    </Button>
+                  )}
+
+                  {rbacCanAccess('opportunities', 'close_lost') && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-red-600 text-red-600 hover:bg-red-50"
+                      disabled={!canCloseLost}
+                      onClick={async () => {
+                        const lostStage = stages.find(
+                          (s: any) =>
+                            s.status_name.toLowerCase().includes('lost') ||
+                            s.is_lost,
+                        );
+                        if (lostStage) {
+                          try {
+                            await updateOpportunityService(id, {
+                              stage_id: lostStage.id,
+                              is_closed: true,
+                              is_won: false,
+                            });
+                            toast.success('Opportunity marked as Lost');
+                            refetch();
+                          } catch (error) {
+                            toast.error('Failed to update status');
+                          }
+                        }
+                      }}
+                    >
+                      Close as Lost
+                    </Button>
+                  )}
                 </div>
+              }
+            />
 
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Expected Revenue
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Target className="text-muted-foreground h-4 w-4" />
-                    <span className="text-sm">
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: opportunity.currency || 'USD',
-                      }).format(opportunity.expected_revenue || 0)}
-                    </span>
-                  </div>
+            {/* Sales Pipeline Timeline */}
+            <CardWidgetContainer
+              title="Opportunity Sales Pipeline"
+              icon={
+                <Workflow className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+              }
+              className="w-full border shadow-sm"
+            >
+              <div className="px-6 pb-6 pt-4">
+                <OpportunityStatusTimeline
+                  opportunityId={id}
+                  currentStatusId={opportunity.stage_id}
+                  statuses={stages}
+                  onStatusChange={refetch}
+                  canEdit={canEdit}
+                />
+              </div>
+            </CardWidgetContainer>
+
+            {/* Details */}
+            <CardWidgetContainer
+              title="Details"
+              icon={
+                <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+              }
+            >
+              <div className="flex-1">
+                <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
+                  <CustomInputForView
+                    label="Amount"
+                    labelIcon={
+                      <Wallet className="text-muted-foreground h-4 w-4" />
+                    }
+                    value={new Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: opportunity.currency || 'USD',
+                    }).format(opportunity.amount || 0)}
+                  />
+
+                  <CustomInputForView
+                    label="Expected Revenue"
+                    labelIcon={
+                      <Target className="text-muted-foreground h-4 w-4" />
+                    }
+                    value={new Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: opportunity.currency || 'USD',
+                    }).format(opportunity.expected_revenue || 0)}
+                  />
+
+                  <CustomInputForView
+                    label="Expected Close Date"
+                    labelIcon={
+                      <Calendar className="text-muted-foreground h-4 w-4" />
+                    }
+                    value={
+                      opportunity.expected_close_date
+                        ? formatDate(opportunity.expected_close_date)
+                        : '-'
+                    }
+                  />
+
+                  <CustomInputForView
+                    label="Probability"
+                    labelIcon={
+                      <CheckCircle className="text-muted-foreground h-4 w-4" />
+                    }
+                    value={`${opportunity.probability}%`}
+                  />
+
+                  <CustomInputForView
+                    label="Priority"
+                    labelIcon={
+                      <Flag className="text-muted-foreground h-4 w-4" />
+                    }
+                    value={
+                      opportunity.priority
+                        ? opportunity.priority.charAt(0).toUpperCase() +
+                          opportunity.priority.slice(1)
+                        : '-'
+                    }
+                  />
+
+                  <CustomInputForView
+                    label="Lead Source"
+                    value={opportunity.lead_source || '-'}
+                  />
+
+                  {opportunity.description && (
+                    <CustomInputForView
+                      label="Description"
+                      value={opportunity.description}
+                      as="textarea"
+                      className="col-span-2"
+                    />
+                  )}
+
+                  {opportunity.competitor && (
+                    <CustomInputForView
+                      label="Competitor"
+                      value={opportunity.competitor}
+                      className="col-span-2"
+                    />
+                  )}
                 </div>
-
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Expected Close Date
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="text-muted-foreground h-4 w-4" />
-                    <span className="text-sm">
-                      {opportunity.expected_close_date
-                        ? new Date(
-                            opportunity.expected_close_date,
-                          ).toLocaleDateString()
-                        : '-'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Probability
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="text-muted-foreground h-4 w-4" />
-                    <span className="text-sm">{opportunity.probability}%</span>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Priority
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Flag className="text-muted-foreground h-4 w-4" />
-                    <span className="text-sm capitalize">
-                      {opportunity.priority || '-'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Lead Source
-                  </p>
-                  <span className="text-sm">
-                    {opportunity.lead_source || '-'}
-                  </span>
-                </div>
-
-                {opportunity.description && (
-                  <div className="col-span-2 space-y-1">
-                    <p className="text-muted-foreground text-sm font-medium">
-                      Description
-                    </p>
-                    <p className="text-sm whitespace-pre-wrap">
-                      {opportunity.description}
-                    </p>
-                  </div>
-                )}
-
-                {opportunity.competitor && (
-                  <div className="col-span-2 space-y-1">
-                    <p className="text-muted-foreground text-sm font-medium">
-                      Competitor
-                    </p>
-                    <span className="text-sm">{opportunity.competitor}</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Opportunity Assignees Section */}
-            {currentWorkspace?.id && (
-              <OpportunityAssignees
-                opportunityId={id}
-                workspaceId={currentWorkspace.id}
-              />
-            )}
+              </div>
+            </CardWidgetContainer>
 
             {/* Notes Section */}
             <EntityNotes entityType="opportunity" entityId={id} />
-
-            {/* Activity Sections */}
-            <EntityCalls entityType="opportunity" entityId={id} />
-            <EntityEmails
-              entityId={id}
-              entityType="opportunity"
-              entityName={opportunity.opportunity_name}
-              recipientOptions={opportunityEmailRecipients}
-            />
-            <EntityReminders entityType="opportunity" entityId={id} />
-            <EntityMeetings entityType="opportunity" entityId={id} />
-            <EntityDocuments entityType="opportunity" entityId={id} />
 
             {/* Danger Zone */}
             {rbacCanAccess('opportunities', 'delete') && (
@@ -663,7 +721,7 @@ export default function OpportunityDetailsPage() {
                   <div className="flex items-center gap-2">
                     <Calendar className="h-3 w-3" />
                     <span className="text-sm">
-                      {new Date(opportunity.created_at).toLocaleDateString()}
+                      {formatDate(opportunity.created_at)}
                     </span>
                   </div>
                 </div>
@@ -688,12 +746,32 @@ export default function OpportunityDetailsPage() {
                   <div className="flex items-center gap-2">
                     <Calendar className="h-3 w-3" />
                     <span className="text-sm">
-                      {new Date(opportunity.updated_at).toLocaleDateString()}
+                      {formatDate(opportunity.updated_at)}
                     </span>
                   </div>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Opportunity Assignees Section */}
+            {currentWorkspace?.id && (
+              <OpportunityAssignees
+                opportunityId={id}
+                workspaceId={currentWorkspace.id}
+              />
+            )}
+
+            {/* Activity Sections */}
+            <EntityCalls entityType="opportunity" entityId={id} />
+            <EntityEmails
+              entityId={id}
+              entityType="opportunity"
+              entityName={opportunity.opportunity_name}
+              recipientOptions={opportunityEmailRecipients}
+            />
+            <EntityReminders entityType="opportunity" entityId={id} />
+            <EntityMeetings entityType="opportunity" entityId={id} />
+            <EntityDocuments entityType="opportunity" entityId={id} />
           </div>
         </div>
       </PageBody>
@@ -721,15 +799,20 @@ export default function OpportunityDetailsPage() {
         />
       )}
 
-      <EmailLeadDialog
-        open={isEmailDialogOpen}
-        onOpenChange={setIsEmailDialogOpen}
-        leadName={opportunity.opportunity_name}
-        recipientOptions={opportunityEmailRecipients}
-        workspaceEmailAccounts={workspaceEmailAccounts}
-        entityId={id}
-        entityType="opportunity"
-      />
+      {canManageEmail && (
+        <CoreEmailComposeDialog
+          open={isEmailDialogOpen}
+          onOpenChange={setIsEmailDialogOpen}
+          workspaceId={currentWorkspace?.id || ''}
+          accounts={coreEmailAccounts}
+          entityType="opportunity"
+          entityId={id}
+          initialTo={opportunityEmailRecipients[0]?.email}
+          templateContext={{
+            opportunity_name: opportunity.opportunity_name,
+          }}
+        />
+      )}
     </ModuleGuard>
   );
 }

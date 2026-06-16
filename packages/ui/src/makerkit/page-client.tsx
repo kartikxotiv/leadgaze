@@ -65,7 +65,7 @@ export function PageTitle(props: React.PropsWithChildren) {
   return (
     <h1
       className={
-        'font-heading text-base leading-none font-bold tracking-tight dark:text-white'
+        'primary-heading text-leadgaze-dark leading-none tracking-tight dark:text-white'
       }
     >
       {props.children}
@@ -91,15 +91,15 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        'bg-background/95 sticky z-10 flex items-center justify-between py-5 backdrop-blur-md px-6',
+        'flex items-center justify-between pt-0 pb-0 backdrop-blur-md',
         {
           'top-0': !isHeaderLayout,
-          'top-14 border-b': isHeaderLayout,
+          'top-14': isHeaderLayout,
         },
         className,
       )}
     >
-      <div className={'flex flex-col gap-y-2'}>
+      <div className={'flex flex-col gap-y-1'}>
         <div className="flex items-center gap-x-2.5">
           {displaySidebarTrigger ? (
             <SidebarTrigger className="text-muted-foreground hover:text-secondary-foreground hidden h-4.5 w-4.5 cursor-pointer lg:inline-flex" />

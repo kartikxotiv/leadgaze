@@ -31,12 +31,14 @@ import {
   type WorkspaceMember,
   updateMemberService,
 } from '~/services/team-members.service';
+import { CustomInputForView } from '@kit/ui/custom-input-for-view';
 
 interface UpdateMemberDialogProps {
   member: WorkspaceMember;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  productKey?: string;
 }
 
 export function UpdateMemberDialog({
@@ -44,6 +46,7 @@ export function UpdateMemberDialog({
   open,
   onOpenChange,
   onSuccess,
+  productKey,
 }: UpdateMemberDialogProps) {
   const { currentWorkspace, canAccess } = useRBAC();
   const queryClient = useQueryClient();
@@ -64,9 +67,9 @@ export function UpdateMemberDialog({
 
   // Fetch roles
   const { data: roles = [], isLoading: rolesLoading } = useQuery({
-    queryKey: ['workspaceRoles', currentWorkspace?.id],
+    queryKey: ['workspaceRoles', currentWorkspace?.id, productKey],
     queryFn: async () => {
-      const res = await getRolesService(currentWorkspace?.id || '');
+      const res = await getRolesService(currentWorkspace?.id || '', productKey);
       return res?.data;
     },
     enabled: open && !!currentWorkspace?.id,
@@ -98,21 +101,22 @@ export function UpdateMemberDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[450px]">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[450px]">
+        <DialogHeader className="border-b p-6 pb-4">
           <DialogTitle>Update Member</DialogTitle>
           <DialogDescription>
             Update the role and settings for this team member
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           <div className="space-y-2">
-            <Label>Email</Label>
-            <div className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
-              {member.user?.email}
-            </div>
+            <CustomInputForView
+                                label="Email"
+                                value={member.user?.email}                    
+                              />   
           </div>
+            
 
           <div className="space-y-2">
             <Label htmlFor="role">Role *</Label>
@@ -165,7 +169,9 @@ export function UpdateMemberDialog({
             </Label>
           </div>
 
-          <DialogFooter>
+          
+        </form>
+      <DialogFooter className="border-t p-6 mt-auto">
             <Button
               type="button"
               variant="outline"
@@ -175,7 +181,7 @@ export function UpdateMemberDialog({
               Cancel
             </Button>
             <Button
-              type="submit"
+              type="submit" form="dialog-form"
               disabled={updateMutation.isPending}
               className="gap-2"
             >
@@ -185,7 +191,6 @@ export function UpdateMemberDialog({
               Save Changes
             </Button>
           </DialogFooter>
-        </form>
       </DialogContent>
     </Dialog>
   );

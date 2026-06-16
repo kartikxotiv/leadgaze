@@ -137,12 +137,60 @@ function getPatterns() {
           return NextResponse.redirect(new URL(redirectPath, origin).href);
         }
 
+        // Redirect legacy bare /home/* routes to /org/home.
+        // Only module-scoped routes are allowed: /home/sales, /home/hrms,
+        // /home/services, /home/inventory, /home/funds.
+        const allowedModulePrefixes = [
+          '/home/sales',
+          '/home/hrms',
+          '/home/services',
+          '/home/inventory',
+          '/home/funds',
+        ];
+        const isAllowedRoute = allowedModulePrefixes.some(
+          (prefix) => next === prefix || next.startsWith(`${prefix}/`),
+        );
+
+        if (!isAllowedRoute) {
+          return NextResponse.redirect(
+            new URL(pathsConfig.app.home, origin).href,
+          );
+        }
+
         const supabase = createMiddlewareClient(req, res);
 
         const requiresMultiFactorAuthentication =
           await checkRequiresMultiFactorAuthentication(supabase);
 
         // If user requires multi-factor authentication, redirect to MFA page.
+        if (requiresMultiFactorAuthentication) {
+          return NextResponse.redirect(
+            new URL(pathsConfig.auth.verifyMfa, origin).href,
+          );
+        }
+      },
+    },
+    {
+      pattern: new URLPattern({ pathname: '/org/*?' }),
+      handler: async (req: NextRequest, res: NextResponse) => {
+        const { data } = await getUser(req, res);
+
+        const origin = req.nextUrl.origin;
+        const next = req.nextUrl.pathname;
+
+        // If user is not logged in, redirect to sign in page.
+        if (!data?.claims) {
+          const signIn = pathsConfig.auth.signIn;
+          const redirectPath = `${signIn}?next=${next}`;
+
+          return NextResponse.redirect(new URL(redirectPath, origin).href);
+        }
+
+        const supabase = createMiddlewareClient(req, res);
+
+        const requiresMultiFactorAuthentication =
+          await checkRequiresMultiFactorAuthentication(supabase);
+
         if (requiresMultiFactorAuthentication) {
           return NextResponse.redirect(
             new URL(pathsConfig.auth.verifyMfa, origin).href,

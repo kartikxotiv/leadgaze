@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import INVITE_MEMBER_TEMPLATE from '~/constants/email.templates/member-invite.template';
@@ -183,9 +184,10 @@ const inviteMember = catchAsync(
     params?: Record<string, string>;
   }) => {
     const supabase = getSupabaseServerClient();
-    const url = new URL(request.url);
+    const adminClient = getSupabaseServerAdminClient();
+    // const url = new URL(request.url);
     // const workspaceId = url.searchParams.get('workspaceId');
-    const { email, role_id, workspaceId } = await request.json();
+    const { email, role_id, workspaceId, productKey } = await request.json();
 
     if (!workspaceId || !email || !role_id) {
       return NextResponse.json(
@@ -201,6 +203,38 @@ const inviteMember = catchAsync(
         { message: 'Invalid email format' },
         { status: 400 },
       );
+    }
+
+    // ── Seat availability check ──────────────────────────────────
+    // If a productKey is provided, verify there is at least one free seat
+    // in that module before allowing the invitation.
+    if (productKey) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: productRow } = await (adminClient as any)
+        .from('subscription_products')
+        .select('id')
+        .eq('product_key', productKey)
+        .maybeSingle();
+
+      if (productRow) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: seatRow } = await (adminClient as any)
+          .from('workspace_module_seats')
+          .select('id, seats_purchased, seats_used, status')
+          .eq('workspace_id', workspaceId)
+          .eq('product_id', productRow.id)
+          .in('status', ['active', 'trialing'])
+          .maybeSingle();
+
+        if (seatRow && seatRow.seats_used >= seatRow.seats_purchased) {
+          return NextResponse.json(
+            {
+              message: `No seats available in this module. All ${seatRow.seats_purchased} seat(s) are already in use. Please increase your seat count from the subscription page before inviting new members.`,
+            },
+            { status: 403 },
+          );
+        }
+      }
     }
 
     // Check if role exists and belongs to workspace
@@ -256,6 +290,9 @@ const inviteMember = catchAsync(
         status: 'pending',
         token,
         token_expires_at: expiresAt.toISOString(),
+        // Store the module product key so seat assignment on accept
+        // only targets the module the invite was sent from.
+        ...(productKey ? { product_key: productKey } : {}),
       })
       .select()
       .single();
@@ -287,8 +324,9 @@ const inviteMember = catchAsync(
 
     try {
       await transporter.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        from: process.env.SMTP_USER,
         to: email,
+        replyTo: user?.email || process.env.SMTP_USER,
         subject: `${inviterName} invited you to join ${workspace?.name || 'Workspace'} on ${process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze'}`,
         html: INVITE_MEMBER_TEMPLATE({
           inviteLink: inviteUrl,
@@ -412,7 +450,7 @@ const updateMember = catchAsync(
 
 const removeMember = catchAsync(
   async ({
-    request,
+    request: _request,
     params,
   }: {
     request: NextRequest;
@@ -442,6 +480,10 @@ const removeMember = catchAsync(
       );
     }
 
+    // ── Auto-revoke ALL seat assignments for this user in this workspace ──
+    // When a member is removed, they lose access to all modules.
+    await autoRevokeSeats(member.workspace_id, member.user_id);
+
     // Update status to 'removed' instead of deleting
     const { error } = await supabase
       .from('workspace_members')
@@ -457,6 +499,28 @@ const removeMember = catchAsync(
   },
 );
 
+// ─── Helper: Revoke ALL seat assignments for a removed member ──────────
+
+async function autoRevokeSeats(workspaceId: string, userId: string) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const adminClient = getSupabaseServerAdminClient() as any;
+
+    await adminClient
+      .from('seat_assignments')
+      .update({
+        is_active: false,
+        revoked_at: new Date().toISOString(),
+        revoked_by: userId,
+      })
+      .eq('workspace_id', workspaceId)
+      .eq('user_id', userId)
+      .eq('is_active', true);
+  } catch (error) {
+    console.error('Auto-revoke seats error:', error);
+  }
+}
+
 const resendInvitation = catchAsync(
   async ({
     request,
@@ -467,7 +531,7 @@ const resendInvitation = catchAsync(
   }) => {
     const supabase = getSupabaseServerClient();
     const url = new URL(request.url);
-    const workspaceId = url.searchParams.get('workspaceId');
+    const _workspaceId = url.searchParams.get('workspaceId');
     const memberId = params?.memberId;
 
     if (!memberId) {
@@ -551,6 +615,248 @@ const resendInvitation = catchAsync(
   },
 );
 
+// ─── Pending Invitations: Fetch, Delete, Resend ────────────────────────────
+
+const getPendingInvitations = catchAsync(
+  async ({
+    request,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const url = new URL(request.url);
+    const workspaceId = url.searchParams.get('workspaceId');
+
+    if (!workspaceId) {
+      return NextResponse.json(
+        { message: 'workspaceId is required' },
+        { status: 400 },
+      );
+    }
+
+    const { data: invitations, error } = await supabase
+      .from('workspace_invitations')
+      .select(
+        `
+        id,
+        email,
+        status,
+        invited_at,
+        created_at,
+        token_expires_at,
+        role:workspace_roles(id, role_name, role_key, hierarchy_level, color)
+      `,
+      )
+      .eq('workspace_id', workspaceId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Get pending invitations error:', error);
+      throw error;
+    }
+
+    return successDataResponse(
+      'Pending invitations retrieved successfully',
+      invitations || [],
+    );
+  },
+);
+
+const deleteInvitation = catchAsync(
+  async ({
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const invitationId = params?.invitationId;
+
+    if (!invitationId) {
+      return NextResponse.json(
+        { message: 'invitationId is required' },
+        { status: 400 },
+      );
+    }
+
+    // Verify the invitation exists and is still pending
+    const { data: invitation, error: fetchError } = await supabase
+      .from('workspace_invitations')
+      .select('id, status')
+      .eq('id', invitationId)
+      .single();
+
+    if (fetchError || !invitation) {
+      return NextResponse.json(
+        { message: 'Invitation not found' },
+        { status: 404 },
+      );
+    }
+
+    if (invitation.status !== 'pending') {
+      return NextResponse.json(
+        { message: 'Only pending invitations can be deleted' },
+        { status: 400 },
+      );
+    }
+
+    const { error } = await supabase
+      .from('workspace_invitations')
+      .delete()
+      .eq('id', invitationId);
+
+    if (error) {
+      console.error('Delete invitation error:', error);
+      throw error;
+    }
+
+    return successDataResponse('Invitation deleted successfully');
+  },
+);
+
+const resendInvitationEmail = catchAsync(
+  async ({
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const invitationId = params?.invitationId;
+
+    if (!invitationId) {
+      return NextResponse.json(
+        { message: 'invitationId is required' },
+        { status: 400 },
+      );
+    }
+
+    // Fetch the invitation with all needed fields
+    const { data: invitation, error: fetchError } = await supabase
+      .from('workspace_invitations')
+      .select('id, email, token, status, workspace_id, invited_at, token_expires_at')
+      .eq('id', invitationId)
+      .single();
+
+    if (fetchError || !invitation) {
+      return NextResponse.json(
+        { message: 'Invitation not found' },
+        { status: 404 },
+      );
+    }
+
+    if (invitation.status !== 'pending') {
+      return NextResponse.json(
+        { message: 'Only pending invitations can be resent' },
+        { status: 400 },
+      );
+    }
+
+    // If token has expired, regenerate a fresh token and extend the expiry
+    let activeToken = invitation.token;
+    const now = new Date();
+    const isExpired =
+      invitation.token_expires_at &&
+      new Date(invitation.token_expires_at) < now;
+
+    if (isExpired || !activeToken) {
+      const generateToken = () =>
+        Math.random().toString(36).substring(2, 15) +
+        Math.random().toString(36).substring(2, 15) +
+        Math.random().toString(36).substring(2, 15);
+
+      activeToken = generateToken();
+      const newExpiresAt = new Date(
+        now.getTime() + 7 * 24 * 60 * 60 * 1000,
+      ).toISOString();
+
+      const { error: tokenUpdateError } = await supabase
+        .from('workspace_invitations')
+        .update({ token: activeToken, token_expires_at: newExpiresAt })
+        .eq('id', invitationId);
+
+      if (tokenUpdateError) {
+        console.error('Regenerate token error:', tokenUpdateError);
+        throw tokenUpdateError;
+      }
+    }
+
+    // Fetch workspace details for email
+    const { data: workspace } = await supabase
+      .from('workspaces')
+      .select('id, name')
+      .eq('id', invitation.workspace_id)
+      .single();
+
+    // Get inviter info
+    const { data: { user } = {} } = await supabase.auth.getUser();
+    let inviterName = user?.user_metadata?.email || 'Someone';
+    if (user) {
+      const { data: userData } = await supabase
+        .from('accounts')
+        .select('name')
+        .eq('id', user.id)
+        .single();
+      inviterName = userData?.name || inviterName;
+    }
+
+    // Re-send the invitation email (use activeToken which may have been regenerated)
+    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/invite?token=${activeToken}`;
+
+    try {
+      await transporter.sendMail({
+        from: process.env.SMTP_USER,
+        to: invitation.email,
+        replyTo: user?.email || process.env.SMTP_USER,
+        subject: `${inviterName} invited you to join ${workspace?.name || 'Workspace'} on ${process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze'}`,
+        html: INVITE_MEMBER_TEMPLATE({
+          inviteLink: inviteUrl,
+          workspaceName: workspace?.name || 'Workspace',
+          inviterName,
+          productName: process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze',
+          appUrl: process.env.NEXT_PUBLIC_APP_URL,
+        }),
+      });
+    } catch (error) {
+      console.error('Resend invitation email error:', error);
+      return NextResponse.json(
+        { message: 'Failed to send invitation email' },
+        { status: 500 },
+      );
+    }
+
+    // Update invited_at timestamp
+    const { data: updatedInvitation, error: updateError } = await supabase
+      .from('workspace_invitations')
+      .update({ invited_at: new Date().toISOString() })
+      .eq('id', invitationId)
+      .select(
+        `
+        id,
+        email,
+        status,
+        invited_at,
+        created_at,
+        token_expires_at,
+        role:workspace_roles(id, role_name, role_key, hierarchy_level, color)
+      `,
+      )
+      .single();
+
+    if (updateError) {
+      console.error('Update invitation timestamp error:', updateError);
+      throw updateError;
+    }
+
+    return successDataResponse(
+      'Invitation resent successfully',
+      updatedInvitation,
+    );
+  },
+);
+
 export {
   getMembers,
   getMemberById,
@@ -558,4 +864,7 @@ export {
   updateMember,
   removeMember,
   resendInvitation,
+  getPendingInvitations,
+  deleteInvitation,
+  resendInvitationEmail,
 };

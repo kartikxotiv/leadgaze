@@ -106,17 +106,17 @@ export function CreateAccountDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[700px]">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[700px]">
+        <DialogHeader className="border-b p-6 pb-4">
           <DialogTitle>Create New Account</DialogTitle>
           <DialogDescription>
             Add a new business account to your workspace.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 py-4">
+        <form id="create-account-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-6 p-6 py-4">
           <div className="space-y-4">
-            <h3 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+            <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase">
               Basic Information
             </h3>
             <Separator />
@@ -194,7 +194,7 @@ export function CreateAccountDialog({
           </div>
 
           <div className="space-y-4 pt-4">
-            <h3 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+            <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase">
               Address Information
             </h3>
             <Separator />
@@ -273,25 +273,25 @@ export function CreateAccountDialog({
               rows={3}
             />
           </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="mr-2 h-4 w-4" />
-              )}
-              Create Account
-            </Button>
-          </DialogFooter>
         </form>
+
+        <DialogFooter className="border-t p-6 mt-auto">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" form="create-account-form" disabled={mutation.isPending}>
+            {mutation.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="mr-2 h-4 w-4" />
+            )}
+            Create Account
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

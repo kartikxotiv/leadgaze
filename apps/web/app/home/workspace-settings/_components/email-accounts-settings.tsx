@@ -4,7 +4,6 @@ import { useState } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import {
   AlertCircle,
@@ -15,9 +14,7 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react';
-import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import * as z from 'zod';
 
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Alert, AlertDescription, AlertTitle } from '@kit/ui/alert';
@@ -44,6 +41,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -66,250 +64,129 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import { Skeleton } from '@kit/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
 
 import {
-  EmailAccount,
+  type EmailAccount,
+  type EmailAccountAccessScope,
   deleteEmailAccountService,
   getWorkspaceEmailAccountService,
   submitEmailAccountService,
   updateEmailAccountService,
 } from '~/services/email.service';
 
-const smtpSchema = z.object({
-  email: z.string().email(),
-  from_name: z.string().min(1, 'From Name is required'),
-  host: z.string().min(1, 'Host is required'),
-  port: z.coerce.number().int().positive(),
-  username: z.string().min(1, 'Username is required'),
-  password: z.string().min(1, 'Password is required'),
-  secure: z.boolean(),
-  imap_host: z.string().optional(),
-  imap_port: z.coerce.number().int().positive().optional(),
-  imap_secure: z.boolean().optional(),
-  access_scope: z.enum(['private', 'workspace']),
-});
+import { EmailTemplatesTab } from '../../emails/_components/email-templates-tab';
+import { EmailVariablesTab } from '../../emails/_components/email-variables-tab';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 
-type SmtpFormValues = z.infer<typeof smtpSchema>;
+type SmtpFormState = {
+  email: string;
+  from_name: string;
+  host: string;
+  port: string;
+  username: string;
+  password: string;
+  secure: boolean;
+  imap_host: string;
+  imap_port: string;
+  imap_secure: boolean;
+  access_scope: EmailAccountAccessScope;
+};
+
+const emptySmtpForm: SmtpFormState = {
+  email: '',
+  from_name: '',
+  host: '',
+  port: '465',
+  username: '',
+  password: '',
+  secure: true,
+  imap_host: '',
+  imap_port: '993',
+  imap_secure: true,
+  access_scope: 'private',
+};
 
 export function EmailAccountsSettings({ workspace }: { workspace: any }) {
   const searchParams = useSearchParams();
   const { data: user } = useUser();
   const [isConnectDialogOpen, setIsConnectDialogOpen] = useState(false);
+  const [connectTab, setConnectTab] = useState<'google' | 'smtp'>('google');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [updatingAccountId, setUpdatingAccountId] = useState<number | null>(
     null,
   );
+  const [form, setForm] = useState<SmtpFormState>(emptySmtpForm);
   const isAdmin = workspace?.role?.role_key === 'admin';
-
   const error = searchParams.get('error');
 
   const {
-    data: workspaceEmailAccount,
-    isLoading: workspaceEmailAccountLoading,
-    refetch: workspaceEmailAccountRefetch,
+    data: accounts = [],
+    isLoading,
+    refetch,
   } = useQuery({
     queryKey: ['workspace-email-accounts', workspace?.id],
-    queryFn: () => {
-      if (!workspace?.id) throw new Error('Workspace ID is required');
-      return getWorkspaceEmailAccountService(workspace.id);
-    },
-    enabled: !!workspace?.id,
+    queryFn: () => getWorkspaceEmailAccountService(workspace.id),
+    enabled: Boolean(workspace?.id),
   });
-
-  const SmtpForm = () => {
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const form = useForm<SmtpFormValues>({
-      resolver: zodResolver(smtpSchema),
-      defaultValues: {
-        secure: true,
-        port: 465,
-        imap_secure: true,
-        imap_port: 993,
-        access_scope: 'private',
-      },
-    });
-
-    const onSubmit = async (data: SmtpFormValues) => {
-      if (!workspace?.id) return;
-
-      setIsSubmitting(true);
-      try {
-        await submitEmailAccountService(workspace.id, data);
-        toast.success('Email account added successfully');
-        setIsConnectDialogOpen(false);
-        await workspaceEmailAccountRefetch();
-      } catch (err: any) {
-        console.error('Failed to add account:', err);
-        toast.error(err.message || 'Failed to add account');
-      } finally {
-        setIsSubmitting(false);
-      }
-    };
-
-    return (
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>From Name</Label>
-            <Input
-              {...form.register('from_name')}
-              placeholder="My Company Support"
-            />
-            {form.formState.errors.from_name ? (
-              <p className="text-destructive text-xs">
-                {form.formState.errors.from_name.message}
-              </p>
-            ) : null}
-          </div>
-          <div className="space-y-2">
-            <Label>Email Address</Label>
-            <Input
-              {...form.register('email')}
-              placeholder="support@company.com"
-            />
-            {form.formState.errors.email ? (
-              <p className="text-destructive text-xs">
-                {form.formState.errors.email.message}
-              </p>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>SMTP Host</Label>
-            <Input {...form.register('host')} placeholder="smtp.example.com" />
-            {form.formState.errors.host ? (
-              <p className="text-destructive text-xs">
-                {form.formState.errors.host.message}
-              </p>
-            ) : null}
-          </div>
-          <div className="space-y-2">
-            <Label>Port</Label>
-            <Input {...form.register('port')} type="number" />
-            {form.formState.errors.port ? (
-              <p className="text-destructive text-xs">
-                {form.formState.errors.port.message}
-              </p>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Username</Label>
-            <Input {...form.register('username')} />
-            {form.formState.errors.username ? (
-              <p className="text-destructive text-xs">
-                {form.formState.errors.username.message}
-              </p>
-            ) : null}
-          </div>
-          <div className="space-y-2">
-            <Label>Password</Label>
-            <Input {...form.register('password')} type="password" />
-            {form.formState.errors.password ? (
-              <p className="text-destructive text-xs">
-                {form.formState.errors.password.message}
-              </p>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="secure"
-            {...form.register('secure')}
-            className="rounded border-gray-300"
-          />
-          <Label htmlFor="secure">Use SSL/TLS for SMTP (Secure)</Label>
-        </div>
-
-        <Separator className="my-4" />
-        <div className="text-sm font-medium">
-          IMAP Settings (For fetching emails)
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>IMAP Host</Label>
-            <Input
-              {...form.register('imap_host')}
-              placeholder="imap.example.com"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>IMAP Port</Label>
-            <Input
-              {...form.register('imap_port')}
-              type="number"
-              placeholder="993"
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="imap_secure"
-            {...form.register('imap_secure')}
-            className="rounded border-gray-300"
-          />
-          <Label htmlFor="imap_secure">Use SSL/TLS for IMAP (Secure)</Label>
-        </div>
-
-        {isAdmin ? (
-          <div className="space-y-2">
-            <Label>Sharing</Label>
-            <Select
-              defaultValue={form.getValues('access_scope')}
-              onValueChange={(value: 'private' | 'workspace') =>
-                form.setValue('access_scope', value, { shouldDirty: true })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="private">
-                  Private: only owner and admins can send
-                </SelectItem>
-                <SelectItem value="workspace">
-                  Workspace: all workspace members can send
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        ) : null}
-
-        <Button type="submit" disabled={isSubmitting} className="w-full">
-          {isSubmitting ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : null}
-          Connect SMTP Account
-        </Button>
-      </form>
-    );
-  };
 
   const handleGoogleConnect = () => {
     if (!workspace?.id) return;
 
-    globalThis.location.href = `/api/email/google/auth?workspace_id=${workspace.id}&from_name=${workspace?.name ?? 'Leadgaze'}&access_scope=private`;
+    const params = new URLSearchParams({
+      workspace_id: workspace.id,
+      from_name: workspace?.name ?? 'Leadgaze',
+      access_scope: 'private',
+      return_url: '/home/workspace-settings',
+    });
+
+    globalThis.location.href = `/api/email/google/auth?${params.toString()}`;
   };
 
-  const handleDelete = async (id: string) => {
+  const handleSubmitSmtp = async () => {
+    if (!workspace?.id) return;
+
+    if (
+      !form.email ||
+      !form.from_name ||
+      !form.host ||
+      !form.port ||
+      !form.username ||
+      !form.password
+    ) {
+      toast.error('Please fill all required SMTP fields');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await submitEmailAccountService(workspace.id, {
+        ...form,
+        port: Number(form.port),
+        imap_port: form.imap_port ? Number(form.imap_port) : undefined,
+        access_scope: isAdmin ? form.access_scope : 'private',
+      });
+      toast.success('Email account added successfully');
+      setForm(emptySmtpForm);
+      setConnectTab('google');
+      setIsConnectDialogOpen(false);
+      await refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to add account');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (account: EmailAccount) => {
     setIsDeleting(true);
     try {
-      await deleteEmailAccountService(id, workspace?.id || '');
+      await deleteEmailAccountService(String(account.id), workspace?.id || '');
       toast.success('Email account deleted successfully');
-      await workspaceEmailAccountRefetch();
+      await refetch();
     } catch (err: any) {
-      console.error('Failed to delete account:', err);
       toast.error(err.message || 'Failed to delete account');
     } finally {
       setIsDeleting(false);
@@ -318,7 +195,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
 
   const handleAccessChange = async (
     account: EmailAccount,
-    accessScope: 'private' | 'workspace',
+    accessScope: EmailAccountAccessScope,
   ) => {
     setUpdatingAccountId(account.id);
     try {
@@ -328,7 +205,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
         access_scope: accessScope,
       });
       toast.success('Email account access updated');
-      await workspaceEmailAccountRefetch();
+      await refetch();
     } catch (err: any) {
       toast.error(err.message || 'Failed to update access');
     } finally {
@@ -348,30 +225,12 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
         is_active: isActive,
       });
       toast.success(`Email account ${isActive ? 'enabled' : 'disabled'}`);
-      await workspaceEmailAccountRefetch();
+      await refetch();
     } catch (err: any) {
       toast.error(err.message || 'Failed to update status');
     } finally {
       setUpdatingAccountId(null);
     }
-  };
-
-  const renderAccessBadge = (account: EmailAccount) => {
-    if (account.access_scope === 'workspace') {
-      return (
-        <Badge variant="secondary" className="gap-1">
-          <Globe2 className="h-3 w-3" />
-          Workspace
-        </Badge>
-      );
-    }
-
-    return (
-      <Badge variant="outline" className="gap-1">
-        <Lock className="h-3 w-3" />
-        Private
-      </Badge>
-    );
   };
 
   return (
@@ -396,231 +255,408 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
         </Alert>
       ) : null}
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Email Accounts</CardTitle>
-            <CardDescription>
-              Connect accounts to send emails from your workspace.
-            </CardDescription>
-          </div>
-          <Dialog
-            open={isConnectDialogOpen}
-            onOpenChange={setIsConnectDialogOpen}
-          >
-            <Tooltip>
-              <TooltipTrigger asChild>
+      <Tabs defaultValue="accounts" className="space-y-6">
+        <TabsList className="mb-0">
+          <TabsTrigger value="accounts">Email Accounts</TabsTrigger>
+          <TabsTrigger value="templates">Templates</TabsTrigger>
+          <TabsTrigger value="variables">Variables</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="accounts">
+          <CardWidgetContainer title="Email Accounts" desc="Connect accounts to send emails from your workspace." icon2={<Dialog
+                open={isConnectDialogOpen}
+                onOpenChange={(open) => {
+                  setIsConnectDialogOpen(open);
+                  if (!open) setConnectTab('google');
+                }}
+              >
                 <DialogTrigger asChild>
-                  <Button
-                    className="h-8 w-8 bg-white p-0 text-black dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
-                    variant="outline"
-                  >
+                  <Button className="h-9 w-9 p-0" variant="outline">
                     <Plus className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p>Connect Account</p>
-              </TooltipContent>
-            </Tooltip>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Connect Email Account</DialogTitle>
-              </DialogHeader>
-              <Tabs defaultValue="google" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="google">Google / Gmail</TabsTrigger>
-                  <TabsTrigger value="smtp">SMTP</TabsTrigger>
-                </TabsList>
-                <TabsContent value="google" className="space-y-4 pt-4">
-                  <div className="mb-4 rounded-md bg-blue-50 p-4 text-sm text-blue-800">
-                    Connect your Gmail or Google Workspace account to send
-                    emails directly.
-                  </div>
-                  <Button
-                    onClick={handleGoogleConnect}
-                    className="w-full"
-                    variant="outline"
-                  >
-                    <Mail className="mr-2 h-4 w-4" />
-                    Connect with Google
-                  </Button>
-                </TabsContent>
-                <TabsContent value="smtp">
-                  <SmtpForm />
-                </TabsContent>
-              </Tabs>
-            </DialogContent>
-          </Dialog>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Provider</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Owner</TableHead>
-                <TableHead>From Name</TableHead>
-                <TableHead>Access</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {workspaceEmailAccountLoading ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="text-muted-foreground py-8 text-center"
-                  >
-                    Loading accounts...
-                  </TableCell>
-                </TableRow>
-              ) : workspaceEmailAccount?.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="text-muted-foreground py-8 text-center"
-                  >
-                    No email accounts connected yet.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                workspaceEmailAccount?.map((account: EmailAccount) => (
-                  <TableRow key={account.id}>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          account.provider === 'google'
-                            ? 'secondary'
-                            : 'outline'
-                        }
-                      >
-                        {account.provider === 'google' ? 'Google' : 'SMTP'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{account.email}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span>
-                          {account.owner?.name ||
-                            account.owner?.email ||
-                            'Unknown owner'}
-                        </span>
-                        {account.owner?.email ? (
-                          <span className="text-muted-foreground text-xs">
-                            {account.owner.email}
-                          </span>
-                        ) : null}
+                <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[500px] dark:border-slate-800 dark:bg-slate-950">
+                  <div className="flex max-h-[90vh] flex-col">
+                  <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+                    <DialogTitle>Connect Email Account</DialogTitle>
+                  </DialogHeader>
+                  <Tabs value={connectTab} onValueChange={(v) => setConnectTab(v as 'google' | 'smtp')} className="flex flex-1 flex-col overflow-hidden">
+                    <div className="shrink-0 px-6 pt-4">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="google">Google / Gmail</TabsTrigger>
+                      <TabsTrigger value="smtp">SMTP</TabsTrigger>
+                    </TabsList>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-6">
+                    <TabsContent value="google" className="space-y-4 pt-4">
+                      <div className="mb-4 rounded-md bg-blue-50 p-4 text-sm text-blue-800 dark:bg-blue-950 dark:text-blue-200">
+                        Connect your Gmail or Google Workspace account to send
+                        emails directly.
                       </div>
-                    </TableCell>
-                    <TableCell>{account.from_name || '-'}</TableCell>
-                    <TableCell>
-                      {isAdmin ? (
-                        <Select
-                          value={account.access_scope}
-                          onValueChange={(value: 'private' | 'workspace') =>
-                            handleAccessChange(account, value)
+                      <Button
+                        onClick={handleGoogleConnect}
+                        className="w-full text-leadgaze-dark dark:text-white"
+                        variant="outline"
+                      >
+                        <Mail className="mr-2 h-4 w-4" />
+                        Connect with Google
+                      </Button>
+                    </TabsContent>
+                    <TabsContent value="smtp" className="space-y-4 pt-4">
+                      <SmtpField
+                        label="From Name"
+                        value={form.from_name}
+                        onChange={(from_name) =>
+                          setForm((prev) => ({ ...prev, from_name }))
+                        }
+                      />
+                      <SmtpField
+                        label="Email Address"
+                        value={form.email}
+                        onChange={(email) =>
+                          setForm((prev) => ({ ...prev, email }))
+                        }
+                      />
+                      <div className="grid grid-cols-2 gap-4">
+                        <SmtpField
+                          label="SMTP Host"
+                          value={form.host}
+                          onChange={(host) =>
+                            setForm((prev) => ({ ...prev, host }))
                           }
-                          disabled={updatingAccountId === account.id}
-                        >
-                          <SelectTrigger className="w-[170px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="private">Private</SelectItem>
-                            <SelectItem value="workspace">Workspace</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        renderAccessBadge(account)
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-2">
-                        <Badge
-                          variant={account.is_active ? 'default' : 'secondary'}
-                          onClick={() => {
-                            if (!account.can_manage) return;
-                            if (updatingAccountId === account.id) return;
-                            handleActiveChange(account, !account.is_active);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          {updatingAccountId === account.id
-                            ? 'Updating...'
-                            : account.is_active
-                              ? 'Active'
-                              : 'Inactive'}
-                        </Badge>
-                        {/* {account.can_manage ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-muted-foreground h-7 justify-start px-0 text-xs"
-                            disabled={updatingAccountId === account.id}
-                            onClick={() =>
-                              handleActiveChange(account, !account.is_active)
+                        />
+                        <SmtpField
+                          label="SMTP Port"
+                          value={form.port}
+                          onChange={(port) =>
+                            setForm((prev) => ({ ...prev, port }))
+                          }
+                        />
+                      </div>
+                      <SmtpField
+                        label="Username"
+                        value={form.username}
+                        onChange={(username) =>
+                          setForm((prev) => ({ ...prev, username }))
+                        }
+                      />
+                      <SmtpField
+                        label="Password"
+                        type="password"
+                        value={form.password}
+                        onChange={(password) =>
+                          setForm((prev) => ({ ...prev, password }))
+                        }
+                      />
+                      <CheckboxField
+                        label="Use SSL/TLS for SMTP"
+                        checked={form.secure}
+                        onChange={(secure) =>
+                          setForm((prev) => ({ ...prev, secure }))
+                        }
+                      />
+                      <Separator />
+                      <div className="text-sm font-medium">IMAP Settings</div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <SmtpField
+                          label="IMAP Host"
+                          value={form.imap_host}
+                          onChange={(imap_host) =>
+                            setForm((prev) => ({ ...prev, imap_host }))
+                          }
+                        />
+                        <SmtpField
+                          label="IMAP Port"
+                          value={form.imap_port}
+                          onChange={(imap_port) =>
+                            setForm((prev) => ({ ...prev, imap_port }))
+                          }
+                        />
+                      </div>
+                      <CheckboxField
+                        label="Use SSL/TLS for IMAP"
+                        checked={form.imap_secure}
+                        onChange={(imap_secure) =>
+                          setForm((prev) => ({ ...prev, imap_secure }))
+                        }
+                      />
+                      {isAdmin ? (
+                        <div className="space-y-2">
+                          <Label>Sharing</Label>
+                          <Select
+                            value={form.access_scope}
+                            onValueChange={(
+                              access_scope: EmailAccountAccessScope,
+                            ) => setForm((prev) => ({ ...prev, access_scope }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="private">Private</SelectItem>
+                              <SelectItem value="workspace">
+                                Workspace
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ) : null}
+                    </TabsContent>
+                    </div>
+                  </Tabs>
+                  {connectTab === 'smtp' ? (
+                  <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+                    <Button
+                      onClick={handleSubmitSmtp}
+                      disabled={isSubmitting}
+                      className="w-full"
+                    >
+                      {isSubmitting ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : null}
+                      Connect SMTP Account
+                    </Button>
+                  </DialogFooter>
+                  ) : null}
+                  </div>
+                </DialogContent>
+              </Dialog>}>
+            <div className='mb-2'>            
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Provider</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Owner</TableHead>
+                    <TableHead>From Name</TableHead>
+                    <TableHead>Access</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    [...Array(5)].map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="h-[52px] px-4 py-2" colSpan={6}>
+                          <Skeleton className="h-7 w-full" />
+                        </TableCell>
+                        <TableCell className="bg-card px-4 text-right">
+                          <Skeleton className="h-7 ml-auto w-full" />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : accounts.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="text-muted-foreground py-8 text-center"
+                      >
+                        No email accounts connected yet.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    accounts.map((account: EmailAccount) => (
+                      <TableRow key={account.id}>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              account.provider === 'google'
+                                ? 'secondary'
+                                : 'outline'
+                            }                            
+                          >
+                            {account.provider === 'google' ? 'Google' : 'SMTP'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{account.email}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span>
+                              {account.owner?.name ||
+                                account.owner?.email ||
+                                'Unknown owner'}
+                            </span>
+                            {account.owner?.email ? (
+                              <span className="text-muted-foreground text-xs">
+                                {account.owner.email}
+                              </span>
+                            ) : null}
+                          </div>
+                        </TableCell>
+                        <TableCell>{account.from_name || '-'}</TableCell>
+                        <TableCell>
+                          {isAdmin ? (
+                            <Select
+                              value={account.access_scope}
+                              onValueChange={(value: EmailAccountAccessScope) =>
+                                handleAccessChange(account, value)
+                              }
+                              disabled={updatingAccountId === account.id}
+                            >
+                              <SelectTrigger className="w-[170px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="private">Private</SelectItem>
+                                <SelectItem value="workspace">
+                                  Workspace
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <AccessBadge accessScope={account.access_scope} />
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              account.is_active ? 'default' : 'secondary'
+                            }
+                            onClick={() => {
+                              if (
+                                !account.can_manage ||
+                                updatingAccountId === account.id
+                              )
+                                return;
+                              handleActiveChange(account, !account.is_active);
+                            }}
+                            className={
+                              account.can_manage ? 'cursor-pointer' : ''
                             }
                           >
                             {updatingAccountId === account.id
                               ? 'Updating...'
                               : account.is_active
-                                ? 'Disable'
-                                : 'Enable'}
-                          </Button>
-                        ) : null} */}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {account.can_manage ? (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              disabled={isDeleting}
-                            >
-                              <Trash2 className="text-muted-foreground h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                Delete Email Account
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete{' '}
-                                <strong>{account.email}</strong>? This action
-                                cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(String(account.id))}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">
-                          {account.owner_user_id === user?.id
-                            ? 'Owner'
-                            : 'View only'}
-                        </span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                                ? 'Active'
+                                : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {account.can_manage ? (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  disabled={isDeleting}
+                                >
+                                  <Trash2 className="text-muted-foreground h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    Delete Email Account
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete{' '}
+                                    <strong>{account.email}</strong>? This
+                                    action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDelete(account)}
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">
+                              {account.owner_user_id === user?.id
+                                ? 'Owner'
+                                : 'View only'}
+                            </span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardWidgetContainer>         
+        </TabsContent>
+
+        <TabsContent value="templates">
+          <EmailTemplatesTab />
+        </TabsContent>
+
+        <TabsContent value="variables">
+          <EmailVariablesTab />
+        </TabsContent>
+      </Tabs>
     </div>
+  );
+}
+
+function SmtpField({
+  label,
+  value,
+  onChange,
+  type = 'text',
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Input
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </div>
+  );
+}
+
+function CheckboxField({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center gap-2 text-sm">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="rounded border-gray-300"
+      />
+      {label}
+    </label>
+  );
+}
+
+function AccessBadge({
+  accessScope,
+}: {
+  accessScope: EmailAccountAccessScope;
+}) {
+  if (accessScope === 'workspace') {
+    return (
+      <Badge variant="secondary" className="gap-1">
+        <Globe2 className="h-3 w-3" />
+        Workspace
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge variant="outline" className="gap-1">
+      <Lock className="h-3 w-3" />
+      Private
+    </Badge>
   );
 }

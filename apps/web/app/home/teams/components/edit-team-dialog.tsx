@@ -87,8 +87,8 @@ export function EditTeamDialog({ team, open, onOpenChange, onSuccess }: EditTeam
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0">
+        <DialogHeader className="border-b p-6 pb-4">
           <DialogTitle>Edit Team</DialogTitle>
           <DialogDescription>
             Update the team details.
@@ -96,7 +96,7 @@ export function EditTeamDialog({ team, open, onOpenChange, onSuccess }: EditTeam
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -129,7 +129,10 @@ export function EditTeamDialog({ team, open, onOpenChange, onSuccess }: EditTeam
               )}
             />
 
-            <DialogFooter className="pt-4">
+            
+          </form>
+        </Form>
+      <DialogFooter className="pt-4 border-t p-6 mt-auto">
               <Button
                 type="button"
                 variant="outline"
@@ -138,12 +141,10 @@ export function EditTeamDialog({ team, open, onOpenChange, onSuccess }: EditTeam
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={updateMutation.isPending}>
+              <Button type="submit" form="dialog-form" disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>
-          </form>
-        </Form>
       </DialogContent>
     </Dialog>
   );
