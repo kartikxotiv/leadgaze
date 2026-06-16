@@ -27,12 +27,16 @@ const paths = {
 interface SignUpPageProps {
   searchParams: Promise<{
     next?: string;
+    email?: string;
+    invite_token?: string;
   }>;
 }
 
 async function SignUpPage({ searchParams }: SignUpPageProps) {
   const resolvedSearchParams = await searchParams;
   const nextParam = resolvedSearchParams.next;
+  const emailParam = resolvedSearchParams.email;
+  const inviteTokenParam = resolvedSearchParams.invite_token;
   const signInUrl = nextParam
     ? `${pathsConfig.auth.signIn}?next=${encodeURIComponent(nextParam)}`
     : pathsConfig.auth.signIn;
@@ -155,6 +159,8 @@ async function SignUpPage({ searchParams }: SignUpPageProps) {
               providers={authConfig.providers}
               displayTermsCheckbox={authConfig.displayTermsCheckbox}
               paths={paths}
+              inviteToken={inviteTokenParam}
+              email={emailParam}
             />
 
             <div className="mt-5 flex items-center justify-center gap-1 text-xs text-slate-500">
