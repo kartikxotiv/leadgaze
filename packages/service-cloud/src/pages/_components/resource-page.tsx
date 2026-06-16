@@ -17,6 +17,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@kit/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@kit/ui/alert-dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import {
@@ -128,6 +138,24 @@ export function ServiceCloudResourcePage({
     getInitialForm(fields, defaults),
   );
   const [saving, setSaving] = useState(false);
+  const [deletingRecord, setDeletingRecord] = useState<ServiceCloudRecord | null>(null);
+
+  const getResourceSingleName = () => {
+    switch (resource) {
+      case 'tickets':
+        return 'ticket';
+      case 'customers':
+        return 'customer';
+      case 'statuses':
+        return 'status';
+      case 'priorities':
+        return 'priority';
+      case 'categories':
+        return 'category';
+      default:
+        return resource.endsWith('s') ? resource.slice(0, -1) : resource;
+    }
+  };
 
   const {
     data = [],
@@ -429,7 +457,7 @@ export function ServiceCloudResourcePage({
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => remove(record)}
+                            onClick={() => setDeletingRecord(record)}
                           >
                             <Trash2 className="text-muted-foreground h-4 w-4" />
                           </Button>
@@ -443,6 +471,38 @@ export function ServiceCloudResourcePage({
           </TableBody>
         </Table>
       </div>
+      <AlertDialog
+        open={Boolean(deletingRecord)}
+        onOpenChange={(open) => !open && setDeletingRecord(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the{' '}
+              {getResourceSingleName()}{' '}
+              {deletingRecord?.subject || deletingRecord?.name
+                ? `"${deletingRecord.subject || deletingRecord.name}"`
+                : ''}{' '}
+              and remove it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingRecord) {
+                  void remove(deletingRecord);
+                  setDeletingRecord(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </CardWidgetContainer>
   );
 }
