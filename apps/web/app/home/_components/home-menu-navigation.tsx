@@ -23,7 +23,6 @@ import {
   Plus,
   Settings,
   ShoppingCart,
-  Users,
   Users as UsersIcon,
 } from 'lucide-react';
 
@@ -38,7 +37,6 @@ import {
   useInventoryPermissions,
 } from '@kit/inventory';
 import {
-  canAccessServiceCloudSettings,
   getServiceCloudRoutesForPermissions,
   useServiceCloudPermissions,
 } from '@kit/service-cloud';
@@ -424,11 +422,12 @@ function NavDropdown({
         {/* Text label — navigates to the main list page */}
         <Link
           href={path}
-          className={cn('px-3 py-1.5 outline-none focus:outline-none',
-                    active
-                      ? 'bg-header-primary !text-white'
-                      : '!text-blue-100 hover:bg-white/10 hover:text-white',
-                  )}
+          className={cn(
+            'px-3 py-1.5 outline-none focus:outline-none',
+            active
+              ? 'bg-header-primary !text-white'
+              : '!text-blue-100 hover:bg-white/10 hover:text-white',
+          )}
         >
           <Trans i18nKey={label} defaults={formattedLabel} />
         </Link>
@@ -775,31 +774,30 @@ export function HomeMenuNavigation() {
     // 4. Service Cloud Module
     if (isServiceCloudModule) {
       const commonPaths = getModuleCommonPaths('/home/services');
-      const canManageServiceSettings = canAccessServiceCloudSettings(
-        canAccessServiceCloud,
-      );
+      const canViewWorkspaceSettings =
+        canAccess('settings', 'view') ||
+        canAccess('subscription', 'view') ||
+        canAccess('emails', 'manage_email');
       const teamItems =
         permissionNavConfig?.teamItems ||
         getNavigationConfig(canAccess).teamItems;
       const scopedTeamItems = scopeCommonItems(teamItems, '/home/services');
-      const settingsChildren = [
-        ...(canManageServiceSettings
-          ? [
-              {
-                label: 'common:routes.workspace-settings',
-                path: commonPaths.workspaceSettings,
-                Icon: <Settings className="h-4 w-4" />,
-              },
-            ]
-          : []),
-        ...scopedTeamItems.map((item) => {
-          const IconComponent = item.Icon;
-          return {
-            ...item,
-            Icon: <IconComponent className="h-4 w-4" />,
-          };
-        }),
-      ];
+      const settingsChildren = canViewWorkspaceSettings
+        ? [
+            {
+              label: 'common:routes.workspace-settings',
+              path: commonPaths.workspaceSettings,
+              Icon: <Settings className="h-4 w-4" />,
+            },
+            ...scopedTeamItems.map((item) => {
+              const IconComponent = item.Icon;
+              return {
+                ...item,
+                Icon: <IconComponent className="h-4 w-4" />,
+              };
+            }),
+          ]
+        : [];
 
       return [
         ...getServiceCloudRoutesForPermissions(canAccessServiceCloud),
@@ -1043,7 +1041,7 @@ export function HomeMenuNavigation() {
               </DialogTrigger>
 
               <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col rounded-lg border border-zinc-200 bg-white p-0 p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
-                <DialogHeader className="mb-0 border-b p-6 pb-4 pt-0">
+                <DialogHeader className="mb-0 border-b p-6 pt-0 pb-4">
                   <DialogTitle className="flex items-center gap-2 text-xl font-bold text-zinc-900 dark:text-white">
                     <Grip className="h-5 w-5 text-blue-600" />
                     App Launcher
