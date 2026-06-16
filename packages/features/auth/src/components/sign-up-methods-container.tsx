@@ -23,9 +23,11 @@ export function SignUpMethodsContainer(props: {
   };
 
   displayTermsCheckbox?: boolean;
+  inviteToken?: string;
+  email?: string;
 }) {
   const redirectUrl = getCallbackUrl(props);
-  const defaultValues = getDefaultValues();
+  const defaultValues = getDefaultValues(props.email, props.inviteToken);
 
   // Use 'next' parameter for redirect after signup if present, 
   // otherwise fallback to default appHome
@@ -97,20 +99,28 @@ function getCallbackUrl(props: {
   return url.href;
 }
 
-function getDefaultValues() {
+function getDefaultValues(emailProp?: string, inviteTokenProp?: string) {
+  if (inviteTokenProp) {
+    return {
+      email: emailProp ?? '',
+      isEmailReadOnly: true,
+    };
+  }
+
   if (!isBrowser()) {
-    return { email: '' };
+    return { email: '', isEmailReadOnly: false };
   }
 
   const searchParams = new URLSearchParams(window.location.search);
   const inviteToken = searchParams.get('invite_token');
 
   if (!inviteToken) {
-    return { email: '' };
+    return { email: '', isEmailReadOnly: false };
   }
 
   return {
     email: searchParams.get('email') ?? '',
+    isEmailReadOnly: true,
   };
 }
 function getAppHome(defaultAppHome: string) {

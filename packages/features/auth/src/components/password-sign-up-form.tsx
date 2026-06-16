@@ -29,6 +29,7 @@ export function PasswordSignUpForm({
 }: {
   defaultValues?: {
     email: string;
+    isEmailReadOnly?: boolean;
   };
 
   displayTermsCheckbox?: boolean;
@@ -102,6 +103,7 @@ export function PasswordSignUpForm({
                     type="email"
                     placeholder={'you@company.com'}
                     className="h-10 rounded-lg border-slate-200 bg-white pr-3 pl-10 text-sm shadow-none placeholder:text-slate-400 focus-visible:ring-[var(--color-leadgaze-auth-7)]"
+                    disabled={defaultValues?.isEmailReadOnly}
                     {...field}
                   />
                 </div>

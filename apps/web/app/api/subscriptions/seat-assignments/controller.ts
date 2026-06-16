@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import { requireSubscriptionManagePermission } from '~/lib/server/subscription-permissions';
+
 import { catchAsync } from '../../../../utils/response-handler';
 
 /**
@@ -11,7 +13,7 @@ import { catchAsync } from '../../../../utils/response-handler';
  */
 export const getSeatAssignments = catchAsync(
   async ({ request }: { request: NextRequest }) => {
-    const adminClient = getSupabaseServerAdminClient() as any;
+    const adminClient = getSupabaseServerAdminClient();
     const workspaceId = request.nextUrl.searchParams.get('workspaceId');
     const productKey = request.nextUrl.searchParams.get('productKey');
 
@@ -110,8 +112,7 @@ export const createSeatAssignment = catchAsync(
     request: NextRequest;
     user?: { id: string };
   }) => {
-    // Cast to any — subscription tables aren't in generated types yet
-    const adminClient = getSupabaseServerAdminClient() as any;
+    const adminClient = getSupabaseServerAdminClient();
     const supabase = getSupabaseServerClient();
 
     if (!user) {
@@ -139,6 +140,11 @@ export const createSeatAssignment = catchAsync(
         { status: 400 },
       );
     }
+
+    await requireSubscriptionManagePermission({
+      accountId: user.id,
+      workspaceId,
+    });
 
     // Resolve product ID from product_key
     const { data: product } = await adminClient
@@ -285,7 +291,7 @@ export const deleteSeatAssignment = catchAsync(
     request: NextRequest;
     user?: { id: string };
   }) => {
-    const adminClient = getSupabaseServerAdminClient() as any;
+    const adminClient = getSupabaseServerAdminClient();
     const supabase = getSupabaseServerClient();
 
     if (!user) {
@@ -312,6 +318,24 @@ export const deleteSeatAssignment = catchAsync(
         { status: 400 },
       );
     }
+
+    const { data: assignment } = await adminClient
+      .from('seat_assignments')
+      .select('workspace_id')
+      .eq('id', assignmentId)
+      .single();
+
+    if (!assignment) {
+      return NextResponse.json(
+        { success: false, message: 'Seat assignment not found' },
+        { status: 404 },
+      );
+    }
+
+    await requireSubscriptionManagePermission({
+      accountId: user.id,
+      workspaceId: assignment.workspace_id,
+    });
 
     const { data, error } = await adminClient
       .from('seat_assignments')
