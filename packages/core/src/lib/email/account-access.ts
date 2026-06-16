@@ -59,7 +59,7 @@ export async function listWorkspaceEmailAccounts(
     .schema('core')
     .from('email_accounts')
     .select(
-      'id,email,created_at,from_name,is_active,provider,workspace_id,owner_user_id,access_scope,is_sync_enabled,inbound_enabled,outbound_enabled',
+      'id,email,created_at,from_name,is_active,provider,workspace_id,owner_user_id,access_scope,is_sync_enabled,inbound_enabled,outbound_enabled,settings',
     )
     .eq('workspace_id', workspaceId)
     .order('created_at', { ascending: false });
@@ -108,26 +108,28 @@ export async function listWorkspaceEmailAccounts(
       .map((grant) => grant.email_account_id),
   );
 
-  return (accounts ?? []).map((account: any) => {
-    const isOwner = account.owner_user_id === memberContext.userId;
-    const canSend =
-      memberContext.isAdmin ||
-      isOwner ||
-      account.access_scope === 'workspace' ||
-      grantedSendAccountIds.has(account.id);
+  return (accounts ?? [])
+    .filter((account: any) => !account.settings?.deleted_at)
+    .map((account: any) => {
+      const isOwner = account.owner_user_id === memberContext.userId;
+      const canSend =
+        memberContext.isAdmin ||
+        isOwner ||
+        account.access_scope === 'workspace' ||
+        grantedSendAccountIds.has(account.id);
 
-    return {
-      ...account,
-      owner: account.owner_user_id
-        ? (ownerMap.get(account.owner_user_id) ?? null)
-        : null,
-      is_owner: isOwner,
-      can_manage: memberContext.isAdmin || isOwner,
-      can_change_access: memberContext.isAdmin,
-      can_send: canSend,
-      can_view_inbox: canSend && account.inbound_enabled !== false,
-    };
-  });
+      return {
+        ...account,
+        owner: account.owner_user_id
+          ? (ownerMap.get(account.owner_user_id) ?? null)
+          : null,
+        is_owner: isOwner,
+        can_manage: memberContext.isAdmin || isOwner,
+        can_change_access: memberContext.isAdmin,
+        can_send: canSend,
+        can_view_inbox: canSend && account.inbound_enabled !== false,
+      };
+    });
 }
 
 export async function getAccessibleInboxEmails(
