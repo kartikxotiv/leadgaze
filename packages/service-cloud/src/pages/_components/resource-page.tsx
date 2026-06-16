@@ -104,6 +104,7 @@ type ResourcePageProps = {
   emptyLabel?: string;
   queryParams?: Record<string, string>;
   toolbar?: React.ReactNode;
+  createLabel?: string;
 };
 
 function getInitialForm(
@@ -131,6 +132,7 @@ export function ServiceCloudResourcePage({
   emptyLabel = 'No records found.',
   queryParams = {},
   toolbar,
+  createLabel,
 }: ResourcePageProps) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ServiceCloudRecord | null>(null);
@@ -240,149 +242,10 @@ export function ServiceCloudResourcePage({
     <CardWidgetContainer className="mt-2" title={title} desc="Connect Gmail or SMTP/IMAP accounts for Core email." icon2={<div className="flex items-center gap-2">
           {toolbar}
           {canCreate ? (
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openCreate}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  New
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[560px] dark:border-slate-800 dark:bg-slate-950">
-                <div className="flex max-h-[90vh] flex-col">
-                  <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
-                    <DialogTitle>
-                      {editing ? `Edit ${title}` : `New ${title}`}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
-                    <div className="grid gap-4">
-                  {fields.map((field) => (
-                    <div key={field.key} className="space-y-2">
-                      <Label>{field.label}</Label>
-                      {field.type === 'select' ? (
-                        <Select
-                          value={String(form[field.key] ?? '')}
-                          onValueChange={(value) =>
-                            setForm((prev: ServiceCloudRecord) => ({
-                              ...prev,
-                              [field.key]: value,
-                            }))
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={`Select ${field.label}`}
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(field.options ?? []).map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                <div className="flex items-center gap-2">
-                                  {option.color ? (
-                                    <span
-                                      className="h-2 w-2 rounded-full border border-black/10 dark:border-white/10 shrink-0"
-                                      style={{ backgroundColor: option.color }}
-                                    />
-                                  ) : null}
-                                  <span>{option.label}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : field.type === 'color' ? (
-                        <div className="space-y-3">
-                          <div className="flex flex-wrap gap-2">
-                            {PRESET_COLORS.map((color) => (
-                              <button
-                                key={color}
-                                type="button"
-                                className={cn(
-                                  "h-8 w-8 rounded-full border-2 transition-all hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                                  form[field.key] === color
-                                    ? "border-primary scale-105 shadow-md ring-2 ring-primary"
-                                    : "border-zinc-300 dark:border-zinc-700"
-                                )}
-                                style={{ backgroundColor: color }}
-                                onClick={() =>
-                                  setForm((prev: ServiceCloudRecord) => ({
-                                    ...prev,
-                                    [field.key]: color,
-                                  }))
-                                }
-                                title={color}
-                              />
-                            ))}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="relative h-9 w-9 overflow-hidden rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-                              <input
-                                type="color"
-                                className="absolute -left-2 -top-2 h-14 w-14 cursor-pointer border-0 p-0"
-                                value={String(form[field.key] || '#64748b')}
-                                onChange={(event) =>
-                                  setForm((prev: ServiceCloudRecord) => ({
-                                    ...prev,
-                                    [field.key]: event.target.value,
-                                  }))
-                                }
-                              />
-                            </div>
-                            <Input
-                              type="text"
-                              placeholder="#000000"
-                              value={String(form[field.key] ?? '')}
-                              onChange={(event) =>
-                                setForm((prev: ServiceCloudRecord) => ({
-                                  ...prev,
-                                  [field.key]: event.target.value,
-                                }))
-                              }
-                              className="w-32 uppercase font-mono text-sm"
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <Input
-                          type={
-                            field.type === 'number'
-                              ? 'number'
-                              : field.type === 'email'
-                                ? 'email'
-                                : 'text'
-                          }
-                          value={String(form[field.key] ?? '')}
-                          onChange={(event) =>
-                            setForm((prev: ServiceCloudRecord) => ({
-                              ...prev,
-                              [field.key]:
-                                field.type === 'number'
-                                  ? Number(event.target.value)
-                                  : event.target.value,
-                            }))
-                          }
-                        />
-                      )}
-                    </div>
-                  ))}
-                    </div>
-                  </div>
-                  <div className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-                    <div className="flex justify-end gap-3">
-                      <Button onClick={save} disabled={saving}>
-                        {saving ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : null}
-                        Save
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button onClick={openCreate}>
+              <Plus className="mr-2 h-4 w-4" />
+              {createLabel || 'New'}
+            </Button>
           ) : null}
         </div>
       }
@@ -503,6 +366,141 @@ export function ServiceCloudResourcePage({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {canCreate || canEdit ? (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[560px] dark:border-slate-800 dark:bg-slate-950">
+            <div className="flex max-h-[90vh] flex-col">
+              <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+                <DialogTitle>
+                  {editing ? `Edit ${title}` : `New ${title}`}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
+                <div className="grid gap-4">
+                  {fields.map((field) => (
+                    <div key={field.key} className="space-y-2">
+                      <Label>{field.label}</Label>
+                      {field.type === 'select' ? (
+                        <Select
+                          value={String(form[field.key] ?? '')}
+                          onValueChange={(value) =>
+                            setForm((prev: ServiceCloudRecord) => ({
+                              ...prev,
+                              [field.key]: value,
+                            }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={`Select ${field.label}`} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(field.options ?? []).map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                <div className="flex items-center gap-2">
+                                  {option.color ? (
+                                    <span
+                                      className="h-2 w-2 rounded-full border border-black/10 dark:border-white/10 shrink-0"
+                                      style={{ backgroundColor: option.color }}
+                                    />
+                                  ) : null}
+                                  <span>{option.label}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : field.type === 'color' ? (
+                        <div className="space-y-3">
+                          <div className="flex flex-wrap gap-2">
+                            {PRESET_COLORS.map((color) => (
+                              <button
+                                key={color}
+                                type="button"
+                                className={cn(
+                                  "h-8 w-8 rounded-full border-2 transition-all hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                                  form[field.key] === color
+                                    ? "border-primary scale-105 shadow-md ring-2 ring-primary"
+                                    : "border-zinc-300 dark:border-zinc-700"
+                                )}
+                                style={{ backgroundColor: color }}
+                                onClick={() =>
+                                  setForm((prev: ServiceCloudRecord) => ({
+                                    ...prev,
+                                    [field.key]: color,
+                                  }))
+                                }
+                                title={color}
+                              />
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="relative h-9 w-9 overflow-hidden rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                              <input
+                                type="color"
+                                className="absolute -left-2 -top-2 h-14 w-14 cursor-pointer border-0 p-0"
+                                value={String(form[field.key] || '#64748b')}
+                                onChange={(event) =>
+                                  setForm((prev: ServiceCloudRecord) => ({
+                                    ...prev,
+                                    [field.key]: event.target.value,
+                                  }))
+                                }
+                              />
+                            </div>
+                            <Input
+                              type="text"
+                              placeholder="#000000"
+                              value={String(form[field.key] ?? '')}
+                              onChange={(event) =>
+                                setForm((prev: ServiceCloudRecord) => ({
+                                  ...prev,
+                                  [field.key]: event.target.value,
+                                }))
+                              }
+                              className="w-32 uppercase font-mono text-sm"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <Input
+                          type={
+                            field.type === 'number'
+                              ? 'number'
+                              : field.type === 'email'
+                                ? 'email'
+                                : 'text'
+                          }
+                          value={String(form[field.key] ?? '')}
+                          onChange={(event) =>
+                            setForm((prev: ServiceCloudRecord) => ({
+                              ...prev,
+                              [field.key]:
+                                field.type === 'number'
+                                  ? Number(event.target.value)
+                                  : event.target.value,
+                            }))
+                          }
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+                <div className="flex justify-end gap-3">
+                  <Button onClick={save} disabled={saving}>
+                    {saving ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Save
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </CardWidgetContainer>
   );
 }
