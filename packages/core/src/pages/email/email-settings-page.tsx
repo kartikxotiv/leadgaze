@@ -38,6 +38,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -130,6 +131,7 @@ export function CoreEmailSettingsPage({
   );
   const [form, setForm] = useState<SmtpFormState>(emptySmtpForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [connectTab, setConnectTab] = useState<'google' | 'smtp'>('google');
 
   const {
     data: accounts = [],
@@ -180,6 +182,7 @@ export function CoreEmailSettingsPage({
       });
       toast.success('Email account connected');
       setForm(emptySmtpForm);
+      setConnectTab('google');
       setIsConnectDialogOpen(false);
       await refetch();
     } catch (error: any) {
@@ -300,24 +303,31 @@ export function CoreEmailSettingsPage({
               <TabsContent value="accounts">
                 <CardWidgetContainer title="Email Accounts" desc="Connect Gmail or SMTP/IMAP accounts for Core email." icon2={<Dialog
                       open={isConnectDialogOpen}
-                      onOpenChange={setIsConnectDialogOpen}
+                      onOpenChange={(open) => {
+                        setIsConnectDialogOpen(open);
+                        if (!open) setConnectTab('google');
+                      }}
                     >
                       <DialogTrigger asChild>
                         <Button variant="outline" size="icon">
                           <Plus className="h-4 w-4" />
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-[540px] overflow-auto max-h-[90vh]">
-                        <DialogHeader>
+                      <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[540px] dark:border-slate-800 dark:bg-slate-950">
+                        <div className="flex max-h-[90vh] flex-col">
+                        <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
                           <DialogTitle>Connect Email Account</DialogTitle>
                         </DialogHeader>
-                        <Tabs defaultValue="google">
+                        <Tabs value={connectTab} onValueChange={(v) => setConnectTab(v as 'google' | 'smtp')} className="flex flex-1 flex-col overflow-hidden">
+                          <div className="shrink-0 px-6 pt-4">
                           <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="google">
                               Google / Gmail
                             </TabsTrigger>
                             <TabsTrigger value="smtp">SMTP / IMAP</TabsTrigger>
                           </TabsList>
+                          </div>
+                          <div className="flex-1 overflow-y-auto p-6">
                           <TabsContent
                             value="google"
                             className="space-y-4 pt-4"
@@ -444,18 +454,24 @@ export function CoreEmailSettingsPage({
                                 </Select>
                               </div>
                             ) : null}
-                            <Button
-                              onClick={handleSubmitSmtp}
-                              disabled={isSubmitting}
-                              className="w-full"
-                            >
-                              {isSubmitting ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              ) : null}
-                              Connect SMTP Account
-                            </Button>
-                          </TabsContent>
+                           </TabsContent>
+                          </div>
                         </Tabs>
+                        {connectTab === 'smtp' ? (
+                        <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+                          <Button
+                            onClick={handleSubmitSmtp}
+                            disabled={isSubmitting}
+                            className="w-full"
+                          >
+                            {isSubmitting ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : null}
+                            Connect SMTP Account
+                          </Button>
+                        </DialogFooter>
+                        ) : null}
+                        </div>
                       </DialogContent>
                     </Dialog>}>
                   <div className='mb-2'>                  

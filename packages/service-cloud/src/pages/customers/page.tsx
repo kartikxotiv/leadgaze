@@ -23,8 +23,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@kit/ui/select';
+import Link from 'next/link';
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@kit/ui/table';
+
+import { formatDate } from '@kit/shared/utils';
 
 import {
   type ServiceCloudRecord,
@@ -38,7 +50,7 @@ import {
   useServiceCloudPermissions,
 } from '../../utils';
 import { ServiceCloudAccessDenied } from '../_components/access-denied';
-import { ServiceCloudResourcePage } from '../_components/resource-page';
+import { ServiceCloudResourcePage, StatusBadge } from '../_components/resource-page';
 
 export function ServiceCloudCustomersPage({
   workspaceId,
@@ -76,6 +88,15 @@ export function ServiceCloudCustomersPage({
   const [ticketPriorityId, setTicketPriorityId] = useState('');
   const [ticketCategoryId, setTicketCategoryId] = useState('');
 
+  // --- Customer Tickets Modal state & query ---
+  const [ticketsModalCustomer, setTicketsModalCustomer] = useState<ServiceCloudRecord | null>(null);
+
+  const { data: customerTickets = [], isLoading: isLoadingTickets } = useQuery<ServiceCloudRecord[]>({
+    queryKey: ['service-cloud', 'customer-tickets', workspaceId, ticketsModalCustomer?.id],
+    queryFn: () => getServiceCloudResourceService('tickets', workspaceId, { customerId: ticketsModalCustomer?.id as string }),
+    enabled: Boolean(ticketsModalCustomer?.id) && Boolean(workspaceId),
+  });
+
   const { data: customers = [] } = useQuery<ServiceCloudRecord[]>({
     queryKey: ['service-cloud', 'customer-ticket-customers', workspaceId],
     queryFn: () => getServiceCloudResourceService('customers', workspaceId),
@@ -85,12 +106,19 @@ export function ServiceCloudCustomersPage({
   const { data: lookups } = useQuery({
     queryKey: ['service-cloud', 'ticket-lookups', workspaceId],
     queryFn: () => getServiceCloudTicketLookupsService(workspaceId),
-    enabled: createOpen && Boolean(workspaceId),
+    enabled: (createOpen || Boolean(ticketsModalCustomer)) && Boolean(workspaceId),
   });
 
   const statuses: any[] = lookups?.statuses ?? [];
   const priorities: any[] = lookups?.priorities ?? [];
   const categories: any[] = lookups?.categories ?? [];
+
+  const statusById = new Map<string, any>(
+    statuses.map((status: any) => [status.id, status]),
+  );
+  const priorityById = new Map<string, any>(
+    priorities.map((priority: any) => [priority.id, priority]),
+  );
 
   const statusOptions = statuses.map((s: any) => ({
     label: s.name,
@@ -180,7 +208,8 @@ export function ServiceCloudCustomersPage({
   ) : null;
 
   return (
-    <Tabs defaultValue="customers" className="space-y-4">
+    <>
+      <Tabs defaultValue="customers" className="space-y-4">
       <TabsList className="mb-0">
         <TabsTrigger value="customers">Customers</TabsTrigger>
         <TabsTrigger value="organizations">Organizations</TabsTrigger>
@@ -202,7 +231,19 @@ export function ServiceCloudCustomersPage({
             { key: 'job_title', label: 'Job Title' },
           ]}
           columns={[
-            { key: 'name', label: 'Name' },
+            {
+              key: 'name',
+              label: 'Name',
+              render: (customer) => (
+                <button
+                  type="button"
+                  onClick={() => setTicketsModalCustomer(customer)}
+                  className="font-medium text-leadgaze-primary hover:underline text-left"
+                >
+                  {customer.name}
+                </button>
+              ),
+            },
             { key: 'email', label: 'Email' },
             { key: 'phone', label: 'Phone' },
             { key: 'job_title', label: 'Job Title' },
@@ -384,5 +425,87 @@ export function ServiceCloudCustomersPage({
         </DialogContent>
       </Dialog>
     </Tabs>
+
+      {/* Customer Tickets Dialog */}
+      <Dialog
+        open={Boolean(ticketsModalCustomer)}
+        onOpenChange={(v) => {
+          if (!v) setTicketsModalCustomer(null);
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-4xl lg:max-w-5xl dark:border-slate-800 dark:bg-slate-950">
+          <div className="flex max-h-[90vh] flex-col w-full max-w-full min-w-0">
+            <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+              <DialogTitle className="flex items-center gap-2">
+                <Ticket className="h-5 w-5" />
+                Tickets for {ticketsModalCustomer?.name}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-y-auto overflow-x-auto p-6 w-full max-w-full min-w-0">
+              {isLoadingTickets ? (
+                <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading tickets...
+                </div>
+              ) : customerTickets.length === 0 ? (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  No tickets found for this customer.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ticket #</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Created</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {customerTickets.map((ticket) => (
+                      <TableRow key={ticket.id}>
+                        <TableCell className="font-mono text-sm">#{ticket.ticket_number}</TableCell>
+                        <TableCell>
+                          <Link
+                            href={`/home/services/tickets/${ticket.id}`}
+                            className="font-medium text-primary hover:underline text-leadgaze-primary block max-w-[200px] sm:max-w-[400px] lg:max-w-[550px] truncate"
+                            title={ticket.subject}
+                          >
+                            {ticket.subject}
+                          </Link>
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge
+                            value={statusById.get(ticket.status_id)?.name as string}
+                            color={statusById.get(ticket.status_id)?.color as string}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge
+                            value={priorityById.get(ticket.priority_id)?.name as string}
+                            color={priorityById.get(ticket.priority_id)?.color as string}
+                          />
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {ticket.created_at ? formatDate(ticket.created_at) : '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+
+            <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+              <Button variant="outline" onClick={() => setTicketsModalCustomer(null)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

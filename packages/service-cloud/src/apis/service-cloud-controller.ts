@@ -165,6 +165,9 @@ export const getServiceCloudResourceController = catchAsync(
       url.searchParams.get('workspace_id');
     const id = url.searchParams.get('id');
     const search = url.searchParams.get('search');
+    const customerId =
+      url.searchParams.get('customerId') ??
+      url.searchParams.get('customer_id');
     const assignedToMe = url.searchParams.get('assignedToMe') === 'true';
 
     if (!workspaceId)
@@ -201,6 +204,10 @@ export const getServiceCloudResourceController = catchAsync(
           .map((column) => `${column}.ilike.%${search}%`)
           .join(','),
       );
+    }
+
+    if (resource === 'tickets' && customerId) {
+      query = query.eq('customer_id', customerId);
     }
 
     if (resource === 'tickets' && assignedToMe) {
