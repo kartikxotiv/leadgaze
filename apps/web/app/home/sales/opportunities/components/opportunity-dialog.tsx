@@ -516,11 +516,12 @@ export function OpportunityDialog({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={mutation.isPending}
+                disabled={mutation.isPending} 
+                className='mb-2'
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={mutation.isPending}>
+              <Button type="submit" form="dialog-form" disabled={mutation.isPending} className='mb-2'>
                 {mutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>

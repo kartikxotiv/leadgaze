@@ -18,6 +18,7 @@ import {
   Grip,
   Headphones,
   Loader2,
+  Menu,
   NotebookPen,
   Package,
   Plus,
@@ -415,7 +416,7 @@ function NavDropdown({
       {/* Wrapper keeps label + chevron visually grouped with shared active styling */}
       <div
         className={cn(
-          'flex items-center rounded-md text-sm font-medium transition-colors',
+          'flex items-center text-sm font-medium transition-colors',
           active
             ? 'bg-header-primary !text-white'
             : '!text-blue-100 hover:bg-white/10 hover:text-white',
@@ -1027,10 +1028,10 @@ export function HomeMenuNavigation() {
   return (
     <div className="flex w-full flex-1 items-center justify-between">
       {/* Left side: Logo & App Launcher & Navigation Items */}
-      <div className="flex items-center space-x-6 lg:space-x-8">
-        <div className="flex items-center space-x-4">
+      <div className="flex min-w-0 flex-1 items-center space-x-3 md:space-x-4 lg:space-x-6 overflow-hidden">
+        <div className="flex shrink-0 items-center space-x-2 md:space-x-3 lg:space-x-4">
           <AppLogo className="max-h-8 w-auto" />
-          {!isOrgRoute && <div className="h-6 w-px bg-white/25" />}
+          {!isOrgRoute && <div className="hidden md:block h-6 w-px bg-white/25" />}
 
           {/* App Launcher Trigger Modal */}
           {!isOrgRoute && (
@@ -1038,7 +1039,7 @@ export function HomeMenuNavigation() {
               <DialogTrigger asChild>
                 <button className="flex cursor-pointer items-center space-x-2 bg-transparent px-3 py-1.5 text-white transition-colors hover:bg-transparent">
                   <Grip className="h-5 w-5" />
-                  <span className="primary-heading-big">{currentAppName}</span>
+                  <span className="primary-heading-big sm:text-md smfont-medium">{currentAppName}</span>
                 </button>
               </DialogTrigger>
 
@@ -1107,12 +1108,12 @@ export function HomeMenuNavigation() {
               </DialogContent>
             </Dialog>
           )}
-          {!isOrgRoute && <div className="h-6 w-px bg-white/25" />}
+          {!isOrgRoute && <div className="hidden lg:block h-6 w-px bg-white/25" />}
         </div>
 
         {/* Dynamic Navigation Menu Items */}
         {!isOrgRoute && (
-          <nav className="flex items-center space-x-1 lg:space-x-2">
+          <nav className="hidden lg:flex items-center space-x-1 lg:space-x-2">
             {visibleRoutes.map((item) => {
               const formatted = formatLabel(item.label);
               const active = isRouteActive(
@@ -1156,7 +1157,7 @@ export function HomeMenuNavigation() {
                   key={item.path}
                   href={item.path}
                   className={cn(
-                    'flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                    'flex items-center gap-1 px-3 py-1.5 text-sm font-medium transition-colors',
                     active
                       ? 'bg-header-primary !text-white'
                       : '!text-blue-100 hover:bg-white/10 hover:text-white',
@@ -1202,8 +1203,75 @@ export function HomeMenuNavigation() {
         )}
       </div>
 
-      {/* Right side: Search, Notifications, Settings, Profile */}
-      <div className="flex items-center space-x-4">
+      {/* Right side: Mobile Menu, Settings, Profile */}
+      <div className="flex shrink-0 items-center space-x-2 md:space-x-3 lg:space-x-4">
+        {/* Mobile hamburger navigation menu */}
+        {!isOrgRoute && allMainRoutes.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex cursor-pointer items-center justify-center rounded-md p-2 text-blue-100 transition-colors hover:bg-white/10 hover:text-white lg:hidden">
+                <Menu className="h-5 w-5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="mt-1 w-48">
+              {allMainRoutes.map((item) => {
+                const formatted = formatLabel(item.label);
+                const isActive = isRouteActive(
+                  item.path,
+                  pathname,
+                  item.end ?? false,
+                );
+                return (
+                  <DropdownMenuItem key={item.path} asChild>
+                    <Link
+                      href={item.path}
+                      className={cn(
+                        'flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2',
+                        isActive
+                          ? 'bg-header-primary font-semibold text-white'
+                          : '',
+                      )}
+                    >
+                      {item.Icon}
+                      <span>
+                        <Trans i18nKey={item.label} defaults={formatted} />
+                      </span>
+                    </Link>
+                  </DropdownMenuItem>
+                );
+              })}
+              {settingsMenuItems.length > 0 && (
+                <>
+                  <div className="my-1 h-px bg-zinc-200 dark:bg-zinc-800" />
+                  {settingsMenuItems.map((item) => {
+                    const isActive = isRouteActive(item.path, pathname, false);
+                    return (
+                      <DropdownMenuItem key={item.path} asChild>
+                        <Link
+                          href={item.path}
+                          className={cn(
+                            'flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2',
+                            isActive
+                              ? 'bg-header-primary font-semibold text-white'
+                              : '',
+                          )}
+                        >
+                          {item.Icon}
+                          <span>
+                            <Trans
+                              i18nKey={item.label}
+                              defaults={formatLabel(item.label)}
+                            />
+                          </span>
+                        </Link>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         {/* Search CRM input */}
         {/* <div className="relative hidden w-48 max-w-xs md:block lg:w-64">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-200/60" />
@@ -1252,7 +1320,7 @@ export function HomeMenuNavigation() {
         )}
 
         {/* User avatar profile dropdown */}
-        <div className="border-l border-blue-500/20 pl-2 lg:pl-4">
+        <div className="shrink-0 border-l border-blue-500/20 pl-2 lg:pl-4">
           <ProfileAccountDropdownContainer showProfileName={false} />
         </div>
       </div>

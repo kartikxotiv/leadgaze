@@ -117,7 +117,7 @@ export function ServiceCloudDashboardPage({
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 mt-2">
       <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.18),_transparent_35%),linear-gradient(135deg,_#111827,_#0f766e_55%,_#1e3a8a)] p-6 text-white shadow-xl">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
@@ -152,13 +152,13 @@ export function ServiceCloudDashboardPage({
         </div>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
             <Card
               key={card.label}
-              className="flex h-32 flex-col justify-between xl:h-28 2xl:h-32"
+              className="flex m-h-32 flex-col justify-between xl:h-28 2xl:h-32"
             >
               <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
                 <div className="space-y-1">
@@ -185,8 +185,8 @@ export function ServiceCloudDashboardPage({
         })}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="space-y-6">
+      <div className="flex flex-col lg:flex-row gap-4 w-full">
+        <div className="space-y-4 w-full lg:w-[65%]">
           <CardWidgetContainer
             title="Status Workload"
             description="Where the current support queue is concentrated."
@@ -258,7 +258,7 @@ export function ServiceCloudDashboardPage({
           </CardWidgetContainer>
         </div>
 
-        <aside className="space-y-6">
+        <div className="space-y-4 w-full lg:w-[35%]">
           <CardWidgetContainer
             title="Priority Pressure"
             description="Open work by severity."
@@ -353,7 +353,7 @@ export function ServiceCloudDashboardPage({
               )}
             </div>
           </CardWidgetContainer>
-        </aside>
+        </div>
       </div>
     </div>
   );
@@ -390,7 +390,7 @@ function EmptyState({ label }: { label: string }) {
 
 export function ServiceCloudDashboardSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 mt-2">
       {/* Hero banner skeleton */}
       <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.18),_transparent_35%),linear-gradient(135deg,_#111827,_#0f766e_55%,_#1e3a8a)] p-6 shadow-xl">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">

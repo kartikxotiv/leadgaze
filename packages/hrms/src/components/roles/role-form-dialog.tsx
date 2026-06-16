@@ -168,10 +168,10 @@ export function RoleFormDialog({
             </div>
 
             <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-              <Button type={'button'} variant={'outline'} onClick={() => setOpen(false)}>
+              <Button type={'button'} variant={'outline'} onClick={() => setOpen(false)} className='mb-2'>
                 Cancel
               </Button>
-              <Button type={'submit'} disabled={mutation.isPending}>
+              <Button type={'submit'} disabled={mutation.isPending} className='mb-2'>
                 {mutation.isPending ? 'Saving...' : initialData ? 'Save Changes' : 'Create Role'}
               </Button>
             </DialogFooter>

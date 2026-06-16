@@ -76,7 +76,7 @@ export function LeadAssignees({ leadId, workspaceId }: LeadAssigneesProps) {
 
   return (
     <CardWidgetContainer
-      className="mt-6"
+      className="mt-4"
       title="Assigned Team Members"
       icon={<Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
