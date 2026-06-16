@@ -19,6 +19,34 @@ export async function GET(request: NextRequest) {
       redirectPath: pathsConfig.app.home,
     });
 
+    // Check for pending workspace invitations after token hash verification
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user?.email) {
+        const { data: invitation } = await supabase
+          .from('workspace_invitations')
+          .select('id, token, email, status, token_expires_at')
+          .eq('email', user.email.toLowerCase())
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (
+          invitation &&
+          (!invitation.token_expires_at ||
+            new Date(invitation.token_expires_at) >= new Date())
+        ) {
+          return redirect(`/invite?token=${invitation.token}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking invitations in callback verifyTokenHash:', error);
+    }
+
     return redirect(nextPath.toString());
   }
 
