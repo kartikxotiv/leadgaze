@@ -6,7 +6,6 @@ import {
   BarChart3,
   Briefcase,
   History,
-  Mail,
   ShieldCheck,
   User,
   Users,
@@ -55,12 +54,19 @@ const SALES_MODULES: NavItem[] = [
     feature: 'view',
     module: 'opportunities',
   },
+  // {
+  //   label: 'Emails',
+  //   path: pathsConfig.app.emails,
+  //   Icon: Mail,
+  //   feature: 'manage_email',
+  //   module: 'emails',
+  // },
   {
-    label: 'Emails',
-    path: pathsConfig.app.emails,
-    Icon: Mail,
-    feature: 'view_inbox',
-    module: 'emails',
+    label: 'Teams',
+    path: pathsConfig.app.teams,
+    Icon: Users,
+    feature: 'view',
+    module: 'team_members',
   },
 ];
 
@@ -71,13 +77,6 @@ const TEAM_MODULES: NavItem[] = [
   {
     label: 'Members',
     path: pathsConfig.app.teamMembers,
-    Icon: Users,
-    feature: 'view',
-    module: 'team_members',
-  },
-  {
-    label: 'Teams',
-    path: pathsConfig.app.teams,
     Icon: Users,
     feature: 'view',
     module: 'team_members',

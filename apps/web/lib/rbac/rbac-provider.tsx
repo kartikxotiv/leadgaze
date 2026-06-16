@@ -4,11 +4,8 @@ import React, { ReactNode, createContext, useContext } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 
-import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
 import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { useUser } from '@kit/supabase/hooks/use-user';
-
-import { Tables } from '~/lib/database.types';
 
 interface Permission {
   module: string;
@@ -66,13 +63,12 @@ export function RBACProvider({ children }: { children: ReactNode }) {
     data: workspaces = [],
     isLoading: isWorkspacesLoading,
     error,
-    refetch,
   } = useQuery({
     queryKey: ['userWorkspaces', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
 
-      // Get workspace memberships
+      // Get workspace memberships, roles, and all nested role permissions in a single call
       const { data: members, error: membersError } = await supabase
         .from('workspace_members')
         .select(
@@ -81,26 +77,12 @@ export function RBACProvider({ children }: { children: ReactNode }) {
           workspace_id,
           status,
           workspace_id(*),
-          role_id(id, role_key, role_name, hierarchy_level)
-        `,
-        )
-        .eq('user_id', user.id)
-        .eq('status', 'accepted');
-
-      if (membersError) throw membersError;
-      if (!members || members.length === 0) return [];
-
-      // Get permissions for each role
-      const workspacesData: Workspace[] = await Promise.all(
-        members.map(async (member) => {
-          const workspace = member.workspace_id as any;
-          const role = member.role_id as any;
-
-          // Get role permissions
-          const { data: permissionsData, error: permError } = await supabase
-            .from('role_permissions')
-            .select(
-              `
+          role_id(
+            id,
+            role_key,
+            role_name,
+            hierarchy_level,
+            role_permissions(
               module_feature_id,
               access_level,
               can_access,
@@ -112,41 +94,51 @@ export function RBACProvider({ children }: { children: ReactNode }) {
                   module_key
                 )
               )
-            `,
             )
-            .eq('role_id', role.id);
+          )
+        `,
+        )
+        .eq('user_id', user.id)
+        .eq('status', 'accepted');
 
-          if (permError) throw permError;
+      if (membersError) throw membersError;
+      if (!members || members.length === 0) return [];
 
-          const permissions: Permission[] = (permissionsData || []).map(
-            (perm: any) => ({
-              module: perm.crm_module_features?.crm_modules?.module_key || '',
-              feature: perm.crm_module_features?.feature_key || '',
-              access_level: perm.access_level,
-              can_access: perm.can_access,
-              can_view_sensitive_data: perm.can_view_sensitive_data,
-              can_override_owner: perm.can_override_owner,
-            }),
-          );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const workspacesData: Workspace[] = members.map((member) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const workspace = member.workspace_id as any;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const role = member.role_id as any;
+        const permissionsData = role?.role_permissions || [];
 
-          return {
-            id: workspace.id,
-            owner_id: workspace.owner_id,
-            name: workspace.name,
-            slug: workspace.slug,
-            member_id: member.id,
-            status: member.status,
-            role: {
-              id: role.id,
-              workspace_id: role.workspace_id,
-              role_key: role.role_key,
-              role_name: role.role_name,
-              hierarchy_level: role.hierarchy_level,
-              permissions,
-            },
-          };
-        }),
-      );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const permissions: Permission[] = permissionsData.map((perm: any) => ({
+          module: perm.crm_module_features?.crm_modules?.module_key || '',
+          feature: perm.crm_module_features?.feature_key || '',
+          access_level: perm.access_level,
+          can_access: perm.can_access,
+          can_view_sensitive_data: perm.can_view_sensitive_data,
+          can_override_owner: perm.can_override_owner,
+        }));
+
+        return {
+          id: workspace.id,
+          owner_id: workspace.owner_id,
+          name: workspace.name,
+          slug: workspace.slug,
+          member_id: member.id,
+          status: member.status,
+          role: {
+            id: role.id,
+            workspace_id: role.workspace_id,
+            role_key: role.role_key,
+            role_name: role.role_name,
+            hierarchy_level: role.hierarchy_level,
+            permissions,
+          },
+        };
+      });
 
       return workspacesData;
     },
@@ -177,6 +169,7 @@ export function RBACProvider({ children }: { children: ReactNode }) {
 
   React.useEffect(() => {
     if (currentWorkspace) {
+      // Reserved for future workspace-change side effects
     }
   }, [currentWorkspace]);
 

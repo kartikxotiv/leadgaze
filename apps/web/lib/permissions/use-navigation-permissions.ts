@@ -10,7 +10,6 @@ import {
   BarChart3,
   Briefcase,
   History,
-  Mail,
   ShieldCheck,
   User,
   Users,
@@ -18,6 +17,16 @@ import {
 
 import pathsConfig from '~/config/paths.config';
 import { useAccessibleModules } from '~/lib/permissions';
+
+/**
+ * Permission-based Dynamic Navigation Hook
+ * Filters navigation items based on the new permission system
+ */
+
+/**
+ * Permission-based Dynamic Navigation Hook
+ * Filters navigation items based on the new permission system
+ */
 
 /**
  * Permission-based Dynamic Navigation Hook
@@ -105,13 +114,13 @@ const ALL_NAV_ITEMS: NavItem[] = [
     moduleKey: 'audit_logs',
     featureKey: 'view',
   },
-  {
-    label: 'Emails',
-    path: pathsConfig.app.emails,
-    Icon: Mail,
-    moduleKey: 'emails',
-    featureKey: 'view_inbox',
-  },
+  // {
+  //   label: 'Emails',
+  //   path: pathsConfig.app.emails,
+  //   Icon: Mail,
+  //   moduleKey: 'emails',
+  //   featureKey: 'manage_email',
+  // },
 ];
 
 /**
@@ -142,16 +151,23 @@ export function usePermissionBasedNavigation() {
 
   // Separate into sales and team items
   const salesItems = useMemo(() => {
-    return filteredItems.filter((item) =>
-      ['leads', 'contacts', 'accounts', 'opportunities', 'emails'].includes(
-        item.moduleKey,
-      ),
+    return filteredItems.filter(
+      (item) =>
+        [
+          'leads',
+          'contacts',
+          'accounts',
+          'opportunities',
+          'team_members',
+        ].includes(item.moduleKey) && item.path !== pathsConfig.app.teamMembers, // Members stays in team/settings
     );
   }, [filteredItems]);
 
   const teamItems = useMemo(() => {
-    return filteredItems.filter((item) =>
-      ['team_members', 'roles', 'audit_logs'].includes(item.moduleKey),
+    return filteredItems.filter(
+      (item) =>
+        ['team_members', 'roles', 'audit_logs'].includes(item.moduleKey) &&
+        item.path !== pathsConfig.app.teams, // Teams moved to sales nav
     );
   }, [filteredItems]);
 

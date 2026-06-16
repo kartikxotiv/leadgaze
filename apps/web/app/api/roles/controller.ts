@@ -17,6 +17,7 @@ const getAllRoles = catchAsync(
     const supabase = getSupabaseServerClient();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
+    const productKey = url.searchParams.get('productKey');
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -25,12 +26,18 @@ const getAllRoles = catchAsync(
       );
     }
 
-    const { data: roles, error } = await supabase
+    let query = supabase
       .from('workspace_roles')
       .select('*')
       .eq('workspace_id', workspaceId)
       .order('hierarchy_level', { ascending: false })
       .order('role_name', { ascending: true });
+
+    if (productKey) {
+      query = query.eq('product_key', productKey);
+    }
+
+    const { data: roles, error } = await query;
 
     if (error) {
       console.error('Get roles error:', error);
@@ -56,24 +63,23 @@ const createRole = catchAsync(
       description,
       color,
       permissions,
+      product_key,
     } = await request.json();
 
-    if (
-      !workspaceId ||
-      !role_key ||
-      !role_name
-    ) {
+    if (!workspaceId || !role_key || !role_name) {
       return NextResponse.json(
         { message: 'Missing required fields' },
         { status: 400 },
       );
     }
 
-    // Check if role_key already exists in this workspace
+    // Check if role_key already exists for this product in this workspace
+    const roleProductKey = product_key || 'sales';
     const { data: existingRole, error: checkError } = await supabase
       .from('workspace_roles')
       .select('id')
       .eq('workspace_id', workspaceId)
+      .eq('product_key', roleProductKey)
       .eq('role_key', role_key)
       .single();
 
@@ -89,8 +95,6 @@ const createRole = catchAsync(
       );
     }
 
-
-
     const { data: createdRole, error: createRoleError } = await supabase
       .from('workspace_roles')
       .insert({
@@ -102,6 +106,7 @@ const createRole = catchAsync(
         color,
         is_system: false,
         is_active: true,
+        product_key: roleProductKey,
       })
       .select()
       .single();
@@ -146,38 +151,97 @@ const getModulesWithFeatures = catchAsync(
     request: NextRequest;
     params?: Record<string, string>;
   }) => {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient() as any;
+    const url = new URL(request.url);
+    const productKey = url.searchParams.get('productKey');
 
-    // Get all modules
-    const { data: modules, error: modulesError } = await supabase
+    // Get modules filtered by product_key directly on crm_modules table.
+    // Include 'common' modules plus the shared emails module for service roles,
+    // where it exposes only emails:manage_inbox.
+    let modulesQuery = supabase
       .from('crm_modules')
       .select('*')
       .eq('is_active', true)
       .order('display_order', { ascending: true });
 
-    if (modulesError) {
-      console.error('Get modules error:', modulesError);
-      throw modulesError;
+    if (productKey) {
+      // Get both product-specific AND common modules
+      modulesQuery = modulesQuery.in('product_key', [productKey, 'common']);
     }
 
-    // Get all features grouped by module
-    const { data: features, error: featuresError } = await supabase
-      .from('crm_module_features')
-      .select('*')
-      .eq('is_active', true)
-      .order('display_order', { ascending: true });
+    let { data: modules, error: modulesError } = await modulesQuery;
+    if (modulesError) throw modulesError;
 
-    if (featuresError) {
-      console.error('Get features error:', featuresError);
-      throw featuresError;
+    if (productKey === 'service_cloud') {
+      const { data: emailModule, error: emailModuleError } = await supabase
+        .from('crm_modules')
+        .select('*')
+        .eq('module_key', 'emails')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (emailModuleError) throw emailModuleError;
+
+      if (
+        emailModule &&
+        !(modules ?? []).some((module: any) => module.id === emailModule.id)
+      ) {
+        modules = [...(modules ?? []), emailModule].sort(
+          (a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0),
+        );
+      }
     }
+
+    const moduleList = modules ?? [];
+
+    // Get features for these modules
+    const moduleIds = moduleList.map((m: any) => m.id);
+    let features: any[] = [];
+
+    if (moduleIds.length > 0) {
+      const { data: featureData, error: featuresError } = await supabase
+        .from('crm_module_features')
+        .select('*')
+        .in('module_id', moduleIds)
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (featuresError) throw featuresError;
+      features = featureData ?? [];
+    }
+
+    const moduleById = new Map<string, any>(
+      moduleList.map((module: any) => [module.id, module]),
+    );
+
+    features = features.filter((feature: any) => {
+      const module = moduleById.get(feature.module_id);
+
+      if (module?.module_key !== 'emails' || !productKey) {
+        return true;
+      }
+
+      if (productKey === 'service_cloud') {
+        return feature.feature_key === 'manage_inbox';
+      }
+
+      if (productKey === 'sales') {
+        return feature.feature_key === 'manage_email';
+      }
+
+      return false;
+    });
 
     // Group features by module
-    const modulesWithFeatures =
-      modules?.map((module: any) => ({
+    const modulesWithFeatures = moduleList
+      .map((module: any) => ({
         ...module,
-        features: features?.filter((f: any) => f.module_id === module.id) || [],
-      })) || [];
+        features: features.filter((f: any) => f.module_id === module.id),
+      }))
+      .filter(
+        (module: any) =>
+          module.module_key !== 'emails' || module.features.length > 0,
+      );
 
     return successDataResponse(
       'Modules with features retrieved successfully',

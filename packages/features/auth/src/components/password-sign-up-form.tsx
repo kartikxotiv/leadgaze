@@ -1,9 +1,8 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRight } from 'lucide-react';
+import { LockKeyhole, Mail, UserRound } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
 
 import { Button } from '@kit/ui/button';
 import {
@@ -42,8 +41,6 @@ export function PasswordSignUpForm({
   }) => unknown;
   loading: boolean;
 }) {
-  const { t } = useTranslation();
-
   const form = useForm({
     resolver: zodResolver(PasswordSignUpSchema),
     defaultValues: {
@@ -57,7 +54,7 @@ export function PasswordSignUpForm({
   return (
     <Form {...form}>
       <form
-        className={'w-full space-y-2.5'}
+        className={'w-full space-y-4'}
         onSubmit={form.handleSubmit(onSubmit)}
       >
         <FormField
@@ -65,17 +62,21 @@ export function PasswordSignUpForm({
           name={'fullName'}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
+              <FormLabel className="text-xs font-semibold text-slate-800">
                 <Trans i18nKey={'Full Name'} />
               </FormLabel>
 
               <FormControl>
-                <Input
-                  data-test={'full-name-input'}
-                  required
-                  placeholder={t('Enter your full name')}
-                  {...field}
-                />
+                <div className="relative">
+                  <UserRound className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    data-test={'full-name-input'}
+                    required
+                    placeholder={'John Doe'}
+                    className="h-10 rounded-lg border-slate-200 bg-white pr-3 pl-10 text-sm shadow-none placeholder:text-slate-400 focus-visible:ring-[var(--color-leadgaze-auth-7)]"
+                    {...field}
+                  />
+                </div>
               </FormControl>
 
               <FormMessage />
@@ -88,18 +89,22 @@ export function PasswordSignUpForm({
           name={'email'}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
-                <Trans i18nKey={'common:emailAddress'} />
+              <FormLabel className="text-xs font-semibold text-slate-800">
+                Work email
               </FormLabel>
 
               <FormControl>
-                <Input
-                  data-test={'email-input'}
-                  required
-                  type="email"
-                  placeholder={t('emailPlaceholder')}
-                  {...field}
-                />
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    data-test={'email-input'}
+                    required
+                    type="email"
+                    placeholder={'you@company.com'}
+                    className="h-10 rounded-lg border-slate-200 bg-white pr-3 pl-10 text-sm shadow-none placeholder:text-slate-400 focus-visible:ring-[var(--color-leadgaze-auth-7)]"
+                    {...field}
+                  />
+                </div>
               </FormControl>
 
               <FormMessage />
@@ -112,18 +117,22 @@ export function PasswordSignUpForm({
           name={'password'}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
+              <FormLabel className="text-xs font-semibold text-slate-800">
                 <Trans i18nKey={'common:password'} />
               </FormLabel>
 
               <FormControl>
-                <Input
-                  required
-                  data-test={'password-input'}
-                  type="password"
-                  placeholder={''}
-                  {...field}
-                />
+                <div className="relative">
+                  <LockKeyhole className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    required
+                    data-test={'password-input'}
+                    type="password"
+                    placeholder={'Create a strong password'}
+                    className="h-10 rounded-lg border-slate-200 bg-white pr-3 pl-10 text-sm shadow-none placeholder:text-slate-400 focus-visible:ring-[var(--color-leadgaze-auth-7)]"
+                    {...field}
+                  />
+                </div>
               </FormControl>
 
               <FormMessage />
@@ -136,23 +145,27 @@ export function PasswordSignUpForm({
           name={'repeatPassword'}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
-                <Trans i18nKey={'auth:repeatPassword'} />
+              <FormLabel className="text-xs font-semibold text-slate-800">
+                Confirm password
               </FormLabel>
 
               <FormControl>
-                <Input
-                  required
-                  data-test={'repeat-password-input'}
-                  type="password"
-                  placeholder={''}
-                  {...field}
-                />
+                <div className="relative">
+                  <LockKeyhole className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    required
+                    data-test={'repeat-password-input'}
+                    type="password"
+                    placeholder={'Repeat your password'}
+                    className="h-10 rounded-lg border-slate-200 bg-white pr-3 pl-10 text-sm shadow-none placeholder:text-slate-400 focus-visible:ring-[var(--color-leadgaze-auth-7)]"
+                    {...field}
+                  />
+                </div>
               </FormControl>
 
               <FormMessage />
 
-              <FormDescription className={'pb-2 text-xs'}>
+              <FormDescription className={'text-xs text-slate-400'}>
                 <Trans i18nKey={'auth:repeatPasswordHint'} />
               </FormDescription>
             </FormItem>
@@ -165,24 +178,13 @@ export function PasswordSignUpForm({
 
         <Button
           data-test={'auth-submit-button'}
-          className={'w-full'}
+          className={
+            'h-10 w-full rounded-lg bg-[var(--color-leadgaze-auth-7)] text-sm font-semibold text-white shadow-none hover:bg-[var(--color-leadgaze-auth-11)]'
+          }
           type="submit"
           disabled={loading}
         >
-          <If
-            condition={loading}
-            fallback={
-              <>
-                <Trans i18nKey={'auth:signUpWithEmail'} />
-
-                <ArrowRight
-                  className={
-                    'zoom-in animate-in slide-in-from-left-2 fill-mode-both h-4 delay-500 duration-500'
-                  }
-                />
-              </>
-            }
-          >
+          <If condition={loading} fallback={'Create account'}>
             <Trans i18nKey={'auth:signingUp'} />
           </If>
         </Button>

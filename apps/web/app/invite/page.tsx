@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useSignOut } from '@kit/supabase/hooks/use-sign-out';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Button } from '@kit/ui/button';
 import {
@@ -26,6 +27,7 @@ import {
 interface InvitationData {
   id: string;
   email: string;
+  product_key?: string | null;
   workspace: {
     id: string;
     name: string;
@@ -37,16 +39,46 @@ interface InvitationData {
   };
 }
 
+const INVITE_PRODUCT_ROUTES: Record<string, string> = {
+  sales: '/home/sales',
+  hrms: '/home/hrms',
+  inventory: '/home/inventory',
+  service_cloud: '/home/services',
+  funds: '/home/funds',
+};
+
+function getInviteRedirectPath(productKey?: string | null) {
+  if (!productKey) return '/home';
+
+  return INVITE_PRODUCT_ROUTES[productKey] ?? '/home';
+}
+
 export default function InviteAcceptancePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: user } = useUser();
   const queryClient = useQueryClient();
   const token = searchParams.get('token');
+  const signOutMutation = useSignOut();
 
   const [invitation, setInvitation] = useState<InvitationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Compare logged in user email with invitation email
+  const isDifferentEmail =
+    !!user &&
+    !!invitation &&
+    !!user.email &&
+    !!invitation.email &&
+    user.email.toLowerCase() !== invitation.email.toLowerCase();
+
+  // Show a toast error if logged in with a different email
+  useEffect(() => {
+    if (isDifferentEmail) {
+      toast.error('You have logged in with another email');
+    }
+  }, [isDifferentEmail]);
 
   // Validate invite token on mount
   useEffect(() => {
@@ -100,10 +132,17 @@ export default function InviteAcceptancePage() {
       // Redirect to workspace
       const workspace = data.data?.workspace;
       if (workspace) {
+        const productKey = data.data?.product_key ?? invitation?.product_key;
+        const redirectPath = getInviteRedirectPath(productKey);
+
+        if (productKey) {
+          localStorage.setItem('selected_module', productKey);
+        }
+
         // Use window.location.assign for a full page refresh which ensures
         // all client-side and server-side state is correctly updated.
         setTimeout(() => {
-          window.location.assign('/home');
+          window.location.assign(redirectPath);
         }, 1500);
       }
     },
@@ -172,6 +211,36 @@ export default function InviteAcceptancePage() {
     );
   }
 
+  if (isDifferentEmail) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Card className="w-full max-w-md border-red-200">
+          <CardHeader>
+            <CardTitle className="text-red-600">Account Mismatch</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground text-sm">
+              You are currently logged in as <strong>{user.email}</strong>, but this invitation is for <strong>{invitation.email}</strong>.
+            </p>
+            <div className="space-y-2">
+              <Button onClick={() => router.push('/')} className="w-full">
+                Go Home
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => signOutMutation.mutate()}
+                disabled={signOutMutation.isPending}
+                className="w-full"
+              >
+                {signOutMutation.isPending ? 'Signing out...' : 'Sign Out'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center">
       <Card className="w-full max-w-md">
@@ -209,7 +278,13 @@ export default function InviteAcceptancePage() {
 
           <div className="space-y-3 border-t pt-6">
             <Button
-              onClick={() => acceptMutation.mutate()}
+              onClick={() => {
+                if (isDifferentEmail) {
+                  toast.error('You have logged in with another email');
+                  return;
+                }
+                acceptMutation.mutate();
+              }}
               disabled={acceptMutation.isPending}
               className="w-full gap-2"
             >

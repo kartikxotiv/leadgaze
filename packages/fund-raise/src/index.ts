@@ -1,0 +1,14 @@
+export * from './pages/dashboard/page';
+export * from './pages/rounds/page';
+export * from './pages/investors/page';
+export * from './pages/deals/page';
+export * from './pages/investor-details/page';
+export * from './pages/round-details/page';
+export * from './pages/deal-details/page';
+export * from './pages/pipeline/page';
+export * from './pages/activities/page';
+export * from './pages/settings/page';
+export * from './apis/index';
+export * from './services/index';
+export * from './utils/index';
+export const name = 'fund-raise';
