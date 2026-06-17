@@ -104,12 +104,16 @@
 }
 
 /* Auth pages input style overrides for dark mode compatibility */
-.auth-card input:not([type="checkbox"]):not([type="radio"]) {
+.auth-card
+  input:not([type='checkbox']):not([type='radio']):not([data-input-otp]) {
   background-color: #ffffff !important;
   color: #0f172a !important;
   border-color: #cbd5e1 !important;
 }
 
-.auth-card input:not([type="checkbox"]):not([type="radio"])::placeholder {
+.auth-card
+  input:not([type='checkbox']):not([type='radio']):not(
+    [data-input-otp]
+  )::placeholder {
   color: #94a3b8 !important;
 }

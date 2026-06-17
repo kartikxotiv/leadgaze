@@ -13,6 +13,7 @@ import { useSignOut } from '@kit/supabase/hooks/use-sign-out';
 import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { Alert, AlertDescription, AlertTitle } from '@kit/ui/alert';
 import { Button } from '@kit/ui/button';
+import { Checkbox } from '@kit/ui/checkbox';
 import {
   Form,
   FormControl,
@@ -34,15 +35,22 @@ import { Trans } from '@kit/ui/trans';
 export function MultiFactorChallengeContainer({
   paths,
   userId,
+  onTrustDevice,
 }: React.PropsWithChildren<{
   userId: string;
   paths: {
     redirectPath: string;
   };
+  /**
+   * Optional callback invoked after successful MFA verification
+   * when the user opts to trust this device.
+   * Typically calls the createTrustedDevice server action.
+   */
+  onTrustDevice?: () => Promise<unknown>;
 }>) {
   const verifyMFAChallenge = useVerifyMFAChallenge({
     onSuccess: () => {
-      window.location.replace(paths.redirectPath);
+      // Redirect is handled in the form submit handler after optional trust device creation
     },
   });
 
@@ -51,11 +59,13 @@ export function MultiFactorChallengeContainer({
       z.object({
         factorId: z.string().min(1),
         verificationCode: z.string().min(6).max(6),
+        trustDevice: z.boolean(),
       }),
     ),
     defaultValues: {
       factorId: '',
       verificationCode: '',
+      trustDevice: false,
     },
   });
 
@@ -84,10 +94,18 @@ export function MultiFactorChallengeContainer({
             factorId,
             verificationCode: data.verificationCode,
           });
+
+          // If user opted to trust this device, call the callback
+          if (data.trustDevice && onTrustDevice) {
+            await onTrustDevice();
+          }
+
+          // Redirect after verification (and optional trust device creation)
+          window.location.replace(paths.redirectPath);
         })}
       >
         <div className={'flex flex-col space-y-4'}>
-          <span className={'text-muted-foreground text-sm'}>
+          <span className={'text-sm text-slate-500'}>
             <Trans i18nKey={'account:verifyActivationCodeDescription'} />
           </span>
 
@@ -115,7 +133,7 @@ export function MultiFactorChallengeContainer({
                   return (
                     <FormItem
                       className={
-                        'mx-auto flex flex-col items-center justify-center'
+                        'mx-auto mb-2 flex flex-col items-center justify-center'
                       }
                     >
                       <FormControl>
@@ -134,11 +152,11 @@ export function MultiFactorChallengeContainer({
                         </InputOTP>
                       </FormControl>
 
-                      <FormDescription>
+                      {/* <FormDescription>
                         <Trans
                           i18nKey={'account:verifyActivationCodeDescription'}
                         />
-                      </FormDescription>
+                      </FormDescription> */}
 
                       <FormMessage />
                     </FormItem>
@@ -147,6 +165,37 @@ export function MultiFactorChallengeContainer({
               />
             </div>
           </div>
+
+          {/* Trust this device checkbox */}
+          <If condition={!!onTrustDevice}>
+            <FormField
+              name={'trustDevice'}
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(checked) =>
+                        field.onChange(checked === true)
+                      }
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <label
+                      htmlFor={field.name}
+                      className="cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      onClick={() => field.onChange(!field.value)}
+                    >
+                      <Trans i18nKey={'account:trustDeviceFor30Days'} />
+                    </label>
+                    <FormDescription className="text-xs">
+                      <Trans i18nKey={'account:trustDeviceDescription'} />
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
+          </If>
 
           <Button
             disabled={
@@ -166,7 +215,11 @@ export function MultiFactorChallengeContainer({
   );
 }
 
-function useVerifyMFAChallenge({ onSuccess }: { onSuccess: () => void }) {
+function useVerifyMFAChallenge({
+  onSuccess,
+}: {
+  onSuccess: () => void | Promise<void>;
+}) {
   const client = useSupabase();
   const mutationKey = ['mfa-verify-challenge'];
 
