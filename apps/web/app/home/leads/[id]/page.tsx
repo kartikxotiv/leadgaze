@@ -5,18 +5,25 @@ import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
+  Bell,
   Briefcase,
   Building2,
+  Calendar,
+  ChevronDown,
   Clock,
   Edit2,
+  FileStack,
+  FileText,
   Mail,
   MapPin,
   Phone,
+  Plus,
   Trash2,
   User,
+  Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -26,12 +33,18 @@ import { formatDate, formatDateTime } from '@kit/shared/utils';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@kit/ui/accordion';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
-import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { CustomInputForView } from '@kit/ui/custom-input-for-view';
 import { DetailHeader } from '@kit/ui/detail-header';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import {
   Tooltip,
   TooltipContent,
@@ -48,11 +61,15 @@ import {
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
+  assignLeadToUser,
+  getLeadAssignees,
+} from '~/services/lead-assignees.service';
+
+import {
   getLeadByIdService,
   getLeadStatusesService,
   updateLeadService,
 } from '~/services/leads.service';
-
 import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
 import {
   EntityDocuments,
@@ -66,6 +83,7 @@ import { ChangeStatusDialog } from '../components/change-status-dialog';
 import { ConvertLeadDialog } from '../components/convert-lead-dialog';
 import EditLeadDialog from '../components/edit-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
+import { AssignUserModal } from '../components/assign-user-modal';
 import { LogCallDialog } from '../components/log-call-dialog';
 
 function LeadDetailsSkeleton() {
@@ -150,11 +168,36 @@ export default function LeadDetailsPage() {
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [openAccordion, setOpenAccordion] = useState<string>('');
 
   const queryClient = useQueryClient();
 
   const leadId = params?.id as string;
   const canManageEmail = canAccess('emails', 'manage_email');
+
+  // Page-level assign modal (works even when accordion is collapsed)
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const { data: pageAssignees = [] } = useQuery({
+    queryKey: ['lead-assignees', leadId],
+    queryFn: async () => {
+      const res = await getLeadAssignees(leadId);
+      return res?.data ?? [];
+    },
+    enabled: !!leadId,
+  });
+  const pageAssignMutation = useMutation({
+    mutationFn: (userId: string) =>
+      assignLeadToUser(leadId, { assigned_to_user_id: userId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lead-assignees', leadId] });
+      toast.success('User assigned to lead');
+      setIsAssignModalOpen(false);
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || 'Failed to assign user';
+      toast.error(message);
+    },
+  });
 
   const {
     data: lead,
@@ -311,7 +354,7 @@ export default function LeadDetailsPage() {
             </Link>
           </Button>
           <div className="flex flex-col">
-            <h1 className="text-lg font-semibold">Lead details</h1>
+            <h1 className="text-lg text-leadgaze-dark font-bold dark:text-white">Lead details</h1>
             <p className="text-leadgaze-muted text-sm">
               View and edit lead information
             </p>
@@ -440,189 +483,122 @@ export default function LeadDetailsPage() {
                 </div>
               }
             />
-            {/* $$$$$$$$$$$$$*/}
+            {/* Tabs Section */}
+            <Tabs defaultValue="email" className="space-y-4">
+              <TabsList className="h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0 mb-2">
+                <TabsTrigger
+                  value="email"
+                  className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <Mail className="mr-2 h-4 w-4" />
+                  Email
+                </TabsTrigger>
+                <TabsTrigger
+                  value="notes"
+                  className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Notes
+                </TabsTrigger>
+                <TabsTrigger
+                  value="meetings"
+                  className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Meetings
+                </TabsTrigger>
+                <TabsTrigger
+                  value="calls"
+                  className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <Phone className="mr-2 h-4 w-4" />
+                  Calls
+                </TabsTrigger>
+                <TabsTrigger
+                  value="reminders"
+                  className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <Bell className="mr-2 h-4 w-4" />
+                  Reminders
+                </TabsTrigger>
+                <TabsTrigger
+                  value="documents"
+                  className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <FileStack className="mr-2 h-4 w-4" />
+                  Documents
+                </TabsTrigger>
+                <TabsTrigger
+                  value="activity"
+                  className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <Clock className="mr-2 h-4 w-4" />
+                  Activity
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Comapny */}
-            <CardWidgetContainer
-              title="Company"
-              icon={
-                <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
-              }
-            >
-              <div className="flex-1">
-                <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
-                  {lead.company_name && (
-                    <CustomInputForView
-                      label="Company"
-                      value={lead.company_name}
-                    />
-                  )}
+              <TabsContent value="email" className="max-h-[500px] overflow-y-auto">
+                <EntityEmails
+                  entityId={leadId}
+                  entityType="lead"
+                  entityName={fullName}
+                  entityEmail={lead.email || undefined}
+                />
+              </TabsContent>
 
-                  {lead.job_title && (
-                    <CustomInputForView
-                      label="Job Title"
-                      value={lead.job_title}
-                    />
-                  )}
-                  {lead.industry && (
-                    <CustomInputForView
-                      label="Industry"
-                      value={lead.industry.industry_name}
-                    />
-                  )}
-                  {lead.company_size && (
-                    <CustomInputForView
-                      label="Company Size"
-                      value={lead.company_size}
-                    />
-                  )}
-                  {lead.company_website ? (
-                    <CustomInputForView
-                      label="Website"
-                      value={
-                        <a
-                          href={lead.company_website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {lead.company_website}
-                        </a>
-                      }
-                    />
-                  ) : null}
-                  {lead.company_linkedin_url ? (
-                    <CustomInputForView
-                      label="Company LinkedIn"
-                      value={
-                        <a
-                          href={lead.company_linkedin_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {lead.company_linkedin_url}
-                        </a>
-                      }
-                    />
-                  ) : null}
-                  {lead.department && (
-                    <CustomInputForView
-                      label="Department"
-                      value={lead.department}
-                    />
-                  )}
-                  {lead.notes && (
-                    <CustomInputForView
-                      label="Notes"
-                      value={lead.notes}
-                      as="textarea"
-                    />
-                  )}
-                </div>
-              </div>
-            </CardWidgetContainer>
+              <TabsContent value="notes" className="max-h-[500px] overflow-y-auto">
+                <EntityNotes entityType="lead" entityId={leadId} />
+              </TabsContent>
 
-            {/* Contact Information Section */}
-            <CardWidgetContainer
-              title="Contact"
-              icon={
-                <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
-              }
-            >
-              <div className="flex-1">
-                <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
-                  {lead.email && (
-                    <CustomInputForView
-                      label="Primary Email"
-                      value={
-                        <a
-                          href={`mailto:${lead.email}`}
-                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {lead.email}
-                        </a>
-                      }
-                    />
-                  )}
+              <TabsContent value="meetings" className="max-h-[500px] overflow-y-auto">
+                <EntityMeetings entityType="lead" entityId={leadId} />
+              </TabsContent>
 
-                  {lead.alt_email && (
-                    <CustomInputForView
-                      label="Alternative Email"
-                      value={
-                        <a
-                          href={`mailto:${lead.alt_email}`}
-                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {lead.alt_email}
-                        </a>
-                      }
-                    />
-                  )}
+              <TabsContent value="calls" className="max-h-[500px] overflow-y-auto">
+                <EntityCalls entityType="lead" entityId={leadId} />
+              </TabsContent>
 
-                  {lead.phone_number && (
-                    <CustomInputForView
-                      label="Phone"
-                      value={
-                        <a
-                          href={`tel:${lead.phone_number}`}
-                          className="block text-sm text-gray-700 dark:text-gray-300"
-                        >
-                          {lead.phone_number}
-                        </a>
-                      }
-                    />
-                  )}
+              <TabsContent value="reminders" className="max-h-[500px] overflow-y-auto">
+                <EntityReminders entityType="lead" entityId={leadId} />
+              </TabsContent>
 
-                  {lead.mobile_number && (
-                    <CustomInputForView
-                      label="Mobile"
-                      value={
-                        <a
-                          href={`tel:${lead.mobile_number}`}
-                          className="block text-sm text-gray-700 dark:text-gray-300"
-                        >
-                          {lead.mobile_number}
-                        </a>
-                      }
-                    />
-                  )}
+              <TabsContent value="documents" className="max-h-[500px] overflow-y-auto">
+                <EntityDocuments entityType="lead" entityId={leadId} />
+              </TabsContent>
 
-                  {lead.location && (
-                    <CustomInputForView
-                      label="Location"
-                      value={lead.location}
-                    />
-                  )}
-
-                  {lead.timezone && (
-                    <CustomInputForView
-                      label="Timezone"
-                      value={lead.timezone}
-                    />
-                  )}
-
-                  {lead.linkedin_url && (
-                    <CustomInputForView
-                      label="LinkedIn"
-                      value={
-                        <a
-                          href={lead.linkedin_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {lead.linkedin_url}
-                        </a>
-                      }
-                    />
-                  )}
-                </div>
-              </div>
-            </CardWidgetContainer>
-
-            {/* Notes Section */}
-            <EntityNotes entityType="lead" entityId={leadId} />
+              <TabsContent value="activity">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
+                        <div className="h-2 w-2 rounded-full bg-green-500" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            Lead Created
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {formatDate(lead.created_at)}
+                          </p>
+                        </div>
+                      </div>
+                      {lead.updated_at && lead.updated_at !== lead.created_at && (
+                        <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
+                          <div className="h-2 w-2 rounded-full bg-blue-500" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              Lead Updated
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {formatDate(lead.updated_at)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
 
             {/* Danger Zone */}
             {canAccess('leads', 'delete') && (
@@ -633,7 +609,7 @@ export default function LeadDetailsPage() {
                 <CardContent>
                   <div className="flex flex-col md:flex-row items-center justify-between">
                     <div className="mb-4 space-y-1">
-                      <p className="font-medium">Delete Lead</p>
+                      <p className="font-medium dark:text-white">Delete Lead</p>
                       <p className="text-muted-foreground text-sm">
                         Once you delete a lead, there is no going back. Please
                         be certain.
@@ -675,7 +651,7 @@ export default function LeadDetailsPage() {
                   <div className="flex flex-row items-start justify-between gap-6">
                     {/* Left side: Breakdown */}
                     <div className="w-full flex-1 space-y-4">
-                      <h3 className="mb-2 text-base font-semibold text-zinc-950 dark:text-white">
+                      <h3 className="mb-2 primary-heading text-leadgaze-dark dark:text-white">
                         Lead Score
                       </h3>
                       <div className="flex items-center justify-between text-sm">
@@ -821,127 +797,227 @@ export default function LeadDetailsPage() {
               </Card>
             )}
 
-            {/* Lead Assignees Section */}
-            {workspace?.id && (
-              <LeadAssignees leadId={leadId} workspaceId={workspace.id} />
-            )}
-
-            {/* Meetings */}
-            <EntityMeetings entityType="lead" entityId={leadId} />
-
-            {/* Email Activity (Drafts, Scheduled, Sent) */}
-            <EntityEmails
-              entityId={leadId}
-              entityType="lead"
-              entityName={fullName}
-              entityEmail={lead.email || undefined}
-            />
-
-            {/* Call Logs Section */}
-            <EntityCalls entityType="lead" entityId={leadId} />
-
-            {/* Activity Section */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                <div className="flex items-center gap-2">
-                  <Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />
-                  <CardTitle className="text-lg">Activity</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                    <div className="h-2 w-2 rounded-full bg-green-500" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        Lead Created
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {formatDate(lead.created_at)}
-                      </p>
-                    </div>
+            {/* Accordion Sections */}
+            <Accordion type="single" collapsible className="space-y-2" value={openAccordion} onValueChange={setOpenAccordion}>
+              {/* Company */}
+              <AccordionItem value="company" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
+                <AccordionTrigger className="hover:no-underline px-4 py-3">
+                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                    <User className="text-leadgaze-dark h-4 w-4 dark:text-white" />                    
+                    Company
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {lead.company_name && (
+                      <CustomInputForView label="Company" value={lead.company_name} />
+                    )}
+                    {lead.job_title && (
+                      <CustomInputForView label="Job Title" value={lead.job_title} />
+                    )}
+                    {lead.industry && (
+                      <CustomInputForView label="Industry" value={lead.industry.industry_name} />
+                    )}
+                    {lead.company_size && (
+                      <CustomInputForView label="Company Size" value={lead.company_size} />
+                    )}
+                    {lead.company_website && (
+                      <CustomInputForView
+                        label="Website"
+                        value={
+                          <a href={lead.company_website} target="_blank" rel="noopener noreferrer" className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400">
+                            {lead.company_website}
+                          </a>
+                        }
+                      />
+                    )}
+                    {lead.company_linkedin_url && (
+                      <CustomInputForView
+                        label="Company LinkedIn"
+                        value={
+                          <a href={lead.company_linkedin_url} target="_blank" rel="noopener noreferrer" className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400">
+                            {lead.company_linkedin_url}
+                          </a>
+                        }
+                      />
+                    )}
+                    {lead.department && (
+                      <CustomInputForView label="Department" value={lead.department} />
+                    )}
+                    {lead.notes && (
+                      <CustomInputForView label="Notes" value={lead.notes} as="textarea" />
+                    )}
                   </div>
-                  {lead.updated_at && lead.updated_at !== lead.created_at && (
-                    <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                      <div className="h-2 w-2 rounded-full bg-blue-500" />
-                      <div className="min-w-0 flex-1">
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Contact */}
+              <AccordionItem value="contact" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
+                <AccordionTrigger className="hover:no-underline px-4 py-3">
+                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                    <User className="text-leadgaze-dark h-4 w-4 dark:text-white" />
+                    Contact
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {lead.email && (
+                      <CustomInputForView
+                        label="Primary Email"
+                        value={
+                          <a href={`mailto:${lead.email}`} className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400">
+                            {lead.email}
+                          </a>
+                        }
+                      />
+                    )}
+                    {lead.alt_email && (
+                      <CustomInputForView
+                        label="Alternative Email"
+                        value={
+                          <a href={`mailto:${lead.alt_email}`} className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400">
+                            {lead.alt_email}
+                          </a>
+                        }
+                      />
+                    )}
+                    {lead.phone_number && (
+                      <CustomInputForView
+                        label="Phone"
+                        value={
+                          <a href={`tel:${lead.phone_number}`} className="block text-sm text-gray-700 dark:text-gray-300">
+                            {lead.phone_number}
+                          </a>
+                        }
+                      />
+                    )}
+                    {lead.mobile_number && (
+                      <CustomInputForView
+                        label="Mobile"
+                        value={
+                          <a href={`tel:${lead.mobile_number}`} className="block text-sm text-gray-700 dark:text-gray-300">
+                            {lead.mobile_number}
+                          </a>
+                        }
+                      />
+                    )}
+                    {lead.location && (
+                      <CustomInputForView label="Location" value={lead.location} />
+                    )}
+                    {lead.timezone && (
+                      <CustomInputForView label="Timezone" value={lead.timezone} />
+                    )}
+                    {lead.linkedin_url && (
+                      <CustomInputForView
+                        label="LinkedIn"
+                        value={
+                          <a href={lead.linkedin_url} target="_blank" rel="noopener noreferrer" className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400">
+                            {lead.linkedin_url}
+                          </a>
+                        }
+                      />
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Assigned Team Members */}
+              {workspace?.id && (
+                <AccordionItem value="assignees" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
+                  <AccordionTrigger hideChevron className="hover:no-underline px-4 py-3">
+                    <div className="flex justify-between w-full">
+                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                      <Users className="text-leadgaze-dark h-4 w-4 dark:text-white" />
+                      Assigned Team Members
+                    </span>
+                    <Button
+                      size="sm"
+                      className="ml-2 mr-3 gap-2 shrink-0"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsAssignModalOpen(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Assign Member
+                    </Button>
+                    </div>
+                    <ChevronDown className={cn('text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200', openAccordion === 'assignees' && 'rotate-180')} />
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <LeadAssignees leadId={leadId} workspaceId={workspace.id} embedded />
+                  </AccordionContent>
+                </AccordionItem>
+              )}
+
+              {/* Lead Owner */}
+              {lead.owner && (
+                <AccordionItem value="owner" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
+                  <AccordionTrigger className="hover:no-underline px-4 py-3">
+                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                      <User className="text-leadgaze-dark h-4 w-4 dark:text-white" />
+                      Lead Owner
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-sm font-semibold text-white">
+                        {lead.owner.name?.charAt(0) || 'U'}
+                      </div>
+                      <div className="min-w-0">
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          Lead Updated
+                          {lead.owner.name}
                         </p>
-                        <p className="text-xs text-gray-500">
-                          {formatDate(lead.updated_at)}
+                        <p className="truncate text-xs text-gray-600 dark:text-gray-400">
+                          {lead.owner.email}
                         </p>
                       </div>
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
 
-            {/* Owner Information */}
-            {lead.owner && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Lead Owner</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-sm font-semibold text-white">
-                      {lead.owner.name?.charAt(0) || 'U'}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {lead.owner.name}
+              {/* Details / Metadata */}
+              <AccordionItem value="details" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
+                <AccordionTrigger className="hover:no-underline px-4 py-3">
+                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                    <Clock className="text-leadgaze-dark h-4 w-4 dark:text-white" />
+                    Details
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+                        Created
                       </p>
-                      <p className="truncate text-xs text-gray-600 dark:text-gray-400">
-                        {lead.owner.email}
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        {formatDate(lead.created_at)}
                       </p>
                     </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+                        Last Updated
+                      </p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        {formatDate(lead.updated_at)}
+                      </p>
+                    </div>
+                    {lead.lead_score !== null && (
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+                          Lead Score
+                        </p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          {scoringResult?.totalScore ?? lead.lead_score}/100
+                        </p>
+                      </div>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Reminders */}
-            <EntityReminders entityType="lead" entityId={leadId} />
-
-            {/* Documents */}
-            <EntityDocuments entityType="lead" entityId={leadId} />
-
-            {/* Metadata */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
-                    Created
-                  </p>
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {formatDate(lead.created_at)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
-                    Last Updated
-                  </p>
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {formatDate(lead.updated_at)}
-                  </p>
-                </div>
-                {lead.lead_score !== null && (
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
-                      Lead Score
-                    </p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      {scoringResult?.totalScore ?? lead.lead_score}/100
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
         </div>
       </PageBody>
@@ -1016,6 +1092,19 @@ export default function LeadDetailsPage() {
             lead_name: fullName,
             lead_email: lead.email,
           }}
+        />
+      )}
+
+      {/* Page-level Assign User Modal (works from accordion header even when collapsed) */}
+      {workspace?.id && (
+        <AssignUserModal
+          isOpen={isAssignModalOpen}
+          onOpenChange={setIsAssignModalOpen}
+          leadId={leadId}
+          workspaceId={workspace.id}
+          currentAssignees={pageAssignees}
+          onAssign={(userId) => pageAssignMutation.mutate(userId)}
+          isLoading={pageAssignMutation.isPending}
         />
       )}
     </ModuleGuard>

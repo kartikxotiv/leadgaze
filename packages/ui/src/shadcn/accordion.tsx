@@ -16,9 +16,11 @@ const AccordionItem: React.FC<
 );
 AccordionItem.displayName = 'AccordionItem';
 
-const AccordionTrigger: React.FC<
-  React.ComponentPropsWithRef<typeof AccordionPrimitive.Trigger>
-> = ({ className, children, ...props }) => (
+type AccordionTriggerProps = React.ComponentPropsWithRef<typeof AccordionPrimitive.Trigger> & {
+  hideChevron?: boolean;
+};
+
+const AccordionTrigger: React.FC<AccordionTriggerProps> = ({ className, children, hideChevron = false, ...props }) => (
   <AccordionPrimitive.Header className="flex">
     <AccordionPrimitive.Trigger
       className={cn(
@@ -28,7 +30,9 @@ const AccordionTrigger: React.FC<
       {...props}
     >
       {children}
-      <ChevronDownIcon className="text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200" />
+      {!hideChevron && (
+        <ChevronDownIcon className="text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200" />
+      )}
     </AccordionPrimitive.Trigger>
   </AccordionPrimitive.Header>
 );
