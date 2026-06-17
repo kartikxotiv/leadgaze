@@ -1061,12 +1061,20 @@ export function ServiceCloudTicketDetailPage({
             <div className="space-y-3 px-6 py-4 text-sm">
               <Metric label="Source" value={ticket.source ?? '-'} />
               <Metric
-                label="First response"
-                value={formatDateTime(ticket.first_response_at)}
+                label="Last response"
+                value={
+                  ticket.last_agent_response_at
+                    ? formatDateTime(ticket.last_agent_response_at)
+                    : 'No response yet'
+                }
               />
               <Metric
                 label="Last customer reply"
-                value={formatDateTime(ticket.last_customer_response_at)}
+                value={
+                  ticket.last_customer_response_at
+                    ? formatDateTime(ticket.last_customer_response_at)
+                    : 'Customer has not responded yet'
+                }
               />
               <Metric
                 label="Updated"
@@ -1652,7 +1660,7 @@ function ServiceCloudTicketDetailSkeleton() {
             <div className="space-y-3 px-6 py-4">
               {[
                 'Source',
-                'First response',
+                'Last response',
                 'Last customer reply',
                 'Updated',
               ].map((field) => (
