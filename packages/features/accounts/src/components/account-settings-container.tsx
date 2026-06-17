@@ -18,8 +18,30 @@ import { usePersonalAccountData } from '../hooks/use-personal-account-data';
 import { AccountDangerZone } from './account-danger-zone';
 import { MultiFactorAuthFactorsList } from './mfa/multi-factor-auth-list';
 import { UpdatePasswordFormContainer } from './password/update-password-container';
+import {
+  type TrustedDevice,
+  TrustedDevicesList,
+} from './trusted-devices/trusted-devices-list';
 import { UpdateAccountDetailsFormContainer } from './update-account-details-form-container';
 import { UpdateAccountImageContainer } from './update-account-image-container';
+
+export interface TrustedDevicesActions {
+  fetchDevices: () => Promise<{
+    success: boolean;
+    data?: TrustedDevice[];
+    error?: string;
+  }>;
+  removeDevice: (deviceId: string) => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+  removeAllDevices: () => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+  /** Optional callback invoked after all devices are removed to sign out the current session. */
+  onSignOut?: () => Promise<void>;
+}
 
 export function PersonalAccountSettingsContainer(
   props: React.PropsWithChildren<{
@@ -33,6 +55,9 @@ export function PersonalAccountSettingsContainer(
     paths: {
       callback: string;
     };
+
+    /** Optional trusted devices server actions. Pass to enable the Trusted Devices section. */
+    trustedDevices?: TrustedDevicesActions;
   }>,
 ) {
   const supportsLanguageSelection = useSupportMultiLanguage();
@@ -123,7 +148,31 @@ export function PersonalAccountSettingsContainer(
         </If>
       </div>
 
-      {/* <Card>
+      {/* Trusted Devices Section */}
+      <If condition={!!props.trustedDevices}>
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <Trans i18nKey={'account:trustedDevices'} />
+            </CardTitle>
+
+            <CardDescription>
+              <Trans i18nKey={'account:trustedDevicesDescription'} />
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <TrustedDevicesList
+              fetchDevices={props.trustedDevices!.fetchDevices}
+              removeDevice={props.trustedDevices!.removeDevice}
+              removeAllDevices={props.trustedDevices!.removeAllDevices}
+              onSignOut={props.trustedDevices!.onSignOut}
+            />
+          </CardContent>
+        </Card>
+      </If>
+
+      <Card>
         <CardHeader>
           <CardTitle>
             <Trans i18nKey={'account:multiFactorAuth'} />
@@ -155,7 +204,7 @@ export function PersonalAccountSettingsContainer(
             <AccountDangerZone />
           </CardContent>
         </Card>
-      </If> */}
+      </If>
     </div>
   );
 }

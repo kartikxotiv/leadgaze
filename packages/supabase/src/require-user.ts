@@ -9,8 +9,12 @@ const SIGN_IN_PATH = '/auth/sign-in';
  * @name requireUser
  * @description Require a session to be present in the request
  * @param client
+ * @param isMfaBypassed Optional async function that returns true if MFA should be bypassed (e.g. trusted device)
  */
-export async function requireUser(client: SupabaseClient): Promise<
+export async function requireUser(
+  client: SupabaseClient,
+  isMfaBypassed?: () => Promise<boolean>,
+): Promise<
   | {
       error: null;
       data: JwtPayload;
@@ -41,13 +45,17 @@ export async function requireUser(client: SupabaseClient): Promise<
   const requiresMfa = await checkRequiresMultiFactorAuthentication(client);
 
   // If the user requires multi-factor authentication,
-  // redirect them to the page where they can verify their identity.
+  // check if they have a valid trusted device bypass before rejecting.
   if (requiresMfa) {
-    return {
-      data: null,
-      error: new MultiFactorAuthError(),
-      redirectTo: MULTI_FACTOR_AUTH_VERIFY_PATH,
-    };
+    const bypassed = isMfaBypassed ? await isMfaBypassed() : false;
+
+    if (!bypassed) {
+      return {
+        data: null,
+        error: new MultiFactorAuthError(),
+        redirectTo: MULTI_FACTOR_AUTH_VERIFY_PATH,
+      };
+    }
   }
 
   return {
