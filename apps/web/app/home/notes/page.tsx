@@ -10,6 +10,7 @@ import {
   Edit,
   Loader2,
   MoreHorizontal,
+  MoreVertical,
   Plus,
   Trash2,
   User,
@@ -605,7 +606,7 @@ export default function NotesPage() {
                               size="icon"
                               className="h-8 w-8"
                             >
-                              <MoreHorizontal className="h-4 w-4" />
+                              <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">

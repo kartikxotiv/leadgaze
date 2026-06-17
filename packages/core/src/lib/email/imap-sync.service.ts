@@ -1,10 +1,11 @@
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
+
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
 import { decrypt } from './crypto';
-import { findCoreEmailEntityByEmail } from './entity-linking';
 import { saveSyncedCoreEmails } from './email-sync-store';
+import { findCoreEmailEntityByEmail } from './entity-linking';
 
 export interface CoreImapSyncOptions {
   id: number;
@@ -27,24 +28,46 @@ function normalizeAddress(value?: string | null) {
   return value?.trim().toLowerCase() ?? '';
 }
 
+function uniqueMailboxPaths(paths: Array<string | null | undefined>) {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const path of paths) {
+    const normalizedPath = path?.trim();
+    const key = normalizedPath?.toLowerCase();
+
+    if (!normalizedPath || !key || seen.has(key)) continue;
+
+    seen.add(key);
+    result.push(normalizedPath);
+  }
+
+  return result;
+}
+
 export class CoreImapSyncService {
   private readonly lastSyncedAt: Date | null;
 
   constructor(private readonly options: CoreImapSyncOptions) {
-    this.lastSyncedAt = options.last_synced_at ? new Date(options.last_synced_at) : null;
+    this.lastSyncedAt = options.last_synced_at
+      ? new Date(options.last_synced_at)
+      : null;
   }
 
   async sync() {
     const host = this.options.imap_host || this.options.smtp_host;
     const username = this.options.imap_username || this.options.smtp_username;
-    const encryptedPassword = this.options.imap_password || this.options.smtp_password;
+    const encryptedPassword =
+      this.options.imap_password || this.options.smtp_password;
 
     console.log('[CoreEmailSync:IMAP] Starting sync', {
       accountId: this.options.id,
       email: this.options.email,
       workspaceId: this.options.workspace_id,
       host,
-      port: this.options.imap_port || (this.options.imap_secure === false ? 143 : 993),
+      port:
+        this.options.imap_port ||
+        (this.options.imap_secure === false ? 143 : 993),
       secure: this.options.imap_secure !== false,
       lastSyncedAt: this.lastSyncedAt?.toISOString() ?? null,
       firstSync: !this.lastSyncedAt,
@@ -56,7 +79,9 @@ export class CoreImapSyncService {
 
     const client = new ImapFlow({
       host,
-      port: this.options.imap_port || (this.options.imap_secure === false ? 143 : 993),
+      port:
+        this.options.imap_port ||
+        (this.options.imap_secure === false ? 143 : 993),
       secure: this.options.imap_secure !== false,
       auth: {
         user: username,
@@ -67,78 +92,146 @@ export class CoreImapSyncService {
 
     try {
       await client.connect();
-      const lock = await client.getMailboxLock('INBOX');
+      const mailboxes = await this.getSyncMailboxPaths(client);
+      const syncResults = [];
 
-      try {
-        const criteria: any = { all: true };
-        if (this.lastSyncedAt) criteria.since = this.lastSyncedAt;
-
-        let messages = (await client.search(criteria)) as number[];
-        const foundCount = messages.length;
-        if (!this.lastSyncedAt && messages.length > 10) {
-          messages = messages.slice(-10);
-        }
-
-        console.log('[CoreEmailSync:IMAP] Provider returned message sequence numbers', {
-          accountId: this.options.id,
-          email: this.options.email,
-          foundCount,
-          selectedCount: messages.length,
-          selectedSequences: messages.slice(0, 20),
-        });
-
-        const payloads = [];
-
-        for (const sequence of messages) {
-          const content = await client.fetchOne(sequence.toString(), {
-            source: true,
-            envelope: true,
-            internalDate: true,
-          });
-
-          if (!content?.source) continue;
-
-          const receivedAt = new Date(content.internalDate || content.envelope?.date || Date.now());
-          if (this.lastSyncedAt && receivedAt <= this.lastSyncedAt) continue;
-
-          const parsed = await simpleParser(content.source);
-          const payload = await this.toCoreEmailPayload(parsed, receivedAt);
-          if (payload) {
-            console.log('[CoreEmailSync:IMAP] Prepared message', {
-              accountId: this.options.id,
-              email: this.options.email,
-              providerMessageId: payload.provider_message_id,
-              direction: payload.direction,
-              from: payload.from_email,
-              to: payload.to_emails,
-              subject: payload.subject,
-              receivedAt: payload.received_at,
-              sentAt: payload.sent_at,
-            });
-            payloads.push(payload);
-          }
-        }
-
-        const savedCount = await saveSyncedCoreEmails(payloads);
-        await this.updateSyncState(null, messages.length > 0 || payloads.length > 0);
-
-        console.log('[CoreEmailSync:IMAP] Sync complete', {
-          accountId: this.options.id,
-          email: this.options.email,
-          selectedCount: messages.length,
-          preparedCount: payloads.length,
-          savedCount,
-        });
-
-        return savedCount;
-      } finally {
-        lock.release();
+      for (const mailbox of mailboxes) {
+        syncResults.push(await this.syncMailbox(client, mailbox));
       }
+
+      const payloads = syncResults.flatMap((result) => result.payloads);
+      const selectedCount = syncResults.reduce(
+        (sum, result) => sum + result.selectedCount,
+        0,
+      );
+      const savedCount = await saveSyncedCoreEmails(payloads);
+      await this.updateSyncState(
+        null,
+        selectedCount > 0 || payloads.length > 0,
+      );
+
+      console.log('[CoreEmailSync:IMAP] Sync complete', {
+        accountId: this.options.id,
+        email: this.options.email,
+        mailboxes,
+        selectedCount,
+        preparedCount: payloads.length,
+        savedCount,
+      });
+
+      return savedCount;
     } catch (error: any) {
       await this.updateSyncState(error.message ?? 'IMAP sync failed');
       throw error;
     } finally {
       await client.logout().catch(() => undefined);
+    }
+  }
+
+  private async getSyncMailboxPaths(client: ImapFlow) {
+    try {
+      const mailboxes = await client.list();
+      const sentMailboxes = (mailboxes ?? [])
+        .filter((mailbox: any) => {
+          const path = String(mailbox.path ?? mailbox.name ?? '');
+          const specialUse = String(mailbox.specialUse ?? '');
+
+          return (
+            specialUse.toLowerCase() === '\\sent' || /\bsent\b/i.test(path)
+          );
+        })
+        .map((mailbox: any) => mailbox.path ?? mailbox.name);
+
+      return uniqueMailboxPaths(['INBOX', ...sentMailboxes]);
+    } catch (error) {
+      console.warn('[CoreEmailSync:IMAP] Failed to list mailboxes', {
+        accountId: this.options.id,
+        email: this.options.email,
+        error,
+      });
+
+      return ['INBOX'];
+    }
+  }
+
+  private async syncMailbox(client: ImapFlow, mailbox: string) {
+    let lock;
+
+    try {
+      lock = await client.getMailboxLock(mailbox);
+    } catch (error) {
+      if (mailbox.toLowerCase() === 'inbox') throw error;
+
+      console.warn('[CoreEmailSync:IMAP] Skipping unavailable mailbox', {
+        accountId: this.options.id,
+        email: this.options.email,
+        mailbox,
+        error,
+      });
+
+      return { selectedCount: 0, payloads: [] };
+    }
+
+    try {
+      const criteria: any = { all: true };
+      if (this.lastSyncedAt) criteria.since = this.lastSyncedAt;
+
+      let messages = (await client.search(criteria)) as number[];
+      const foundCount = messages.length;
+      if (!this.lastSyncedAt && messages.length > 10) {
+        messages = messages.slice(-10);
+      }
+
+      console.log(
+        '[CoreEmailSync:IMAP] Provider returned message sequence numbers',
+        {
+          accountId: this.options.id,
+          email: this.options.email,
+          mailbox,
+          foundCount,
+          selectedCount: messages.length,
+          selectedSequences: messages.slice(0, 20),
+        },
+      );
+
+      const payloads = [];
+
+      for (const sequence of messages) {
+        const content = await client.fetchOne(sequence.toString(), {
+          source: true,
+          envelope: true,
+          internalDate: true,
+        });
+
+        if (!content?.source) continue;
+
+        const receivedAt = new Date(
+          content.internalDate || content.envelope?.date || Date.now(),
+        );
+        if (this.lastSyncedAt && receivedAt <= this.lastSyncedAt) continue;
+
+        const parsed = await simpleParser(content.source);
+        const payload = await this.toCoreEmailPayload(parsed, receivedAt);
+        if (payload) {
+          console.log('[CoreEmailSync:IMAP] Prepared message', {
+            accountId: this.options.id,
+            email: this.options.email,
+            mailbox,
+            providerMessageId: payload.provider_message_id,
+            direction: payload.direction,
+            from: payload.from_email,
+            to: payload.to_emails,
+            subject: payload.subject,
+            receivedAt: payload.received_at,
+            sentAt: payload.sent_at,
+          });
+          payloads.push(payload);
+        }
+      }
+
+      return { selectedCount: messages.length, payloads };
+    } finally {
+      lock.release();
     }
   }
 
@@ -153,13 +246,15 @@ export class CoreImapSyncService {
     const bccEmails = (parsed.bcc?.value ?? [])
       .map((item: any) => normalizeAddress(item.address))
       .filter(Boolean);
-    const direction = fromEmail === this.options.email.toLowerCase() ? 'outbound' : 'inbound';
+    const direction =
+      fromEmail === this.options.email.toLowerCase() ? 'outbound' : 'inbound';
     const targetEmail = direction === 'inbound' ? fromEmail : toEmails[0];
     const entity = targetEmail
       ? await findCoreEmailEntityByEmail(this.options.workspace_id, targetEmail)
       : null;
     const providerMessageId =
-      parsed.messageId || `imap-${this.options.id}-${receivedAt.getTime()}-${fromEmail}-${parsed.subject ?? ''}`;
+      parsed.messageId ||
+      `imap-${this.options.id}-${receivedAt.getTime()}-${fromEmail}-${parsed.subject ?? ''}`;
 
     if (!fromEmail) return null;
 
@@ -168,11 +263,15 @@ export class CoreImapSyncService {
       email_account_id: this.options.id,
       provider_message_id: providerMessageId,
       internet_message_id: parsed.messageId ?? null,
-      thread_key: parsed.references?.[0] ?? parsed.inReplyTo ?? parsed.messageId ?? providerMessageId,
+      thread_key:
+        parsed.references?.[0] ??
+        parsed.inReplyTo ??
+        parsed.messageId ??
+        providerMessageId,
       in_reply_to: parsed.inReplyTo ?? null,
       email_references: Array.isArray(parsed.references)
         ? parsed.references.join(' ')
-        : parsed.references ?? null,
+        : (parsed.references ?? null),
       direction,
       from_email: fromEmail,
       to_email: toEmails[0] ?? null,
@@ -189,12 +288,19 @@ export class CoreImapSyncService {
       sent_at: direction === 'outbound' ? receivedAt.toISOString() : null,
       received_at: direction === 'inbound' ? receivedAt.toISOString() : null,
       relation: entity
-        ? { entity_type: entity.type, entity_id: entity.id, relation_type: 'participant' }
+        ? {
+            entity_type: entity.type,
+            entity_id: entity.id,
+            relation_type: 'participant',
+          }
         : null,
     };
   }
 
-  private async updateSyncState(error: string | null, shouldAdvanceLastSyncedAt = true) {
+  private async updateSyncState(
+    error: string | null,
+    shouldAdvanceLastSyncedAt = true,
+  ) {
     const supabase = getSupabaseServerAdminClient();
     const updatePayload: Record<string, unknown> = { last_error: error };
 

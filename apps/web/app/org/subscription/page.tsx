@@ -894,18 +894,20 @@ export default function OrgSubscriptionPage({
       {/* Cancel Subscription Section (only for paid subscriptions) */}
       {canManageSubscription && isPaid && seats.length > 0 && (
         <Card className="border-destructive/20">
-          <CardContent className="flex items-center gap-3 p-6">
-            <div className="bg-destructive/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-              <AlertTriangle className="text-destructive h-4 w-4" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-destructive font-semibold">
-                Cancel Subscription
-              </h3>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Cancelling will revoke access to all modules at the end of your
-                current billing period. This action cannot be undone.
-              </p>
+          <CardContent className="flex flex-col md:flex-row items-center justify-between p-6">
+            <div className="flex items-start gap-3 mb-2">
+              <div className="bg-destructive/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+                <AlertTriangle className="text-destructive h-4 w-4" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-destructive font-semibold">
+                  Cancel Subscription
+                </h3>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Cancelling will revoke access to all modules at the end of your
+                  current billing period. This action cannot be undone.
+                </p>
+              </div>
             </div>
             <Button
               variant="destructive"

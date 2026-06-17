@@ -17,6 +17,7 @@ import {
   Trash2,
   User,
   Users,
+  MoreVertical,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@kit/ui/button';
@@ -651,7 +652,7 @@ export default function DocumentPage() {
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
+                              <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
@@ -808,7 +809,7 @@ export default function DocumentPage() {
           <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Rename Document</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
+          <div className="flex-1 space-y-4 px-6 py-4">
             <div className="space-y-2">
               <Label>Document Name</Label>
               <Input

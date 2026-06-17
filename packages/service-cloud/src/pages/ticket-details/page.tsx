@@ -398,7 +398,7 @@ export function ServiceCloudTicketDetailPage({
     updateMutation.mutate(payload);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 mt-2">
       <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_34%),linear-gradient(135deg,_#0f172a,_#164e63_52%,_#0f172a)] p-6 text-white shadow-xl">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-4xl space-y-5">
@@ -481,8 +481,8 @@ export function ServiceCloudTicketDetailPage({
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
-        <main className="space-y-6">
+      <div className="flex flex-col lg:flex-row gap-4 w-full">
+        <div className="space-y-4 w-full lg:w-[65%]">
           <CardWidgetContainer
             title="Ticket Workspace"
             description="Customer conversation, internal work, attachments, and service timeline."
@@ -507,11 +507,11 @@ export function ServiceCloudTicketDetailPage({
                     Send Email
                   </Button>
                 ) : null}
-                <StatusPill label={ticket.source ?? 'manual'} />
+                <StatusPill label={ticket.source ?? 'manual'}/>
                 {canManageInbox ? (
-                  <StatusPill label={`${emails.length} emails`} />
+                  <StatusPill label={`${emails.length} emails`}/>
                 ) : null}
-                <StatusPill label={formatDuration(totalLoggedSeconds)} />
+                <StatusPill label={formatDuration(totalLoggedSeconds)}/>
               </div>
             }
           >
@@ -937,9 +937,9 @@ export function ServiceCloudTicketDetailPage({
               </Tabs>
             </div>
           </CardWidgetContainer>
-        </main>
+        </div>
 
-        <aside className="space-y-4 xl:sticky xl:top-4 xl:self-start">
+        <div className="space-y-4 w-full lg:w-[35%]">
           <CardWidgetContainer
             title="Ticket Properties"
             description="Operational fields agents update while working the case."
@@ -1074,7 +1074,7 @@ export function ServiceCloudTicketDetailPage({
               />
             </div>
           </CardWidgetContainer>
-        </aside>
+        </div>
       </div>
 
       {canManageInbox ? (
@@ -1424,7 +1424,7 @@ function Metric({
 
 function StatusPill({ label }: { label: string }) {
   return (
-    <span className="rounded-full border bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm dark:bg-slate-950 dark:text-slate-200">
+    <span className="rounded-full border bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm dark:bg-slate-950 dark:text-slate-200 mt-1">
       {label}
     </span>
   );
@@ -1451,7 +1451,7 @@ function EmptyState({
 
 function ServiceCloudTicketDetailSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 mt-2">
       {/* ── Hero banner skeleton ── */}
       <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_34%),linear-gradient(135deg,_#0f172a,_#164e63_52%,_#0f172a)] p-6 shadow-xl">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">

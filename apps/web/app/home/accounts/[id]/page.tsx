@@ -301,9 +301,9 @@ export default function AccountDetailsPage() {
           entityName={account.account_name}
           onSuccess={() => router.push('/home/sales/accounts')}
         />
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="flex flex-col lg:flex-row gap-4 w-full">
           {/* Main Content */}
-          <div className="space-y-6 lg:col-span-2">
+          <div className="space-y-6 w-full lg:w-[65%]">
             <DetailHeader
               avatar={
                 <div className="bg-primary/10 flex h-16 w-16 items-center justify-center rounded-lg">
@@ -679,7 +679,7 @@ export default function AccountDetailsPage() {
                   <CardTitle className="text-destructive text-lg"></CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col md:flex-row items-center justify-between">
                     <div className="space-y-1">
                       <p className="font-medium">Delete Account</p>
                       <p className="text-muted-foreground text-sm">
@@ -715,7 +715,7 @@ export default function AccountDetailsPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-6 w-full lg:w-[35%]">
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm font-medium">
