@@ -685,16 +685,16 @@ export function HomeMenuNavigation() {
     // 1. Fundraising Module
     if (isFundraiseModule) {
       const commonPaths = getModuleCommonPaths('/home/funds');
+      const canViewWorkspaceSettings =
+        canAccess('settings', 'view') ||
+        canAccess('subscription', 'view') ||
+        canAccess('emails', 'manage_email');
       const teamItems =
         permissionNavConfig?.teamItems ||
         getNavigationConfig(canAccess).teamItems;
       const scopedTeamItems = scopeCommonItems(teamItems, '/home/funds');
-
-      return [
-        ...getFundraiseRoutesForPermissions(canAccessFundraising),
-        {
-          label: 'common:routes.settings',
-          children: [
+      const settingsChildren = canViewWorkspaceSettings
+        ? [
             {
               label: 'common:routes.workspace-settings',
               path: commonPaths.workspaceSettings,
@@ -707,24 +707,41 @@ export function HomeMenuNavigation() {
                 Icon: <IconComponent className="h-4 w-4" />,
               };
             }),
-          ],
-        },
+          ]
+        : scopedTeamItems.map((item) => {
+            const IconComponent = item.Icon;
+            return {
+              ...item,
+              Icon: <IconComponent className="h-4 w-4" />,
+            };
+          });
+
+      return [
+        ...getFundraiseRoutesForPermissions(canAccessFundraising),
+        ...(settingsChildren.length > 0
+          ? [
+              {
+                label: 'common:routes.settings',
+                children: settingsChildren,
+              },
+            ]
+          : []),
       ];
     }
 
     // 2. HRMS Module
     if (isHrmsModule) {
       const commonPaths = getModuleCommonPaths('/home/hrms');
+      const canViewWorkspaceSettings =
+        canAccess('settings', 'view') ||
+        canAccess('subscription', 'view') ||
+        canAccess('emails', 'manage_email');
       const teamItems =
         permissionNavConfig?.teamItems ||
         getNavigationConfig(canAccess).teamItems;
       const scopedTeamItems = scopeCommonItems(teamItems, '/home/hrms');
-
-      return [
-        hrmsRoutes,
-        {
-          label: 'common:routes.settings',
-          children: [
+      const settingsChildren = canViewWorkspaceSettings
+        ? [
             {
               label: 'common:routes.workspace-settings',
               path: commonPaths.workspaceSettings,
@@ -737,24 +754,41 @@ export function HomeMenuNavigation() {
                 Icon: <IconComponent className="h-4 w-4" />,
               };
             }),
-          ],
-        },
+          ]
+        : scopedTeamItems.map((item) => {
+            const IconComponent = item.Icon;
+            return {
+              ...item,
+              Icon: <IconComponent className="h-4 w-4" />,
+            };
+          });
+
+      return [
+        hrmsRoutes,
+        ...(settingsChildren.length > 0
+          ? [
+              {
+                label: 'common:routes.settings',
+                children: settingsChildren,
+              },
+            ]
+          : []),
       ];
     }
 
     // 3. Inventory Module
     if (isInventoryModule) {
+      const canViewWorkspaceSettings =
+        canAccess('settings', 'view') ||
+        canAccess('subscription', 'view') ||
+        canAccess('emails', 'manage_email');
       const teamItems =
         permissionNavConfig?.teamItems ||
         getNavigationConfig(canAccess).teamItems;
       const scopedTeamItems = scopeCommonItems(teamItems, '/home/inventory');
       const commonPaths = getModuleCommonPaths('/home/inventory');
-
-      return [
-        ...getInventoryRoutesForPermissions(canAccessInventory),
-        {
-          label: 'common:routes.settings',
-          children: [
+      const settingsChildren = canViewWorkspaceSettings
+        ? [
             {
               label: 'common:routes.workspace-settings',
               path: commonPaths.workspaceSettings,
@@ -767,8 +801,25 @@ export function HomeMenuNavigation() {
                 Icon: <IconComponent className="h-4 w-4" />,
               };
             }),
-          ],
-        },
+          ]
+        : scopedTeamItems.map((item) => {
+            const IconComponent = item.Icon;
+            return {
+              ...item,
+              Icon: <IconComponent className="h-4 w-4" />,
+            };
+          });
+
+      return [
+        ...getInventoryRoutesForPermissions(canAccessInventory),
+        ...(settingsChildren.length > 0
+          ? [
+              {
+                label: 'common:routes.settings',
+                children: settingsChildren,
+              },
+            ]
+          : []),
       ];
     }
 
@@ -798,7 +849,13 @@ export function HomeMenuNavigation() {
               };
             }),
           ]
-        : [];
+        : scopedTeamItems.map((item) => {
+            const IconComponent = item.Icon;
+            return {
+              ...item,
+              Icon: <IconComponent className="h-4 w-4" />,
+            };
+          });
 
       return [
         ...getServiceCloudRoutesForPermissions(canAccessServiceCloud),
@@ -816,6 +873,36 @@ export function HomeMenuNavigation() {
     // 5. Default: Sales CRM Module — permission-filtered
     const { salesItems, teamItems } =
       permissionNavConfig ?? getNavigationConfig(canAccess);
+    const canViewWorkspaceSettings =
+      canAccess('settings', 'view') ||
+      canAccess('subscription', 'view') ||
+      canAccess('emails', 'manage_email');
+    const salesSettingsChildren = canViewWorkspaceSettings
+      ? [
+          {
+            label: 'common:routes.workspace-settings',
+            path: pathsConfig.app.workspaceSettings,
+            Icon: <Settings className="h-4 w-4" />,
+          },
+          ...(teamItems.length > 0
+            ? teamItems.map((item) => {
+                const IconComponent = item.Icon;
+                return {
+                  ...item,
+                  Icon: <IconComponent className="h-4 w-4" />,
+                };
+              })
+            : []),
+        ]
+      : teamItems.length > 0
+        ? teamItems.map((item) => {
+            const IconComponent = item.Icon;
+            return {
+              ...item,
+              Icon: <IconComponent className="h-4 w-4" />,
+            };
+          })
+        : [];
 
     return [
       {
@@ -858,32 +945,16 @@ export function HomeMenuNavigation() {
             path: '/home/sales/document',
             Icon: <FileText className="h-4 w-4" />,
           },
-          // {
-          //   label: 'Teams',
-          //   path: pathsConfig.app.teams,
-          //   Icon: <Users className="h-4 w-4" />,
-          // },
         ],
       },
-      {
-        label: 'common:routes.settings',
-        children: [
-          {
-            label: 'common:routes.workspace-settings',
-            path: pathsConfig.app.workspaceSettings,
-            Icon: <Settings className="h-4 w-4" />,
-          },
-          ...(teamItems.length > 0
-            ? teamItems.map((item) => {
-                const IconComponent = item.Icon;
-                return {
-                  ...item,
-                  Icon: <IconComponent className="h-4 w-4" />,
-                };
-              })
-            : []),
-        ],
-      },
+      ...(salesSettingsChildren.length > 0
+        ? [
+            {
+              label: 'common:routes.settings',
+              children: salesSettingsChildren,
+            },
+          ]
+        : []),
     ];
   }, [
     permissionNavConfig,
@@ -1026,10 +1097,12 @@ export function HomeMenuNavigation() {
   return (
     <div className="flex w-full flex-1 items-center justify-between">
       {/* Left side: Logo & App Launcher & Navigation Items */}
-      <div className="flex min-w-0 flex-1 items-center space-x-3 md:space-x-4 lg:space-x-6 overflow-hidden">
+      <div className="flex min-w-0 flex-1 items-center space-x-3 overflow-hidden md:space-x-4 lg:space-x-6">
         <div className="flex shrink-0 items-center space-x-2 md:space-x-3 lg:space-x-4">
           <AppLogo className="max-h-8 w-auto" />
-          {!isOrgRoute && <div className="hidden md:block h-6 w-px bg-white/25" />}
+          {!isOrgRoute && (
+            <div className="hidden h-6 w-px bg-white/25 md:block" />
+          )}
 
           {/* App Launcher Trigger Modal */}
           {!isOrgRoute && (
@@ -1037,7 +1110,9 @@ export function HomeMenuNavigation() {
               <DialogTrigger asChild>
                 <button className="flex cursor-pointer items-center space-x-2 bg-transparent px-3 py-1.5 text-white transition-colors hover:bg-transparent">
                   <Grip className="h-5 w-5" />
-                  <span className="primary-heading-big sm:text-md smfont-medium">{currentAppName}</span>
+                  <span className="primary-heading-big sm:text-md smfont-medium">
+                    {currentAppName}
+                  </span>
                 </button>
               </DialogTrigger>
 
@@ -1106,12 +1181,14 @@ export function HomeMenuNavigation() {
               </DialogContent>
             </Dialog>
           )}
-          {!isOrgRoute && <div className="hidden lg:block h-6 w-px bg-white/25" />}
+          {!isOrgRoute && (
+            <div className="hidden h-6 w-px bg-white/25 lg:block" />
+          )}
         </div>
 
         {/* Dynamic Navigation Menu Items */}
         {!isOrgRoute && (
-          <nav className="hidden lg:flex items-center space-x-1 lg:space-x-2">
+          <nav className="hidden items-center space-x-1 lg:flex lg:space-x-2">
             {visibleRoutes.map((item) => {
               const formatted = formatLabel(item.label);
               const active = isRouteActive(
