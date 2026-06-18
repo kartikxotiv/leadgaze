@@ -64,6 +64,15 @@ export const convertCoreEmailToServiceCloudTicketService = asyncHandlerClient(
   },
 );
 
+export const detectEmailTicketService = asyncHandlerClient(
+  async (workspaceId: string, emailId: string) => {
+    const res = await ServiceCloudApiClient.get(
+      `/detect-email-ticket?workspace_id=${workspaceId}&email_id=${emailId}`,
+    );
+    return res.data?.data;
+  },
+);
+
 export const getServiceCloudTicketDetailService = asyncHandlerClient(
   async (workspaceId: string, ticketId: string) => {
     const res = await ServiceCloudApiClient.get(
