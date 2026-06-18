@@ -29,6 +29,11 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import { Textarea } from '@kit/ui/textarea';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 
 import {
   type ServiceCloudRecord,
@@ -297,23 +302,41 @@ export function ServiceCloudTicketsPage({
         queryParams={assignedToMeOnly ? { assignedToMe: 'true' } : {}}
         toolbar={
           <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant={assignedToMeOnly ? 'default' : 'outline'}
-              onClick={() => setAssignedToMeOnly((current) => !current)}
-            >
-              {assignedToMeOnly ? (
-                <Check className="mr-2 h-4 w-4" />
-              ) : (
-                <Filter className="mr-2 h-4 w-4" />
-              )}
-              Assigned to me
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant={assignedToMeOnly ? 'default' : 'outline'}
+                  onClick={() => setAssignedToMeOnly((current) => !current)}
+                  className="shrink-0 gap-1.5 h-9"
+                >
+                  {assignedToMeOnly ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Filter className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <span>Assigned to me</span>
+              </TooltipContent>
+            </Tooltip>
             {canCreate ? (
-              <Button type="button" onClick={openCreateDialog}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Ticket
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    onClick={openCreateDialog}
+                    variant="default"
+                    className="shrink-0 gap-1.5 h-9"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <span>New Ticket</span>
+                </TooltipContent>
+              </Tooltip>
             ) : null}
           </div>
         }

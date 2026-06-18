@@ -1,30 +1,20 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { usePathname } from 'next/navigation';
 import { format } from 'date-fns';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Filter,
-  Eye,
-} from 'lucide-react';
+import { Eye } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
+import CustomTableContainer from '@kit/ui/custom-table-container';
+import { TablePagination } from '@kit/ui/table-pagination';
+import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@kit/ui/pagination';
-import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
+
 import { Separator } from '@kit/ui/separator';
 import {
   Sheet,
@@ -33,6 +23,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@kit/ui/sheet';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -41,21 +32,12 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
-import { Skeleton } from '@kit/ui/skeleton';
-
+import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAuditLogsService } from '~/services/audit-logs.service';
-import CustomTableContainer from '@kit/ui/custom-table-container';
-import { PageSizeSelector } from '@kit/ui/page-size-selector';
 
 export default function AuditLogsPage() {
   const { currentWorkspace: workspace } = useRBAC();
@@ -66,13 +48,10 @@ export default function AuditLogsPage() {
   const pathname = usePathname();
   const productContextMatch = pathname.match(/^\/home\/([^/]+)\/audit-logs/);
   const contextProductKey = productContextMatch ? productContextMatch[1] : null;
-
   const [selectedLog, setSelectedLog] = useState<any>(null);
   const [selectedProduct, setSelectedProduct] = useState<string>(contextProductKey || 'all');
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [filterView, setFilterView] = useState<'main' | 'module' | 'action' | 'product'>(
-    'main',
-  );
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const itemsPerPage = pageSize;
 
   const activeFilterCount =
@@ -122,7 +101,18 @@ export default function AuditLogsPage() {
     enabled: !!workspace?.id,
   });
 
-  const logs = data?.logs || [];
+  const logs = useMemo(() => {
+    const allLogs = data?.logs || [];
+    if (!debouncedSearchTerm) return allLogs;
+    const term = debouncedSearchTerm.toLowerCase();
+    return allLogs.filter((log: any) =>
+      (log.actor?.name || '').toLowerCase().includes(term) ||
+      (log.actor?.email || '').toLowerCase().includes(term) ||
+      (log.module || '').toLowerCase().includes(term) ||
+      (log.action || '').toLowerCase().includes(term) ||
+      (log.entity_name || '').toLowerCase().includes(term),
+    );
+  }, [data?.logs, debouncedSearchTerm]);
   const count = data?.count || 0;
   const totalPages = Math.ceil(count / itemsPerPage);
 
@@ -145,387 +135,108 @@ export default function AuditLogsPage() {
     return module.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
+  // Reset to first page when search or filters change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearchTerm, selectedModule, selectedAction, selectedProduct]);
+
+  const filterGroups = useMemo(() => {
+    const groups = [
+      {
+        key: 'module',
+        label: 'Module',
+        selectedValue: selectedModule === 'all' ? '' : selectedModule,
+        selectedLabel: selectedModule === 'all' ? 'All modules' : getModuleLabel(selectedModule),
+        options: [
+          'leads', 'contacts', 'accounts', 'opportunities',
+          'team_members', 'roles', 'role_permissions',
+          'notes', 'reminders', 'meetings', 'documents',
+        ].map((mod) => ({
+          value: mod,
+          label: getModuleLabel(mod),
+        })),
+        onSelect: (val: string) => setSelectedModule(val || 'all'),
+      },
+      {
+        key: 'action',
+        label: 'Action Type',
+        selectedValue: selectedAction === 'all' ? '' : selectedAction,
+        selectedLabel: selectedAction === 'all' ? 'All actions' : selectedAction,
+        options: ['CREATE', 'UPDATE', 'DELETE', 'READ'].map((act) => ({
+          value: act,
+          label: act,
+          color: act === 'CREATE' ? '#22c55e' : act === 'UPDATE' ? '#3b82f6' : act === 'DELETE' ? '#ef4444' : '#6b7280',
+        })),
+        onSelect: (val: string) => setSelectedAction(val || 'all'),
+      },
+    ];
+    if (!contextProductKey) {
+      groups.push({
+        key: 'product',
+        label: 'Product',
+        selectedValue: selectedProduct === 'all' ? '' : selectedProduct,
+        selectedLabel: selectedProduct === 'all' ? 'All products' : getModuleLabel(selectedProduct),
+        options: ['sales', 'hrms', 'inventory', 'service_cloud', 'funds', 'common'].map((prod) => ({
+          value: prod,
+          label: getModuleLabel(prod),
+        })),
+        onSelect: (val: string) => setSelectedProduct(val || 'all'),
+      });
+    }
+    return groups;
+  }, [selectedModule, selectedAction, selectedProduct, contextProductKey]);
+
   return (
     <ModuleGuard module="audit_logs">
       <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
-          <PageHeader
-            title={`Audit Logs (${count})`}
-            description="Track all activities and changes within your workspace"
-          >
-            <div className="flex items-center gap-2">
-            <TooltipProvider>
-              <Popover
-                open={isFilterOpen}
-                onOpenChange={(open) => {
-                  setIsFilterOpen(open);
-                  if (!open) setFilterView('main');
-                }}
-              >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <PopoverTrigger asChild>
-                      <Button
-                      variant="outline"                      
-                      className="h-9 w-9 bg-white p-0 dark:dark-background-color hover:cursor-pointer">
-                      
-                        <Filter className="h-4 w-4" />
-                        {activeFilterCount > 0 && (
-                          <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
-                            {activeFilterCount}
-                          </span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p>Filter</p>
-                  </TooltipContent>
-                </Tooltip>
-                <PopoverContent className="w-80 p-0" align="end">
-                  <div className="flex items-center justify-between border-b px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {filterView !== 'main' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setFilterView('main')}
-                          className="h-9 w-9 bg-white p-0 dark:dark-background-color hover:cursor-pointer"
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <span className="text-sm font-semibold">
-                        {filterView === 'main'
-                          ? 'Filters'
-                          : filterView === 'module'
-                            ? 'Filter by Module'
-                            : filterView === 'product'
-                              ? 'Filter by Product'
-                              : 'Filter by Action'}
-                      </span>
-                    </div>
-                    <button
-                      className="text-muted-foreground hover:text-foreground text-xs underline"
-                      onClick={() => {
-                        setSelectedModule('all');
-                        setSelectedAction('all');
-                        if (!contextProductKey) setSelectedProduct('all');
-                        setPage(1);
-                      }}
-                    >
-                      Clear all
-                    </button>
-                  </div>
+        <PageHeader
+          title={`Audit Logs (${count})`}
+          description="Track all activities and changes within your workspace"
+        />
+      </div>
 
-                  <div className="p-2">
-                    {filterView === 'main' && (
-                      <div className="flex flex-col gap-1">
-                        <button
-                          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
-                          onClick={() => setFilterView('module')}
-                        >
-                          <div className="flex flex-col gap-1">
-                            <span>Module</span>
-                            <span className="text-muted-foreground text-xs font-normal">
-                              {selectedModule === 'all'
-                                ? 'All modules'
-                                : getModuleLabel(selectedModule)}
-                            </span>
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-gray-400" />
-                        </button>
-                        <button
-                          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
-                          onClick={() => setFilterView('action')}
-                        >
-                          <div className="flex flex-col gap-1">
-                            <span>Action Type</span>
-                            <span className="text-muted-foreground text-xs font-normal">
-                              {selectedAction === 'all'
-                                ? 'All actions'
-                                : selectedAction}
-                            </span>
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-gray-400" />
-                        </button>
-                        {!contextProductKey && (
-                          <button
-                            className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
-                            onClick={() => setFilterView('product')}
-                          >
-                            <div className="flex flex-col gap-1">
-                              <span>Product</span>
-                              <span className="text-muted-foreground text-xs font-normal">
-                                {selectedProduct === 'all'
-                                  ? 'All products'
-                                  : getModuleLabel(selectedProduct)}
-                              </span>
-                            </div>
-                            <ChevronRight className="h-4 w-4 text-gray-400" />
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {filterView === 'module' && (
-                      <div className="flex flex-col gap-1 p-1">
-                        {[
-                          'all',
-                          'leads',
-                          'contacts',
-                          'accounts',
-                          'opportunities',
-                          'team_members',
-                          'roles',
-                          'role_permissions',
-                          'notes',
-                          'reminders',
-                          'meetings',
-                          'documents',
-                        ].map((mod) => {
-                          const isSelected = selectedModule === mod;
-                          return (
-                            <div
-                              key={mod}
-                              className="hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors"
-                              onClick={() => {
-                                setSelectedModule(mod);
-                                setPage(1);
-                              }}
-                            >
-                              <div
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${isSelected
-                                    ? 'border-black bg-transparent dark:border-white'
-                                    : 'border-black/20 bg-transparent dark:border-white/30'
-                                  }`}
-                              >
-                                {isSelected && (
-                                  <div className="h-2 w-2 rounded-full bg-black dark:bg-white" />
-                                )}
-                              </div>
-                              <span className="text-black capitalize dark:text-gray-200">
-                                {mod === 'all'
-                                  ? 'All Modules'
-                                  : getModuleLabel(mod)}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {filterView === 'action' && (
-                      <div className="flex flex-col gap-1 p-1">
-                        {['all', 'CREATE', 'UPDATE', 'DELETE', 'READ'].map(
-                          (act) => {
-                            const isSelected = selectedAction === act;
-                            return (
-                              <div
-                                key={act}
-                                className="hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors"
-                                onClick={() => {
-                                  setSelectedAction(act);
-                                  setPage(1);
-                                }}
-                              >
-                                <div
-                                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${isSelected
-                                      ? 'border-black bg-transparent dark:border-white'
-                                      : 'border-black/20 bg-transparent dark:border-white/30'
-                                    }`}
-                                >
-                                  {isSelected && (
-                                    <div className="h-2 w-2 rounded-full bg-black dark:bg-white" />
-                                  )}
-                                </div>
-                                <span className="text-black capitalize dark:text-gray-200">
-                                  {act === 'all'
-                                    ? 'All Actions'
-                                    : act.toLowerCase()}
-                                </span>
-                              </div>
-                            );
-                          },
-                        )}
-                      </div>
-                    )}
-
-                    {filterView === 'product' && (
-                      <div className="flex flex-col gap-1 p-1">
-                        {[
-                          'all',
-                          'sales',
-                          'hrms',
-                          'inventory',
-                          'service_cloud',
-                          'funds',
-                          'common',
-                        ].map((prod) => {
-                          const isSelected = selectedProduct === prod;
-                          return (
-                            <div
-                              key={prod}
-                              className="hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors"
-                              onClick={() => {
-                                setSelectedProduct(prod);
-                                setPage(1);
-                              }}
-                            >
-                              <div
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${isSelected
-                                    ? 'border-black bg-transparent dark:border-white'
-                                    : 'border-black/20 bg-transparent dark:border-white/30'
-                                  }`}
-                              >
-                                {isSelected && (
-                                  <div className="h-2 w-2 rounded-full bg-black dark:bg-white" />
-                                )}
-                              </div>
-                              <span className="text-black capitalize dark:text-gray-200">
-                                {prod === 'all'
-                                  ? 'All Products'
-                                  : getModuleLabel(prod)}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </TooltipProvider>
- 
-            {activeFilterCount > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 border-dashed"
-                onClick={() => {
-                  setSelectedModule('all');
-                  setSelectedAction('all');
-                  if (!contextProductKey) setSelectedProduct('all');
-                  setPage(1);
-                }}
-              >
-                Reset Filters
-              </Button>
-            )}
-
-            <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" />
-
+      {/* Toolbar with search, filters, column visibility */}
+      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+        <ListToolBar
+          showSearch
+          searchPlaceholder="Search logs..."
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          showFilter
+          filterGroups={filterGroups}
+          activeFilterCount={activeFilterCount}
+          onClearFilters={() => {
+            setSelectedModule('all');
+            setSelectedAction('all');
+            if (!contextProductKey) setSelectedProduct('all');
+          }}
+          columnVisibilitySlot={
             <ColumnVisibilitySelector
               columns={columns}
               visibility={visibility}
               onToggle={toggleVisibility}
               onReset={reset}
             />
-          </div>
-        </PageHeader>
-        </div>
+          }
+        />
+      </div>
 
         <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-2">
             <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
-              <CustomTableContainer pagination={count > 0 && (
-                  <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
-                  <div className="flex items-center gap-1">
-                    Showing{' '}
-                    <span className="text-foreground font-medium">
-                      {(page - 1) * itemsPerPage + 1}
-                    </span>{' '}
-                    to{' '}
-                    <span className="text-foreground font-medium">
-                      {Math.min(page * itemsPerPage, count)}
-                    </span>{' '}
-                    of{' '}
-                    <span className="text-foreground font-medium">{count}</span>{' '}
-                    logs
-                  </div>
-                  <div className="flex w-full max-w-full min-w-0 items-center justify-end px-2">
-                                        <PageSizeSelector
-                                        value={pageSize}
-                                        onChange={(val) => {
-                                          setPageSize(val);
-                                          setPage(1);
-                                        }}
-                                      />
-                                    </div>
-                  <Pagination className="w-auto">
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious
-                          className={
-                            page === 1
-                              ? 'pointer-events-none opacity-50'
-                              : 'cursor-pointer'
-                          }
-                          onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        />
-                      </PaginationItem>
-                      {(() => {
-                        const visiblePages: (number | string)[] = [];
-                        const delta = 1; // Number of pages to show before and after current page
-
-                        if (totalPages <= 7) {
-                          // If total pages is small, show all
-                          for (let i = 1; i <= totalPages; i++)
-                            visiblePages.push(i);
-                        } else {
-                          visiblePages.push(1); // Always show first
-
-                          if (page > delta + 2) {
-                            visiblePages.push('ellipsis-start');
-                          }
-
-                          const start = Math.max(2, page - delta);
-                          const end = Math.min(totalPages - 1, page + delta);
-
-                          for (let i = start; i <= end; i++) visiblePages.push(i);
-
-                          if (page < totalPages - (delta + 1)) {
-                            visiblePages.push('ellipsis-end');
-                          }
-
-                          visiblePages.push(totalPages); // Always show last
-                        }
-
-                        return visiblePages.map((p, i) => {
-                          if (typeof p === 'string') {
-                            return (
-                              <PaginationItem key={`ellipsis-${i}`}>
-                                <span className="px-2">...</span>
-                              </PaginationItem>
-                            );
-                          }
-                          return (
-                            <PaginationItem key={p}>
-                              <PaginationLink
-                                isActive={page === p}
-                                onClick={() => setPage(p)}
-                                className="cursor-pointer"
-                              >
-                                {p}
-                              </PaginationLink>
-                            </PaginationItem>
-                          );
-                        });
-                      })()}
-                      <PaginationItem>
-                        <PaginationNext
-                          className={
-                            page === totalPages
-                              ? 'pointer-events-none opacity-50'
-                              : 'cursor-pointer'
-                          }
-                          onClick={() =>
-                            setPage((p) => Math.min(totalPages, p + 1))
-                          }
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                  </div>
-                  )}>
+              <CustomTableContainer pagination={
+                <TablePagination
+                  currentPage={page}
+                  totalPages={totalPages}
+                  totalCount={count}
+                  pageSize={pageSize}
+                  onPageChange={setPage}
+                  onPageSizeChange={(val) => {
+                    setPageSize(val);
+                    setPage(1);
+                  }}
+                  entityLabel="logs"
+                />
+              }>
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b bg-muted/50 hover:bg-muted/50">

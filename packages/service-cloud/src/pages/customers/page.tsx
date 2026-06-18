@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Loader2, Plus, Ticket } from 'lucide-react';
+import { Loader2, Plus, Ticket, TicketIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
@@ -27,6 +27,11 @@ import Link from 'next/link';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 import {
   Table,
   TableBody,
@@ -201,10 +206,21 @@ export function ServiceCloudCustomersPage({
   if (!canView) return <ServiceCloudAccessDenied label="customers" />;
 
   const newTicketToolbar = canCreateTickets ? (
-    <Button type="button" onClick={openDialog}>
-      <Plus className="mr-2 h-4 w-4" />
-      New Ticket
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          onClick={openDialog}
+          variant="default"
+          className="shrink-0 gap-1.5 h-9"
+        >
+          <TicketIcon className="h-4 w-4" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        <span>New Ticket</span>
+      </TooltipContent>
+    </Tooltip>
   ) : null;
 
   return (

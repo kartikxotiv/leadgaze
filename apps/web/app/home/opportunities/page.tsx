@@ -12,14 +12,7 @@ import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { formatDate } from '@kit/shared/utils';
 import { PageBody, PageHeader } from '@kit/ui/page';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@kit/ui/pagination';
+
 import { Skeleton } from '@kit/ui/skeleton';
 import {
   Table,
@@ -46,7 +39,7 @@ import { getMembersService } from '~/services/team-members.service';
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { OpportunityDialog } from './components/opportunity-dialog';
-import { PageSizeSelector } from '@kit/ui/page-size-selector';
+import { TablePagination } from '@kit/ui/table-pagination';
 
 function PriorityBadge({ priority }: { priority: string | null | undefined }) {
   switch (priority?.toLowerCase()) {
@@ -395,75 +388,20 @@ export default function OpportunitiesPage() {
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
           <CustomTableContainer
-            pagination={totalCount > 0 && (
-              <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
-                <div className="flex items-center gap-1">
-                  Showing{' '}
-                  <span className="text-foreground font-medium">
-                    {(currentPage - 1) * itemsPerPage + 1}
-                  </span>{' '}
-                  to{' '}
-                  <span className="text-foreground font-medium">
-                    {Math.min(currentPage * itemsPerPage, totalCount)}
-                  </span>{' '}
-                  of{' '}
-                  <span className="text-foreground font-medium">
-                    {totalCount}
-                  </span>{' '}
-                  opportunities
-                </div>
-                <div className="flex w-full max-w-full min-w-0 items-center justify-end px-2">
-                                      <PageSizeSelector
-                                      value={pageSize}
-                                      onChange={(val) => {
-                                        setPageSize(val);
-                                        setCurrentPage(1);
-                                      }}
-                                    />
-                                  </div>
-                <Pagination className="w-auto">
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        className={
-                          currentPage === 1
-                            ? 'pointer-events-none opacity-50'
-                            : 'cursor-pointer'
-                        }
-                        onClick={() =>
-                          setCurrentPage((prev) => Math.max(prev - 1, 1))
-                        }
-                      />
-                    </PaginationItem>
-                    {Array.from({ length: totalPages }).map((_, i) => (
-                      <PaginationItem key={i}>
-                        <PaginationLink
-                          isActive={currentPage === i + 1}
-                          onClick={() => setCurrentPage(i + 1)}
-                          className="cursor-pointer"
-                        >
-                          {i + 1}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
-                    <PaginationItem>
-                      <PaginationNext
-                        className={
-                          currentPage === totalPages
-                            ? 'pointer-events-none opacity-50'
-                            : 'cursor-pointer'
-                        }
-                        onClick={() =>
-                          setCurrentPage((prev) =>
-                            Math.min(prev + 1, totalPages),
-                          )
-                        }
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
+            pagination={
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={totalCount}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(val) => {
+                  setPageSize(val);
+                  setCurrentPage(1);
+                }}
+                entityLabel="opportunities"
+              />
+            }
           >
             <Table>
               <TableHeader>
