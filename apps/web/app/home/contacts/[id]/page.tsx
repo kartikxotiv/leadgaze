@@ -83,7 +83,7 @@ function ContactDetailsSkeleton() {
   return (
     <ModuleGuard module="contacts">
       <div className="flex h-full flex-col">
-        <div className="px-6 pb-2 pt-4">
+        <div className="px-6 pt-4 pb-2">
           <Skeleton className="h-8 w-20 rounded-md" />
         </div>
         <PageBody>
@@ -182,8 +182,9 @@ export default function ContactDetailsPage() {
       setIsAssignModalOpen(false);
     },
     onError: (error: unknown) => {
-      const response = (error as { response?: { data?: { message?: unknown } } })
-        ?.response;
+      const response = (
+        error as { response?: { data?: { message?: unknown } } }
+      )?.response;
       const message =
         typeof response?.data?.message === 'string'
           ? response.data.message
@@ -237,7 +238,7 @@ export default function ContactDetailsPage() {
 
   return (
     <ModuleGuard module="contacts">
-      <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap sm:items-center sm:justify-between pb-2 pt-4">
+      <div className="flex flex-wrap items-start gap-2 pt-4 pb-2 sm:flex-nowrap sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -327,9 +328,9 @@ export default function ContactDetailsPage() {
           entityName={fullName}
           onSuccess={() => router.push('/home/sales/contacts')}
         />
-        <div className="flex lg:flex-1 lg:min-h-0 flex-col lg:flex-row gap-4 w-full">
+        <div className="flex w-full flex-col gap-4 lg:min-h-0 lg:flex-1 lg:flex-row">
           {/* Main Content */}
-          <div className="space-y-4 w-full lg:w-[65%] lg:overflow-y-auto">
+          <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
             <DetailHeader
               avatar={
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-semibold text-white">
@@ -376,15 +377,20 @@ export default function ContactDetailsPage() {
             />
 
             {/* Tabs Section */}
-            <Tabs defaultValue="email" className="space-y-4">
-              <TabsList className="h-auto w-full justify-start gap-3 sm:gap-6 rounded-none border-b bg-transparent p-0 mb-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                <TabsTrigger
-                  value="email"
-                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                >
-                  <Mail className="mr-2 h-4 w-4" />
-                  Email
-                </TabsTrigger>
+            <Tabs
+              defaultValue={canManageEmail ? 'email' : 'notes'}
+              className="space-y-4"
+            >
+              <TabsList className="mb-2 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
+                {canManageEmail && (
+                  <TabsTrigger
+                    value="email"
+                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                  >
+                    <Mail className="mr-2 h-4 w-4" />
+                    Email
+                  </TabsTrigger>
+                )}
                 <TabsTrigger
                   value="notes"
                   className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
@@ -429,52 +435,72 @@ export default function ContactDetailsPage() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="email" className="max-h-[500px] overflow-y-auto">
-                <EntityEmails
-                  entityId={id}
-                  entityType="contact"
-                  entityName={fullName}
-                  entityEmail={contact.email || undefined}
-                  recipientOptions={[
-                    ...(contact.email
-                      ? [
-                          {
-                            email: contact.email,
-                            name: fullName,
-                            label: 'Primary Email',
-                          },
-                        ]
-                      : []),
-                    ...(contact.alt_email
-                      ? [
-                          {
-                            email: contact.alt_email,
-                            name: fullName,
-                            label: 'Alt Email',
-                          },
-                        ]
-                      : []),
-                  ]}
-                />
-              </TabsContent>
+              {canManageEmail && (
+                <TabsContent
+                  value="email"
+                  className="max-h-[500px] overflow-y-auto"
+                >
+                  <EntityEmails
+                    entityId={id}
+                    entityType="contact"
+                    entityName={fullName}
+                    entityEmail={contact.email || undefined}
+                    recipientOptions={[
+                      ...(contact.email
+                        ? [
+                            {
+                              email: contact.email,
+                              name: fullName,
+                              label: 'Primary Email',
+                            },
+                          ]
+                        : []),
+                      ...(contact.alt_email
+                        ? [
+                            {
+                              email: contact.alt_email,
+                              name: fullName,
+                              label: 'Alt Email',
+                            },
+                          ]
+                        : []),
+                    ]}
+                  />
+                </TabsContent>
+              )}
 
-              <TabsContent value="notes" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="notes"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityNotes entityType="contact" entityId={id} />
               </TabsContent>
 
-              <TabsContent value="meetings" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="meetings"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityMeetings entityType="contact" entityId={id} />
               </TabsContent>
 
-              <TabsContent value="calls" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="calls"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityCalls entityType="contact" entityId={id} />
               </TabsContent>
 
-              <TabsContent value="reminders" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="reminders"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityReminders entityType="contact" entityId={id} />
               </TabsContent>
 
-              <TabsContent value="documents" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="documents"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityDocuments entityType="contact" entityId={id} />
               </TabsContent>
 
@@ -493,19 +519,20 @@ export default function ContactDetailsPage() {
                           </p>
                         </div>
                       </div>
-                      {contact.updated_at && contact.updated_at !== contact.created_at && (
-                        <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                          <div className="h-2 w-2 rounded-full bg-blue-500" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              Contact Updated
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {formatDate(contact.updated_at)}
-                            </p>
+                      {contact.updated_at &&
+                        contact.updated_at !== contact.created_at && (
+                          <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
+                            <div className="h-2 w-2 rounded-full bg-blue-500" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                Contact Updated
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {formatDate(contact.updated_at)}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
                     </div>
                   </CardContent>
                 </Card>
@@ -514,11 +541,13 @@ export default function ContactDetailsPage() {
 
             {/* Danger Zone */}
             {canAccess('contacts', 'delete') && (
-              <Card className="hidden lg:block border-destructive/50 border-solid">
+              <Card className="border-destructive/50 hidden border-solid lg:block">
                 <CardContent>
-                  <div className="flex flex-col md:flex-row items-center justify-between mt-6">
-                    <div className="space-y-1 mb-2">
-                      <p className="font-medium dark:text-white">Delete Contact</p>
+                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
+                    <div className="mb-2 space-y-1">
+                      <p className="font-medium dark:text-white">
+                        Delete Contact
+                      </p>
                       <p className="text-muted-foreground text-sm">
                         Once you delete a contact, there is no going back.
                         Please be certain.
@@ -531,7 +560,7 @@ export default function ContactDetailsPage() {
                             <Button
                               variant="destructive"
                               disabled={!canAccess('contacts', 'delete')}
-                              onClick={() => setDeleteDialogOpen(true)}                              
+                              onClick={() => setDeleteDialogOpen(true)}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Contact
@@ -552,7 +581,7 @@ export default function ContactDetailsPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-4 w-full lg:w-[35%] lg:overflow-y-auto">
+          <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
             {/* Accordion Sections */}
             <Accordion
               type="single"
@@ -562,8 +591,11 @@ export default function ContactDetailsPage() {
               onValueChange={setOpenAccordion}
             >
               {/* Contact Info */}
-              <AccordionItem value="contact" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
-                <AccordionTrigger className="hover:no-underline px-4 py-3">
+              <AccordionItem
+                value="contact"
+                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              >
+                <AccordionTrigger className="px-4 py-3 hover:no-underline">
                   <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
                     <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     Contact Details
@@ -576,7 +608,10 @@ export default function ContactDetailsPage() {
                         icon={<Mail className="h-5 w-5" />}
                         label="Email"
                         value={
-                          <a href={`mailto:${contact.email}`} className="text-blue-600 hover:underline dark:text-blue-400">
+                          <a
+                            href={`mailto:${contact.email}`}
+                            className="text-blue-600 hover:underline dark:text-blue-400"
+                          >
                             {contact.email}
                           </a>
                         }
@@ -587,7 +622,10 @@ export default function ContactDetailsPage() {
                         icon={<Mail className="h-5 w-5" />}
                         label="Alt Email"
                         value={
-                          <a href={`mailto:${contact.alt_email}`} className="text-blue-600 hover:underline dark:text-blue-400">
+                          <a
+                            href={`mailto:${contact.alt_email}`}
+                            className="text-blue-600 hover:underline dark:text-blue-400"
+                          >
                             {contact.alt_email}
                           </a>
                         }
@@ -598,7 +636,10 @@ export default function ContactDetailsPage() {
                         icon={<Phone className="h-5 w-5" />}
                         label="Phone"
                         value={
-                          <a href={`tel:${contact.phone_number}`} className="text-blue-600 hover:underline dark:text-blue-400">
+                          <a
+                            href={`tel:${contact.phone_number}`}
+                            className="text-blue-600 hover:underline dark:text-blue-400"
+                          >
                             {contact.phone_number}
                           </a>
                         }
@@ -609,7 +650,10 @@ export default function ContactDetailsPage() {
                         icon={<Phone className="h-5 w-5" />}
                         label="Mobile"
                         value={
-                          <a href={`tel:${contact.mobile_number}`} className="text-blue-600 hover:underline dark:text-blue-400">
+                          <a
+                            href={`tel:${contact.mobile_number}`}
+                            className="text-blue-600 hover:underline dark:text-blue-400"
+                          >
                             {contact.mobile_number}
                           </a>
                         }
@@ -620,7 +664,10 @@ export default function ContactDetailsPage() {
                         icon={<Phone className="h-5 w-5" />}
                         label="Alt Phone"
                         value={
-                          <a href={`tel:${contact.alt_phone}`} className="text-blue-600 hover:underline dark:text-blue-400">
+                          <a
+                            href={`tel:${contact.alt_phone}`}
+                            className="text-blue-600 hover:underline dark:text-blue-400"
+                          >
                             {contact.alt_phone}
                           </a>
                         }
@@ -637,7 +684,9 @@ export default function ContactDetailsPage() {
                       <DetailInfoRow
                         icon={<MapPin className="h-5 w-5" />}
                         label="Location"
-                        value={[contact.location, contact.timezone].filter(Boolean).join(' • ')}
+                        value={[contact.location, contact.timezone]
+                          .filter(Boolean)
+                          .join(' • ')}
                       />
                     )}
                     {contact.department && (
@@ -652,7 +701,12 @@ export default function ContactDetailsPage() {
                         icon={<Linkedin className="h-5 w-5" />}
                         label="LinkedIn"
                         value={
-                          <a href={contact.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400">
+                          <a
+                            href={contact.linkedin_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline dark:text-blue-400"
+                          >
                             {contact.linkedin_url}
                           </a>
                         }
@@ -671,8 +725,11 @@ export default function ContactDetailsPage() {
 
               {/* Account */}
               {contact.account && (
-                <AccordionItem value="account" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
-                  <AccordionTrigger className="hover:no-underline px-4 py-3">
+                <AccordionItem
+                  value="account"
+                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                >
+                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
                     <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
                       <Building2 className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                       Account
@@ -699,16 +756,22 @@ export default function ContactDetailsPage() {
 
               {/* Assigned Team Members */}
               {workspace?.id && (
-                <AccordionItem value="assignees" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
-                  <AccordionTrigger hideChevron className="hover:no-underline px-4 py-3">
-                    <div className="flex justify-between w-full">
+                <AccordionItem
+                  value="assignees"
+                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                >
+                  <AccordionTrigger
+                    hideChevron
+                    className="px-4 py-3 hover:no-underline"
+                  >
+                    <div className="flex w-full justify-between">
                       <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
                         <Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                         Assigned Members
                       </span>
                       <Button
                         size="sm"
-                        className="ml-2 mr-3 gap-2 shrink-0"
+                        className="mr-3 ml-2 shrink-0 gap-2"
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -719,17 +782,29 @@ export default function ContactDetailsPage() {
                         Assign Member
                       </Button>
                     </div>
-                    <ChevronDown className={cn('text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200', openAccordion === 'assignees' && 'rotate-180')} />
+                    <ChevronDown
+                      className={cn(
+                        'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
+                        openAccordion === 'assignees' && 'rotate-180',
+                      )}
+                    />
                   </AccordionTrigger>
                   <AccordionContent className="px-4 pb-4">
-                    <ContactAssignees contactId={id} workspaceId={workspace.id} embedded />
+                    <ContactAssignees
+                      contactId={id}
+                      workspaceId={workspace.id}
+                      embedded
+                    />
                   </AccordionContent>
                 </AccordionItem>
               )}
 
               {/* System Info */}
-              <AccordionItem value="system" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
-                <AccordionTrigger className="hover:no-underline px-4 py-3">
+              <AccordionItem
+                value="system"
+                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              >
+                <AccordionTrigger className="px-4 py-3 hover:no-underline">
                   <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
                     <Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     System Info
@@ -750,7 +825,11 @@ export default function ContactDetailsPage() {
                     <DetailInfoRow
                       icon={<User className="h-5 w-5" />}
                       label="Created By"
-                      value={contact.created_by_account?.name || contact.created_by || '-'}
+                      value={
+                        contact.created_by_account?.name ||
+                        contact.created_by ||
+                        '-'
+                      }
                     />
                     {contact.twitter_handle && (
                       <DetailInfoRow
@@ -773,15 +852,17 @@ export default function ContactDetailsPage() {
               </AccordionItem>
             </Accordion>
           </div>
-          
+
           {/* Danger Zone */}
           <div className="w-full lg:hidden">
             {canAccess('contacts', 'delete') && (
               <Card className="border-destructive/50 border-solid">
                 <CardContent>
-                  <div className="flex flex-col md:flex-row items-center justify-between mt-6">
-                    <div className="space-y-1 mb-2">
-                      <p className="font-medium dark:text-white">Delete Contact</p>
+                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
+                    <div className="mb-2 space-y-1">
+                      <p className="font-medium dark:text-white">
+                        Delete Contact
+                      </p>
                       <p className="text-muted-foreground text-sm">
                         Once you delete a contact, there is no going back.
                         Please be certain.
@@ -794,7 +875,7 @@ export default function ContactDetailsPage() {
                             <Button
                               variant="destructive"
                               disabled={!canAccess('contacts', 'delete')}
-                              onClick={() => setDeleteDialogOpen(true)}                              
+                              onClick={() => setDeleteDialogOpen(true)}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Contact
@@ -865,7 +946,11 @@ export default function ContactDetailsPage() {
           onOpenChange={setIsAssignModalOpen}
           leadId={id}
           workspaceId={workspace.id}
-          currentAssignees={pageAssignees as Parameters<typeof AssignUserModal>[0]['currentAssignees']}
+          currentAssignees={
+            pageAssignees as Parameters<
+              typeof AssignUserModal
+            >[0]['currentAssignees']
+          }
           onAssign={(userId) => pageAssignMutation.mutate(userId)}
           isLoading={pageAssignMutation.isPending}
         />
