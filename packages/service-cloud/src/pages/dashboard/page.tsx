@@ -85,6 +85,7 @@ export function ServiceCloudDashboardPage({
       icon: Ticket,
       detail: 'All active service tickets',
       iconBg: 'bg-primary dark:bg-primary',
+      link: '/home/services/tickets',
     },
     {
       label: 'Open Tickets',
@@ -92,6 +93,7 @@ export function ServiceCloudDashboardPage({
       icon: AlertCircle,
       detail: 'Unresolved customer work',
       iconBg: 'bg-activity-4',
+      link: '/home/services/tickets',
     },
     {
       label: 'Customers',
@@ -99,6 +101,7 @@ export function ServiceCloudDashboardPage({
       icon: Users,
       detail: 'Support customer records',
       iconBg: 'bg-activity-5',
+      link: '/home/services/customers?tab=customers',
     },
     {
       label: 'Organizations',
@@ -106,6 +109,7 @@ export function ServiceCloudDashboardPage({
       icon: Building2,
       detail: 'Linked companies',
       iconBg: 'bg-activity-3',
+      link: '/home/services/customers?tab=organizations',
     },
     {
       label: 'Logged Time',
@@ -165,9 +169,17 @@ export function ServiceCloudDashboardPage({
                   <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
                     {card.label}
                   </CardTitle>
-                  <div className="primary-heading-number text-leadgaze-dark dark:text-zinc-100">
-                    {card.value}
-                  </div>
+                  {card.link ? <Link
+                    href={card.link}
+                    className="hover:underline"
+                  >
+                    <div className="primary-heading-number text-leadgaze-dark dark:text-zinc-100">
+                      {card.value}
+                    </div>
+                  </Link>: <div className="primary-heading-number text-leadgaze-dark dark:text-zinc-100">
+                      {card.value}
+                    </div>}
+
                 </div>
                 <div
                   className={`flex h-8 w-8 items-center justify-center rounded ${card.iconBg}`}

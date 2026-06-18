@@ -122,7 +122,12 @@ export default function DashboardDemo() {
               <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
                 Total Leads
               </CardTitle>
-              <Figure>{metrics.leads.total}</Figure>
+              <Link
+                href="/home/sales/leads"
+                className="hover:underline"
+              >
+                <Figure>{metrics.leads.total}</Figure>
+              </Link>
             </div>
             <div className="flex h-8 w-8 items-center justify-center rounded bg-primary dark:bg-primary">
               <File className="h-4 w-4 text-white" />
@@ -141,7 +146,12 @@ export default function DashboardDemo() {
               <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
                 Contacts
               </CardTitle>
-              <Figure>{metrics.contacts.total}</Figure>
+              <Link
+                href="/home/sales/contacts"
+                className="hover:underline"
+              >
+                <Figure>{metrics.contacts.total}</Figure>
+              </Link>
             </div>
             <div className="flex h-8 w-8 items-center justify-center rounded bg-activity-5">
               <Users className="h-4 w-4 text-white" />
@@ -160,7 +170,12 @@ export default function DashboardDemo() {
               <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
                 Accounts
               </CardTitle>
-              <Figure>{metrics.accounts.total}</Figure>
+              <Link
+                href="/home/sales/accounts"
+                className="hover:underline"
+              >
+                <Figure>{metrics.accounts.total}</Figure>
+              </Link>
             </div>
             <div className="flex h-8 w-8 items-center justify-center rounded bg-activity-3">
               <Building2 className="h-4 w-4 text-white" />
@@ -179,13 +194,18 @@ export default function DashboardDemo() {
               <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
                 Pipeline Value
               </CardTitle>
-              <Figure>
-                {new Intl.NumberFormat('en-US', {
-                  style: 'currency',
-                  currency: 'USD',
-                  maximumFractionDigits: 0,
-                }).format(metrics.opportunities.totalAmount)}
-              </Figure>
+              <Link
+                href="/home/sales/opportunities"
+                className="hover:underline"
+              >
+                <Figure>
+                  {new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    maximumFractionDigits: 0,
+                  }).format(metrics.opportunities.totalAmount)}
+                </Figure>
+              </Link>
             </div>
             <div className="flex h-8 w-8 items-center justify-center rounded bg-activity-4">
               <Target className="h-4 w-4 text-white" />

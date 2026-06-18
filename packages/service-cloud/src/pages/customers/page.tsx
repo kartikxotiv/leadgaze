@@ -56,6 +56,8 @@ import {
 } from '../../utils';
 import { ServiceCloudAccessDenied } from '../_components/access-denied';
 import { ServiceCloudResourcePage, StatusBadge } from '../_components/resource-page';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+
 
 export function ServiceCloudCustomersPage({
   workspaceId,
@@ -222,10 +224,16 @@ export function ServiceCloudCustomersPage({
       </TooltipContent>
     </Tooltip>
   ) : null;
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams()
+
+  const tab = searchParams.get('tab') || 'customers';
 
   return (
     <>
-      <Tabs defaultValue="customers" className="space-y-4">
+      <Tabs defaultValue={tab} className="space-y-4" onValueChange={(value) => router.push(`${pathname}?tab=${value}`)
+  }>
       <TabsList className="mb-0">
         <TabsTrigger value="customers">Customers</TabsTrigger>
         <TabsTrigger value="organizations">Organizations</TabsTrigger>
