@@ -29,11 +29,7 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import { Textarea } from '@kit/ui/textarea';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@kit/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
 
 import {
   type ServiceCloudRecord,
@@ -308,7 +304,7 @@ export function ServiceCloudTicketsPage({
                   type="button"
                   variant={assignedToMeOnly ? 'default' : 'outline'}
                   onClick={() => setAssignedToMeOnly((current) => !current)}
-                  className="shrink-0 gap-1.5 h-9"
+                  className="h-9 shrink-0 gap-1.5"
                 >
                   {assignedToMeOnly ? (
                     <Check className="h-4 w-4" />
@@ -328,7 +324,7 @@ export function ServiceCloudTicketsPage({
                     type="button"
                     onClick={openCreateDialog}
                     variant="default"
-                    className="shrink-0 gap-1.5 h-9"
+                    className="h-9 shrink-0 gap-1.5"
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -388,6 +384,7 @@ export function ServiceCloudTicketsPage({
             render: (ticket) => (
               <StatusBadge
                 value={statusById.get(ticket.status_id)?.name as string}
+                color={statusById.get(ticket.status_id)?.color as string}
               />
             ),
           },
@@ -397,6 +394,7 @@ export function ServiceCloudTicketsPage({
             render: (ticket) => (
               <StatusBadge
                 value={priorityById.get(ticket.priority_id)?.name as string}
+                color={priorityById.get(ticket.priority_id)?.color as string}
               />
             ),
           },
@@ -459,7 +457,15 @@ export function ServiceCloudTicketsPage({
                       <SelectContent>
                         {statusOptions.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
+                            <div className="flex items-center gap-2">
+                              {opt.color ? (
+                                <span
+                                  className="h-2 w-2 shrink-0 rounded-full border border-black/10 dark:border-white/10"
+                                  style={{ backgroundColor: opt.color }}
+                                />
+                              ) : null}
+                              <span>{opt.label}</span>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -477,7 +483,15 @@ export function ServiceCloudTicketsPage({
                       <SelectContent>
                         {priorityOptions.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
+                            <div className="flex items-center gap-2">
+                              {opt.color ? (
+                                <span
+                                  className="h-2 w-2 shrink-0 rounded-full border border-black/10 dark:border-white/10"
+                                  style={{ backgroundColor: opt.color }}
+                                />
+                              ) : null}
+                              <span>{opt.label}</span>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -626,13 +640,17 @@ export function ServiceCloudTicketsPage({
             </div>
 
             <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-              <Button className='mb-2' variant="outline" onClick={() => setCreateOpen(false)}>
+              <Button
+                className="mb-2"
+                variant="outline"
+                onClick={() => setCreateOpen(false)}
+              >
                 Cancel
               </Button>
               <Button
                 onClick={submitCreateTicket}
                 disabled={createTicketMutation.isPending}
-                className='mb-2'
+                className="mb-2"
               >
                 {createTicketMutation.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
