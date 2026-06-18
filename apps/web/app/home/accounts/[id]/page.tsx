@@ -315,7 +315,7 @@ export default function AccountDetailsPage() {
 
   return (
     <ModuleGuard module="accounts">
-      <div className="flex w-full items-center justify-between pb-2 pt-4">
+      <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap sm:items-center sm:justify-between pb-2 pt-4">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -572,7 +572,7 @@ export default function AccountDetailsPage() {
 
             {/* Danger Zone */}
             {rbacCanAccess('accounts', 'delete') && (
-              <Card className="border-destructive/50 border-solid">
+              <Card className="hidden lg:block border-destructive/50 border-solid">
                 <CardContent>
                   <div className="flex flex-col md:flex-row items-center justify-between mt-6">
                     <div className="space-y-1 mb-2">
@@ -958,6 +958,48 @@ export default function AccountDetailsPage() {
               </AccordionItem>
             </Accordion>
           </div>
+
+          {/* Danger Zone */}
+          <div className="w-full lg:hidden">            
+            {rbacCanAccess('accounts', 'delete') && (
+              <Card className="border-destructive/50 border-solid">
+                <CardContent>
+                  <div className="flex flex-col md:flex-row items-center justify-between mt-6">
+                    <div className="space-y-1 mb-2">
+                      <p className="font-medium dark:text-white">Delete Account</p>
+                      <p className="text-muted-foreground text-sm">
+                        Once you delete an account, there is no going back.
+                        Please be certain.
+                      </p>
+                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              variant="destructive"
+                              disabled={!rbacCanAccess('accounts', 'delete')}
+                              onClick={() => setDeleteDialogOpen(true)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Account
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        {!rbacCanAccess('accounts', 'delete') && (
+                          <TooltipContent>
+                            <p>You do not have permission to delete</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          
         </div>
       </PageBody>
 

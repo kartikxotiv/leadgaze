@@ -56,6 +56,7 @@ import {
 } from '../../services';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 import { PageBody } from '@kit/ui/page';
+import { TablePagination } from '@kit/ui/table-pagination';
 
 const PRESET_COLORS = [
   '#64748b', // Slate
@@ -107,6 +108,8 @@ type ResourcePageProps = {
   queryParams?: Record<string, string>;
   toolbar?: React.ReactNode;
   createLabel?: string;
+  /** Label shown in the pagination bar, e.g. "tickets", "customers". Defaults to the resource name. */
+  entityLabel?: string;
 };
 
 function getInitialForm(
@@ -135,14 +138,22 @@ export function ServiceCloudResourcePage({
   queryParams = {},
   toolbar,
   createLabel,
+  entityLabel,
 }: ResourcePageProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  // Reset to first page when search or page size changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm, pageSize]);
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ServiceCloudRecord | null>(null);
@@ -190,6 +201,14 @@ export function ServiceCloudResourcePage({
       }),
     );
   }, [data, debouncedSearchTerm, columns]);
+
+  // Pagination derived values
+  const totalCount = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const paginatedData = useMemo(
+    () => filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [filteredData, currentPage, pageSize],
+  );
   
   const openCreate = () => {
     setEditing(null);
@@ -285,7 +304,22 @@ export function ServiceCloudResourcePage({
       </div>
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
-          <CustomTableContainer>
+          <CustomTableContainer
+            pagination={
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={totalCount}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(val) => {
+                  setPageSize(val);
+                  setCurrentPage(1);
+                }}
+                entityLabel={entityLabel ?? resource}
+              />
+            }
+          >
         <Table>
           <TableHeader>
             <TableRow>
@@ -324,7 +358,7 @@ export function ServiceCloudResourcePage({
                 </TableCell>
               </TableRow>
             ) : (
-              filteredData.map((record: ServiceCloudRecord) => (
+              paginatedData.map((record: ServiceCloudRecord) => (
                 <TableRow key={record.id}>
                   {columns.map((column) => (
                     <TableCell

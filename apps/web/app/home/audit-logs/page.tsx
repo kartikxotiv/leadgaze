@@ -11,17 +11,10 @@ import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
+import { TablePagination } from '@kit/ui/table-pagination';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@kit/ui/pagination';
-import { PageSizeSelector } from '@kit/ui/page-size-selector';
+
 import { Separator } from '@kit/ui/separator';
 import {
   Sheet,
@@ -230,106 +223,20 @@ export default function AuditLogsPage() {
 
         <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-2">
             <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
-              <CustomTableContainer pagination={count > 0 && (
-                  <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
-                  <div className="flex items-center gap-1">
-                    Showing{' '}
-                    <span className="text-foreground font-medium">
-                      {(page - 1) * itemsPerPage + 1}
-                    </span>{' '}
-                    to{' '}
-                    <span className="text-foreground font-medium">
-                      {Math.min(page * itemsPerPage, count)}
-                    </span>{' '}
-                    of{' '}
-                    <span className="text-foreground font-medium">{count}</span>{' '}
-                    logs
-                  </div>
-                  <div className="flex w-full max-w-full min-w-0 items-center justify-end px-2">
-                                        <PageSizeSelector
-                                        value={pageSize}
-                                        onChange={(val) => {
-                                          setPageSize(val);
-                                          setPage(1);
-                                        }}
-                                      />
-                                    </div>
-                  <Pagination className="w-auto">
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious
-                          className={
-                            page === 1
-                              ? 'pointer-events-none opacity-50'
-                              : 'cursor-pointer'
-                          }
-                          onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        />
-                      </PaginationItem>
-                      {(() => {
-                        const visiblePages: (number | string)[] = [];
-                        const delta = 1; // Number of pages to show before and after current page
-
-                        if (totalPages <= 7) {
-                          // If total pages is small, show all
-                          for (let i = 1; i <= totalPages; i++)
-                            visiblePages.push(i);
-                        } else {
-                          visiblePages.push(1); // Always show first
-
-                          if (page > delta + 2) {
-                            visiblePages.push('ellipsis-start');
-                          }
-
-                          const start = Math.max(2, page - delta);
-                          const end = Math.min(totalPages - 1, page + delta);
-
-                          for (let i = start; i <= end; i++) visiblePages.push(i);
-
-                          if (page < totalPages - (delta + 1)) {
-                            visiblePages.push('ellipsis-end');
-                          }
-
-                          visiblePages.push(totalPages); // Always show last
-                        }
-
-                        return visiblePages.map((p, i) => {
-                          if (typeof p === 'string') {
-                            return (
-                              <PaginationItem key={`ellipsis-${i}`}>
-                                <span className="px-2">...</span>
-                              </PaginationItem>
-                            );
-                          }
-                          return (
-                            <PaginationItem key={p}>
-                              <PaginationLink
-                                isActive={page === p}
-                                onClick={() => setPage(p)}
-                                className="cursor-pointer"
-                              >
-                                {p}
-                              </PaginationLink>
-                            </PaginationItem>
-                          );
-                        });
-                      })()}
-                      <PaginationItem>
-                        <PaginationNext
-                          className={
-                            page === totalPages
-                              ? 'pointer-events-none opacity-50'
-                              : 'cursor-pointer'
-                          }
-                          onClick={() =>
-                            setPage((p) => Math.min(totalPages, p + 1))
-                          }
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                  </div>
-                  )}>
+              <CustomTableContainer pagination={
+                <TablePagination
+                  currentPage={page}
+                  totalPages={totalPages}
+                  totalCount={count}
+                  pageSize={pageSize}
+                  onPageChange={setPage}
+                  onPageSizeChange={(val) => {
+                    setPageSize(val);
+                    setPage(1);
+                  }}
+                  entityLabel="logs"
+                />
+              }>
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b bg-muted/50 hover:bg-muted/50">

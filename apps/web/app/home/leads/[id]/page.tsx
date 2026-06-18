@@ -346,7 +346,7 @@ export default function LeadDetailsPage() {
 
   return (
     <ModuleGuard module="leads">
-      <div className="flex w-full items-center justify-between pb-2 pt-4">
+      <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap sm:items-center sm:justify-between pb-2 pt-4">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -518,7 +518,7 @@ export default function LeadDetailsPage() {
               email={lead.email || undefined}
               right={
                 lead.lead_score !== null ? (
-                  <div className="flex items-center gap-1 flex-col">
+                  <div className="flex items-center gap-1 flex-col mx-auto lg:mx-0">
                     <span className="primary-text-medium text-leadgaze-dark dark:text-white">Lead Score</span>
 
                     <div className="relative h-15 w-15 shrink-0">
@@ -655,7 +655,7 @@ export default function LeadDetailsPage() {
 
             {/* Danger Zone */}
             {canAccess('leads', 'delete') && (
-              <Card className="border-destructive/50 border-solid">
+              <Card className="hidden lg:block border-destructive/50 border-solid">
                 <CardContent>
                   <div className="flex flex-col md:flex-row items-center justify-between mt-6">
                     <div className="mb-2 space-y-1">
@@ -954,6 +954,46 @@ export default function LeadDetailsPage() {
                 </AccordionContent>
               </AccordionItem> */}
             </Accordion>
+          </div>
+
+          {/* Danger Zone */}
+          <div className="w-full lg:hidden">
+            {canAccess('leads', 'delete') && (
+              <Card className="border-destructive/50 border-solid">
+                <CardContent>
+                  <div className="flex flex-col md:flex-row items-center justify-between mt-6">
+                    <div className="mb-2 space-y-1">
+                      <p className="font-medium dark:text-white">Delete Lead</p>
+                      <p className="text-muted-foreground text-sm">
+                        Once you delete a lead, there is no going back. Please
+                        be certain.
+                      </p>
+                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              variant="destructive"
+                              disabled={!canAccess('leads', 'delete')}
+                              onClick={() => setDeleteDialogOpen(true)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Lead
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        {!canAccess('leads', 'delete') && (
+                          <TooltipContent>
+                            <p>You do not have permission to delete</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </PageBody>
