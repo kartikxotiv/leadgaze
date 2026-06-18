@@ -24,7 +24,7 @@ export function DetailInfoRow({
   label,
   value,
   className,
-  labelWidth = 'w-24',
+  labelWidth = 'w-26',
 }: DetailInfoRowProps) {
   return (
     <div className={cn('flex items-center gap-2 py-2.5 justify-between', className)}>

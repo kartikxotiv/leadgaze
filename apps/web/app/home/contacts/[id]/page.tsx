@@ -566,7 +566,7 @@ export default function ContactDetailsPage() {
                 <AccordionTrigger className="hover:no-underline px-4 py-3">
                   <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
                     <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
-                    Contact
+                    Contact Details
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
