@@ -24,7 +24,11 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { CoreEmailComposeDialog, CoreEmailReplyDialog, CoreEntityPanel } from '@kit/core/pages';
+import {
+  CoreEmailComposeDialog,
+  CoreEmailReplyDialog,
+  CoreEntityPanel,
+} from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
 import { formatDate, formatDateOnly, formatDateTime } from '@kit/shared/utils';
 import {
@@ -48,6 +52,7 @@ import {
   CardTitle,
 } from '@kit/ui/card';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import CustomTableContainer from '@kit/ui/custom-table-container';
 import {
   Dialog,
   DialogContent,
@@ -56,17 +61,13 @@ import {
 } from '@kit/ui/dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@kit/ui/popover';
+import { PageBody } from '@kit/ui/page';
+import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from '@kit/ui/select';
 import { Separator } from '@kit/ui/separator';
 import { Skeleton } from '@kit/ui/skeleton';
@@ -80,6 +81,7 @@ import {
 } from '@kit/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
+import { cn } from '@kit/ui/utils';
 
 import {
   createServiceCloudResourceService,
@@ -88,9 +90,6 @@ import {
   logServiceCloudTicketTimeService,
   updateServiceCloudResourceService,
 } from '../../services';
-import CustomTableContainer from '@kit/ui/custom-table-container';
-import { PageBody } from '@kit/ui/page';
-import { cn } from '@kit/ui/utils';
 import {
   SERVICE_CLOUD_FEATURE_KEYS,
   SERVICE_CLOUD_MODULE_KEYS,
@@ -149,17 +148,6 @@ function eventLabel(eventType?: string | null) {
     .split('_')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
-}
-
-function priorityTone(priority?: LookupOption | null) {
-  const key = `${priority?.name ?? ''}`.toLowerCase();
-  if (key.includes('urgent') || key.includes('critical')) {
-    return 'border-red-200 bg-red-50 text-red-700 dark:border-red-950 dark:bg-red-950/30 dark:text-red-300';
-  }
-  if (key.includes('high')) {
-    return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-950 dark:bg-amber-950/30 dark:text-amber-300';
-  }
-  return 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300';
 }
 
 export function ServiceCloudTicketDetailPage({
@@ -237,7 +225,13 @@ export function ServiceCloudTicketDetailPage({
     },
     onSuccess: async () => {
       toast.success('Time logged');
-      setTimeForm({ hours: '', minutes: '', description: '', activities: '', logged_date: todayLocalDate() });
+      setTimeForm({
+        hours: '',
+        minutes: '',
+        description: '',
+        activities: '',
+        logged_date: todayLocalDate(),
+      });
       await queryClient.invalidateQueries({ queryKey });
     },
     onError: (error: any) => toast.error(error.message || 'Failed to log time'),
@@ -286,7 +280,9 @@ export function ServiceCloudTicketDetailPage({
       minutes: minutes > 0 ? String(minutes) : '',
       description: entry.description || '',
       activities: entry.activities || '',
-      logged_date: entry.logged_date ? entry.logged_date.slice(0, 10) : todayLocalDate(),
+      logged_date: entry.logged_date
+        ? entry.logged_date.slice(0, 10)
+        : todayLocalDate(),
     });
     setEditingLogId(entry.id);
   };
@@ -398,7 +394,7 @@ export function ServiceCloudTicketDetailPage({
     updateMutation.mutate(payload);
 
   return (
-    <div className="space-y-4 mt-2">
+    <div className="mt-2 space-y-4">
       <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_34%),linear-gradient(135deg,_#0f172a,_#164e63_52%,_#0f172a)] p-6 text-white shadow-xl">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-4xl space-y-5">
@@ -419,27 +415,45 @@ export function ServiceCloudTicketDetailPage({
                 <Badge className="border-white/20 bg-white/15 text-white hover:bg-white/20">
                   #{ticket.ticket_number}
                 </Badge>
-                <Badge className="border-emerald-300/30 bg-emerald-400/15 text-emerald-100 flex items-center gap-1.5 font-medium">
+                <Badge
+                  className="flex items-center gap-1.5 font-medium"
+                  style={
+                    ticket.status?.color
+                      ? {
+                          backgroundColor: `${ticket.status.color}20`,
+                          borderColor: `${ticket.status.color}40`,
+                          color: ticket.status.color,
+                        }
+                      : undefined
+                  }
+                >
                   {ticket.status?.color ? (
                     <span
-                      className="h-1.5 w-1.5 rounded-full shrink-0 animate-pulse"
+                      className="h-2 w-2 shrink-0 animate-pulse rounded-full"
                       style={{ backgroundColor: ticket.status.color }}
                     />
-                  ) : (
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
-                  )}
+                  ) : null}
                   {ticket.status?.name ?? 'Open'}
                 </Badge>
                 {ticket.priority?.name ? (
-                  <Badge className="border-white/20 bg-white/15 text-white flex items-center gap-1.5 font-medium">
+                  <Badge
+                    className="flex items-center gap-1.5 font-medium"
+                    style={
+                      ticket.priority?.color
+                        ? {
+                            backgroundColor: `${ticket.priority.color}20`,
+                            borderColor: `${ticket.priority.color}40`,
+                            color: ticket.priority.color,
+                          }
+                        : undefined
+                    }
+                  >
                     {ticket.priority?.color ? (
                       <span
-                        className="h-1.5 w-1.5 rounded-full shrink-0"
+                        className="h-2 w-2 shrink-0 rounded-full"
                         style={{ backgroundColor: ticket.priority.color }}
                       />
-                    ) : (
-                      <span className="h-1.5 w-1.5 rounded-full bg-slate-400 shrink-0" />
-                    )}
+                    ) : null}
                     {ticket.priority.name}
                   </Badge>
                 ) : null}
@@ -481,8 +495,8 @@ export function ServiceCloudTicketDetailPage({
         </div>
       </section>
 
-      <div className="flex flex-col lg:flex-row gap-4 w-full">
-        <div className="space-y-4 w-full lg:w-[65%]">
+      <div className="flex w-full flex-col gap-4 lg:flex-row">
+        <div className="w-full space-y-4 lg:w-[65%]">
           <CardWidgetContainer
             title="Ticket Workspace"
             description="Customer conversation, internal work, attachments, and service timeline."
@@ -499,19 +513,16 @@ export function ServiceCloudTicketDetailPage({
                   </Button>
                 ) : null}
                 {canManageInbox && !latestThreadEmail ? (
-                  <Button
-                    size="sm"
-                    onClick={() => setIsComposeOpen(true)}
-                  >
+                  <Button size="sm" onClick={() => setIsComposeOpen(true)}>
                     <Mail className="mr-2 h-4 w-4" />
                     Send Email
                   </Button>
                 ) : null}
-                <StatusPill label={ticket.source ?? 'manual'}/>
+                <StatusPill label={ticket.source ?? 'manual'} />
                 {canManageInbox ? (
-                  <StatusPill label={`${emails.length} emails`}/>
+                  <StatusPill label={`${emails.length} emails`} />
                 ) : null}
-                <StatusPill label={formatDuration(totalLoggedSeconds)}/>
+                <StatusPill label={formatDuration(totalLoggedSeconds)} />
               </div>
             }
           >
@@ -630,7 +641,8 @@ export function ServiceCloudTicketDetailPage({
                                 variant="outline"
                                 className={cn(
                                   'w-full justify-start text-left font-normal',
-                                  !timeForm.logged_date && 'text-muted-foreground',
+                                  !timeForm.logged_date &&
+                                    'text-muted-foreground',
                                 )}
                               >
                                 <CalendarDays className="mr-2 h-4 w-4" />
@@ -639,12 +651,17 @@ export function ServiceCloudTicketDetailPage({
                                   : 'Pick a date'}
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
+                            <PopoverContent
+                              className="w-auto p-0"
+                              align="start"
+                            >
                               <Calendar
                                 mode="single"
                                 selected={
                                   timeForm.logged_date
-                                    ? new Date(timeForm.logged_date + 'T00:00:00')
+                                    ? new Date(
+                                        timeForm.logged_date + 'T00:00:00',
+                                      )
                                     : undefined
                                 }
                                 onSelect={(date) =>
@@ -711,7 +728,7 @@ export function ServiceCloudTicketDetailPage({
                             }
                             placeholder="What did you work on?"
                           />
-                        </Field>                        
+                        </Field>
                         <Button
                           className="w-full"
                           disabled={!canLogTime || timeMutation.isPending}
@@ -736,8 +753,8 @@ export function ServiceCloudTicketDetailPage({
                             compact
                           />
                         ) : (
-                          <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
-                            <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+                          <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
+                            <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0">
                               <CustomTableContainer>
                                 <div className="scrollbar-thin max-h-[295px] overflow-y-auto">
                                   <Table>
@@ -889,7 +906,7 @@ export function ServiceCloudTicketDetailPage({
                     description="Status, priority, assignment, email, and time-log history for this ticket."
                     hideHeaderBorder={true}
                   >
-                    <div className="scrollbar-thin max-h-[calc(100vh-450px)] min-h-[300px] space-y-3 overflow-y-auto px-6 pr-2 pb-4">
+                    <div className="scrollbar-thin max-h-[calc(100vh-450px)] min-h-[300px] space-y-3 overflow-y-auto px-6 pb-4 pr-2">
                       {(data.activities ?? []).length === 0 ? (
                         <EmptyState
                           title="No activity yet"
@@ -939,7 +956,7 @@ export function ServiceCloudTicketDetailPage({
           </CardWidgetContainer>
         </div>
 
-        <div className="space-y-4 w-full lg:w-[35%]">
+        <div className="w-full space-y-4 lg:w-[35%]">
           <CardWidgetContainer
             title="Ticket Properties"
             description="Operational fields agents update while working the case."
@@ -1013,7 +1030,15 @@ export function ServiceCloudTicketDetailPage({
           <CardWidgetContainer
             title="SLA Snapshot"
             hideHeaderBorder={true}
-            className={priorityTone(ticket.priority)}
+            style={
+              ticket.priority?.color
+                ? {
+                    backgroundColor: `${ticket.priority.color}15`,
+                    borderColor: `${ticket.priority.color}50`,
+                    color: ticket.priority.color,
+                  }
+                : undefined
+            }
           >
             <div className="space-y-3 px-6 py-4 text-sm">
               <Metric
@@ -1166,7 +1191,7 @@ export function ServiceCloudTicketDetailPage({
                 </PopoverContent>
               </Popover>
             </Field>
-            <div className="grid grid-cols-2 gap-3">               
+            <div className="grid grid-cols-2 gap-3">
               <Field label="Hours">
                 <Input
                   type="number"
@@ -1217,7 +1242,7 @@ export function ServiceCloudTicketDetailPage({
                 }
                 placeholder="What did you work on?"
               />
-            </Field>           
+            </Field>
             <Button
               className="w-full"
               disabled={updateTimeMutation.isPending}
@@ -1299,9 +1324,12 @@ function EditableSelect({
   return (
     <Field label={label}>
       <div className="flex items-center gap-2">
-        <span 
+        <span
           style={selectedColor ? { color: selectedColor } : undefined}
-          className={cn("text-muted-foreground shrink-0", selectedColor && "transition-colors")}
+          className={cn(
+            'text-muted-foreground shrink-0',
+            selectedColor && 'transition-colors',
+          )}
         >
           {icon}
         </span>
@@ -1313,15 +1341,24 @@ function EditableSelect({
           }
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder={`Select ${label.toLowerCase()}`} />
+            <div className="flex items-center gap-2">
+              {selectedOption?.color ? (
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full border border-black/10 dark:border-white/10"
+                  style={{ backgroundColor: selectedOption.color }}
+                />
+              ) : null}
+              <span className="truncate">
+                {selectedOption
+                  ? optionLabel(selectedOption)
+                  : `Select ${label.toLowerCase()}`}
+              </span>
+            </div>
           </SelectTrigger>
           <SelectContent>
             {allowNone ? (
               <SelectItem value="none">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-slate-400 shrink-0" />
-                  <span>Unassigned</span>
-                </div>
+                <span>Unassigned</span>
               </SelectItem>
             ) : null}
             {options.map((option) => (
@@ -1329,12 +1366,10 @@ function EditableSelect({
                 <div className="flex items-center gap-2">
                   {option.color ? (
                     <span
-                      className="h-2 w-2 rounded-full border border-black/10 dark:border-white/10 shrink-0"
+                      className="h-2 w-2 shrink-0 rounded-full border border-black/10 dark:border-white/10"
                       style={{ backgroundColor: option.color }}
                     />
-                  ) : (
-                    <span className="h-2 w-2 rounded-full bg-slate-400 shrink-0" />
-                  )}
+                  ) : null}
                   <span>{optionLabel(option)}</span>
                 </div>
               </SelectItem>
@@ -1432,7 +1467,7 @@ function Metric({
 
 function StatusPill({ label }: { label: string }) {
   return (
-    <span className="rounded-full border bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm dark:bg-slate-950 dark:text-slate-200 mt-1">
+    <span className="mt-1 rounded-full border bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm dark:bg-slate-950 dark:text-slate-200">
       {label}
     </span>
   );
@@ -1459,7 +1494,7 @@ function EmptyState({
 
 function ServiceCloudTicketDetailSkeleton() {
   return (
-    <div className="space-y-4 mt-2">
+    <div className="mt-2 space-y-4">
       {/* ── Hero banner skeleton ── */}
       <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_34%),linear-gradient(135deg,_#0f172a,_#164e63_52%,_#0f172a)] p-6 shadow-xl">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">

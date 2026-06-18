@@ -2,10 +2,14 @@
 
 import { useState } from 'react';
 
+import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Loader2, Plus, Ticket, TicketIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { formatDate } from '@kit/shared/utils';
 import { Button } from '@kit/ui/button';
 import {
   Dialog,
@@ -23,15 +27,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@kit/ui/select';
-import Link from 'next/link';
-
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
-import { Textarea } from '@kit/ui/textarea';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@kit/ui/tooltip';
 import {
   Table,
   TableBody,
@@ -40,8 +35,9 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-
-import { formatDate } from '@kit/shared/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
+import { Textarea } from '@kit/ui/textarea';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
 
 import {
   type ServiceCloudRecord,
@@ -55,7 +51,10 @@ import {
   useServiceCloudPermissions,
 } from '../../utils';
 import { ServiceCloudAccessDenied } from '../_components/access-denied';
-import { ServiceCloudResourcePage, StatusBadge } from '../_components/resource-page';
+import {
+  ServiceCloudResourcePage,
+  StatusBadge,
+} from '../_components/resource-page';
 
 export function ServiceCloudCustomersPage({
   workspaceId,
@@ -94,11 +93,22 @@ export function ServiceCloudCustomersPage({
   const [ticketCategoryId, setTicketCategoryId] = useState('');
 
   // --- Customer Tickets Modal state & query ---
-  const [ticketsModalCustomer, setTicketsModalCustomer] = useState<ServiceCloudRecord | null>(null);
+  const [ticketsModalCustomer, setTicketsModalCustomer] =
+    useState<ServiceCloudRecord | null>(null);
 
-  const { data: customerTickets = [], isLoading: isLoadingTickets } = useQuery<ServiceCloudRecord[]>({
-    queryKey: ['service-cloud', 'customer-tickets', workspaceId, ticketsModalCustomer?.id],
-    queryFn: () => getServiceCloudResourceService('tickets', workspaceId, { customerId: ticketsModalCustomer?.id as string }),
+  const { data: customerTickets = [], isLoading: isLoadingTickets } = useQuery<
+    ServiceCloudRecord[]
+  >({
+    queryKey: [
+      'service-cloud',
+      'customer-tickets',
+      workspaceId,
+      ticketsModalCustomer?.id,
+    ],
+    queryFn: () =>
+      getServiceCloudResourceService('tickets', workspaceId, {
+        customerId: ticketsModalCustomer?.id as string,
+      }),
     enabled: Boolean(ticketsModalCustomer?.id) && Boolean(workspaceId),
   });
 
@@ -111,7 +121,8 @@ export function ServiceCloudCustomersPage({
   const { data: lookups } = useQuery({
     queryKey: ['service-cloud', 'ticket-lookups', workspaceId],
     queryFn: () => getServiceCloudTicketLookupsService(workspaceId),
-    enabled: (createOpen || Boolean(ticketsModalCustomer)) && Boolean(workspaceId),
+    enabled:
+      (createOpen || Boolean(ticketsModalCustomer)) && Boolean(workspaceId),
   });
 
   const statuses: any[] = lookups?.statuses ?? [];
@@ -128,12 +139,14 @@ export function ServiceCloudCustomersPage({
   const statusOptions = statuses.map((s: any) => ({
     label: s.name,
     value: s.id,
+    color: s.color,
   }));
   const openStatus =
     statuses.find((s: any) => s.lifecycle === 'open') ?? statuses[0];
   const priorityOptions = priorities.map((p: any) => ({
     label: p.name,
     value: p.id,
+    color: p.color,
   }));
   const categoryOptions = categories.map((c: any) => ({
     label: c.name,
@@ -212,7 +225,7 @@ export function ServiceCloudCustomersPage({
           type="button"
           onClick={openDialog}
           variant="default"
-          className="shrink-0 gap-1.5 h-9"
+          className="h-9 shrink-0 gap-1.5"
         >
           <TicketIcon className="h-4 w-4" />
         </Button>
@@ -223,226 +236,257 @@ export function ServiceCloudCustomersPage({
     </Tooltip>
   ) : null;
 
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab') || 'customers';
+
   return (
     <>
-      <Tabs defaultValue="customers" className="space-y-4">
-      <TabsList className="mb-0">
-        <TabsTrigger value="customers">Customers</TabsTrigger>
-        <TabsTrigger value="organizations">Organizations</TabsTrigger>
-      </TabsList>
-      <TabsContent value="customers">
-        <ServiceCloudResourcePage
-          workspaceId={workspaceId}
-          resource="customers"
-          title="Customers"
-          createLabel="New Customer"
-          description="People who contact support."
-          canCreate={canCreate}
-          canEdit={canEdit}
-          canDelete={canDelete}
-          toolbar={newTicketToolbar}
-          fields={[
-            { key: 'name', label: 'Name', required: true },
-            { key: 'email', label: 'Email', type: 'email' },
-            { key: 'phone', label: 'Phone' },
-            { key: 'job_title', label: 'Job Title' },
-          ]}
-          columns={[
-            {
-              key: 'name',
-              label: 'Name',
-              render: (customer) => (
-                <button
-                  type="button"
-                  onClick={() => setTicketsModalCustomer(customer)}
-                  className="font-medium text-leadgaze-primary hover:underline text-left"
-                >
-                  {customer.name}
-                </button>
-              ),
-            },
-            { key: 'email', label: 'Email' },
-            { key: 'phone', label: 'Phone' },
-            { key: 'job_title', label: 'Job Title' },
-          ]}
-        />
-      </TabsContent>
-      <TabsContent value="organizations">
-        <ServiceCloudResourcePage
-          workspaceId={workspaceId}
-          resource="organizations"
-          title="Organizations"
-          createLabel="New Organization"
-          description="Companies and customer accounts supported by the team."
-          canCreate={canCreate}
-          canEdit={canEdit}
-          canDelete={canDelete}
-          fields={[
-            { key: 'name', label: 'Name', required: true },
-            { key: 'website', label: 'Website' },
-            { key: 'industry', label: 'Industry' },
-            { key: 'email', label: 'Email', type: 'email' },
-            { key: 'phone', label: 'Phone' },
-          ]}
-          columns={[
-            { key: 'name', label: 'Name' },
-            { key: 'website', label: 'Website' },
-            { key: 'industry', label: 'Industry' },
-            { key: 'email', label: 'Email' },
-            { key: 'phone', label: 'Phone' },
-          ]}
-        />
-      </TabsContent>
-
-      {/* Create Ticket from Customer Dialog */}
-      <Dialog
-        open={createOpen}
-        onOpenChange={(v) => {
-          setCreateOpen(v);
-          if (!v) resetForm();
-        }}
+      <Tabs
+        defaultValue={tab}
+        className="space-y-4"
+        onValueChange={(value) => router.push(`${pathname}?tab=${value}`)}
       >
-        <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-2xl dark:border-slate-800 dark:bg-slate-950">
-          <div className="flex max-h-[90vh] flex-col">
-            <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
-              <DialogTitle className="flex items-center gap-2">
-                <Ticket className="h-5 w-5" />
-                New Ticket for Customer
-              </DialogTitle>
-            </DialogHeader>
-
-            <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
-              <div className="grid gap-4">
-                {/* Customer Selection */}
-                <div className="grid gap-2">
-                  <Label>
-                    Customer <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={selectedCustomerId}
-                    onValueChange={setSelectedCustomerId}
+        <TabsList className="mb-0">
+          <TabsTrigger value="customers">Customers</TabsTrigger>
+          <TabsTrigger value="organizations">Organizations</TabsTrigger>
+        </TabsList>
+        <TabsContent value="customers">
+          <ServiceCloudResourcePage
+            workspaceId={workspaceId}
+            resource="customers"
+            title="Customers"
+            createLabel="New Customer"
+            description="People who contact support."
+            canCreate={canCreate}
+            canEdit={canEdit}
+            canDelete={canDelete}
+            toolbar={newTicketToolbar}
+            fields={[
+              { key: 'name', label: 'Name', required: true },
+              { key: 'email', label: 'Email', type: 'email' },
+              { key: 'phone', label: 'Phone' },
+              { key: 'job_title', label: 'Job Title' },
+            ]}
+            columns={[
+              {
+                key: 'name',
+                label: 'Name',
+                render: (customer) => (
+                  <button
+                    type="button"
+                    onClick={() => setTicketsModalCustomer(customer)}
+                    className="text-leadgaze-primary text-left font-medium hover:underline"
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select customer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers.map((customer) => (
-                        <SelectItem
-                          key={customer.id}
-                          value={String(customer.id)}
-                        >
-                          {customer.name}{' '}
-                          {customer.email ? `(${customer.email})` : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedCustomer?.organization_id ? (
-                    <p className="text-muted-foreground text-xs">
-                      Organization will be auto-linked from the customer record.
-                    </p>
-                  ) : null}
-                </div>
+                    {customer.name}
+                  </button>
+                ),
+              },
+              { key: 'email', label: 'Email' },
+              { key: 'phone', label: 'Phone' },
+              { key: 'job_title', label: 'Job Title' },
+            ]}
+          />
+        </TabsContent>
+        <TabsContent value="organizations">
+          <ServiceCloudResourcePage
+            workspaceId={workspaceId}
+            resource="organizations"
+            title="Organizations"
+            createLabel="New Organization"
+            description="Companies and customer accounts supported by the team."
+            canCreate={canCreate}
+            canEdit={canEdit}
+            canDelete={canDelete}
+            fields={[
+              { key: 'name', label: 'Name', required: true },
+              { key: 'website', label: 'Website' },
+              { key: 'industry', label: 'Industry' },
+              { key: 'email', label: 'Email', type: 'email' },
+              { key: 'phone', label: 'Phone' },
+            ]}
+            columns={[
+              { key: 'name', label: 'Name' },
+              { key: 'website', label: 'Website' },
+              { key: 'industry', label: 'Industry' },
+              { key: 'email', label: 'Email' },
+              { key: 'phone', label: 'Phone' },
+            ]}
+          />
+        </TabsContent>
 
-                {/* Subject */}
-                <div className="grid gap-2">
-                  <Label>
-                    Subject <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    value={ticketSubject}
-                    onChange={(e) => setTicketSubject(e.target.value)}
-                  />
-                </div>
+        {/* Create Ticket from Customer Dialog */}
+        <Dialog
+          open={createOpen}
+          onOpenChange={(v) => {
+            setCreateOpen(v);
+            if (!v) resetForm();
+          }}
+        >
+          <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-2xl dark:border-slate-800 dark:bg-slate-950">
+            <div className="flex max-h-[90vh] flex-col">
+              <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+                <DialogTitle className="flex items-center gap-2">
+                  <Ticket className="h-5 w-5" />
+                  New Ticket for Customer
+                </DialogTitle>
+              </DialogHeader>
 
-                {/* Description */}
-                <div className="grid gap-2">
-                  <Label>Description</Label>
-                  <Textarea
-                    value={ticketDescription}
-                    onChange={(e) => setTicketDescription(e.target.value)}
-                    className="min-h-24"
-                  />
-                </div>
-
-                {/* Status / Priority / Category */}
-                <div className="grid gap-4 sm:grid-cols-3">
+              <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
+                <div className="grid gap-4">
+                  {/* Customer Selection */}
                   <div className="grid gap-2">
-                    <Label>Status</Label>
+                    <Label>
+                      Customer <span className="text-destructive">*</span>
+                    </Label>
                     <Select
-                      value={ticketStatusId || String(openStatus?.id ?? '')}
-                      onValueChange={setTicketStatusId}
+                      value={selectedCustomerId}
+                      onValueChange={setSelectedCustomerId}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
+                        <SelectValue placeholder="Select customer" />
                       </SelectTrigger>
                       <SelectContent>
-                        {statusOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
+                        {customers.map((customer) => (
+                          <SelectItem
+                            key={customer.id}
+                            value={String(customer.id)}
+                          >
+                            {customer.name}{' '}
+                            {customer.email ? `(${customer.email})` : ''}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {selectedCustomer?.organization_id ? (
+                      <p className="text-muted-foreground text-xs">
+                        Organization will be auto-linked from the customer
+                        record.
+                      </p>
+                    ) : null}
                   </div>
+
+                  {/* Subject */}
                   <div className="grid gap-2">
-                    <Label>Priority</Label>
-                    <Select
-                      value={ticketPriorityId}
-                      onValueChange={setTicketPriorityId}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {priorityOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label>
+                      Subject <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      value={ticketSubject}
+                      onChange={(e) => setTicketSubject(e.target.value)}
+                    />
                   </div>
+
+                  {/* Description */}
                   <div className="grid gap-2">
-                    <Label>Category</Label>
-                    <Select
-                      value={ticketCategoryId}
-                      onValueChange={setTicketCategoryId}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categoryOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label>Description</Label>
+                    <Textarea
+                      value={ticketDescription}
+                      onChange={(e) => setTicketDescription(e.target.value)}
+                      className="min-h-24"
+                    />
+                  </div>
+
+                  {/* Status / Priority / Category */}
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="grid gap-2">
+                      <Label>Status</Label>
+                      <Select
+                        value={ticketStatusId || String(openStatus?.id ?? '')}
+                        onValueChange={setTicketStatusId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              <div className="flex items-center gap-2">
+                                {opt.color ? (
+                                  <span
+                                    className="h-2 w-2 shrink-0 rounded-full border border-black/10 dark:border-white/10"
+                                    style={{ backgroundColor: opt.color }}
+                                  />
+                                ) : null}
+                                <span>{opt.label}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Priority</Label>
+                      <Select
+                        value={ticketPriorityId}
+                        onValueChange={setTicketPriorityId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {priorityOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              <div className="flex items-center gap-2">
+                                {opt.color ? (
+                                  <span
+                                    className="h-2 w-2 shrink-0 rounded-full border border-black/10 dark:border-white/10"
+                                    style={{ backgroundColor: opt.color }}
+                                  />
+                                ) : null}
+                                <span>{opt.label}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Category</Label>
+                      <Select
+                        value={ticketCategoryId}
+                        onValueChange={setTicketCategoryId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categoryOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-              <Button variant="outline" onClick={() => setCreateOpen(false)} className='mb-2'>
-                Cancel
-              </Button>
-              <Button
-                onClick={submitCreateTicket} className='mb-2'
-                disabled={createTicketMutation.isPending}
-              >
-                {createTicketMutation.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : null}
-                Create Ticket
-              </Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </Tabs>
+              <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+                <Button
+                  variant="outline"
+                  onClick={() => setCreateOpen(false)}
+                  className="mb-2"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={submitCreateTicket}
+                  className="mb-2"
+                  disabled={createTicketMutation.isPending}
+                >
+                  {createTicketMutation.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Create Ticket
+                </Button>
+              </DialogFooter>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </Tabs>
 
       {/* Customer Tickets Dialog */}
       <Dialog
@@ -452,7 +496,7 @@ export function ServiceCloudCustomersPage({
         }}
       >
         <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-4xl lg:max-w-5xl dark:border-slate-800 dark:bg-slate-950">
-          <div className="flex max-h-[90vh] flex-col w-full max-w-full min-w-0">
+          <div className="flex max-h-[90vh] w-full min-w-0 max-w-full flex-col">
             <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
               <DialogTitle className="flex items-center gap-2">
                 <Ticket className="h-5 w-5" />
@@ -460,14 +504,14 @@ export function ServiceCloudCustomersPage({
               </DialogTitle>
             </DialogHeader>
 
-            <div className="flex-1 overflow-y-auto overflow-x-auto p-6 w-full max-w-full min-w-0">
+            <div className="w-full min-w-0 max-w-full flex-1 overflow-x-auto overflow-y-auto p-6">
               {isLoadingTickets ? (
-                <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+                <div className="text-muted-foreground flex items-center justify-center py-8 text-sm">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Loading tickets...
                 </div>
               ) : customerTickets.length === 0 ? (
-                <div className="py-8 text-center text-sm text-muted-foreground">
+                <div className="text-muted-foreground py-8 text-center text-sm">
                   No tickets found for this customer.
                 </div>
               ) : (
@@ -484,11 +528,13 @@ export function ServiceCloudCustomersPage({
                   <TableBody>
                     {customerTickets.map((ticket) => (
                       <TableRow key={ticket.id}>
-                        <TableCell className="font-mono text-sm">#{ticket.ticket_number}</TableCell>
+                        <TableCell className="font-mono text-sm">
+                          #{ticket.ticket_number}
+                        </TableCell>
                         <TableCell>
                           <Link
                             href={`/home/services/tickets/${ticket.id}`}
-                            className="font-medium text-primary hover:underline text-leadgaze-primary block max-w-[200px] sm:max-w-[400px] lg:max-w-[550px] truncate"
+                            className="text-primary text-leadgaze-primary block max-w-[200px] truncate font-medium hover:underline sm:max-w-[400px] lg:max-w-[550px]"
                             title={ticket.subject}
                           >
                             {ticket.subject}
@@ -496,18 +542,30 @@ export function ServiceCloudCustomersPage({
                         </TableCell>
                         <TableCell>
                           <StatusBadge
-                            value={statusById.get(ticket.status_id)?.name as string}
-                            color={statusById.get(ticket.status_id)?.color as string}
+                            value={
+                              statusById.get(ticket.status_id)?.name as string
+                            }
+                            color={
+                              statusById.get(ticket.status_id)?.color as string
+                            }
                           />
                         </TableCell>
                         <TableCell>
                           <StatusBadge
-                            value={priorityById.get(ticket.priority_id)?.name as string}
-                            color={priorityById.get(ticket.priority_id)?.color as string}
+                            value={
+                              priorityById.get(ticket.priority_id)
+                                ?.name as string
+                            }
+                            color={
+                              priorityById.get(ticket.priority_id)
+                                ?.color as string
+                            }
                           />
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {ticket.created_at ? formatDate(ticket.created_at) : '-'}
+                        <TableCell className="text-muted-foreground text-sm">
+                          {ticket.created_at
+                            ? formatDate(ticket.created_at)
+                            : '-'}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -517,7 +575,10 @@ export function ServiceCloudCustomersPage({
             </div>
 
             <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-              <Button variant="outline" onClick={() => setTicketsModalCustomer(null)}>
+              <Button
+                variant="outline"
+                onClick={() => setTicketsModalCustomer(null)}
+              >
                 Close
               </Button>
             </DialogFooter>
