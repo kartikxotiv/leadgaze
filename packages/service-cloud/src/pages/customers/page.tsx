@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Loader2, Plus, Ticket, TicketIcon } from 'lucide-react';
@@ -235,9 +236,18 @@ export function ServiceCloudCustomersPage({
     </Tooltip>
   ) : null;
 
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab') || 'customers';
+
   return (
     <>
-      <Tabs defaultValue="customers" className="space-y-4">
+      <Tabs
+        defaultValue={tab}
+        className="space-y-4"
+        onValueChange={(value) => router.push(`${pathname}?tab=${value}`)}
+      >
         <TabsList className="mb-0">
           <TabsTrigger value="customers">Customers</TabsTrigger>
           <TabsTrigger value="organizations">Organizations</TabsTrigger>
