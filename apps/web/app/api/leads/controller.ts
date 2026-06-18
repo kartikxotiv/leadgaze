@@ -545,10 +545,202 @@ const createLeadSource = catchAsync(
   },
 );
 
+/**
+ * POST /api/leads/statuses
+ * Create a new lead status
+ */
+const createLeadStatus = catchAsync(
+  async ({
+    request,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const body = await request.json();
+    const { workspace_id, status_name, color, icon, is_closed } = body;
+
+    if (!workspace_id || !status_name) {
+      return NextResponse.json(
+        { message: 'workspace_id and status_name are required' },
+        { status: 400 },
+      );
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: moduleData, error: moduleError } = await supabase
+      .from('crm_modules')
+      .select('id')
+      .eq('module_key', 'leads')
+      .single();
+
+    if (moduleError || !moduleData) {
+      console.error('Get module error:', moduleError);
+      return NextResponse.json(
+        { message: 'Failed to retrieve module information' },
+        { status: 500 },
+      );
+    }
+
+    const status_key = status_name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+
+    // Get highest sort_order
+    const { data: maxSort } = await supabase
+      .from('entity_statuses')
+      .select('sort_order')
+      .eq('workspace_id', workspace_id)
+      .eq('module_id', moduleData.id)
+      .order('sort_order', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const sort_order = (maxSort?.sort_order ?? -1) + 1;
+
+    const { data: statusRecord, error } = await supabase
+      .from('entity_statuses')
+      .insert({
+        workspace_id,
+        module_id: moduleData.id,
+        status_name: status_name.trim(),
+        status_key,
+        color: color || '#3B82F6',
+        icon: icon || null,
+        is_active: true,
+        is_system: false,
+        is_default: false,
+        is_closed: !!is_closed,
+        sort_order,
+        created_by: user.id,
+      })
+      .select('id, status_name, status_key, color, icon, is_closed')
+      .single();
+
+    if (error) {
+      console.error('Create status error:', error);
+      throw error;
+    }
+
+    return successDataResponse('Status created successfully', statusRecord);
+  },
+);
+
+/**
+ * PATCH /api/leads/statuses/[id]
+ * Update a lead status
+ */
+const updateLeadStatus = catchAsync(
+  async ({
+    request,
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const id = params?.id;
+    const body = await request.json();
+    const { status_name, color, icon, is_closed, is_active } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { message: 'status id is required' },
+        { status: 400 },
+      );
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const updateData: any = {};
+    if (status_name !== undefined) {
+      updateData.status_name = status_name.trim();
+      updateData.status_key = status_name
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    }
+    if (color !== undefined) updateData.color = color;
+    if (icon !== undefined) updateData.icon = icon;
+    if (is_closed !== undefined) updateData.is_closed = is_closed;
+    if (is_active !== undefined) updateData.is_active = is_active;
+    updateData.updated_by = user.id;
+    updateData.updated_at = new Date().toISOString();
+
+    const { data: statusRecord, error } = await supabase
+      .from('entity_statuses')
+      .update(updateData)
+      .eq('id', id)
+      .select('id, status_name, status_key, color, icon, is_closed')
+      .single();
+
+    if (error) {
+      console.error('Update status error:', error);
+      throw error;
+    }
+
+    return successDataResponse('Status updated successfully', statusRecord);
+  },
+);
+
+/**
+ * DELETE /api/leads/statuses/[id]
+ * Delete a lead status
+ */
+const deleteLeadStatus = catchAsync(
+  async ({
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const id = params?.id;
+
+    if (!id) {
+      return NextResponse.json(
+        { message: 'status id is required' },
+        { status: 400 },
+      );
+    }
+
+    const { error } = await supabase
+      .from('entity_statuses')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Delete status error:', error);
+      throw error;
+    }
+
+    return successDataResponse('Status deleted successfully', { id });
+  },
+);
+
 export {
   getLeads,
   createLead,
   getLeadSources,
   getLeadStatuses,
   createLeadSource,
+  createLeadStatus,
+  updateLeadStatus,
+  deleteLeadStatus,
 };

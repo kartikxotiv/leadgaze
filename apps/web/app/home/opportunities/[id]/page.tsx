@@ -63,10 +63,10 @@ import { type Contact, getContactsService } from '~/services/contacts.service';
 import {
   getOpportunityByIdService,
   updateOpportunityService,
+  getOpportunityStatusesService,
 } from '~/services/opportunities.service';
-import { getOpportunityStatusesService } from '~/services/opportunities.service';
-
 import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
+import { ManageableStatusSelect } from '../../_components/manageable-status-select';
 import {
   EntityDocuments,
   EntityMeetings,
@@ -425,9 +425,12 @@ export default function OpportunityDetailsPage() {
                   )}
 
                   {rbacCanAccess('opportunities', 'change_stage') && (
-                    <Select
+                    <ManageableStatusSelect
+                      moduleKey="opportunities"
+                      workspaceId={currentWorkspace?.id ?? ''}
                       value={opportunity.stage_id}
                       onValueChange={async (value) => {
+                        if (!value) return;
                         try {
                           await updateOpportunityService(id, {
                             stage_id: value,
@@ -439,38 +442,22 @@ export default function OpportunityDetailsPage() {
                         }
                       }}
                       disabled={!canChangeStage}
-                    >
-                      <SelectTrigger className="h-9 w-[180px]">
-                        <SelectValue placeholder="Update Stage" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {stages
-                          .filter((stage: any) => {
-                            const isWon =
-                              stage.status_name.toLowerCase().includes('won') ||
-                              stage.is_won;
-                            const isLost =
-                              stage.status_name
-                                .toLowerCase()
-                                .includes('lost') || stage.is_lost;
+                      triggerClassName="h-9 w-[180px]"
+                      filter={(rawStages) =>
+                        rawStages.filter((stage: any) => {
+                          const isWon =
+                            stage.status_name.toLowerCase().includes('won') ||
+                            stage.is_closed; // Using is_closed/is_won logic from database schema
+                          const isLost =
+                            stage.status_name.toLowerCase().includes('lost') ||
+                            (stage.is_closed && !stage.is_won);
 
-                            if (isWon && !canCloseWon) return false;
-                            if (isLost && !canCloseLost) return false;
-                            return true;
-                          })
-                          .map((stage: any) => (
-                            <SelectItem key={stage.id} value={stage.id}>
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="h-2 w-2 rounded-full"
-                                  style={{ backgroundColor: stage.color }}
-                                />
-                                {stage.status_name}
-                              </div>
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
+                          if (isWon && !canCloseWon) return false;
+                          if (isLost && !canCloseLost) return false;
+                          return true;
+                        })
+                      }
+                    />
                   )}
 
                   {rbacCanAccess('opportunities', 'close_won') && (

@@ -434,10 +434,10 @@ export default function AccountDetailsPage() {
                     />
                   )}
 
-                  {account.account_type && (
+                  {account.account_type_relation?.status_name && (
                     <CustomInputForView
                       label="Type"
-                      value={account.account_type}
+                      value={account.account_type_relation.status_name}
                       className="capitalize"
                     />
                   )}

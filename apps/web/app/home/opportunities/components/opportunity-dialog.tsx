@@ -50,9 +50,9 @@ import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
 import {
   createOpportunityService,
-  getOpportunityStatusesService,
   updateOpportunityService,
 } from '~/services/opportunities.service';
+import { ManageableStatusSelect } from '../../_components/manageable-status-select';
 
 const formSchema = z.object({
   opportunity_name: z.string().min(1, 'Opportunity Name is required'),
@@ -94,12 +94,7 @@ export function OpportunityDialog({
   const [accountSearchQuery, setAccountSearchQuery] = useState('');
   const debouncedAccountSearchQuery = useDebounce(accountSearchQuery, 300);
 
-  // Fetch Stages
-  const { data: stages = [] } = useQuery({
-    queryKey: ['opportunity-stages', currentWorkspace?.id],
-    queryFn: () => getOpportunityStatusesService(currentWorkspace!.id),
-    enabled: !!currentWorkspace?.id && isOpen,
-  });
+  // Fetch Stages — removed; ManageableStatusSelect manages its own data
 
   // Fetch Accounts (for selection)
   const {
@@ -326,24 +321,16 @@ export function OpportunityDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Stage</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select stage" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {stages.map((stage: any) => (
-                          <SelectItem key={stage.id} value={stage.id}>
-                            {stage.status_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <ManageableStatusSelect
+                        moduleKey="opportunities"
+                        workspaceId={currentWorkspace?.id ?? ''}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={mutation.isPending}
+                        placeholder="Select stage"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

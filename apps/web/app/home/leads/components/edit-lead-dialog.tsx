@@ -28,11 +28,11 @@ import { Textarea } from '@kit/ui/textarea';
 import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { Lead } from '~/services/leads.service';
-import { getLeadStatusesService } from '~/services/leads.service';
 import ApiClient from '~/utils/axios-client';
 
 import { IndustrySelect } from '../../_components/industry-select';
 import { LeadSourceSelect } from '../../_components/lead-source-select';
+import { ManageableStatusSelect } from '../../_components/manageable-status-select';
 
 interface EditLeadDialogProps {
   open: boolean;
@@ -105,11 +105,7 @@ export default function EditLeadDialog({
     lead_score: 0,
   });
 
-  const { data: statuses = [] } = useQuery({
-    queryKey: ['lead-statuses', workspace?.id],
-    queryFn: () => getLeadStatusesService(workspace!.id),
-    enabled: !!workspace?.id,
-  });
+  // Lead statuses query removed; managed by ManageableStatusSelect
 
   // Initialize form with lead data
   useEffect(() => {
@@ -144,9 +140,6 @@ export default function EditLeadDialog({
   useEffect(() => {
     if (!open) return;
 
-    const selectedStatus = statuses.find(
-      (s: any) => s.id === formData.status_id,
-    );
     const { totalScore } = calculateLeadScore({
       first_name: formData.first_name,
       last_name: formData.last_name,
@@ -156,7 +149,7 @@ export default function EditLeadDialog({
       location: formData.location,
       timezone: formData.timezone,
       job_title: formData.job_title,
-      status_key: selectedStatus?.status_key,
+      status_key: undefined,
       contacted_count: lead.contacted_count || 0,
       custom_fields: lead.custom_fields || {},
     });
@@ -175,7 +168,6 @@ export default function EditLeadDialog({
     formData.job_title,
     formData.linkedin_url,
     formData.status_id,
-    statuses,
     open,
     lead.contacted_count,
     lead.custom_fields,
@@ -221,12 +213,7 @@ export default function EditLeadDialog({
 
     setIsLoading(true);
     try {
-      // Find selected status to get its key
-      const selectedStatus = statuses.find(
-        (s: any) => s.id === formData.status_id,
-      );
-
-      // Calculate lead score
+      // Calculate lead score (removed selectedStatus lookup)
       const { totalScore } = calculateLeadScore({
         first_name: formData.first_name,
         last_name: formData.last_name,
@@ -236,7 +223,7 @@ export default function EditLeadDialog({
         location: formData.location,
         timezone: formData.timezone,
         job_title: formData.job_title,
-        status_key: selectedStatus?.status_key,
+        status_key: undefined,
         contacted_count: lead.contacted_count || 0,
         custom_fields: lead.custom_fields || {},
       });
@@ -565,24 +552,18 @@ export default function EditLeadDialog({
                       htmlFor="status_id">
                       Status <span className="text-red-500">*</span>
                     </Label>
-                    <Select
-                      value={formData.status_id}
-                      onValueChange={(value) =>
-                        handleInputChange('status_id', value)
-                      }
-                      disabled={isLoading}
-                    >
-                      <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
-                        {statuses.map((status: any) => (
-                          <SelectItem key={status.id} value={status.id}>
-                            {status.status_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="mt-2">
+                      <ManageableStatusSelect
+                        moduleKey="leads"
+                        workspaceId={workspace?.id ?? ''}
+                        value={formData.status_id}
+                        onValueChange={(value) =>
+                          handleInputChange('status_id', value)
+                        }
+                        disabled={isLoading}
+                        triggerClassName="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                      />
+                    </div>
                   </div>
                   <div>
                     <Label
