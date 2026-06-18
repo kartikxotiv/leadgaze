@@ -42,6 +42,7 @@ import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { CreateAccountDialog } from './components/create-account-dialog';
 import { formatDate } from '@kit/shared/utils';
+import { PageSizeSelector } from '@kit/ui/page-size-selector';
 
 function AccountsPageSkeleton() {
   return (
@@ -105,7 +106,8 @@ export default function AccountsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const [pageSize, setPageSize] = useState(15);
+  const itemsPerPage = pageSize;
   const { data: user } = useUser();
 
   const columns = useMemo(
@@ -157,7 +159,7 @@ export default function AccountsPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['accounts', workspace?.id, currentPage, debouncedSearchTerm],
+    queryKey: ['accounts', workspace?.id, currentPage, debouncedSearchTerm, pageSize],
     queryFn: () =>
       getAccountsService({
         workspaceId: workspace?.id || '',
@@ -174,7 +176,7 @@ export default function AccountsPage() {
   // Reset to first page when search changes
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm]);
+  }, [debouncedSearchTerm, pageSize]);
 
   // Pagination Logic
   const totalPages = Math.ceil(totalCount / itemsPerPage);
@@ -249,7 +251,7 @@ export default function AccountsPage() {
           <CustomTableContainer
             pagination={totalCount > 0 && (
               <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
-                <div>
+                <div className="flex items-center gap-1">
                   Showing{' '}
                   <span className="text-foreground font-medium">
                     {(currentPage - 1) * itemsPerPage + 1}
@@ -264,6 +266,15 @@ export default function AccountsPage() {
                   </span>{' '}
                   accounts
                 </div>
+                <div className="flex w-full max-w-full min-w-0 items-center justify-end px-2">
+                                      <PageSizeSelector
+                                      value={pageSize}
+                                      onChange={(val) => {
+                                        setPageSize(val);
+                                        setCurrentPage(1);
+                                      }}
+                                    />
+                                  </div>
                 <Pagination className="w-auto">
                   <PaginationContent>
                     <PaginationItem>

@@ -48,8 +48,9 @@ import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import CreateLeadDialog from './components/create-lead-dialog';
 import {CustomTableContainer} from '@kit/ui/custom-table-container';
-import {TableStatusMetricTab} from '@kit/ui/table-status-metric-tab';
-import { formatDate } from '@kit/shared/utils';
+import {StatusFilterDropdown} from '@kit/ui/status-filter-dropdown';
+import {formatDate} from '@kit/shared/utils';
+import { PageSizeSelector } from '@kit/ui/page-size-selector';
 
 export default function LeadsPage() {
   const router = useRouter();
@@ -61,7 +62,8 @@ export default function LeadsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const [pageSize, setPageSize] = useState(15);
+  const itemsPerPage = pageSize;
   const { data: user } = useUser();
 
   const activeFilterCount =
@@ -144,12 +146,13 @@ export default function LeadsPage() {
       debouncedSearchTerm,
       selectedStatus,
       selectedCreatedBy,
+      pageSize,
     ],
     queryFn: () =>
       getLeadsService({
         workspaceId: workspace?.id || '',
         page: currentPage,
-        limit: itemsPerPage,
+        limit: pageSize,
         searchTerm: debouncedSearchTerm,
         statusId: selectedStatus,
       }),
@@ -186,7 +189,7 @@ export default function LeadsPage() {
   // Reset to first page when search or filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, selectedStatus, selectedCreatedBy]);
+  }, [debouncedSearchTerm, selectedStatus, selectedCreatedBy, pageSize]);
 
   const paginatedLeads = filteredLeads;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
@@ -226,47 +229,19 @@ export default function LeadsPage() {
           />          
         </div>
         
-          {/* Status Distribution Cards */}
-          <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2 pt-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <TableStatusMetricTab
-                   key={0}
-                   id={0}
-                   statusName='All Leads'
-                   isSelected={selectedStatus === 'all'}
-                   count={totalCount}
-                   onClick={() => setSelectedStatus('all')} />
-              {statuses.map((status: any) => {
-                const stats = leadsData.statusBreakdown[status.id] || {
-                  count: 0,
-                };
-                const isSelected = selectedStatus === status.id;
-                const displayCount =
-                  selectedStatus === 'all'
-                    ? stats.count
-                    : isSelected
-                      ? stats.count
-                      : 0;
-
-                return (
-                  <TableStatusMetricTab
-                   key={status.id}
-                   id={status.id}
-                   color={status.color}
-                   statusName={status.status_name}
-                   count={displayCount}
-                   isSelected={isSelected}
-                   onClick={() => setSelectedStatus(status.id)} />                  
-                );
-              })}
-            </div>
-          </div>
-
-        
-
-        {/* Full-width search / filter / actions toolbar */}
+          {/* Status filter dropdown + toolbar */}
         <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
           <ListToolBar
+            statusSlot={
+              <StatusFilterDropdown
+                statuses={statuses}
+                selectedStatus={selectedStatus}
+                onStatusChange={setSelectedStatus}
+                statusBreakdown={leadsData.statusBreakdown}
+                totalCount={totalCount}
+                allLabel="All Leads"
+              />
+            }
             showSearch
             searchPlaceholder="Search leads..."
             searchValue={searchTerm}
@@ -340,12 +315,12 @@ export default function LeadsPage() {
             }
           />
         </div>
-
+        
         <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
           <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
             <CustomTableContainer pagination={totalCount > 0 && (
-                <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
-                  <div>
+                <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8 flex-wrap sm:flex-nowrap">
+                  <div className="flex items-center gap-1">
                     Showing{' '}
                     <span className="primary-text-regular text-leadgaze-muted">
                       {(currentPage - 1) * itemsPerPage + 1}
@@ -359,6 +334,15 @@ export default function LeadsPage() {
                       {totalCount}
                     </span>{' '}
                     enteries
+                  </div>
+                  <div className="flex w-full max-w-full min-w-0 items-center justify-end px-2">
+                      <PageSizeSelector
+                      value={pageSize}
+                      onChange={(val) => {
+                        setPageSize(val);
+                        setCurrentPage(1);
+                      }}
+                    />
                   </div>
                   <Pagination className="w-auto">
                     <PaginationContent>
@@ -401,7 +385,7 @@ export default function LeadsPage() {
                       </PaginationItem>
                     </PaginationContent>
                   </Pagination>
-                </div>
+                </div>                
               )}>
                     <Table>
                       <TableHeader>

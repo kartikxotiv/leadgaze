@@ -8,6 +8,7 @@ interface DetailHeaderProps extends Omit<React.HTMLAttributes<HTMLDivElement>, '
   subtitle?: React.ReactNode;
   email?: string;
   actions?: React.ReactNode;
+  right?: React.ReactNode;
 }
 
 export function DetailHeader({
@@ -16,6 +17,7 @@ export function DetailHeader({
   subtitle,
   email,
   actions,
+  right,
   className,
   ...props
 }: DetailHeaderProps) {
@@ -65,6 +67,12 @@ export function DetailHeader({
       {actions && (
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           {actions}
+        </div>
+      )}
+
+      {right && (
+        <div className="flex shrink-0 items-center sm:ml-auto">
+          {right}
         </div>
       )}
     </div>

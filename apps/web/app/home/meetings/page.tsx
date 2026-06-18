@@ -83,6 +83,7 @@ import {
 import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
+import { PageSizeSelector } from '@kit/ui/page-size-selector';
 
 function MeetingsPageSkeleton() {
   return (
@@ -145,7 +146,8 @@ export default function MeetingsPage() {
     to: undefined,
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const [pageSize, setPageSize] = useState(15);
+  const itemsPerPage = pageSize;
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -294,7 +296,7 @@ export default function MeetingsPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm, statusFilter, pageSize]);
 
   const filteredMeetings = useMemo(() => {
     return meetings.filter((meeting: Meeting) => {
@@ -595,7 +597,7 @@ export default function MeetingsPage() {
           <CustomTableContainer
             pagination={totalCount > 0 && (
               <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
-                <div>
+                <div className="flex items-center gap-1">
                   Showing{' '}
                   <span className="text-foreground font-medium">
                     {(currentPage - 1) * itemsPerPage + 1}
@@ -610,6 +612,15 @@ export default function MeetingsPage() {
                   </span>{' '}
                   meetings
                 </div>
+                <div className="flex w-full max-w-full min-w-0 items-center justify-end px-2">
+                                      <PageSizeSelector
+                                      value={pageSize}
+                                      onChange={(val) => {
+                                        setPageSize(val);
+                                        setCurrentPage(1);
+                                      }}
+                                    />
+                                  </div>
                 <Pagination className="w-auto">
                   <PaginationContent>
                     <PaginationItem>
