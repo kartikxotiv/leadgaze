@@ -12,15 +12,14 @@ import {
   Edit2,
   Plus,
   RotateCcw,
-  Shield,
   Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { getWorkspaceSubscriptionService } from '@kit/core/services';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { Card, CardContent } from '@kit/ui/card';
+import { StatusFilterDropdown } from '@kit/ui/status-filter-dropdown';
+import { ListToolBar } from '@kit/ui/list-toolbar';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 import { PageBody, PageHeader } from '@kit/ui/page';
@@ -35,8 +34,8 @@ import {
 } from '@kit/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
-import { cn } from '@kit/ui/utils';
 
+import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getModuleKeyFromPath } from '~/lib/rbac/route-module-map';
@@ -44,6 +43,7 @@ import { getRolesService } from '~/services/roles.service';
 import {
   type SeatAssignment,
   getSeatAssignmentsService,
+  getWorkspaceSubscriptionService,
 } from '~/services/subscription.service';
 import {
   type PendingInvitation,
@@ -58,6 +58,8 @@ import {
 
 import { InviteMemberDialog } from './components/invite-member-dialog';
 import { UpdateMemberDialog } from './components/update-member-dialog';
+import { Card, CardContent } from '@kit/ui/card';
+import { cn } from '@kit/ui/utils';
 
 function TeamMembersPageSkeleton() {
   return (
@@ -126,6 +128,8 @@ export default function TeamMembersPage() {
   const [statusFilter, setStatusFilter] = useState<
     'all' | 'accepted' | 'pending'
   >('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   // Fetch workspace subscription status for seat capacity
   const { data: subscriptionData } = useQuery({
@@ -210,15 +214,27 @@ export default function TeamMembersPage() {
 
   // Apply the active status filter to the member list shown in the table
   const members = useMemo(() => {
+    let filtered: WorkspaceMember[];
     switch (statusFilter) {
       case 'accepted':
-        return activeMembers;
+        filtered = activeMembers;
+        break;
       case 'pending':
-        return pendingMembers;
+        filtered = pendingMembers;
+        break;
       default:
-        return allMembers;
+        filtered = allMembers;
     }
-  }, [statusFilter, allMembers, activeMembers, pendingMembers]);
+    if (debouncedSearchTerm) {
+      const term = debouncedSearchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (m: WorkspaceMember) =>
+          (m.user?.user_metadata?.full_name || '').toLowerCase().includes(term) ||
+          (m.user?.email || '').toLowerCase().includes(term),
+      );
+    }
+    return filtered;
+  }, [statusFilter, allMembers, activeMembers, pendingMembers, debouncedSearchTerm]);
 
   // Remove member mutation
   const removeMutation = useMutation({
@@ -258,6 +274,23 @@ export default function TeamMembersPage() {
 
   const pendingInvitations: PendingInvitation[] =
     (pendingInvitationsData?.data as PendingInvitation[]) || [];
+
+  // Status items for StatusFilterDropdown
+  const memberStatusItems = useMemo(
+    () => [
+      { id: 'accepted', status_name: 'Active', color: '#22c55e' },
+      { id: 'pending', status_name: 'Pending', color: '#eab308' },
+    ],
+    [],
+  );
+
+  const memberStatusBreakdown = useMemo(
+    () => ({
+      accepted: { count: activeMembers.length },
+      pending: { count: pendingInvitations.length || pendingMembers.length },
+    }),
+    [activeMembers.length, pendingInvitations.length, pendingMembers.length],
+  );
 
   // Delete invitation mutation
   const deleteInvitationMutation = useMutation({
@@ -344,129 +377,16 @@ export default function TeamMembersPage() {
   return (
     <ModuleGuard module="team_members">
       <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
-        <PageHeader
-          title={`Members (${statusFilter === 'pending' ? pendingInvitations.length : members.length})`}
-          description={
-            statusFilter === 'all'
-              ? 'Manage your workspace team members and permissions'
-              : statusFilter === 'accepted'
-                ? 'Showing active members only'
-                : 'Showing pending invitations only'
-          }
-        >
-          <div className="flex items-center gap-2">
-            {/* {canAccess('team_members', 'create') && (
-                <Button
-                  onClick={() => setInviteDialogOpen(true)}
-                  size="sm"
-                  className="h-9 gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Invite Member
-                </Button>
-              )} */}
-
-            {canAccess('team_members', 'create') && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    onClick={() => setInviteDialogOpen(true)}
-                    className="dark:dark-background-color h-9 w-9 bg-white p-0 hover:cursor-pointer"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-
-                <TooltipContent side="bottom">
-                  <p>Invite Member</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-
-            {/* <div className="mx-1 hidden h-6 w-px bg-gray-200 lg:block" /> */}
-
-            <ColumnVisibilitySelector
-              columns={columns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
-            />
-          </div>
-        </PageHeader>
-        {/* Summary Cards - Fixed at top */}
-        <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <Card
-              onClick={() => setStatusFilter('all')}
-              className={cn(
-                'hover:border-primary/50 bg-card rounded-sm-card inline-flex w-auto shrink-0 cursor-pointer transition-all',
-                statusFilter === 'all' &&
-                  'border-primary ring-primary/30 ring-1',
-              )}
-            >
-              <CardContent className={cn('flex items-center px-3 py-2')}>
-                <div className="flex items-center gap-2 whitespace-nowrap">
-                  <div className="bg-activity-1 h-2 w-2 shrink-0 rounded-full" />
-                  <span
-                    className={cn(
-                      'primary-text-medium text-leadgaze-dark uppercase dark:text-white',
-                    )}
-                  >
-                    Total Members ({allMembers.length})
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card
-              onClick={() => setStatusFilter('accepted')}
-              className={cn(
-                'hover:border-primary/50 bg-card rounded-sm-card inline-flex w-auto shrink-0 cursor-pointer transition-all',
-                statusFilter === 'accepted' &&
-                  'border-primary ring-primary/30 ring-1',
-              )}
-            >
-              <CardContent className={cn('flex items-center px-3 py-2')}>
-                <div className="flex items-center gap-2 whitespace-nowrap">
-                  <div className="bg-activity-2 h-2 w-2 shrink-0 rounded-full" />
-                  <span
-                    className={cn(
-                      'primary-text-medium text-leadgaze-dark uppercase dark:text-white',
-                    )}
-                  >
-                    Active ({activeMembers.length})
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card
-              onClick={() => setStatusFilter('pending')}
-              className={cn(
-                'hover:border-primary/50 bg-card rounded-sm-card inline-flex w-auto shrink-0 cursor-pointer transition-all',
-                statusFilter === 'pending' &&
-                  'border-primary ring-primary/30 ring-1',
-              )}
-            >
-              <CardContent className={cn('flex items-center px-3 py-2')}>
-                <div className="flex items-center gap-2 whitespace-nowrap">
-                  <div className="bg-activity-4 h-2 w-2 shrink-0 rounded-full" />
-                  <span
-                    className={cn(
-                      'primary-text-medium text-leadgaze-dark uppercase dark:text-white',
-                    )}
-                  >
-                    Pending Invitations (
-                    {pendingInvitationsData?.data
-                      ? pendingInvitations.length
-                      : pendingMembers.length}
-                    )
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
+          <PageHeader
+            title={`Members (${statusFilter === 'pending' ? pendingInvitations.length : (statusFilter === 'all' ? allMembers.length : members.length)})`}
+            description={
+              statusFilter === 'all'
+                ? 'Manage your workspace team members and permissions'
+                : statusFilter === 'accepted'
+                  ? 'Showing active members only'
+                  : 'Showing pending invitations only'
+            }
+          ><div className="flex">
             {currentModule && (
               <Card
                 className={cn(
@@ -475,7 +395,6 @@ export default function TeamMembersPage() {
               >
                 <CardContent className={cn('flex items-center px-3 py-2')}>
                   <div className="flex items-center gap-2 whitespace-nowrap">
-                    <Shield className="text-activity-1 h-3.5 w-3.5 shrink-0" />
                     <span
                       className={cn(
                         'primary-text-medium text-leadgaze-dark uppercase dark:text-white',
@@ -494,40 +413,54 @@ export default function TeamMembersPage() {
                 </CardContent>
               </Card>
             )}
-
-            {canViewSubscription && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    onClick={() => (window.location.href = '/org/subscription')}
-                    className="dark:dark-background-color h-9 w-9 bg-white p-0 hover:cursor-pointer"
-                  >
-                    <CreditCard className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p>Manage Subscription</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
           </div>
-        </div>
+        </PageHeader>
+          
       </div>
 
-      {/* <div className="flex min-h-0 flex-col space-y-6">
-            <Card className="flex min-h-0 flex-col border-none shadow-none bg-transparent">
-              <CardHeader className="shrink-0 py-4 px-0">
-                <div>
-                  <CardTitle className="leading-tight">Members</CardTitle>
-                  <CardDescription>
-                    Manage team members and their roles
-                  </CardDescription>
-                </div>
-              </CardHeader>              
-            </Card>
-
-          </div> */}
+        {/* Toolbar with search, status filter, actions */}
+        <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+          <ListToolBar
+            statusSlot={
+              <StatusFilterDropdown
+                statuses={memberStatusItems}
+                selectedStatus={statusFilter}
+                onStatusChange={(id) =>
+                  setStatusFilter(id as 'all' | 'accepted' | 'pending')
+                }
+                statusBreakdown={memberStatusBreakdown}
+                totalCount={allMembers.length}
+                allLabel="All Members"
+              />
+            }
+            showSearch
+            searchPlaceholder="Search members..."
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            actions={[
+              ...(canAccess('team_members', 'create')
+                ? [
+                    {
+                      key: 'invite',
+                      label: 'Invite Member',
+                      icon: Plus,
+                      onClick: () => setInviteDialogOpen(true),
+                      show: true,
+                      buttonVariant: 'default' as const,
+                    },
+                  ]
+                : []),              
+            ]}
+            columnVisibilitySlot={
+              <ColumnVisibilitySelector
+                columns={columns}
+                visibility={visibility}
+                onToggle={toggleVisibility}
+                onReset={reset}
+              />
+            }
+          />
+        </div>
 
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">

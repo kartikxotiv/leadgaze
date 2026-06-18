@@ -186,6 +186,7 @@ export function EmployeesPage(props: {
             onDeleteRequested={controller.setEmployeeToDelete}
             onEditRequested={controller.onEditRequested}
             onPageChange={controller.onPageChange}
+            onPageSizeChange={controller.onPageSizeChange}
             pagination={controller.pagination}
             visibility={visibility}
           />

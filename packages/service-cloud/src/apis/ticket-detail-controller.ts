@@ -6,145 +6,6 @@ import { catchAsync, successDataResponse } from '../utils/response-handler';
 import { hasServiceCloudManageInboxPermission } from './_shared/permissions';
 import { assertServiceCloudWorkspaceAccess } from './_shared/workspace-access';
 
-function uniqueValues(values: Array<string | null | undefined>) {
-  const seen = new Set<string>();
-
-  return values
-    .map((value) => value?.trim())
-    .filter((value): value is string => Boolean(value))
-    .filter((value) => {
-      if (seen.has(value)) return false;
-      seen.add(value);
-      return true;
-    });
-}
-
-function emailLookupKeys(email: any) {
-  return uniqueValues([
-    email?.thread_key,
-    email?.internet_message_id,
-    email?.provider_message_id,
-    email?.gmail_message_id,
-    email?.in_reply_to,
-  ]);
-}
-
-function postgrestContainsFilter(column: string, value: string) {
-  if (/[,\r\n]/.test(value)) return null;
-
-  return `${column}.ilike.%${value.replace(/%/g, '')}%`;
-}
-
-function normalizeEmailAddress(value?: string | null) {
-  return value?.trim().toLowerCase() || null;
-}
-
-function normalizeRecipients(value: unknown) {
-  if (Array.isArray(value)) {
-    return value
-      .map((item) => normalizeEmailAddress(String(item)))
-      .filter(Boolean) as string[];
-  }
-
-  if (typeof value === 'string') {
-    return value
-      .split(',')
-      .map((item) => normalizeEmailAddress(item))
-      .filter(Boolean) as string[];
-  }
-
-  return [];
-}
-
-function normalizeConversationSubject(value?: string | null) {
-  let subject = String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ');
-
-  while (/^(re|fw|fwd)\s*:\s*/i.test(subject)) {
-    subject = subject.replace(/^(re|fw|fwd)\s*:\s*/i, '').trim();
-  }
-
-  return subject;
-}
-
-function collectCustomerEmails(ticket: any, linkedEmails: any[]) {
-  const candidates = [
-    ticket.customer?.email,
-    ...linkedEmails.flatMap((email: any) =>
-      email.direction === 'inbound'
-        ? [email.from_email]
-        : [email.to_email, ...normalizeRecipients(email.to_emails)],
-    ),
-  ];
-
-  return uniqueValues(candidates.map((value) => normalizeEmailAddress(value)));
-}
-
-async function getAccessibleSupportInboxAccounts(
-  supabase: any,
-  workspaceId: string,
-  userId: string,
-) {
-  const { data: membership, error: membershipError } = await supabase
-    .from('workspace_members')
-    .select(
-      `
-        role:workspace_roles!workspace_members_role_id_fkey(role_key)
-      `,
-    )
-    .eq('workspace_id', workspaceId)
-    .eq('user_id', userId)
-    .eq('status', 'accepted')
-    .maybeSingle();
-
-  if (membershipError) throw membershipError;
-
-  const role = Array.isArray(membership?.role)
-    ? membership.role[0]
-    : membership?.role;
-  const isAdmin = role?.role_key === 'admin';
-
-  const { data: accounts, error: accountsError } = await (supabase as any)
-    .schema('core')
-    .from('email_accounts')
-    .select('id,email,owner_user_id,access_scope,inbound_enabled,settings')
-    .eq('workspace_id', workspaceId);
-
-  if (accountsError) throw accountsError;
-
-  const { data: grants, error: grantsError } = await (supabase as any)
-    .schema('core')
-    .from('email_account_access_grants')
-    .select('email_account_id,can_send')
-    .eq('workspace_id', workspaceId)
-    .eq('grantee_user_id', userId);
-
-  if (grantsError) throw grantsError;
-
-  const grantedAccountIds = new Set(
-    ((grants as Array<{ email_account_id: number; can_send: boolean }>) ?? [])
-      .filter((grant) => grant.can_send)
-      .map((grant) => grant.email_account_id),
-  );
-
-  return (accounts ?? [])
-    .filter((account: any) => !account.settings?.deleted_at)
-    .filter((account: any) => account.inbound_enabled !== false)
-    .filter(
-      (account: any) =>
-        isAdmin ||
-        account.owner_user_id === userId ||
-        account.access_scope === 'workspace' ||
-        grantedAccountIds.has(account.id),
-    )
-    .map((account: any) => ({
-      id: account.id,
-      email: normalizeEmailAddress(account.email),
-    }));
-}
-
 export const getServiceCloudTicketDetailController = catchAsync(
   async ({ request, params }) => {
     const ticketId = params?.ticketId ?? '';
@@ -289,10 +150,6 @@ export const getServiceCloudTicketDetailController = catchAsync(
     if (ticketAssignees.error) throw ticketAssignees.error;
     if (ticketEmailThreads.error) throw ticketEmailThreads.error;
 
-    const accessibleInboxAccounts = canManageInbox
-      ? await getAccessibleSupportInboxAccounts(supabase, workspaceId, user.id)
-      : [];
-
     // Filter workspace members to only those with service cloud module access
     const filteredMemberIds = (workspaceMembers.data ?? [])
       .filter((member: any) => {
@@ -363,155 +220,28 @@ export const getServiceCloudTicketDetailController = catchAsync(
 
     if (coreEmailsResult.error) throw coreEmailsResult.error;
     const linkedEmails: any[] = coreEmailsResult.data ?? [];
-    const emailById = new Map(
-      linkedEmails.map((email: any) => [email.id, email]),
-    );
 
     if (memberAccountsResult.error) throw memberAccountsResult.error;
     const memberAccounts = memberAccountsResult.data;
 
-    // Thread emails depend on core emails (need thread_keys), so run separately
-    const threadKeys = uniqueValues([
-      ...(ticketEmailThreads.data ?? []).map(
-        (thread: any) => thread.thread_key,
-      ),
-      ...linkedEmails.flatMap(emailLookupKeys),
-    ]);
-
-    if (threadKeys.length > 0) {
-      const referenceFilters = threadKeys
-        .map((key) => postgrestContainsFilter('email_references', key))
-        .filter(Boolean)
-        .slice(0, 25)
-        .join(',');
-
-      const [threadKeyEmails, replyEmails, referencedEmails] =
-        await Promise.all([
-          (supabase as any)
-            .schema('core')
-            .from('emails')
-            .select('*')
-            .eq('workspace_id', workspaceId)
-            .eq('is_deleted', false)
-            .in('thread_key', threadKeys),
-          (supabase as any)
-            .schema('core')
-            .from('emails')
-            .select('*')
-            .eq('workspace_id', workspaceId)
-            .eq('is_deleted', false)
-            .in('in_reply_to', threadKeys),
-          referenceFilters
-            ? (supabase as any)
-                .schema('core')
-                .from('emails')
-                .select('*')
-                .eq('workspace_id', workspaceId)
-                .eq('is_deleted', false)
-                .or(referenceFilters)
-            : Promise.resolve({ data: [], error: null }),
-        ]);
-
-      if (threadKeyEmails.error) throw threadKeyEmails.error;
-      if (replyEmails.error) throw replyEmails.error;
-      if (referencedEmails.error) throw referencedEmails.error;
-      [
-        ...(threadKeyEmails.data ?? []),
-        ...(replyEmails.data ?? []),
-        ...(referencedEmails.data ?? []),
-      ].forEach((email: any) => emailById.set(email.id, email));
-    }
-
-    const customerEmails = collectCustomerEmails(ticket, linkedEmails);
-    const emailAccountIds = Array.from(
-      new Set(
-        [
-          ticket.support_email_account_id,
-          ...linkedEmails.map((email: any) => email.email_account_id),
-          ...accessibleInboxAccounts.map((account: any) => account.id),
-        ].filter(Boolean),
-      ),
-    );
-    const supportInboxEmails: string[] = Array.from(
-      new Set<string>(
-        accessibleInboxAccounts
-          .map((account: any) => normalizeEmailAddress(account.email))
-          .filter((email: string | null): email is string => Boolean(email)),
-      ),
-    );
-    const subjectKeys = uniqueValues([
-      normalizeConversationSubject(ticket.subject),
-      ...linkedEmails.map((email: any) =>
-        normalizeConversationSubject(email.subject),
-      ),
-    ]).filter(Boolean);
-
-    if (
-      canManageInbox &&
-      (emailAccountIds.length > 0 || supportInboxEmails.length > 0) &&
-      customerEmails.length > 0 &&
-      subjectKeys.length > 0
-    ) {
-      const participantFilters = customerEmails
-        .filter((email) => !/[,\r\n]/.test(email))
-        .flatMap((email) => [`from_email.eq.${email}`, `to_email.eq.${email}`])
-        .join(',');
-      const supportInboxFilters = [
-        ...(emailAccountIds.length > 0
-          ? [`email_account_id.in.(${emailAccountIds.join(',')})`]
-          : []),
-        ...supportInboxEmails
-          .filter((email) => !/[,\r\n]/.test(email))
-          .flatMap((email) => [
-            `from_email.ilike.${email}`,
-            `to_email.ilike.${email}`,
-          ]),
-      ].join(',');
-
-      const { data: participantEmails, error: participantEmailError } =
-        participantFilters && supportInboxFilters
-          ? await (supabase as any)
-              .schema('core')
-              .from('emails')
-              .select('*')
-              .eq('workspace_id', workspaceId)
-              .eq('is_deleted', false)
-              .or(supportInboxFilters)
-              .or(participantFilters)
-              .order('received_at', { ascending: false, nullsFirst: false })
-              .order('sent_at', { ascending: false, nullsFirst: false })
-              .order('created_at', { ascending: false })
-              .limit(200)
-          : { data: [], error: null };
-
-      if (participantEmailError) throw participantEmailError;
-
-      (participantEmails ?? [])
-        .filter((email: any) =>
-          subjectKeys.includes(normalizeConversationSubject(email.subject)),
-        )
-        .forEach((email: any) => emailById.set(email.id, email));
-    }
+    // Ticket conversation is sourced exclusively from ticket_emails (the
+    // source of truth). DB triggers auto-link legitimate replies via
+    // core_email_matches_thread(). The controller does NOT perform its
+    // own thread-key / subject / participant discovery, which previously
+    // pulled in many unrelated emails.
 
     const memberAccountById = new Map(
       (memberAccounts ?? []).map((account: any) => [account.id, account]),
     );
-    const linkedEmailById = new Map(
-      (ticketEmails.data ?? []).map((item: any) => [item.email_id, item]),
+    const coreEmailById = new Map(
+      linkedEmails.map((email: any) => [email.id, email]),
     );
-    const emails = Array.from(emailById.values())
-      .map((email: any) => ({
-        ...(linkedEmailById.get(email.id) ?? {
-          id: `thread:${email.id}`,
-          workspace_id: workspaceId,
-          ticket_id: ticketId,
-          email_id: email.id,
-          email_role: 'thread_message',
-          is_public: true,
-          created_at: email.created_at,
-        }),
-        email,
+    const emails = (ticketEmails.data ?? [])
+      .map((item: any) => ({
+        ...item,
+        email: coreEmailById.get(item.email_id) ?? null,
       }))
+      .filter((item: any) => item.email !== null)
       .sort((left: any, right: any) => {
         const leftDate =
           left.email?.received_at ??

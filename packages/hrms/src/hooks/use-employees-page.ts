@@ -10,7 +10,6 @@ import {
   type EmployeeStatusFilter,
   allEmployeeStatuses,
   employeeOptionsQueryKey,
-  employeePageSize,
   employeesQueryKey,
   emptyEmployeeOptions,
   emptySummary,
@@ -30,6 +29,7 @@ export function useEmployeesPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [isFiltersVisible, setIsFiltersVisible] = useState(false);
   const [statusFilter, setStatusFilter] =
@@ -48,7 +48,7 @@ export function useEmployeesPage() {
       ...employeesQueryKey,
       {
         page,
-        pageSize: employeePageSize,
+        pageSize,
         search: normalizedSearchTerm,
         status: statusFilter,
       },
@@ -56,7 +56,7 @@ export function useEmployeesPage() {
     queryFn: () =>
       listPaginatedEmployeesService({
         page,
-        pageSize: employeePageSize,
+        pageSize,
         search: normalizedSearchTerm || undefined,
         status: statusFilter === allEmployeeStatuses ? undefined : statusFilter,
       }),
@@ -80,7 +80,7 @@ export function useEmployeesPage() {
     hasNextPage: false,
     hasPreviousPage: false,
     page,
-    pageSize: employeePageSize,
+    pageSize,
     total: 0,
     totalPages: 0,
   };
@@ -194,6 +194,10 @@ export function useEmployeesPage() {
       }
     },
     onPageChange: setPage,
+    onPageSizeChange: (newPageSize: number) => {
+      setPageSize(newPageSize);
+      setPage(1);
+    },
     onSearchTermChange: (value: string) => {
       setSearchTerm(value);
       setPage(1);

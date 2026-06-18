@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type React from 'react';
 
 import { useQuery } from '@tanstack/react-query';
@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { ListToolBar } from '@kit/ui/list-toolbar';
 import {
   Dialog,
   DialogContent,
@@ -54,6 +54,9 @@ import {
   getServiceCloudResourceService,
   updateServiceCloudResourceService,
 } from '../../services';
+import CustomTableContainer from '@kit/ui/custom-table-container';
+import { PageBody } from '@kit/ui/page';
+import { TablePagination } from '@kit/ui/table-pagination';
 
 const PRESET_COLORS = [
   '#64748b', // Slate
@@ -105,6 +108,8 @@ type ResourcePageProps = {
   queryParams?: Record<string, string>;
   toolbar?: React.ReactNode;
   createLabel?: string;
+  /** Label shown in the pagination bar, e.g. "tickets", "customers". Defaults to the resource name. */
+  entityLabel?: string;
 };
 
 function getInitialForm(
@@ -133,7 +138,23 @@ export function ServiceCloudResourcePage({
   queryParams = {},
   toolbar,
   createLabel,
+  entityLabel,
 }: ResourcePageProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset to first page when search or page size changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm, pageSize]);
+
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ServiceCloudRecord | null>(null);
   const [form, setForm] = useState<ServiceCloudRecord>(() =>
@@ -170,6 +191,25 @@ export function ServiceCloudResourcePage({
     enabled: Boolean(workspaceId),
   });
 
+  const filteredData = useMemo(() => {
+    if (!debouncedSearchTerm) return data;
+    const term = debouncedSearchTerm.toLowerCase();
+    return data.filter((record: ServiceCloudRecord) =>
+      columns.some((col) => {
+        const val = record[col.key];
+        return val != null && String(val).toLowerCase().includes(term);
+      }),
+    );
+  }, [data, debouncedSearchTerm, columns]);
+
+  // Pagination derived values
+  const totalCount = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const paginatedData = useMemo(
+    () => filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [filteredData, currentPage, pageSize],
+  );
+  
   const openCreate = () => {
     setEditing(null);
     setForm(getInitialForm(fields, defaults));
@@ -239,18 +279,47 @@ export function ServiceCloudResourcePage({
   };
 
   return (
-    <CardWidgetContainer className="mt-2" title={title} desc="Connect Gmail or SMTP/IMAP accounts for Core email." icon2={<div className="flex items-center gap-2">
-          {toolbar}
-          {canCreate ? (
-            <Button onClick={openCreate}>
-              <Plus className="mr-2 h-4 w-4" />
-              {createLabel || 'New'}
-            </Button>
-          ) : null}
-        </div>
-      }
-    >
-      <div className="mb-2">
+    <>
+    <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+      <ListToolBar
+        showSearch
+        searchPlaceholder={`Search ${title.toLowerCase()}...`}
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        statusSlot={toolbar}
+        actions={
+          canCreate
+            ? [
+                {
+                  key: 'create',
+                  label: createLabel || 'New',
+                  icon: Plus,
+                  onClick: openCreate,
+                  buttonVariant: 'default' as const,
+                },
+              ]
+            : []
+        }
+      />
+      </div>
+      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+          <CustomTableContainer
+            pagination={
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={totalCount}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(val) => {
+                  setPageSize(val);
+                  setCurrentPage(1);
+                }}
+                entityLabel={entityLabel ?? resource}
+              />
+            }
+          >
         <Table>
           <TableHeader>
             <TableRow>
@@ -279,7 +348,7 @@ export function ServiceCloudResourcePage({
                   ) : null}
                 </TableRow>
               ))
-            ) : data.length === 0 ? (
+            ) : filteredData.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={columns.length + 1}
@@ -289,7 +358,7 @@ export function ServiceCloudResourcePage({
                 </TableCell>
               </TableRow>
             ) : (
-              data.map((record) => (
+              paginatedData.map((record: ServiceCloudRecord) => (
                 <TableRow key={record.id}>
                   {columns.map((column) => (
                     <TableCell
@@ -333,7 +402,9 @@ export function ServiceCloudResourcePage({
             )}
           </TableBody>
         </Table>
-      </div>
+        </CustomTableContainer>
+          </div>
+        </PageBody>
       <AlertDialog
         open={Boolean(deletingRecord)}
         onOpenChange={(open) => !open && setDeletingRecord(null)}
@@ -501,7 +572,7 @@ export function ServiceCloudResourcePage({
           </DialogContent>
         </Dialog>
       ) : null}
-    </CardWidgetContainer>
+    </>
   );
 }
 

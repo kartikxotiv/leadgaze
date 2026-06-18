@@ -197,7 +197,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
           <DialogTrigger asChild>
             <Button size="sm" variant="ghost" className="gap-1 text-sm text-blue-500 hover:text-blue-600">
               <Plus className="h-4 w-4" />
-              Set
+              Add Reminder
             </Button>
           </DialogTrigger>
           <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[400px]">
