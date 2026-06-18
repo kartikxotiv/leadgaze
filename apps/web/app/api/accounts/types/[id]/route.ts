@@ -1,6 +1,6 @@
 import { enhanceRouteHandler } from '@kit/next/routes';
 
-import { updateAccountType, deleteAccountType } from '../../../controller';
+import { deleteAccountType, updateAccountType } from '../../controller';
 
 export const PATCH = enhanceRouteHandler(updateAccountType, {
   auth: false,
