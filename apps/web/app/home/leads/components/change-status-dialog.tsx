@@ -22,8 +22,10 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 
+import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
 import { updateLeadService } from '~/services/leads.service';
+import { ManageableStatusSelect } from '../../_components/manageable-status-select';
 
 interface ChangeStatusDialogProps {
   open: boolean;
@@ -45,6 +47,7 @@ export function ChangeStatusDialog({
   lead,
   statuses,
 }: ChangeStatusDialogProps) {
+  const { currentWorkspace: workspace } = useRBAC();
   const [selectedStatusId, setSelectedStatusId] = useState(
     lead?.status_id || '',
   );
@@ -58,7 +61,7 @@ export function ChangeStatusDialog({
 
     setIsSaving(true);
     try {
-      // Find selected status to get its key
+      // Find selected status to get its details if present in the passed statuses prop (fallback if not loaded yet)
       const selectedStatus = statuses.find((s) => s.id === selectedStatusId);
 
       // Calculate new lead score
@@ -83,9 +86,11 @@ export function ChangeStatusDialog({
         totalScore,
       });
 
-      toast.info(
-        `Recalculated Score: ${totalScore} for ${selectedStatus?.status_name}`,
-      );
+      if (selectedStatus?.status_name) {
+        toast.info(
+          `Recalculated Score: ${totalScore} for ${selectedStatus?.status_name}`,
+        );
+      }
 
       await updateLeadService(lead.id, {
         status_id: selectedStatusId,
@@ -113,27 +118,15 @@ export function ChangeStatusDialog({
         <div className="grid gap-4 px-6 py-4 flex-1 overflow-y-auto">
           <div className="grid gap-2">
             <Label htmlFor="status">Lead Status</Label>
-            <Select
-              value={selectedStatusId}
-              onValueChange={setSelectedStatusId}
-            >
-              <SelectTrigger id="status">
-                <SelectValue placeholder="Select a status" />
-              </SelectTrigger>
-              <SelectContent>
-                {statuses.map((status) => (
-                  <SelectItem key={status.id} value={status.id}>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="h-2 w-2 rounded-full"
-                        style={{ backgroundColor: status.color }}
-                      />
-                      {status.status_name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="mt-1">
+              <ManageableStatusSelect
+                moduleKey="leads"
+                workspaceId={workspace?.id ?? ''}
+                value={selectedStatusId}
+                onValueChange={setSelectedStatusId}
+                disabled={isSaving}
+              />
+            </div>
           </div>
         </div>
         

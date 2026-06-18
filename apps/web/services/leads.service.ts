@@ -208,6 +208,42 @@ const getLeadStatusesService = asyncHandlerClient(
   },
 );
 
+const createLeadStatusService = asyncHandlerClient(
+  async (payload: {
+    workspace_id: string;
+    status_name: string;
+    color?: string;
+    icon?: string;
+    is_closed?: boolean;
+  }) => {
+    const response = await ApiClient.post('/leads/statuses', payload);
+    return response.data?.data;
+  },
+);
+
+const updateLeadStatusService = asyncHandlerClient(
+  async (
+    statusId: string,
+    payload: {
+      status_name?: string;
+      color?: string;
+      icon?: string;
+      is_closed?: boolean;
+      is_active?: boolean;
+    },
+  ) => {
+    const response = await ApiClient.patch(`/leads/statuses/${statusId}`, payload);
+    return response.data?.data;
+  },
+);
+
+const deleteLeadStatusService = asyncHandlerClient(
+  async (statusId: string) => {
+    const response = await ApiClient.delete(`/leads/statuses/${statusId}`);
+    return response.data?.data;
+  },
+);
+
 const updateLeadService = asyncHandlerClient(
   async (leadId: string, payload: UpdateLeadPayload) => {
     const response = await ApiClient.patch(`/leads/${leadId}`, payload);
@@ -259,6 +295,9 @@ export {
   getLeadSourcesService,
   createLeadSourceService,
   getLeadStatusesService,
+  createLeadStatusService,
+  updateLeadStatusService,
+  deleteLeadStatusService,
   updateLeadService,
   deleteLeadService,
   sendLeadEmailService,

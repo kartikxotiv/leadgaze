@@ -32,6 +32,7 @@ import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { createAccountService } from '~/services/accounts.service';
 
 import { IndustrySelect } from '../../_components/industry-select';
+import { ManageableStatusSelect } from '../../_components/manageable-status-select';
 
 interface CreateAccountDialogProps {
   open: boolean;
@@ -52,6 +53,7 @@ export function CreateAccountDialog({
     phone_number: '',
     industry_id: '',
     company_size: '',
+    account_type: '',
     billing_street: '',
     billing_city: '',
     billing_state: '',
@@ -86,6 +88,7 @@ export function CreateAccountDialog({
       phone_number: '',
       industry_id: '',
       company_size: '',
+      account_type: '',
       billing_street: '',
       billing_city: '',
       billing_state: '',
@@ -101,7 +104,11 @@ export function CreateAccountDialog({
       toast.error('Account name is required');
       return;
     }
-    mutation.mutate(formData);
+    const payload = {
+      ...formData,
+      account_type: formData.account_type || null,
+    };
+    mutation.mutate(payload);
   };
 
   return (
@@ -114,9 +121,13 @@ export function CreateAccountDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form id="create-account-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-6 p-6 py-4">
+        <form
+          id="create-account-form"
+          onSubmit={handleSubmit}
+          className="flex-1 space-y-6 overflow-y-auto p-6 py-4"
+        >
           <div className="space-y-4">
-            <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase">
+            <h3 className="primary-heading text-leadgaze-dark uppercase dark:text-white">
               Basic Information
             </h3>
             <Separator />
@@ -191,10 +202,25 @@ export function CreateAccountDialog({
                 </Select>
               </div>
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="account_type">Account Type</Label>
+                <ManageableStatusSelect
+                  moduleKey="accounts"
+                  workspaceId={workspace?.id ?? ''}
+                  value={formData.account_type}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, account_type: value })
+                  }
+                  placeholder="Select type"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-4 pt-4">
-            <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase">
+            <h3 className="primary-heading text-leadgaze-dark uppercase dark:text-white">
               Address Information
             </h3>
             <Separator />
@@ -275,7 +301,7 @@ export function CreateAccountDialog({
           </div>
         </form>
 
-        <DialogFooter className="border-t p-6 mt-auto">
+        <DialogFooter className="mt-auto border-t p-6">
           <Button
             type="button"
             variant="outline"
@@ -283,7 +309,11 @@ export function CreateAccountDialog({
           >
             Cancel
           </Button>
-          <Button type="submit" form="create-account-form" disabled={mutation.isPending}>
+          <Button
+            type="submit"
+            form="create-account-form"
+            disabled={mutation.isPending}
+          >
             {mutation.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (

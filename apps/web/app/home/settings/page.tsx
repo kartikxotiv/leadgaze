@@ -8,6 +8,13 @@ import pathsConfig from '~/config/paths.config';
 import { createI18nServerInstance } from '~/lib/i18n/i18n.server';
 import { withI18n } from '~/lib/i18n/with-i18n';
 import { requireUserInServerComponent } from '~/lib/server/require-user-in-server-component';
+import {
+  deleteAllTrustedDevices,
+  deleteTrustedDevice,
+  getTrustedDevices,
+} from '~/lib/trusted-devices/trusted-devices.actions';
+
+import { TrustedDevicesSignOutProvider } from './_components/trusted-devices-signout-provider';
 
 const callbackPath = pathsConfig.auth.callback;
 
@@ -35,11 +42,16 @@ function PersonalAccountSettingsPage() {
 
   return (
     <PageBody className="flex min-w-0 flex-1 shrink-0 flex-col">
-      <div className={'flex w-full flex-1 flex-col mt-2'}>
-        <PersonalAccountSettingsContainer
+      <div className={'mt-2 flex w-full flex-1 flex-col'}>
+        <TrustedDevicesSignOutProvider
           userId={userId}
           paths={paths}
           features={features}
+          trustedDevices={{
+            fetchDevices: getTrustedDevices,
+            removeDevice: deleteTrustedDevice,
+            removeAllDevices: deleteAllTrustedDevices,
+          }}
         />
       </div>
     </PageBody>

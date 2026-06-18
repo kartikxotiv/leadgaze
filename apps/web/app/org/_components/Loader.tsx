@@ -21,20 +21,44 @@ const loadingMessages = [
 ];
 
 export function FullScreenLoader() {
+  const [mounted, setMounted] = useState(false);
+
   const shuffledMessages = useMemo(
-    () => [...loadingMessages].sort(() => Math.random() - 0.5),
-    [],
+    () =>
+      mounted
+        ? [...loadingMessages].sort(() => Math.random() - 0.5)
+        : loadingMessages,
+    [mounted],
+  );
+
+  const particles = useMemo(
+    () =>
+      mounted
+        ? [...Array(15)].map(() => ({
+            left: Math.random() * 100,
+            top: Math.random() * 100,
+            duration: 3 + Math.random() * 4,
+            delay: Math.random() * 2,
+          }))
+        : [],
+    [mounted],
   );
 
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % shuffledMessages.length);
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [shuffledMessages]);
+  }, [mounted, shuffledMessages]);
 
   const message = shuffledMessages[index];
 
@@ -51,15 +75,15 @@ export function FullScreenLoader() {
 
       {/* Floating particles */}
       <div className="absolute inset-0 overflow-hidden">
-        {[...Array(15)].map((_, i) => (
+        {particles.map((p, i) => (
           <div
             key={i}
             className="bg-primary/20 absolute h-2 w-2 animate-bounce rounded-full"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDuration: `${3 + Math.random() * 4}s`,
-              animationDelay: `${Math.random() * 2}s`,
+              left: `${p.left}%`,
+              top: `${p.top}%`,
+              animationDuration: `${p.duration}s`,
+              animationDelay: `${p.delay}s`,
             }}
           />
         ))}

@@ -225,6 +225,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                   onChange={(e) =>
                     setFormData({ ...formData, due_date: e.target.value })
                   }
+                  onClick={(e) => e.currentTarget.showPicker()}
                 />
               </div>
             </div>
@@ -525,6 +526,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
                       onChange={(e) =>
                         setFormData({ ...formData, start_time: e.target.value })
                       }
+                      onClick={(e) => e.currentTarget.showPicker()}
                     />
                   </div>
                   <div className="space-y-2">
@@ -535,6 +537,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
                       onChange={(e) =>
                         setFormData({ ...formData, end_time: e.target.value })
                       }
+                      onClick={(e) => e.currentTarget.showPicker()}
                     />
                   </div>
                 </div>

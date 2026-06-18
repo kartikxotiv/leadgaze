@@ -67,7 +67,10 @@ export function PersonalAccountDropdown({
   const displayName =
     personalAccountData?.data?.name ?? account?.name ?? user?.email ?? '';
 
-  const selectedModule = localStorage.getItem('selected_module');
+  const selectedModule =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('selected_module')
+      : null;
 
   const profilePath =
     selectedModule === 'hrms'
