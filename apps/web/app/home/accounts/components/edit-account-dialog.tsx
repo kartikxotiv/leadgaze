@@ -15,9 +15,9 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@kit/ui/dialog';
 import {
   Form,
@@ -42,6 +42,7 @@ import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { Account, updateAccountService } from '~/services/accounts.service';
 
 import { IndustrySelect } from '../../_components/industry-select';
+import { ManageableStatusSelect } from '../../_components/manageable-status-select';
 
 const formSchema = z.object({
   account_name: z.string().min(1, 'Account Name is required'),
@@ -155,6 +156,10 @@ export function EditAccountDialog({
         employee_count: values.employee_count
           ? parseInt(values.employee_count)
           : null,
+        account_type:
+          values.account_type && values.account_type !== ''
+            ? values.account_type
+            : null,
       };
       return updateAccountService(account.id, payload);
     },
@@ -180,7 +185,11 @@ export function EditAccountDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <form
+            id="dialog-form"
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="flex-1 space-y-4 overflow-y-auto px-6 py-4"
+          >
             <Tabs defaultValue="general" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="general">General</TabsTrigger>
@@ -254,22 +263,16 @@ export function EditAccountDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Type</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Customer">Customer</SelectItem>
-                          <SelectItem value="Prospect">Prospect</SelectItem>
-                          <SelectItem value="Partner">Partner</SelectItem>
-                          <SelectItem value="Vendor">Vendor</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <ManageableStatusSelect
+                          moduleKey="accounts"
+                          workspaceId={workspace?.id ?? ''}
+                          value={field.value ?? ''}
+                          onValueChange={field.onChange}
+                          disabled={updateMutation.isPending}
+                          placeholder="Select type"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -490,24 +493,27 @@ export function EditAccountDialog({
                 />
               </TabsContent>
             </Tabs>
-
-            
           </form>
         </Form>
-        <DialogFooter className="border-t p-6 mt-auto">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={updateMutation.isPending}
-                className='mb-2'
-              >
-                Cancel
-              </Button>
-              <Button type="submit" form="dialog-form" disabled={updateMutation.isPending} className='mb-2'>
-                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </DialogFooter>
+        <DialogFooter className="mt-auto border-t p-6">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={updateMutation.isPending}
+            className="mb-2"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form="dialog-form"
+            disabled={updateMutation.isPending}
+            className="mb-2"
+          >
+            {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

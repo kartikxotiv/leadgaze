@@ -17,6 +17,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@kit/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@kit/ui/alert-dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import {
@@ -94,6 +104,7 @@ type ResourcePageProps = {
   emptyLabel?: string;
   queryParams?: Record<string, string>;
   toolbar?: React.ReactNode;
+  createLabel?: string;
 };
 
 function getInitialForm(
@@ -121,6 +132,7 @@ export function ServiceCloudResourcePage({
   emptyLabel = 'No records found.',
   queryParams = {},
   toolbar,
+  createLabel,
 }: ResourcePageProps) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ServiceCloudRecord | null>(null);
@@ -128,6 +140,24 @@ export function ServiceCloudResourcePage({
     getInitialForm(fields, defaults),
   );
   const [saving, setSaving] = useState(false);
+  const [deletingRecord, setDeletingRecord] = useState<ServiceCloudRecord | null>(null);
+
+  const getResourceSingleName = () => {
+    switch (resource) {
+      case 'tickets':
+        return 'ticket';
+      case 'customers':
+        return 'customer';
+      case 'statuses':
+        return 'status';
+      case 'priorities':
+        return 'priority';
+      case 'categories':
+        return 'category';
+      default:
+        return resource.endsWith('s') ? resource.slice(0, -1) : resource;
+    }
+  };
 
   const {
     data = [],
@@ -212,22 +242,142 @@ export function ServiceCloudResourcePage({
     <CardWidgetContainer className="mt-2" title={title} desc="Connect Gmail or SMTP/IMAP accounts for Core email." icon2={<div className="flex items-center gap-2">
           {toolbar}
           {canCreate ? (
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openCreate}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  New
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[560px] dark:border-slate-800 dark:bg-slate-950">
-                <div className="flex max-h-[90vh] flex-col">
-                  <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
-                    <DialogTitle>
-                      {editing ? `Edit ${title}` : `New ${title}`}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
-                    <div className="grid gap-4">
+            <Button onClick={openCreate}>
+              <Plus className="mr-2 h-4 w-4" />
+              {createLabel || 'New'}
+            </Button>
+          ) : null}
+        </div>
+      }
+    >
+      <div className="mb-2">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {columns.map((column) => (
+                <TableHead key={column.key}>{column.label}</TableHead>
+              ))}
+              {canEdit || canDelete ? (
+                <TableHead className="text-right">Actions</TableHead>
+              ) : null}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              [...Array(5)].map((_, i) => (
+                <TableRow key={`skeleton-${i}`}>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-[52px] px-4 py-2"
+                  >
+                    <Skeleton className="h-7 w-full" />
+                  </TableCell>
+                  {canEdit || canDelete ? (
+                    <TableCell className="bg-card px-4 text-right">
+                      <Skeleton className="ml-auto h-7 w-full" />
+                    </TableCell>
+                  ) : null}
+                </TableRow>
+              ))
+            ) : data.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length + 1}
+                  className="text-muted-foreground py-8 text-center"
+                >
+                  {emptyLabel}
+                </TableCell>
+              </TableRow>
+            ) : (
+              data.map((record) => (
+                <TableRow key={record.id}>
+                  {columns.map((column) => (
+                    <TableCell
+                      key={column.key}
+                      className={cn(
+                        column.key === 'name' &&
+                          'primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary',
+                      )}
+                    >
+                      {column.render
+                        ? column.render(record)
+                        : String(record[column.key] ?? '-')}
+                    </TableCell>
+                  ))}
+                  {canEdit || canDelete ? (
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        {canEdit ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEdit(record)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                        ) : null}
+                        {canDelete ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDeletingRecord(record)}
+                          >
+                            <Trash2 className="text-muted-foreground h-4 w-4" />
+                          </Button>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                  ) : null}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <AlertDialog
+        open={Boolean(deletingRecord)}
+        onOpenChange={(open) => !open && setDeletingRecord(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the{' '}
+              {getResourceSingleName()}{' '}
+              {deletingRecord?.subject || deletingRecord?.name
+                ? `"${deletingRecord.subject || deletingRecord.name}"`
+                : ''}{' '}
+              and remove it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingRecord) {
+                  void remove(deletingRecord);
+                  setDeletingRecord(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {canCreate || canEdit ? (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[560px] dark:border-slate-800 dark:bg-slate-950">
+            <div className="flex max-h-[90vh] flex-col">
+              <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+                <DialogTitle>
+                  {editing ? `Edit ${title}` : `New ${title}`}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
+                <div className="grid gap-4">
                   {fields.map((field) => (
                     <div key={field.key} className="space-y-2">
                       <Label>{field.label}</Label>
@@ -242,16 +392,11 @@ export function ServiceCloudResourcePage({
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue
-                              placeholder={`Select ${field.label}`}
-                            />
+                            <SelectValue placeholder={`Select ${field.label}`} />
                           </SelectTrigger>
                           <SelectContent>
                             {(field.options ?? []).map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
+                              <SelectItem key={option.value} value={option.value}>
                                 <div className="flex items-center gap-2">
                                   {option.color ? (
                                     <span
@@ -340,109 +485,22 @@ export function ServiceCloudResourcePage({
                       )}
                     </div>
                   ))}
-                    </div>
-                  </div>
-                  <div className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-                    <div className="flex justify-end gap-3">
-                      <Button onClick={save} disabled={saving}>
-                        {saving ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : null}
-                        Save
-                      </Button>
-                    </div>
-                  </div>
                 </div>
-              </DialogContent>
-            </Dialog>
-          ) : null}
-        </div>
-      }
-    >
-      <div className="mb-2">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {columns.map((column) => (
-                <TableHead key={column.key}>{column.label}</TableHead>
-              ))}
-              {canEdit || canDelete ? (
-                <TableHead className="text-right">Actions</TableHead>
-              ) : null}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              [...Array(5)].map((_, i) => (
-                <TableRow key={`skeleton-${i}`}>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-[52px] px-4 py-2"
-                  >
-                    <Skeleton className="h-7 w-full" />
-                  </TableCell>
-                  {canEdit || canDelete ? (
-                    <TableCell className="bg-card px-4 text-right">
-                      <Skeleton className="ml-auto h-7 w-full" />
-                    </TableCell>
-                  ) : null}
-                </TableRow>
-              ))
-            ) : data.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length + 1}
-                  className="text-muted-foreground py-8 text-center"
-                >
-                  {emptyLabel}
-                </TableCell>
-              </TableRow>
-            ) : (
-              data.map((record) => (
-                <TableRow key={record.id}>
-                  {columns.map((column) => (
-                    <TableCell
-                      key={column.key}
-                      className={cn(
-                        column.key === 'name' &&
-                          'primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary',
-                      )}
-                    >
-                      {column.render
-                        ? column.render(record)
-                        : String(record[column.key] ?? '-')}
-                    </TableCell>
-                  ))}
-                  {canEdit || canDelete ? (
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {canEdit ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEdit(record)}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                        ) : null}
-                        {canDelete ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => remove(record)}
-                          >
-                            <Trash2 className="text-muted-foreground h-4 w-4" />
-                          </Button>
-                        ) : null}
-                      </div>
-                    </TableCell>
-                  ) : null}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              </div>
+              <div className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+                <div className="flex justify-end gap-3">
+                  <Button onClick={save} disabled={saving}>
+                    {saving ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Save
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </CardWidgetContainer>
   );
 }

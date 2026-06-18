@@ -21,6 +21,7 @@ import {
   Mail,
   Phone,
   Plus,
+  Settings,
   Tag,
   Target,
   Trash2,
@@ -74,12 +75,13 @@ import {
   getOpportunityAssignees,
 } from '~/services/opportunity-assignees.service';
 import {
-  getOpportunityByIdService,
-  getOpportunityStatusesService,
+  getOpportunityByIdService,  
   updateOpportunityService,
+  getOpportunityStatusesService,
 } from '~/services/opportunities.service';
-
+import { CentralStatusManagementDialog } from '../../_components/central-status-management-dialog';
 import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
+import { ManageableStatusSelect } from '../../_components/manageable-status-select';
 import {
   EntityDocuments,
   EntityMeetings,
@@ -92,7 +94,6 @@ import { AssignUserModal } from '../../leads/components/assign-user-modal';
 import { LogCallDialog } from '../../leads/components/log-call-dialog';
 import { EditOpportunityDialog } from '../components/edit-opportunity-dialog';
 import { OpportunityAssignees } from '../components/opportunity-assignees';
-import { OpportunityStatusTimeline } from '../components/opportunity-status-timeline';
 
 function OpportunityDetailsSkeleton() {
   return (
@@ -172,6 +173,7 @@ export default function OpportunityDetailsPage() {
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string>('');
+  const [isManageStagesOpen, setIsManageStagesOpen] = useState(false);
 
   const {
     data: opportunity,
@@ -472,6 +474,21 @@ export default function OpportunityDetailsPage() {
                             )}
                           </button>
                         ))}
+                      <div className="mt-1 border-t pt-1">
+                        <button
+                          type="button"
+                          className="text-primary hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm transition-colors"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setIsManageStagesOpen(true);
+                          }}
+                        >
+                          <Settings className="h-3.5 w-3.5" />
+                          Manage Stages
+                        </button>
+                      </div>
                     </div>
                   </PopoverContent>
                 </Popover>
@@ -629,7 +646,7 @@ export default function OpportunityDetailsPage() {
                     </span>
                   </div>
                 </>
-              }
+              }              
             />
 
             {/* Sales Pipeline Timeline */}
@@ -999,6 +1016,13 @@ export default function OpportunityDetailsPage() {
           }}
         />
       )}
+
+      <CentralStatusManagementDialog
+        open={isManageStagesOpen}
+        onOpenChange={setIsManageStagesOpen}
+        workspaceId={currentWorkspace?.id ?? ''}
+        initialTab="opportunities"
+      />
 
       {/* Page-level Assign User Modal (works from accordion header even when collapsed) */}
       {currentWorkspace?.id && (

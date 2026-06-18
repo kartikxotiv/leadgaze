@@ -23,6 +23,7 @@ import {
   MapPin,
   Phone,
   Plus,
+  Tag,
   Trash2,
   User,
   Users,
@@ -209,7 +210,7 @@ export default function AccountDetailsPage() {
     queryKey: ['account', id],
     queryFn: () => getAccountByIdService(id),
     enabled: !!id,
-  });
+  });  
 
   const workspaceId = account?.workspace_id;
 
@@ -658,10 +659,10 @@ export default function AccountDetailsPage() {
                     )}
                     {account.account_type && (
                       <DetailInfoRow
-                        icon={<Briefcase className="h-5 w-5" />}
+                        icon={<Tag className="h-5 w-5" />}
                         label="Type"
-                        value={<span className="capitalize">{account.account_type}</span>}
-                      />
+                        value={<span className="capitalize">{account.account_type_relation.status_name}</span>}
+                      />                      
                     )}
                     {account.linkedin_url && (
                       <DetailInfoRow

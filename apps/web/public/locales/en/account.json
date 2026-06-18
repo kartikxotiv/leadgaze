@@ -111,5 +111,18 @@
   "languageDescription": "Choose your preferred language",
   "noTeamsYet": "You don't have any teams yet.",
   "createTeam": "Create a team to get started.",
-  "createTeamButtonLabel": "Create a Team"
+  "createTeamButtonLabel": "Create a Team",
+  "trustDeviceFor30Days": "Trust this device for 30 days",
+  "trustDeviceDescription": "You won't be asked for a verification code on this device.",
+  "trustedDevices": "Trusted Devices",
+  "trustedDevicesDescription": "Manage devices that can bypass MFA for your account.",
+  "trustedDevicesEmpty": "No trusted devices found.",
+  "trustedDevicesLoadError": "Failed to load trusted devices.",
+  "trustedDeviceRemoved": "Trusted device removed successfully.",
+  "trustedDeviceRemoveError": "Failed to remove trusted device.",
+  "trustedDevicesAllRemoved": "All trusted devices removed successfully.",
+  "trustedDevicesRemoveAll": "Sign Out All Trusted Devices",
+  "trustedDevicesRemoveAllTitle": "Remove All Trusted Devices",
+  "trustedDevicesRemoveAllDescription": "This will revoke all trusted devices. You will need to complete MFA on your next login from each device.",
+  "trustedDevicesRemoveAllConfirm": "Yes, remove all"
 }

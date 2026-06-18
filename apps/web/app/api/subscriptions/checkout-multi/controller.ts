@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import { requireSubscriptionManagePermission } from '~/lib/server/subscription-permissions';
 import {
   getOrCreateStripeCustomer,
   getStripeClient,
@@ -69,6 +70,11 @@ export const createMultiProductCheckout = catchAsync(
     }
 
     const cycle = billingCycle || 'monthly';
+
+    await requireSubscriptionManagePermission({
+      accountId: user.id,
+      workspaceId,
+    });
 
     // ── Validate all products and resolve Stripe price IDs ─────────
     const productKeys = items.map((i) => i.productKey);
@@ -280,7 +286,6 @@ async function addItemsToExistingSubscription(
 
   // Build the items to add (new items that don't exist yet)
   const newItems: Array<{ price: string; quantity: number }> = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateItems: Array<{ id: string; quantity: number }> = [];
 
   for (const item of items) {

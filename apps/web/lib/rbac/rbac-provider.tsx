@@ -2,6 +2,8 @@
 
 import React, { ReactNode, createContext, useContext } from 'react';
 
+import { usePathname, useRouter } from 'next/navigation';
+
 import { useQuery } from '@tanstack/react-query';
 
 import { useSupabase } from '@kit/supabase/hooks/use-supabase';
@@ -54,6 +56,8 @@ const RBACContext = createContext<RBACContextType | undefined>(undefined);
 export function RBACProvider({ children }: { children: ReactNode }) {
   const { data: user, isLoading: isUserLoading } = useUser();
   const supabase = useSupabase();
+  const router = useRouter();
+  const pathname = usePathname();
   const [currentWorkspaceId, setCurrentWorkspaceId] = React.useState<
     string | null
   >(null);
@@ -157,15 +161,43 @@ export function RBACProvider({ children }: { children: ReactNode }) {
 
   const currentWorkspace =
     workspaces.find((w) => w.id === currentWorkspaceIdFinal) ||
-    workspaces[0] ||
-    null;
+    (workspaces.length === 1 ? workspaces[0] : null);
 
-  // Sync back to state if we picked a default
+  // Sync back to state and localStorage if we picked a default
   React.useEffect(() => {
     if (currentWorkspace && currentWorkspace.id !== currentWorkspaceId) {
       setCurrentWorkspaceId(currentWorkspace.id);
+      if (typeof window !== 'undefined' && !localStorage.getItem('currentWorkspaceId')) {
+        localStorage.setItem('currentWorkspaceId', currentWorkspace.id);
+      }
     }
   }, [currentWorkspace, currentWorkspaceId]);
+
+  // Clear active workspace selection from localStorage on logout
+  React.useEffect(() => {
+    if (!isUserLoading && !user?.id) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('currentWorkspaceId');
+        setCurrentWorkspaceId(null);
+      }
+    }
+  }, [user?.id, isUserLoading]);
+
+  // Redirect to workspace selector if they have multiple workspaces but haven't selected one
+  React.useEffect(() => {
+    if (isWorkspacesLoading || isUserLoading || !user?.id) return;
+
+    const hasValidSelection = workspaces.some((w) => w.id === currentWorkspaceIdFinal);
+
+    // If they have multiple workspaces and no valid selection, and are trying to access /home/... or /org/...
+    if (
+      workspaces.length > 1 &&
+      !hasValidSelection &&
+      (pathname?.startsWith('/home') || pathname?.startsWith('/org'))
+    ) {
+      router.push('/workspace-select');
+    }
+  }, [workspaces, user?.id, isUserLoading, isWorkspacesLoading, currentWorkspaceIdFinal, pathname, router]);
 
   React.useEffect(() => {
     if (currentWorkspace) {

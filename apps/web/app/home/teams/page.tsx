@@ -170,17 +170,7 @@ export default function TeamsPage() {
 
       {/* Toolbar with status filter, search, actions, and column visibility */}
       <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
-        <ListToolBar
-          statusSlot={
-            <StatusFilterDropdown
-              statuses={teamStatuses}
-              selectedStatus={selectedStatus}
-              onStatusChange={setSelectedStatus}
-              statusBreakdown={teamStatusBreakdown}
-              totalCount={teams.length}
-              allLabel="All Teams"
-            />
-          }
+        <ListToolBar          
           showSearch
           searchPlaceholder="Search teams..."
           searchValue={searchTerm}
