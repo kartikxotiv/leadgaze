@@ -46,6 +46,7 @@ import { getMembersService } from '~/services/team-members.service';
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { OpportunityDialog } from './components/opportunity-dialog';
+import { PageSizeSelector } from '@kit/ui/page-size-selector';
 
 function PriorityBadge({ priority }: { priority: string | null | undefined }) {
   switch (priority?.toLowerCase()) {
@@ -145,7 +146,8 @@ export default function OpportunitiesPage() {
   const [opportunityToDelete, setOpportunityToDelete] =
     useState<Opportunity | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const [pageSize, setPageSize] = useState(15);
+  const itemsPerPage = pageSize;
 
   const columns = useMemo(
     () => [
@@ -213,6 +215,7 @@ export default function OpportunitiesPage() {
       debouncedSearchTerm,
       selectedStage,
       selectedCreatedId,
+      pageSize,
     ],
     queryFn: () =>
       getOpportunitiesService({
@@ -243,7 +246,7 @@ export default function OpportunitiesPage() {
   // Reset to first page when search or filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, selectedStage, selectedCreatedId]);
+  }, [debouncedSearchTerm, selectedStage, selectedCreatedId, pageSize]);
 
   // Client-side filtering for Created By if not supported by API
   const filteredOpportunities = useMemo(() => {
@@ -463,7 +466,7 @@ export default function OpportunitiesPage() {
           <CustomTableContainer
             pagination={totalCount > 0 && (
               <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
-                <div>
+                <div className="flex items-center gap-1">
                   Showing{' '}
                   <span className="text-foreground font-medium">
                     {(currentPage - 1) * itemsPerPage + 1}
@@ -478,6 +481,15 @@ export default function OpportunitiesPage() {
                   </span>{' '}
                   opportunities
                 </div>
+                <div className="flex w-full max-w-full min-w-0 items-center justify-end px-2">
+                                      <PageSizeSelector
+                                      value={pageSize}
+                                      onChange={(val) => {
+                                        setPageSize(val);
+                                        setCurrentPage(1);
+                                      }}
+                                    />
+                                  </div>
                 <Pagination className="w-auto">
                   <PaginationContent>
                     <PaginationItem>

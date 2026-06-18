@@ -85,6 +85,14 @@ export interface ListToolBarProps {
   statusSlot?: React.ReactNode;
 
   // ── Root ───────────────────────────────────────────────────────────────────
+  /**
+   * Controls the toolbar's width and horizontal alignment.
+   * - `'full'`  → always stretches to full width (default when `showSearch` is true)
+   * - `'left'`  → shrinks to content, aligned to the left
+   * - `'right'` → shrinks to content, pushed to the right via `ml-auto`
+   * When omitted and `showSearch` is false, defaults to `'left'`.
+   */
+  align?: 'left' | 'right' | 'full';
   className?: string;
 }
 
@@ -105,6 +113,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
   actions = [],
   columnVisibilitySlot,
   statusSlot,
+  align,
   className,
 }) => {
   const [isFilterOpen, setIsFilterOpen] = React.useState(false);
@@ -118,9 +127,23 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
   const activeGroup = filterGroups.find((g) => g.key === filterView);
   const visibleActions = actions.filter((a) => a.show !== false);
 
+  // Resolve effective width/alignment:
+  // - Explicit 'full' or showSearch (no align given) → full width
+  // - Explicit 'right' → shrink to content + push right via ml-auto
+  // - Explicit 'left' or fallback → shrink to content, left-aligned
+  const isFullWidth = align === 'full' || (!align && showSearch);
+  const isRightAligned = align === 'right';
+
   return (
     <TooltipProvider>
-      <div className={cn('flex w-full items-center gap-2 bg-white p-2 border-light-gray border-1 dark:dark-theme-color', className)}>
+      <div
+        className={cn(
+          'flex items-center gap-2 bg-white p-2 border-light-gray border-1 dark:dark-theme-color',
+          isFullWidth ? 'w-full' : 'w-auto',
+          isRightAligned && 'ml-auto',
+          className,
+        )}
+      >
 
         {/* ── Search: always visible, stretches to fill available space ───── */}
         {showSearch && (

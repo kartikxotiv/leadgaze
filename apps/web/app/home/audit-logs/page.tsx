@@ -55,10 +55,12 @@ import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAuditLogsService } from '~/services/audit-logs.service';
 import CustomTableContainer from '@kit/ui/custom-table-container';
+import { PageSizeSelector } from '@kit/ui/page-size-selector';
 
 export default function AuditLogsPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
   const [selectedModule, setSelectedModule] = useState<string>('all');
   const [selectedAction, setSelectedAction] = useState<string>('all');
   const pathname = usePathname();
@@ -71,7 +73,7 @@ export default function AuditLogsPage() {
   const [filterView, setFilterView] = useState<'main' | 'module' | 'action' | 'product'>(
     'main',
   );
-  const itemsPerPage = 15;
+  const itemsPerPage = pageSize;
 
   const activeFilterCount =
     (selectedModule !== 'all' ? 1 : 0) + (selectedAction !== 'all' ? 1 : 0) + (selectedProduct !== 'all' && !contextProductKey ? 1 : 0);
@@ -426,7 +428,7 @@ export default function AuditLogsPage() {
             <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
               <CustomTableContainer pagination={count > 0 && (
                   <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
-                  <div>
+                  <div className="flex items-center gap-1">
                     Showing{' '}
                     <span className="text-foreground font-medium">
                       {(page - 1) * itemsPerPage + 1}
@@ -439,6 +441,15 @@ export default function AuditLogsPage() {
                     <span className="text-foreground font-medium">{count}</span>{' '}
                     logs
                   </div>
+                  <div className="flex w-full max-w-full min-w-0 items-center justify-end px-2">
+                                        <PageSizeSelector
+                                        value={pageSize}
+                                        onChange={(val) => {
+                                          setPageSize(val);
+                                          setPage(1);
+                                        }}
+                                      />
+                                    </div>
                   <Pagination className="w-auto">
                     <PaginationContent>
                       <PaginationItem>
