@@ -64,11 +64,11 @@ import {
 } from '~/lib/permissions/use-permissions';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
-import { getAccountByIdService } from '~/services/accounts.service';
 import {
   assignAccountToUser,
   getAccountAssignees,
 } from '~/services/account-assignees.service';
+import { getAccountByIdService } from '~/services/accounts.service';
 import { type Contact, getContactsService } from '~/services/contacts.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
 
@@ -91,7 +91,7 @@ function AccountDetailsSkeleton() {
   return (
     <ModuleGuard module="accounts">
       <div className="flex h-full flex-col">
-        <div className="px-6 pb-2 pt-4">
+        <div className="px-6 pt-4 pb-2">
           <Skeleton className="h-8 w-20 rounded-md" />
         </div>
         <PageBody>
@@ -192,8 +192,9 @@ export default function AccountDetailsPage() {
       setIsAssignModalOpen(false);
     },
     onError: (error: unknown) => {
-      const response = (error as { response?: { data?: { message?: unknown } } })
-        ?.response;
+      const response = (
+        error as { response?: { data?: { message?: unknown } } }
+      )?.response;
       const message =
         typeof response?.data?.message === 'string'
           ? response.data.message
@@ -210,7 +211,7 @@ export default function AccountDetailsPage() {
     queryKey: ['account', id],
     queryFn: () => getAccountByIdService(id),
     enabled: !!id,
-  });  
+  });
 
   const workspaceId = account?.workspace_id;
 
@@ -282,8 +283,8 @@ export default function AccountDetailsPage() {
         <div className="flex h-screen flex-col items-center justify-center gap-4">
           <h1 className="text-2xl font-bold">Account Not Found</h1>
           <p className="text-muted-foreground">
-            The account you&apos;re looking for doesn&apos;t exist or you don&apos;t have
-            permission to view it.
+            The account you&apos;re looking for doesn&apos;t exist or you
+            don&apos;t have permission to view it.
           </p>
           <Button asChild variant="outline">
             <Link href="/home/sales/accounts">Back to Accounts</Link>
@@ -315,7 +316,7 @@ export default function AccountDetailsPage() {
 
   return (
     <ModuleGuard module="accounts">
-      <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap sm:items-center sm:justify-between pb-2 pt-4">
+      <div className="flex flex-wrap items-start gap-2 pt-4 pb-2 sm:flex-nowrap sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -364,7 +365,10 @@ export default function AccountDetailsPage() {
                     size="sm"
                     className={`gap-2 ${accountEmailRecipients.length === 0 ? 'opacity-50' : ''}`}
                     disabled={accountEmailRecipients.length === 0}
-                    onClick={() => accountEmailRecipients.length > 0 && setIsEmailDialogOpen(true)}
+                    onClick={() =>
+                      accountEmailRecipients.length > 0 &&
+                      setIsEmailDialogOpen(true)
+                    }
                     title={
                       accountEmailRecipients.length === 0
                         ? 'Account has no contact email addresses'
@@ -376,7 +380,9 @@ export default function AccountDetailsPage() {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="sm:hidden">
-                  {accountEmailRecipients.length === 0 ? 'No emails available' : 'Send Email'}
+                  {accountEmailRecipients.length === 0
+                    ? 'No emails available'
+                    : 'Send Email'}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -405,9 +411,9 @@ export default function AccountDetailsPage() {
           entityName={account.account_name}
           onSuccess={() => router.push('/home/sales/accounts')}
         />
-        <div className="flex lg:flex-1 lg:min-h-0 flex-col lg:flex-row gap-4 w-full">
+        <div className="flex w-full flex-col gap-4 lg:min-h-0 lg:flex-1 lg:flex-row">
           {/* Main Content */}
-          <div className="space-y-4 w-full lg:w-[65%] lg:overflow-y-auto">
+          <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
             <DetailHeader
               avatar={
                 <div className="bg-primary/10 flex h-16 w-16 items-center justify-center rounded-lg">
@@ -454,15 +460,20 @@ export default function AccountDetailsPage() {
             />
 
             {/* Tabs Section */}
-            <Tabs defaultValue="email" className="space-y-4">
-              <TabsList className="h-auto w-full justify-start gap-3 sm:gap-6 rounded-none border-b bg-transparent p-0 mb-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                <TabsTrigger
-                  value="email"
-                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                >
-                  <Mail className="mr-2 h-4 w-4" />
-                  Email
-                </TabsTrigger>
+            <Tabs
+              defaultValue={canManageEmail ? 'email' : 'notes'}
+              className="space-y-4"
+            >
+              <TabsList className="mb-2 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
+                {canManageEmail && (
+                  <TabsTrigger
+                    value="email"
+                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                  >
+                    <Mail className="mr-2 h-4 w-4" />
+                    Email
+                  </TabsTrigger>
+                )}
                 <TabsTrigger
                   value="notes"
                   className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
@@ -507,32 +518,52 @@ export default function AccountDetailsPage() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="email" className="max-h-[500px] overflow-y-auto">
-                <EntityEmails
-                  entityId={id}
-                  entityType="account"
-                  entityName={account.account_name}
-                  recipientOptions={accountEmailRecipients}
-                />
-              </TabsContent>
+              {canManageEmail && (
+                <TabsContent
+                  value="email"
+                  className="max-h-[500px] overflow-y-auto"
+                >
+                  <EntityEmails
+                    entityId={id}
+                    entityType="account"
+                    entityName={account.account_name}
+                    recipientOptions={accountEmailRecipients}
+                  />
+                </TabsContent>
+              )}
 
-              <TabsContent value="notes" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="notes"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityNotes entityType="account" entityId={id} />
               </TabsContent>
 
-              <TabsContent value="meetings" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="meetings"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityMeetings entityType="account" entityId={id} />
               </TabsContent>
 
-              <TabsContent value="calls" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="calls"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityCalls entityType="account" entityId={id} />
               </TabsContent>
 
-              <TabsContent value="reminders" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="reminders"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityReminders entityType="account" entityId={id} />
               </TabsContent>
 
-              <TabsContent value="documents" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="documents"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityDocuments entityType="account" entityId={id} />
               </TabsContent>
 
@@ -551,19 +582,20 @@ export default function AccountDetailsPage() {
                           </p>
                         </div>
                       </div>
-                      {account.updated_at && account.updated_at !== account.created_at && (
-                        <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                          <div className="h-2 w-2 rounded-full bg-blue-500" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              Account Updated
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {formatDate(account.updated_at)}
-                            </p>
+                      {account.updated_at &&
+                        account.updated_at !== account.created_at && (
+                          <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
+                            <div className="h-2 w-2 rounded-full bg-blue-500" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                Account Updated
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {formatDate(account.updated_at)}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
                     </div>
                   </CardContent>
                 </Card>
@@ -572,11 +604,13 @@ export default function AccountDetailsPage() {
 
             {/* Danger Zone */}
             {rbacCanAccess('accounts', 'delete') && (
-              <Card className="hidden lg:block border-destructive/50 border-solid">
+              <Card className="border-destructive/50 hidden border-solid lg:block">
                 <CardContent>
-                  <div className="flex flex-col md:flex-row items-center justify-between mt-6">
-                    <div className="space-y-1 mb-2">
-                      <p className="font-medium dark:text-white">Delete Account</p>
+                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
+                    <div className="mb-2 space-y-1">
+                      <p className="font-medium dark:text-white">
+                        Delete Account
+                      </p>
                       <p className="text-muted-foreground text-sm">
                         Once you delete an account, there is no going back.
                         Please be certain.
@@ -610,7 +644,7 @@ export default function AccountDetailsPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-4 w-full lg:w-[35%] lg:overflow-y-auto">
+          <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
             {/* Accordion Sections */}
             <Accordion
               type="single"
@@ -620,8 +654,11 @@ export default function AccountDetailsPage() {
               onValueChange={setOpenAccordion}
             >
               {/* Account Details */}
-              <AccordionItem value="details" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
-                <AccordionTrigger className="hover:no-underline px-4 py-3">
+              <AccordionItem
+                value="details"
+                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              >
+                <AccordionTrigger className="px-4 py-3 hover:no-underline">
                   <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
                     <Building2 className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     Account Details
@@ -634,7 +671,10 @@ export default function AccountDetailsPage() {
                         icon={<Phone className="h-5 w-5" />}
                         label="Phone"
                         value={
-                          <a href={`tel:${account.phone_number}`} className="text-blue-600 hover:underline dark:text-blue-400">
+                          <a
+                            href={`tel:${account.phone_number}`}
+                            className="text-blue-600 hover:underline dark:text-blue-400"
+                          >
                             {account.phone_number}
                           </a>
                         }
@@ -661,15 +701,24 @@ export default function AccountDetailsPage() {
                       <DetailInfoRow
                         icon={<Tag className="h-5 w-5" />}
                         label="Type"
-                        value={<span className="capitalize">{account.account_type_relation.status_name}</span>}
-                      />                      
+                        value={
+                          <span className="capitalize">
+                            {account.account_type_relation.status_name}
+                          </span>
+                        }
+                      />
                     )}
                     {account.linkedin_url && (
                       <DetailInfoRow
                         icon={<Linkedin className="h-5 w-5" />}
                         label="LinkedIn"
                         value={
-                          <a href={account.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400">
+                          <a
+                            href={account.linkedin_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline dark:text-blue-400"
+                          >
                             {account.linkedin_url}
                           </a>
                         }
@@ -701,9 +750,15 @@ export default function AccountDetailsPage() {
               </AccordionItem>
 
               {/* Contacts */}
-              <AccordionItem value="contacts" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
-                <AccordionTrigger hideChevron className="hover:no-underline px-4 py-3">
-                  <div className="flex justify-between w-full">
+              <AccordionItem
+                value="contacts"
+                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              >
+                <AccordionTrigger
+                  hideChevron
+                  className="px-4 py-3 hover:no-underline"
+                >
+                  <div className="flex w-full justify-between">
                     <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
                       <Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                       Contacts
@@ -711,7 +766,7 @@ export default function AccountDetailsPage() {
                     {rbacCanAccess('accounts', 'add_contact') && (
                       <Button
                         size="sm"
-                        className="ml-2 mr-3 gap-2 shrink-0"
+                        className="mr-3 ml-2 shrink-0 gap-2"
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -723,7 +778,12 @@ export default function AccountDetailsPage() {
                       </Button>
                     )}
                   </div>
-                  <ChevronDown className={cn('text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200', openAccordion === 'contacts' && 'rotate-180')} />
+                  <ChevronDown
+                    className={cn(
+                      'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
+                      openAccordion === 'contacts' && 'rotate-180',
+                    )}
+                  />
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
                   {rbacCanAccess('accounts', 'view_contacts') ? (
@@ -742,7 +802,9 @@ export default function AccountDetailsPage() {
                             subtitle={
                               <span>
                                 {contact.job_title}
-                                {contact.job_title && contact.department && ' • '}
+                                {contact.job_title &&
+                                  contact.department &&
+                                  ' • '}
                                 {contact.department}
                               </span>
                             }
@@ -756,7 +818,9 @@ export default function AccountDetailsPage() {
                             actions={
                               rbacCanAccess('contacts', 'view') && (
                                 <Button size="sm" variant="ghost" asChild>
-                                  <Link href={`/home/sales/contacts/${contact.id}`}>
+                                  <Link
+                                    href={`/home/sales/contacts/${contact.id}`}
+                                  >
                                     View
                                   </Link>
                                 </Button>
@@ -779,16 +843,22 @@ export default function AccountDetailsPage() {
               </AccordionItem>
 
               {/* Opportunities */}
-              <AccordionItem value="opportunities" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
-                <AccordionTrigger hideChevron className="hover:no-underline px-4 py-3">
-                  <div className="flex justify-between w-full">
+              <AccordionItem
+                value="opportunities"
+                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              >
+                <AccordionTrigger
+                  hideChevron
+                  className="px-4 py-3 hover:no-underline"
+                >
+                  <div className="flex w-full justify-between">
                     <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
                       <Briefcase className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                       Opportunities
                     </span>
                     <Button
                       size="sm"
-                      className="ml-2 mr-3 gap-2 shrink-0"
+                      className="mr-3 ml-2 shrink-0 gap-2"
                       onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -799,7 +869,12 @@ export default function AccountDetailsPage() {
                       New Opportunity
                     </Button>
                   </div>
-                  <ChevronDown className={cn('text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200', openAccordion === 'opportunities' && 'rotate-180')} />
+                  <ChevronDown
+                    className={cn(
+                      'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
+                      openAccordion === 'opportunities' && 'rotate-180',
+                    )}
+                  />
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
                   {rbacCanAccess('accounts', 'view_opportunities') ? (
@@ -841,7 +916,9 @@ export default function AccountDetailsPage() {
                             actions={
                               rbacCanAccess('opportunities', 'view') && (
                                 <Button size="sm" variant="ghost" asChild>
-                                  <Link href={`/home/sales/opportunities/${opp.id}`}>
+                                  <Link
+                                    href={`/home/sales/opportunities/${opp.id}`}
+                                  >
                                     View
                                   </Link>
                                 </Button>
@@ -865,16 +942,22 @@ export default function AccountDetailsPage() {
 
               {/* Assigned Team Members */}
               {workspace?.id && (
-                <AccordionItem value="assignees" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
-                  <AccordionTrigger hideChevron className="hover:no-underline px-4 py-3">
-                    <div className="flex justify-between w-full">
+                <AccordionItem
+                  value="assignees"
+                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                >
+                  <AccordionTrigger
+                    hideChevron
+                    className="px-4 py-3 hover:no-underline"
+                  >
+                    <div className="flex w-full justify-between">
                       <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
                         <Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                         Assigned Members
                       </span>
                       <Button
                         size="sm"
-                        className="ml-2 mr-3 gap-2 shrink-0"
+                        className="mr-3 ml-2 shrink-0 gap-2"
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -885,17 +968,29 @@ export default function AccountDetailsPage() {
                         Assign Member
                       </Button>
                     </div>
-                    <ChevronDown className={cn('text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200', openAccordion === 'assignees' && 'rotate-180')} />
+                    <ChevronDown
+                      className={cn(
+                        'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
+                        openAccordion === 'assignees' && 'rotate-180',
+                      )}
+                    />
                   </AccordionTrigger>
                   <AccordionContent className="px-4 pb-4">
-                    <AccountAssignees accountId={id} workspaceId={workspace.id} embedded />
+                    <AccountAssignees
+                      accountId={id}
+                      workspaceId={workspace.id}
+                      embedded
+                    />
                   </AccordionContent>
                 </AccordionItem>
               )}
 
               {/* System Info */}
-              <AccordionItem value="system" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
-                <AccordionTrigger className="hover:no-underline px-4 py-3">
+              <AccordionItem
+                value="system"
+                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              >
+                <AccordionTrigger className="px-4 py-3 hover:no-underline">
                   <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
                     <Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     System Info
@@ -960,13 +1055,15 @@ export default function AccountDetailsPage() {
           </div>
 
           {/* Danger Zone */}
-          <div className="w-full lg:hidden">            
+          <div className="w-full lg:hidden">
             {rbacCanAccess('accounts', 'delete') && (
               <Card className="border-destructive/50 border-solid">
                 <CardContent>
-                  <div className="flex flex-col md:flex-row items-center justify-between mt-6">
-                    <div className="space-y-1 mb-2">
-                      <p className="font-medium dark:text-white">Delete Account</p>
+                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
+                    <div className="mb-2 space-y-1">
+                      <p className="font-medium dark:text-white">
+                        Delete Account
+                      </p>
                       <p className="text-muted-foreground text-sm">
                         Once you delete an account, there is no going back.
                         Please be certain.
@@ -998,8 +1095,6 @@ export default function AccountDetailsPage() {
               </Card>
             )}
           </div>
-
-          
         </div>
       </PageBody>
 
@@ -1061,7 +1156,11 @@ export default function AccountDetailsPage() {
           onOpenChange={setIsAssignModalOpen}
           leadId={id}
           workspaceId={workspace.id}
-          currentAssignees={pageAssignees as Parameters<typeof AssignUserModal>[0]['currentAssignees']}
+          currentAssignees={
+            pageAssignees as Parameters<
+              typeof AssignUserModal
+            >[0]['currentAssignees']
+          }
           onAssign={(userId) => pageAssignMutation.mutate(userId)}
           isLoading={pageAssignMutation.isPending}
         />

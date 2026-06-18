@@ -36,14 +36,14 @@ import { CoreEmailComposeDialog } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
 import { formatDate, formatDateTime } from '@kit/shared/utils';
 import { useUser } from '@kit/supabase/hooks/use-user';
-import { Badge } from '@kit/ui/badge';
-import { Button } from '@kit/ui/button';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@kit/ui/accordion';
+import { Badge } from '@kit/ui/badge';
+import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { DetailHeader } from '@kit/ui/detail-header';
 import { DetailInfoList, DetailInfoRow } from '@kit/ui/detail-info-row';
@@ -69,12 +69,12 @@ import {
   assignLeadToUser,
   getLeadAssignees,
 } from '~/services/lead-assignees.service';
-
 import {
   getLeadByIdService,
   getLeadStatusesService,
   updateLeadService,
 } from '~/services/leads.service';
+
 import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
 import {
   EntityDocuments,
@@ -84,17 +84,17 @@ import {
 import { EntityCalls } from '../../_components/entity-calls';
 import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
+import { AssignUserModal } from '../components/assign-user-modal';
 import { ChangeStatusDialog } from '../components/change-status-dialog';
 import { ConvertLeadDialog } from '../components/convert-lead-dialog';
 import EditLeadDialog from '../components/edit-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
-import { AssignUserModal } from '../components/assign-user-modal';
 import { LogCallDialog } from '../components/log-call-dialog';
 
 function LeadDetailsSkeleton() {
   return (
     <div className="flex h-full flex-col">
-      <div className="px-6 pb-2 pt-4">
+      <div className="px-6 pt-4 pb-2">
         <Skeleton className="h-8 w-20 rounded-md" />
       </div>
       <PageBody>
@@ -334,7 +334,7 @@ export default function LeadDetailsPage() {
   }) => (
     <div className="flex items-start justify-between">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+        <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
           {label}
         </p>
         <p className="mt-1 text-sm text-gray-900 dark:text-white">
@@ -346,7 +346,7 @@ export default function LeadDetailsPage() {
 
   return (
     <ModuleGuard module="leads">
-      <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap sm:items-center sm:justify-between pb-2 pt-4">
+      <div className="flex flex-wrap items-start gap-2 pt-4 pb-2 sm:flex-nowrap sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -355,11 +355,13 @@ export default function LeadDetailsPage() {
             className="border-leadgaze-border border p-0"
           >
             <Link href="/home/sales/leads">
-              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
+              <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
             </Link>
           </Button>
           <div className="flex flex-col">
-            <h1 className="text-lg text-leadgaze-dark font-bold dark:text-white">Lead details</h1>
+            <h1 className="text-leadgaze-dark text-lg font-bold dark:text-white">
+              Lead details
+            </h1>
             <p className="text-leadgaze-muted text-sm">
               View and edit lead information
             </p>
@@ -381,7 +383,9 @@ export default function LeadDetailsPage() {
                     <span className="hidden sm:inline">Change Status</span>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent className="sm:hidden">Change Status</TooltipContent>
+                <TooltipContent className="sm:hidden">
+                  Change Status
+                </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           )}
@@ -448,7 +452,9 @@ export default function LeadDetailsPage() {
                     <span className="hidden sm:inline">Convert Lead</span>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent className="sm:hidden">Convert Lead</TooltipContent>
+                <TooltipContent className="sm:hidden">
+                  Convert Lead
+                </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           )}
@@ -476,9 +482,9 @@ export default function LeadDetailsPage() {
           entityName={`${lead.first_name} ${lead.last_name || ''}`}
           onSuccess={() => router.push('/home/sales/leads')}
         />
-        <div className="flex lg:flex-1 lg:min-h-0 flex-col lg:flex-row gap-4 w-full">
+        <div className="flex w-full flex-col gap-4 lg:min-h-0 lg:flex-1 lg:flex-row">
           {/* Main Content */}
-          <div className="space-y-4 w-full lg:w-[65%] lg:overflow-y-auto">
+          <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
             <DetailHeader
               avatar={
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-semibold text-white">
@@ -518,34 +524,61 @@ export default function LeadDetailsPage() {
               email={lead.email || undefined}
               right={
                 lead.lead_score !== null ? (
-                  <div className="flex items-center gap-1 flex-col mx-auto lg:mx-0">
-                    <span className="primary-text-medium text-leadgaze-dark dark:text-white">Lead Score</span>
+                  <div className="mx-auto flex flex-col items-center gap-1 lg:mx-0">
+                    <span className="primary-text-medium text-leadgaze-dark dark:text-white">
+                      Lead Score
+                    </span>
 
                     <div className="relative h-15 w-15 shrink-0">
-                      <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="3" className="text-gray-200 dark:text-gray-700" />
-                        <circle cx="50" cy="50" r="45" fill="none" stroke={statusColor} strokeWidth="3" strokeDasharray={`${((scoringResult?.totalScore ?? lead.lead_score) / 100) * 283} 283`} strokeLinecap="round" />
+                      <svg
+                        className="h-full w-full -rotate-90 transform"
+                        viewBox="0 0 100 100"
+                      >
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="45"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          className="text-gray-200 dark:text-gray-700"
+                        />
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="45"
+                          fill="none"
+                          stroke={statusColor}
+                          strokeWidth="3"
+                          strokeDasharray={`${((scoringResult?.totalScore ?? lead.lead_score) / 100) * 283} 283`}
+                          strokeLinecap="round"
+                        />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
                         <span className="primary-heading text-gray-900 dark:text-white">
                           {scoringResult?.totalScore ?? lead.lead_score}
                         </span>
                       </div>
-                    </div>                    
+                    </div>
                   </div>
                 ) : undefined
               }
             />
             {/* Tabs Section */}
-            <Tabs defaultValue="email" className="space-y-4">
-              <TabsList className="h-auto w-full justify-start gap-3 sm:gap-6 rounded-none border-b bg-transparent p-0 mb-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                <TabsTrigger
-                  value="email"
-                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                >
-                  <Mail className="mr-2 h-4 w-4" />
-                  Email
-                </TabsTrigger>
+            <Tabs
+              defaultValue={canManageEmail ? 'email' : 'notes'}
+              className="space-y-4"
+            >
+              <TabsList className="mb-2 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
+                {canManageEmail && (
+                  <TabsTrigger
+                    value="email"
+                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                  >
+                    <Mail className="mr-2 h-4 w-4" />
+                    Email
+                  </TabsTrigger>
+                )}
                 <TabsTrigger
                   value="notes"
                   className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
@@ -590,32 +623,52 @@ export default function LeadDetailsPage() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="email" className="max-h-[500px] overflow-y-auto">
-                <EntityEmails
-                  entityId={leadId}
-                  entityType="lead"
-                  entityName={fullName}
-                  entityEmail={lead.email || undefined}
-                />
-              </TabsContent>
+              {canManageEmail && (
+                <TabsContent
+                  value="email"
+                  className="max-h-[500px] overflow-y-auto"
+                >
+                  <EntityEmails
+                    entityId={leadId}
+                    entityType="lead"
+                    entityName={fullName}
+                    entityEmail={lead.email || undefined}
+                  />
+                </TabsContent>
+              )}
 
-              <TabsContent value="notes" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="notes"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityNotes entityType="lead" entityId={leadId} />
               </TabsContent>
 
-              <TabsContent value="meetings" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="meetings"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityMeetings entityType="lead" entityId={leadId} />
               </TabsContent>
 
-              <TabsContent value="calls" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="calls"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityCalls entityType="lead" entityId={leadId} />
               </TabsContent>
 
-              <TabsContent value="reminders" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="reminders"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityReminders entityType="lead" entityId={leadId} />
               </TabsContent>
 
-              <TabsContent value="documents" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="documents"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityDocuments entityType="lead" entityId={leadId} />
               </TabsContent>
 
@@ -634,19 +687,20 @@ export default function LeadDetailsPage() {
                           </p>
                         </div>
                       </div>
-                      {lead.updated_at && lead.updated_at !== lead.created_at && (
-                        <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                          <div className="h-2 w-2 rounded-full bg-blue-500" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              Lead Updated
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {formatDate(lead.updated_at)}
-                            </p>
+                      {lead.updated_at &&
+                        lead.updated_at !== lead.created_at && (
+                          <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
+                            <div className="h-2 w-2 rounded-full bg-blue-500" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                Lead Updated
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {formatDate(lead.updated_at)}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
                     </div>
                   </CardContent>
                 </Card>
@@ -655,9 +709,9 @@ export default function LeadDetailsPage() {
 
             {/* Danger Zone */}
             {canAccess('leads', 'delete') && (
-              <Card className="hidden lg:block border-destructive/50 border-solid">
+              <Card className="border-destructive/50 hidden border-solid lg:block">
                 <CardContent>
-                  <div className="flex flex-col md:flex-row items-center justify-between mt-6">
+                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
                     <div className="mb-2 space-y-1">
                       <p className="font-medium dark:text-white">Delete Lead</p>
                       <p className="text-muted-foreground text-sm">
@@ -693,14 +747,23 @@ export default function LeadDetailsPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-4 w-full lg:w-[35%] lg:overflow-y-auto">
+          <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
             {/* Accordion Sections */}
-            <Accordion type="single" collapsible className="space-y-2" value={openAccordion} onValueChange={setOpenAccordion}>
+            <Accordion
+              type="single"
+              collapsible
+              className="space-y-2"
+              value={openAccordion}
+              onValueChange={setOpenAccordion}
+            >
               {/* Company */}
-              <AccordionItem value="company" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
-                <AccordionTrigger className="hover:no-underline px-4 py-3">
+              <AccordionItem
+                value="company"
+                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              >
+                <AccordionTrigger className="px-4 py-3 hover:no-underline">
                   <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
-                    <Building2 className="text-leadgaze-dark h-5 w-5 dark:text-white" />                    
+                    <Building2 className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     Company Details
                   </span>
                 </AccordionTrigger>
@@ -739,7 +802,12 @@ export default function LeadDetailsPage() {
                         icon={<Globe className="h-5 w-5" />}
                         label="Website"
                         value={
-                          <a href={lead.company_website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400">
+                          <a
+                            href={lead.company_website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline dark:text-blue-400"
+                          >
                             {lead.company_website}
                           </a>
                         }
@@ -750,7 +818,12 @@ export default function LeadDetailsPage() {
                         icon={<Linkedin className="h-5 w-5" />}
                         label="LinkedIn"
                         value={
-                          <a href={lead.company_linkedin_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400">
+                          <a
+                            href={lead.company_linkedin_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline dark:text-blue-400"
+                          >
                             {lead.company_linkedin_url}
                           </a>
                         }
@@ -775,8 +848,11 @@ export default function LeadDetailsPage() {
               </AccordionItem>
 
               {/* Contact */}
-              <AccordionItem value="contact" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
-                <AccordionTrigger className="hover:no-underline px-4 py-3">
+              <AccordionItem
+                value="contact"
+                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              >
+                <AccordionTrigger className="px-4 py-3 hover:no-underline">
                   <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
                     <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     Contact Details
@@ -789,7 +865,10 @@ export default function LeadDetailsPage() {
                         icon={<Mail className="h-5 w-5" />}
                         label="Email"
                         value={
-                          <a href={`mailto:${lead.email}`} className="text-blue-600 hover:underline dark:text-blue-400">
+                          <a
+                            href={`mailto:${lead.email}`}
+                            className="text-blue-600 hover:underline dark:text-blue-400"
+                          >
                             {lead.email}
                           </a>
                         }
@@ -800,7 +879,10 @@ export default function LeadDetailsPage() {
                         icon={<Mail className="h-5 w-5" />}
                         label="Alt Email"
                         value={
-                          <a href={`mailto:${lead.alt_email}`} className="text-blue-600 hover:underline dark:text-blue-400">
+                          <a
+                            href={`mailto:${lead.alt_email}`}
+                            className="text-blue-600 hover:underline dark:text-blue-400"
+                          >
                             {lead.alt_email}
                           </a>
                         }
@@ -847,7 +929,12 @@ export default function LeadDetailsPage() {
                         icon={<Linkedin className="h-5 w-5" />}
                         label="LinkedIn"
                         value={
-                          <a href={lead.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400">
+                          <a
+                            href={lead.linkedin_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline dark:text-blue-400"
+                          >
                             {lead.linkedin_url}
                           </a>
                         }
@@ -859,38 +946,56 @@ export default function LeadDetailsPage() {
 
               {/* Assigned Team Members */}
               {workspace?.id && (
-                <AccordionItem value="assignees" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
-                  <AccordionTrigger hideChevron className="hover:no-underline px-4 py-3">
-                    <div className="flex justify-between w-full">
-                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
-                      <Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />
-                      Assigned Members
-                    </span>
-                    <Button
-                      size="sm"
-                      className="ml-2 mr-3 gap-2 shrink-0"
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsAssignModalOpen(true);
-                      }}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Assign Member
-                    </Button>
+                <AccordionItem
+                  value="assignees"
+                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                >
+                  <AccordionTrigger
+                    hideChevron
+                    className="px-4 py-3 hover:no-underline"
+                  >
+                    <div className="flex w-full justify-between">
+                      <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                        <Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+                        Assigned Members
+                      </span>
+                      <Button
+                        size="sm"
+                        className="mr-3 ml-2 shrink-0 gap-2"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsAssignModalOpen(true);
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Assign Member
+                      </Button>
                     </div>
-                    <ChevronDown className={cn('text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200', openAccordion === 'assignees' && 'rotate-180')} />
+                    <ChevronDown
+                      className={cn(
+                        'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
+                        openAccordion === 'assignees' && 'rotate-180',
+                      )}
+                    />
                   </AccordionTrigger>
                   <AccordionContent className="px-4 pb-4">
-                    <LeadAssignees leadId={leadId} workspaceId={workspace.id} embedded />
+                    <LeadAssignees
+                      leadId={leadId}
+                      workspaceId={workspace.id}
+                      embedded
+                    />
                   </AccordionContent>
                 </AccordionItem>
               )}
 
               {/* Lead Owner */}
               {lead.owner && (
-                <AccordionItem value="owner" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
-                  <AccordionTrigger className="hover:no-underline px-4 py-3">
+                <AccordionItem
+                  value="owner"
+                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                >
+                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
                     <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
                       <User className="text-leadgaze-dark h-4 w-4 dark:text-white" />
                       Lead Owner
@@ -961,7 +1066,7 @@ export default function LeadDetailsPage() {
             {canAccess('leads', 'delete') && (
               <Card className="border-destructive/50 border-solid">
                 <CardContent>
-                  <div className="flex flex-col md:flex-row items-center justify-between mt-6">
+                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
                     <div className="mb-2 space-y-1">
                       <p className="font-medium dark:text-white">Delete Lead</p>
                       <p className="text-muted-foreground text-sm">
