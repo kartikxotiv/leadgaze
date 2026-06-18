@@ -36,23 +36,19 @@ import { CoreEmailComposeDialog } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
 import { formatDate } from '@kit/shared/utils';
 import { useUser } from '@kit/supabase/hooks/use-user';
-import { Button } from '@kit/ui/button';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@kit/ui/accordion';
+import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader } from '@kit/ui/card';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { DetailHeader } from '@kit/ui/detail-header';
 import { DetailInfoList, DetailInfoRow } from '@kit/ui/detail-info-row';
 import { PageBody } from '@kit/ui/page';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@kit/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
 import { Skeleton } from '@kit/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import {
@@ -71,17 +67,17 @@ import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { type Contact, getContactsService } from '~/services/contacts.service';
 import {
+  getOpportunityByIdService,
+  getOpportunityStatusesService,
+  updateOpportunityService,
+} from '~/services/opportunities.service';
+import {
   assignOpportunityToUser,
   getOpportunityAssignees,
 } from '~/services/opportunity-assignees.service';
-import {
-  getOpportunityByIdService,  
-  updateOpportunityService,
-  getOpportunityStatusesService,
-} from '~/services/opportunities.service';
+
 import { CentralStatusManagementDialog } from '../../_components/central-status-management-dialog';
 import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
-import { ManageableStatusSelect } from '../../_components/manageable-status-select';
 import {
   EntityDocuments,
   EntityMeetings,
@@ -90,6 +86,7 @@ import {
 import { EntityCalls } from '../../_components/entity-calls';
 import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
+import { ManageableStatusSelect } from '../../_components/manageable-status-select';
 import { AssignUserModal } from '../../leads/components/assign-user-modal';
 import { LogCallDialog } from '../../leads/components/log-call-dialog';
 import { EditOpportunityDialog } from '../components/edit-opportunity-dialog';
@@ -99,7 +96,7 @@ function OpportunityDetailsSkeleton() {
   return (
     <ModuleGuard module="opportunities">
       <div className="flex h-full flex-col">
-        <div className="px-6 pb-2 pt-4">
+        <div className="px-6 pt-4 pb-2">
           <Skeleton className="h-8 w-20 rounded-md" />
         </div>
         <PageBody>
@@ -216,13 +213,16 @@ export default function OpportunityDetailsPage() {
     mutationFn: (userId: string) =>
       assignOpportunityToUser(id, { assigned_to_user_id: userId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['opportunity-assignees', id] });
+      queryClient.invalidateQueries({
+        queryKey: ['opportunity-assignees', id],
+      });
       toast.success('User assigned to opportunity');
       setIsAssignModalOpen(false);
     },
     onError: (error: unknown) => {
-      const response = (error as { response?: { data?: { message?: unknown } } })
-        ?.response;
+      const response = (
+        error as { response?: { data?: { message?: unknown } } }
+      )?.response;
       const message =
         typeof response?.data?.message === 'string'
           ? response.data.message
@@ -331,8 +331,8 @@ export default function OpportunityDetailsPage() {
         <div className="flex h-screen flex-col items-center justify-center gap-4">
           <h1 className="text-2xl font-bold">Opportunity Not Found</h1>
           <p className="text-muted-foreground">
-            The opportunity you&apos;re looking for doesn&apos;t exist or you don&apos;t have
-            permission to view it.
+            The opportunity you&apos;re looking for doesn&apos;t exist or you
+            don&apos;t have permission to view it.
           </p>
           <Button asChild variant="outline">
             <Link href="/home/sales/opportunities">Back to Opportunities</Link>
@@ -344,7 +344,7 @@ export default function OpportunityDetailsPage() {
 
   return (
     <ModuleGuard module="opportunities">
-      <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap sm:items-center sm:justify-between pb-2 pt-4">  
+      <div className="flex flex-wrap items-start gap-2 pt-4 pb-2 sm:flex-nowrap sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -393,7 +393,10 @@ export default function OpportunityDetailsPage() {
                     size="sm"
                     className={`gap-2 ${opportunityEmailRecipients.length === 0 ? 'opacity-50' : ''}`}
                     disabled={opportunityEmailRecipients.length === 0}
-                    onClick={() => opportunityEmailRecipients.length > 0 && setIsEmailDialogOpen(true)}
+                    onClick={() =>
+                      opportunityEmailRecipients.length > 0 &&
+                      setIsEmailDialogOpen(true)
+                    }
                     title={
                       opportunityEmailRecipients.length === 0
                         ? 'Opportunity account has no contact email addresses'
@@ -405,7 +408,9 @@ export default function OpportunityDetailsPage() {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  {opportunityEmailRecipients.length === 0 ? 'No emails available' : 'Send Email'}
+                  {opportunityEmailRecipients.length === 0
+                    ? 'No emails available'
+                    : 'Send Email'}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -437,9 +442,8 @@ export default function OpportunityDetailsPage() {
                             stage.status_name.toLowerCase().includes('won') ||
                             stage.is_won;
                           const isLost =
-                            stage.status_name
-                              .toLowerCase()
-                              .includes('lost') || stage.is_lost;
+                            stage.status_name.toLowerCase().includes('lost') ||
+                            stage.is_lost;
 
                           if (isWon && !canCloseWon) return false;
                           if (isLost && !canCloseLost) return false;
@@ -449,8 +453,9 @@ export default function OpportunityDetailsPage() {
                           <button
                             key={stage.id}
                             className={cn(
-                              'flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent',
-                              opportunity.stage_id === stage.id && 'bg-accent font-medium',
+                              'hover:bg-accent flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
+                              opportunity.stage_id === stage.id &&
+                                'bg-accent font-medium',
                             )}
                             onClick={async () => {
                               try {
@@ -468,7 +473,9 @@ export default function OpportunityDetailsPage() {
                               className="h-2 w-2 shrink-0 rounded-full"
                               style={{ backgroundColor: stage.color }}
                             />
-                            <span className="flex-1 text-left">{stage.status_name}</span>
+                            <span className="flex-1 text-left">
+                              {stage.status_name}
+                            </span>
                             {opportunity.stage_id === stage.id && (
                               <Check className="text-primary h-4 w-4 shrink-0" />
                             )}
@@ -604,9 +611,9 @@ export default function OpportunityDetailsPage() {
           entityName={opportunity.opportunity_name}
           onSuccess={() => router.push('/home/sales/opportunities')}
         />
-        <div className="flex lg:flex-1 lg:min-h-0 flex-col lg:flex-row gap-4 w-full">
+        <div className="flex w-full flex-col gap-4 lg:min-h-0 lg:flex-1 lg:flex-row">
           {/* Main Content */}
-          <div className="space-y-4 w-full lg:w-[65%] lg:overflow-y-auto">
+          <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
             <DetailHeader
               avatar={
                 <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 text-white">
@@ -646,7 +653,7 @@ export default function OpportunityDetailsPage() {
                     </span>
                   </div>
                 </>
-              }              
+              }
             />
 
             {/* Sales Pipeline Timeline */}
@@ -669,15 +676,20 @@ export default function OpportunityDetailsPage() {
             </CardWidgetContainer> */}
 
             {/* Tabs Section */}
-            <Tabs defaultValue="email" className="space-y-4">
-              <TabsList className="h-auto w-full justify-start gap-3 sm:gap-6 rounded-none border-b bg-transparent p-0 mb-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                <TabsTrigger
-                  value="email"
-                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                >
-                  <Mail className="mr-2 h-4 w-4" />
-                  Email
-                </TabsTrigger>
+            <Tabs
+              defaultValue={canManageEmail ? 'email' : 'notes'}
+              className="space-y-4"
+            >
+              <TabsList className="mb-2 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
+                {canManageEmail && (
+                  <TabsTrigger
+                    value="email"
+                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                  >
+                    <Mail className="mr-2 h-4 w-4" />
+                    Email
+                  </TabsTrigger>
+                )}
                 <TabsTrigger
                   value="notes"
                   className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
@@ -722,32 +734,52 @@ export default function OpportunityDetailsPage() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="email" className="max-h-[500px] overflow-y-auto">
-                <EntityEmails
-                  entityId={id}
-                  entityType="opportunity"
-                  entityName={opportunity.opportunity_name}
-                  recipientOptions={opportunityEmailRecipients}
-                />
-              </TabsContent>
+              {canManageEmail && (
+                <TabsContent
+                  value="email"
+                  className="max-h-[500px] overflow-y-auto"
+                >
+                  <EntityEmails
+                    entityId={id}
+                    entityType="opportunity"
+                    entityName={opportunity.opportunity_name}
+                    recipientOptions={opportunityEmailRecipients}
+                  />
+                </TabsContent>
+              )}
 
-              <TabsContent value="notes" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="notes"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityNotes entityType="opportunity" entityId={id} />
               </TabsContent>
 
-              <TabsContent value="meetings" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="meetings"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityMeetings entityType="opportunity" entityId={id} />
               </TabsContent>
 
-              <TabsContent value="calls" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="calls"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityCalls entityType="opportunity" entityId={id} />
               </TabsContent>
 
-              <TabsContent value="reminders" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="reminders"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityReminders entityType="opportunity" entityId={id} />
               </TabsContent>
 
-              <TabsContent value="documents" className="max-h-[500px] overflow-y-auto">
+              <TabsContent
+                value="documents"
+                className="max-h-[500px] overflow-y-auto"
+              >
                 <EntityDocuments entityType="opportunity" entityId={id} />
               </TabsContent>
 
@@ -766,19 +798,20 @@ export default function OpportunityDetailsPage() {
                           </p>
                         </div>
                       </div>
-                      {opportunity.updated_at && opportunity.updated_at !== opportunity.created_at && (
-                        <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                          <div className="h-2 w-2 rounded-full bg-blue-500" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              Opportunity Updated
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {formatDate(opportunity.updated_at)}
-                            </p>
+                      {opportunity.updated_at &&
+                        opportunity.updated_at !== opportunity.created_at && (
+                          <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
+                            <div className="h-2 w-2 rounded-full bg-blue-500" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                Opportunity Updated
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {formatDate(opportunity.updated_at)}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
                     </div>
                   </CardContent>
                 </Card>
@@ -787,11 +820,13 @@ export default function OpportunityDetailsPage() {
 
             {/* Danger Zone */}
             {rbacCanAccess('opportunities', 'delete') && (
-              <Card className="hidden lg:block border-destructive/50 border-solid">
+              <Card className="border-destructive/50 hidden border-solid lg:block">
                 <CardContent>
-                  <div className="flex flex-col md:flex-row items-center justify-between mt-6">
-                    <div className="space-y-1 mb-2">
-                      <p className="font-medium dark:text-white">Delete Opportunity</p>
+                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
+                    <div className="mb-2 space-y-1">
+                      <p className="font-medium dark:text-white">
+                        Delete Opportunity
+                      </p>
                       <p className="text-muted-foreground text-sm">
                         Once you delete an opportunity, there is no going back.
                         Please be certain.
@@ -827,7 +862,7 @@ export default function OpportunityDetailsPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-4 w-full lg:w-[35%] lg:overflow-y-auto">
+          <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
             {/* Accordion Sections */}
             <Accordion
               type="single"
@@ -837,8 +872,11 @@ export default function OpportunityDetailsPage() {
               onValueChange={setOpenAccordion}
             >
               {/* Opportunity Details */}
-              <AccordionItem value="details" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
-                <AccordionTrigger className="hover:no-underline px-4 py-3">
+              <AccordionItem
+                value="details"
+                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              >
+                <AccordionTrigger className="px-4 py-3 hover:no-underline">
                   <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
                     <Wallet className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     Details
@@ -913,16 +951,22 @@ export default function OpportunityDetailsPage() {
 
               {/* Assigned Team Members */}
               {currentWorkspace?.id && (
-                <AccordionItem value="assignees" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
-                  <AccordionTrigger hideChevron className="hover:no-underline px-4 py-3">
-                    <div className="flex justify-between w-full">
+                <AccordionItem
+                  value="assignees"
+                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                >
+                  <AccordionTrigger
+                    hideChevron
+                    className="px-4 py-3 hover:no-underline"
+                  >
+                    <div className="flex w-full justify-between">
                       <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
                         <Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                         Assigned Members
                       </span>
                       <Button
                         size="sm"
-                        className="ml-2 mr-3 gap-2 shrink-0"
+                        className="mr-3 ml-2 shrink-0 gap-2"
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -933,17 +977,29 @@ export default function OpportunityDetailsPage() {
                         Assign Member
                       </Button>
                     </div>
-                    <ChevronDown className={cn('text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200', openAccordion === 'assignees' && 'rotate-180')} />
+                    <ChevronDown
+                      className={cn(
+                        'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
+                        openAccordion === 'assignees' && 'rotate-180',
+                      )}
+                    />
                   </AccordionTrigger>
                   <AccordionContent className="px-4 pb-4">
-                    <OpportunityAssignees opportunityId={id} workspaceId={currentWorkspace.id} embedded />
+                    <OpportunityAssignees
+                      opportunityId={id}
+                      workspaceId={currentWorkspace.id}
+                      embedded
+                    />
                   </AccordionContent>
                 </AccordionItem>
               )}
 
               {/* System Info */}
-              <AccordionItem value="system" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
-                <AccordionTrigger className="hover:no-underline px-4 py-3">
+              <AccordionItem
+                value="system"
+                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              >
+                <AccordionTrigger className="px-4 py-3 hover:no-underline">
                   <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
                     <Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     System Info
@@ -964,7 +1020,11 @@ export default function OpportunityDetailsPage() {
                     <DetailInfoRow
                       icon={<User className="h-5 w-5" />}
                       label="Created By"
-                      value={opportunity.created_by_account?.name || opportunity.created_by || '-'}
+                      value={
+                        opportunity.created_by_account?.name ||
+                        opportunity.created_by ||
+                        '-'
+                      }
                     />
                     <DetailInfoRow
                       icon={<Calendar className="h-5 w-5" />}
@@ -982,9 +1042,11 @@ export default function OpportunityDetailsPage() {
             {rbacCanAccess('opportunities', 'delete') && (
               <Card className="border-destructive/50 border-solid">
                 <CardContent>
-                  <div className="flex flex-col md:flex-row items-center justify-between mt-6">
-                    <div className="space-y-1 mb-2">
-                      <p className="font-medium dark:text-white">Delete Opportunity</p>
+                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
+                    <div className="mb-2 space-y-1">
+                      <p className="font-medium dark:text-white">
+                        Delete Opportunity
+                      </p>
                       <p className="text-muted-foreground text-sm">
                         Once you delete an opportunity, there is no going back.
                         Please be certain.
@@ -1073,7 +1135,11 @@ export default function OpportunityDetailsPage() {
           onOpenChange={setIsAssignModalOpen}
           leadId={id}
           workspaceId={currentWorkspace.id}
-          currentAssignees={pageAssignees as Parameters<typeof AssignUserModal>[0]['currentAssignees']}
+          currentAssignees={
+            pageAssignees as Parameters<
+              typeof AssignUserModal
+            >[0]['currentAssignees']
+          }
           onAssign={(userId) => pageAssignMutation.mutate(userId)}
           isLoading={pageAssignMutation.isPending}
         />
