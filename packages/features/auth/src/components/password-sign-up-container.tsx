@@ -106,8 +106,14 @@ export function EmailPasswordSignUpContainer({
           console.error('Error checking invitations:', error);
         }
 
-        // No invitation found or error occurred, proceed with normal redirect
-        router.push(appHome);
+        // No invitation found or error occurred, route through auth callback
+        // so the server-side workspace check can redirect to the correct
+        // destination (workspace-setup vs home) without the /org/home flash.
+        const callbackUrl = new URL('/auth/callback', window.location.origin);
+        if (appHome) {
+          callbackUrl.searchParams.set('next', appHome);
+        }
+        window.location.assign(callbackUrl.toString());
       };
 
       const timer = setTimeout(() => {
