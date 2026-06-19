@@ -23,6 +23,8 @@ import { AssignUserModal } from '../../leads/components/assign-user-modal';
 interface ContactAssigneesProps {
   contactId: string;
   workspaceId: string;
+  /** When true, renders without the CardWidgetContainer wrapper (for embedding in accordion) */
+  embedded?: boolean;
 }
 
 interface ContactAssignee {
@@ -56,6 +58,7 @@ function getAssigneeInitials(assignee: ContactAssignee) {
 export function ContactAssignees({
   contactId,
   workspaceId,
+  embedded = false,
 }: ContactAssigneesProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -97,6 +100,87 @@ export function ContactAssignees({
     },
   });
 
+  const content = (
+    <div className={embedded ? '' : 'px-6 py-4'}>
+      {isLoading ? (
+        <div className="text-muted-foreground py-8 text-center text-sm">
+          Loading assignees...
+        </div>
+      ) : assignees.length === 0 ? (
+        <div className="py-8 text-center">
+          <p className="text-muted-foreground mb-4 text-sm">
+            No team members assigned yet
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setIsModalOpen(true)}
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Assign First Member
+          </Button>
+        </div>
+      ) : (
+        <CardWidgetList>
+          {assignees?.map((assignee) => (
+            <CardWidgetListItem
+              key={assignee.id}
+              icon={
+                assignee.assignee_picture ? (
+                  <img
+                    src={assignee.assignee_picture}
+                    alt={assignee.assignee_name || 'User'}
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
+                    {getAssigneeInitials(assignee)}
+                  </div>
+                )
+              }
+              title={assignee.assignee_name || 'Unknown'}
+              subtitle={assignee.assignee_email}
+              badge={
+                assignee.is_primary_assignee ? (
+                  <Badge variant="default">Primary</Badge>
+                ) : null
+              }
+              actions={
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => unassignMutation.mutate(assignee.id)}
+                  disabled={unassignMutation.isPending}
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              }
+            />
+          ))}
+        </CardWidgetList>
+      )}
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <>
+        {content}
+        <AssignUserModal
+          isOpen={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          leadId={contactId}
+          workspaceId={workspaceId}
+          currentAssignees={assignees as LeadAssigneeWithDetails[]}
+          onAssign={(userId) => assignMutation.mutate(userId)}
+          isLoading={assignMutation.isPending}
+        />
+      </>
+    );
+  }
+
   return (
     <CardWidgetContainer
       className="mt-6"
@@ -114,68 +198,7 @@ export function ContactAssignees({
         </Button>
       }
     >
-      <div className="px-6 py-4">
-        {isLoading ? (
-          <div className="text-muted-foreground py-8 text-center text-sm">
-            Loading assignees...
-          </div>
-        ) : assignees.length === 0 ? (
-          <div className="py-8 text-center">
-            <p className="text-muted-foreground mb-4 text-sm">
-              No team members assigned yet
-            </p>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setIsModalOpen(true)}
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Assign First Member
-            </Button>
-          </div>
-        ) : (
-          <CardWidgetList>
-            {assignees?.map((assignee) => (
-              <CardWidgetListItem
-                key={assignee.id}
-                icon={
-                  assignee.assignee_picture ? (
-                    <img
-                      src={assignee.assignee_picture}
-                      alt={assignee.assignee_name || 'User'}
-                      className="h-8 w-8 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
-                      {getAssigneeInitials(assignee)}
-                    </div>
-                  )
-                }
-                title={assignee.assignee_name || 'Unknown'}
-                subtitle={assignee.assignee_email}
-                badge={
-                  assignee.is_primary_assignee ? (
-                    <Badge variant="default">Primary</Badge>
-                  ) : null
-                }
-                actions={
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => unassignMutation.mutate(assignee.id)}
-                    disabled={unassignMutation.isPending}
-                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                }
-              />
-            ))}
-          </CardWidgetList>
-        )}
-      </div>
-
+      {content}
       <AssignUserModal
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}

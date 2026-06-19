@@ -147,7 +147,7 @@ export function CoreInboxTab({
   });
 
   return (
-    <div className="grid gap-4">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="flex items-center gap-2">
           {(['all', 'inbound', 'outbound'] as const).map((value) => (
@@ -269,7 +269,7 @@ export function CoreInboxTab({
               </div>
             </div>
           ) : (
-            <div className="grid gap-3 h-[calc(100vh-320px)] min-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
+            <div className="flex h-[calc(100vh-320px)] min-h-[400px] flex-col gap-3 overflow-y-auto pr-2 scrollbar-thin">
               {emails.map((email: any) => (
                 <button
                   key={email.id}
@@ -278,7 +278,7 @@ export function CoreInboxTab({
                     setSelectedEmail(email);
                     setIsDetailOpen(true);
                   }}
-                  className="hover:border-primary/30 group flex cursor-pointer flex-col gap-2 rounded-xl border border-gray-100 bg-white p-4 text-left transition-all hover:shadow-md dark:border-gray-800 dark:bg-zinc-900"
+                  className="hover:border-primary/30 group flex-none cursor-pointer flex-col gap-2 rounded-xl border border-gray-100 bg-white p-4 text-left transition-all hover:shadow-md dark:border-gray-800 dark:bg-zinc-900"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex min-w-0 items-center gap-3">

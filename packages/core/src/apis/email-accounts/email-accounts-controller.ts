@@ -9,6 +9,12 @@ import {
 import { encrypt } from '../../lib/email/crypto';
 import { catchAsync, successDataResponse } from '../../utils/response-handler';
 
+function normalizeEmail(value: unknown) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase();
+}
+
 export const getCoreEmailAccountsController = catchAsync(
   async ({ request }) => {
     const url = new URL(request.url);
@@ -86,7 +92,7 @@ export const createCoreSmtpAccountController = catchAsync(
       .upsert(
         {
           workspace_id: workspaceId,
-          email: body.email,
+          email: normalizeEmail(body.email),
           from_name: body.from_name,
           provider: 'smtp',
           smtp_host: body.host,
@@ -107,6 +113,8 @@ export const createCoreSmtpAccountController = catchAsync(
           is_sync_enabled: true,
           inbound_enabled: Boolean(body.imap_host),
           outbound_enabled: true,
+          last_error: null,
+          settings: {},
           updated_by: memberContext.userId,
           created_by: memberContext.userId,
         },
@@ -249,7 +257,7 @@ export const deleteCoreEmailAccountController = catchAsync(
     const { data: existingAccount } = await (supabase as any)
       .schema('core')
       .from('email_accounts')
-      .select('id,owner_user_id')
+      .select('id,owner_user_id,settings')
       .eq('id', id)
       .eq('workspace_id', workspaceId)
       .single();
@@ -272,7 +280,19 @@ export const deleteCoreEmailAccountController = catchAsync(
     const { error } = await (supabase as any)
       .schema('core')
       .from('email_accounts')
-      .delete()
+      .update({
+        is_active: false,
+        is_sync_enabled: false,
+        inbound_enabled: false,
+        outbound_enabled: false,
+        last_error: null,
+        settings: {
+          ...((existingAccount as any).settings ?? {}),
+          deleted_at: new Date().toISOString(),
+          deleted_by: memberContext.userId,
+        },
+        updated_by: memberContext.userId,
+      })
       .eq('id', id)
       .eq('workspace_id', workspaceId);
 

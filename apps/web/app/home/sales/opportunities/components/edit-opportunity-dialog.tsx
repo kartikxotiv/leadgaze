@@ -390,11 +390,12 @@ export function EditOpportunityDialog({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={updateMutation.isPending}
+                disabled={updateMutation.isPending} 
+                className='mb-2'
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={updateMutation.isPending}>
+              <Button type="submit" form="dialog-form" disabled={updateMutation.isPending} className='mb-2'>
                 {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>

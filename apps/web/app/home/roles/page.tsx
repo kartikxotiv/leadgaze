@@ -8,7 +8,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Edit2,
   GripVertical,
-  Loader2,
   Plus,
   Shield,
   Trash2,
@@ -17,16 +16,11 @@ import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
+import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
+import { StatusFilterDropdown } from '@kit/ui/status-filter-dropdown';
 import { Skeleton } from '@kit/ui/skeleton';
 import {
   Table,
@@ -36,10 +30,9 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
-import { cn } from '@kit/ui/utils';
 
+import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getModuleKeyFromPath } from '~/lib/rbac/route-module-map';
@@ -65,6 +58,9 @@ export default function RolesPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [orderedRoles, setOrderedRoles] = useState<Role[]>([]);
   const [draggedRoleIndex, setDraggedRoleIndex] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const columns = useMemo(
     () => [
@@ -99,6 +95,42 @@ export default function RolesPage() {
     },
     enabled: !!currentWorkspace?.id,
   });
+
+  // Type filter items for StatusFilterDropdown
+  const typeFilterItems = useMemo(
+    () => [
+      { id: 'system', status_name: 'System Roles', color: '#3b82f6' },
+      { id: 'custom', status_name: 'Custom Roles', color: '#eab308' },
+    ],
+    [],
+  );
+
+  const typeBreakdown = useMemo(
+    () => ({
+      system: { count: roles.filter((r: Role) => r.is_system).length },
+      custom: { count: roles.filter((r: Role) => !r.is_system).length },
+    }),
+    [roles],
+  );
+
+  // Filtered roles based on type filter and search term
+  const filteredRoles = useMemo(() => {
+    let result = orderedRoles;
+    if (typeFilter === 'system') {
+      result = result.filter((r: Role) => r.is_system);
+    } else if (typeFilter === 'custom') {
+      result = result.filter((r: Role) => !r.is_system);
+    }
+    if (debouncedSearchTerm) {
+      const term = debouncedSearchTerm.toLowerCase();
+      result = result.filter(
+        (r: Role) =>
+          r.role_name.toLowerCase().includes(term) ||
+          r.role_key.toLowerCase().includes(term),
+      );
+    }
+    return result;
+  }, [orderedRoles, typeFilter, debouncedSearchTerm]);
 
   // Reorder mutation
   const reorderRolesMutation = useMutation({
@@ -217,134 +249,58 @@ export default function RolesPage() {
     <ModuleGuard module="roles">
       <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          title={`Roles Management (${Array.isArray(roles) ? roles.length : 0})`}
+          title={`Roles Management (${roles.length})`}
           description="Create and manage workspace roles with custom permissions"
-        >
-          <div className="flex items-center gap-2">
-            {/* {canAccess('roles', 'create') && (
-                <Button
-                  onClick={() => setCreateDialogOpen(true)}
-                  size="sm"
-                  className="h-9 gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  New Role
-                </Button>
-              )} */}
+        />
+      </div>
 
-            {canAccess('roles', 'create') && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    onClick={() => setCreateDialogOpen(true)}
-                    size="sm"
-                    className="dark:dark-background-color h-9 w-9 bg-white p-0 hover:cursor-pointer"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-
-                <TooltipContent side="bottom">
-                  <p>New Role</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-
+      {/* Toolbar with search, type filter, actions */}
+      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+        <ListToolBar
+          statusSlot={
+            <StatusFilterDropdown
+              statuses={typeFilterItems}
+              selectedStatus={typeFilter}
+              onStatusChange={setTypeFilter}
+              statusBreakdown={typeBreakdown}
+              totalCount={roles.length}
+              allLabel="All Roles"
+            />
+          }
+          showSearch
+          searchPlaceholder="Search roles..."
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          actions={[
+            ...(canAccess('roles', 'create')
+              ? [
+                  {
+                    key: 'add',
+                    label: 'New Role',
+                    icon: Plus,
+                    onClick: () => setCreateDialogOpen(true),
+                    show: true,
+                    buttonVariant: 'default' as const,
+                  },
+                ]
+              : []),
+          ]}
+          columnVisibilitySlot={
             <ColumnVisibilitySelector
               columns={columns}
               visibility={visibility}
               onToggle={toggleVisibility}
               onReset={reset}
             />
-          </div>
-        </PageHeader>
-        {/* Summary Cards */}
-        <div className="w-full max-w-full min-w-0 overflow-x-auto pb-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Card
-              className={cn(
-                'hover:border-primary/50 bg-card rounded-sm-card inline-flex w-auto shrink-0 cursor-pointer transition-all',
-              )}
-            >
-              <CardContent className={cn('flex items-center px-3 py-2')}>
-                <div className="flex items-center gap-2 whitespace-nowrap">
-                  <div className="bg-activity-3 h-2 w-2 shrink-0 rounded-full" />
-                  <span
-                    className={cn(
-                      'primary-text-medium text-leadgaze-dark uppercase dark:text-white',
-                    )}
-                  >
-                    Total Roles ({Array.isArray(roles) ? roles.length : 0})
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card
-              className={cn(
-                'hover:border-primary/50 bg-card rounded-sm-card inline-flex w-auto shrink-0 cursor-pointer transition-all',
-              )}
-            >
-              <CardContent className={cn('flex items-center px-3 py-2')}>
-                <div className="flex items-center gap-2 whitespace-nowrap">
-                  <div className="bg-activity-1 h-2 w-2 shrink-0 rounded-full" />
-                  <span
-                    className={cn(
-                      'primary-text-medium text-leadgaze-dark uppercase dark:text-white',
-                    )}
-                  >
-                    System Roles (
-                    {Array.isArray(roles)
-                      ? roles.filter((r: Role) => r.is_system).length
-                      : 0}
-                    )
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card
-              className={cn(
-                'hover:border-primary/50 bg-card rounded-sm-card inline-flex w-auto shrink-0 cursor-pointer transition-all',
-              )}
-            >
-              <CardContent className={cn('flex items-center px-3 py-2')}>
-                <div className="flex items-center gap-2 whitespace-nowrap">
-                  <div className="bg-activity-4 h-2 w-2 shrink-0 rounded-full" />
-                  <span
-                    className={cn(
-                      'primary-text-medium text-leadgaze-dark uppercase dark:text-white',
-                    )}
-                  >
-                    Custom Roles (
-                    {Array.isArray(roles)
-                      ? roles.filter((r: Role) => !r.is_system).length
-                      : 0}
-                    )
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+          }
+        />
       </div>
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col gap-0">
-          <Card className="flex min-h-0 flex-col border-none shadow-none">
-            <CardHeader className="shrink-0 p-4">
-              <div>
-                <CardTitle className="leading-tight">Workspace Roles</CardTitle>
-                <CardDescription>
-                  Manage roles and their permissions
-                </CardDescription>
-              </div>
-            </CardHeader>
-          </Card>
+        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
           <CustomTableContainer>
             {isLoading ? (
               <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
-                <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
+                <Table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
                   <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                     <TableRow>
                       {isVisible('role_name') && (
@@ -379,13 +335,13 @@ export default function RolesPage() {
                       </TableRow>
                     ))}
                   </TableBody>
-                </table>
+                </Table>
               </div>
             ) : error ? (
               <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border p-4">
                 Failed to load roles
               </div>
-            ) : !Array.isArray(roles) || roles.length === 0 ? (
+            ) : filteredRoles.length === 0 ? (
               <div className="py-12 text-center table-row-border">
                 <Shield className="text-muted-foreground/30 mx-auto mb-4 h-12 w-12" />
                 <p className="text-muted-foreground">No roles found</p>
@@ -407,7 +363,7 @@ export default function RolesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orderedRoles?.map((role: Role, index: number) => (
+                  {filteredRoles?.map((role: Role, index: number) => (
                     <TableRow
                       key={role.id}
                       className={draggedRoleIndex === index ? 'opacity-50' : ''}
@@ -506,9 +462,9 @@ export default function RolesPage() {
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
-            )}
-          </CustomTableContainer>
+              </Table>            
+            )}        
+          </CustomTableContainer>  
         </div>
 
         {/* Dialogs */}

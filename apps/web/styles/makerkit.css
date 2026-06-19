@@ -8,12 +8,8 @@
 /*
 Optimize dropdowns for mobile
  */
-[data-radix-popper-content-wrapper] {
-    @apply w-full md:w-auto;
-}
-
 [data-radix-menu-content] {
-    @apply rounded-none md:rounded-lg w-full md:w-auto;
+    @apply md:rounded-lg;
 }
 
 [data-radix-menu-content] [role="menuitem"] {

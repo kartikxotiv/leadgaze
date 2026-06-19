@@ -24,7 +24,23 @@ const paths = {
   appHome: pathsConfig.app.home,
 };
 
-function SignUpPage() {
+interface SignUpPageProps {
+  searchParams: Promise<{
+    next?: string;
+    email?: string;
+    invite_token?: string;
+  }>;
+}
+
+async function SignUpPage({ searchParams }: SignUpPageProps) {
+  const resolvedSearchParams = await searchParams;
+  const nextParam = resolvedSearchParams.next;
+  const emailParam = resolvedSearchParams.email;
+  const inviteTokenParam = resolvedSearchParams.invite_token;
+  const signInUrl = nextParam
+    ? `${pathsConfig.auth.signIn}?next=${encodeURIComponent(nextParam)}`
+    : pathsConfig.auth.signIn;
+
   return (
     <div className="fixed inset-0 z-50 grid min-h-screen overflow-y-auto bg-slate-50 text-slate-900 lg:grid-cols-[minmax(360px,1fr)_minmax(420px,1fr)]">
       <section className="relative hidden min-h-screen flex-col overflow-hidden bg-[linear-gradient(180deg,var(--color-leadgaze-auth-1)_0%,var(--color-leadgaze-auth-7)_54%,var(--color-leadgaze-auth-11)_100%)] px-14 py-14 text-white lg:flex xl:px-16">
@@ -143,6 +159,8 @@ function SignUpPage() {
               providers={authConfig.providers}
               displayTermsCheckbox={authConfig.displayTermsCheckbox}
               paths={paths}
+              inviteToken={inviteTokenParam}
+              email={emailParam}
             />
 
             <div className="mt-5 flex items-center justify-center gap-1 text-xs text-slate-500">
@@ -153,7 +171,7 @@ function SignUpPage() {
                 size={'sm'}
                 className="h-auto p-0 text-xs font-semibold text-[var(--color-leadgaze-auth-7)]"
               >
-                <Link href={pathsConfig.auth.signIn}>Sign in</Link>
+                <Link href={signInUrl}>Sign in</Link>
               </Button>
             </div>
           </div>

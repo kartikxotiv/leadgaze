@@ -157,9 +157,16 @@ function getProductStyle(key: string) {
 
 // ─── Main Page ───────────────────────────────────────────────────
 
-export default function OrgSubscriptionPage() {
-  const { currentWorkspace } = useRBAC();
+export default function OrgSubscriptionPage({
+  canManageSubscription: canManageSubscriptionProp,
+}: {
+  canManageSubscription?: boolean;
+} = {}) {
+  const { currentWorkspace, canAccess, isLoading: isRbacLoading } = useRBAC();
   const workspaceId = currentWorkspace?.id ?? '';
+  const canViewSubscription = canAccess('subscription', 'view');
+  const canManageSubscription =
+    canManageSubscriptionProp ?? canAccess('subscription', 'manage');
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
@@ -244,7 +251,10 @@ export default function OrgSubscriptionPage() {
     enabled: !!workspaceId,
   });
 
-  const products: SubscriptionProduct[] = productsData?.data ?? [];
+  const products = useMemo<SubscriptionProduct[]>(
+    () => productsData?.data ?? [],
+    [productsData?.data],
+  );
   const seats: WorkspaceSeat[] = useMemo(
     () =>
       (seatsData?.data ?? []).filter(
@@ -388,6 +398,10 @@ export default function OrgSubscriptionPage() {
 
   const checkoutMutation = useMutation({
     mutationFn: () => {
+      if (!canManageSubscription) {
+        throw new Error('You do not have permission to manage subscriptions.');
+      }
+
       const existingItems = seats.map((s) => ({
         productKey: s.subscription_products?.product_key ?? '',
         seats: pendingChanges[s.product_id] ?? s.seats_purchased,
@@ -432,6 +446,11 @@ export default function OrgSubscriptionPage() {
   });
 
   const handleDirectUpdate = async (seatId: string, newQuantity: number) => {
+    if (!canManageSubscription) {
+      toast.error('You do not have permission to manage subscriptions.');
+      return;
+    }
+
     try {
       const result = await updateSeatsViaStripeService(seatId, newQuantity);
       toast.success(
@@ -459,6 +478,8 @@ export default function OrgSubscriptionPage() {
   };
 
   const requestSeatUpdate = (seat: WorkspaceSeat, newQuantity: number) => {
+    if (!canManageSubscription) return;
+
     setSeatUpdateDialog({
       open: true,
       seatId: seat.id,
@@ -469,13 +490,21 @@ export default function OrgSubscriptionPage() {
   };
 
   const updatePending = (productId: string, seats: number) => {
+    if (!canManageSubscription) return;
+
     setPendingChanges((prev) => ({ ...prev, [productId]: seats }));
   };
 
   const hasChanges = changedItems.length > 0 || selectedNewItems.length > 0;
 
   const cancelMutation = useMutation({
-    mutationFn: () => cancelSubscriptionService({ workspaceId }),
+    mutationFn: () => {
+      if (!canManageSubscription) {
+        throw new Error('You do not have permission to manage subscriptions.');
+      }
+
+      return cancelSubscriptionService({ workspaceId });
+    },
     onSuccess: (data) => {
       toast.success(data?.message ?? 'Subscription cancelled.');
       setCancelDialogOpen(false);
@@ -492,8 +521,13 @@ export default function OrgSubscriptionPage() {
   });
 
   const removeModuleMutation = useMutation({
-    mutationFn: (productKey: string) =>
-      cancelSubscriptionService({ workspaceId, productKey }),
+    mutationFn: (productKey: string) => {
+      if (!canManageSubscription) {
+        throw new Error('You do not have permission to manage subscriptions.');
+      }
+
+      return cancelSubscriptionService({ workspaceId, productKey });
+    },
     onSuccess: (data) => {
       toast.success(data?.message ?? 'Module removed from subscription.');
       setRemoveModuleDialog({ open: false, productKey: '', displayName: '' });
@@ -517,10 +551,24 @@ export default function OrgSubscriptionPage() {
     },
   });
 
+  if (isRbacLoading) {
+    return null;
+  }
+
+  if (!canViewSubscription) {
+    return (
+      <Card>
+        <CardContent className="text-muted-foreground p-6 text-sm">
+          You do not have permission to view billing.
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-8">
       {/* Billing cycle toggle — only for trial/new users, not existing subscribers */}
-      {!existingBillingCycle && (
+      {!existingBillingCycle && canManageSubscription && (
         <div className="flex items-center gap-4">
           <span className="text-muted-foreground text-sm font-medium">
             Billing Cycle
@@ -619,19 +667,22 @@ export default function OrgSubscriptionPage() {
                       pendingChanges[seat.product_id] ?? seat.seats_purchased
                     }
                     billingCycle={billingCycle}
+                    canManageSubscription={canManageSubscription}
                     onPendingChange={(count) =>
                       updatePending(seat.product_id, count)
                     }
                     onDirectUpdate={(count) => requestSeatUpdate(seat, count)}
-                    onRemove={() =>
+                    onRemove={() => {
+                      if (!canManageSubscription) return;
+
                       setRemoveModuleDialog({
                         open: true,
                         productKey:
                           seat.subscription_products?.product_key ?? '',
                         displayName:
                           seat.subscription_products?.display_name ?? 'Module',
-                      })
-                    }
+                      });
+                    }}
                   />
                 ))}
               </TableBody>
@@ -783,21 +834,26 @@ export default function OrgSubscriptionPage() {
               </p>
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 px-1">
+            <div className="grid gap-4 px-1 sm:grid-cols-2 lg:grid-cols-3">
               {availableProducts.map((product) => (
                 <AvailableModuleCard
                   key={product.id}
                   product={product}
                   billingCycle={billingCycle}
+                  canManageSubscription={canManageSubscription}
                   isSelected={product.product_key in availableSelections}
                   selectedSeats={availableSelections[product.product_key] ?? 1}
                   onSelect={() => {
+                    if (!canManageSubscription) return;
+
                     setAvailableSelections((prev) => ({
                       ...prev,
                       [product.product_key]: 1,
                     }));
                   }}
                   onDeselect={() => {
+                    if (!canManageSubscription) return;
+
                     setAvailableSelections((prev) => {
                       const next = { ...prev };
                       delete next[product.product_key];
@@ -805,6 +861,8 @@ export default function OrgSubscriptionPage() {
                     });
                   }}
                   onSeatsChange={(seats) => {
+                    if (!canManageSubscription) return;
+
                     setAvailableSelections((prev) => ({
                       ...prev,
                       [product.product_key]: seats,
@@ -818,35 +876,38 @@ export default function OrgSubscriptionPage() {
       )}
 
       {/* Checkout Bar */}
-      {(((!isPaid || isTrial) && seats.length > 0) ||
-        selectedNewItems.length > 0) && (
-        <CheckoutBar
-          totalMonthly={totalMonthly}
-          totalSeats={totalSeats}
-          billingCycle={billingCycle}
-          hasChanges={hasChanges}
-          isTrial={isTrial}
-          isTrialExpired={isTrialExpired}
-          isPending={checkoutMutation.isPending}
-          onCheckout={() => checkoutMutation.mutate()}
-        />
-      )}
+      {canManageSubscription &&
+        (((!isPaid || isTrial) && seats.length > 0) ||
+          selectedNewItems.length > 0) && (
+          <CheckoutBar
+            totalMonthly={totalMonthly}
+            totalSeats={totalSeats}
+            billingCycle={billingCycle}
+            hasChanges={hasChanges}
+            isTrial={isTrial}
+            isTrialExpired={isTrialExpired}
+            isPending={checkoutMutation.isPending}
+            onCheckout={() => checkoutMutation.mutate()}
+          />
+        )}
 
       {/* Cancel Subscription Section (only for paid subscriptions) */}
-      {isPaid && seats.length > 0 && (
+      {canManageSubscription && isPaid && seats.length > 0 && (
         <Card className="border-destructive/20">
-          <CardContent className="flex items-center gap-3 p-6">
-            <div className="bg-destructive/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-              <AlertTriangle className="text-destructive h-4 w-4" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-destructive font-semibold">
-                Cancel Subscription
-              </h3>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Cancelling will revoke access to all modules at the end of your
-                current billing period. This action cannot be undone.
-              </p>
+          <CardContent className="flex flex-col md:flex-row items-center justify-between p-6">
+            <div className="flex items-start gap-3 mb-2">
+              <div className="bg-destructive/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+                <AlertTriangle className="text-destructive h-4 w-4" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-destructive font-semibold">
+                  Cancel Subscription
+                </h3>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Cancelling will revoke access to all modules at the end of your
+                  current billing period. This action cannot be undone.
+                </p>
+              </div>
             </div>
             <Button
               variant="destructive"
@@ -936,7 +997,10 @@ export default function OrgSubscriptionPage() {
               Cancel
             </Button>
             <Button
+              disabled={!canManageSubscription}
               onClick={async () => {
+                if (!canManageSubscription) return;
+
                 await handleDirectUpdate(
                   seatUpdateDialog.seatId,
                   seatUpdateDialog.newSeats,
@@ -1013,7 +1077,7 @@ export default function OrgSubscriptionPage() {
             </Button>
             <Button
               variant="destructive"
-              disabled={cancelMutation.isPending}
+              disabled={cancelMutation.isPending || !canManageSubscription}
               onClick={() => cancelMutation.mutate()}
             >
               {cancelMutation.isPending ? (
@@ -1096,7 +1160,9 @@ export default function OrgSubscriptionPage() {
             </Button>
             <Button
               variant="destructive"
-              disabled={removeModuleMutation.isPending}
+              disabled={
+                removeModuleMutation.isPending || !canManageSubscription
+              }
               onClick={() =>
                 removeModuleMutation.mutate(removeModuleDialog.productKey)
               }
@@ -1176,6 +1242,7 @@ function ActiveModuleRow({
   isTrial,
   pendingSeats,
   billingCycle,
+  canManageSubscription,
   onPendingChange,
   onDirectUpdate,
   onRemove,
@@ -1186,6 +1253,7 @@ function ActiveModuleRow({
   isTrial: boolean;
   pendingSeats: number;
   billingCycle: 'monthly' | 'yearly';
+  canManageSubscription: boolean;
   onPendingChange: (count: number) => void;
   onDirectUpdate: (count: number) => void;
   onRemove: () => void;
@@ -1206,6 +1274,8 @@ function ActiveModuleRow({
   const total = pricePerSeat ? Number(pricePerSeat) * displaySeats : 0;
 
   const handleIncrement = async () => {
+    if (!canManageSubscription) return;
+
     const newCount = displaySeats + 1;
     if (isPaid && !isTrial) {
       setUpdating(true);
@@ -1220,6 +1290,8 @@ function ActiveModuleRow({
   };
 
   const handleDecrement = async () => {
+    if (!canManageSubscription) return;
+
     if (displaySeats <= 1) return;
     const newCount = displaySeats - 1;
     if (isPaid && !isTrial) {
@@ -1290,7 +1362,7 @@ function ActiveModuleRow({
             variant="outline"
             size="icon"
             className="h-7 w-7"
-            disabled={displaySeats <= 1 || updating}
+            disabled={!canManageSubscription || displaySeats <= 1 || updating}
             onClick={handleDecrement}
           >
             <Minus className="h-3 w-3" />
@@ -1303,7 +1375,7 @@ function ActiveModuleRow({
             variant="outline"
             size="icon"
             className="h-7 w-7"
-            disabled={updating}
+            disabled={!canManageSubscription || updating}
             onClick={handleIncrement}
           >
             <Plus className="h-3 w-3" />
@@ -1341,7 +1413,7 @@ function ActiveModuleRow({
               </>
             ) : null}
           </div>
-          {seat.seats_used <= 1 && (
+          {canManageSubscription && seat.seats_used <= 1 && (
             <Button
               type="button"
               variant="ghost"
@@ -1426,6 +1498,7 @@ function PricingBreakdownRow({
 function AvailableModuleCard({
   product,
   billingCycle,
+  canManageSubscription,
   isSelected,
   selectedSeats,
   onSelect,
@@ -1434,6 +1507,7 @@ function AvailableModuleCard({
 }: {
   product: SubscriptionProduct;
   billingCycle: 'monthly' | 'yearly';
+  canManageSubscription: boolean;
   isSelected: boolean;
   selectedSeats: number;
   onSelect: () => void;
@@ -1536,7 +1610,7 @@ function AvailableModuleCard({
                     variant="outline"
                     size="icon"
                     className="h-7 w-7"
-                    disabled={selectedSeats <= 1}
+                    disabled={!canManageSubscription || selectedSeats <= 1}
                     onClick={() =>
                       onSeatsChange(Math.max(1, selectedSeats - 1))
                     }
@@ -1551,6 +1625,7 @@ function AvailableModuleCard({
                     variant="outline"
                     size="icon"
                     className="h-7 w-7"
+                    disabled={!canManageSubscription}
                     onClick={() => onSeatsChange(selectedSeats + 1)}
                   >
                     <Plus className="h-3 w-3" />
@@ -1564,6 +1639,7 @@ function AvailableModuleCard({
                 type="button"
                 variant="destructive"
                 className="w-full gap-2"
+                disabled={!canManageSubscription}
                 onClick={onDeselect}
               >
                 <X className="h-4 w-4" />
@@ -1574,6 +1650,7 @@ function AvailableModuleCard({
                 type="button"
                 className="w-full gap-2"
                 style={{ backgroundColor: style.accentHex }}
+                disabled={!canManageSubscription}
                 onClick={onSelect}
               >
                 <Plus className="h-4 w-4" />

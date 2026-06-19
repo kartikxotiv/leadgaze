@@ -8,6 +8,7 @@ import { JwtPayload } from '@supabase/supabase-js';
 import { z } from 'zod';
 
 import { verifyCaptchaToken } from '@kit/auth/captcha/server';
+import { createTrustedDeviceBypass } from '@kit/supabase/check-trusted-device';
 import { requireUser } from '@kit/supabase/require-user';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
@@ -101,7 +102,7 @@ export const enhanceRouteHandler = <
     // Check if the user should be authenticated
     if (shouldVerifyAuth) {
       // Get the authenticated user
-      const auth = await requireUser(client);
+      const auth = await requireUser(client, createTrustedDeviceBypass(client));
 
       // If the user is not authenticated, redirect to the specified URL.
       if (auth.error) {

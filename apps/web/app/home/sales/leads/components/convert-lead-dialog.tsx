@@ -637,11 +637,12 @@ export function ConvertLeadDialog({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
+                disabled={isSubmitting} 
+                className='mb-2'
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={isSubmitting}>
+              <Button type="submit" form="dialog-form" disabled={isSubmitting} className='mb-2'>
                 {isSubmitting ? 'Converting...' : 'Convert'}
               </Button>
             </DialogFooter>

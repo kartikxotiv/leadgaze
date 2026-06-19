@@ -81,7 +81,18 @@ export interface ListToolBarProps {
   // ── Column-visibility slot ─────────────────────────────────────────────────
   columnVisibilitySlot?: React.ReactNode;
 
+  // ── Status filter slot (e.g. a dropdown replacing inline metric tabs) ──────
+  statusSlot?: React.ReactNode;
+
   // ── Root ───────────────────────────────────────────────────────────────────
+  /**
+   * Controls the toolbar's width and horizontal alignment.
+   * - `'full'`  → always stretches to full width (default when `showSearch` is true)
+   * - `'left'`  → shrinks to content, aligned to the left
+   * - `'right'` → shrinks to content, pushed to the right via `ml-auto`
+   * When omitted and `showSearch` is false, defaults to `'left'`.
+   */
+  align?: 'left' | 'right' | 'full';
   className?: string;
 }
 
@@ -101,6 +112,8 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
   onClearFilters,
   actions = [],
   columnVisibilitySlot,
+  statusSlot,
+  align,
   className,
 }) => {
   const [isFilterOpen, setIsFilterOpen] = React.useState(false);
@@ -114,9 +127,23 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
   const activeGroup = filterGroups.find((g) => g.key === filterView);
   const visibleActions = actions.filter((a) => a.show !== false);
 
+  // Resolve effective width/alignment:
+  // - Explicit 'full' or showSearch (no align given) → full width
+  // - Explicit 'right' → shrink to content + push right via ml-auto
+  // - Explicit 'left' or fallback → shrink to content, left-aligned
+  const isFullWidth = align === 'full' || (!align && showSearch);
+  const isRightAligned = align === 'right';
+
   return (
     <TooltipProvider>
-      <div className={cn('flex w-full items-center gap-2 bg-white p-2 border-light-gray border-1 dark:dark-theme-color', className)}>
+      <div
+        className={cn(
+          'flex items-center gap-2 bg-white p-2 border-light-gray border-1 dark:dark-theme-color',
+          isFullWidth ? 'w-full' : 'w-auto',
+          isRightAligned && 'ml-auto',
+          className,
+        )}
+      >
 
         {/* ── Search: always visible, stretches to fill available space ───── */}
         {showSearch && (
@@ -131,29 +158,34 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
           </div>
         )}
 
+        {/* ── Status filter slot (e.g. dropdown replacing metric tabs) ───── */}
+        {statusSlot}
+
         {/* ── Filter button ────────────────────────────────────────────────── */}
         {showFilter && (
-          <Popover open={isFilterOpen} onOpenChange={handleFilterOpenChange}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  'relative shrink-0 gap-1.5',
-                  isFilterOpen && 'bg-accent',
-                )}
-                aria-label="Open filters"
-              >
-                <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
-                <span className="hidden sm:inline">{filterLabel}</span>
-                {activeFilterCount > 0 && (
-                  <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
-                    {activeFilterCount}
-                  </span>
-                )}
-              </Button>
-            </PopoverTrigger>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Popover open={isFilterOpen} onOpenChange={handleFilterOpenChange}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'relative shrink-0 gap-1.5',
+                      isFilterOpen && 'bg-accent',
+                    )}
+                    aria-label="Open filters"
+                  >
+                    <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
+                    {/* <span className="hidden sm:inline">{filterLabel}</span> */}
+                    {activeFilterCount > 0 && (
+                      <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
 
-            <PopoverContent className="w-80 p-0" align="end">
+                <PopoverContent className="w-80 p-0" align="end">
               {/* Header */}
               <div className="flex items-center justify-between border-b px-4 py-3">
                 <div className="flex items-center gap-2">
@@ -257,8 +289,13 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                   </p>
                 )}
               </div>
-            </PopoverContent>
-          </Popover>
+              </PopoverContent>
+              </Popover>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <span>Filters</span>
+            </TooltipContent>
+          </Tooltip>
         )}
 
         {/* ── Action buttons ───────────────────────────────────────────────── */}
@@ -285,9 +322,9 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                   aria-label={action.label}
                 >
                   <Icon className="h-4 w-4" />
-                  {!isIconOnly && (
+                  {/* {!isIconOnly && (
                     <span className="hidden sm:inline">{action.label}</span>
-                  )}
+                  )} */}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import { requireSubscriptionManagePermission } from '~/lib/server/subscription-permissions';
 import {
   getOrCreateStripeCustomer,
   getStripeClient,
@@ -57,6 +58,11 @@ export const createCheckoutSession = catchAsync(
     }
 
     const cycle = billingCycle || 'monthly';
+
+    await requireSubscriptionManagePermission({
+      accountId: user.id,
+      workspaceId,
+    });
 
     // ── Resolve product and Stripe price ID ──────────────────────────
     const { data: product, error: productError } = await adminClient

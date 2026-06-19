@@ -31,10 +31,11 @@ export const getAccountById = catchAsync(
       .select(
         `
           *,
-          status:entity_statuses(id, status_name, status_key, color, icon),
+          status:entity_statuses!crm_accounts_status_id_fkey(id, status_name, status_key, color, icon),
           industry:crm_industries(id, industry_name),
           owner:accounts!crm_accounts_owner_id_fkey(id, email, name),
-          updated_by_account:accounts!crm_accounts_updated_by_fkey(id, email, name)
+          updated_by_account:accounts!crm_accounts_updated_by_fkey(id, email, name),
+          account_type_relation:entity_statuses!entity_statuses_account_type_fkey(id, status_name, status_key, color, icon)
         `,
       )
       .eq('id', id)
@@ -93,7 +94,10 @@ export const updateAccount = catchAsync(
       .single();
 
     if (!existingAccount) {
-      return NextResponse.json({ message: 'Account not found' }, { status: 404 });
+      return NextResponse.json(
+        { message: 'Account not found' },
+        { status: 404 },
+      );
     }
 
     // Get workspace to check if user is owner
@@ -150,11 +154,20 @@ export const updateAccount = catchAsync(
       );
     }
 
+    // Sanitize body - convert empty strings to null for UUID fields
+    const sanitizedBody: Record<string, any> = {};
+    for (const [key, value] of Object.entries(body)) {
+      if (value === '') {
+        sanitizedBody[key] = null;
+      } else {
+        sanitizedBody[key] = value;
+      }
+    }
 
     const { data: account, error } = await supabase
       .from('crm_accounts')
       .update({
-        ...body,
+        ...sanitizedBody,
         updated_by: user.id,
         updated_at: new Date().toISOString(),
       })
@@ -162,11 +175,12 @@ export const updateAccount = catchAsync(
       .select(
         `
           *,
-          status:entity_statuses(id, status_name, status_key, color, icon),
+          status:entity_statuses!crm_accounts_status_id_fkey(id, status_name, status_key, color, icon),
           industry:crm_industries(id, industry_name),
           owner:accounts!crm_accounts_owner_id_fkey(id, email, name),
-          updated_by_account:accounts!crm_accounts_updated_by_fkey(id, email, name)
-        `
+          updated_by_account:accounts!crm_accounts_updated_by_fkey(id, email, name),
+          account_type_relation:entity_statuses!entity_statuses_account_type_fkey(id, status_name, status_key, color, icon)
+        `,
       )
       .single();
 

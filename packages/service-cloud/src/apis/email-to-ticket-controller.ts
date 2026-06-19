@@ -32,11 +32,25 @@ function uniqueThreadKeys(values: Array<string | null | undefined>) {
 }
 
 function emailThreadKeys(email: any) {
+  // Collect all RFC-compliant thread identifiers for matching:
+  //   1. Provider thread_key (Gmail hex ID, Outlook conversation ID, etc.)
+  //   2. internet_message_id (the email's own Message-ID header)
+  //   3. Each token from email_references (space-separated Message-IDs
+  //      from the References header)
+  //
+  // These are registered in ticket_email_threads so that future replies
+  // with In-Reply-To or References pointing to any of these identifiers
+  // are automatically linked to the ticket.
+  const references =
+    (email?.email_references as string | null)
+      ?.split(' ')
+      .map((ref: string) => ref.trim())
+      .filter(Boolean) ?? [];
+
   return uniqueThreadKeys([
     email?.thread_key,
     email?.internet_message_id,
-    email?.provider_message_id,
-    email?.gmail_message_id,
+    ...references,
   ]);
 }
 
@@ -341,3 +355,114 @@ export const convertCoreEmailToServiceCloudTicketController = catchAsync(
     });
   },
 );
+
+/**
+ * Detect whether an email (or its thread) is already linked to a ticket.
+ *
+ * GET /api/services/detect-email-ticket?workspace_id=X&email_id=Y
+ *
+ * Checks three levels:
+ *   1. Direct link: ticket_emails.email_id = emailId
+ *   2. Thread link: email's thread_key matches ticket_email_threads
+ *   3. RFC link: email's internet_message_id or references match ticket_email_threads
+ *
+ * Returns: { ticket: { id, ticket_number, subject } | null }
+ */
+export const detectEmailTicketController = catchAsync(async ({ request }) => {
+  const url = new URL(request.url);
+  const workspaceId =
+    url.searchParams.get('workspace_id') ?? url.searchParams.get('workspaceId');
+  const emailId =
+    url.searchParams.get('email_id') ?? url.searchParams.get('emailId');
+
+  if (!workspaceId || !emailId) {
+    return NextResponse.json(
+      { success: false, message: 'workspace_id and email_id are required' },
+      { status: 400 },
+    );
+  }
+
+  const { supabase, user, error } =
+    await assertServiceCloudWorkspaceAccess(workspaceId);
+  if (error || !user) return error!;
+
+  const canManageInbox = await hasServiceCloudManageInboxPermission(
+    supabase,
+    workspaceId,
+    user.id,
+  );
+  if (!canManageInbox) {
+    return NextResponse.json({ ticket: null });
+  }
+
+  const client = (supabase as any).schema('service_cloud');
+
+  // Level 1: Direct link via ticket_emails
+  const { data: directLink } = await client
+    .from('ticket_emails')
+    .select('ticket_id,tickets!inner(id,ticket_number,subject,is_deleted)')
+    .eq('workspace_id', workspaceId)
+    .eq('email_id', emailId)
+    .eq('tickets.is_deleted', false)
+    .limit(1)
+    .maybeSingle();
+
+  if (directLink?.tickets) {
+    return successDataResponse('Email is linked to a ticket', {
+      ticket: directLink.tickets,
+    });
+  }
+
+  // Level 2 & 3: Thread link via ticket_email_threads
+  // Fetch the email's thread identifiers
+  const { data: emailRecord } = await (supabase as any)
+    .schema('core')
+    .from('emails')
+    .select('thread_key,internet_message_id,email_references')
+    .eq('workspace_id', workspaceId)
+    .eq('id', emailId)
+    .maybeSingle();
+
+  if (!emailRecord) {
+    return successDataResponse('Email not found', { ticket: null });
+  }
+
+  // Collect all identifiers that could match a registered thread
+  const identifiers: string[] = [];
+  if (emailRecord.thread_key) identifiers.push(emailRecord.thread_key);
+  if (emailRecord.internet_message_id)
+    identifiers.push(emailRecord.internet_message_id);
+
+  // Parse references (space-separated message IDs)
+  const refs = (emailRecord.email_references as string | null)
+    ?.split(' ')
+    .map((r: string) => r.trim())
+    .filter(Boolean);
+  if (refs) identifiers.push(...refs);
+
+  if (identifiers.length === 0) {
+    return successDataResponse('No thread identifiers found', {
+      ticket: null,
+    });
+  }
+
+  // Check ticket_email_threads for any matching identifier
+  const { data: threadMatch } = await client
+    .from('ticket_email_threads')
+    .select('ticket_id,tickets!inner(id,ticket_number,subject,is_deleted)')
+    .eq('workspace_id', workspaceId)
+    .in('thread_key', identifiers)
+    .eq('tickets.is_deleted', false)
+    .limit(1)
+    .maybeSingle();
+
+  if (threadMatch?.tickets) {
+    return successDataResponse('Email thread is linked to a ticket', {
+      ticket: threadMatch.tickets,
+    });
+  }
+
+  return successDataResponse('Email is not linked to any ticket', {
+    ticket: null,
+  });
+});

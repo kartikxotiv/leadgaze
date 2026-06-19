@@ -25,6 +25,7 @@ import {
   useServiceCloudPermissions,
 } from '../../utils';
 import { ServiceCloudAccessDenied } from '../_components/access-denied';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@kit/ui/table';
 
 function formatHours(seconds: number) {
   return `${Math.round((Number(seconds || 0) / 3600) * 10) / 10}h`;
@@ -107,7 +108,7 @@ export function ServiceCloudReportsPage({
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 mt-2">
       <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.18),_transparent_35%),linear-gradient(135deg,_#102a43,_#0f766e_55%,_#172554)] p-6 text-white shadow-xl">
         <div className="max-w-3xl">
           <Badge className="border-white/20 bg-white/15 text-white hover:bg-white/20">
@@ -123,7 +124,7 @@ export function ServiceCloudReportsPage({
         </div>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
@@ -156,8 +157,8 @@ export function ServiceCloudReportsPage({
         })}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="space-y-6">
+      <div className="flex flex-col lg:flex-row gap-4 w-full">
+        <div className="space-y-4 w-full lg:w-[65%]">
           <CardWidgetContainer
             title="Ticket Status Distribution"
             description="How many tickets are currently sitting in each status."
@@ -290,7 +291,7 @@ export function ServiceCloudReportsPage({
           </CardWidgetContainer>
         </div>
 
-        <aside className="space-y-6">
+        <div className="space-y-4 w-full lg:w-[35%]">
           <CardWidgetContainer
             title="Priority Mix"
             description="Open pressure by priority."
@@ -379,7 +380,7 @@ export function ServiceCloudReportsPage({
               )}
             </div>
           </CardWidgetContainer>
-        </aside>
+        </div>
       </div>
     </div>
   );
@@ -426,39 +427,39 @@ function ReportTable({
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-muted/40 text-muted-foreground border-b text-left text-xs uppercase">
-          <tr>
+      <Table>
+        <TableHeader className="text-left text-xs uppercase">
+          <TableRow>
             {headers.map((header) => (
-              <th key={header} className="p-3 font-medium">
+              <TableHead key={header} className="p-3 font-medium">
                 {header}
-              </th>
+              </TableHead>
             ))}
-          </tr>
-        </thead>
-        <tbody>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.length === 0 ? (
-            <tr>
-              <td
+            <TableRow>
+              <TableCell
                 className="text-muted-foreground p-6 text-center"
                 colSpan={headers.length}
               >
                 {empty}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ) : (
             rows.map((row, index) => (
-              <tr key={index} className="border-b last:border-b-0">
+              <TableRow key={index} className="border-b last:border-b-0">
                 {row.map((cell, cellIndex) => (
-                  <td key={cellIndex} className="p-3 align-top">
+                  <TableCell key={cellIndex} className="p-3 align-top">
                     {cell}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
             ))
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -473,7 +474,7 @@ function EmptyReport({ label }: { label: string }) {
 
 function ServiceCloudReportsSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 mt-2">
       {/* Hero banner skeleton */}
       <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.18),_transparent_35%),linear-gradient(135deg,_#102a43,_#0f766e_55%,_#172554)] p-6 shadow-xl">
         <div className="max-w-3xl space-y-3">

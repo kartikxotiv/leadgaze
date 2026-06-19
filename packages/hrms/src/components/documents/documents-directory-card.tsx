@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { ExternalLink, FileText, MoreHorizontal } from 'lucide-react';
+import { ExternalLink, FileText, MoreHorizontal, MoreVertical } from 'lucide-react';
 
 import { Button } from '@kit/ui/button';
 import { CustomTableContainer } from '@kit/ui/custom-table-container';
@@ -172,7 +172,7 @@ export function DocumentsDirectoryCard(props: {
                           variant="ghost"
                           aria-label="Document actions"
                         >
-                          <MoreHorizontal className="h-4 w-4" />
+                          <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
 

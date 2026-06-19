@@ -1,15 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type React from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { Edit2, Loader2, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@kit/ui/alert-dialog';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import CustomTableContainer from '@kit/ui/custom-table-container';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +29,8 @@ import {
 } from '@kit/ui/dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
+import { ListToolBar } from '@kit/ui/list-toolbar';
+import { PageBody } from '@kit/ui/page';
 import {
   Select,
   SelectContent,
@@ -35,6 +47,7 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import { TablePagination } from '@kit/ui/table-pagination';
 import { cn } from '@kit/ui/utils';
 
 import {
@@ -94,6 +107,9 @@ type ResourcePageProps = {
   emptyLabel?: string;
   queryParams?: Record<string, string>;
   toolbar?: React.ReactNode;
+  createLabel?: string;
+  /** Label shown in the pagination bar, e.g. "tickets", "customers". Defaults to the resource name. */
+  entityLabel?: string;
 };
 
 function getInitialForm(
@@ -121,13 +137,49 @@ export function ServiceCloudResourcePage({
   emptyLabel = 'No records found.',
   queryParams = {},
   toolbar,
+  createLabel,
+  entityLabel,
 }: ResourcePageProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset to first page when search or page size changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm, pageSize]);
+
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ServiceCloudRecord | null>(null);
   const [form, setForm] = useState<ServiceCloudRecord>(() =>
     getInitialForm(fields, defaults),
   );
   const [saving, setSaving] = useState(false);
+  const [deletingRecord, setDeletingRecord] =
+    useState<ServiceCloudRecord | null>(null);
+
+  const getResourceSingleName = () => {
+    switch (resource) {
+      case 'tickets':
+        return 'ticket';
+      case 'customers':
+        return 'customer';
+      case 'statuses':
+        return 'status';
+      case 'priorities':
+        return 'priority';
+      case 'categories':
+        return 'category';
+      default:
+        return resource.endsWith('s') ? resource.slice(0, -1) : resource;
+    }
+  };
 
   const {
     data = [],
@@ -139,6 +191,26 @@ export function ServiceCloudResourcePage({
       getServiceCloudResourceService(resource, workspaceId, queryParams),
     enabled: Boolean(workspaceId),
   });
+
+  const filteredData = useMemo(() => {
+    if (!debouncedSearchTerm) return data;
+    const term = debouncedSearchTerm.toLowerCase();
+    return data.filter((record: ServiceCloudRecord) =>
+      columns.some((col) => {
+        const val = record[col.key];
+        return val != null && String(val).toLowerCase().includes(term);
+      }),
+    );
+  }, [data, debouncedSearchTerm, columns]);
+
+  // Pagination derived values
+  const totalCount = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const paginatedData = useMemo(
+    () =>
+      filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [filteredData, currentPage, pageSize],
+  );
 
   const openCreate = () => {
     setEditing(null);
@@ -209,25 +281,176 @@ export function ServiceCloudResourcePage({
   };
 
   return (
-    <CardWidgetContainer className="mt-2" title={title} desc="Connect Gmail or SMTP/IMAP accounts for Core email." icon2={<div className="flex items-center gap-2">
-          {toolbar}
-          {canCreate ? (
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openCreate}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  New
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[560px] dark:border-slate-800 dark:bg-slate-950">
-                <div className="flex max-h-[90vh] flex-col">
-                  <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
-                    <DialogTitle>
-                      {editing ? `Edit ${title}` : `New ${title}`}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
-                    <div className="grid gap-4">
+    <>
+      <div className="w-full min-w-0 max-w-full shrink-0 border-b pb-2">
+        <ListToolBar
+          showSearch
+          searchPlaceholder={`Search ${title.toLowerCase()}...`}
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          statusSlot={toolbar}
+          actions={
+            canCreate
+              ? [
+                  {
+                    key: 'create',
+                    label: createLabel || 'New',
+                    icon: Plus,
+                    onClick: openCreate,
+                    buttonVariant: 'default' as const,
+                  },
+                ]
+              : []
+          }
+        />
+      </div>
+      <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0">
+          <CustomTableContainer
+            pagination={
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={totalCount}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(val) => {
+                  setPageSize(val);
+                  setCurrentPage(1);
+                }}
+                entityLabel={entityLabel ?? resource}
+              />
+            }
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {columns.map((column) => (
+                    <TableHead key={column.key}>{column.label}</TableHead>
+                  ))}
+                  {canEdit || canDelete ? (
+                    <TableHead className="text-right">Actions</TableHead>
+                  ) : null}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  [...Array(5)].map((_, i) => (
+                    <TableRow key={`skeleton-${i}`}>
+                      <TableCell
+                        colSpan={columns.length}
+                        className="h-[52px] px-4 py-2"
+                      >
+                        <Skeleton className="h-7 w-full" />
+                      </TableCell>
+                      {canEdit || canDelete ? (
+                        <TableCell className="bg-card px-4 text-right">
+                          <Skeleton className="ml-auto h-7 w-full" />
+                        </TableCell>
+                      ) : null}
+                    </TableRow>
+                  ))
+                ) : filteredData.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length + 1}
+                      className="text-muted-foreground py-8 text-center"
+                    >
+                      {emptyLabel}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedData.map((record: ServiceCloudRecord) => (
+                    <TableRow key={record.id}>
+                      {columns.map((column) => (
+                        <TableCell
+                          key={column.key}
+                          className={cn(
+                            column.key === 'name' &&
+                              'primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary',
+                          )}
+                        >
+                          {column.render
+                            ? column.render(record)
+                            : String(record[column.key] ?? '-')}
+                        </TableCell>
+                      ))}
+                      {canEdit || canDelete ? (
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            {canEdit ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEdit(record)}
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                            ) : null}
+                            {canDelete ? (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setDeletingRecord(record)}
+                              >
+                                <Trash2 className="text-muted-foreground h-4 w-4" />
+                              </Button>
+                            ) : null}
+                          </div>
+                        </TableCell>
+                      ) : null}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CustomTableContainer>
+        </div>
+      </PageBody>
+      <AlertDialog
+        open={Boolean(deletingRecord)}
+        onOpenChange={(open) => !open && setDeletingRecord(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the{' '}
+              {getResourceSingleName()}{' '}
+              {deletingRecord?.subject || deletingRecord?.name
+                ? `"${deletingRecord.subject || deletingRecord.name}"`
+                : ''}{' '}
+              and remove it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingRecord) {
+                  void remove(deletingRecord);
+                  setDeletingRecord(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {canCreate || canEdit ? (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[560px] dark:border-slate-800 dark:bg-slate-950">
+            <div className="flex max-h-[90vh] flex-col">
+              <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+                <DialogTitle>
+                  {editing ? `Edit ${title}` : `New ${title}`}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
+                <div className="grid gap-4">
                   {fields.map((field) => (
                     <div key={field.key} className="space-y-2">
                       <Label>{field.label}</Label>
@@ -255,7 +478,7 @@ export function ServiceCloudResourcePage({
                                 <div className="flex items-center gap-2">
                                   {option.color ? (
                                     <span
-                                      className="h-2 w-2 rounded-full border border-black/10 dark:border-white/10 shrink-0"
+                                      className="h-2 w-2 shrink-0 rounded-full border border-black/10 dark:border-white/10"
                                       style={{ backgroundColor: option.color }}
                                     />
                                   ) : null}
@@ -273,10 +496,10 @@ export function ServiceCloudResourcePage({
                                 key={color}
                                 type="button"
                                 className={cn(
-                                  "h-8 w-8 rounded-full border-2 transition-all hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                                  'focus:ring-ring h-8 w-8 rounded-full border-2 transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95',
                                   form[field.key] === color
-                                    ? "border-primary scale-105 shadow-md ring-2 ring-primary"
-                                    : "border-zinc-300 dark:border-zinc-700"
+                                    ? 'border-primary ring-primary scale-105 shadow-md ring-2'
+                                    : 'border-zinc-300 dark:border-zinc-700',
                                 )}
                                 style={{ backgroundColor: color }}
                                 onClick={() =>
@@ -290,7 +513,7 @@ export function ServiceCloudResourcePage({
                             ))}
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className="relative h-9 w-9 overflow-hidden rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                            <div className="border-input focus-within:ring-ring relative h-9 w-9 overflow-hidden rounded-md border focus-within:ring-2 focus-within:ring-offset-2">
                               <input
                                 type="color"
                                 className="absolute -left-2 -top-2 h-14 w-14 cursor-pointer border-0 p-0"
@@ -313,7 +536,7 @@ export function ServiceCloudResourcePage({
                                   [field.key]: event.target.value,
                                 }))
                               }
-                              className="w-32 uppercase font-mono text-sm"
+                              className="w-32 font-mono text-sm uppercase"
                             />
                           </div>
                         </div>
@@ -340,124 +563,44 @@ export function ServiceCloudResourcePage({
                       )}
                     </div>
                   ))}
-                    </div>
-                  </div>
-                  <div className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-                    <div className="flex justify-end gap-3">
-                      <Button onClick={save} disabled={saving}>
-                        {saving ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : null}
-                        Save
-                      </Button>
-                    </div>
-                  </div>
                 </div>
-              </DialogContent>
-            </Dialog>
-          ) : null}
-        </div>
-      }
-    >
-      <div className="mb-2">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {columns.map((column) => (
-                <TableHead key={column.key}>{column.label}</TableHead>
-              ))}
-              {canEdit || canDelete ? (
-                <TableHead className="text-right">Actions</TableHead>
-              ) : null}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              [...Array(5)].map((_, i) => (
-                <TableRow key={`skeleton-${i}`}>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-[52px] px-4 py-2"
-                  >
-                    <Skeleton className="h-7 w-full" />
-                  </TableCell>
-                  {canEdit || canDelete ? (
-                    <TableCell className="bg-card px-4 text-right">
-                      <Skeleton className="ml-auto h-7 w-full" />
-                    </TableCell>
-                  ) : null}
-                </TableRow>
-              ))
-            ) : data.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length + 1}
-                  className="text-muted-foreground py-8 text-center"
-                >
-                  {emptyLabel}
-                </TableCell>
-              </TableRow>
-            ) : (
-              data.map((record) => (
-                <TableRow key={record.id}>
-                  {columns.map((column) => (
-                    <TableCell
-                      key={column.key}
-                      className={cn(
-                        column.key === 'name' &&
-                          'primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary',
-                      )}
-                    >
-                      {column.render
-                        ? column.render(record)
-                        : String(record[column.key] ?? '-')}
-                    </TableCell>
-                  ))}
-                  {canEdit || canDelete ? (
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {canEdit ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEdit(record)}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                        ) : null}
-                        {canDelete ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => remove(record)}
-                          >
-                            <Trash2 className="text-muted-foreground h-4 w-4" />
-                          </Button>
-                        ) : null}
-                      </div>
-                    </TableCell>
-                  ) : null}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-    </CardWidgetContainer>
+              </div>
+              <div className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+                <div className="flex justify-end gap-3">
+                  <Button onClick={save} disabled={saving}>
+                    {saving ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Save
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      ) : null}
+    </>
   );
 }
 
-export function StatusBadge({ value, color }: { value?: string | null; color?: string | null }) {
+export function StatusBadge({
+  value,
+  color,
+}: {
+  value?: string | null;
+  color?: string | null;
+}) {
   return (
-    <Badge variant="secondary" className="inline-flex items-center gap-1.5 font-medium">
+    <Badge
+      variant="secondary"
+      className="inline-flex items-center gap-1.5 font-medium"
+    >
       {color ? (
         <span
-          className="h-2 w-2 rounded-full border border-black/10 dark:border-white/10 shrink-0"
+          className="h-2 w-2 shrink-0 rounded-full border border-black/10 dark:border-white/10"
           style={{ backgroundColor: color }}
         />
-      ) : (
-        <span className="h-2 w-2 rounded-full bg-slate-400 shrink-0" />
-      )}
+      ) : null}
       {value || 'Unassigned'}
     </Badge>
   );
