@@ -1,6 +1,6 @@
 'use client';
 
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, MoreVertical } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@kit/ui/avatar';
 import { Button } from '@kit/ui/button';
@@ -36,6 +36,7 @@ import type {
 import { useRbac } from '../rbac/rbac-context';
 import { EmployeeStatusBadge } from './employee-status-badge';
 import { formatDate } from '@kit/shared/utils';
+import { PageSizeSelector } from '@kit/ui/page-size-selector';
 
 export function EmployeesDirectoryCard(props: {
   employees: Array<Employee>;
@@ -45,6 +46,7 @@ export function EmployeesDirectoryCard(props: {
   onDeleteRequested: (employee: Employee) => void;
   onEditRequested: (employee: Employee) => void;
   onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
   pagination: EmployeeListPagination;
   visibility: Record<string, boolean>;
 }) {
@@ -68,7 +70,7 @@ export function EmployeesDirectoryCard(props: {
       pagination={
         props.pagination.total > 0 ? (
           <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
-            <div>
+            <div className="flex items-center gap-1">
               Showing{' '}
               <span className="primary-text-regular text-leadgaze-muted">
                 {from}
@@ -83,6 +85,14 @@ export function EmployeesDirectoryCard(props: {
               </span>{' '}
               entries
             </div>
+            <div className="flex w-full max-w-full min-w-0 items-center justify-end px-2">
+                      <PageSizeSelector
+                      value={props.pagination.pageSize}
+                      onChange={(val) => {
+                        props.onPageSizeChange(val);
+                      }}
+                    />
+                  </div>
             <Pagination className="w-auto">
               <PaginationContent>
                 <PaginationItem>
@@ -281,7 +291,7 @@ export function EmployeesDirectoryCard(props: {
                         variant="ghost"
                         aria-label="More actions"
                       >
-                        <MoreHorizontal className="h-4 w-4" />
+                        <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
 

@@ -100,10 +100,48 @@ const deleteAccountService = asyncHandlerClient(async (id: string) => {
   return response.data?.data;
 });
 
+export interface AccountType {
+  id: string;
+  status_name: string;
+  status_key: string;
+  color: string;
+  icon?: string;
+  is_closed?: boolean;
+  is_system?: boolean;
+}
+
+const getAccountTypesService = asyncHandlerClient(async (workspaceId: string) => {
+  const response = await ApiClient.get(`/accounts/types?workspaceId=${workspaceId}`);
+  return (response.data?.data || []) as AccountType[];
+});
+
+const createAccountTypeService = asyncHandlerClient(
+  async (payload: Partial<Record<string, any>>) => {
+    const response = await ApiClient.post('/accounts/types', payload);
+    return response.data?.data as AccountType;
+  },
+);
+
+const updateAccountTypeService = asyncHandlerClient(
+  async (id: string, payload: Partial<Record<string, any>>) => {
+    const response = await ApiClient.patch(`/accounts/types/${id}`, payload);
+    return response.data?.data as AccountType;
+  },
+);
+
+const deleteAccountTypeService = asyncHandlerClient(async (id: string) => {
+  const response = await ApiClient.delete(`/accounts/types/${id}`);
+  return response.data?.data;
+});
+
 export {
   getAccountsService,
   getAccountByIdService,
   createAccountService,
   updateAccountService,
   deleteAccountService,
+  getAccountTypesService,
+  createAccountTypeService,
+  updateAccountTypeService,
+  deleteAccountTypeService,
 };

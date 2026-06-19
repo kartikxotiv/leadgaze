@@ -132,11 +132,11 @@ export function CreateTeamDialog({ open, onOpenChange }: CreateTeamDialogProps) 
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={createMutation.isPending}
+                disabled={createMutation.isPending} className='mb-2'
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={createMutation.isPending}>
+              <Button type="submit" form="dialog-form" disabled={createMutation.isPending} className='mb-2'>
                 {createMutation.isPending ? 'Creating...' : 'Create Team'}
               </Button>
             </DialogFooter>

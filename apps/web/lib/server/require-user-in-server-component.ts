@@ -4,6 +4,7 @@ import { cache } from 'react';
 
 import { redirect } from 'next/navigation';
 
+import { createTrustedDeviceBypass } from '@kit/supabase/check-trusted-device';
 import { requireUser } from '@kit/supabase/require-user';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
@@ -15,7 +16,7 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
  */
 export const requireUserInServerComponent = cache(async () => {
   const client = getSupabaseServerClient();
-  const result = await requireUser(client);
+  const result = await requireUser(client, createTrustedDeviceBypass(client));
 
   if (result.error) {
     redirect(result.redirectTo);

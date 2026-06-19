@@ -5,12 +5,13 @@ import { useCallback, useState } from 'react';
 import type { Factor } from '@supabase/supabase-js';
 
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ShieldCheck, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { useFetchAuthFactors } from '@kit/supabase/hooks/use-fetch-mfa-factors';
+import { useSignOut } from '@kit/supabase/hooks/use-sign-out';
 import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { useFactorsMutationKey } from '@kit/supabase/hooks/use-user-factors-mutation-key';
 import { Alert, AlertDescription, AlertTitle } from '@kit/ui/alert';
@@ -27,6 +28,12 @@ import {
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { If } from '@kit/ui/if';
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSeparator,
+  InputOTPSlot,
+} from '@kit/ui/input-otp';
 import { Spinner } from '@kit/ui/spinner';
 import {
   Table,
@@ -44,9 +51,139 @@ import {
 } from '@kit/ui/tooltip';
 import { Trans } from '@kit/ui/trans';
 
+import { refreshAuthSession } from '../../server/server-actions';
 import { MultiFactorAuthSetupDialog } from './multi-factor-auth-setup-dialog';
 
+function MFAChallengeForm({
+  userId,
+  onVerified,
+}: {
+  userId: string;
+  onVerified: () => void;
+}) {
+  const client = useSupabase();
+  const { data: factors } = useFetchAuthFactors(userId);
+  const [code, setCode] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (code.length !== 6) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const factorId = factors?.all?.[0]?.id;
+      if (!factorId) {
+        throw new Error('No enrolled factor found');
+      }
+
+      const challenge = await client.auth.mfa.challenge({ factorId });
+      if (challenge.error) throw challenge.error;
+
+      const verify = await client.auth.mfa.verify({
+        factorId,
+        challengeId: challenge.data.id,
+        code,
+      });
+      if (verify.error) throw verify.error;
+
+      await refreshAuthSession();
+      onVerified();
+      toast.success('Identity verified successfully');
+    } catch (err) {
+      setError((err as Error).message || 'Verification failed');
+      toast.error('Invalid verification code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col space-y-4 rounded-lg border border-yellow-200 bg-yellow-50/50 p-6 dark:border-yellow-900/30 dark:bg-yellow-950/10">
+      <div className="flex flex-col space-y-2">
+        <h4 className="font-semibold text-yellow-800 dark:text-yellow-400">
+          Re-authentication Required
+        </h4>
+        <p className="text-sm text-yellow-700 dark:text-yellow-500">
+          To manage your multi-factor authentication, please enter the 6-digit code from your authenticator app.
+        </p>
+      </div>
+
+      <form onSubmit={handleVerify} className="flex flex-col space-y-4">
+        <div className="flex flex-col space-y-2">
+          <InputOTP value={code} onChange={setCode} maxLength={6}>
+            <InputOTPGroup>
+              <InputOTPSlot index={0} />
+              <InputOTPSlot index={1} />
+              <InputOTPSlot index={2} />
+            </InputOTPGroup>
+            <InputOTPSeparator />
+            <InputOTPGroup>
+              <InputOTPSlot index={3} />
+              <InputOTPSlot index={4} />
+              <InputOTPSlot index={5} />
+            </InputOTPGroup>
+          </InputOTP>
+        </div>
+
+        {error && (
+          <p className="text-xs text-destructive">{error}</p>
+        )}
+
+        <div>
+          <Button type="submit" disabled={code.length !== 6 || loading}>
+            {loading ? 'Verifying...' : 'Verify Code'}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export function MultiFactorAuthFactorsList(props: { userId: string }) {
+  const client = useSupabase();
+  const queryClient = useQueryClient();
+
+  const { data: assuranceLevel, isLoading } = useQuery({
+    queryKey: ['mfa-aal-level', props.userId],
+    queryFn: async () => {
+      const { data, error } = await client.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className={'flex items-center space-x-4 py-4'}>
+        <Spinner />
+        <div>
+          <Trans i18nKey={'account:loadingFactors'} />
+        </div>
+      </div>
+    );
+  }
+
+  const isBypassed =
+    assuranceLevel?.currentLevel === 'aal1' &&
+    assuranceLevel?.nextLevel === 'aal2';
+
+  if (isBypassed) {
+    return (
+      <MFAChallengeForm
+        userId={props.userId}
+        onVerified={() => {
+          void queryClient.invalidateQueries({
+            queryKey: ['mfa-aal-level', props.userId],
+          });
+        }}
+      />
+    );
+  }
+
   return (
     <div className={'flex flex-col space-y-4'}>
       <FactorsTableContainer userId={props.userId} />
@@ -127,12 +264,13 @@ function ConfirmUnenrollFactorModal(
 ) {
   const { t } = useTranslation();
   const unEnroll = useUnenrollFactor(props.userId);
+  const signOut = useSignOut();
 
   const onUnenrollRequested = useCallback(
     (factorId: string) => {
       if (unEnroll.isPending) return;
 
-      const promise = unEnroll.mutateAsync(factorId).then((response) => {
+      const promise = unEnroll.mutateAsync(factorId).then(async (response) => {
         props.setIsModalOpen(false);
 
         if (!response.success) {
@@ -142,6 +280,9 @@ function ConfirmUnenrollFactorModal(
             defaultValue: t(`account:unenrollFactorError`),
           });
         }
+
+        await signOut.mutateAsync();
+        window.location.replace('/auth/sign-in');
       });
 
       toast.promise(promise, {
@@ -152,7 +293,7 @@ function ConfirmUnenrollFactorModal(
         },
       });
     },
-    [props, t, unEnroll],
+    [props, t, unEnroll, signOut],
   );
 
   return (

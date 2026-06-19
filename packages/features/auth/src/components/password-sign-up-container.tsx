@@ -19,6 +19,7 @@ interface EmailPasswordSignUpContainerProps {
   displayTermsCheckbox?: boolean;
   defaultValues?: {
     email: string;
+    isEmailReadOnly?: boolean;
   };
 
   onSignUp?: (userId?: string) => unknown;

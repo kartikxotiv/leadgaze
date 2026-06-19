@@ -19,7 +19,9 @@ import { Input } from '@kit/ui/input';
 import { ScrollArea } from '@kit/ui/scroll-area';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
+import { useRBAC } from '~/lib/rbac/rbac-provider';
 import type { LeadAssigneeWithDetails } from '~/services/lead-assignees.service';
+import { getSeatAssignmentsService } from '~/services/subscription.service';
 import { getWorkspaceMembersService } from '~/services/workspace-members.service';
 
 interface AssignUserModalProps {
@@ -44,6 +46,9 @@ export function AssignUserModal({
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
+  const { currentWorkspace } = useRBAC();
+  const ownerId = currentWorkspace?.owner_id;
+
   // Get all workspace members
   const { data: members = [], isLoading: membersLoading } = useQuery({
     queryKey: ['workspace-members', workspaceId],
@@ -55,17 +60,38 @@ export function AssignUserModal({
     enabled: !!workspaceId,
   });
 
+  // Get active Sales seat assignments
+  const { data: seatAssignmentsData, isLoading: assignmentsLoading } = useQuery({
+    queryKey: ['module-seat-assignments', workspaceId, 'sales'],
+    queryFn: () => getSeatAssignmentsService(workspaceId, 'sales'),
+    enabled: !!workspaceId,
+  });
+
+  const isLoaderActive = membersLoading || assignmentsLoading;
+
   // Get list of currently assigned user IDs
   const assignedUserIds = useMemo(
     () => new Set(currentAssignees.map((a) => a.assigned_to_user_id)),
     [currentAssignees],
   );
 
-  // Filter members based on search and exclude already assigned users
+  // Get list of active Sales seat assignment user IDs
+  const salesUserIds = useMemo(() => {
+    const assignments = seatAssignmentsData?.data || [];
+    return new Set(
+      assignments.filter((a: any) => a.is_active).map((a: any) => a.user_id)
+    );
+  }, [seatAssignmentsData]);
+
+  // Filter members based on search, exclude already assigned users, and limit to users with Sales seats (or owner)
   const availableMembers = useMemo(() => {
     return members.filter((member: any) => {
       const isAlreadyAssigned = assignedUserIds.has(member.id);
       if (isAlreadyAssigned) return false;
+
+      // Ensure the user has active Sales seat assignment or is the workspace owner
+      const hasAccess = salesUserIds.has(member.id) || (ownerId && member.id === ownerId);
+      if (!hasAccess) return false;
 
       const searchLower = debouncedSearchQuery.toLowerCase();
       return (
@@ -73,7 +99,7 @@ export function AssignUserModal({
         (member.email?.toLowerCase().includes(searchLower) ?? false)
       );
     });
-  }, [members, debouncedSearchQuery, assignedUserIds]);
+  }, [members, debouncedSearchQuery, assignedUserIds, salesUserIds, ownerId]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -94,13 +120,13 @@ export function AssignUserModal({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
-              disabled={membersLoading || isLoading}
+              disabled={isLoaderActive || isLoading}
             />
           </div>
 
           {/* Members List */}
           <ScrollArea className="h-[300px] rounded-lg border p-3">
-            {membersLoading ? (
+            {isLoaderActive ? (
               <div className="flex h-full items-center justify-center">
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />

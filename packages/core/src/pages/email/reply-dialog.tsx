@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { LayoutTemplate, Loader2, Send, Variable } from 'lucide-react';
+import { LayoutTemplate, Loader2, Send, Variable, Bold, Italic, Underline } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@kit/ui/select';
-import { Textarea } from '@kit/ui/textarea';
+
 
 import type { CoreEmailAccount } from '../../services/email-accounts.service';
 import { sendCoreEmailService } from '../../services/email-activity.service';
@@ -94,6 +94,15 @@ export function CoreEmailReplyDialog({
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [templateId, setTemplateId] = useState('');
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  const handleFormat = (command: string) => {
+    if (editorRef.current) {
+      editorRef.current.focus();
+      document.execCommand(command, false);
+      setBody(editorRef.current.innerHTML);
+    }
+  };
 
   const { data: templates = [] } = useQuery({
     queryKey: ['core-email-templates', workspaceId],
@@ -114,6 +123,11 @@ export function CoreEmailReplyDialog({
       setSubject(replySubject(email?.subject));
       setBody('');
       setTemplateId('');
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.innerHTML = '';
+        }
+      }, 0);
     }
   }, [email, open, sendableAccounts]);
 
@@ -184,11 +198,20 @@ export function CoreEmailReplyDialog({
     }
 
     setBody(rendered.body);
+    if (editorRef.current) {
+      editorRef.current.innerHTML = rendered.body;
+    }
     toast.success(`Applied template: ${template.name}`);
   };
 
   const insertVariable = (value: string) => {
-    setBody((current) => `${current}${current ? '\n' : ''}${value}`);
+    if (editorRef.current) {
+      editorRef.current.focus();
+      document.execCommand('insertText', false, value);
+      setBody(editorRef.current.innerHTML);
+    } else {
+      setBody((current) => `${current}${current ? '\n' : ''}${value}`);
+    }
   };
 
   return (
@@ -314,12 +337,47 @@ export function CoreEmailReplyDialog({
 
           <div className="grid gap-2">
             <Label>Message</Label>
-            <Textarea
-              value={body}
-              onChange={(event) => setBody(event.target.value)}
-              className="min-h-48"
-              placeholder="Write your reply..."
-            />
+            <div className="overflow-hidden rounded-md border border-gray-200 dark:border-slate-800">
+              <div className="flex items-center gap-1 border-b bg-zinc-50 p-1 dark:bg-zinc-900/50">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => handleFormat('bold')}
+                  title="Bold"
+                >
+                  <Bold className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => handleFormat('italic')}
+                  title="Italic"
+                >
+                  <Italic className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => handleFormat('underline')}
+                  title="Underline"
+                >
+                  <Underline className="h-4 w-4" />
+                </Button>
+              </div>
+              <div
+                ref={editorRef}
+                contentEditable
+                onInput={(event) => setBody(event.currentTarget.innerHTML)}
+                className="min-h-48 bg-white p-4 text-sm outline-none dark:bg-slate-950"
+                style={{ minHeight: '12rem' }}
+              />
+            </div>
           </div>
             </div>
           </div>

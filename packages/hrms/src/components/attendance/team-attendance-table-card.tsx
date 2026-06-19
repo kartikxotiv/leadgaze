@@ -1,6 +1,6 @@
 'use client';
 
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, MoreVertical } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
@@ -122,7 +122,7 @@ export function TeamAttendanceTableCard(props: {
                           variant="ghost"
                           aria-label="Attendance actions"
                         >
-                          <MoreHorizontal className="h-4 w-4" />
+                          <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">

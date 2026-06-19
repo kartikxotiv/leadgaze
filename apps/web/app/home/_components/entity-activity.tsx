@@ -197,7 +197,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
           <DialogTrigger asChild>
             <Button size="sm" variant="ghost" className="gap-1 text-sm text-blue-500 hover:text-blue-600">
               <Plus className="h-4 w-4" />
-              Set
+              Add Reminder
             </Button>
           </DialogTrigger>
           <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[400px]">
@@ -225,6 +225,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                   onChange={(e) =>
                     setFormData({ ...formData, due_date: e.target.value })
                   }
+                  onClick={(e) => e.currentTarget.showPicker()}
                 />
               </div>
             </div>
@@ -525,6 +526,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
                       onChange={(e) =>
                         setFormData({ ...formData, start_time: e.target.value })
                       }
+                      onClick={(e) => e.currentTarget.showPicker()}
                     />
                   </div>
                   <div className="space-y-2">
@@ -535,6 +537,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
                       onChange={(e) =>
                         setFormData({ ...formData, end_time: e.target.value })
                       }
+                      onClick={(e) => e.currentTarget.showPicker()}
                     />
                   </div>
                 </div>
