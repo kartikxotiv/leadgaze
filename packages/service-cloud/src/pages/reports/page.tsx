@@ -163,7 +163,7 @@ export function ServiceCloudReportsPage({
             title="Ticket Status Distribution"
             description="How many tickets are currently sitting in each status."
           >
-            <div className="space-y-4 px-6 py-4">
+            <div className="space-y-4 px-6 py-4  max-h-[460px] overflow-auto">
               {statusBreakdown.length === 0 ? (
                 <EmptyReport label="No ticket statuses found." />
               ) : (
@@ -297,7 +297,7 @@ export function ServiceCloudReportsPage({
             description="Open pressure by priority."
             hideHeaderBorder={true}
           >
-            <div className="px-6 py-4">
+            <div className="px-6 py-4 overflow-auto max-h-[380px]">
               {priorityBreakdown.length === 0 ? (
                 <EmptyReport label="No priority data." />
               ) : (
@@ -344,7 +344,7 @@ export function ServiceCloudReportsPage({
             description="Tickets consuming the most logged support time."
             hideHeaderBorder={true}
           >
-            <div className="space-y-4 px-6 py-4">
+            <div className="space-y-4 px-6 py-4 overflow-auto max-h-[320px]">
               {ticketTimeBreakdown.length === 0 ? (
                 <EmptyReport label="No logged ticket time yet." />
               ) : (
@@ -426,7 +426,7 @@ function ReportTable({
   empty: string;
 }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-auto max-h-[350px]">
       <Table>
         <TableHeader className="text-left text-xs uppercase">
           <TableRow>
@@ -605,7 +605,7 @@ function ServiceCloudReportsSkeleton() {
               <Skeleton className="h-5 w-40" />
               <Skeleton className="mt-1 h-3 w-56" />
             </CardHeader>
-            <div className="overflow-x-auto">
+            <div className="overflow-auto max-h-[350px]">
               <div className="bg-muted/40 grid grid-cols-5 gap-3 border-b px-3 py-2">
                 {['Ticket', 'Customer', 'Entries', 'Logged', 'Latest'].map(
                   (h) => (
