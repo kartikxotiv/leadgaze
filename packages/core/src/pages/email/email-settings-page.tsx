@@ -79,6 +79,7 @@ import { CoreEmailTemplatesTab } from './templates-tab';
 import type { CoreEmailPageProps } from './types';
 import { CoreEmailVariablesTab } from './variables-tab';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 
 type SmtpFormState = {
   email: string;
@@ -132,6 +133,8 @@ export function CoreEmailSettingsPage({
   const [form, setForm] = useState<SmtpFormState>(emptySmtpForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [connectTab, setConnectTab] = useState<'google' | 'smtp'>('google');
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('core-email-accounts-table');
 
   const {
     data: accounts = [],
@@ -478,13 +481,34 @@ export function CoreEmailSettingsPage({
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Provider</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Owner</TableHead>
-                          <TableHead>From Name</TableHead>
-                          <TableHead>Access</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Sync</TableHead>
+                          <TableHead className="relative" {...getHeaderProps('provider')}>
+                            Provider
+                            <span className="col-resize-handle" {...getResizeHandleProps('provider')} />
+                          </TableHead>
+                          <TableHead className="relative" {...getHeaderProps('email')}>
+                            Email
+                            <span className="col-resize-handle" {...getResizeHandleProps('email')} />
+                          </TableHead>
+                          <TableHead className="relative" {...getHeaderProps('owner')}>
+                            Owner
+                            <span className="col-resize-handle" {...getResizeHandleProps('owner')} />
+                          </TableHead>
+                          <TableHead className="relative" {...getHeaderProps('from_name')}>
+                            From Name
+                            <span className="col-resize-handle" {...getResizeHandleProps('from_name')} />
+                          </TableHead>
+                          <TableHead className="relative" {...getHeaderProps('access')}>
+                            Access
+                            <span className="col-resize-handle" {...getResizeHandleProps('access')} />
+                          </TableHead>
+                          <TableHead className="relative" {...getHeaderProps('status')}>
+                            Status
+                            <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+                          </TableHead>
+                          <TableHead className="relative" {...getHeaderProps('sync')}>
+                            Sync
+                            <span className="col-resize-handle" {...getResizeHandleProps('sync')} />
+                          </TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
