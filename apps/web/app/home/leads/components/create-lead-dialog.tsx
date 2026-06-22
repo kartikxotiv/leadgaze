@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -29,7 +29,7 @@ import { Textarea } from '@kit/ui/textarea';
 
 import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
-import { createLeadService } from '~/services/leads.service';
+import { createLeadService, getLeadStatusesService } from '~/services/leads.service';
 
 import { IndustrySelect } from '../../_components/industry-select';
 import { LeadSourceSelect } from '../../_components/lead-source-select';
@@ -105,7 +105,20 @@ export default function CreateLeadDialog({
     lead_score: 0,
   });
 
-  // Fetch available statuses — removed; ManageableStatusSelect manages its own data
+  // Fetch available statuses
+  const { data: statuses = [] } = useQuery({
+    queryKey: ['lead-statuses', workspace?.id],
+    queryFn: () => {
+      if (!workspace?.id) {
+        return Promise.resolve([]);
+      }
+      return getLeadStatusesService(workspace.id).catch((error) => {
+        console.error('❌ Error fetching statuses:', error);
+        return [];
+      });
+    },
+    enabled: !!workspace,
+  });
 
   useEffect(() => {}, [workspace]);
 
