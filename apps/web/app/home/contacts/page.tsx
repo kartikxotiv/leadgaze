@@ -21,6 +21,7 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 
 import { Skeleton } from '@kit/ui/skeleton';
@@ -136,6 +137,9 @@ export default function ContactsPage() {
       updated_by: true,
     });
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('contacts');
+
+
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const {
@@ -248,33 +252,77 @@ export default function ContactsPage() {
                       <TableHeader>
                       <TableRow>
                         {isVisible('sno') && (
-                          <TableHead className="w-12 whitespace-nowrap">
-                            S. No.
-                          </TableHead>
-                        )}
-                        {isVisible('name') && <TableHead>Name</TableHead>}
+  <TableHead className="relative w-12 whitespace-nowrap" {...getHeaderProps('sno')}>
+    S. No.
+    <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
+  </TableHead>
+)}
+                        {isVisible('name') && (
+  <TableHead className="relative" {...getHeaderProps('name')}>
+    Name
+    <span className="col-resize-handle" {...getResizeHandleProps('name')} />
+  </TableHead>
+)}
                         {isVisible('first_name') && (
-                          <TableHead>First Name</TableHead>
-                        )}
+  <TableHead className="relative" {...getHeaderProps('first_name')}>
+    First Name
+    <span className="col-resize-handle" {...getResizeHandleProps('first_name')} />
+  </TableHead>
+)}
                         {isVisible('last_name') && (
-                          <TableHead>Last Name</TableHead>
-                        )}
+  <TableHead className="relative" {...getHeaderProps('last_name')}>
+    Last Name
+    <span className="col-resize-handle" {...getResizeHandleProps('last_name')} />
+  </TableHead>
+)}
                         {isVisible('job_title') && (
-                          <TableHead>Job Title</TableHead>
-                        )}
-                        {isVisible('email') && <TableHead>Email</TableHead>}
-                        {isVisible('phone') && <TableHead>Phone</TableHead>}
-                        {isVisible('account') && <TableHead>Account</TableHead>}
-                        {isVisible('owner') && <TableHead>Owner</TableHead>}
+  <TableHead className="relative" {...getHeaderProps('job_title')}>
+    Job Title
+    <span className="col-resize-handle" {...getResizeHandleProps('job_title')} />
+  </TableHead>
+)}
+                        {isVisible('email') && (
+  <TableHead className="relative" {...getHeaderProps('email')}>
+    Email
+    <span className="col-resize-handle" {...getResizeHandleProps('email')} />
+  </TableHead>
+)}
+                        {isVisible('phone') && (
+  <TableHead className="relative" {...getHeaderProps('phone')}>
+    Phone
+    <span className="col-resize-handle" {...getResizeHandleProps('phone')} />
+  </TableHead>
+)}
+                        {isVisible('account') && (
+  <TableHead className="relative" {...getHeaderProps('account')}>
+    Account
+    <span className="col-resize-handle" {...getResizeHandleProps('account')} />
+  </TableHead>
+)}
+                        {isVisible('owner') && (
+  <TableHead className="relative" {...getHeaderProps('owner')}>
+    Owner
+    <span className="col-resize-handle" {...getResizeHandleProps('owner')} />
+  </TableHead>
+)}
                         {isVisible('created_by') && (
-                          <TableHead>Created By</TableHead>
-                        )}
+  <TableHead className="relative" {...getHeaderProps('created_by')}>
+    Created By
+    <span className="col-resize-handle" {...getResizeHandleProps('created_by')} />
+  </TableHead>
+)}
                         {isVisible('created_at') && (
-                          <TableHead>Created On</TableHead>
-                        )}
+  <TableHead className="relative" {...getHeaderProps('created_at')}>
+    Created On
+    <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
+  </TableHead>
+)}
                         {isVisible('updated_by') && (
-                          <TableHead>Last Updated By</TableHead>
-                        )}
+  <TableHead className="relative" {...getHeaderProps('updated_by')}>
+    Last Updated By
+    <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
+  </TableHead>
+)}
                         <TableHead className="sticky-right-header">
                           Actions
                         </TableHead>

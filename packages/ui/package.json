@@ -114,6 +114,7 @@
     "./detail-info-row": "./src/shadcn/detail-info-row.tsx",
     "./utils": "./src/lib/utils/index.ts",
     "./use-column-visibility": "./src/hooks/use-column-visibility.ts",
+    "./use-column-resize": "./src/hooks/use-column-resize.ts",
     "./column-visibility-selector": "./src/makerkit/column-visibility-selector.tsx",
     "./if": "./src/makerkit/if.tsx",
     "./trans": "./src/makerkit/trans.tsx",

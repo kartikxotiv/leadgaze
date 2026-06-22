@@ -23,6 +23,7 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 
@@ -187,6 +188,9 @@ export default function OpportunitiesPage() {
       created_at: false,
       updated_by: false,
     });
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('opportunities');
+
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -407,27 +411,113 @@ export default function OpportunitiesPage() {
               <TableHeader>
                 <TableRow>
                   {isVisible('sno') && (
-                    <TableHead className="w-12 whitespace-nowrap">
-                      S. No.
-                    </TableHead>
-                  )}
-                  {isVisible('name') && <TableHead>Name</TableHead>}
-                  {isVisible('account') && <TableHead>Account</TableHead>}
-                  {isVisible('stage') && <TableHead>Stage</TableHead>}
-                  {isVisible('amount') && <TableHead>Amount</TableHead>}
-                  {isVisible('currency') && <TableHead>Currency</TableHead>}
-                  {isVisible('probability') && <TableHead>Probability</TableHead>}
-                  {isVisible('close_date') && <TableHead>Close Date</TableHead>}
-                  {isVisible('priority') && <TableHead>Priority</TableHead>}
-                  {isVisible('type') && <TableHead>Type</TableHead>}
-                  {isVisible('source') && <TableHead>Source</TableHead>}
-                  {isVisible('competitor') && <TableHead>Competitor</TableHead>}
-                  {isVisible('is_closed') && <TableHead>Closed</TableHead>}
-                  {isVisible('is_won') && <TableHead>Won</TableHead>}
-                  {isVisible('owner') && <TableHead>Owner</TableHead>}
-                  {isVisible('created_by') && <TableHead>Created By</TableHead>}
-                  {isVisible('created_at') && <TableHead>Created On</TableHead>}
-                  {isVisible('updated_by') && <TableHead>Last Updated By</TableHead>}
+  <TableHead className="relative w-12 whitespace-nowrap" {...getHeaderProps('sno')}>
+    S. No.
+    <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
+  </TableHead>
+)}
+                  {isVisible('name') && (
+  <TableHead className="relative" {...getHeaderProps('name')}>
+    Name
+    <span className="col-resize-handle" {...getResizeHandleProps('name')} />
+  </TableHead>
+)}
+                  {isVisible('account') && (
+  <TableHead className="relative" {...getHeaderProps('account')}>
+    Account
+    <span className="col-resize-handle" {...getResizeHandleProps('account')} />
+  </TableHead>
+)}
+                  {isVisible('stage') && (
+  <TableHead className="relative" {...getHeaderProps('stage')}>
+    Stage
+    <span className="col-resize-handle" {...getResizeHandleProps('stage')} />
+  </TableHead>
+)}
+                  {isVisible('amount') && (
+  <TableHead className="relative" {...getHeaderProps('amount')}>
+    Amount
+    <span className="col-resize-handle" {...getResizeHandleProps('amount')} />
+  </TableHead>
+)}
+                  {isVisible('currency') && (
+  <TableHead className="relative" {...getHeaderProps('currency')}>
+    Currency
+    <span className="col-resize-handle" {...getResizeHandleProps('currency')} />
+  </TableHead>
+)}
+                  {isVisible('probability') && (
+  <TableHead className="relative" {...getHeaderProps('probability')}>
+    Probability
+    <span className="col-resize-handle" {...getResizeHandleProps('probability')} />
+  </TableHead>
+)}
+                  {isVisible('close_date') && (
+  <TableHead className="relative" {...getHeaderProps('close_date')}>
+    Close Date
+    <span className="col-resize-handle" {...getResizeHandleProps('close_date')} />
+  </TableHead>
+)}
+                  {isVisible('priority') && (
+  <TableHead className="relative" {...getHeaderProps('priority')}>
+    Priority
+    <span className="col-resize-handle" {...getResizeHandleProps('priority')} />
+  </TableHead>
+)}
+                  {isVisible('type') && (
+  <TableHead className="relative" {...getHeaderProps('type')}>
+    Type
+    <span className="col-resize-handle" {...getResizeHandleProps('type')} />
+  </TableHead>
+)}
+                  {isVisible('source') && (
+  <TableHead className="relative" {...getHeaderProps('source')}>
+    Source
+    <span className="col-resize-handle" {...getResizeHandleProps('source')} />
+  </TableHead>
+)}
+                  {isVisible('competitor') && (
+  <TableHead className="relative" {...getHeaderProps('competitor')}>
+    Competitor
+    <span className="col-resize-handle" {...getResizeHandleProps('competitor')} />
+  </TableHead>
+)}
+                  {isVisible('is_closed') && (
+  <TableHead className="relative" {...getHeaderProps('is_closed')}>
+    Closed
+    <span className="col-resize-handle" {...getResizeHandleProps('is_closed')} />
+  </TableHead>
+)}
+                  {isVisible('is_won') && (
+  <TableHead className="relative" {...getHeaderProps('is_won')}>
+    Won
+    <span className="col-resize-handle" {...getResizeHandleProps('is_won')} />
+  </TableHead>
+)}
+                  {isVisible('owner') && (
+  <TableHead className="relative" {...getHeaderProps('owner')}>
+    Owner
+    <span className="col-resize-handle" {...getResizeHandleProps('owner')} />
+  </TableHead>
+)}
+                  {isVisible('created_by') && (
+  <TableHead className="relative" {...getHeaderProps('created_by')}>
+    Created By
+    <span className="col-resize-handle" {...getResizeHandleProps('created_by')} />
+  </TableHead>
+)}
+                  {isVisible('created_at') && (
+  <TableHead className="relative" {...getHeaderProps('created_at')}>
+    Created On
+    <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
+  </TableHead>
+)}
+                  {isVisible('updated_by') && (
+  <TableHead className="relative" {...getHeaderProps('updated_by')}>
+    Last Updated By
+    <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
+  </TableHead>
+)}
                   <TableHead className="sticky-right-header">
                     Actions
                   </TableHead>

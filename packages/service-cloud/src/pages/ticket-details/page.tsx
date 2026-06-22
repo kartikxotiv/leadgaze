@@ -91,6 +91,8 @@ import {
 } from '@kit/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 import { cn } from '@kit/ui/utils';
 
 import {
@@ -193,7 +195,11 @@ export function ServiceCloudTicketDetailPage({
   });
   const [replyEmail, setReplyEmail] = useState<any | null>(null);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
-  const [openAccordion, setOpenAccordion] = useState<string>('');
+  const [openAccordion, setOpenAccordion] = useState<string | undefined>(
+    'ticket-properties',
+  );
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('sc-ticket-details-time-entries');
 
   const { data, isLoading } = useQuery({
     queryKey,
@@ -797,20 +803,25 @@ export function ServiceCloudTicketDetailPage({
                                   <Table>
                                     <TableHeader>
                                       <TableRow>
-                                        <TableHead className="w-[80px]">
+                                        <TableHead className="relative w-[80px]" {...getHeaderProps('s_no')}>
                                           S. No.
+                                          <span className="col-resize-handle" {...getResizeHandleProps('s_no')} />
                                         </TableHead>
-                                        <TableHead className="max-w-[150px]">
+                                        <TableHead className="relative max-w-[150px]" {...getHeaderProps('activities')}>
                                           Activities
+                                          <span className="col-resize-handle" {...getResizeHandleProps('activities')} />
                                         </TableHead>
-                                        <TableHead className="max-w-[200px]">
+                                        <TableHead className="relative max-w-[200px]" {...getHeaderProps('description')}>
                                           Description
+                                          <span className="col-resize-handle" {...getResizeHandleProps('description')} />
                                         </TableHead>
-                                        <TableHead className="w-[150px]">
+                                        <TableHead className="relative w-[150px]" {...getHeaderProps('author')}>
                                           Author
+                                          <span className="col-resize-handle" {...getResizeHandleProps('author')} />
                                         </TableHead>
-                                        <TableHead className="w-[180px]">
+                                        <TableHead className="relative w-[180px]" {...getHeaderProps('date_time')}>
                                           Date &amp; Time Log
+                                          <span className="col-resize-handle" {...getResizeHandleProps('date_time')} />
                                         </TableHead>
                                         <TableHead className="w-[100px] text-center"></TableHead>
                                       </TableRow>
