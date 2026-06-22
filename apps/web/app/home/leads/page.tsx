@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -24,6 +24,7 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
@@ -59,6 +60,16 @@ export default function LeadsPage() {
   const itemsPerPage = pageSize;
   const { data: user } = useUser();
 
+  // ─── Custom Fields (dynamic columns from API) ─────────────────────────────
+  // When the backend is ready, replace the empty array with your query:
+  // const { data: customFields = [] } = useQuery({
+  //   queryKey: ['lead-custom-fields', workspace?.id],
+  //   queryFn: () => getLeadCustomFieldsService(workspace?.id || ''),
+  //   enabled: !!workspace?.id,
+  // });
+  const customFields: { id: string; label: string }[] = [];
+
+
   const activeFilterCount =
     (selectedStatus !== 'all' ? 1 : 0) + (selectedCreatedBy ? 1 : 0);
 
@@ -90,11 +101,13 @@ export default function LeadsPage() {
       { id: 'created_by', label: 'Created By' },
       { id: 'created_at', label: 'Created On' },
       { id: 'updated_by', label: 'Last Updated By' },
+      // Dynamic custom field columns from API are appended here automatically
+      ...customFields,
     ],
-    [],
+    [customFields],
   );
 
-  const { visibility, toggleVisibility, isVisible, reset } =
+  const { visibility, toggleVisibility, isVisible, reset, mergeNewColumns } =
     useColumnVisibility('leads', {
       sno: true,
       name: true,
@@ -125,6 +138,17 @@ export default function LeadsPage() {
     });
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  // Column resize — widths persisted in localStorage: 'table-col-widths-leads'
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('leads');
+
+  // Merge newly-arrived custom field IDs into visibility (preserves user prefs)
+  useEffect(() => {
+    if (!customFields.length) return;
+    mergeNewColumns(
+      Object.fromEntries(customFields.map((cf) => [cf.id, true])),
+    );
+  }, [customFields, mergeNewColumns]);
 
   const {
     data: leadsData = { data: [], count: 0, statusBreakdown: {} },
@@ -329,69 +353,178 @@ export default function LeadsPage() {
                       <TableHeader>
                         <TableRow>
                           {isVisible('sno') && (
-                            <TableHead className="w-12 whitespace-nowrap">
+                            <TableHead
+                              className="relative w-12 whitespace-nowrap"
+                              {...getHeaderProps('sno')}
+                            >
                               S. No.
+                              <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
                             </TableHead>
                           )}
-                          {isVisible('name') && <TableHead>Name</TableHead>}
+                          {isVisible('name') && (
+                            <TableHead className="relative" {...getHeaderProps('name')}>
+                              Name
+                              <span className="col-resize-handle" {...getResizeHandleProps('name')} />
+                            </TableHead>
+                          )}
                           {isVisible('first_name') && (
-                            <TableHead>First Name</TableHead>
+                            <TableHead className="relative" {...getHeaderProps('first_name')}>
+                              First Name
+                              <span className="col-resize-handle" {...getResizeHandleProps('first_name')} />
+                            </TableHead>
                           )}
                           {isVisible('last_name') && (
-                            <TableHead>Last Name</TableHead>
+                            <TableHead className="relative" {...getHeaderProps('last_name')}>
+                              Last Name
+                              <span className="col-resize-handle" {...getResizeHandleProps('last_name')} />
+                            </TableHead>
                           )}
                           {isVisible('job_title') && (
-                            <TableHead>Job Title</TableHead>
+                            <TableHead className="relative" {...getHeaderProps('job_title')}>
+                              Job Title
+                              <span className="col-resize-handle" {...getResizeHandleProps('job_title')} />
+                            </TableHead>
                           )}
-                          {isVisible('email') && <TableHead>Email</TableHead>}
+                          {isVisible('email') && (
+                            <TableHead className="relative" {...getHeaderProps('email')}>
+                              Email
+                              <span className="col-resize-handle" {...getResizeHandleProps('email')} />
+                            </TableHead>
+                          )}
                           {isVisible('alt_email') && (
-                            <TableHead>Alt Email</TableHead>
+                            <TableHead className="relative" {...getHeaderProps('alt_email')}>
+                              Alt Email
+                              <span className="col-resize-handle" {...getResizeHandleProps('alt_email')} />
+                            </TableHead>
                           )}
-                          {isVisible('phone') && <TableHead>Phone</TableHead>}
-                          {isVisible('mobile') && <TableHead>Mobile</TableHead>}
+                          {isVisible('phone') && (
+                            <TableHead className="relative" {...getHeaderProps('phone')}>
+                              Phone
+                              <span className="col-resize-handle" {...getResizeHandleProps('phone')} />
+                            </TableHead>
+                          )}
+                          {isVisible('mobile') && (
+                            <TableHead className="relative" {...getHeaderProps('mobile')}>
+                              Mobile
+                              <span className="col-resize-handle" {...getResizeHandleProps('mobile')} />
+                            </TableHead>
+                          )}
                           {isVisible('company') && (
-                            <TableHead>Company</TableHead>
+                            <TableHead className="relative" {...getHeaderProps('company')}>
+                              Company
+                              <span className="col-resize-handle" {...getResizeHandleProps('company')} />
+                            </TableHead>
                           )}
                           {isVisible('company_website') && (
-                            <TableHead>Company Website</TableHead>
+                            <TableHead className="relative" {...getHeaderProps('company_website')}>
+                              Company Website
+                              <span className="col-resize-handle" {...getResizeHandleProps('company_website')} />
+                            </TableHead>
                           )}
                           {isVisible('company_linkedin') && (
-                            <TableHead>Company LinkedIn</TableHead>
+                            <TableHead className="relative" {...getHeaderProps('company_linkedin')}>
+                              Company LinkedIn
+                              <span className="col-resize-handle" {...getResizeHandleProps('company_linkedin')} />
+                            </TableHead>
                           )}
                           {isVisible('linkedin') && (
-                            <TableHead>LinkedIn</TableHead>
+                            <TableHead className="relative" {...getHeaderProps('linkedin')}>
+                              LinkedIn
+                              <span className="col-resize-handle" {...getResizeHandleProps('linkedin')} />
+                            </TableHead>
                           )}
                           {isVisible('department') && (
-                            <TableHead>Department</TableHead>
+                            <TableHead className="relative" {...getHeaderProps('department')}>
+                              Department
+                              <span className="col-resize-handle" {...getResizeHandleProps('department')} />
+                            </TableHead>
                           )}
                           {isVisible('industry') && (
-                            <TableHead>Industry</TableHead>
+                            <TableHead className="relative" {...getHeaderProps('industry')}>
+                              Industry
+                              <span className="col-resize-handle" {...getResizeHandleProps('industry')} />
+                            </TableHead>
                           )}
                           {isVisible('company_size') && (
-                            <TableHead>Company Size</TableHead>
+                            <TableHead className="relative" {...getHeaderProps('company_size')}>
+                              Company Size
+                              <span className="col-resize-handle" {...getResizeHandleProps('company_size')} />
+                            </TableHead>
                           )}
                           {isVisible('location') && (
-                            <TableHead>Location</TableHead>
+                            <TableHead className="relative" {...getHeaderProps('location')}>
+                              Location
+                              <span className="col-resize-handle" {...getResizeHandleProps('location')} />
+                            </TableHead>
                           )}
                           {isVisible('timezone') && (
-                            <TableHead>Timezone</TableHead>
+                            <TableHead className="relative" {...getHeaderProps('timezone')}>
+                              Timezone
+                              <span className="col-resize-handle" {...getResizeHandleProps('timezone')} />
+                            </TableHead>
                           )}
-                          {isVisible('status') && <TableHead>Status</TableHead>}
-                          {isVisible('source') && <TableHead>Source</TableHead>}
+                          {isVisible('status') && (
+                            <TableHead className="relative" {...getHeaderProps('status')}>
+                              Status
+                              <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+                            </TableHead>
+                          )}
+                          {isVisible('source') && (
+                            <TableHead className="relative" {...getHeaderProps('source')}>
+                              Source
+                              <span className="col-resize-handle" {...getResizeHandleProps('source')} />
+                            </TableHead>
+                          )}
                           {isVisible('trigger') && (
-                            <TableHead>Trigger</TableHead>
+                            <TableHead className="relative" {...getHeaderProps('trigger')}>
+                              Trigger
+                              <span className="col-resize-handle" {...getResizeHandleProps('trigger')} />
+                            </TableHead>
                           )}
-                          {isVisible('notes') && <TableHead>Notes</TableHead>}
-                          {isVisible('score') && <TableHead>Score</TableHead>}
+                          {isVisible('notes') && (
+                            <TableHead className="relative" {...getHeaderProps('notes')}>
+                              Notes
+                              <span className="col-resize-handle" {...getResizeHandleProps('notes')} />
+                            </TableHead>
+                          )}
+                          {isVisible('score') && (
+                            <TableHead className="relative" {...getHeaderProps('score')}>
+                              Score
+                              <span className="col-resize-handle" {...getResizeHandleProps('score')} />
+                            </TableHead>
+                          )}
                           {isVisible('created_by') && (
-                            <TableHead>Created By</TableHead>
+                            <TableHead className="relative" {...getHeaderProps('created_by')}>
+                              Created By
+                              <span className="col-resize-handle" {...getResizeHandleProps('created_by')} />
+                            </TableHead>
                           )}
                           {isVisible('created_at') && (
-                            <TableHead>Created On</TableHead>
+                            <TableHead className="relative" {...getHeaderProps('created_at')}>
+                              Created On
+                              <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
+                            </TableHead>
                           )}
                           {isVisible('updated_by') && (
-                            <TableHead>Last Updated By</TableHead>
+                            <TableHead className="relative" {...getHeaderProps('updated_by')}>
+                              Last Updated By
+                              <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
+                            </TableHead>
                           )}
+                          {/* Dynamic custom field columns — rendered automatically when API returns data */}
+                          {customFields.map((cf) =>
+                            isVisible(cf.id) ? (
+                              <TableHead
+                                key={cf.id}
+                                className="relative"
+                                {...getHeaderProps(cf.id)}
+                              >
+                                {cf.label}
+                                <span className="col-resize-handle" {...getResizeHandleProps(cf.id)} />
+                              </TableHead>
+                            ) : null,
+                          )}
+                          {/* Actions — intentionally NOT resizable (sticky column) */}
                           <TableHead className="sticky-right-header">
                             Actions
                           </TableHead>
@@ -645,6 +778,15 @@ export default function LeadsPage() {
                                     lead.updated_by ||
                                     '-'}
                                 </TableCell>
+                              )}
+
+                              {/* Dynamic custom field cells — value read from lead.custom_fields JSON column */}
+                              {customFields.map((cf) =>
+                                isVisible(cf.id) ? (
+                                  <TableCell key={cf.id}>
+                                    {(lead as any).custom_fields?.[cf.id] ?? '-'}
+                                  </TableCell>
+                                ) : null,
                               )}
 
                               <TableCell className="bg-card sticky right-0 text-right">

@@ -56,6 +56,7 @@ import {
 } from '@kit/ui/table';
 import { Textarea } from '@kit/ui/textarea';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 import { Skeleton } from '@kit/ui/skeleton';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
@@ -166,6 +167,9 @@ export default function NotesPage() {
       created_at: false,
       updated_by: false,
     });
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('notes');
+
 
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ['notes', workspace?.id],
@@ -449,18 +453,59 @@ export default function NotesPage() {
               <TableHeader>
                 <TableRow>
                   {isVisible('sno') && (
-                    <TableHead className="w-12 whitespace-nowrap">
-                      S. No.
-                    </TableHead>
-                  )}
-                  {isVisible('category') && <TableHead>Category</TableHead>}
-                  {isVisible('associate') && <TableHead>Associate With</TableHead>}
-                  {isVisible('content') && <TableHead className="min-w-[300px]">Note Content</TableHead>}
-                  {isVisible('author') && <TableHead>Author</TableHead>}
-                  {isVisible('updated_at') && <TableHead>Updated At</TableHead>}
-                  {isVisible('created_by') && <TableHead>Created By</TableHead>}
-                  {isVisible('created_at') && <TableHead>Created On</TableHead>}
-                  {isVisible('updated_by') && <TableHead>Last Updated By</TableHead>}
+  <TableHead className="relative w-12 whitespace-nowrap" {...getHeaderProps('sno')}>
+    S. No.
+    <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
+  </TableHead>
+)}
+                  {isVisible('category') && (
+  <TableHead className="relative" {...getHeaderProps('category')}>
+    Category
+    <span className="col-resize-handle" {...getResizeHandleProps('category')} />
+  </TableHead>
+)}
+                  {isVisible('associate') && (
+  <TableHead className="relative" {...getHeaderProps('associate')}>
+    Associate With
+    <span className="col-resize-handle" {...getResizeHandleProps('associate')} />
+  </TableHead>
+)}
+                  {isVisible('content') && (
+  <TableHead className="relative min-w-[300px]" {...getHeaderProps('content')}>
+    Note Content
+    <span className="col-resize-handle" {...getResizeHandleProps('content')} />
+  </TableHead>
+)}
+                  {isVisible('author') && (
+  <TableHead className="relative" {...getHeaderProps('author')}>
+    Author
+    <span className="col-resize-handle" {...getResizeHandleProps('author')} />
+  </TableHead>
+)}
+                  {isVisible('updated_at') && (
+  <TableHead className="relative" {...getHeaderProps('updated_at')}>
+    Updated At
+    <span className="col-resize-handle" {...getResizeHandleProps('updated_at')} />
+  </TableHead>
+)}
+                  {isVisible('created_by') && (
+  <TableHead className="relative" {...getHeaderProps('created_by')}>
+    Created By
+    <span className="col-resize-handle" {...getResizeHandleProps('created_by')} />
+  </TableHead>
+)}
+                  {isVisible('created_at') && (
+  <TableHead className="relative" {...getHeaderProps('created_at')}>
+    Created On
+    <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
+  </TableHead>
+)}
+                  {isVisible('updated_by') && (
+  <TableHead className="relative" {...getHeaderProps('updated_by')}>
+    Last Updated By
+    <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
+  </TableHead>
+)}
                   <TableHead className="sticky-right-header">Actions</TableHead>
                 </TableRow>
               </TableHeader>

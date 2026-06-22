@@ -37,6 +37,7 @@ import { useRbac } from '../rbac/rbac-context';
 import { EmployeeStatusBadge } from './employee-status-badge';
 import { formatDate } from '@kit/shared/utils';
 import { PageSizeSelector } from '@kit/ui/page-size-selector';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 
 export function EmployeesDirectoryCard(props: {
   employees: Array<Employee>;
@@ -62,8 +63,9 @@ export function EmployeesDirectoryCard(props: {
     props.pagination.total,
   );
   const visibleColumnCount =
-    Object.values(props.visibility).filter((value) => value !== false).length +
     1;
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('hrms-employees');
 
   return (
     <CustomTableContainer
@@ -142,28 +144,71 @@ export function EmployeesDirectoryCard(props: {
         <TableHeader>
           <TableRow>
             {props.isColumnVisible('sno') && (
-              <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
+              <TableHead className="relative w-12 whitespace-nowrap" {...getHeaderProps('sno')}>
+                S. No.
+                <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
+              </TableHead>
             )}
             {props.isColumnVisible('employee') && (
-              <TableHead>Employee</TableHead>
+              <TableHead className="relative" {...getHeaderProps('employee')}>
+                Employee
+                <span className="col-resize-handle" {...getResizeHandleProps('employee')} />
+              </TableHead>
             )}
-            {props.isColumnVisible('code') && <TableHead>Code</TableHead>}
+            {props.isColumnVisible('code') && (
+              <TableHead className="relative" {...getHeaderProps('code')}>
+                Code
+                <span className="col-resize-handle" {...getResizeHandleProps('code')} />
+              </TableHead>
+            )}
             {props.isColumnVisible('department') && (
-              <TableHead>Department</TableHead>
+              <TableHead className="relative" {...getHeaderProps('department')}>
+                Department
+                <span className="col-resize-handle" {...getResizeHandleProps('department')} />
+              </TableHead>
             )}
-            {props.isColumnVisible('manager') && <TableHead>Manager</TableHead>}
+            {props.isColumnVisible('manager') && (
+              <TableHead className="relative" {...getHeaderProps('manager')}>
+                Manager
+                <span className="col-resize-handle" {...getResizeHandleProps('manager')} />
+              </TableHead>
+            )}
             {props.isColumnVisible('designation') && (
-              <TableHead>Designation</TableHead>
+              <TableHead className="relative" {...getHeaderProps('designation')}>
+                Designation
+                <span className="col-resize-handle" {...getResizeHandleProps('designation')} />
+              </TableHead>
             )}
             {props.isColumnVisible('employment_type') && (
-              <TableHead>Employment Type</TableHead>
+              <TableHead className="relative" {...getHeaderProps('employment_type')}>
+                Employment Type
+                <span className="col-resize-handle" {...getResizeHandleProps('employment_type')} />
+              </TableHead>
             )}
-            {props.isColumnVisible('status') && <TableHead>Status</TableHead>}
+            {props.isColumnVisible('status') && (
+              <TableHead className="relative" {...getHeaderProps('status')}>
+                Status
+                <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+              </TableHead>
+            )}
             {props.isColumnVisible('joining_date') && (
-              <TableHead>Joining Date</TableHead>
+              <TableHead className="relative" {...getHeaderProps('joining_date')}>
+                Joining Date
+                <span className="col-resize-handle" {...getResizeHandleProps('joining_date')} />
+              </TableHead>
             )}
-            {props.isColumnVisible('email') && <TableHead>Email</TableHead>}
-            {props.isColumnVisible('phone') && <TableHead>Phone</TableHead>}
+            {props.isColumnVisible('email') && (
+              <TableHead className="relative" {...getHeaderProps('email')}>
+                Email
+                <span className="col-resize-handle" {...getResizeHandleProps('email')} />
+              </TableHead>
+            )}
+            {props.isColumnVisible('phone') && (
+              <TableHead className="relative" {...getHeaderProps('phone')}>
+                Phone
+                <span className="col-resize-handle" {...getResizeHandleProps('phone')} />
+              </TableHead>
+            )}
             <TableHead className="sticky right-0 px-4 text-right">
               Actions
             </TableHead>

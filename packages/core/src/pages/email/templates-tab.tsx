@@ -51,6 +51,7 @@ import {
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 import { formatDate } from '@kit/shared/utils';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 
 
 export function CoreEmailTemplatesTab({
@@ -62,6 +63,8 @@ export function CoreEmailTemplatesTab({
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('core-email-templates-table');
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['core-email-templates', workspaceId],
@@ -114,9 +117,18 @@ export function CoreEmailTemplatesTab({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Subject</TableHead>
-                <TableHead>Updated</TableHead>
+                <TableHead className="relative" {...getHeaderProps('name')}>
+                  Name
+                  <span className="col-resize-handle" {...getResizeHandleProps('name')} />
+                </TableHead>
+                <TableHead className="relative" {...getHeaderProps('subject')}>
+                  Subject
+                  <span className="col-resize-handle" {...getResizeHandleProps('subject')} />
+                </TableHead>
+                <TableHead className="relative" {...getHeaderProps('updated_at')}>
+                  Updated
+                  <span className="col-resize-handle" {...getResizeHandleProps('updated_at')} />
+                </TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>

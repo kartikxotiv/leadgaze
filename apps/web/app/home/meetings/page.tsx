@@ -60,6 +60,7 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 import { Skeleton } from '@kit/ui/skeleton';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
@@ -185,6 +186,9 @@ export default function MeetingsPage() {
       date_time: true,
       entity: true,
     });
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('meetings');
+
 
   const { data: meetings = [], isLoading } = useQuery({
     queryKey: ['meetings', workspace?.id],
@@ -607,19 +611,65 @@ export default function MeetingsPage() {
               <TableHeader>
                 <TableRow>
                   {isVisible('sno') && (
-                    <TableHead className="w-12 whitespace-nowrap">
-                      S. No.
-                    </TableHead>
-                  )}
-                  {isVisible('title') && <TableHead>Meeting Title</TableHead>}
-                  {isVisible('description') && <TableHead>Description</TableHead>}
-                  {isVisible('location') && <TableHead>Location</TableHead>}
-                  {isVisible('meeting_link') && <TableHead>Meeting Link</TableHead>}
-                  {isVisible('host') && <TableHead>Host</TableHead>}
-                  {isVisible('created_at') && <TableHead>Created On</TableHead>}
-                  {isVisible('updated_by') && <TableHead>Last Updated By</TableHead>}
-                  {isVisible('date_time') && <TableHead>Date & Time</TableHead>}
-                  {isVisible('entity') && <TableHead>Entity</TableHead>}
+  <TableHead className="relative w-12 whitespace-nowrap" {...getHeaderProps('sno')}>
+    S. No.
+    <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
+  </TableHead>
+)}
+                  {isVisible('title') && (
+  <TableHead className="relative" {...getHeaderProps('title')}>
+    Meeting Title
+    <span className="col-resize-handle" {...getResizeHandleProps('title')} />
+  </TableHead>
+)}
+                  {isVisible('description') && (
+  <TableHead className="relative" {...getHeaderProps('description')}>
+    Description
+    <span className="col-resize-handle" {...getResizeHandleProps('description')} />
+  </TableHead>
+)}
+                  {isVisible('location') && (
+  <TableHead className="relative" {...getHeaderProps('location')}>
+    Location
+    <span className="col-resize-handle" {...getResizeHandleProps('location')} />
+  </TableHead>
+)}
+                  {isVisible('meeting_link') && (
+  <TableHead className="relative" {...getHeaderProps('meeting_link')}>
+    Meeting Link
+    <span className="col-resize-handle" {...getResizeHandleProps('meeting_link')} />
+  </TableHead>
+)}
+                  {isVisible('host') && (
+  <TableHead className="relative" {...getHeaderProps('host')}>
+    Host
+    <span className="col-resize-handle" {...getResizeHandleProps('host')} />
+  </TableHead>
+)}
+                  {isVisible('created_at') && (
+  <TableHead className="relative" {...getHeaderProps('created_at')}>
+    Created On
+    <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
+  </TableHead>
+)}
+                  {isVisible('updated_by') && (
+  <TableHead className="relative" {...getHeaderProps('updated_by')}>
+    Last Updated By
+    <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
+  </TableHead>
+)}
+                  {isVisible('date_time') && (
+  <TableHead className="relative" {...getHeaderProps('date_time')}>
+    Date & Time
+    <span className="col-resize-handle" {...getResizeHandleProps('date_time')} />
+  </TableHead>
+)}
+                  {isVisible('entity') && (
+  <TableHead className="relative" {...getHeaderProps('entity')}>
+    Entity
+    <span className="col-resize-handle" {...getResizeHandleProps('entity')} />
+  </TableHead>
+)}
                   <TableHead className="sticky-right-header">Actions</TableHead>
                 </TableRow>
               </TableHeader>

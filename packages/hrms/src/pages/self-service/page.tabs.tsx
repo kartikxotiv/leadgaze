@@ -28,6 +28,7 @@ import {
   getRequestStatusLabel,
 } from './page.data';
 import { getStatusBadgeClassName } from './page.shared';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 
 export function SelfServicePayslipsTab(props: {
   canDownload: boolean;
@@ -35,6 +36,8 @@ export function SelfServicePayslipsTab(props: {
   onView: (payslip: SelfServicePayslipSummary) => void;
   payslips: Array<SelfServicePayslipSummary>;
 }) {
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('hrms-self-service-payslips');
+
   return (
     <TabsContent value="payslips" className="mt-0">
       <div className="grid gap-2">
@@ -47,11 +50,26 @@ export function SelfServicePayslipsTab(props: {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Period</TableHead>
-                <TableHead>Gross</TableHead>
-                <TableHead>Deductions</TableHead>
-                <TableHead>Net Pay</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="relative" {...getHeaderProps('period')}>
+                  Period
+                  <span className="col-resize-handle" {...getResizeHandleProps('period')} />
+                </TableHead>
+                <TableHead className="relative" {...getHeaderProps('gross')}>
+                  Gross
+                  <span className="col-resize-handle" {...getResizeHandleProps('gross')} />
+                </TableHead>
+                <TableHead className="relative" {...getHeaderProps('deductions')}>
+                  Deductions
+                  <span className="col-resize-handle" {...getResizeHandleProps('deductions')} />
+                </TableHead>
+                <TableHead className="relative" {...getHeaderProps('net_pay')}>
+                  Net Pay
+                  <span className="col-resize-handle" {...getResizeHandleProps('net_pay')} />
+                </TableHead>
+                <TableHead className="relative" {...getHeaderProps('status')}>
+                  Status
+                  <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+                </TableHead>
                 <TableHead className="sticky right-0 px-4 text-right">
                   Actions
                 </TableHead>

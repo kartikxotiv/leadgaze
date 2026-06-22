@@ -59,6 +59,7 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 import { Skeleton } from '@kit/ui/skeleton';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
@@ -183,6 +184,9 @@ export default function RemindersPage() {
       created_at: false,
       updated_by: false,
     });
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('reminders');
+
 
   const { data: reminders = [], isLoading } = useQuery({
     queryKey: ['reminders', workspace?.id],
@@ -650,19 +654,65 @@ export default function RemindersPage() {
               <TableHeader>
                 <TableRow>
                   {isVisible('sno') && (
-                    <TableHead className="w-12 whitespace-nowrap">
-                      S. No.
-                    </TableHead>
-                  )}
-                  {isVisible('title') && <TableHead>Task Title</TableHead>}
-                  {isVisible('description') && <TableHead>Description</TableHead>}
-                  {isVisible('priority') && <TableHead>Priority</TableHead>}
-                  {isVisible('due_date') && <TableHead>Due Date</TableHead>}
-                  {isVisible('status') && <TableHead>Status</TableHead>}
-                  {isVisible('entity') && <TableHead>Entity</TableHead>}
-                  {isVisible('created_by') && <TableHead>Created By</TableHead>}
-                  {isVisible('created_at') && <TableHead>Created On</TableHead>}
-                  {isVisible('updated_by') && <TableHead>Last Updated By</TableHead>}
+  <TableHead className="relative w-12 whitespace-nowrap" {...getHeaderProps('sno')}>
+    S. No.
+    <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
+  </TableHead>
+)}
+                  {isVisible('title') && (
+  <TableHead className="relative" {...getHeaderProps('title')}>
+    Task Title
+    <span className="col-resize-handle" {...getResizeHandleProps('title')} />
+  </TableHead>
+)}
+                  {isVisible('description') && (
+  <TableHead className="relative" {...getHeaderProps('description')}>
+    Description
+    <span className="col-resize-handle" {...getResizeHandleProps('description')} />
+  </TableHead>
+)}
+                  {isVisible('priority') && (
+  <TableHead className="relative" {...getHeaderProps('priority')}>
+    Priority
+    <span className="col-resize-handle" {...getResizeHandleProps('priority')} />
+  </TableHead>
+)}
+                  {isVisible('due_date') && (
+  <TableHead className="relative" {...getHeaderProps('due_date')}>
+    Due Date
+    <span className="col-resize-handle" {...getResizeHandleProps('due_date')} />
+  </TableHead>
+)}
+                  {isVisible('status') && (
+  <TableHead className="relative" {...getHeaderProps('status')}>
+    Status
+    <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+  </TableHead>
+)}
+                  {isVisible('entity') && (
+  <TableHead className="relative" {...getHeaderProps('entity')}>
+    Entity
+    <span className="col-resize-handle" {...getResizeHandleProps('entity')} />
+  </TableHead>
+)}
+                  {isVisible('created_by') && (
+  <TableHead className="relative" {...getHeaderProps('created_by')}>
+    Created By
+    <span className="col-resize-handle" {...getResizeHandleProps('created_by')} />
+  </TableHead>
+)}
+                  {isVisible('created_at') && (
+  <TableHead className="relative" {...getHeaderProps('created_at')}>
+    Created On
+    <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
+  </TableHead>
+)}
+                  {isVisible('updated_by') && (
+  <TableHead className="relative" {...getHeaderProps('updated_by')}>
+    Last Updated By
+    <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
+  </TableHead>
+)}
                   <TableHead className="sticky-right-header">Actions</TableHead>
                 </TableRow>
               </TableHeader>

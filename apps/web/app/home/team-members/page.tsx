@@ -34,6 +34,7 @@ import {
 } from '@kit/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
@@ -163,6 +164,9 @@ export default function TeamMembersPage() {
       status: true,
       primary_contact: true,
     });
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('team-members');
+
 
   // Fetch members
   const { data: membersData = [], isLoading } = useQuery({
@@ -471,19 +475,52 @@ export default function TeamMembersPage() {
                   {statusFilter === 'pending' ? (
                     <>
                       <TableHead>Email</TableHead>
-                      {isVisible('role') && <TableHead>Role</TableHead>}
+                      {isVisible('role') && (
+  <TableHead className="relative" {...getHeaderProps('role')}>
+    Role
+    <span className="col-resize-handle" {...getResizeHandleProps('role')} />
+  </TableHead>
+)}
                       <TableHead>Sent On</TableHead>
-                      {isVisible('status') && <TableHead>Status</TableHead>}
+                      {isVisible('status') && (
+  <TableHead className="relative" {...getHeaderProps('status')}>
+    Status
+    <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+  </TableHead>
+)}
                     </>
                   ) : (
                     <>
-                      {isVisible('member') && <TableHead>Member</TableHead>}
-                      {isVisible('email') && <TableHead>Email</TableHead>}
-                      {isVisible('role') && <TableHead>Role</TableHead>}
-                      {isVisible('status') && <TableHead>Status</TableHead>}
+                      {isVisible('member') && (
+  <TableHead className="relative" {...getHeaderProps('member')}>
+    Member
+    <span className="col-resize-handle" {...getResizeHandleProps('member')} />
+  </TableHead>
+)}
+                      {isVisible('email') && (
+  <TableHead className="relative" {...getHeaderProps('email')}>
+    Email
+    <span className="col-resize-handle" {...getResizeHandleProps('email')} />
+  </TableHead>
+)}
+                      {isVisible('role') && (
+  <TableHead className="relative" {...getHeaderProps('role')}>
+    Role
+    <span className="col-resize-handle" {...getResizeHandleProps('role')} />
+  </TableHead>
+)}
+                      {isVisible('status') && (
+  <TableHead className="relative" {...getHeaderProps('status')}>
+    Status
+    <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+  </TableHead>
+)}
                       {isVisible('primary_contact') && (
-                        <TableHead>Primary Contact</TableHead>
-                      )}
+  <TableHead className="relative" {...getHeaderProps('primary_contact')}>
+    Primary Contact
+    <span className="col-resize-handle" {...getResizeHandleProps('primary_contact')} />
+  </TableHead>
+)}
                     </>
                   )}
                   <TableHead className="sticky-right-header">Actions</TableHead>

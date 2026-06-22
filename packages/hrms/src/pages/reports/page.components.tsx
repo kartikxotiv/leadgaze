@@ -33,6 +33,7 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { cn } from '@kit/ui/utils';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 
 type MetricItem = {
   hint: string;
@@ -181,6 +182,9 @@ export function ReportTableCard(props: {
   rows: Array<Record<string, TableRowValue>>;
   title: string;
 }) {
+  const tableKey = 'hrms-report-' + props.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize(tableKey);
+
   return (
     <div className="flex min-h-0 flex-col gap-2">
       <div className="px-1">
@@ -199,9 +203,11 @@ export function ReportTableCard(props: {
               {props.columns.map((column) => (
                 <TableHead
                   key={column.key}
-                  className={cn(column.align === 'right' ? 'text-right' : '')}
+                  className={cn("relative", column.align === 'right' ? 'text-right' : '')}
+                  {...getHeaderProps(column.key)}
                 >
                   {column.label}
+                  <span className="col-resize-handle" {...getResizeHandleProps(column.key)} />
                 </TableHead>
               ))}
             </TableRow>

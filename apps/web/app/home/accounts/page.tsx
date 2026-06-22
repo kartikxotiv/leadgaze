@@ -21,6 +21,7 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 
@@ -144,6 +145,9 @@ export default function AccountsPage() {
       updated_by: false,
     });
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('accounts');
+
+
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const {
@@ -261,49 +265,101 @@ export default function AccountsPage() {
               <TableHeader>
                 <TableRow>
                   {isVisible('sno') && (
-                    <TableHead className="w-12 whitespace-nowrap">
-                      S. No.
-                    </TableHead>
-                  )}
+  <TableHead className="relative w-12 whitespace-nowrap" {...getHeaderProps('sno')}>
+    S. No.
+    <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
+  </TableHead>
+)}
                   {isVisible('name') && (
-                    <TableHead>Account Name</TableHead>
-                  )}
-                  {isVisible('website') && <TableHead>Website</TableHead>}
+  <TableHead className="relative" {...getHeaderProps('name')}>
+    Account Name
+    <span className="col-resize-handle" {...getResizeHandleProps('name')} />
+  </TableHead>
+)}
+                  {isVisible('website') && (
+  <TableHead className="relative" {...getHeaderProps('website')}>
+    Website
+    <span className="col-resize-handle" {...getResizeHandleProps('website')} />
+  </TableHead>
+)}
                   {isVisible('industry') && (
-                    <TableHead>Industry</TableHead>
-                  )}
-                  {isVisible('phone') && <TableHead>Phone</TableHead>}
+  <TableHead className="relative" {...getHeaderProps('industry')}>
+    Industry
+    <span className="col-resize-handle" {...getResizeHandleProps('industry')} />
+  </TableHead>
+)}
+                  {isVisible('phone') && (
+  <TableHead className="relative" {...getHeaderProps('phone')}>
+    Phone
+    <span className="col-resize-handle" {...getResizeHandleProps('phone')} />
+  </TableHead>
+)}
                   {isVisible('company_size') && (
-                    <TableHead>Size</TableHead>
-                  )}
+  <TableHead className="relative" {...getHeaderProps('company_size')}>
+    Size
+    <span className="col-resize-handle" {...getResizeHandleProps('company_size')} />
+  </TableHead>
+)}
                   {isVisible('billing_street') && (
-                    <TableHead>Street</TableHead>
-                  )}
+  <TableHead className="relative" {...getHeaderProps('billing_street')}>
+    Street
+    <span className="col-resize-handle" {...getResizeHandleProps('billing_street')} />
+  </TableHead>
+)}
                   {isVisible('billing_city') && (
-                    <TableHead>City</TableHead>
-                  )}
+  <TableHead className="relative" {...getHeaderProps('billing_city')}>
+    City
+    <span className="col-resize-handle" {...getResizeHandleProps('billing_city')} />
+  </TableHead>
+)}
                   {isVisible('billing_state') && (
-                    <TableHead>State</TableHead>
-                  )}
+  <TableHead className="relative" {...getHeaderProps('billing_state')}>
+    State
+    <span className="col-resize-handle" {...getResizeHandleProps('billing_state')} />
+  </TableHead>
+)}
                   {isVisible('billing_postal_code') && (
-                    <TableHead>Postal Code</TableHead>
-                  )}
+  <TableHead className="relative" {...getHeaderProps('billing_postal_code')}>
+    Postal Code
+    <span className="col-resize-handle" {...getResizeHandleProps('billing_postal_code')} />
+  </TableHead>
+)}
                   {isVisible('billing_country') && (
-                    <TableHead>Country</TableHead>
-                  )}
+  <TableHead className="relative" {...getHeaderProps('billing_country')}>
+    Country
+    <span className="col-resize-handle" {...getResizeHandleProps('billing_country')} />
+  </TableHead>
+)}
                   {isVisible('description') && (
-                    <TableHead>Description</TableHead>
-                  )}
-                  {isVisible('owner') && <TableHead>Owner</TableHead>}
+  <TableHead className="relative" {...getHeaderProps('description')}>
+    Description
+    <span className="col-resize-handle" {...getResizeHandleProps('description')} />
+  </TableHead>
+)}
+                  {isVisible('owner') && (
+  <TableHead className="relative" {...getHeaderProps('owner')}>
+    Owner
+    <span className="col-resize-handle" {...getResizeHandleProps('owner')} />
+  </TableHead>
+)}
                   {isVisible('created_by') && (
-                    <TableHead>Created By</TableHead>
-                  )}
+  <TableHead className="relative" {...getHeaderProps('created_by')}>
+    Created By
+    <span className="col-resize-handle" {...getResizeHandleProps('created_by')} />
+  </TableHead>
+)}
                   {isVisible('created_at') && (
-                    <TableHead>Created On</TableHead>
-                  )}
+  <TableHead className="relative" {...getHeaderProps('created_at')}>
+    Created On
+    <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
+  </TableHead>
+)}
                   {isVisible('updated_by') && (
-                    <TableHead>Last Updated By</TableHead>
-                  )}
+  <TableHead className="relative" {...getHeaderProps('updated_by')}>
+    Last Updated By
+    <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
+  </TableHead>
+)}
                   <TableHead className="sticky-right-header">
                     Actions
                   </TableHead>

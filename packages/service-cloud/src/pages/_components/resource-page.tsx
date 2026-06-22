@@ -49,6 +49,7 @@ import {
 } from '@kit/ui/table';
 import { TablePagination } from '@kit/ui/table-pagination';
 import { cn } from '@kit/ui/utils';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 
 import {
   type ServiceCloudRecord,
@@ -144,6 +145,7 @@ export function ServiceCloudResourcePage({
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize(`sc-${resource}`);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
@@ -326,10 +328,13 @@ export function ServiceCloudResourcePage({
               <TableHeader>
                 <TableRow>
                   {columns.map((column) => (
-                    <TableHead key={column.key}>{column.label}</TableHead>
+                    <TableHead className="relative" key={column.key} {...getHeaderProps(column.key)}>
+                      {column.label}
+                      <span className="col-resize-handle" {...getResizeHandleProps(column.key)} />
+                    </TableHead>
                   ))}
                   {canEdit || canDelete ? (
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="sticky-right-header text-right">Actions</TableHead>
                   ) : null}
                 </TableRow>
               </TableHeader>

@@ -33,6 +33,7 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
@@ -76,6 +77,8 @@ export default function AuditLogsPage() {
       action: true,
       entity: true,
     });
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('audit-logs');
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: [
@@ -241,28 +244,33 @@ export default function AuditLogsPage() {
                     <TableHeader>
                       <TableRow className="border-b bg-muted/50 hover:bg-muted/50">
                         {isVisible('date_time') && (
-                          <TableHead className="w-[160px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
+                          <TableHead className="relative w-[160px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap" {...getHeaderProps('date_time')}>
                             Date & Time
+                            <span className="col-resize-handle" {...getResizeHandleProps('date_time')} />
                           </TableHead>
                         )}
                         {isVisible('actor') && (
-                          <TableHead className="w-[200px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
+                          <TableHead className="relative w-[200px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap" {...getHeaderProps('actor')}>
                             Actor
+                            <span className="col-resize-handle" {...getResizeHandleProps('actor')} />
                           </TableHead>
                         )}
                         {isVisible('module') && (
-                          <TableHead className="w-[140px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
+                          <TableHead className="relative w-[140px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap" {...getHeaderProps('module')}>
                             Module
+                            <span className="col-resize-handle" {...getResizeHandleProps('module')} />
                           </TableHead>
                         )}
                         {isVisible('action') && (
-                          <TableHead className="w-[120px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
+                          <TableHead className="relative w-[120px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap" {...getHeaderProps('action')}>
                             Action
+                            <span className="col-resize-handle" {...getResizeHandleProps('action')} />
                           </TableHead>
                         )}
                         {isVisible('entity') && (
-                          <TableHead className="w-full h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
+                          <TableHead className="relative w-full h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap" {...getHeaderProps('entity')}>
                             Entity
+                            <span className="col-resize-handle" {...getResizeHandleProps('entity')} />
                           </TableHead>
                         )}
                         <TableHead className="sticky-right-header w-[80px] h-11 text-xs uppercase tracking-wider font-semibold text-right whitespace-nowrap">

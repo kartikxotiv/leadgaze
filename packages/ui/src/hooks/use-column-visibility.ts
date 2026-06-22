@@ -45,5 +45,34 @@ export function useColumnVisibility(
     setVisibility(initialVisibility);
   }, [initialVisibility]);
 
-  return { visibility, toggleVisibility, isVisible, reset };
+  /**
+   * Merges new column IDs into visibility state without overwriting existing
+   * user preferences. Call this inside a useEffect when dynamic columns
+   * (e.g. custom fields from API) arrive after mount.
+   *
+   * Example:
+   *   useEffect(() => {
+   *     if (!customFields.length) return;
+   *     mergeNewColumns(Object.fromEntries(customFields.map(cf => [cf.id, true])));
+   *   }, [customFields, mergeNewColumns]);
+   */
+  const mergeNewColumns = useCallback(
+    (newColumns: Record<string, boolean>) => {
+      setVisibility((prev) => {
+        const additions: Record<string, boolean> = {};
+        for (const k of Object.keys(newColumns)) {
+          // Only add columns that don't already have a saved preference
+          if (!(k in prev)) {
+            additions[k] = newColumns[k]!;
+          }
+        }
+        return Object.keys(additions).length > 0
+          ? { ...prev, ...additions }
+          : prev;
+      });
+    },
+    [],
+  );
+
+  return { visibility, toggleVisibility, isVisible, reset, mergeNewColumns };
 }
