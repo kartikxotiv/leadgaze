@@ -56,6 +56,7 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 
@@ -169,6 +170,9 @@ export default function DocumentPage() {
       created_at: false,
       updated_by: false,
     });
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('documents');
+
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ['documents', workspace?.id],
@@ -494,19 +498,65 @@ export default function DocumentPage() {
               <TableHeader>
                 <TableRow>
                   {isVisible('sno') && (
-                    <TableHead className="w-12 whitespace-nowrap">
-                      S. No.
-                    </TableHead>
-                  )}
-                  {isVisible('name') && <TableHead>Name</TableHead>}
-                  {isVisible('type') && <TableHead>Type</TableHead>}
-                  {isVisible('size') && <TableHead>Size</TableHead>}
-                  {isVisible('uploader') && <TableHead>Uploaded By</TableHead>}
-                  {isVisible('entity') && <TableHead>Entity</TableHead>}
-                  {isVisible('last_modified') && <TableHead>Last Modified At</TableHead>}
-                  {isVisible('created_by') && <TableHead>Created By</TableHead>}
-                  {isVisible('created_at') && <TableHead>Created On</TableHead>}
-                  {isVisible('updated_by') && <TableHead>Last Updated By</TableHead>}
+  <TableHead className="relative w-12 whitespace-nowrap" {...getHeaderProps('sno')}>
+    S. No.
+    <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
+  </TableHead>
+)}
+                  {isVisible('name') && (
+  <TableHead className="relative" {...getHeaderProps('name')}>
+    Name
+    <span className="col-resize-handle" {...getResizeHandleProps('name')} />
+  </TableHead>
+)}
+                  {isVisible('type') && (
+  <TableHead className="relative" {...getHeaderProps('type')}>
+    Type
+    <span className="col-resize-handle" {...getResizeHandleProps('type')} />
+  </TableHead>
+)}
+                  {isVisible('size') && (
+  <TableHead className="relative" {...getHeaderProps('size')}>
+    Size
+    <span className="col-resize-handle" {...getResizeHandleProps('size')} />
+  </TableHead>
+)}
+                  {isVisible('uploader') && (
+  <TableHead className="relative" {...getHeaderProps('uploader')}>
+    Uploaded By
+    <span className="col-resize-handle" {...getResizeHandleProps('uploader')} />
+  </TableHead>
+)}
+                  {isVisible('entity') && (
+  <TableHead className="relative" {...getHeaderProps('entity')}>
+    Entity
+    <span className="col-resize-handle" {...getResizeHandleProps('entity')} />
+  </TableHead>
+)}
+                  {isVisible('last_modified') && (
+  <TableHead className="relative" {...getHeaderProps('last_modified')}>
+    Last Modified At
+    <span className="col-resize-handle" {...getResizeHandleProps('last_modified')} />
+  </TableHead>
+)}
+                  {isVisible('created_by') && (
+  <TableHead className="relative" {...getHeaderProps('created_by')}>
+    Created By
+    <span className="col-resize-handle" {...getResizeHandleProps('created_by')} />
+  </TableHead>
+)}
+                  {isVisible('created_at') && (
+  <TableHead className="relative" {...getHeaderProps('created_at')}>
+    Created On
+    <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
+  </TableHead>
+)}
+                  {isVisible('updated_by') && (
+  <TableHead className="relative" {...getHeaderProps('updated_by')}>
+    Last Updated By
+    <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
+  </TableHead>
+)}
                   <TableHead className="sticky-right-header">Actions</TableHead>
                 </TableRow>
               </TableHeader>

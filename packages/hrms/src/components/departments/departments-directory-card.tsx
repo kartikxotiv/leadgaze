@@ -48,19 +48,53 @@ export function DepartmentsDirectoryCard(props: {
         <TableHeader>
           <TableRow>
             {props.isColumnVisible('sno') && (
-              <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
+              <TableHead className="relative w-12 whitespace-nowrap" {...getHeaderProps('sno')}>
+                S. No.
+                <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
+              </TableHead>
             )}
             {props.isColumnVisible('department') && (
-              <TableHead>Department</TableHead>
+              <TableHead className="relative" {...getHeaderProps('department')}>
+                Department
+                <span className="col-resize-handle" {...getResizeHandleProps('department')} />
+              </TableHead>
             )}
-            {props.isColumnVisible('code') && <TableHead>Code</TableHead>}
-            {props.isColumnVisible('parent') && <TableHead>Parent</TableHead>}
-            {props.isColumnVisible('head') && <TableHead>Head</TableHead>}
+            {props.isColumnVisible('code') && (
+              <TableHead className="relative" {...getHeaderProps('code')}>
+                Code
+                <span className="col-resize-handle" {...getResizeHandleProps('code')} />
+              </TableHead>
+            )}
+            {props.isColumnVisible('parent') && (
+              <TableHead className="relative" {...getHeaderProps('parent')}>
+                Parent
+                <span className="col-resize-handle" {...getResizeHandleProps('parent')} />
+              </TableHead>
+            )}
+            {props.isColumnVisible('head') && (
+              <TableHead className="relative" {...getHeaderProps('head')}>
+                Head
+                <span className="col-resize-handle" {...getResizeHandleProps('head')} />
+              </TableHead>
+            )}
             {props.isColumnVisible('cost_center') && (
-              <TableHead>Cost Center</TableHead>
+              <TableHead className="relative" {...getHeaderProps('cost_center')}>
+                Cost Center
+                <span className="col-resize-handle" {...getResizeHandleProps('cost_center')} />
+              </TableHead>
             )}
-            {props.isColumnVisible('status') && <TableHead>Status</TableHead>}
-            {props.isColumnVisible('updated') && <TableHead>Updated</TableHead>}
+            {props.isColumnVisible('status') && (
+              <TableHead className="relative" {...getHeaderProps('status')}>
+                Status
+                <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+              </TableHead>
+            )}
+            {props.isColumnVisible('updated') && (
+              <TableHead className="relative" {...getHeaderProps('updated')}>
+                Updated
+                <span className="col-resize-handle" {...getResizeHandleProps('updated')} />
+              </TableHead>
+            )}
             <TableHead className="sticky right-0 px-4 text-right">
               Actions
             </TableHead>

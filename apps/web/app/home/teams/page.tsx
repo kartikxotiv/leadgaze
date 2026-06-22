@@ -22,6 +22,7 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { StatusFilterDropdown } from '@kit/ui/status-filter-dropdown';
 
@@ -78,6 +79,9 @@ export default function TeamsPage() {
       description: true,
       members: true,
     });
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('teams');
+
 
   // Fetch teams
   const {
@@ -251,9 +255,24 @@ export default function TeamsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {isVisible('name') && <TableHead>Team Name</TableHead>}
-                    {isVisible('description') && <TableHead>Description</TableHead>}
-                    {isVisible('members') && <TableHead>Members</TableHead>}
+                    {isVisible('name') && (
+  <TableHead className="relative" {...getHeaderProps('name')}>
+    Team Name
+    <span className="col-resize-handle" {...getResizeHandleProps('name')} />
+  </TableHead>
+)}
+                    {isVisible('description') && (
+  <TableHead className="relative" {...getHeaderProps('description')}>
+    Description
+    <span className="col-resize-handle" {...getResizeHandleProps('description')} />
+  </TableHead>
+)}
+                    {isVisible('members') && (
+  <TableHead className="relative" {...getHeaderProps('members')}>
+    Members
+    <span className="col-resize-handle" {...getResizeHandleProps('members')} />
+  </TableHead>
+)}
                     <TableHead className="sticky-right-header text-right">
                       Actions
                     </TableHead>

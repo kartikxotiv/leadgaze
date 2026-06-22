@@ -31,6 +31,7 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
@@ -81,6 +82,9 @@ export default function RolesPage() {
       type: true,
       status: true,
     });
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('roles');
+
 
   // Fetch roles filtered by current product/module
   const {
@@ -350,13 +354,36 @@ export default function RolesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {isVisible('role_name') && <TableHead>Role Name</TableHead>}
-                    {isVisible('role_key') && <TableHead>Role Key</TableHead>}
+                    {isVisible('role_name') && (
+  <TableHead className="relative" {...getHeaderProps('role_name')}>
+    Role Name
+    <span className="col-resize-handle" {...getResizeHandleProps('role_name')} />
+  </TableHead>
+)}
+                    {isVisible('role_key') && (
+  <TableHead className="relative" {...getHeaderProps('role_key')}>
+    Role Key
+    <span className="col-resize-handle" {...getResizeHandleProps('role_key')} />
+  </TableHead>
+)}
                     {isVisible('hierarchy') && (
-                      <TableHead>Access Level</TableHead>
-                    )}
-                    {isVisible('type') && <TableHead>Type</TableHead>}
-                    {isVisible('status') && <TableHead>Status</TableHead>}
+  <TableHead className="relative" {...getHeaderProps('hierarchy')}>
+    Access Level
+    <span className="col-resize-handle" {...getResizeHandleProps('hierarchy')} />
+  </TableHead>
+)}
+                    {isVisible('type') && (
+  <TableHead className="relative" {...getHeaderProps('type')}>
+    Type
+    <span className="col-resize-handle" {...getResizeHandleProps('type')} />
+  </TableHead>
+)}
+                    {isVisible('status') && (
+  <TableHead className="relative" {...getHeaderProps('status')}>
+    Status
+    <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+  </TableHead>
+)}
                     <TableHead className="sticky-right-header text-right">
                       Actions
                     </TableHead>

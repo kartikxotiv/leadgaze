@@ -25,6 +25,7 @@ import {
 import type { EmployeeDocument } from '../../types/document.type';
 import { useRbac } from '../rbac/rbac-context';
 import { formatDate } from '@kit/shared/utils';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 
 export function DocumentsDirectoryCard(props: {
   documents: Array<EmployeeDocument>;
@@ -43,28 +44,55 @@ export function DocumentsDirectoryCard(props: {
     Object.values(props.visibility).filter((value) => value !== false).length +
     1;
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('hrms-documents');
+
   return (
     <CustomTableContainer>
       <Table>
         <TableHeader>
           <TableRow>
             {props.isColumnVisible('sno') && (
-              <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
+              <TableHead className="relative w-12 whitespace-nowrap" {...getHeaderProps('sno')}>
+                S. No.
+                <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
+              </TableHead>
             )}
             {props.isColumnVisible('document') && (
-              <TableHead>Document</TableHead>
+              <TableHead className="relative" {...getHeaderProps('document')}>
+                Document
+                <span className="col-resize-handle" {...getResizeHandleProps('document')} />
+              </TableHead>
             )}
             {props.isColumnVisible('employee') && (
-              <TableHead>Employee</TableHead>
+              <TableHead className="relative" {...getHeaderProps('employee')}>
+                Employee
+                <span className="col-resize-handle" {...getResizeHandleProps('employee')} />
+              </TableHead>
             )}
             {props.isColumnVisible('employee_code') && (
-              <TableHead>Employee Code</TableHead>
+              <TableHead className="relative" {...getHeaderProps('employee_code')}>
+                Employee Code
+                <span className="col-resize-handle" {...getResizeHandleProps('employee_code')} />
+              </TableHead>
             )}
             {props.isColumnVisible('uploaded') && (
-              <TableHead>Uploaded</TableHead>
+              <TableHead className="relative" {...getHeaderProps('uploaded')}>
+                Uploaded
+                <span className="col-resize-handle" {...getResizeHandleProps('uploaded')} />
+              </TableHead>
             )}
-            {props.isColumnVisible('status') && <TableHead>Status</TableHead>}
-            {props.isColumnVisible('view') && <TableHead>View</TableHead>}
+            {props.isColumnVisible('status') && (
+              <TableHead className="relative" {...getHeaderProps('status')}>
+                Status
+                <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+              </TableHead>
+            )}
+            {props.isColumnVisible('view') && (
+              <TableHead className="relative" {...getHeaderProps('view')}>
+                View
+                <span className="col-resize-handle" {...getResizeHandleProps('view')} />
+              </TableHead>
+            )}
             <TableHead className="sticky right-0 px-4 text-right">
               Actions
             </TableHead>

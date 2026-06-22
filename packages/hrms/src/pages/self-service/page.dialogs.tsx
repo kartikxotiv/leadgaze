@@ -47,6 +47,7 @@ import {
   formatPayslipPeriod,
 } from './page.data';
 import { StatTile } from './page.shared';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 
 export function UpdateProfileDialog(props: {
   employee: SelfServiceEmployeeProfile;
@@ -380,6 +381,8 @@ export function SelfServicePayslipDetailsDialog(props: {
     queryKey: ['self-service-payslip', props.payslipId],
   });
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('hrms-self-service-payslip-details');
+
   const detail = detailsQuery.data?.data as
     | SelfServicePayslipDetail
     | undefined;
@@ -429,10 +432,22 @@ export function SelfServicePayslipDetailsDialog(props: {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Component</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="relative" {...getHeaderProps('component')}>
+                      Component
+                      <span className="col-resize-handle" {...getResizeHandleProps('component')} />
+                    </TableHead>
+                    <TableHead className="relative" {...getHeaderProps('type')}>
+                      Type
+                      <span className="col-resize-handle" {...getResizeHandleProps('type')} />
+                    </TableHead>
+                    <TableHead className="relative" {...getHeaderProps('source')}>
+                      Source
+                      <span className="col-resize-handle" {...getResizeHandleProps('source')} />
+                    </TableHead>
+                    <TableHead className="relative text-right" {...getHeaderProps('amount')}>
+                      Amount
+                      <span className="col-resize-handle" {...getResizeHandleProps('amount')} />
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

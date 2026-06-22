@@ -34,12 +34,15 @@ import {
 } from '../../services/email-templates.service';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 
 export function CoreEmailVariablesTab({ workspaceId }: { workspaceId: string }) {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedVariable, setSelectedVariable] = useState<any>(null);
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('core-email-variables-table');
 
   const { data: variables = [], isLoading } = useQuery({
     queryKey: ['core-email-variables', workspaceId],
@@ -92,8 +95,14 @@ export function CoreEmailVariablesTab({ workspaceId }: { workspaceId: string }) 
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Key</TableHead>
-                    <TableHead>Value</TableHead>
+                    <TableHead className="relative" {...getHeaderProps('key')}>
+                      Key
+                      <span className="col-resize-handle" {...getResizeHandleProps('key')} />
+                    </TableHead>
+                    <TableHead className="relative" {...getHeaderProps('value')}>
+                      Value
+                      <span className="col-resize-handle" {...getResizeHandleProps('value')} />
+                    </TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
