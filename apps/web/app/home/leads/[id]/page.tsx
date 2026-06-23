@@ -34,7 +34,7 @@ import { toast } from 'sonner';
 
 import { CoreEmailComposeDialog } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
-import { formatDate, formatDateTime } from '@kit/shared/utils';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import {
   Accordion,
@@ -166,6 +166,7 @@ export default function LeadDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
+  const { formatDate, formatDateTime } = useLocalization();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -512,11 +513,7 @@ export default function LeadDetailsPage() {
                     <Clock className="h-3 w-3" />
                     <span>
                       Created on{' '}
-                      {new Date(lead.created_at).toLocaleDateString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
+                      {formatDate(lead.created_at)}
                     </span>
                   </div>
                 </>

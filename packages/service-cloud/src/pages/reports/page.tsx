@@ -16,7 +16,7 @@ import {
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import { Skeleton } from '@kit/ui/skeleton';
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '@kit/shared/localization';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 
 import { getServiceCloudDashboardService } from '../../services';
@@ -45,6 +45,7 @@ export function ServiceCloudReportsPage({
 }: {
   workspaceId: string;
 }) {
+  const { formatDate } = useLocalization();
   const { canAccess, isLoading: isPermissionLoading } =
     useServiceCloudPermissions(workspaceId);
   const canView = canAccess(

@@ -30,7 +30,7 @@ import { toast } from 'sonner';
 
 import { CoreEmailComposeDialog } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import {
   Accordion,
@@ -147,6 +147,7 @@ export default function ContactDetailsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const id = params?.id as string;
+  const { formatDate } = useLocalization();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
@@ -361,14 +362,7 @@ export default function ContactDetailsPage() {
                     <Clock className="h-3 w-3" />
                     <span>
                       Created on{' '}
-                      {new Date(contact.created_at).toLocaleDateString(
-                        undefined,
-                        {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        },
-                      )}
+                      {formatDate(contact.created_at)}
                     </span>
                   </div>
                 </>

@@ -34,7 +34,7 @@ import { toast } from 'sonner';
 
 import { CoreEmailComposeDialog } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import {
   Accordion,
@@ -165,6 +165,7 @@ export default function OpportunityDetailsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const id = params?.id as string;
+  const { formatDate, formatCurrency } = useLocalization();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
@@ -642,14 +643,7 @@ export default function OpportunityDetailsPage() {
                     <Clock className="h-3 w-3" />
                     <span>
                       Created on{' '}
-                      {new Date(opportunity.created_at).toLocaleDateString(
-                        undefined,
-                        {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        },
-                      )}
+                      {formatDate(opportunity.created_at)}
                     </span>
                   </div>
                 </>
@@ -887,18 +881,12 @@ export default function OpportunityDetailsPage() {
                     <DetailInfoRow
                       icon={<Wallet className="h-5 w-5" />}
                       label="Amount"
-                      value={new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: opportunity.currency || 'USD',
-                      }).format(opportunity.amount || 0)}
+                      value={formatCurrency(opportunity.amount || 0, opportunity.currency || 'USD')}
                     />
                     <DetailInfoRow
                       icon={<Target className="h-5 w-5" />}
                       label="Revenue"
-                      value={new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: opportunity.currency || 'USD',
-                      }).format(opportunity.expected_revenue || 0)}
+                      value={formatCurrency(opportunity.expected_revenue || 0, opportunity.currency || 'USD')}
                     />
                     <DetailInfoRow
                       icon={<Calendar className="h-5 w-5" />}

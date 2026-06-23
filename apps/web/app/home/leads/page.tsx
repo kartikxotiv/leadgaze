@@ -43,12 +43,13 @@ import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import CreateLeadDialog from './components/create-lead-dialog';
 import {CustomTableContainer} from '@kit/ui/custom-table-container';
 import {StatusFilterDropdown} from '@kit/ui/status-filter-dropdown';
-import {formatDate} from '@kit/shared/utils';
 import { TablePagination } from '@kit/ui/table-pagination';
+import { useLocalization } from '~/lib/localization/localization-provider';
 
 export default function LeadsPage() {
   const router = useRouter();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
+  const { formatDate } = useLocalization();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedCreatedBy, setSelectedCreatedBy] = useState<string>('');

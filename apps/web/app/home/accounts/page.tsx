@@ -35,8 +35,8 @@ import { Account, getAccountsService } from '~/services/accounts.service';
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { CreateAccountDialog } from './components/create-account-dialog';
-import { formatDate } from '@kit/shared/utils';
 import { TablePagination } from '@kit/ui/table-pagination';
+import { useLocalization } from '~/lib/localization/localization-provider';
 
 function AccountsPageSkeleton() {
   return (
@@ -95,6 +95,7 @@ function AccountsPageSkeleton() {
 export default function AccountsPage() {
   const router = useRouter();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
+  const { formatDate } = useLocalization();
   const [searchTerm, setSearchTerm] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

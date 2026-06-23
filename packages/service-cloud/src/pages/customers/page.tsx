@@ -9,7 +9,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Loader2, Plus, Ticket, TicketIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '@kit/shared/localization';
 import { Button } from '@kit/ui/button';
 import {
   Dialog,
@@ -62,6 +62,7 @@ export function ServiceCloudCustomersPage({
 }: {
   workspaceId: string;
 }) {
+  const { formatDate } = useLocalization();
   const { canAccess, isLoading } = useServiceCloudPermissions(workspaceId);
   const canView = canAccess(
     SERVICE_CLOUD_MODULE_KEYS.customers,

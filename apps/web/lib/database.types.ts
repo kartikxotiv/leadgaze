@@ -7840,6 +7840,121 @@ export type Database = {
           },
         ];
       };
+      workspace_preferences: {
+        Row: {
+          created_at: string;
+          date_format: string;
+          default_currency: string;
+          id: string;
+          time_format: string;
+          timezone: string;
+          updated_at: string;
+          workspace_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          date_format?: string;
+          default_currency?: string;
+          id?: string;
+          time_format?: string;
+          timezone?: string;
+          updated_at?: string;
+          workspace_id: string;
+        };
+        Update: {
+          created_at?: string;
+          date_format?: string;
+          default_currency?: string;
+          id?: string;
+          time_format?: string;
+          timezone?: string;
+          updated_at?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'workspace_preferences_workspace_id_fkey';
+            columns: ['workspace_id'];
+            isOneToOne: true;
+            referencedRelation: 'workspaces';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      workspace_currencies: {
+        Row: {
+          created_at: string;
+          currency_code: string;
+          currency_symbol: string;
+          id: string;
+          is_active: boolean;
+          is_default: boolean;
+          updated_at: string;
+          workspace_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          currency_code: string;
+          currency_symbol: string;
+          id?: string;
+          is_active?: boolean;
+          is_default?: boolean;
+          updated_at?: string;
+          workspace_id: string;
+        };
+        Update: {
+          created_at?: string;
+          currency_code?: string;
+          currency_symbol?: string;
+          id?: string;
+          is_active?: boolean;
+          is_default?: boolean;
+          updated_at?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'workspace_currencies_workspace_id_fkey';
+            columns: ['workspace_id'];
+            isOneToOne: false;
+            referencedRelation: 'workspaces';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      currency_exchange_rates: {
+        Row: {
+          base_currency: string;
+          created_at: string;
+          fetched_at: string | null;
+          id: string;
+          provider: string | null;
+          target_currency: string;
+          exchange_rate: number;
+          updated_at: string;
+        };
+        Insert: {
+          base_currency: string;
+          created_at?: string;
+          fetched_at?: string | null;
+          id?: string;
+          provider?: string | null;
+          target_currency: string;
+          exchange_rate: number;
+          updated_at?: string;
+        };
+        Update: {
+          base_currency?: string;
+          created_at?: string;
+          fetched_at?: string | null;
+          id?: string;
+          provider?: string | null;
+          target_currency?: string;
+          exchange_rate?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       workspaces: {
         Row: {
           created_at: string;

@@ -12,13 +12,13 @@ import {
   getCoreEmailAccountsService,
   getCoreEntityEmailActivityService,
 } from '@kit/core/services';
-import { formatDate } from '@kit/shared/utils';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import { cn } from '@kit/ui/utils';
 
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 
 interface EntityEmailsProps {
@@ -44,6 +44,7 @@ export function EntityEmails({
 }: EntityEmailsProps) {
   const queryClient = useQueryClient();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
+  const { formatDate } = useLocalization();
   const canManageEmail = canAccess('emails', 'manage_email');
   const [mounted, setMounted] = useState(false);
   const [isComposeOpen, setIsComposeOpen] = useState(false);

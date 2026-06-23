@@ -72,7 +72,7 @@ import {
 import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { TablePagination } from '@kit/ui/table-pagination';
 
 function DocumentPageSkeleton() {
@@ -125,6 +125,7 @@ function DocumentPageSkeleton() {
 
 export default function DocumentPage() {
   const { currentWorkspace: workspace } = useRBAC();
+  const { formatDate } = useLocalization();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');

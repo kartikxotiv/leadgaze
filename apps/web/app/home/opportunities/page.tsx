@@ -10,8 +10,8 @@ import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
-import { formatDate } from '@kit/shared/utils';
 import { PageBody, PageHeader } from '@kit/ui/page';
+import { useLocalization } from '~/lib/localization/localization-provider';
 
 import { Skeleton } from '@kit/ui/skeleton';
 import {
@@ -132,6 +132,7 @@ function OpportunitiesPageSkeleton() {
 export default function OpportunitiesPage() {
   const router = useRouter();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
+  const { formatDate, formatCurrency } = useLocalization();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [selectedCreatedId, setSelectedCreatedId] = useState<string>('all');
@@ -605,11 +606,7 @@ export default function OpportunitiesPage() {
                         )}
                         {isVisible('amount') && (
                           <TableCell className="text-muted-foreground">
-                            {new Intl.NumberFormat('en-US', {
-                              style: 'currency',
-                              currency: opportunity.currency || 'USD',
-                              maximumFractionDigits: 0,
-                            }).format(opportunity.amount || 0)}
+                            {formatCurrency(opportunity.amount || 0, opportunity.currency || 'USD')}
                           </TableCell>
                         )}
                         {isVisible('currency') && (

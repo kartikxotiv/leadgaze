@@ -32,7 +32,7 @@ import { toast } from 'sonner';
 
 import { CoreEmailComposeDialog } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import {
   Accordion,
@@ -154,6 +154,7 @@ export default function AccountDetailsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const id = params?.id as string;
+  const { formatDate, formatCurrency } = useLocalization();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
@@ -445,14 +446,7 @@ export default function AccountDetailsPage() {
                     <Clock className="h-3 w-3" />
                     <span>
                       Created on{' '}
-                      {new Date(account.created_at).toLocaleDateString(
-                        undefined,
-                        {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        },
-                      )}
+                      {formatDate(account.created_at)}
                     </span>
                   </div>
                 </>
@@ -691,10 +685,7 @@ export default function AccountDetailsPage() {
                       <DetailInfoRow
                         icon={<DollarSign className="h-5 w-5" />}
                         label="Revenue"
-                        value={new Intl.NumberFormat('en-US', {
-                          style: 'currency',
-                          currency: 'USD',
-                        }).format(account.annual_revenue)}
+                        value={formatCurrency(account.annual_revenue, 'USD')}
                       />
                     )}
                     {account.account_type && (
@@ -896,10 +887,7 @@ export default function AccountDetailsPage() {
                             }
                             subtitle={
                               <span>
-                                {new Intl.NumberFormat('en-US', {
-                                  style: 'currency',
-                                  currency: opp.currency || 'USD',
-                                }).format(opp.amount)}
+                                {formatCurrency(opp.amount, opp.currency || 'USD')}
                               </span>
                             }
                             metadata={
