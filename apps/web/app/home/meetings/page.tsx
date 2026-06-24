@@ -60,6 +60,12 @@ import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
+import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
+import { StatusFilterDropdown } from '@kit/ui/status-filter-dropdown';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
 import {
   Select,
   SelectContent,
@@ -247,6 +253,12 @@ const DURATION_OPTIONS = [
   { value: 120, label: '2 hours' },
 ];
 
+const meetingStatuses = (Object.keys(STATUS_CONFIG) as MeetingStatus[]).map(key => ({
+  id: key,
+  status_name: STATUS_CONFIG[key].label,
+  color: STATUS_CONFIG[key].color,
+}));
+
 // =============================================================================
 // HELPERS
 // =============================================================================
@@ -335,12 +347,12 @@ type IntegrationAccountRow = {
 // SKELETON
 // =============================================================================
 
-function MeetingsPageSkeleton() {
+function MeetingsPageSkeleton({ colSpan = 7 }: { colSpan?: number }) {
   return (
     <>
       {[...Array(8)].map((_, i) => (
         <TableRow key={i}>
-          <TableCell className="h-[52px] px-4 py-2" colSpan={7}>
+          <TableCell className="h-[52px] px-4 py-2" colSpan={colSpan}>
             <Skeleton className="h-7 w-full rounded-md" />
           </TableCell>
         </TableRow>
@@ -1711,10 +1723,33 @@ export default function MeetingsPage() {
   const queryClient = useQueryClient();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
+
+  const columns = useMemo(
+    () => [
+      { id: 'sno', label: 'S. No.' },
+      { id: 'title', label: 'Title' },
+      { id: 'type', label: 'Type' },
+      { id: 'provider', label: 'Provider' },
+      { id: 'date_time', label: 'Date & Time' },
+      { id: 'status', label: 'Status' },
+    ],
+    [],
+  );
+
+  const { visibility, toggleVisibility, isVisible, reset } = useColumnVisibility('meetings', {
+    sno: true,
+    title: true,
+    type: true,
+    provider: true,
+    date_time: true,
+    status: true,
+  });
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('meetings');
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [initialMeetingType, setInitialMeetingType] =
@@ -1805,28 +1840,40 @@ export default function MeetingsPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, typeFilter, statusFilter, pageSize]);
+  }, [searchTerm, selectedTypes, selectedStatuses, pageSize]);
 
   const filteredMeetings = useMemo(() => {
     return meetings.filter((meeting: CoreMeeting) => {
       const matchesSearch =
         meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         meeting.description?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType =
-        typeFilter === 'all' || meeting.meeting_type === typeFilter;
-      const matchesStatus =
-        statusFilter === 'all' || meeting.status === statusFilter;
+      const matchesType = selectedTypes.length === 0 || selectedTypes.includes(meeting.meeting_type);
+      const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(meeting.status);
       return matchesSearch && matchesType && matchesStatus;
     });
-  }, [meetings, searchTerm, typeFilter, statusFilter]);
+  }, [meetings, searchTerm, selectedTypes, selectedStatuses]);
+
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<CoreMeeting>(
+    'meetings',
+    filteredMeetings,
+    { onSortChange: () => setCurrentPage(1) },
+  );
 
   const paginatedMeetings = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
-    return filteredMeetings.slice(start, start + pageSize);
-  }, [filteredMeetings, currentPage, pageSize]);
+    return sortedData.slice(start, start + pageSize);
+  }, [sortedData, currentPage, pageSize]);
 
   const totalPages = Math.ceil(filteredMeetings.length / pageSize);
   const totalCount = filteredMeetings.length;
+
+  const statusBreakdown = useMemo(() => {
+    const breakdown: Record<string, number> = {};
+    meetings.forEach((m: CoreMeeting) => {
+      breakdown[m.status] = (breakdown[m.status] || 0) + 1;
+    });
+    return breakdown;
+  }, [meetings]);
 
   return (
     <>
@@ -1839,37 +1886,55 @@ export default function MeetingsPage() {
 
       <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
         <ListToolBar
+          // statusSlot={
+          //   <StatusFilterDropdown
+          //     statuses={meetingStatuses}
+          //     selectedStatuses={selectedStatuses}
+          //     onStatusesChange={setSelectedStatuses}
+          //     statusBreakdown={statusBreakdown}
+          //     totalCount={meetings.length}
+          //     allLabel="All Meetings"
+          //   />
+          // }
           showSearch
           searchPlaceholder="Search meetings..."
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
-          statusSlot={
-            <div className="flex items-center gap-2">
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="All Types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="scheduled">Scheduled</SelectItem>
-                  <SelectItem value="logged">Logged</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  {(Object.keys(STATUS_CONFIG) as MeetingStatus[]).map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {STATUS_CONFIG[s].label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          }
+          showFilter
+          filterGroups={[
+            {
+              key: 'type',
+              label: 'Type',
+              selectedValues: selectedTypes,
+              selectedLabel: selectedTypes.length === 0
+                ? 'All types'
+                : `${selectedTypes.length} selected`,
+              options: [
+                { value: 'scheduled', label: 'Scheduled' },
+                { value: 'logged', label: 'Logged' }
+              ],
+              onSelectValues: setSelectedTypes,
+            },
+            {
+              key: 'status',
+              label: 'Status',
+              selectedValues: selectedStatuses,
+              selectedLabel: selectedStatuses.length === 0
+                ? 'All statuses'
+                : `${selectedStatuses.length} selected`,
+              options: meetingStatuses.map(s => ({
+                value: s.id,
+                label: s.status_name,
+                color: s.color,
+              })),
+              onSelectValues: setSelectedStatuses,
+            }
+          ]}
+          activeFilterCount={selectedTypes.length + selectedStatuses.length}
+          onClearFilters={() => {
+            setSelectedTypes([]);
+            setSelectedStatuses([]);
+          }}
           actions={[
             {
               key: 'manage-accounts',
@@ -1892,6 +1957,14 @@ export default function MeetingsPage() {
               buttonVariant: 'default' as const,
             },
           ]}
+          columnVisibilitySlot={
+            <ColumnVisibilitySelector
+              columns={columns}
+              visibility={visibility}
+              onToggle={toggleVisibility}
+              onReset={reset}
+            />
+          }
         />
       </div>
 
@@ -1913,17 +1986,90 @@ export default function MeetingsPage() {
               />
             }
           >
-            <Table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
-              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12 whitespace-nowrap">
-                    S. No.
-                  </TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Provider</TableHead>
-                  <TableHead>Date & Time</TableHead>
-                  <TableHead>Status</TableHead>
+                  {isVisible('sno') && (
+                    <SortableTableHead
+                      label="S. No."
+                      columnId="sno"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      sortable={false}
+                      className="relative w-12 whitespace-nowrap"
+                      {...getHeaderProps('sno')}
+                    >
+                      <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('title') && (
+                    <SortableTableHead
+                      label="Title"
+                      columnId="title"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('title')}
+                    >
+                      <span className="col-resize-handle" {...getResizeHandleProps('title')} />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('type') && (
+                    <SortableTableHead
+                      label="Type"
+                      columnId="type"
+                      sortKey="meeting_type"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('type')}
+                    >
+                      <span className="col-resize-handle" {...getResizeHandleProps('type')} />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('provider') && (
+                    <SortableTableHead
+                      label="Provider"
+                      columnId="provider"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('provider')}
+                    >
+                      <span className="col-resize-handle" {...getResizeHandleProps('provider')} />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('date_time') && (
+                    <SortableTableHead
+                      label="Date & Time"
+                      columnId="date_time"
+                      sortKey="scheduled_start"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('date_time')}
+                    >
+                      <span className="col-resize-handle" {...getResizeHandleProps('date_time')} />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('status') && (
+                    <SortableTableHead
+                      label="Status"
+                      columnId="status"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('status')}
+                    >
+                      <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+                    </SortableTableHead>
+                  )}
                   <TableHead className="sticky right-0 text-right">
                     Actions
                   </TableHead>
@@ -1931,10 +2077,10 @@ export default function MeetingsPage() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <MeetingsPageSkeleton />
+                  <MeetingsPageSkeleton colSpan={visibility ? Object.values(visibility).filter((v) => v !== false).length + 1 : 7} />
                 ) : paginatedMeetings.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-32 text-center">
+                    <TableCell colSpan={visibility ? Object.values(visibility).filter((v) => v !== false).length + 1 : 7} className="h-32 text-center">
                       <p className="text-muted-foreground">
                         {searchTerm
                           ? 'No meetings match your search'
@@ -1957,62 +2103,74 @@ export default function MeetingsPage() {
                             setIsDetailsOpen(true);
                           }}
                         >
-                          <TableCell className="text-muted-foreground px-4 py-3">
-                            {sno}
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            <div>
-                              <p className="font-medium">{meeting.title}</p>
-                              {meeting.location && (
-                                <p className="text-muted-foreground text-xs">
-                                  {meeting.location}
-                                </p>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            <Badge variant="outline" className="text-xs">
-                              {meeting.meeting_type === 'logged'
-                                ? 'Logged'
-                                : 'Scheduled'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            <Badge
-                              variant="outline"
-                              className={`gap-1.5 text-xs ${providerInfo.cls}`}
-                            >
-                              {providerInfo.icon}
-                              {providerInfo.label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            <div className="flex items-center gap-2 text-sm">
-                              <Clock className="text-muted-foreground h-4 w-4" />
-                              {formatMeetingTime(
-                                meeting.meeting_type === 'logged'
-                                  ? meeting.actual_start
-                                  : meeting.scheduled_start,
-                                meeting.meeting_type === 'logged'
-                                  ? meeting.actual_end
-                                  : meeting.scheduled_end,
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            <Badge
-                              variant="outline"
-                              className="gap-1.5 text-xs"
-                              style={{
-                                color: statusCfg.color,
-                                borderColor: `${statusCfg.color}40`,
-                                backgroundColor: `${statusCfg.color}10`,
-                              }}
-                            >
-                              {statusCfg.icon}
-                              {statusCfg.label}
-                            </Badge>
-                          </TableCell>
+                          {isVisible('sno') && (
+                            <TableCell className="text-muted-foreground px-4 py-3">
+                              {sno}
+                            </TableCell>
+                          )}
+                          {isVisible('title') && (
+                            <TableCell className="px-4 py-3">
+                              <div>
+                                <p className="font-medium">{meeting.title}</p>
+                                {meeting.location && (
+                                  <p className="text-muted-foreground text-xs">
+                                    {meeting.location}
+                                  </p>
+                                )}
+                              </div>
+                            </TableCell>
+                          )}
+                          {isVisible('type') && (
+                            <TableCell className="px-4 py-3">
+                              <Badge variant="outline" className="text-xs">
+                                {meeting.meeting_type === 'logged'
+                                  ? 'Logged'
+                                  : 'Scheduled'}
+                              </Badge>
+                            </TableCell>
+                          )}
+                          {isVisible('provider') && (
+                            <TableCell className="px-4 py-3">
+                              <Badge
+                                variant="outline"
+                                className={`gap-1.5 text-xs ${providerInfo.cls}`}
+                              >
+                                {providerInfo.icon}
+                                {providerInfo.label}
+                              </Badge>
+                            </TableCell>
+                          )}
+                          {isVisible('date_time') && (
+                            <TableCell className="px-4 py-3">
+                              <div className="flex items-center gap-2 text-sm">
+                                <Clock className="text-muted-foreground h-4 w-4" />
+                                {formatMeetingTime(
+                                  meeting.meeting_type === 'logged'
+                                    ? meeting.actual_start
+                                    : meeting.scheduled_start,
+                                  meeting.meeting_type === 'logged'
+                                    ? meeting.actual_end
+                                    : meeting.scheduled_end,
+                                )}
+                              </div>
+                            </TableCell>
+                          )}
+                          {isVisible('status') && (
+                            <TableCell className="px-4 py-3">
+                              <Badge
+                                variant="outline"
+                                className="gap-1.5 text-xs"
+                                style={{
+                                  color: statusCfg.color,
+                                  borderColor: `${statusCfg.color}40`,
+                                  backgroundColor: `${statusCfg.color}10`,
+                                }}
+                              >
+                                {statusCfg.icon}
+                                {statusCfg.label}
+                              </Badge>
+                            </TableCell>
+                          )}
                           <TableCell className="bg-card sticky right-0 px-4 py-3 text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger

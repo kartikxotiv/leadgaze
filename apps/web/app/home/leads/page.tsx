@@ -284,16 +284,16 @@ export default function LeadsPage() {
           {/* Status filter dropdown + toolbar */}
         <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
           <ListToolBar
-            statusSlot={
-              <StatusFilterDropdown
-                statuses={statuses}
-                selectedStatuses={selectedStatuses}
-                onStatusesChange={setSelectedStatuses}
-                statusBreakdown={leadsData.statusBreakdown}
-                totalCount={totalCount}
-                allLabel="All Leads"
-              />
-            }
+            // statusSlot={
+            //   <StatusFilterDropdown
+            //     statuses={statuses}
+            //     selectedStatuses={selectedStatuses}
+            //     onStatusesChange={setSelectedStatuses}
+            //     statusBreakdown={leadsData.statusBreakdown}
+            //     totalCount={totalCount}
+            //     allLabel="All Leads"
+            //   />
+            // }
             showSearch
             searchPlaceholder="Search leads..."
             searchValue={searchTerm}
