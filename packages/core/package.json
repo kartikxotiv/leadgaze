@@ -26,6 +26,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@kit/integration-core": "workspace:*",
+    "@kit/integration-google": "workspace:*",
+    "@kit/integration-zoom": "workspace:*",
     "@kit/next": "workspace:*",
     "@kit/shared": "workspace:*",
     "@kit/supabase": "workspace:*",

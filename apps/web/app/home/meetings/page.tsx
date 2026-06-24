@@ -1,32 +1,49 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+
+import Image from 'next/image';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Briefcase,
-  Building2,
+  Ban,
   Calendar as CalendarIcon,
+  Check,
   Clock,
+  ExternalLink,
+  Eye,
+  Link2,
   Loader2,
   MapPin,
-  MoreHorizontal,
   MoreVertical,
   Pencil,
   Plus,
+  Settings,
   Trash2,
-  User,
   Users,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { formatDate } from '@kit/shared/utils';
+import {
+  type CoreMeeting,
+  type MeetingProvider,
+  type MeetingStatus,
+  type MeetingType,
+  cancelMeetingService,
+  createGoogleMeetingService,
+  createMeetingNoteService,
+  createMeetingService,
+  createZoomMeetingService,
+  deleteMeetingService,
+  getIntegrationAccountsService,
+  getMeetingNotesService,
+  getMeetingsService,
+  updateMeetingService,
+} from '@kit/core/services';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { Calendar } from '@kit/ui/calendar';
-import { Card, CardContent } from '@kit/ui/card';
-import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
+import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import {
   Dialog,
   DialogContent,
@@ -41,9 +58,8 @@ import {
 } from '@kit/ui/dropdown-menu';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
+import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
-
-import { RadioGroup, RadioGroupItem } from '@kit/ui/radio-group';
 import {
   Select,
   SelectContent,
@@ -51,6 +67,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@kit/ui/select';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -59,138 +76,1657 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import { useColumnVisibility } from '@kit/ui/use-column-visibility';
-import { useColumnResize } from '@kit/ui/use-column-resize';
-import { useTableSort } from '@kit/ui/use-table-sort';
-import { SortableTableHead } from '@kit/ui/sortable-table-head';
-import { Skeleton } from '@kit/ui/skeleton';
-import { ListToolBar } from '@kit/ui/list-toolbar';
-import CustomTableContainer from '@kit/ui/custom-table-container';
+import { TablePagination } from '@kit/ui/table-pagination';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
+import { Textarea } from '@kit/ui/textarea';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
-import {
-  Meeting,
-  createMeetingService,
-  deleteMeetingService,
-  getMeetingsService,
-  updateMeetingService,
-} from '~/services/activities.service';
 import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
-import { TablePagination } from '@kit/ui/table-pagination';
+
+// =============================================================================
+// PROVIDER ICONS
+// =============================================================================
+
+function GoogleMeetIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9z"
+        fill="#4285F4"
+        opacity="0.12"
+      />
+      <path
+        d="M15.5 8.5H14l-2.5 2.5V8.5H8.5v7h3v-2.5L14 15.5h1.5l-3-3.5 3-3.5z"
+        fill="#4285F4"
+      />
+      <path d="M16 9.5v5l2.5 1.5V8l-2.5 1.5z" fill="#34A853" />
+    </svg>
+  );
+}
+
+function ZoomIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect x="2" y="6" width="14" height="12" rx="3" fill="#2D8CFF" />
+      <path d="M16 9.5v5l3.5 2V7.5L16 9.5z" fill="#2D8CFF" />
+      <circle cx="9" cy="12" r="2.5" fill="white" />
+    </svg>
+  );
+}
+
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+const MEETING_TYPES: {
+  value: MeetingType;
+  label: string;
+  icon: React.ReactNode;
+}[] = [
+  {
+    value: 'scheduled',
+    label: 'Scheduled Meeting',
+    icon: <CalendarIcon className="h-4 w-4" />,
+  },
+  {
+    value: 'logged',
+    label: 'Log Past Meeting',
+    icon: <Clock className="h-4 w-4" />,
+  },
+];
+
+const PROVIDER_CARDS: {
+  value: MeetingProvider;
+  label: string;
+  icon: React.ReactNode;
+  selectedBg: string;
+}[] = [
+  {
+    value: 'GOOGLE',
+    label: 'Google Meet',
+    icon: (
+      <Image
+        src={'/images/icons/google-meet.png'}
+        width={32}
+        height={32}
+        className="h-7 w-8"
+        alt="Google Meet"
+      />
+    ),
+    selectedBg: 'bg-blue-50/50',
+  },
+  {
+    value: 'ZOOM',
+    label: 'Zoom Meeting',
+    icon: (
+      <Image
+        src={'/images/icons/zoom.webp'}
+        width={32}
+        height={32}
+        className="h-8 w-8"
+        alt="Google Meet"
+      />
+    ),
+    selectedBg: 'bg-blue-50/50',
+  },
+  {
+    value: 'MANUAL',
+    label: 'Manual Link',
+    icon: <Link2 className="h-8 w-8 text-gray-400" />,
+    selectedBg: 'bg-gray-50',
+  },
+];
+
+const STATUS_CONFIG: Record<
+  MeetingStatus,
+  { label: string; color: string; icon: React.ReactNode }
+> = {
+  scheduled: {
+    label: 'Scheduled',
+    color: '#3B82F6',
+    icon: <CalendarIcon className="h-3.5 w-3.5" />,
+  },
+  in_progress: {
+    label: 'In Progress',
+    color: '#F59E0B',
+    icon: <Clock className="h-3.5 w-3.5" />,
+  },
+  completed: {
+    label: 'Completed',
+    color: '#10B981',
+    icon: <Check className="h-3.5 w-3.5" />,
+  },
+  cancelled: {
+    label: 'Cancelled',
+    color: '#EF4444',
+    icon: <X className="h-3.5 w-3.5" />,
+  },
+};
+
+const TIMEZONES = [
+  'UTC',
+  'America/New_York',
+  'America/Los_Angeles',
+  'America/Chicago',
+  'Europe/London',
+  'Europe/Paris',
+  'Europe/Berlin',
+  'Asia/Tokyo',
+  'Asia/Shanghai',
+  'Asia/Kolkata',
+  'Australia/Sydney',
+];
+
+const REMINDER_OPTIONS = [
+  { value: 5, label: '5 min' },
+  { value: 15, label: '15 min' },
+  { value: 30, label: '30 min' },
+  { value: 60, label: '1 hour' },
+  { value: 1440, label: '1 day' },
+];
+
+const DURATION_OPTIONS = [
+  { value: 15, label: '15 min' },
+  { value: 30, label: '30 min' },
+  { value: 45, label: '45 min' },
+  { value: 60, label: '1 hour' },
+  { value: 90, label: '1.5 hours' },
+  { value: 120, label: '2 hours' },
+];
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+function formatMeetingTime(start?: string | null, end?: string | null): string {
+  if (!start) return 'No time set';
+  const s = new Date(start);
+  const dateStr = s.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+  const timeStr = s.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+  if (!end) return `${dateStr} at ${timeStr}`;
+  const endTimeStr = new Date(end).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+  return `${dateStr}, ${timeStr} – ${endTimeStr}`;
+}
+
+function getProviderBadge(provider: MeetingProvider) {
+  switch (provider) {
+    case 'GOOGLE':
+      return {
+        label: 'Google Meet',
+        icon: (
+          <Image
+            src={'/images/icons/google-meet.png'}
+            width={32}
+            height={32}
+            className="h-3 w-4"
+            alt="Google Meet"
+          />
+        ),
+        cls: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
+      };
+    case 'ZOOM':
+      return {
+        label: 'Zoom',
+        icon: (
+          <Image
+            src={'/images/icons/zoom.webp'}
+            width={32}
+            height={32}
+            className="h-4 w-4"
+            alt="Zoom"
+          />
+        ),
+        cls: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
+      };
+    default:
+      return {
+        label: 'Manual',
+        icon: <Link2 className="h-4 w-4" />,
+        cls: 'bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-900 dark:text-gray-400 dark:border-gray-700',
+      };
+  }
+}
+
+function getStatusBadge(status: MeetingStatus) {
+  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.scheduled;
+  return cfg;
+}
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type EntityRecord = any;
+
+type IntegrationAccountRow = {
+  id: string;
+  connection?: { provider?: string } | null;
+  email?: string | null;
+  display_name?: string | null;
+};
+
+// =============================================================================
+// SKELETON
+// =============================================================================
 
 function MeetingsPageSkeleton() {
   return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden">
-      <div className="flex shrink-0 flex-col gap-2">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="space-y-1">
-            <Skeleton className="h-6 w-36" />
-            <Skeleton className="h-4 w-56" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-8" />
-            <Skeleton className="h-8 w-8" />
-            <Skeleton className="h-8 w-8" />
-          </div>
-        </div>
-      </div>
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
-        <div className="flex min-h-0 flex-1 flex-col px-4 lg:px-8">
-          <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
-            <Table className="w-max min-w-full border-separate border-spacing-0 caption-bottom text-sm">
-              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
-                <TableRow>
-                  <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
-                  <TableHead>Meeting Title</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Host</TableHead>
-                  <TableHead>Date & Time</TableHead>
-                  <TableHead>Entity</TableHead>
-                  <TableHead className="sticky right-0 text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {[...Array(10)].map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="h-[52px] px-4 py-2" colSpan={7}>
-                      <Skeleton className="h-7 w-full" />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      </div>
+    <>
+      {[...Array(8)].map((_, i) => (
+        <TableRow key={i}>
+          <TableCell className="h-[52px] px-4 py-2" colSpan={7}>
+            <Skeleton className="h-7 w-full rounded-md" />
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
+// =============================================================================
+// PROVIDER SELECTOR COMPONENT
+// =============================================================================
+
+function ProviderSelector({
+  value,
+  onChange,
+}: {
+  value: MeetingProvider;
+  onChange: (v: MeetingProvider) => void;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      {PROVIDER_CARDS.map((p) => {
+        const isSelected = value === p.value;
+        return (
+          <button
+            key={p.value}
+            type="button"
+            onClick={() => onChange(p.value)}
+            className={`relative flex flex-col items-center gap-2.5 rounded-xl border-2 p-4 transition-all ${
+              isSelected
+                ? `border-blue-500 ${p.selectedBg} shadow-sm`
+                : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900'
+            }`}
+          >
+            {isSelected && (
+              <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500">
+                <Check className="h-3 w-3 text-white" />
+              </div>
+            )}
+            {p.icon}
+            <span
+              className={`text-xs font-medium ${isSelected ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500'}`}
+            >
+              {p.label}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
 
+// =============================================================================
+// MEETING TYPE TOGGLE
+// =============================================================================
+
+function MeetingTypeToggle({
+  value,
+  onChange,
+}: {
+  value: MeetingType;
+  onChange: (v: MeetingType) => void;
+}) {
+  return (
+    <div className="flex gap-2">
+      {MEETING_TYPES.map((type) => (
+        <button
+          key={type.value}
+          type="button"
+          onClick={() => onChange(type.value)}
+          className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all ${
+            value === type.value
+              ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm dark:border-blue-400 dark:bg-blue-950 dark:text-blue-300'
+              : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400'
+          }`}
+        >
+          {type.icon}
+          {type.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// =============================================================================
+// CREATE MEETING DIALOG
+// =============================================================================
+
+interface CreateMeetingDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  workspaceId: string;
+  integrationAccounts: IntegrationAccountRow[];
+  leads: EntityRecord[];
+  contacts: EntityRecord[];
+  accounts: EntityRecord[];
+  opportunities: EntityRecord[];
+  initialType?: MeetingType;
+  onSuccess: () => void;
+}
+
+function CreateMeetingDialog({
+  open,
+  onOpenChange,
+  workspaceId,
+  integrationAccounts,
+  leads,
+  contacts,
+  accounts: crmAccounts,
+  opportunities,
+  initialType = 'scheduled',
+  onSuccess,
+}: CreateMeetingDialogProps) {
+  const [meetingType, setMeetingType] = useState<MeetingType>(initialType);
+  const [provider, setProvider] = useState<MeetingProvider>('GOOGLE');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [scheduledStart, setScheduledStart] = useState('');
+  const [duration, setDuration] = useState(30);
+  const [actualStart, setActualStart] = useState('');
+  const [actualEnd, setActualEnd] = useState('');
+  const [timezone, setTimezone] = useState('UTC');
+  const [meetingUrl, setMeetingUrl] = useState('');
+  const [location, setLocation] = useState('');
+  const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [entityType, setEntityType] = useState('lead');
+  const [entityId, setEntityId] = useState('');
+  const [externalEmails, setExternalEmails] = useState<string[]>([]);
+  const [newEmail, setNewEmail] = useState('');
+  const [reminders, setReminders] = useState<number[]>([30]);
+  const [isCreatingGoogleMeeting, setIsCreatingGoogleMeeting] = useState(false);
+  const [isCreatingZoomMeeting, setIsCreatingZoomMeeting] = useState(false);
+
+  const _queryClient = useQueryClient();
+
+  const resetForm = () => {
+    setMeetingType('scheduled');
+    setProvider('GOOGLE');
+    setTitle('');
+    setDescription('');
+    setScheduledStart('');
+    setDuration(30);
+    setActualStart('');
+    setActualEnd('');
+    setTimezone('UTC');
+    setMeetingUrl('');
+    setLocation('');
+    setSelectedAccountId('');
+    setEntityType('lead');
+    setEntityId('');
+    setExternalEmails([]);
+    setNewEmail('');
+    setReminders([30]);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onOpenChange(false);
+  };
+
+  // Helper to compute end time from start time + duration (in minutes)
+  const getEndTime = (): string => {
+    if (!scheduledStart) return '';
+    const start = new Date(scheduledStart);
+    start.setMinutes(start.getMinutes() + duration);
+    return start.toISOString();
+  };
+
+  const handleAddEmail = () => {
+    if (
+      newEmail &&
+      newEmail.includes('@') &&
+      !externalEmails.includes(newEmail)
+    ) {
+      setExternalEmails([...externalEmails, newEmail]);
+      setNewEmail('');
+    }
+  };
+  const handleRemoveEmail = (email: string) =>
+    setExternalEmails(externalEmails.filter((e) => e !== email));
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      if (
+        provider === 'GOOGLE' &&
+        selectedAccountId &&
+        meetingType === 'scheduled'
+      ) {
+        setIsCreatingGoogleMeeting(true);
+        try {
+          const googleResult = await createGoogleMeetingService({
+            workspace_id: workspaceId,
+            account_id: selectedAccountId,
+            title,
+            description: description || undefined,
+            start_time: new Date(scheduledStart).toISOString(),
+            end_time: getEndTime(),
+            timezone,
+            attendees: externalEmails.map((email) => ({ email })),
+            send_invites: true,
+          });
+          return createMeetingService({
+            workspace_id: workspaceId,
+            meeting_type: meetingType,
+            provider,
+            title,
+            description: description || undefined,
+            scheduled_start: new Date(scheduledStart).toISOString(),
+            scheduled_end: getEndTime(),
+            timezone,
+            meeting_url: googleResult.meeting_url,
+            provider_event_id: googleResult.provider_event_id,
+            provider_meeting_id: googleResult.provider_meeting_id,
+            meeting_host_email_account_id: selectedAccountId,
+            location: location || undefined,
+            entity_type: entityType || undefined,
+            entity_id: entityId || undefined,
+            participants: externalEmails.map((email) => ({
+              participant_type: 'EXTERNAL' as const,
+              external_email: email,
+              display_name: email,
+            })),
+            reminders: reminders.map((offset) => ({
+              offset_minutes: offset,
+              channel: 'EMAIL' as const,
+            })),
+          });
+        } finally {
+          setIsCreatingGoogleMeeting(false);
+        }
+      }
+      if (
+        provider === 'ZOOM' &&
+        selectedAccountId &&
+        meetingType === 'scheduled'
+      ) {
+        setIsCreatingZoomMeeting(true);
+        try {
+          const zoomResult = await createZoomMeetingService({
+            workspace_id: workspaceId,
+            account_id: selectedAccountId,
+            title,
+            description: description || undefined,
+            start_time: new Date(scheduledStart).toISOString(),
+            end_time: getEndTime(),
+            timezone,
+            attendees: externalEmails.map((email) => ({ email })),
+          });
+          return createMeetingService({
+            workspace_id: workspaceId,
+            meeting_type: meetingType,
+            provider,
+            title,
+            description: description || undefined,
+            scheduled_start: new Date(scheduledStart).toISOString(),
+            scheduled_end: getEndTime(),
+            timezone,
+            meeting_url: zoomResult.meeting_url,
+            provider_event_id: zoomResult.provider_event_id,
+            provider_meeting_id: zoomResult.provider_meeting_id,
+            meeting_host_email_account_id: selectedAccountId,
+            location: location || undefined,
+            entity_type: entityType || undefined,
+            entity_id: entityId || undefined,
+            participants: externalEmails.map((email) => ({
+              participant_type: 'EXTERNAL' as const,
+              external_email: email,
+              display_name: email,
+            })),
+            reminders: reminders.map((offset) => ({
+              offset_minutes: offset,
+              channel: 'EMAIL' as const,
+            })),
+          });
+        } finally {
+          setIsCreatingZoomMeeting(false);
+        }
+      }
+      return createMeetingService({
+        workspace_id: workspaceId,
+        meeting_type: meetingType,
+        provider,
+        title,
+        description: description || undefined,
+        scheduled_start:
+          meetingType === 'scheduled' && scheduledStart
+            ? new Date(scheduledStart).toISOString()
+            : undefined,
+        scheduled_end:
+          meetingType === 'scheduled' && scheduledStart
+            ? getEndTime()
+            : undefined,
+        actual_start:
+          meetingType === 'logged' && actualStart
+            ? new Date(actualStart).toISOString()
+            : undefined,
+        actual_end:
+          meetingType === 'logged' && actualEnd
+            ? new Date(actualEnd).toISOString()
+            : undefined,
+        timezone,
+        meeting_url: meetingUrl || undefined,
+        location: location || undefined,
+        entity_type: entityType || undefined,
+        entity_id: entityId || undefined,
+        participants: externalEmails.map((email) => ({
+          participant_type: 'EXTERNAL' as const,
+          external_email: email,
+          display_name: email,
+        })),
+        reminders:
+          meetingType === 'scheduled'
+            ? reminders.map((offset) => ({
+                offset_minutes: offset,
+                channel: 'EMAIL' as const,
+              }))
+            : undefined,
+      });
+    },
+    onSuccess: () => {
+      toast.success(
+        meetingType === 'logged' ? 'Meeting logged' : 'Meeting scheduled',
+      );
+      handleClose();
+      onSuccess();
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to create meeting');
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!title.trim()) {
+      toast.error('Title is required');
+      return;
+    }
+    if (meetingType === 'scheduled' && !scheduledStart) {
+      toast.error('Start time is required');
+      return;
+    }
+    if (meetingType === 'logged' && (!actualStart || !actualEnd)) {
+      toast.error('Start and end times are required');
+      return;
+    }
+    createMutation.mutate();
+  };
+
+  const googleAccounts = integrationAccounts.filter(
+    (acc) => acc.connection?.provider === 'GOOGLE',
+  );
+  const zoomAccounts = integrationAccounts.filter(
+    (acc) => acc.connection?.provider === 'ZOOM',
+  );
+  const isBusy =
+    createMutation.isPending ||
+    isCreatingGoogleMeeting ||
+    isCreatingZoomMeeting;
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="max-h-[90vh] max-w-2xl gap-0 overflow-y-auto p-0">
+        <div className="bg-background sticky top-0 z-10 border-b px-6 py-5">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">
+              Schedule Meeting
+            </DialogTitle>
+            <p className="text-muted-foreground text-sm">
+              Setup a new engagement with your lead.
+            </p>
+          </DialogHeader>
+        </div>
+
+        <div className="space-y-5 px-6 py-5">
+          {/* Meeting Type */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
+              Meeting Type
+            </Label>
+            <MeetingTypeToggle value={meetingType} onChange={setMeetingType} />
+          </div>
+
+          {/* Provider Selection */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
+              Meeting Provider
+            </Label>
+            <ProviderSelector
+              value={provider}
+              onChange={(v) => {
+                setProvider(v);
+                setSelectedAccountId('');
+              }}
+            />
+          </div>
+
+          {/* Account Selection */}
+          {meetingType === 'scheduled' && provider === 'GOOGLE' && (
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
+                Connect As
+              </Label>
+              {googleAccounts.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-blue-200 bg-blue-50/50 p-3 text-center dark:border-blue-800 dark:bg-blue-950/50">
+                  <p className="text-sm">
+                    No Google accounts.{' '}
+                    <a
+                      href="/home/workspace-settings#meetings"
+                      className="font-medium text-blue-600 hover:underline"
+                    >
+                      Manage Accounts
+                    </a>
+                  </p>
+                </div>
+              ) : (
+                <Select
+                  value={selectedAccountId}
+                  onValueChange={setSelectedAccountId}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Select Google account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {googleAccounts.map((acc) => (
+                      <SelectItem key={acc.id} value={acc.id}>
+                        {acc.email || acc.display_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
+          {meetingType === 'scheduled' && provider === 'ZOOM' && (
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
+                Connect As
+              </Label>
+              {zoomAccounts.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-blue-200 bg-blue-50/50 p-3 text-center dark:border-blue-800 dark:bg-blue-950/50">
+                  <p className="text-sm">
+                    No Zoom accounts.{' '}
+                    <a
+                      href="/home/workspace-settings#meetings"
+                      className="font-medium text-blue-600 hover:underline"
+                    >
+                      Manage Accounts
+                    </a>
+                  </p>
+                </div>
+              ) : (
+                <Select
+                  value={selectedAccountId}
+                  onValueChange={setSelectedAccountId}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Select Zoom account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {zoomAccounts.map((acc) => (
+                      <SelectItem key={acc.id} value={acc.id}>
+                        {acc.email || acc.display_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
+
+          {/* Title */}
+          <div className="space-y-2">
+            <Label className="font-medium">
+              Title <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Product Demo with Sales Team"
+              className="h-11"
+            />
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label className="font-medium">Description</Label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Add notes or agenda for the meeting..."
+              rows={3}
+            />
+          </div>
+
+          {/* Time Selection */}
+          {meetingType === 'scheduled' ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="font-medium">
+                  Meeting Date & Time <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  type="datetime-local"
+                  step="60"
+                  value={scheduledStart}
+                  onChange={(e) => setScheduledStart(e.target.value)}
+                  className="h-11"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-medium">Duration</Label>
+                <Select
+                  value={String(duration)}
+                  onValueChange={(val) => setDuration(Number(val))}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DURATION_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={String(opt.value)}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="font-medium">
+                  Actual Start <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  type="datetime-local"
+                  step="60"
+                  value={actualStart}
+                  onChange={(e) => setActualStart(e.target.value)}
+                  className="h-11"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-medium">
+                  Actual End <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  type="datetime-local"
+                  step="60"
+                  value={actualEnd}
+                  onChange={(e) => setActualEnd(e.target.value)}
+                  className="h-11"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Timezone + Location/URL */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label className="font-medium">Timezone</Label>
+              <Select value={timezone} onValueChange={setTimezone}>
+                <SelectTrigger className="h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIMEZONES.map((tz) => (
+                    <SelectItem key={tz} value={tz}>
+                      {tz}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {provider === 'MANUAL' ? (
+              <div className="space-y-2">
+                <Label className="font-medium">Meeting URL</Label>
+                <Input
+                  value={meetingUrl}
+                  onChange={(e) => setMeetingUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="h-11"
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label className="font-medium">Location</Label>
+                <div className="relative">
+                  <MapPin className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Input
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="Add physical address"
+                    className="h-11 pl-10"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Meeting URL for logged meetings (optional) */}
+          {meetingType === 'logged' && provider !== 'MANUAL' && (
+            <div className="space-y-2">
+              <Label className="font-medium">Meeting URL (Optional)</Label>
+              <Input
+                value={meetingUrl}
+                onChange={(e) => setMeetingUrl(e.target.value)}
+                placeholder="https://..."
+                className="h-11"
+              />
+            </div>
+          )}
+
+          {/* External Invitees */}
+          {meetingType === 'scheduled' && (
+            <div className="space-y-2">
+              <Label className="font-medium">External Invitees</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="email@example.com"
+                  className="h-11"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddEmail();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddEmail}
+                  className="h-11 w-11"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {externalEmails.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {externalEmails.map((email) => (
+                    <Badge
+                      key={email}
+                      variant="secondary"
+                      className="gap-1 pr-1"
+                    >
+                      {email}
+                      <button
+                        onClick={() => handleRemoveEmail(email)}
+                        className="ml-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Reminders */}
+          {meetingType === 'scheduled' && (
+            <div className="space-y-2">
+              <Label className="font-medium">Reminders</Label>
+              <div className="flex flex-wrap gap-2">
+                {REMINDER_OPTIONS.map((opt) => (
+                  <Badge
+                    key={opt.value}
+                    variant={
+                      reminders.includes(opt.value) ? 'default' : 'outline'
+                    }
+                    className="cursor-pointer transition-colors"
+                    onClick={() =>
+                      setReminders(
+                        reminders.includes(opt.value)
+                          ? reminders.filter((r) => r !== opt.value)
+                          : [...reminders, opt.value],
+                      )
+                    }
+                  >
+                    {opt.label}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Related Entity */}
+          {/* <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label className="font-medium">Related To</Label>
+              <Select value={entityType} onValueChange={setEntityType}>
+                <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="lead">Lead</SelectItem>
+                  <SelectItem value="contact">Contact</SelectItem>
+                  <SelectItem value="account">Account</SelectItem>
+                  <SelectItem value="opportunity">Opportunity</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="font-medium">Entity</Label>
+              <Select value={entityId} onValueChange={setEntityId}>
+                <SelectTrigger className="h-11"><SelectValue placeholder="Select entity" /></SelectTrigger>
+                <SelectContent>
+                  {entityType === 'lead' && leads.map((l: EntityRecord) => (<SelectItem key={l.id} value={l.id}>{l.name || l.email}</SelectItem>))}
+                  {entityType === 'contact' && contacts.map((c: EntityRecord) => (<SelectItem key={c.id} value={c.id}>{c.name || c.email}</SelectItem>))}
+                  {entityType === 'account' && crmAccounts.map((a: EntityRecord) => (<SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>))}
+                  {entityType === 'opportunity' && opportunities.map((o: EntityRecord) => (<SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div> */}
+        </div>
+
+        {/* Footer */}
+        <div className="bg-background sticky bottom-0 flex items-center justify-between border-t px-6 py-4">
+          <Button variant="ghost" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={isBusy}
+            className="min-w-[160px]"
+          >
+            {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isCreatingGoogleMeeting
+              ? 'Creating Google Meeting...'
+              : isCreatingZoomMeeting
+                ? 'Creating Zoom Meeting...'
+                : meetingType === 'logged'
+                  ? 'Log Meeting'
+                  : 'Create Meeting'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// =============================================================================
+// EDIT MEETING DIALOG
+// =============================================================================
+
+interface EditMeetingDialogProps {
+  meeting: CoreMeeting | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  workspaceId: string;
+  integrationAccounts: IntegrationAccountRow[];
+  onSuccess: () => void;
+}
+
+function EditMeetingDialog({
+  meeting,
+  open,
+  onOpenChange,
+  workspaceId,
+  integrationAccounts,
+  onSuccess,
+}: EditMeetingDialogProps) {
+  const queryClient = useQueryClient();
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [scheduledStart, setScheduledStart] = useState('');
+  const [duration, setDuration] = useState(30);
+  const [timezone, setTimezone] = useState('UTC');
+  const [location, setLocation] = useState('');
+  const [status, setStatus] = useState<MeetingStatus>('scheduled');
+  const [externalEmails, setExternalEmails] = useState<string[]>([]);
+  const [newEmail, setNewEmail] = useState('');
+  const [selectedAccountId, setSelectedAccountId] = useState('');
+
+  useEffect(() => {
+    if (meeting && open) {
+      setTitle(meeting.title || '');
+      setDescription(meeting.description || '');
+      setScheduledStart(
+        meeting.scheduled_start
+          ? new Date(meeting.scheduled_start).toISOString().slice(0, 16)
+          : '',
+      );
+      // Calculate duration from start and end times
+      if (meeting.scheduled_start && meeting.scheduled_end) {
+        const startMs = new Date(meeting.scheduled_start).getTime();
+        const endMs = new Date(meeting.scheduled_end).getTime();
+        const durationMins = Math.round((endMs - startMs) / 60000);
+        setDuration(durationMins > 0 ? durationMins : 30);
+      } else {
+        setDuration(30);
+      }
+      setTimezone(meeting.timezone || 'UTC');
+      setLocation(meeting.location || '');
+      setStatus(meeting.status || 'scheduled');
+      setSelectedAccountId(meeting.meeting_host_email_account_id || '');
+      setExternalEmails(
+        meeting.participants
+          ?.filter((p) => p.external_email)
+          .map((p) => p.external_email as string) ?? [],
+      );
+    }
+  }, [meeting, open]);
+
+  const handleClose = () => {
+    setTitle('');
+    setDescription('');
+    setScheduledStart('');
+    setDuration(30);
+    setTimezone('UTC');
+    setLocation('');
+    setStatus('scheduled');
+    setExternalEmails([]);
+    setNewEmail('');
+    setSelectedAccountId('');
+    onOpenChange(false);
+  };
+  const handleAddEmail = () => {
+    if (
+      newEmail &&
+      newEmail.includes('@') &&
+      !externalEmails.includes(newEmail)
+    ) {
+      setExternalEmails([...externalEmails, newEmail]);
+      setNewEmail('');
+    }
+  };
+  const handleRemoveEmail = (email: string) =>
+    setExternalEmails(externalEmails.filter((e) => e !== email));
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!meeting) throw new Error('No meeting');
+      return updateMeetingService({
+        id: meeting.id,
+        workspace_id: workspaceId,
+        title: title.trim(),
+        description: description || undefined,
+        status,
+        scheduled_start: scheduledStart
+          ? new Date(scheduledStart).toISOString()
+          : undefined,
+        scheduled_end: scheduledStart
+          ? new Date(
+              new Date(scheduledStart).getTime() + duration * 60000,
+            ).toISOString()
+          : undefined,
+        timezone,
+        location: location || undefined,
+        participants: externalEmails.map((email) => ({
+          participant_type: 'EXTERNAL' as const,
+          external_email: email,
+          display_name: email,
+        })),
+        attendees: externalEmails.map((email) => ({ email })),
+        send_invites: true,
+      });
+    },
+    onSuccess: () => {
+      toast.success('Meeting updated');
+      handleClose();
+      queryClient.invalidateQueries({ queryKey: ['meetings', workspaceId] });
+      onSuccess();
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to update meeting');
+    },
+  });
+
+  if (!meeting) return null;
+  const googleAccounts = integrationAccounts.filter(
+    (acc) => acc.connection?.provider === 'GOOGLE',
+  );
+  const zoomAccounts = integrationAccounts.filter(
+    (acc) => acc.connection?.provider === 'ZOOM',
+  );
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) handleClose();
+        onOpenChange(v);
+      }}
+    >
+      <DialogContent className="max-h-[90vh] max-w-2xl gap-0 overflow-y-auto p-0">
+        <div className="bg-background sticky top-0 z-10 border-b px-6 py-5">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">
+              Edit Meeting
+            </DialogTitle>
+          </DialogHeader>
+        </div>
+        <div className="space-y-5 px-6 py-5">
+          <div className="space-y-2">
+            <Label className="font-medium">
+              Title <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Meeting title"
+              className="h-11"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="font-medium">Description</Label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Meeting description"
+              rows={3}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="font-medium">Status</Label>
+            <div className="flex flex-wrap gap-2">
+              {(Object.keys(STATUS_CONFIG) as MeetingStatus[]).map((s) => {
+                const cfg = STATUS_CONFIG[s];
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setStatus(s)}
+                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-all ${status === s ? 'border-current shadow-sm' : 'border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-700'}`}
+                    style={
+                      status === s
+                        ? {
+                            color: cfg.color,
+                            borderColor: `${cfg.color}60`,
+                            backgroundColor: `${cfg.color}10`,
+                          }
+                        : undefined
+                    }
+                  >
+                    {cfg.icon}
+                    {cfg.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label className="font-medium">Meeting Date & Time</Label>
+              <Input
+                type="datetime-local"
+                step="60"
+                value={scheduledStart}
+                onChange={(e) => setScheduledStart(e.target.value)}
+                className="h-11"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-medium">Duration</Label>
+              <Select
+                value={String(duration)}
+                onValueChange={(val) => setDuration(Number(val))}
+              >
+                <SelectTrigger className="h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DURATION_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={String(opt.value)}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label className="font-medium">Timezone</Label>
+              <Select value={timezone} onValueChange={setTimezone}>
+                <SelectTrigger className="h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIMEZONES.map((tz) => (
+                    <SelectItem key={tz} value={tz}>
+                      {tz}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="font-medium">Location</Label>
+              <div className="relative">
+                <MapPin className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Physical location"
+                  className="h-11 pl-10"
+                />
+              </div>
+            </div>
+          </div>
+          {meeting.provider === 'GOOGLE' && googleAccounts.length > 0 && (
+            <div className="space-y-2">
+              <Label className="font-medium">Google Account</Label>
+              <Select
+                value={selectedAccountId}
+                onValueChange={setSelectedAccountId}
+              >
+                <SelectTrigger className="h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {googleAccounts.map((acc) => (
+                    <SelectItem key={acc.id} value={acc.id}>
+                      {acc.email || acc.display_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-muted-foreground text-xs">
+                Changes will sync to Google Calendar
+              </p>
+            </div>
+          )}
+          {meeting.provider === 'ZOOM' && zoomAccounts.length > 0 && (
+            <div className="space-y-2">
+              <Label className="font-medium">Zoom Account</Label>
+              <Select
+                value={selectedAccountId}
+                onValueChange={setSelectedAccountId}
+              >
+                <SelectTrigger className="h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {zoomAccounts.map((acc) => (
+                    <SelectItem key={acc.id} value={acc.id}>
+                      {acc.email || acc.display_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-muted-foreground text-xs">
+                Changes will sync to Zoom
+              </p>
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label className="font-medium">External Invitees</Label>
+            <div className="flex gap-2">
+              <Input
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="email@example.com"
+                className="h-11"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddEmail();
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddEmail}
+                className="h-11 w-11"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            {externalEmails.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {externalEmails.map((email) => (
+                  <Badge key={email} variant="secondary" className="gap-1 pr-1">
+                    {email}
+                    <button
+                      onClick={() => handleRemoveEmail(email)}
+                      className="ml-1 rounded-full hover:bg-gray-200"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="bg-background sticky bottom-0 flex items-center justify-between border-t px-6 py-4">
+          <Button variant="ghost" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => updateMutation.mutate()}
+            disabled={updateMutation.isPending}
+            className="min-w-[140px]"
+          >
+            {updateMutation.isPending && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            Save Changes
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// =============================================================================
+// MEETING DETAILS DIALOG
+// =============================================================================
+
+interface MeetingDetailsDialogProps {
+  meeting: CoreMeeting | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  workspaceId: string;
+  onEdit: (meeting: CoreMeeting) => void;
+  onDelete: (id: string) => void;
+}
+
+function MeetingDetailsDialog({
+  meeting,
+  open,
+  onOpenChange,
+  workspaceId,
+  onEdit,
+  onDelete,
+}: MeetingDetailsDialogProps) {
+  const [newNote, setNewNote] = useState('');
+  const queryClient = useQueryClient();
+  const { data: notes = [] } = useQuery({
+    queryKey: ['meeting-notes', meeting?.id],
+    queryFn: () => {
+      if (!meeting?.id) return [];
+      return getMeetingNotesService(workspaceId, meeting.id);
+    },
+    enabled: !!meeting?.id && open,
+  });
+  const addNoteMutation = useMutation({
+    mutationFn: () =>
+      createMeetingNoteService({
+        workspace_id: workspaceId,
+        meeting_id: meeting!.id,
+        content: newNote,
+      }),
+    onSuccess: () => {
+      toast.success('Note added');
+      setNewNote('');
+      queryClient.invalidateQueries({
+        queryKey: ['meeting-notes', meeting?.id],
+      });
+    },
+    onError: () => toast.error('Failed to add note'),
+  });
+
+  if (!meeting) return null;
+  const statusCfg = getStatusBadge(meeting.status);
+  const providerBadge = getProviderBadge(meeting.provider);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] max-w-2xl gap-0 overflow-y-auto p-0">
+        <div className="bg-background sticky top-0 z-10 flex items-center justify-between border-b px-6 py-4">
+          <div className="flex items-center gap-3">
+            <DialogTitle className="text-lg font-semibold">
+              {meeting.title}
+            </DialogTitle>
+          </div>
+          <div className="flex items-center gap-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onEdit(meeting)}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onClick={() => onDelete(meeting.id)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        <Tabs defaultValue="overview" className="px-6">
+          <TabsList className="mt-4 grid w-full grid-cols-3">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="participants">Participants</TabsTrigger>
+            <TabsTrigger value="notes">Notes</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-4 pb-6">
+            <div className="flex flex-wrap gap-2 pt-2">
+              <Badge
+                variant="outline"
+                className="gap-1"
+                style={{
+                  color: statusCfg.color,
+                  borderColor: `${statusCfg.color}40`,
+                  backgroundColor: `${statusCfg.color}10`,
+                }}
+              >
+                {statusCfg.icon}
+                {statusCfg.label}
+              </Badge>
+              <Badge variant="outline" className={`gap-1 ${providerBadge.cls}`}>
+                {providerBadge.icon}
+                {providerBadge.label}
+              </Badge>
+              <Badge variant="outline">
+                {meeting.meeting_type === 'logged' ? 'Logged' : 'Scheduled'}
+              </Badge>
+            </div>
+            <div className="flex items-start gap-3 rounded-lg border p-3">
+              <CalendarIcon className="text-muted-foreground mt-0.5 h-5 w-5" />
+              <div>
+                <p className="font-medium">
+                  {formatMeetingTime(
+                    meeting.meeting_type === 'logged'
+                      ? meeting.actual_start
+                      : meeting.scheduled_start,
+                    meeting.meeting_type === 'logged'
+                      ? meeting.actual_end
+                      : meeting.scheduled_end,
+                  )}
+                </p>
+                <p className="text-muted-foreground text-sm">
+                  {meeting.timezone}
+                </p>
+              </div>
+            </div>
+            {meeting.description && (
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-gray-500 uppercase">
+                  Description
+                </Label>
+                <p className="text-sm">{meeting.description}</p>
+              </div>
+            )}
+            {meeting.location && (
+              <div className="flex items-start gap-3 rounded-lg border p-3">
+                <MapPin className="text-muted-foreground mt-0.5 h-5 w-5" />
+                <p className="text-sm">{meeting.location}</p>
+              </div>
+            )}
+            {meeting.meeting_url && (
+              <div className="flex items-start gap-3 rounded-lg border p-3">
+                <ExternalLink className="text-muted-foreground mt-0.5 h-5 w-5" />
+                <a
+                  href={meeting.meeting_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                >
+                  Join Meeting
+                </a>
+              </div>
+            )}
+            {meeting.host && (
+              <div className="flex items-start gap-3 rounded-lg border p-3">
+                <Users className="text-muted-foreground mt-0.5 h-5 w-5" />
+                <div>
+                  <p className="text-sm font-medium">Host</p>
+                  <p className="text-muted-foreground text-sm">
+                    {meeting.host.name || meeting.host.email}
+                  </p>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="participants" className="space-y-3 pb-6">
+            {meeting.participants && meeting.participants.length > 0 ? (
+              <div className="space-y-2 pt-2">
+                {meeting.participants.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between rounded-lg border p-3"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Users className="text-muted-foreground h-4 w-4" />
+                      <span className="text-sm">
+                        {p.display_name ||
+                          p.external_email ||
+                          p.internal_user?.name}
+                      </span>
+                      {p.is_host && (
+                        <Badge variant="outline" className="text-xs">
+                          Host
+                        </Badge>
+                      )}
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {p.response_status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground pt-4 text-center text-sm">
+                No participants added
+              </p>
+            )}
+          </TabsContent>
+
+          <TabsContent value="notes" className="space-y-4 pb-6">
+            <div className="space-y-2 pt-2">
+              <Label className="font-medium">Add Note</Label>
+              <Textarea
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+                placeholder="Write a note..."
+                rows={3}
+              />
+              <Button
+                size="sm"
+                onClick={() => addNoteMutation.mutate()}
+                disabled={!newNote.trim() || addNoteMutation.isPending}
+              >
+                {addNoteMutation.isPending && (
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                )}
+                Add Note
+              </Button>
+            </div>
+            {notes.length > 0 ? (
+              <div className="space-y-3">
+                {notes.map((note: EntityRecord) => (
+                  <div key={note.id} className="rounded-lg border p-3">
+                    <p className="text-sm whitespace-pre-wrap">
+                      {note.content}
+                    </p>
+                    <p className="text-muted-foreground mt-2 text-xs">
+                      {new Date(note.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center text-sm">
+                No notes yet
+              </p>
+            )}
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// =============================================================================
+// MAIN PAGE COMPONENT
+// =============================================================================
+
 export default function MeetingsPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [dateRange, setDateRange] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>({
-    from: undefined,
-    to: undefined,
-  });
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
-  const itemsPerPage = pageSize;
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    start_time: '',
-    end_time: '',
-    location: '',
-    meeting_link: '',
-    entity_type: 'lead',
-    entityId: '',
-  });
-
-  const meetingColumns = useMemo(
-    () => [
-      { id: 'sno', label: 'S. No.' },
-      { id: 'title', label: 'Meeting Title' },
-      { id: 'description', label: 'Description' },
-      { id: 'location', label: 'Location' },
-      { id: 'meeting_link', label: 'Meeting Link' },
-      { id: 'host', label: 'Host' },
-      { id: 'created_at', label: 'Created On' },
-      { id: 'updated_by', label: 'Last Updated By' },
-      { id: 'date_time', label: 'Date & Time' },
-      { id: 'entity', label: 'Entity' },
-    ],
-    [],
+  const [initialMeetingType, setInitialMeetingType] =
+    useState<MeetingType>('scheduled');
+  const [selectedMeeting, setSelectedMeeting] = useState<CoreMeeting | null>(
+    null,
   );
-
-  const { visibility, toggleVisibility, isVisible, reset } =
-    useColumnVisibility('meetings', {
-      sno: true,
-      title: true,
-      description: false,
-      location: true,
-      meeting_link: false,
-      host: true,
-      created_at: false,
-      updated_by: false,
-      date_time: true,
-      entity: true,
-    });
-
-  const { getHeaderProps, getResizeHandleProps } = useColumnResize('meetings');
-
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [editingMeeting, setEditingMeeting] = useState<CoreMeeting | null>(
+    null,
+  );
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const { data: meetings = [], isLoading } = useQuery({
     queryKey: ['meetings', workspace?.id],
@@ -201,399 +1737,161 @@ export default function MeetingsPage() {
     enabled: !!workspace?.id,
   });
 
+  const { data: integrationAccounts = [] } = useQuery({
+    queryKey: ['integration-accounts', workspace?.id],
+    queryFn: () => {
+      if (!workspace?.id) return [];
+      return getIntegrationAccountsService(workspace.id);
+    },
+    enabled: !!workspace?.id,
+  });
+
   const { data: leads = [] } = useQuery({
     queryKey: ['leads', workspace?.id],
     queryFn: async () => {
       if (!workspace?.id) return [];
-      const res = await getLeadsService({ workspaceId: workspace?.id });
+      const res = await getLeadsService({ workspaceId: workspace.id });
       return res?.data ?? [];
     },
     enabled: !!workspace?.id,
   });
-
   const { data: contacts = [] } = useQuery({
     queryKey: ['contacts', workspace?.id],
     queryFn: async () => {
       if (!workspace?.id) return [];
-      const res = await getContactsService({ workspaceId: workspace?.id });
+      const res = await getContactsService({ workspaceId: workspace.id });
       return res?.data ?? [];
     },
     enabled: !!workspace?.id,
   });
-
-  const { data: accounts = [] } = useQuery({
-    queryKey: ['accounts', workspace?.id],
+  const { data: crmAccounts = [] } = useQuery({
+    queryKey: ['crm-accounts', workspace?.id],
     queryFn: async () => {
       if (!workspace?.id) return [];
-      const res = await getAccountsService({ workspaceId: workspace?.id });
+      const res = await getAccountsService({ workspaceId: workspace.id });
       return res?.data ?? [];
     },
     enabled: !!workspace?.id,
   });
-
   const { data: opportunities = [] } = useQuery({
     queryKey: ['opportunities', workspace?.id],
     queryFn: async () => {
       if (!workspace?.id) return [];
-      const res = await getOpportunitiesService({ workspaceId: workspace?.id });
+      const res = await getOpportunitiesService({ workspaceId: workspace.id });
       return res?.data ?? [];
     },
     enabled: !!workspace?.id,
   });
 
-  const createMutation = useMutation({
-    mutationFn: (payload: any) =>
-      createMeetingService({
-        workspace_id: workspace!.id,
-        entity_type: payload.entity_type,
-        entity_id: payload.entityId,
-        title: payload.title,
-        description: payload.description,
-        start_time: new Date(payload.start_time).toISOString(),
-        end_time: new Date(payload.end_time).toISOString(),
-        location: payload.location,
-        meeting_link: payload.meeting_link,
-      }),
-    onSuccess: () => {
-      toast.success('Meeting scheduled');
-      setIsCreateDialogOpen(false);
-      setFormData({
-        title: '',
-        description: '',
-        start_time: '',
-        end_time: '',
-        location: '',
-        meeting_link: '',
-        entity_type: 'lead',
-        entityId: '',
-      });
-      queryClient.invalidateQueries({ queryKey: ['meetings', workspace?.id] });
-    },
-    onError: () => toast.error('Failed to schedule meeting'),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: (payload: any) =>
-      updateMeetingService(editingMeeting!.id, payload),
-    onSuccess: () => {
-      toast.success('Meeting updated');
-      setIsEditDialogOpen(false);
-      setEditingMeeting(null);
-      queryClient.invalidateQueries({ queryKey: ['meetings', workspace?.id] });
-    },
-    onError: () => toast.error('Failed to update meeting'),
-  });
-
   const deleteMutation = useMutation({
-    mutationFn: deleteMeetingService,
+    mutationFn: (id: string) => deleteMeetingService(workspace!.id, id),
     onSuccess: () => {
       toast.success('Meeting deleted');
+      setIsDetailsOpen(false);
+      setSelectedMeeting(null);
       queryClient.invalidateQueries({ queryKey: ['meetings', workspace?.id] });
     },
     onError: () => toast.error('Failed to delete meeting'),
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: (id: string) => cancelMeetingService(workspace!.id, id),
+    onSuccess: () => {
+      toast.success('Meeting cancelled');
+      queryClient.invalidateQueries({ queryKey: ['meetings', workspace?.id] });
+    },
+    onError: () => toast.error('Failed to cancel meeting'),
+  });
+
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, pageSize]);
+  }, [searchTerm, typeFilter, statusFilter, pageSize]);
 
   const filteredMeetings = useMemo(() => {
-    return meetings.filter((meeting: Meeting) => {
+    return meetings.filter((meeting: CoreMeeting) => {
       const matchesSearch =
         meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        meeting.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        meeting.created_by_user?.name
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase());
-
-      const now = new Date();
-      const endTime = new Date(meeting.end_time);
-      const isCompleted = endTime < now;
-
+        meeting.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesType =
+        typeFilter === 'all' || meeting.meeting_type === typeFilter;
       const matchesStatus =
-        statusFilter === 'all' ||
-        (statusFilter === 'completed' && isCompleted) ||
-        (statusFilter === 'scheduled' && !isCompleted);
-
-      const meetingDate = new Date(meeting.start_time);
-      const toEndOfDay = dateRange.to
-        ? new Date(
-          dateRange.to.getFullYear(),
-          dateRange.to.getMonth(),
-          dateRange.to.getDate(),
-          23,
-          59,
-          59,
-          999,
-        )
-        : undefined;
-      const matchesDateRange =
-        (!dateRange.from || meetingDate >= dateRange.from) &&
-        (!toEndOfDay || meetingDate <= toEndOfDay);
-
-      return matchesSearch && matchesStatus && matchesDateRange;
+        statusFilter === 'all' || meeting.status === statusFilter;
+      return matchesSearch && matchesType && matchesStatus;
     });
-  }, [meetings, searchTerm, statusFilter, dateRange]);
-
-  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Meeting>(
-    'meetings',
-    filteredMeetings,
-    { onSortChange: () => setCurrentPage(1) }
-  );
+  }, [meetings, searchTerm, typeFilter, statusFilter]);
 
   const paginatedMeetings = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return sortedData.slice(start, start + itemsPerPage);
-  }, [sortedData, currentPage, itemsPerPage]);
+    const start = (currentPage - 1) * pageSize;
+    return filteredMeetings.slice(start, start + pageSize);
+  }, [filteredMeetings, currentPage, pageSize]);
 
-  const totalPages = Math.ceil(filteredMeetings.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredMeetings.length / pageSize);
   const totalCount = filteredMeetings.length;
-
-  const handleCreate = () => {
-    if (
-      !formData.title.trim() ||
-      !formData.entityId ||
-      !formData.start_time ||
-      !formData.end_time
-    ) {
-      return;
-    }
-    createMutation.mutate(formData);
-  };
-
-  const handleEdit = (meeting: Meeting) => {
-    setEditingMeeting(meeting);
-    setFormData({
-      title: meeting.title,
-      description: meeting.description || '',
-      start_time: new Date(meeting.start_time).toISOString().slice(0, 16),
-      end_time: new Date(meeting.end_time).toISOString().slice(0, 16),
-      location: meeting.location || '',
-      meeting_link: meeting.meeting_link || '',
-      entity_type: meeting.entity_type || 'lead',
-      entityId: meeting.entity_id,
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  const handleSave = () => {
-    if (!editingMeeting || !formData.title.trim()) return;
-    updateMutation.mutate({
-      title: formData.title,
-      description: formData.description,
-      start_time: new Date(formData.start_time).toISOString(),
-      end_time: new Date(formData.end_time).toISOString(),
-      location: formData.location,
-      meeting_link: formData.meeting_link,
-    });
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this meeting?')) {
-      deleteMutation.mutate(id);
-    }
-  };
-
-  const formatDueDateShort = (dateString: string) => {
-    const date = new Date(dateString);
-    const today = new Date();
-
-    const dateMidnight = new Date(date);
-    dateMidnight.setHours(0, 0, 0, 0);
-
-    const todayMidnight = new Date(today);
-    todayMidnight.setHours(0, 0, 0, 0);
-
-    const timeDiff = dateMidnight.getTime() - todayMidnight.getTime();
-    const dayDiff = Math.round(timeDiff / (1000 * 3600 * 24));
-
-    if (dayDiff === 0) return 'Today';
-    if (dayDiff === 1) return 'Tomorrow';
-    if (dayDiff > 1) return `In ${dayDiff} days`;
-    if (dayDiff === -1) return 'Yesterday';
-    if (dayDiff < -1) return 'Overdue';
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const getStatusBadge = (startTime: string, endTime: string) => {
-    const now = new Date();
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-
-    if (end < now) {
-      return (
-        <Badge
-          variant="outline"
-          className="border-green-200 bg-green-50 text-green-500"
-        >
-          Completed
-        </Badge>
-      );
-    }
-    if (start <= now && end >= now) {
-      return (
-        <Badge
-          variant="outline"
-          className="border-amber-200 bg-amber-50 text-amber-500"
-        >
-          In Progress
-        </Badge>
-      );
-    }
-    return (
-      <Badge
-        variant="outline"
-        className="border-blue-200 bg-blue-50 text-blue-500"
-      >
-        Scheduled
-      </Badge>
-    );
-  };
-
-  const filterGroups = useMemo(() => {
-    return [
-      {
-        key: 'status',
-        label: 'Status',
-        selectedValue: statusFilter === 'all' ? '' : statusFilter,
-        selectedLabel: statusFilter === 'all'
-          ? 'All statuses'
-          : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1),
-        options: [
-          { value: 'scheduled', label: 'Scheduled' },
-          { value: 'completed', label: 'Completed' },
-        ],
-        onSelect: (val: string) => setStatusFilter(val || 'all'),
-      },
-      {
-        key: 'date_range',
-        label: 'Date Range',
-        selectedValue: (dateRange.from || dateRange.to) ? 'range' : '',
-        selectedLabel: (dateRange.from || dateRange.to)
-          ? `${dateRange.from?.toLocaleDateString() || ''} - ${dateRange.to?.toLocaleDateString() || ''}`
-          : 'All time',
-        options: [],
-        onSelect: () => {},
-        customContent: (
-          <div className="flex flex-col gap-4 p-2">
-            <Calendar
-              mode="range"
-              selected={{
-                from: dateRange.from,
-                to: dateRange.to,
-              }}
-              onSelect={(range) =>
-                setDateRange({
-                  from: range?.from,
-                  to: range?.to,
-                })
-              }
-              initialFocus
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs"
-                onClick={() => {
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  setDateRange({ from: today, to: today });
-                }}
-              >
-                Today
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs"
-                onClick={() => {
-                  const today = new Date();
-                  const lastWeek = new Date();
-                  lastWeek.setDate(today.getDate() - 7);
-                  setDateRange({ from: lastWeek, to: today });
-                }}
-              >
-                Last 7 Days
-              </Button>
-            </div>
-          </div>
-        ),
-      },
-    ];
-  }, [statusFilter, dateRange]);
-
-  const activeFilterCount = useMemo(() => {
-    let count = 0;
-    if (statusFilter !== 'all') count++;
-    if (dateRange.from || dateRange.to) count++;
-    return count;
-  }, [statusFilter, dateRange]);
-
-  const handleClearFilters = () => {
-    setStatusFilter('all');
-    setDateRange({ from: undefined, to: undefined });
-  };
-
-  if (!workspace) {
-    return <MeetingsPageSkeleton />;
-  }
 
   return (
     <>
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          title={`Meetings (${meetings.length})`}
-          description="Manage and schedule your meetings with leads and clients"
+          title={`Meetings (${totalCount})`}
+          description="Manage and track your synced calendar events"
         />
       </div>
 
-      {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2 pt-2">
+      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
         <ListToolBar
           showSearch
-          searchPlaceholder="Search by title or host..."
+          searchPlaceholder="Search meetings..."
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
-          showFilter
-          filterLabel="Show Filters"
-          filterGroups={filterGroups}
-          activeFilterCount={activeFilterCount}
-          onClearFilters={handleClearFilters}
+          statusSlot={
+            <div className="flex items-center gap-2">
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="scheduled">Scheduled</SelectItem>
+                  <SelectItem value="logged">Logged</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {(Object.keys(STATUS_CONFIG) as MeetingStatus[]).map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {STATUS_CONFIG[s].label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          }
           actions={[
             {
-              key: 'add',
-              label: 'New Meeting',
+              key: 'manage-accounts',
+              label: 'Manage Accounts',
+              icon: Settings,
+              onClick: () => {
+                window.location.href =
+                  '/home/sales/workspace-settings#meetings';
+              },
+              buttonVariant: 'outline' as const,
+            },
+            {
+              key: 'schedule-meeting',
+              label: 'Schedule Meeting',
               icon: Plus,
               onClick: () => {
-                setFormData({
-                  title: '',
-                  description: '',
-                  start_time: '',
-                  end_time: '',
-                  location: '',
-                  meeting_link: '',
-                  entity_type: 'lead',
-                  entityId: '',
-                });
+                setInitialMeetingType('scheduled');
                 setIsCreateDialogOpen(true);
               },
-              show: true,
-              buttonVariant: 'default',
+              buttonVariant: 'default' as const,
             },
           ]}
-          columnVisibilitySlot={
-            <ColumnVisibilitySelector
-              columns={meetingColumns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
-            />
-          }
         />
       </div>
 
@@ -615,592 +1913,223 @@ export default function MeetingsPage() {
               />
             }
           >
-            <Table>
-              <TableHeader>
+            <Table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
+              <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                 <TableRow>
-                  {isVisible('sno') && (
-  <SortableTableHead
-    label="S. No."
-    columnId="sno"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    sortable={false}
-    className="relative w-12 whitespace-nowrap"
-    {...getHeaderProps('sno')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
-  </SortableTableHead>
-)}
-                  {isVisible('title') && (
-  <SortableTableHead
-    label="Meeting Title"
-    columnId="title"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('title')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('title')} />
-  </SortableTableHead>
-)}
-                  {isVisible('description') && (
-  <SortableTableHead
-    label="Description"
-    columnId="description"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('description')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('description')} />
-  </SortableTableHead>
-)}
-                  {isVisible('location') && (
-  <SortableTableHead
-    label="Location"
-    columnId="location"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('location')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('location')} />
-  </SortableTableHead>
-)}
-                  {isVisible('meeting_link') && (
-  <SortableTableHead
-    label="Meeting Link"
-    columnId="meeting_link"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('meeting_link')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('meeting_link')} />
-  </SortableTableHead>
-)}
-                  {isVisible('host') && (
-  <SortableTableHead
-    label="Host"
-    columnId="host"
-    sortKey="created_by_user.name"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('host')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('host')} />
-  </SortableTableHead>
-)}
-                  {isVisible('created_at') && (
-  <SortableTableHead
-    label="Created On"
-    columnId="created_at"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('created_at')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
-  </SortableTableHead>
-)}
-                  {isVisible('updated_by') && (
-  <SortableTableHead
-    label="Last Updated By"
-    columnId="updated_by"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('updated_by')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
-  </SortableTableHead>
-)}
-                  {isVisible('date_time') && (
-  <SortableTableHead
-    label="Date & Time"
-    columnId="date_time"
-    sortKey="start_time"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('date_time')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('date_time')} />
-  </SortableTableHead>
-)}
-                  {isVisible('entity') && (
-  <SortableTableHead
-    label="Entity"
-    columnId="entity"
-    sortKey="entity_name"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('entity')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('entity')} />
-  </SortableTableHead>
-)}
-                  <TableHead className="sticky-right-header">Actions</TableHead>
+                  <TableHead className="w-12 whitespace-nowrap">
+                    S. No.
+                  </TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Provider</TableHead>
+                  <TableHead>Date & Time</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="sticky right-0 text-right">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <>
-                    {[...Array(10)].map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell
-                          className="h-[52px] px-4 py-2"
-                          colSpan={
-                            visibility
-                              ? Object.values(visibility).filter((v) => v !== false).length + 1
-                              : 7
-                          }
-                        >
-                          <Skeleton className="h-7 w-full" />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </>
-                ) : paginatedMeetings.length > 0 ? (
-                  paginatedMeetings.map(
-                    (meeting: Meeting, index: number) => (
-                      <TableRow
-                        key={meeting.id}
-                        className="hover:bg-muted/50"
-                      >
-                        {isVisible('sno') && (
-                          <TableCell className="text-muted-foreground w-12">
-                            {(currentPage - 1) * itemsPerPage + index + 1}
-                          </TableCell>
-                        )}
-                        {isVisible('title') && (
-                          <TableCell className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
-                            <span>{meeting.title}</span>
-                          </TableCell>
-                        )}
-                        {isVisible('description') && (
-                          <TableCell className="text-muted-foreground">
-                            {meeting.description ? (
-                              <p
-                                className="max-w-[200px] truncate"
-                                title={meeting.description}
-                              >
-                                {meeting.description}
-                              </p>
-                            ) : (
-                              '-'
-                            )}
-                          </TableCell>
-                        )}
-                        {isVisible('location') && (
-                          <TableCell className="text-muted-foreground">
-                            {meeting.location ? (
-                              <p className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />{' '}
-                                {meeting.location}
-                              </p>
-                            ) : (
-                              '-'
-                            )}
-                          </TableCell>
-                        )}
-                        {isVisible('meeting_link') && (
-                          <TableCell className="text-muted-foreground">
-                            {meeting.meeting_link ? (
-                              <a
-                                href={meeting.meeting_link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary hover:underline"
-                              >
-                                Link
-                              </a>
-                            ) : (
-                              '-'
-                            )}
-                          </TableCell>
-                        )}
-                        {isVisible('host') && (
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold">
-                                {(meeting.created_by_user?.name || 'U')
-                                  .split(' ')
-                                  .map((n) => n[0])
-                                  .join('')}
-                              </div>
-                              <span className="text-sm">
-                                {meeting.created_by_user?.name ||
-                                  'System'}
-                              </span>
-                            </div>
-                          </TableCell>
-                        )}
-                        {isVisible('created_at') && (
-                          <TableCell className="text-muted-foreground">
-                            {meeting.created_at
-                              ? formatDate(meeting.created_at)
-                              : '-'}
-                          </TableCell>
-                        )}
-                        {isVisible('updated_by') && (
-                          <TableCell className="text-muted-foreground">
-                            {meeting.updated_by || '-'}
-                          </TableCell>
-                        )}
-                        {isVisible('date_time') && (
-                          <TableCell>
-                            <div className="text-muted-foreground flex flex-col">
-                              <span className="text-sm font-medium">
-                                {formatDueDateShort(meeting.start_time)}
-                              </span>
-                            </div>
-                          </TableCell>
-                        )}
-                        {isVisible('entity') && (
-                          <TableCell>
-                            {meeting.entity_name && (
-                              <Link
-                                href={`/home/sales/${meeting.entity_type === 'opportunity' ? 'opportunities' : `${meeting.entity_type}s`}/${meeting.entity_id}`}
-                                className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary text-xs"
-                                title={`${meeting.entity_type}: ${meeting.entity_name}`}
-                              >
-                                {meeting.entity_name}
-                              </Link>
-                            )}
-                          </TableCell>
-                        )}
-                        <TableCell className="bg-card sticky right-0 px-4 text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                className="gap-2"
-                                onClick={() => handleEdit(meeting)}
-                              >
-                                <Pencil className="h-4 w-4" /> Edit
-                                Meeting
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="gap-2 text-red-500"
-                                onClick={() => handleDelete(meeting.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />{' '}
-                                Cancel/Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  )
-                ) : (
+                  <MeetingsPageSkeleton />
+                ) : paginatedMeetings.length === 0 ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={
-                        visibility
-                          ? Object.values(visibility).filter((v) => v !== false).length + 1
-                          : 10
-                      }
-                      className="text-muted-foreground h-24 text-center"
-                    >
-                      {searchTerm ||
-                        statusFilter !== 'all' ||
-                        dateRange.from ||
-                        dateRange.to
-                        ? 'No meetings match your search'
-                        : 'No meetings found.'}
+                    <TableCell colSpan={7} className="h-32 text-center">
+                      <p className="text-muted-foreground">
+                        {searchTerm
+                          ? 'No meetings match your search'
+                          : 'No meetings found'}
+                      </p>
                     </TableCell>
                   </TableRow>
+                ) : (
+                  paginatedMeetings.map(
+                    (meeting: CoreMeeting, index: number) => {
+                      const statusCfg = getStatusBadge(meeting.status);
+                      const providerInfo = getProviderBadge(meeting.provider);
+                      const sno = (currentPage - 1) * pageSize + index + 1;
+                      return (
+                        <TableRow
+                          key={meeting.id}
+                          className="hover:bg-muted/50 cursor-pointer"
+                          onClick={() => {
+                            setSelectedMeeting(meeting);
+                            setIsDetailsOpen(true);
+                          }}
+                        >
+                          <TableCell className="text-muted-foreground px-4 py-3">
+                            {sno}
+                          </TableCell>
+                          <TableCell className="px-4 py-3">
+                            <div>
+                              <p className="font-medium">{meeting.title}</p>
+                              {meeting.location && (
+                                <p className="text-muted-foreground text-xs">
+                                  {meeting.location}
+                                </p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-4 py-3">
+                            <Badge variant="outline" className="text-xs">
+                              {meeting.meeting_type === 'logged'
+                                ? 'Logged'
+                                : 'Scheduled'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="px-4 py-3">
+                            <Badge
+                              variant="outline"
+                              className={`gap-1.5 text-xs ${providerInfo.cls}`}
+                            >
+                              {providerInfo.icon}
+                              {providerInfo.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="px-4 py-3">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Clock className="text-muted-foreground h-4 w-4" />
+                              {formatMeetingTime(
+                                meeting.meeting_type === 'logged'
+                                  ? meeting.actual_start
+                                  : meeting.scheduled_start,
+                                meeting.meeting_type === 'logged'
+                                  ? meeting.actual_end
+                                  : meeting.scheduled_end,
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-4 py-3">
+                            <Badge
+                              variant="outline"
+                              className="gap-1.5 text-xs"
+                              style={{
+                                color: statusCfg.color,
+                                borderColor: `${statusCfg.color}40`,
+                                backgroundColor: `${statusCfg.color}10`,
+                              }}
+                            >
+                              {statusCfg.icon}
+                              {statusCfg.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="bg-card sticky right-0 px-4 py-3 text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger
+                                asChild
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Button variant="ghost" size="icon">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align="end"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedMeeting(meeting);
+                                    setIsDetailsOpen(true);
+                                  }}
+                                >
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setEditingMeeting(meeting);
+                                    setIsEditOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                {meeting.status === 'scheduled' && (
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      cancelMutation.mutate(meeting.id)
+                                    }
+                                  >
+                                    <Ban className="mr-2 h-4 w-4" />
+                                    Cancel Meeting
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => {
+                                    if (confirm('Are you sure?'))
+                                      deleteMutation.mutate(meeting.id);
+                                  }}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    },
+                  )
                 )}
               </TableBody>
             </Table>
           </CustomTableContainer>
         </div>
+
+        {/* Dialogs */}
+        {workspace?.id && (
+          <CreateMeetingDialog
+            open={isCreateDialogOpen}
+            onOpenChange={setIsCreateDialogOpen}
+            workspaceId={workspace.id}
+            integrationAccounts={integrationAccounts}
+            leads={leads}
+            contacts={contacts}
+            accounts={crmAccounts}
+            opportunities={opportunities}
+            initialType={initialMeetingType}
+            onSuccess={() =>
+              queryClient.invalidateQueries({
+                queryKey: ['meetings', workspace?.id],
+              })
+            }
+          />
+        )}
+
+        <MeetingDetailsDialog
+          meeting={selectedMeeting}
+          open={isDetailsOpen}
+          onOpenChange={setIsDetailsOpen}
+          workspaceId={workspace?.id || ''}
+          onEdit={(m) => {
+            setEditingMeeting(m);
+            setIsEditOpen(true);
+          }}
+          onDelete={(id) => {
+            if (confirm('Are you sure?')) deleteMutation.mutate(id);
+          }}
+        />
+
+        {isEditOpen && editingMeeting && (
+          <EditMeetingDialog
+            meeting={editingMeeting}
+            open={isEditOpen}
+            onOpenChange={(open) => {
+              setIsEditOpen(open);
+              if (!open) setEditingMeeting(null);
+            }}
+            workspaceId={workspace?.id || ''}
+            integrationAccounts={integrationAccounts}
+            onSuccess={() =>
+              queryClient.invalidateQueries({
+                queryKey: ['meetings', workspace?.id],
+              })
+            }
+          />
+        )}
       </PageBody>
-
-      {/* Create Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[700px]">
-          <DialogHeader className="border-b p-6 pb-4">
-            <DialogTitle>Schedule New Meeting</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-6 py-4 grid gap-4">
-            <div className="space-y-4">
-              <Label>Associate with</Label>
-              <RadioGroup
-                value={formData.entity_type}
-                onValueChange={(val) =>
-                  setFormData({ ...formData, entity_type: val, entityId: '' })
-                }
-                className="flex flex-wrap gap-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="lead" id="lead" />
-                  <Label
-                    htmlFor="lead"
-                    className="flex cursor-pointer items-center gap-1"
-                  >
-                    <User className="h-3 w-3" /> Lead
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="contact" id="contact" />
-                  <Label
-                    htmlFor="contact"
-                    className="flex cursor-pointer items-center gap-1"
-                  >
-                    <Users className="h-3 w-3" /> Contact
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="account" id="account" />
-                  <Label
-                    htmlFor="account"
-                    className="flex cursor-pointer items-center gap-1"
-                  >
-                    <Building2 className="h-3 w-3" /> Account
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="opportunity" id="opportunity" />
-                  <Label
-                    htmlFor="opportunity"
-                    className="flex cursor-pointer items-center gap-1"
-                  >
-                    <Briefcase className="h-3 w-3" /> Opportunity
-                  </Label>
-                </div>
-              </RadioGroup>
-
-              <Select
-                value={formData.entityId}
-                onValueChange={(val) =>
-                  setFormData({ ...formData, entityId: val })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={`Select ${formData.entity_type}...`}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {formData.entity_type === 'lead' &&
-                    leads.map((lead: any) => (
-                      <SelectItem key={lead.id} value={lead.id}>
-                        {lead.first_name} {lead.last_name || ''}
-                      </SelectItem>
-                    ))}
-                  {formData.entity_type === 'contact' &&
-                    contacts.map((contact: any) => (
-                      <SelectItem key={contact.id} value={contact.id}>
-                        {contact.first_name} {contact.last_name || ''}
-                      </SelectItem>
-                    ))}
-                  {formData.entity_type === 'account' &&
-                    accounts.map((account: any) => (
-                      <SelectItem key={account.id} value={account.id}>
-                        {account.account_name}
-                      </SelectItem>
-                    ))}
-                  {formData.entity_type === 'opportunity' &&
-                    opportunities.map((opportunity: any) => (
-                      <SelectItem key={opportunity.id} value={opportunity.id}>
-                        {opportunity.opportunity_name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Title</Label>
-              <Input
-                value={formData.title}
-                onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
-                placeholder="Demo meeting..."
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Input
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                placeholder="Meeting agenda..."
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Start</Label>
-                <div className="relative">
-                  <CalendarIcon className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    type="datetime-local"
-                    onClick={(e) => e.currentTarget.showPicker()}
-                    value={formData.start_time}
-                    onChange={(e) =>
-                      setFormData({ ...formData, start_time: e.target.value })
-                    }
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>End</Label>
-                <div className="relative">
-                  <CalendarIcon className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    type="datetime-local"
-                    onClick={(e) => e.currentTarget.showPicker()}
-                    value={formData.end_time}
-                    onChange={(e) =>
-                      setFormData({ ...formData, end_time: e.target.value })
-                    }
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Location / Link</Label>
-              <Input
-                value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
-                placeholder="Zoom, Google Meet, or Office..."
-              />
-            </div>
-          </div>
-          <div className="border-t p-6 mt-auto">
-            <Button
-              onClick={handleCreate}
-              disabled={
-                !formData.title.trim() ||
-                !formData.entityId ||
-                !formData.start_time ||
-                !formData.end_time ||
-                createMutation.isPending
-              }
-              className="w-full"
-            >
-              {createMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                'Schedule Meeting'
-              )}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[425px]">
-          <DialogHeader className="border-b p-6 pb-4">
-            <DialogTitle>Edit Meeting</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4 px-6">
-            <div className="space-y-2">
-              <Label>Title</Label>
-              <Input
-                value={formData.title}
-                onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
-                placeholder="Demo meeting..."
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Input
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                placeholder="Meeting agenda..."
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Start</Label>
-                <div className="relative">
-                  <CalendarIcon className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    type="datetime-local"
-                    onClick={(e) => e.currentTarget.showPicker()}
-                    value={formData.start_time}
-                    onChange={(e) =>
-                      setFormData({ ...formData, start_time: e.target.value })
-                    }
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>End</Label>
-                <div className="relative">
-                  <CalendarIcon className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    type="datetime-local"
-                    onClick={(e) => e.currentTarget.showPicker()}
-                    value={formData.end_time}
-                    onChange={(e) =>
-                      setFormData({ ...formData, end_time: e.target.value })
-                    }
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Location / Link</Label>
-              <Input
-                value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
-                placeholder="Zoom, Google Meet, or Office..."
-              />
-            </div>
-            <Button
-              onClick={handleSave}
-              disabled={
-                !formData.title.trim() ||
-                !formData.start_time ||
-                !formData.end_time ||
-                updateMutation.isPending
-              }
-              className="w-full"
-            >
-              {updateMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                'Update Meeting'
-              )}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

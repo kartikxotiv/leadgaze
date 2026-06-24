@@ -1,6 +1,7 @@
 export * from './_shared/workspace-access';
 export * from './notes/notes-controller';
 export * from './meetings/meetings-controller';
+export * from './integrations/integrations-controller';
 export * from './emails/emails-controller';
 export * from './email-accounts/email-accounts-controller';
 export * from './email-activity/email-activity-controller';
