@@ -641,17 +641,20 @@ export default function OpportunityDetailsPage() {
                   <div className="flex items-center gap-1.5 text-xs text-gray-500">
                     <Clock className="h-3 w-3" />
                     <span>
-                      Created on{' '}
-                      {new Date(opportunity.created_at).toLocaleDateString(
-                        undefined,
-                        {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        },
-                      )}
+                      Created by {opportunity.created_by_account?.name || 'Unknown'} on {formatDate(opportunity.created_at)}
                     </span>
                   </div>
+                  {opportunity.updated_by && (
+                    <>
+                      <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          Updated by {opportunity.updated_by_account?.name || 'Unknown'} on {formatDate(opportunity.updated_at)}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </>
               }
             />
@@ -924,27 +927,26 @@ export default function OpportunityDetailsPage() {
                           : '-'
                       }
                     />
-                    {opportunity.lead_source && (
+                    
                       <DetailInfoRow
                         icon={<Tag className="h-5 w-5" />}
                         label="Lead Source"
-                        value={opportunity.lead_source}
+                        value={opportunity.lead_source || '-'}
                       />
-                    )}
-                    {opportunity.description && (
+                    
                       <DetailInfoRow
                         icon={<FileText className="h-5 w-5" />}
                         label="Description"
-                        value={opportunity.description}
+                        value={opportunity.description || '-'}
                       />
-                    )}
-                    {opportunity.competitor && (
+                    
+                    
                       <DetailInfoRow
                         icon={<Target className="h-5 w-5" />}
                         label="Competitor"
-                        value={opportunity.competitor}
+                        value={opportunity.competitor || '-'}
                       />
-                    )}
+                    
                   </DetailInfoList>
                 </AccordionContent>
               </AccordionItem>
@@ -1015,7 +1017,7 @@ export default function OpportunityDetailsPage() {
                     <DetailInfoRow
                       icon={<Calendar className="h-5 w-5" />}
                       label="Created At"
-                      value={formatDate(opportunity.created_at)}
+                      value={opportunity.created_at ? formatDate(opportunity.created_at): '-'}
                     />
                     <DetailInfoRow
                       icon={<User className="h-5 w-5" />}
@@ -1029,7 +1031,7 @@ export default function OpportunityDetailsPage() {
                     <DetailInfoRow
                       icon={<Calendar className="h-5 w-5" />}
                       label="Updated"
-                      value={formatDate(opportunity.updated_at)}
+                      value={opportunity.updated_at ? formatDate(opportunity.updated_at) : '-'}
                     />
                   </DetailInfoList>
                 </AccordionContent>

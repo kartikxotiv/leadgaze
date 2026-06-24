@@ -360,17 +360,20 @@ export default function ContactDetailsPage() {
                   <div className="flex items-center gap-1.5 text-xs text-gray-500">
                     <Clock className="h-3 w-3" />
                     <span>
-                      Created on{' '}
-                      {new Date(contact.created_at).toLocaleDateString(
-                        undefined,
-                        {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        },
-                      )}
+                      Created by {contact.created_by_account?.name || 'Unknown'} on {formatDate(contact.created_at)}
                     </span>
                   </div>
+                  {contact.updated_by && (
+                    <>
+                      <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          Updated by {contact.updated_by_account?.name || 'Unknown'} on {formatDate(contact.updated_at)}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </>
               }
               email={contact.email || undefined}
@@ -603,122 +606,111 @@ export default function ContactDetailsPage() {
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
                   <DetailInfoList>
-                    {contact.email && (
+                    
                       <DetailInfoRow
                         icon={<Mail className="h-5 w-5" />}
                         label="Email"
                         value={
-                          <a
+                          contact.email ?  (<a
                             href={`mailto:${contact.email}`}
                             className="text-blue-600 hover:underline dark:text-blue-400"
                           >
                             {contact.email}
-                          </a>
+                          </a>) : '-'
                         }
                       />
-                    )}
-                    {contact.alt_email && (
+                    
                       <DetailInfoRow
                         icon={<Mail className="h-5 w-5" />}
                         label="Alt Email"
                         value={
-                          <a
+                          contact.alt_email ? (<a
                             href={`mailto:${contact.alt_email}`}
                             className="text-blue-600 hover:underline dark:text-blue-400"
                           >
                             {contact.alt_email}
-                          </a>
+                          </a>) : '-'
                         }
                       />
-                    )}
-                    {contact.phone_number && (
+                    
                       <DetailInfoRow
                         icon={<Phone className="h-5 w-5" />}
                         label="Phone"
                         value={
-                          <a
+                          contact.phone_number ? (<a
                             href={`tel:${contact.phone_number}`}
                             className="text-blue-600 hover:underline dark:text-blue-400"
                           >
                             {contact.phone_number}
-                          </a>
+                          </a>) : '-'
                         }
                       />
-                    )}
-                    {contact.mobile_number && (
+                    
                       <DetailInfoRow
                         icon={<Phone className="h-5 w-5" />}
                         label="Mobile"
                         value={
-                          <a
+                          contact.mobile_number ? (<a
                             href={`tel:${contact.mobile_number}`}
                             className="text-blue-600 hover:underline dark:text-blue-400"
                           >
                             {contact.mobile_number}
-                          </a>
+                          </a>) : '-'
                         }
                       />
-                    )}
-                    {contact.alt_phone && (
+                    
                       <DetailInfoRow
                         icon={<Phone className="h-5 w-5" />}
                         label="Alt Phone"
                         value={
-                          <a
+                          contact.alt_phone ? (<a
                             href={`tel:${contact.alt_phone}`}
                             className="text-blue-600 hover:underline dark:text-blue-400"
                           >
                             {contact.alt_phone}
-                          </a>
+                          </a>) : '-'
                         }
                       />
-                    )}
-                    {contact.language && (
+                    
                       <DetailInfoRow
                         icon={<Globe className="h-5 w-5" />}
                         label="Language"
-                        value={contact.language}
+                        value={contact.language || '-'}
                       />
-                    )}
-                    {(contact.location || contact.timezone) && (
+
+                    
                       <DetailInfoRow
                         icon={<MapPin className="h-5 w-5" />}
                         label="Location"
-                        value={[contact.location, contact.timezone]
+                        value={(contact.location || contact.timezone) ? ([contact.location, contact.timezone]
                           .filter(Boolean)
-                          .join(' • ')}
+                          .join(' • ')) : '-'}
                       />
-                    )}
-                    {contact.department && (
+                    
                       <DetailInfoRow
                         icon={<FileText className="h-5 w-5" />}
                         label="Department"
-                        value={contact.department}
+                        value={contact.department || '-'}
                       />
-                    )}
-                    {contact.linkedin_url && (
                       <DetailInfoRow
                         icon={<Linkedin className="h-5 w-5" />}
                         label="LinkedIn"
                         value={
-                          <a
+                          contact.linkedin_url ? (<a
                             href={contact.linkedin_url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:underline dark:text-blue-400"
                           >
                             {contact.linkedin_url}
-                          </a>
-                        }
+                          </a>) : '-'}                        
                       />
-                    )}
-                    {contact.notes && (
+                    
                       <DetailInfoRow
                         icon={<FileText className="h-5 w-5" />}
                         label="Notes"
-                        value={contact.notes}
+                        value={contact.notes || '-'}
                       />
-                    )}
                   </DetailInfoList>
                 </AccordionContent>
               </AccordionItem>
@@ -741,13 +733,12 @@ export default function ContactDetailsPage() {
                         icon={<Building2 className="h-5 w-5" />}
                         label="Account"
                         value={
-                          <Link
+                          contact.account.account_name ? (<Link
                             href={`/home/sales/accounts/${contact.account.id}`}
                             className="text-blue-600 hover:underline dark:text-blue-400"
                           >
                             {contact.account.account_name}
-                          </Link>
-                        }
+                          </Link>) : '-'}                        
                       />
                     </DetailInfoList>
                   </AccordionContent>

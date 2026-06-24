@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@kit/shared": "workspace:*",
     "@radix-ui/react-accordion": "1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-avatar": "^1.1.10",
@@ -108,6 +109,7 @@
     "./table-pagination": "./src/shadcn/table-pagination.tsx",
     "./table-status-metric-tab": "./src/shadcn/table-status-metric-tab.tsx",
     "./list-toolbar": "./src/shadcn/list-toolbar.tsx",
+    "./csv-import-dialog": "./src/shadcn/csv-import-dialog.tsx",
     "./status-filter-dropdown": "./src/shadcn/status-filter-dropdown.tsx",
     "./page-size-selector": "./src/shadcn/page-size-selector.tsx",
     "./detail-header": "./src/shadcn/detail-header.tsx",

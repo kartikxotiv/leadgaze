@@ -6,12 +6,11 @@ import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
 import { FileUp, Plus } from 'lucide-react';
-
-import { useUser } from '@kit/supabase/hooks/use-user';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
+import { CsvImportDialog } from '@kit/ui/csv-import-dialog';
 import { PageBody, PageHeader } from '@kit/ui/page';
 
 import { Skeleton } from '@kit/ui/skeleton';
@@ -52,15 +51,15 @@ export default function LeadsPage() {
   const router = useRouter();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [selectedCreatedBy, setSelectedCreatedBy] = useState<string>('');
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const itemsPerPage = pageSize;
-  const { data: user } = useUser();
 
   // ─── Custom Fields (dynamic columns from API) ─────────────────────────────
   // When the backend is ready, replace the empty array with your query:
@@ -71,9 +70,8 @@ export default function LeadsPage() {
   // });
   const customFields: { id: string; label: string }[] = [];
 
-
   const activeFilterCount =
-    (selectedStatus !== 'all' ? 1 : 0) + (selectedCreatedBy ? 1 : 0);
+    selectedStatuses.length + selectedCreatedByIds.length;
 
   const columns = useMemo(
     () => [
@@ -103,10 +101,34 @@ export default function LeadsPage() {
       { id: 'created_by', label: 'Created By' },
       { id: 'created_at', label: 'Created On' },
       { id: 'updated_by', label: 'Last Updated By' },
-      // Dynamic custom field columns from API are appended here automatically
       ...customFields,
     ],
     [customFields],
+  );
+  const importColumns = useMemo(
+    () => [
+      { key: 'first_name', label: 'First Name', required: true },
+      { key: 'last_name', label: 'Last Name' },
+      { key: 'email', label: 'Email' },
+      { key: 'alt_email', label: 'Alt Email' },
+      { key: 'phone_number', label: 'Phone' },
+      { key: 'mobile_number', label: 'Mobile' },
+      { key: 'company_name', label: 'Company' },
+      { key: 'company_website', label: 'Company Website' },
+      { key: 'company_linkedin_url', label: 'Company LinkedIn' },
+      { key: 'linkedin_url', label: 'LinkedIn' },
+      { key: 'job_title', label: 'Job Title' },
+      { key: 'department', label: 'Department' },
+      { key: 'industry_id', label: 'Industry' },
+      { key: 'company_size', label: 'Company Size' },
+      { key: 'location', label: 'Location' },
+      { key: 'timezone', label: 'Timezone' },
+      { key: 'status_id', label: 'Status', required: true },
+      { key: 'source_id', label: 'Source' },
+      { key: 'trigger', label: 'Trigger' },
+      { key: 'notes', label: 'Notes' },
+    ],
+    [],
   );
 
   const { visibility, toggleVisibility, isVisible, reset, mergeNewColumns } =
@@ -163,8 +185,8 @@ export default function LeadsPage() {
       workspace?.id,
       currentPage,
       debouncedSearchTerm,
-      selectedStatus,
-      selectedCreatedBy,
+      selectedStatuses,
+      selectedCreatedByIds,
       pageSize,
     ],
     queryFn: () =>
@@ -173,7 +195,7 @@ export default function LeadsPage() {
         page: currentPage,
         limit: pageSize,
         searchTerm: debouncedSearchTerm,
-        statusId: selectedStatus,
+        statusId: selectedStatuses.length > 0 ? selectedStatuses : undefined,
       }),
     enabled: !!workspace?.id,
   });
@@ -197,18 +219,18 @@ export default function LeadsPage() {
   // Client-side filter for created-by (status is now server-side only for consistency)
   const filteredLeads = useMemo(() => {
     let result = leads;
-    if (selectedCreatedBy) {
+    if (selectedCreatedByIds.length > 0) {
       result = result.filter(
-        (lead: Lead) => lead.created_by === selectedCreatedBy,
+        (lead: Lead) => selectedCreatedByIds.includes(lead.created_by ?? ''),
       );
     }
     return result;
-  }, [leads, selectedCreatedBy]);
+  }, [leads, selectedCreatedByIds]);
 
   // Reset to first page when search or filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, selectedStatus, selectedCreatedBy, pageSize]);
+  }, [debouncedSearchTerm, selectedStatuses, selectedCreatedByIds, pageSize]);
 
   // ── Table sorting (Phase 1: client-side) ───────────────────────────────────
   // To switch to server-side sorting later:
@@ -265,8 +287,8 @@ export default function LeadsPage() {
             statusSlot={
               <StatusFilterDropdown
                 statuses={statuses}
-                selectedStatus={selectedStatus}
-                onStatusChange={setSelectedStatus}
+                selectedStatuses={selectedStatuses}
+                onStatusesChange={setSelectedStatuses}
                 statusBreakdown={leadsData.statusBreakdown}
                 totalCount={totalCount}
                 allLabel="All Leads"
@@ -281,25 +303,29 @@ export default function LeadsPage() {
               {
                 key: 'status',
                 label: 'Status',
-                selectedValue: selectedStatus === 'all' ? '' : selectedStatus,
+                selectedValues: selectedStatuses,
                 selectedLabel:
-                  selectedStatus === 'all'
+                  selectedStatuses.length === 0
                     ? 'All statuses'
-                    : (statuses.find((s: any) => s.id === selectedStatus) as any)?.status_name ?? '1 selected',
+                    : selectedStatuses.length === 1
+                      ? (statuses.find((s: any) => s.id === selectedStatuses[0]) as any)?.status_name ?? '1 selected'
+                      : `${selectedStatuses.length} selected`,
                 options: statuses.map((s: any) => ({
                   value: s.id,
                   label: s.status_name,
                   color: s.color,
                 })),
-                onSelect: (val) => setSelectedStatus(val || 'all'),
+                onSelectValues: setSelectedStatuses,
               },
               {
                 key: 'created_by',
                 label: 'Created By',
-                selectedValue: selectedCreatedBy,
-                selectedLabel: selectedCreatedBy
-                  ? (members.find((m: any) => m.user_id === selectedCreatedBy) as any)?.user?.user_metadata?.full_name ?? '1 selected'
-                  : 'All members',
+                selectedValues: selectedCreatedByIds,
+                selectedLabel: selectedCreatedByIds.length === 0
+                  ? 'All members'
+                  : selectedCreatedByIds.length === 1
+                    ? (members.find((m: any) => m.user_id === selectedCreatedByIds[0]) as any)?.user?.user_metadata?.full_name ?? '1 selected'
+                    : `${selectedCreatedByIds.length} selected`,
                 options: members
                   .filter((m: any) => m.user_id)
                   .map((m: any) => ({
@@ -309,20 +335,20 @@ export default function LeadsPage() {
                       m.user?.email ||
                       m.user_id,
                   })),
-                onSelect: (val) => setSelectedCreatedBy(val),
+                onSelectValues: setSelectedCreatedByIds,
               },
             ]}
             activeFilterCount={activeFilterCount}
             onClearFilters={() => {
-              setSelectedStatus('all');
-              setSelectedCreatedBy('');
+              setSelectedStatuses([]);
+              setSelectedCreatedByIds([]);
             }}
             actions={[
               {
                 key: 'import',
                 label: 'Import',
                 icon: FileUp,
-                onClick: () => setIsCreateDialogOpen(true),
+                onClick: () => setIsImportDialogOpen(true),
                 show: canAccess('leads', 'import'),
                 buttonVariant: 'outline',
               },
@@ -773,7 +799,7 @@ export default function LeadsPage() {
                               className="h-24 text-center"
                             >
                               <div className="text-gray-500">
-                                {searchTerm || selectedStatus !== 'all'
+                                {searchTerm || selectedStatuses.length > 0 || selectedCreatedByIds.length > 0
                                   ? 'No leads match your search'
                                   : 'No leads yet. Create one to get started!'}
                               </div>
@@ -1029,6 +1055,20 @@ export default function LeadsPage() {
             open={isCreateDialogOpen}
             onOpenChange={setIsCreateDialogOpen}
             onSuccess={handleCreateSuccess}
+          />
+
+          <CsvImportDialog
+            open={isImportDialogOpen}
+            onOpenChange={setIsImportDialogOpen}
+            title="Import Leads from CSV"
+            description="Upload a CSV, match each header to a database column, and save the adjusted file before the API upload step."
+            columns={importColumns}
+            onUpload={async ({ formData, file }) => {
+              console.log('CSV ready for upload', {
+                fileName: file.name,
+                formData,
+              });
+            }}
           />
 
           <DeleteEntityDialog

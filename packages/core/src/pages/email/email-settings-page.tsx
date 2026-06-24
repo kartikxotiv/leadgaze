@@ -80,6 +80,8 @@ import type { CoreEmailPageProps } from './types';
 import { CoreEmailVariablesTab } from './variables-tab';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 type SmtpFormState = {
   email: string;
@@ -145,6 +147,11 @@ export function CoreEmailSettingsPage({
     queryFn: () => getCoreEmailAccountsService(workspaceId || ''),
     enabled: Boolean(workspaceId),
   });
+
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<CoreEmailAccount>(
+    'core-email-accounts-table',
+    accounts
+  );
 
   const handleGoogleConnect = () => {
     if (!workspaceId) return;
@@ -481,34 +488,87 @@ export function CoreEmailSettingsPage({
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="relative" {...getHeaderProps('provider')}>
-                            Provider
+                          <SortableTableHead
+                            label="Provider"
+                            columnId="provider"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            className="relative"
+                            {...getHeaderProps('provider')}
+                          >
                             <span className="col-resize-handle" {...getResizeHandleProps('provider')} />
-                          </TableHead>
-                          <TableHead className="relative" {...getHeaderProps('email')}>
-                            Email
+                          </SortableTableHead>
+                          <SortableTableHead
+                            label="Email"
+                            columnId="email"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            className="relative"
+                            {...getHeaderProps('email')}
+                          >
                             <span className="col-resize-handle" {...getResizeHandleProps('email')} />
-                          </TableHead>
-                          <TableHead className="relative" {...getHeaderProps('owner')}>
-                            Owner
+                          </SortableTableHead>
+                          <SortableTableHead
+                            label="Owner"
+                            columnId="owner"
+                            sortKey="owner.name"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            className="relative"
+                            {...getHeaderProps('owner')}
+                          >
                             <span className="col-resize-handle" {...getResizeHandleProps('owner')} />
-                          </TableHead>
-                          <TableHead className="relative" {...getHeaderProps('from_name')}>
-                            From Name
+                          </SortableTableHead>
+                          <SortableTableHead
+                            label="From Name"
+                            columnId="from_name"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            className="relative"
+                            {...getHeaderProps('from_name')}
+                          >
                             <span className="col-resize-handle" {...getResizeHandleProps('from_name')} />
-                          </TableHead>
-                          <TableHead className="relative" {...getHeaderProps('access')}>
-                            Access
+                          </SortableTableHead>
+                          <SortableTableHead
+                            label="Access"
+                            columnId="access"
+                            sortKey="access_scope"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            className="relative"
+                            {...getHeaderProps('access')}
+                          >
                             <span className="col-resize-handle" {...getResizeHandleProps('access')} />
-                          </TableHead>
-                          <TableHead className="relative" {...getHeaderProps('status')}>
-                            Status
+                          </SortableTableHead>
+                          <SortableTableHead
+                            label="Status"
+                            columnId="status"
+                            sortKey="is_active"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            className="relative"
+                            {...getHeaderProps('status')}
+                          >
                             <span className="col-resize-handle" {...getResizeHandleProps('status')} />
-                          </TableHead>
-                          <TableHead className="relative" {...getHeaderProps('sync')}>
-                            Sync
+                          </SortableTableHead>
+                          <SortableTableHead
+                            label="Sync"
+                            columnId="sync"
+                            sortKey="is_sync_enabled"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            className="relative"
+                            {...getHeaderProps('sync')}
+                          >
                             <span className="col-resize-handle" {...getResizeHandleProps('sync')} />
-                          </TableHead>
+                          </SortableTableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -534,7 +594,7 @@ export function CoreEmailSettingsPage({
                             </TableCell>
                           </TableRow>
                         ) : (
-                          accounts.map((account: CoreEmailAccount) => (
+                          sortedData.map((account: CoreEmailAccount) => (
                             <TableRow key={account.id}>
                               <TableCell>
                                 <Badge
