@@ -109,11 +109,15 @@ export const getMeetingsService = asyncHandlerClient(
     entityType?: string,
     entityId?: string,
     meetingType?: MeetingType,
+    includeParticipantMeetings?: boolean,
+    participantUserId?: string,
   ) => {
     let url = `/meetings?workspaceId=${workspaceId}`;
     if (entityType) url += `&entityType=${entityType}`;
     if (entityId) url += `&entityId=${entityId}`;
     if (meetingType) url += `&meetingType=${meetingType}`;
+    if (includeParticipantMeetings) url += `&includeParticipantMeetings=true`;
+    if (participantUserId) url += `&participantUserId=${participantUserId}`;
     const res = await CoreApiClient.get(url);
     return (res?.data?.data ?? []) as CoreMeeting[];
   },

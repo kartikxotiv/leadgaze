@@ -43,6 +43,7 @@ import {
 } from '@kit/core/services';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
+import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import {
   Dialog,
@@ -60,12 +61,6 @@ import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
-import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
-import { SortableTableHead } from '@kit/ui/sortable-table-head';
-import { StatusFilterDropdown } from '@kit/ui/status-filter-dropdown';
-import { useColumnVisibility } from '@kit/ui/use-column-visibility';
-import { useColumnResize } from '@kit/ui/use-column-resize';
-import { useTableSort } from '@kit/ui/use-table-sort';
 import {
   Select,
   SelectContent,
@@ -74,6 +69,8 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import { Skeleton } from '@kit/ui/skeleton';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
+import { StatusFilterDropdown } from '@kit/ui/status-filter-dropdown';
 import {
   Table,
   TableBody,
@@ -85,53 +82,15 @@ import {
 import { TablePagination } from '@kit/ui/table-pagination';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useTableSort } from '@kit/ui/use-table-sort';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
 import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
-
-// =============================================================================
-// PROVIDER ICONS
-// =============================================================================
-
-function GoogleMeetIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9z"
-        fill="#4285F4"
-        opacity="0.12"
-      />
-      <path
-        d="M15.5 8.5H14l-2.5 2.5V8.5H8.5v7h3v-2.5L14 15.5h1.5l-3-3.5 3-3.5z"
-        fill="#4285F4"
-      />
-      <path d="M16 9.5v5l2.5 1.5V8l-2.5 1.5z" fill="#34A853" />
-    </svg>
-  );
-}
-
-function ZoomIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect x="2" y="6" width="14" height="12" rx="3" fill="#2D8CFF" />
-      <path d="M16 9.5v5l3.5 2V7.5L16 9.5z" fill="#2D8CFF" />
-      <circle cx="9" cy="12" r="2.5" fill="white" />
-    </svg>
-  );
-}
 
 // =============================================================================
 // CONSTANTS
@@ -253,11 +212,13 @@ const DURATION_OPTIONS = [
   { value: 120, label: '2 hours' },
 ];
 
-const meetingStatuses = (Object.keys(STATUS_CONFIG) as MeetingStatus[]).map(key => ({
-  id: key,
-  status_name: STATUS_CONFIG[key].label,
-  color: STATUS_CONFIG[key].color,
-}));
+const meetingStatuses = (Object.keys(STATUS_CONFIG) as MeetingStatus[]).map(
+  (key) => ({
+    id: key,
+    status_name: STATUS_CONFIG[key].label,
+    color: STATUS_CONFIG[key].color,
+  }),
+);
 
 // =============================================================================
 // HELPERS
@@ -1740,14 +1701,15 @@ export default function MeetingsPage() {
     [],
   );
 
-  const { visibility, toggleVisibility, isVisible, reset } = useColumnVisibility('meetings', {
-    sno: true,
-    title: true,
-    type: true,
-    provider: true,
-    date_time: true,
-    status: true,
-  });
+  const { visibility, toggleVisibility, isVisible, reset } =
+    useColumnVisibility('meetings', {
+      sno: true,
+      title: true,
+      type: true,
+      provider: true,
+      date_time: true,
+      status: true,
+    });
 
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('meetings');
 
@@ -1767,7 +1729,8 @@ export default function MeetingsPage() {
     queryKey: ['meetings', workspace?.id],
     queryFn: () => {
       if (!workspace?.id) return [];
-      return getMeetingsService(workspace.id);
+      // Include meetings where current user is a participant or host
+      return getMeetingsService(workspace.id, undefined, undefined, undefined, true);
     },
     enabled: !!workspace?.id,
   });
@@ -1847,17 +1810,20 @@ export default function MeetingsPage() {
       const matchesSearch =
         meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         meeting.description?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = selectedTypes.length === 0 || selectedTypes.includes(meeting.meeting_type);
-      const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(meeting.status);
+      const matchesType =
+        selectedTypes.length === 0 ||
+        selectedTypes.includes(meeting.meeting_type);
+      const matchesStatus =
+        selectedStatuses.length === 0 ||
+        selectedStatuses.includes(meeting.status);
       return matchesSearch && matchesType && matchesStatus;
     });
   }, [meetings, searchTerm, selectedTypes, selectedStatuses]);
 
-  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<CoreMeeting>(
-    'meetings',
-    filteredMeetings,
-    { onSortChange: () => setCurrentPage(1) },
-  );
+  const { sortColumn, sortDirection, toggleSort, sortedData } =
+    useTableSort<CoreMeeting>('meetings', filteredMeetings, {
+      onSortChange: () => setCurrentPage(1),
+    });
 
   const paginatedMeetings = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
@@ -1906,12 +1872,13 @@ export default function MeetingsPage() {
               key: 'type',
               label: 'Type',
               selectedValues: selectedTypes,
-              selectedLabel: selectedTypes.length === 0
-                ? 'All types'
-                : `${selectedTypes.length} selected`,
+              selectedLabel:
+                selectedTypes.length === 0
+                  ? 'All types'
+                  : `${selectedTypes.length} selected`,
               options: [
                 { value: 'scheduled', label: 'Scheduled' },
-                { value: 'logged', label: 'Logged' }
+                { value: 'logged', label: 'Logged' },
               ],
               onSelectValues: setSelectedTypes,
             },
@@ -1919,16 +1886,17 @@ export default function MeetingsPage() {
               key: 'status',
               label: 'Status',
               selectedValues: selectedStatuses,
-              selectedLabel: selectedStatuses.length === 0
-                ? 'All statuses'
-                : `${selectedStatuses.length} selected`,
-              options: meetingStatuses.map(s => ({
+              selectedLabel:
+                selectedStatuses.length === 0
+                  ? 'All statuses'
+                  : `${selectedStatuses.length} selected`,
+              options: meetingStatuses.map((s) => ({
                 value: s.id,
                 label: s.status_name,
                 color: s.color,
               })),
               onSelectValues: setSelectedStatuses,
-            }
+            },
           ]}
           activeFilterCount={selectedTypes.length + selectedStatuses.length}
           onClearFilters={() => {
@@ -2000,7 +1968,10 @@ export default function MeetingsPage() {
                       className="relative w-12 whitespace-nowrap"
                       {...getHeaderProps('sno')}
                     >
-                      <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('sno')}
+                      />
                     </SortableTableHead>
                   )}
                   {isVisible('title') && (
@@ -2013,7 +1984,10 @@ export default function MeetingsPage() {
                       className="relative"
                       {...getHeaderProps('title')}
                     >
-                      <span className="col-resize-handle" {...getResizeHandleProps('title')} />
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('title')}
+                      />
                     </SortableTableHead>
                   )}
                   {isVisible('type') && (
@@ -2027,7 +2001,10 @@ export default function MeetingsPage() {
                       className="relative"
                       {...getHeaderProps('type')}
                     >
-                      <span className="col-resize-handle" {...getResizeHandleProps('type')} />
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('type')}
+                      />
                     </SortableTableHead>
                   )}
                   {isVisible('provider') && (
@@ -2040,7 +2017,10 @@ export default function MeetingsPage() {
                       className="relative"
                       {...getHeaderProps('provider')}
                     >
-                      <span className="col-resize-handle" {...getResizeHandleProps('provider')} />
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('provider')}
+                      />
                     </SortableTableHead>
                   )}
                   {isVisible('date_time') && (
@@ -2054,7 +2034,10 @@ export default function MeetingsPage() {
                       className="relative"
                       {...getHeaderProps('date_time')}
                     >
-                      <span className="col-resize-handle" {...getResizeHandleProps('date_time')} />
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('date_time')}
+                      />
                     </SortableTableHead>
                   )}
                   {isVisible('status') && (
@@ -2067,7 +2050,10 @@ export default function MeetingsPage() {
                       className="relative"
                       {...getHeaderProps('status')}
                     >
-                      <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('status')}
+                      />
                     </SortableTableHead>
                   )}
                   <TableHead className="sticky right-0 text-right">
@@ -2077,10 +2063,25 @@ export default function MeetingsPage() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <MeetingsPageSkeleton colSpan={visibility ? Object.values(visibility).filter((v) => v !== false).length + 1 : 7} />
+                  <MeetingsPageSkeleton
+                    colSpan={
+                      visibility
+                        ? Object.values(visibility).filter((v) => v !== false)
+                            .length + 1
+                        : 7
+                    }
+                  />
                 ) : paginatedMeetings.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={visibility ? Object.values(visibility).filter((v) => v !== false).length + 1 : 7} className="h-32 text-center">
+                    <TableCell
+                      colSpan={
+                        visibility
+                          ? Object.values(visibility).filter((v) => v !== false)
+                              .length + 1
+                          : 7
+                      }
+                      className="h-32 text-center"
+                    >
                       <p className="text-muted-foreground">
                         {searchTerm
                           ? 'No meetings match your search'

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+import Image from 'next/image';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ExternalLink, Loader2, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -43,47 +45,6 @@ import {
 import { Skeleton } from '@kit/ui/skeleton';
 
 // =============================================================================
-// PROVIDER ICONS
-// =============================================================================
-
-function GoogleMeetIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9z"
-        fill="#4285F4"
-        opacity="0.12"
-      />
-      <path
-        d="M15.5 8.5H14l-2.5 2.5V8.5H8.5v7h3v-2.5L14 15.5h1.5l-3-3.5 3-3.5z"
-        fill="#4285F4"
-      />
-      <path d="M16 9.5v5l2.5 1.5V8l-2.5 1.5z" fill="#34A853" />
-    </svg>
-  );
-}
-
-function ZoomIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect x="2" y="6" width="14" height="12" rx="3" fill="#2D8CFF" />
-      <path d="M16 9.5v5l3.5 2V7.5L16 9.5z" fill="#2D8CFF" />
-      <circle cx="9" cy="12" r="2.5" fill="white" />
-    </svg>
-  );
-}
-
-// =============================================================================
 // TYPES
 // =============================================================================
 
@@ -100,7 +61,16 @@ const PROVIDERS: ProviderConfig[] = [
   {
     id: 'GOOGLE',
     name: 'Google Meet',
-    icon: <GoogleMeetIcon className="h-8 w-8" />,
+    // icon: <GoogleMeetIcon className="h-8 w-8" />,
+    icon: (
+      <Image
+        src={'/images/icons/google-meet.png'}
+        width={32}
+        height={32}
+        className="h-8 w-8"
+        alt="Google Meet"
+      />
+    ),
     description:
       'Connect Google Workspace to schedule meetings via Google Meet and sync with Google Calendar.',
     authPath: '/api/core/integrations/google/auth',
@@ -109,7 +79,16 @@ const PROVIDERS: ProviderConfig[] = [
   {
     id: 'ZOOM',
     name: 'Zoom',
-    icon: <ZoomIcon className="h-8 w-8" />,
+    // icon: <ZoomIcon className="h-8 w-8" />,
+    icon: (
+      <Image
+        src={'/images/icons/zoom.webp'}
+        width={32}
+        height={32}
+        className="h-8 w-8"
+        alt="Google Meet"
+      />
+    ),
     description:
       'Connect Zoom to schedule video meetings using your Zoom account.',
     authPath: '/api/core/integrations/zoom/auth',
@@ -306,9 +285,23 @@ function AccountRow({
       <div className="flex min-w-0 items-center gap-3">
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
           {account.connection?.provider === 'GOOGLE' ? (
-            <GoogleMeetIcon className="h-5 w-5" />
+            // <GoogleMeetIcon className="h-5 w-5" />
+            <Image
+              src={'/images/icons/google-meet.png'}
+              width={32}
+              height={32}
+              className="h-5 w-5"
+              alt="Google Meet"
+            />
           ) : (
-            <ZoomIcon className="h-5 w-5" />
+            // <ZoomIcon className="h-5 w-5" />
+            <Image
+              src={'/images/icons/zoom.webp'}
+              width={32}
+              height={32}
+              className="h-5 w-5"
+              alt="Google Meet"
+            />
           )}
         </div>
         <div className="min-w-0 flex-1">
