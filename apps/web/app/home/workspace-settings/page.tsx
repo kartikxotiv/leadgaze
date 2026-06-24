@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { usePathname, useRouter } from 'next/navigation';
 
-import { Building2, CreditCard, Mail, Settings2, Video } from 'lucide-react';
+import { Building2, CreditCard, Globe, Mail, Settings2, Video } from 'lucide-react';
 
 import { CoreEmailSettingsPage } from '@kit/core/pages';
 import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';

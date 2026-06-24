@@ -794,14 +794,14 @@ export default function LeadDetailsPage() {
                     <DetailInfoRow
                       icon={<Factory className="h-5 w-5" />}
                       label="Industry"
-                      value={lead.industry.industry_name || '-'}
+                      value={lead?.industry?.industry_name ?? '-'}
                     />
 
 
                     <DetailInfoRow
                       icon={<Users className="h-5 w-5" />}
                       label="Company Size"
-                      value={lead.company_size || '-'}
+                      value={lead?.company_size || '-'}
                     />
 
 

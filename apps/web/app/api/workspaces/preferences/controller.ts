@@ -25,6 +25,7 @@ export const getWorkspacePreferences = catchAsync(
     }
 
     const { data, error } = await supabase
+      .schema('core')
       .from('workspace_preferences')
       .select('*')
       .eq('workspace_id', workspaceId)
@@ -99,6 +100,7 @@ export const updateWorkspacePreferences = catchAsync(
 
     // Upsert: insert if not exists, update if exists
     const { data, error } = await supabase
+      .schema('core')
       .from('workspace_preferences')
       .upsert(payload, { onConflict: 'workspace_id' })
       .select()

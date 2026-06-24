@@ -50,6 +50,7 @@ export function LocalizationProvider({
       if (!currentWorkspace?.id) return DEFAULT_PREFERENCES;
 
       const { data, error } = await supabase
+        .schema('core')
         .from('workspace_preferences')
         .select('timezone, date_format, time_format, default_currency')
         .eq('workspace_id', currentWorkspace.id)
