@@ -89,6 +89,7 @@ export const getAccounts = catchAsync(
           status:entity_statuses!crm_accounts_status_id_fkey(id, status_name, status_key, color, icon),
           owner:accounts!crm_accounts_owner_id_fkey(id, email, name),
           created_by_account:accounts!crm_accounts_created_by_fkey(id, email, name),
+          updated_by_account:accounts!crm_accounts_updated_by_fkey(id, email, name),
           industry:crm_industries(id, industry_name),
           account_type_relation:entity_statuses!entity_statuses_account_type_fkey(id, status_name, status_key, color, icon)
         `,

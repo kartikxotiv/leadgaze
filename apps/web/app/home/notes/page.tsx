@@ -497,6 +497,7 @@ export default function NotesPage() {
     sortDirection={sortDirection}
     onSort={toggleSort}
     className="relative"
+    sortable={false}
     {...getHeaderProps('associate')}
   >
     <span className="col-resize-handle" {...getResizeHandleProps('associate')} />
@@ -509,6 +510,7 @@ export default function NotesPage() {
     sortColumn={sortColumn}
     sortDirection={sortDirection}
     onSort={toggleSort}
+    sortable={false}
     className="relative min-w-[300px]"
     {...getHeaderProps('content')}
   >

@@ -272,6 +272,7 @@ export default function AuditLogsPage() {
                             sortColumn={sortColumn}
                             sortDirection={sortDirection}
                             onSort={toggleSort}
+                            sortable={false}
                             className="relative w-[200px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
                             {...getHeaderProps('actor')}
                           >
@@ -285,6 +286,7 @@ export default function AuditLogsPage() {
                             sortColumn={sortColumn}
                             sortDirection={sortDirection}
                             onSort={toggleSort}
+                            sortable={false}
                             className="relative w-[140px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
                             {...getHeaderProps('module')}
                           >
@@ -298,6 +300,7 @@ export default function AuditLogsPage() {
                             sortColumn={sortColumn}
                             sortDirection={sortDirection}
                             onSort={toggleSort}
+                            sortable={false}
                             className="relative w-[120px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
                             {...getHeaderProps('action')}
                           >
@@ -312,6 +315,7 @@ export default function AuditLogsPage() {
                             sortColumn={sortColumn}
                             sortDirection={sortDirection}
                             onSort={toggleSort}
+                            sortable={false}
                             className="relative w-full h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
                             {...getHeaderProps('entity')}
                           >

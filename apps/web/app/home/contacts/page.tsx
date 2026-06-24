@@ -348,6 +348,7 @@ export default function ContactsPage() {
     sortDirection={sortDirection}
     onSort={toggleSort}
     className="relative"
+    sortable={false}
     {...getHeaderProps('phone')}
   >
     <span className="col-resize-handle" {...getResizeHandleProps('phone')} />
