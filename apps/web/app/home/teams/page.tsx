@@ -269,6 +269,7 @@ export default function TeamsPage() {
     sortColumn={sortColumn}
     sortDirection={sortDirection}
     onSort={toggleSort}
+    sortable={false}
     className="relative"
     {...getHeaderProps('name')}
   >
@@ -282,6 +283,7 @@ export default function TeamsPage() {
     sortColumn={sortColumn}
     sortDirection={sortDirection}
     onSort={toggleSort}
+    sortable={false}
     className="relative"
     {...getHeaderProps('description')}
   >
@@ -296,6 +298,7 @@ export default function TeamsPage() {
     sortColumn={sortColumn}
     sortDirection={sortDirection}
     onSort={toggleSort}
+    sortable={false}
     className="relative"
     {...getHeaderProps('members')}
   >

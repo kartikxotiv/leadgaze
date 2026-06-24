@@ -290,6 +290,7 @@ export function ServiceCloudResourcePage({
       toast.error(error.message || `Failed to delete ${title}`);
     }
   };
+  const nonSortableColumns = ['Subject', 'Assignees', 'Phone', 'Website'];
 
   return (
     <>
@@ -343,6 +344,7 @@ export function ServiceCloudResourcePage({
                       columnId={column.key}
                       sortColumn={sortColumn}
                       sortDirection={sortDirection}
+                      sortable={!nonSortableColumns.includes(column?.label)}
                       onSort={toggleSort}
                       className="relative"
                       {...getHeaderProps(column.key)}
