@@ -68,6 +68,15 @@ importers:
       '@kit/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@kit/integration-core':
+        specifier: workspace:*
+        version: link:../../packages/integration-core
+      '@kit/integration-google':
+        specifier: workspace:*
+        version: link:../../packages/integration-google
+      '@kit/integration-zoom':
+        specifier: workspace:*
+        version: link:../../packages/integration-zoom
       '@kit/inventory':
         specifier: workspace:*
         version: link:../../packages/inventory
@@ -231,6 +240,15 @@ importers:
 
   packages/core:
     dependencies:
+      '@kit/integration-core':
+        specifier: workspace:*
+        version: link:../integration-core
+      '@kit/integration-google':
+        specifier: workspace:*
+        version: link:../integration-google
+      '@kit/integration-zoom':
+        specifier: workspace:*
+        version: link:../integration-zoom
       '@kit/next':
         specifier: workspace:*
         version: link:../next
@@ -593,6 +611,62 @@ importers:
       react-i18next:
         specifier: ^16.0.0
         version: 16.0.0(i18next@25.6.0(typescript@5.9.3))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(typescript@5.9.3)
+
+  packages/integration-core:
+    devDependencies:
+      '@kit/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@kit/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@kit/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+
+  packages/integration-google:
+    dependencies:
+      '@kit/integration-core':
+        specifier: workspace:*
+        version: link:../integration-core
+      googleapis:
+        specifier: ^171.1.0
+        version: 171.1.0
+    devDependencies:
+      '@kit/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@kit/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@kit/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/node':
+        specifier: ^24.7.1
+        version: 24.7.1
+
+  packages/integration-zoom:
+    dependencies:
+      '@kit/integration-core':
+        specifier: workspace:*
+        version: link:../integration-core
+      axios:
+        specifier: ^1.16.1
+        version: 1.16.1
+    devDependencies:
+      '@kit/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@kit/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@kit/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/node':
+        specifier: ^24.7.1
+        version: 24.7.1
 
   packages/inventory:
     dependencies:
