@@ -26,6 +26,8 @@ import type { EmployeeDocument } from '../../types/document.type';
 import { useRbac } from '../rbac/rbac-context';
 import { formatDate } from '@kit/shared/utils';
 import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 export function DocumentsDirectoryCard(props: {
   documents: Array<EmployeeDocument>;
@@ -46,52 +48,112 @@ export function DocumentsDirectoryCard(props: {
 
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('hrms-documents');
 
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<EmployeeDocument>(
+    'hrms-documents',
+    props.filteredDocuments
+  );
+
   return (
     <CustomTableContainer>
       <Table>
         <TableHeader>
           <TableRow>
             {props.isColumnVisible('sno') && (
-              <TableHead className="relative w-12 whitespace-nowrap" {...getHeaderProps('sno')}>
-                S. No.
+              <SortableTableHead
+                label="S. No."
+                columnId="sno"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                sortable={false}
+                className="relative w-12 whitespace-nowrap"
+                {...getHeaderProps('sno')}
+              >
                 <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
-              </TableHead>
+              </SortableTableHead>
             )}
             {props.isColumnVisible('document') && (
-              <TableHead className="relative" {...getHeaderProps('document')}>
-                Document
+              <SortableTableHead
+                label="Document"
+                columnId="document"
+                sortKey="name"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('document')}
+              >
                 <span className="col-resize-handle" {...getResizeHandleProps('document')} />
-              </TableHead>
+              </SortableTableHead>
             )}
             {props.isColumnVisible('employee') && (
-              <TableHead className="relative" {...getHeaderProps('employee')}>
-                Employee
+              <SortableTableHead
+                label="Employee"
+                columnId="employee"
+                sortKey="employee.first_name"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('employee')}
+              >
                 <span className="col-resize-handle" {...getResizeHandleProps('employee')} />
-              </TableHead>
+              </SortableTableHead>
             )}
             {props.isColumnVisible('employee_code') && (
-              <TableHead className="relative" {...getHeaderProps('employee_code')}>
-                Employee Code
+              <SortableTableHead
+                label="Employee Code"
+                columnId="employee_code"
+                sortKey="employee.employee_code"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('employee_code')}
+              >
                 <span className="col-resize-handle" {...getResizeHandleProps('employee_code')} />
-              </TableHead>
+              </SortableTableHead>
             )}
             {props.isColumnVisible('uploaded') && (
-              <TableHead className="relative" {...getHeaderProps('uploaded')}>
-                Uploaded
+              <SortableTableHead
+                label="Uploaded"
+                columnId="uploaded"
+                sortKey="uploaded_at"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('uploaded')}
+              >
                 <span className="col-resize-handle" {...getResizeHandleProps('uploaded')} />
-              </TableHead>
+              </SortableTableHead>
             )}
             {props.isColumnVisible('status') && (
-              <TableHead className="relative" {...getHeaderProps('status')}>
-                Status
+              <SortableTableHead
+                label="Status"
+                columnId="status"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('status')}
+              >
                 <span className="col-resize-handle" {...getResizeHandleProps('status')} />
-              </TableHead>
+              </SortableTableHead>
             )}
             {props.isColumnVisible('view') && (
-              <TableHead className="relative" {...getHeaderProps('view')}>
-                View
+              <SortableTableHead
+                label="View"
+                columnId="view"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                sortable={false}
+                className="relative"
+                {...getHeaderProps('view')}
+              >
                 <span className="col-resize-handle" {...getResizeHandleProps('view')} />
-              </TableHead>
+              </SortableTableHead>
             )}
             <TableHead className="sticky right-0 px-4 text-right">
               Actions
@@ -131,7 +193,7 @@ export function DocumentsDirectoryCard(props: {
           ) : null}
 
           {!props.isLoading &&
-            props.filteredDocuments.map((document, index) => (
+            sortedData.map((document, index) => (
               <TableRow key={document.id} className="hover:bg-muted/50">
                 {props.isColumnVisible('sno') && (
                   <TableCell className="text-muted-foreground w-12">

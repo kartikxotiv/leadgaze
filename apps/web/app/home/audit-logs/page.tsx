@@ -31,14 +31,16 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAuditLogsService } from '~/services/audit-logs.service';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 export default function AuditLogsPage() {
   const { currentWorkspace: workspace } = useRBAC();
@@ -117,6 +119,11 @@ export default function AuditLogsPage() {
       (log.entity_name || '').toLowerCase().includes(term),
     );
   }, [data?.logs, debouncedSearchTerm]);
+
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<any>(
+    'audit-logs',
+    logs,
+  );
   const count = data?.count || 0;
   const totalPages = Math.ceil(count / itemsPerPage);
 
@@ -245,34 +252,72 @@ export default function AuditLogsPage() {
                     <TableHeader>
                       <TableRow className="border-b bg-muted/50 hover:bg-muted/50">
                         {isVisible('date_time') && (
-                          <TableHead className="relative w-[160px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap" {...getHeaderProps('date_time')}>
-                            Date & Time
+                          <SortableTableHead
+                            label="Date & Time"
+                            columnId="date_time"
+                            sortKey="created_at"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            className="relative w-[160px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            {...getHeaderProps('date_time')}
+                          >
                             <span className="col-resize-handle" {...getResizeHandleProps('date_time')} />
-                          </TableHead>
+                          </SortableTableHead>
                         )}
                         {isVisible('actor') && (
-                          <TableHead className="relative w-[200px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap" {...getHeaderProps('actor')}>
-                            Actor
+                          <SortableTableHead
+                            label="Actor"
+                            columnId="actor"
+                            sortKey="actor.name"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            className="relative w-[200px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            {...getHeaderProps('actor')}
+                          >
                             <span className="col-resize-handle" {...getResizeHandleProps('actor')} />
-                          </TableHead>
+                          </SortableTableHead>
                         )}
                         {isVisible('module') && (
-                          <TableHead className="relative w-[140px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap" {...getHeaderProps('module')}>
-                            Module
+                          <SortableTableHead
+                            label="Module"
+                            columnId="module"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            className="relative w-[140px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            {...getHeaderProps('module')}
+                          >
                             <span className="col-resize-handle" {...getResizeHandleProps('module')} />
-                          </TableHead>
+                          </SortableTableHead>
                         )}
                         {isVisible('action') && (
-                          <TableHead className="relative w-[120px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap" {...getHeaderProps('action')}>
-                            Action
+                          <SortableTableHead
+                            label="Action"
+                            columnId="action"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            className="relative w-[120px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            {...getHeaderProps('action')}
+                          >
                             <span className="col-resize-handle" {...getResizeHandleProps('action')} />
-                          </TableHead>
+                          </SortableTableHead>
                         )}
                         {isVisible('entity') && (
-                          <TableHead className="relative w-full h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap" {...getHeaderProps('entity')}>
-                            Entity
+                          <SortableTableHead
+                            label="Entity"
+                            columnId="entity"
+                            sortKey="entity_name"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            className="relative w-full h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            {...getHeaderProps('entity')}
+                          >
                             <span className="col-resize-handle" {...getResizeHandleProps('entity')} />
-                          </TableHead>
+                          </SortableTableHead>
                         )}
                         <TableHead className="sticky-right-header w-[80px] h-11 text-xs uppercase tracking-wider font-semibold text-right whitespace-nowrap">
                           Details
@@ -317,7 +362,7 @@ export default function AuditLogsPage() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        logs.map((log: any) => (
+                        sortedData.map((log: any) => (
                           <TableRow
                             key={log.id}
                             className="group hover:bg-muted/30 transition-colors border-b last:border-0"

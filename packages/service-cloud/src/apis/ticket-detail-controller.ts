@@ -189,6 +189,8 @@ export const getServiceCloudTicketDetailController = catchAsync(
       new Set(
         [
           ...serviceCloudMemberIds,
+          ticket.created_by,
+          ticket.updated_by,
           ...(ticketAssignees.data ?? []).map(
             (assignee: any) => assignee.account_id,
           ),
@@ -258,7 +260,11 @@ export const getServiceCloudTicketDetailController = catchAsync(
       });
 
     return successDataResponse('Ticket detail retrieved successfully', {
-      ticket,
+      ticket: {
+        ...ticket,
+        created_by_account: memberAccountById.get(ticket.created_by) ?? null,
+        updated_by_account: memberAccountById.get(ticket.updated_by) ?? null,
+      },
       emails,
       timeEntries: (timeEntries.data ?? []).map((entry: any) => ({
         ...entry,

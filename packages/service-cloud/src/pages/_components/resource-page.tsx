@@ -50,6 +50,8 @@ import {
 import { TablePagination } from '@kit/ui/table-pagination';
 import { cn } from '@kit/ui/utils';
 import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 import {
   type ServiceCloudRecord,
@@ -208,10 +210,17 @@ export function ServiceCloudResourcePage({
   // Pagination derived values
   const totalCount = filteredData.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<ServiceCloudRecord>(
+    `sc-${resource}`,
+    filteredData,
+    { onSortChange: () => setCurrentPage(1) }
+  );
+
   const paginatedData = useMemo(
     () =>
-      filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize),
-    [filteredData, currentPage, pageSize],
+      sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [sortedData, currentPage, pageSize],
   );
 
   const openCreate = () => {
@@ -328,10 +337,18 @@ export function ServiceCloudResourcePage({
               <TableHeader>
                 <TableRow>
                   {columns.map((column) => (
-                    <TableHead className="relative" key={column.key} {...getHeaderProps(column.key)}>
-                      {column.label}
+                    <SortableTableHead
+                      key={column.key}
+                      label={column.label}
+                      columnId={column.key}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps(column.key)}
+                    >
                       <span className="col-resize-handle" {...getResizeHandleProps(column.key)} />
-                    </TableHead>
+                    </SortableTableHead>
                   ))}
                   {canEdit || canDelete ? (
                     <TableHead className="sticky-right-header text-right">Actions</TableHead>
