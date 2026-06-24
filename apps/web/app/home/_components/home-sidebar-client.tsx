@@ -310,11 +310,7 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
               path: '/home/sales/document',
               Icon: <FileText className="h-4 w-4" />,
             },
-            {
-              label: 'Teams',
-              path: pathsConfig.app.teams,
-              Icon: <Users className="h-4 w-4" />,
-            },
+
           ],
         },
         {
@@ -383,11 +379,7 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
             path: '/home/sales/document',
             Icon: <FileText className="h-4 w-4" />,
           },
-          {
-            label: 'Teams',
-            path: pathsConfig.app.teams,
-            Icon: <Users className="h-4 w-4" />,
-          },
+
         ],
       },
 

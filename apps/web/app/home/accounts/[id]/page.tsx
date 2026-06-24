@@ -444,17 +444,20 @@ export default function AccountDetailsPage() {
                   <div className="flex items-center gap-1.5 text-xs text-gray-500">
                     <Clock className="h-3 w-3" />
                     <span>
-                      Created on{' '}
-                      {new Date(account.created_at).toLocaleDateString(
-                        undefined,
-                        {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        },
-                      )}
+                      Created by {account.created_by_account?.name || 'Unknown'} on {formatDate(account.created_at)}
                     </span>
                   </div>
+                  {account.updated_by && (
+                    <>
+                      <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          Updated by {account.updated_by_account?.name || 'Unknown'} on {formatDate(account.updated_at)}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </>
               }
             />
@@ -666,85 +669,82 @@ export default function AccountDetailsPage() {
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
                   <DetailInfoList>
-                    {account.phone_number && (
+                    
                       <DetailInfoRow
                         icon={<Phone className="h-5 w-5" />}
                         label="Phone"
                         value={
-                          <a
+                          account.phone_number ? (<a
                             href={`tel:${account.phone_number}`}
                             className="text-blue-600 hover:underline dark:text-blue-400"
                           >
                             {account.phone_number}
-                          </a>
+                          </a>) : '-'  
                         }
                       />
-                    )}
-                    {(account.company_size || account.employee_count) && (
+                    
+                    
                       <DetailInfoRow
                         icon={<Users className="h-5 w-5" />}
                         label="Employees"
-                        value={account.company_size || account.employee_count}
+                        value={(account.company_size || account.employee_count) ? (account.company_size || account.employee_count) : '-'}
                       />
-                    )}
-                    {account.annual_revenue && (
+                    
                       <DetailInfoRow
                         icon={<DollarSign className="h-5 w-5" />}
                         label="Revenue"
-                        value={new Intl.NumberFormat('en-US', {
+                        value={account.annual_revenue ? (new Intl.NumberFormat('en-US', {
                           style: 'currency',
                           currency: 'USD',
-                        }).format(account.annual_revenue)}
+                        }).format(account.annual_revenue)) : '-'}
                       />
-                    )}
-                    {account.account_type && (
+                    
                       <DetailInfoRow
                         icon={<Tag className="h-5 w-5" />}
                         label="Type"
                         value={
-                          <span className="capitalize">
+                          account.account_type ? (<span className="capitalize">
                             {account.account_type_relation.status_name}
-                          </span>
+                          </span>) : '-'
                         }
                       />
-                    )}
-                    {account.linkedin_url && (
+                    
+                    
                       <DetailInfoRow
                         icon={<Linkedin className="h-5 w-5" />}
                         label="LinkedIn"
                         value={
-                          <a
+                          account.linkedin_url ? (<a
                             href={account.linkedin_url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:underline dark:text-blue-400"
                           >
                             {account.linkedin_url}
-                          </a>
+                          </a>) : '-'  
                         }
                       />
-                    )}
-                    {account.description && (
+                    
+                    
                       <DetailInfoRow
                         icon={<FileText className="h-5 w-5" />}
                         label="Description"
-                        value={account.description}
+                        value={account.description || '-'}
                       />
-                    )}
-                    {billingAddress && (
+                    
+                    
                       <DetailInfoRow
                         icon={<MapPin className="h-5 w-5" />}
                         label="Billing"
-                        value={billingAddress}
+                        value={billingAddress || '-'}
                       />
-                    )}
-                    {shippingAddress && (
+                    
                       <DetailInfoRow
                         icon={<MapPin className="h-5 w-5" />}
                         label="Shipping"
-                        value={shippingAddress}
+                        value={shippingAddress || '-'}
                       />
-                    )}
+                    
                   </DetailInfoList>
                 </AccordionContent>
               </AccordionItem>
@@ -1006,35 +1006,34 @@ export default function AccountDetailsPage() {
                     <DetailInfoRow
                       icon={<Calendar className="h-5 w-5" />}
                       label="Created At"
-                      value={formatDate(account.created_at)}
+                      value={account.created_at ? formatDate(account.created_at) : '-'}
                     />
                     <DetailInfoRow
                       icon={<Calendar className="h-5 w-5" />}
                       label="Updated"
-                      value={formatDate(account.updated_at)}
+                      value={account.updated_at ? formatDate(account.updated_at) : '-'}
                     />
-                    {account.twitter_handle && (
+                    
                       <DetailInfoRow
                         icon={<Globe className="h-5 w-5" />}
                         label="Twitter"
                         value={
-                          <a
+                          account.twitter_handle ? (<a
                             href={`https://twitter.com/${account.twitter_handle.replace('@', '')}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:underline dark:text-blue-400"
                           >
                             @{account.twitter_handle.replace('@', '')}
-                          </a>
+                          </a>) : '-'
                         }
                       />
-                    )}
-                    {account.tags && account.tags.length > 0 && (
                       <DetailInfoRow
                         icon={<FileText className="h-5 w-5" />}
                         label="Tags"
                         value={
-                          <div className="flex flex-wrap gap-1">
+                          (account.tags && account.tags.length > 0) ? (
+                            <div className="flex flex-wrap gap-1">
                             {account.tags.map((tag: string) => (
                               <Badge
                                 key={tag}
@@ -1044,10 +1043,8 @@ export default function AccountDetailsPage() {
                                 {tag}
                               </Badge>
                             ))}
-                          </div>
-                        }
-                      />
-                    )}
+                          </div>) : '-'}
+                      />                    
                   </DetailInfoList>
                 </AccordionContent>
               </AccordionItem>

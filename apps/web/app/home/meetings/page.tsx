@@ -61,6 +61,8 @@ import {
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import { Skeleton } from '@kit/ui/skeleton';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
@@ -333,10 +335,16 @@ export default function MeetingsPage() {
     });
   }, [meetings, searchTerm, statusFilter, dateRange]);
 
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Meeting>(
+    'meetings',
+    filteredMeetings,
+    { onSortChange: () => setCurrentPage(1) }
+  );
+
   const paginatedMeetings = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return filteredMeetings.slice(start, start + itemsPerPage);
-  }, [filteredMeetings, currentPage, itemsPerPage]);
+    return sortedData.slice(start, start + itemsPerPage);
+  }, [sortedData, currentPage, itemsPerPage]);
 
   const totalPages = Math.ceil(filteredMeetings.length / itemsPerPage);
   const totalCount = filteredMeetings.length;
@@ -611,64 +619,138 @@ export default function MeetingsPage() {
               <TableHeader>
                 <TableRow>
                   {isVisible('sno') && (
-  <TableHead className="relative w-12 whitespace-nowrap" {...getHeaderProps('sno')}>
-    S. No.
+  <SortableTableHead
+    label="S. No."
+    columnId="sno"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    sortable={false}
+    className="relative w-12 whitespace-nowrap"
+    {...getHeaderProps('sno')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('title') && (
-  <TableHead className="relative" {...getHeaderProps('title')}>
-    Meeting Title
+  <SortableTableHead
+    label="Meeting Title"
+    columnId="title"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('title')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('title')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('description') && (
-  <TableHead className="relative" {...getHeaderProps('description')}>
-    Description
+  <SortableTableHead
+    label="Description"
+    columnId="description"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('description')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('description')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('location') && (
-  <TableHead className="relative" {...getHeaderProps('location')}>
-    Location
+  <SortableTableHead
+    label="Location"
+    columnId="location"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('location')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('location')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('meeting_link') && (
-  <TableHead className="relative" {...getHeaderProps('meeting_link')}>
-    Meeting Link
+  <SortableTableHead
+    label="Meeting Link"
+    columnId="meeting_link"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('meeting_link')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('meeting_link')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('host') && (
-  <TableHead className="relative" {...getHeaderProps('host')}>
-    Host
+  <SortableTableHead
+    label="Host"
+    columnId="host"
+    sortKey="created_by_user.name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('host')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('host')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('created_at') && (
-  <TableHead className="relative" {...getHeaderProps('created_at')}>
-    Created On
+  <SortableTableHead
+    label="Created On"
+    columnId="created_at"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('created_at')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('updated_by') && (
-  <TableHead className="relative" {...getHeaderProps('updated_by')}>
-    Last Updated By
+  <SortableTableHead
+    label="Last Updated By"
+    columnId="updated_by"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('updated_by')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('date_time') && (
-  <TableHead className="relative" {...getHeaderProps('date_time')}>
-    Date & Time
+  <SortableTableHead
+    label="Date & Time"
+    columnId="date_time"
+    sortKey="start_time"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('date_time')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('date_time')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('entity') && (
-  <TableHead className="relative" {...getHeaderProps('entity')}>
-    Entity
+  <SortableTableHead
+    label="Entity"
+    columnId="entity"
+    sortKey="entity_name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('entity')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('entity')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   <TableHead className="sticky-right-header">Actions</TableHead>
                 </TableRow>

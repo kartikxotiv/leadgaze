@@ -57,6 +57,8 @@ import {
 import { Textarea } from '@kit/ui/textarea';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import { Skeleton } from '@kit/ui/skeleton';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
@@ -283,10 +285,16 @@ export default function NotesPage() {
     });
   }, [notes, searchTerm, categoryFilter]);
 
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Note>(
+    'notes',
+    filteredNotes,
+    { onSortChange: () => setCurrentPage(1) }
+  );
+
   const paginatedNotes = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return filteredNotes.slice(start, start + itemsPerPage);
-  }, [filteredNotes, currentPage, itemsPerPage]);
+    return sortedData.slice(start, start + itemsPerPage);
+  }, [sortedData, currentPage, itemsPerPage]);
 
   const totalPages = Math.ceil(filteredNotes.length / itemsPerPage);
   const totalCount = filteredNotes.length;
@@ -453,58 +461,125 @@ export default function NotesPage() {
               <TableHeader>
                 <TableRow>
                   {isVisible('sno') && (
-  <TableHead className="relative w-12 whitespace-nowrap" {...getHeaderProps('sno')}>
-    S. No.
+  <SortableTableHead
+    label="S. No."
+    columnId="sno"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    sortable={false}
+    className="relative w-12 whitespace-nowrap"
+    {...getHeaderProps('sno')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('category') && (
-  <TableHead className="relative" {...getHeaderProps('category')}>
-    Category
+  <SortableTableHead
+    label="Category"
+    columnId="category"
+    sortKey="entity_type"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('category')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('category')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('associate') && (
-  <TableHead className="relative" {...getHeaderProps('associate')}>
-    Associate With
+  <SortableTableHead
+    label="Associate With"
+    columnId="associate"
+    sortKey="entity_name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('associate')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('associate')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('content') && (
-  <TableHead className="relative min-w-[300px]" {...getHeaderProps('content')}>
-    Note Content
+  <SortableTableHead
+    label="Note Content"
+    columnId="content"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative min-w-[300px]"
+    {...getHeaderProps('content')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('content')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('author') && (
-  <TableHead className="relative" {...getHeaderProps('author')}>
-    Author
+  <SortableTableHead
+    label="Author"
+    columnId="author"
+    sortKey="created_by_user.name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('author')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('author')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('updated_at') && (
-  <TableHead className="relative" {...getHeaderProps('updated_at')}>
-    Updated At
+  <SortableTableHead
+    label="Updated At"
+    columnId="updated_at"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('updated_at')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('updated_at')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('created_by') && (
-  <TableHead className="relative" {...getHeaderProps('created_by')}>
-    Created By
+  <SortableTableHead
+    label="Created By"
+    columnId="created_by"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('created_by')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('created_by')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('created_at') && (
-  <TableHead className="relative" {...getHeaderProps('created_at')}>
-    Created On
+  <SortableTableHead
+    label="Created On"
+    columnId="created_at"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('created_at')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('updated_by') && (
-  <TableHead className="relative" {...getHeaderProps('updated_by')}>
-    Last Updated By
+  <SortableTableHead
+    label="Last Updated By"
+    columnId="updated_by"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('updated_by')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   <TableHead className="sticky-right-header">Actions</TableHead>
                 </TableRow>

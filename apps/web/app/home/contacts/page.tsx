@@ -22,6 +22,8 @@ import {
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 
 import { Skeleton } from '@kit/ui/skeleton';
@@ -162,6 +164,12 @@ export default function ContactsPage() {
   const contacts = contactsData.data;
   const totalCount = contactsData.count;
 
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Contact>(
+    'contacts',
+    contacts,
+    { onSortChange: () => setCurrentPage(1) }
+  );
+
   // Reset to first page when search changes
   React.useEffect(() => {
     setCurrentPage(1);
@@ -169,7 +177,7 @@ export default function ContactsPage() {
 
   // Pagination Logic
   const totalPages = Math.ceil(totalCount / itemsPerPage);
-  const paginatedContacts = contacts; // Data is already paginated from server
+  const paginatedContacts = sortedData; // Data is already paginated from server
 
   if (!workspace) {
     return null;
@@ -252,76 +260,167 @@ export default function ContactsPage() {
                       <TableHeader>
                       <TableRow>
                         {isVisible('sno') && (
-  <TableHead className="relative w-12 whitespace-nowrap" {...getHeaderProps('sno')}>
-    S. No.
+  <SortableTableHead
+    label="S. No."
+    columnId="sno"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    sortable={false}
+    className="relative w-12 whitespace-nowrap"
+    {...getHeaderProps('sno')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                         {isVisible('name') && (
-  <TableHead className="relative" {...getHeaderProps('name')}>
-    Name
+  <SortableTableHead
+    label="Name"
+    columnId="name"
+    sortKey="first_name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('name')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('name')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                         {isVisible('first_name') && (
-  <TableHead className="relative" {...getHeaderProps('first_name')}>
-    First Name
+  <SortableTableHead
+    label="First Name"
+    columnId="first_name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('first_name')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('first_name')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                         {isVisible('last_name') && (
-  <TableHead className="relative" {...getHeaderProps('last_name')}>
-    Last Name
+  <SortableTableHead
+    label="Last Name"
+    columnId="last_name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('last_name')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('last_name')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                         {isVisible('job_title') && (
-  <TableHead className="relative" {...getHeaderProps('job_title')}>
-    Job Title
+  <SortableTableHead
+    label="Job Title"
+    columnId="job_title"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('job_title')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('job_title')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                         {isVisible('email') && (
-  <TableHead className="relative" {...getHeaderProps('email')}>
-    Email
+  <SortableTableHead
+    label="Email"
+    columnId="email"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('email')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('email')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                         {isVisible('phone') && (
-  <TableHead className="relative" {...getHeaderProps('phone')}>
-    Phone
+  <SortableTableHead
+    label="Phone"
+    columnId="phone"
+    sortKey="phone_number"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('phone')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('phone')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                         {isVisible('account') && (
-  <TableHead className="relative" {...getHeaderProps('account')}>
-    Account
+  <SortableTableHead
+    label="Account"
+    columnId="account"
+    sortKey="account.account_name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('account')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('account')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                         {isVisible('owner') && (
-  <TableHead className="relative" {...getHeaderProps('owner')}>
-    Owner
+  <SortableTableHead
+    label="Owner"
+    columnId="owner"
+    sortKey="owner.name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('owner')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('owner')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                         {isVisible('created_by') && (
-  <TableHead className="relative" {...getHeaderProps('created_by')}>
-    Created By
+  <SortableTableHead
+    label="Created By"
+    columnId="created_by"
+    sortKey="created_by_account.name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('created_by')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('created_by')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                         {isVisible('created_at') && (
-  <TableHead className="relative" {...getHeaderProps('created_at')}>
-    Created On
+  <SortableTableHead
+    label="Created On"
+    columnId="created_at"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('created_at')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                         {isVisible('updated_by') && (
-  <TableHead className="relative" {...getHeaderProps('updated_by')}>
-    Last Updated By
+  <SortableTableHead
+    label="Last Updated By"
+    columnId="updated_by"
+    sortKey="updated_by_account.name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('updated_by')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                         <TableHead className="sticky-right-header">
                           Actions
