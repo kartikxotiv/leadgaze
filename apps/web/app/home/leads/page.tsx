@@ -285,16 +285,16 @@ export default function LeadsPage() {
           {/* Status filter dropdown + toolbar */}
         <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
           <ListToolBar
-            statusSlot={
-              <StatusFilterDropdown
-                statuses={statuses}
-                selectedStatuses={selectedStatuses}
-                onStatusesChange={setSelectedStatuses}
-                statusBreakdown={leadsData.statusBreakdown}
-                totalCount={totalCount}
-                allLabel="All Leads"
-              />
-            }
+            // statusSlot={
+            //   <StatusFilterDropdown
+            //     statuses={statuses}
+            //     selectedStatuses={selectedStatuses}
+            //     onStatusesChange={setSelectedStatuses}
+            //     statusBreakdown={leadsData.statusBreakdown}
+            //     totalCount={totalCount}
+            //     allLabel="All Leads"
+            //   />
+            // }
             showSearch
             searchPlaceholder="Search leads..."
             searchValue={searchTerm}
@@ -345,14 +345,14 @@ export default function LeadsPage() {
               setSelectedCreatedByIds([]);
             }}
             actions={[
-              {
-                key: 'import',
-                label: 'Import',
-                icon: FileUp,
-                onClick: () => setIsImportDialogOpen(true),
-                show: canAccess('leads', 'import'),
-                buttonVariant: 'outline',
-              },
+              // {
+              //   key: 'import',
+              //   label: 'Import',
+              //   icon: FileUp,
+              //   onClick: () => setIsImportDialogOpen(true),
+              //   show: canAccess('leads', 'import'),
+              //   buttonVariant: 'outline',
+              // },
               {
                 key: 'add',
                 label: 'New Lead',
@@ -494,6 +494,7 @@ export default function LeadsPage() {
                               sortDirection={sortDirection}
                               onSort={toggleSort}
                               className="relative"
+                              sortable={false}
                               {...getHeaderProps('phone')}
                             >
                               <span className="col-resize-handle" {...getResizeHandleProps('phone')} />
@@ -508,6 +509,7 @@ export default function LeadsPage() {
                               sortDirection={sortDirection}
                               onSort={toggleSort}
                               className="relative"
+                              sortable={false}
                               {...getHeaderProps('mobile')}
                             >
                               <span className="col-resize-handle" {...getResizeHandleProps('mobile')} />
@@ -534,6 +536,7 @@ export default function LeadsPage() {
                               sortColumn={sortColumn}
                               sortDirection={sortDirection}
                               onSort={toggleSort}
+                              sortable={false}
                               className="relative"
                               {...getHeaderProps('company_website')}
                             >
@@ -548,6 +551,7 @@ export default function LeadsPage() {
                               sortColumn={sortColumn}
                               sortDirection={sortDirection}
                               onSort={toggleSort}
+                              sortable={false}
                               className="relative"
                               {...getHeaderProps('company_linkedin')}
                             >
@@ -562,6 +566,7 @@ export default function LeadsPage() {
                               sortColumn={sortColumn}
                               sortDirection={sortDirection}
                               onSort={toggleSort}
+                              sortable={false}
                               className="relative"
                               {...getHeaderProps('linkedin')}
                             >
@@ -629,6 +634,7 @@ export default function LeadsPage() {
                               sortDirection={sortDirection}
                               onSort={toggleSort}
                               className="relative"
+                              sortable={false}
                               {...getHeaderProps('timezone')}
                             >
                               <span className="col-resize-handle" {...getResizeHandleProps('timezone')} />
@@ -683,6 +689,7 @@ export default function LeadsPage() {
                               sortDirection={sortDirection}
                               onSort={toggleSort}
                               className="relative"
+                              sortable={false}
                               {...getHeaderProps('notes')}
                             >
                               <span className="col-resize-handle" {...getResizeHandleProps('notes')} />

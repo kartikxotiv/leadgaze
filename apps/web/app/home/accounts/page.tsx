@@ -308,6 +308,7 @@ export default function AccountsPage() {
     sortColumn={sortColumn}
     sortDirection={sortDirection}
     onSort={toggleSort}
+    sortable={false}
     className="relative"
     {...getHeaderProps('website')}
   >
@@ -337,6 +338,7 @@ export default function AccountsPage() {
     sortDirection={sortDirection}
     onSort={toggleSort}
     className="relative"
+    sortable={false}
     {...getHeaderProps('phone')}
   >
     <span className="col-resize-handle" {...getResizeHandleProps('phone')} />
@@ -428,6 +430,7 @@ export default function AccountsPage() {
     sortDirection={sortDirection}
     onSort={toggleSort}
     className="relative"
+    sortable={false}
     {...getHeaderProps('description')}
   >
     <span className="col-resize-handle" {...getResizeHandleProps('description')} />

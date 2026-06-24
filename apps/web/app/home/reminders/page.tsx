@@ -696,6 +696,7 @@ export default function RemindersPage() {
     sortDirection={sortDirection}
     onSort={toggleSort}
     className="relative"
+    sortable={false}
     {...getHeaderProps('description')}
   >
     <span className="col-resize-handle" {...getResizeHandleProps('description')} />

@@ -92,10 +92,6 @@ function getModuleCommonPaths(moduleBasePath: string) {
     profileSettings: `${moduleBasePath}/profile-settings`,
     workspaceSettings: `${moduleBasePath}/workspace-settings`,
     teamMembers: `${moduleBasePath}/team-members`,
-    teams:
-      moduleBasePath === '/home/services'
-        ? `${moduleBasePath}/workspace-teams`
-        : `${moduleBasePath}/teams`,
     roles: `${moduleBasePath}/roles`,
     auditLogs: `${moduleBasePath}/audit-logs`,
   };
@@ -107,7 +103,9 @@ function scopeCommonItems<T extends { path?: string }>(
 ) {
   const paths = getModuleCommonPaths(moduleBasePath);
 
-  return items.map((item) => {
+  return items
+    .filter((item) => item.path !== pathsConfig.app.teams)
+    .map((item) => {
     if (item.path === pathsConfig.app.profileSettings) {
       return {
         ...item,
@@ -119,13 +117,6 @@ function scopeCommonItems<T extends { path?: string }>(
       return {
         ...item,
         path: paths.teamMembers,
-      };
-    }
-
-    if (item.path === pathsConfig.app.teams) {
-      return {
-        ...item,
-        path: paths.teams,
       };
     }
 

@@ -527,6 +527,7 @@ export default function DocumentPage() {
     sortColumn={sortColumn}
     sortDirection={sortDirection}
     onSort={toggleSort}
+    sortable={false}
     className="relative"
     {...getHeaderProps('name')}
   >

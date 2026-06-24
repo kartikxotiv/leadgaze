@@ -141,6 +141,7 @@ export function CoreEmailTemplatesTab({
                   sortColumn={sortColumn}
                   sortDirection={sortDirection}
                   onSort={toggleSort}
+                  sortable={false}
                   className="relative"
                   {...getHeaderProps('subject')}
                 >
