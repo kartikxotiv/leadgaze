@@ -34,7 +34,7 @@ import {
   CoreEntityPanel,
 } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
-import { formatDate, formatDateOnly, formatDateTime } from '@kit/shared/utils';
+import { useLocalization } from '@kit/shared/localization';
 import {
   Accordion,
   AccordionContent,
@@ -169,6 +169,7 @@ export function ServiceCloudTicketDetailPage({
   workspaceId: string;
   ticketId: string;
 }) {
+  const { formatDate, formatDateOnly, formatDateTime } = useLocalization();
   const queryClient = useQueryClient();
   const { canAccess, isLoading: permissionsLoading } =
     useServiceCloudPermissions(workspaceId);

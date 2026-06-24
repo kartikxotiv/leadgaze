@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { usePathname } from 'next/navigation';
-import { format } from 'date-fns';
 import { Eye } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
@@ -37,6 +36,7 @@ import { useTableSort } from '@kit/ui/use-table-sort';
 import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAuditLogsService } from '~/services/audit-logs.service';
@@ -44,6 +44,7 @@ import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 export default function AuditLogsPage() {
   const { currentWorkspace: workspace } = useRBAC();
+  const { formatDate, formatDateTime } = useLocalization();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const [selectedModule, setSelectedModule] = useState<string>('all');
@@ -374,16 +375,15 @@ export default function AuditLogsPage() {
                               <TableCell className="py-3 align-middle">
                                 <div className="flex flex-col gap-0.5">
                                   <span className="text-sm font-medium">
-                                    {format(
-                                      new Date(log.created_at),
-                                      'MMM d, yyyy',
-                                    )}
+                                    {formatDate(log.created_at)}
                                   </span>
                                   <span className="text-muted-foreground text-xs font-normal">
-                                    {format(
-                                      new Date(log.created_at),
-                                      'hh:mm:ss a',
-                                    )}
+                                    {new Intl.DateTimeFormat(undefined, {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      second: '2-digit',
+                                      hour12: true,
+                                    }).format(new Date(log.created_at))}
                                   </span>
                                 </div>
                               </TableCell>

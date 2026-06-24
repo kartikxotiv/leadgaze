@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { formatDate, formatDateTime } from '@kit/shared/utils';
 import { Button } from '@kit/ui/button';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
@@ -31,6 +30,7 @@ import {
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { useHasPermission } from '~/lib/permissions/use-permissions';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 
@@ -58,6 +58,7 @@ interface EntityActivityProps {
 
 export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
   const { currentWorkspace: workspace } = useRBAC();
+  const { formatDate } = useLocalization();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -342,6 +343,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
 
 export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
   const { currentWorkspace: workspace } = useRBAC();
+  const { formatDate } = useLocalization();
 
   const moduleKey = useMemo(() => {
     const mapping: Record<string, string> = {
@@ -663,6 +665,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
 
 export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
   const { currentWorkspace: workspace } = useRBAC();
+  const { formatDate } = useLocalization();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);

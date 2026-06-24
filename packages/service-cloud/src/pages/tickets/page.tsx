@@ -8,7 +8,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Check, Filter, Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '@kit/shared/localization';
 import { Avatar, AvatarFallback, AvatarImage } from '@kit/ui/avatar';
 import { Button } from '@kit/ui/button';
 import {
@@ -100,6 +100,7 @@ export function ServiceCloudTicketsPage({
 }: {
   workspaceId: string;
 }) {
+  const { formatDate } = useLocalization();
   const [createOpen, setCreateOpen] = useState(false);
   const [assignedToMeOnly, setAssignedToMeOnly] = useState(false);
   const { canAccess, isLoading } = useServiceCloudPermissions(workspaceId);

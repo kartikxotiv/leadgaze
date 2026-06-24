@@ -58,6 +58,7 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
   DashboardMetrics,
@@ -74,6 +75,7 @@ import { Skeleton } from '@kit/ui/skeleton';
 
 export default function DashboardDemo() {
   const { currentWorkspace } = useRBAC();
+  const { formatCurrency } = useLocalization();
   const workspaceId = currentWorkspace?.id;
 
   const {
@@ -199,11 +201,7 @@ export default function DashboardDemo() {
                 className="hover:underline"
               >
                 <Figure>
-                  {new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                    maximumFractionDigits: 0,
-                  }).format(metrics.opportunities.totalAmount)}
+                  {formatCurrency(metrics.opportunities.totalAmount)}
                 </Figure>
               </Link>
             </div>
@@ -381,6 +379,8 @@ function PipelineOverview({ metrics }: { metrics: DashboardMetrics }) {
 }
 
 function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
+  const { formatDate } = useLocalization();
+
   const formatDueDateShort = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -400,7 +400,7 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
     if (dayDiff > 1) return `In ${dayDiff} days`;
     if (dayDiff === -1) return 'Yesterday';
     if (dayDiff < -1) return 'Overdue';
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return formatDate(dateString);
   };
 
   const getTaskPriority = (task: DashboardTask) => {

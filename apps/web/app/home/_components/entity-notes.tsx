@@ -6,7 +6,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileText, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { formatDate } from '@kit/shared/utils';
 import { Button } from '@kit/ui/button';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
@@ -19,6 +18,7 @@ import {
 } from '@kit/ui/dialog';
 import { Textarea } from '@kit/ui/textarea';
 
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { useHasPermission } from '~/lib/permissions/use-permissions';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 
@@ -37,6 +37,7 @@ interface EntityNotesProps {
 
 export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
   const { currentWorkspace: workspace } = useRBAC();
+  const { formatDate } = useLocalization();
 
   const moduleKey = useMemo(() => {
     const mapping: Record<string, string> = {

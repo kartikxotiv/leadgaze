@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { usePathname, useRouter } from 'next/navigation';
 
-import { Building2, CreditCard, Mail, Settings2, Video } from 'lucide-react';
+import { Building2, CreditCard, Globe, Mail, Settings2, Video } from 'lucide-react';
 
 import { CoreEmailSettingsPage } from '@kit/core/pages';
 import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
@@ -23,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import OrgSubscriptionPage from '~/org/subscription/page';
 
+import { WorkspaceLocalizationSettings } from './_components/localization-settings';
 import { MeetingAccountsSettings } from './_components/meeting-accounts-settings';
 
 type WorkspaceSummary = {
@@ -213,6 +214,15 @@ export default function WorkspaceSettingsPage() {
                 General
               </TabsTrigger>
             )}
+            {canViewSettings && (
+              <TabsTrigger
+                value="localization"
+                className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+              >
+                <Globe className="mr-2 h-4 w-4" />
+                Localization
+              </TabsTrigger>
+            )}
             {canViewSubscription && (
               <TabsTrigger
                 value="billing"
@@ -245,6 +255,12 @@ export default function WorkspaceSettingsPage() {
           {canViewSettings && (
             <TabsContent value="general">
               <WorkspaceManagement currentWorkspace={workspace} />
+            </TabsContent>
+          )}
+
+          {canViewSettings && workspace?.id && (
+            <TabsContent value="localization">
+              <WorkspaceLocalizationSettings workspaceId={workspace.id} />
             </TabsContent>
           )}
 

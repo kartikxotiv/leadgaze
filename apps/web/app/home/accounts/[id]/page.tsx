@@ -32,7 +32,7 @@ import { toast } from 'sonner';
 
 import { CoreEmailComposeDialog } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import {
   Accordion,
@@ -154,6 +154,7 @@ export default function AccountDetailsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const id = params?.id as string;
+  const { formatDate, formatCurrency } = useLocalization();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
@@ -234,21 +235,21 @@ export default function AccountDetailsPage() {
         return [
           ...(contact.email
             ? [
-                {
-                  email: contact.email,
-                  name,
-                  label: 'Primary Email',
-                },
-              ]
+              {
+                email: contact.email,
+                name,
+                label: 'Primary Email',
+              },
+            ]
             : []),
           ...(contact.alt_email
             ? [
-                {
-                  email: contact.alt_email,
-                  name,
-                  label: 'Alt Email',
-                },
-              ]
+              {
+                email: contact.alt_email,
+                name,
+                label: 'Alt Email',
+              },
+            ]
             : []),
         ];
       }),
@@ -669,82 +670,79 @@ export default function AccountDetailsPage() {
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
                   <DetailInfoList>
-                    
-                      <DetailInfoRow
-                        icon={<Phone className="h-5 w-5" />}
-                        label="Phone"
-                        value={
-                          account.phone_number ? (<a
-                            href={`tel:${account.phone_number}`}
-                            className="text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            {account.phone_number}
-                          </a>) : '-'  
-                        }
-                      />
-                    
-                    
-                      <DetailInfoRow
-                        icon={<Users className="h-5 w-5" />}
-                        label="Employees"
-                        value={(account.company_size || account.employee_count) ? (account.company_size || account.employee_count) : '-'}
-                      />
-                    
-                      <DetailInfoRow
-                        icon={<DollarSign className="h-5 w-5" />}
-                        label="Revenue"
-                        value={account.annual_revenue ? (new Intl.NumberFormat('en-US', {
-                          style: 'currency',
-                          currency: 'USD',
-                        }).format(account.annual_revenue)) : '-'}
-                      />
-                    
-                      <DetailInfoRow
-                        icon={<Tag className="h-5 w-5" />}
-                        label="Type"
-                        value={
-                          account.account_type ? (<span className="capitalize">
-                            {account.account_type_relation.status_name}
-                          </span>) : '-'
-                        }
-                      />
-                    
-                    
-                      <DetailInfoRow
-                        icon={<Linkedin className="h-5 w-5" />}
-                        label="LinkedIn"
-                        value={
-                          account.linkedin_url ? (<a
-                            href={account.linkedin_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            {account.linkedin_url}
-                          </a>) : '-'  
-                        }
-                      />
-                    
-                    
-                      <DetailInfoRow
-                        icon={<FileText className="h-5 w-5" />}
-                        label="Description"
-                        value={account.description || '-'}
-                      />
-                    
-                    
-                      <DetailInfoRow
-                        icon={<MapPin className="h-5 w-5" />}
-                        label="Billing"
-                        value={billingAddress || '-'}
-                      />
-                    
-                      <DetailInfoRow
-                        icon={<MapPin className="h-5 w-5" />}
-                        label="Shipping"
-                        value={shippingAddress || '-'}
-                      />
-                    
+
+                    <DetailInfoRow
+                      icon={<Phone className="h-5 w-5" />}
+                      label="Phone"
+                      value={
+                        account.phone_number ? (<a
+                          href={`tel:${account.phone_number}`}
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {account.phone_number}
+                        </a>) : '-'
+                      }
+                    />
+
+
+                    <DetailInfoRow
+                      icon={<Users className="h-5 w-5" />}
+                      label="Employees"
+                      value={(account.company_size || account.employee_count) ? (account.company_size || account.employee_count) : '-'}
+                    />
+
+                    <DetailInfoRow
+                      icon={<DollarSign className="h-5 w-5" />}
+                      label="Revenue"
+                      value={formatCurrency(account.annual_revenue, 'USD')}
+                    />
+
+                    <DetailInfoRow
+                      icon={<Tag className="h-5 w-5" />}
+                      label="Type"
+                      value={
+                        account.account_type ? (<span className="capitalize">
+                          {account.account_type_relation.status_name}
+                        </span>) : '-'
+                      }
+                    />
+
+
+                    <DetailInfoRow
+                      icon={<Linkedin className="h-5 w-5" />}
+                      label="LinkedIn"
+                      value={
+                        account.linkedin_url ? (<a
+                          href={account.linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {account.linkedin_url}
+                        </a>) : '-'
+                      }
+                    />
+
+
+                    <DetailInfoRow
+                      icon={<FileText className="h-5 w-5" />}
+                      label="Description"
+                      value={account.description || '-'}
+                    />
+
+
+                    <DetailInfoRow
+                      icon={<MapPin className="h-5 w-5" />}
+                      label="Billing"
+                      value={billingAddress || '-'}
+                    />
+
+                    <DetailInfoRow
+                      icon={<MapPin className="h-5 w-5" />}
+                      label="Shipping"
+                      value={shippingAddress || '-'}
+                    />
+
                   </DetailInfoList>
                 </AccordionContent>
               </AccordionItem>
@@ -896,10 +894,7 @@ export default function AccountDetailsPage() {
                             }
                             subtitle={
                               <span>
-                                {new Intl.NumberFormat('en-US', {
-                                  style: 'currency',
-                                  currency: opp.currency || 'USD',
-                                }).format(opp.amount)}
+                                {formatCurrency(opp.amount, opp.currency || 'USD')}
                               </span>
                             }
                             metadata={
@@ -1013,27 +1008,27 @@ export default function AccountDetailsPage() {
                       label="Updated"
                       value={account.updated_at ? formatDate(account.updated_at) : '-'}
                     />
-                    
-                      <DetailInfoRow
-                        icon={<Globe className="h-5 w-5" />}
-                        label="Twitter"
-                        value={
-                          account.twitter_handle ? (<a
-                            href={`https://twitter.com/${account.twitter_handle.replace('@', '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            @{account.twitter_handle.replace('@', '')}
-                          </a>) : '-'
-                        }
-                      />
-                      <DetailInfoRow
-                        icon={<FileText className="h-5 w-5" />}
-                        label="Tags"
-                        value={
-                          (account.tags && account.tags.length > 0) ? (
-                            <div className="flex flex-wrap gap-1">
+
+                    <DetailInfoRow
+                      icon={<Globe className="h-5 w-5" />}
+                      label="Twitter"
+                      value={
+                        account.twitter_handle ? (<a
+                          href={`https://twitter.com/${account.twitter_handle.replace('@', '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          @{account.twitter_handle.replace('@', '')}
+                        </a>) : '-'
+                      }
+                    />
+                    <DetailInfoRow
+                      icon={<FileText className="h-5 w-5" />}
+                      label="Tags"
+                      value={
+                        (account.tags && account.tags.length > 0) ? (
+                          <div className="flex flex-wrap gap-1">
                             {account.tags.map((tag: string) => (
                               <Badge
                                 key={tag}
@@ -1044,7 +1039,7 @@ export default function AccountDetailsPage() {
                               </Badge>
                             ))}
                           </div>) : '-'}
-                      />                    
+                    />
                   </DetailInfoList>
                 </AccordionContent>
               </AccordionItem>
