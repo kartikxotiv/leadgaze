@@ -35,6 +35,8 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
@@ -240,6 +242,11 @@ export default function TeamMembersPage() {
     return filtered;
   }, [statusFilter, allMembers, activeMembers, pendingMembers, debouncedSearchTerm]);
 
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<WorkspaceMember>(
+    'team-members',
+    members,
+  );
+
   // Remove member mutation
   const removeMutation = useMutation({
     mutationFn: removeMemberService,
@@ -278,6 +285,11 @@ export default function TeamMembersPage() {
 
   const pendingInvitations: PendingInvitation[] =
     (pendingInvitationsData?.data as PendingInvitation[]) || [];
+
+  const { sortColumn: pendingSortCol, sortDirection: pendingSortDir, toggleSort: togglePendingSort, sortedData: sortedPending } = useTableSort<PendingInvitation>(
+    'pending-invitations',
+    pendingInvitations,
+  );
 
   // Status items for StatusFilterDropdown
   const memberStatusItems = useMemo(
@@ -474,53 +486,131 @@ export default function TeamMembersPage() {
                 <TableRow>
                   {statusFilter === 'pending' ? (
                     <>
-                      <TableHead>Email</TableHead>
+                      <SortableTableHead
+                        label="Email"
+                        columnId="email"
+                        sortColumn={pendingSortCol}
+                        sortDirection={pendingSortDir}
+                        onSort={togglePendingSort}
+                        sortable={true}
+                        className="relative"
+                        {...getHeaderProps('email')}
+                      >
+                        <span className="col-resize-handle" {...getResizeHandleProps('email')} />
+                      </SortableTableHead>
                       {isVisible('role') && (
-  <TableHead className="relative" {...getHeaderProps('role')}>
-    Role
-    <span className="col-resize-handle" {...getResizeHandleProps('role')} />
-  </TableHead>
-)}
-                      <TableHead>Sent On</TableHead>
+                        <SortableTableHead
+                          label="Role"
+                          columnId="role"
+                          sortKey="role.role_name"
+                          sortColumn={pendingSortCol}
+                          sortDirection={pendingSortDir}
+                          onSort={togglePendingSort}
+                          sortable={true}
+                          className="relative"
+                          {...getHeaderProps('role')}
+                        >
+                          <span className="col-resize-handle" {...getResizeHandleProps('role')} />
+                        </SortableTableHead>
+                      )}
+                      <SortableTableHead
+                        label="Sent On"
+                        columnId="invited_at"
+                        sortColumn={pendingSortCol}
+                        sortDirection={pendingSortDir}
+                        onSort={togglePendingSort}
+                        sortable={true}
+                        className="relative"
+                        {...getHeaderProps('invited_at')}
+                      >
+                        <span className="col-resize-handle" {...getResizeHandleProps('invited_at')} />
+                      </SortableTableHead>
                       {isVisible('status') && (
-  <TableHead className="relative" {...getHeaderProps('status')}>
-    Status
-    <span className="col-resize-handle" {...getResizeHandleProps('status')} />
-  </TableHead>
-)}
+                        <SortableTableHead
+                          label="Status"
+                          columnId="status"
+                          sortColumn={pendingSortCol}
+                          sortDirection={pendingSortDir}
+                          onSort={togglePendingSort}
+                          sortable={false}
+                          className="relative"
+                          {...getHeaderProps('status')}
+                        >
+                          <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+                        </SortableTableHead>
+                      )}
                     </>
                   ) : (
                     <>
                       {isVisible('member') && (
-  <TableHead className="relative" {...getHeaderProps('member')}>
-    Member
-    <span className="col-resize-handle" {...getResizeHandleProps('member')} />
-  </TableHead>
-)}
+                        <SortableTableHead
+                          label="Member"
+                          columnId="member"
+                          sortKey="user.user_metadata.full_name"
+                          sortColumn={sortColumn}
+                          sortDirection={sortDirection}
+                          onSort={toggleSort}
+                          className="relative"
+                          {...getHeaderProps('member')}
+                        >
+                          <span className="col-resize-handle" {...getResizeHandleProps('member')} />
+                        </SortableTableHead>
+                      )}
                       {isVisible('email') && (
-  <TableHead className="relative" {...getHeaderProps('email')}>
-    Email
-    <span className="col-resize-handle" {...getResizeHandleProps('email')} />
-  </TableHead>
-)}
+                        <SortableTableHead
+                          label="Email"
+                          columnId="email"
+                          sortKey="user.email"
+                          sortColumn={sortColumn}
+                          sortDirection={sortDirection}
+                          onSort={toggleSort}
+                          className="relative"
+                          {...getHeaderProps('email')}
+                        >
+                          <span className="col-resize-handle" {...getResizeHandleProps('email')} />
+                        </SortableTableHead>
+                      )}
                       {isVisible('role') && (
-  <TableHead className="relative" {...getHeaderProps('role')}>
-    Role
-    <span className="col-resize-handle" {...getResizeHandleProps('role')} />
-  </TableHead>
-)}
+                        <SortableTableHead
+                          label="Role"
+                          columnId="role"
+                          sortKey="role.role_name"
+                          sortColumn={sortColumn}
+                          sortDirection={sortDirection}
+                          onSort={toggleSort}
+                          className="relative"
+                          {...getHeaderProps('role')}
+                        >
+                          <span className="col-resize-handle" {...getResizeHandleProps('role')} />
+                        </SortableTableHead>
+                      )}
                       {isVisible('status') && (
-  <TableHead className="relative" {...getHeaderProps('status')}>
-    Status
-    <span className="col-resize-handle" {...getResizeHandleProps('status')} />
-  </TableHead>
-)}
+                        <SortableTableHead
+                          label="Status"
+                          columnId="status"
+                          sortColumn={sortColumn}
+                          sortDirection={sortDirection}
+                          onSort={toggleSort}
+                          className="relative"
+                          {...getHeaderProps('status')}
+                        >
+                          <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+                        </SortableTableHead>
+                      )}
                       {isVisible('primary_contact') && (
-  <TableHead className="relative" {...getHeaderProps('primary_contact')}>
-    Primary Contact
-    <span className="col-resize-handle" {...getResizeHandleProps('primary_contact')} />
-  </TableHead>
-)}
+                        <SortableTableHead
+                          label="Primary Contact"
+                          columnId="primary_contact"
+                          sortKey="is_primary_contact"
+                          sortColumn={sortColumn}
+                          sortDirection={sortDirection}
+                          onSort={toggleSort}
+                          className="relative"
+                          {...getHeaderProps('primary_contact')}
+                        >
+                          <span className="col-resize-handle" {...getResizeHandleProps('primary_contact')} />
+                        </SortableTableHead>
+                      )}
                     </>
                   )}
                   <TableHead className="sticky-right-header">Actions</TableHead>
@@ -540,7 +630,7 @@ export default function TeamMembersPage() {
                         </TableCell>
                       </TableRow>
                     ))
-                  ) : pendingInvitations.length === 0 ? (
+                  ) : sortedPending.length === 0 ? (
                     <TableRow>
                       <TableCell
                         colSpan={5}
@@ -550,7 +640,7 @@ export default function TeamMembersPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    pendingInvitations.map((invitation) => (
+                    sortedPending.map((invitation: PendingInvitation) => (
                       <TableRow
                         key={invitation.id}
                         className="hover:bg-muted/50"
@@ -675,7 +765,7 @@ export default function TeamMembersPage() {
                       </TableCell>
                     </TableRow>
                   ))
-                ) : members.length === 0 ? (
+                  ) : sortedData.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={6}
@@ -685,7 +775,7 @@ export default function TeamMembersPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  members.map((member: WorkspaceMember) => (
+                  sortedData.map((member: WorkspaceMember) => (
                     <TableRow key={member.id} className="hover:bg-muted/50">
                       {isVisible('member') && (
                         <TableCell>

@@ -24,6 +24,8 @@ import {
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 
@@ -319,9 +321,15 @@ export default function OpportunitiesPage() {
     setSelectedCreatedId('all');
   };
 
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Opportunity>(
+    'opportunities',
+    filteredOpportunities,
+    { onSortChange: () => setCurrentPage(1) }
+  );
+
   // Pagination Logic
   const totalPages = Math.ceil(totalCount / itemsPerPage);
-  const paginatedOpportunities = filteredOpportunities;
+  const paginatedOpportunities = sortedData;
 
   if (!workspace) {
     return <OpportunitiesPageSkeleton />;
@@ -411,112 +419,248 @@ export default function OpportunitiesPage() {
               <TableHeader>
                 <TableRow>
                   {isVisible('sno') && (
-  <TableHead className="relative w-12 whitespace-nowrap" {...getHeaderProps('sno')}>
-    S. No.
+  <SortableTableHead
+    label="S. No."
+    columnId="sno"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    sortable={false}
+    className="relative w-12 whitespace-nowrap"
+    {...getHeaderProps('sno')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('name') && (
-  <TableHead className="relative" {...getHeaderProps('name')}>
-    Name
+  <SortableTableHead
+    label="Name"
+    columnId="name"
+    sortKey="opportunity_name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('name')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('name')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('account') && (
-  <TableHead className="relative" {...getHeaderProps('account')}>
-    Account
+  <SortableTableHead
+    label="Account"
+    columnId="account"
+    sortKey="account.account_name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('account')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('account')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('stage') && (
-  <TableHead className="relative" {...getHeaderProps('stage')}>
-    Stage
+  <SortableTableHead
+    label="Stage"
+    columnId="stage"
+    sortKey="stage.status_name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('stage')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('stage')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('amount') && (
-  <TableHead className="relative" {...getHeaderProps('amount')}>
-    Amount
+  <SortableTableHead
+    label="Amount"
+    columnId="amount"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('amount')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('amount')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('currency') && (
-  <TableHead className="relative" {...getHeaderProps('currency')}>
-    Currency
+  <SortableTableHead
+    label="Currency"
+    columnId="currency"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('currency')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('currency')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('probability') && (
-  <TableHead className="relative" {...getHeaderProps('probability')}>
-    Probability
+  <SortableTableHead
+    label="Probability"
+    columnId="probability"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('probability')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('probability')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('close_date') && (
-  <TableHead className="relative" {...getHeaderProps('close_date')}>
-    Close Date
+  <SortableTableHead
+    label="Close Date"
+    columnId="close_date"
+    sortKey="expected_close_date"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('close_date')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('close_date')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('priority') && (
-  <TableHead className="relative" {...getHeaderProps('priority')}>
-    Priority
+  <SortableTableHead
+    label="Priority"
+    columnId="priority"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('priority')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('priority')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('type') && (
-  <TableHead className="relative" {...getHeaderProps('type')}>
-    Type
+  <SortableTableHead
+    label="Type"
+    columnId="type"
+    sortKey="opportunity_type"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('type')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('type')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('source') && (
-  <TableHead className="relative" {...getHeaderProps('source')}>
-    Source
+  <SortableTableHead
+    label="Source"
+    columnId="source"
+    sortKey="lead_source"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('source')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('source')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('competitor') && (
-  <TableHead className="relative" {...getHeaderProps('competitor')}>
-    Competitor
+  <SortableTableHead
+    label="Competitor"
+    columnId="competitor"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('competitor')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('competitor')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('is_closed') && (
-  <TableHead className="relative" {...getHeaderProps('is_closed')}>
-    Closed
+  <SortableTableHead
+    label="Closed"
+    columnId="is_closed"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('is_closed')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('is_closed')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('is_won') && (
-  <TableHead className="relative" {...getHeaderProps('is_won')}>
-    Won
+  <SortableTableHead
+    label="Won"
+    columnId="is_won"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('is_won')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('is_won')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('owner') && (
-  <TableHead className="relative" {...getHeaderProps('owner')}>
-    Owner
+  <SortableTableHead
+    label="Owner"
+    columnId="owner"
+    sortKey="owner.name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('owner')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('owner')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('created_by') && (
-  <TableHead className="relative" {...getHeaderProps('created_by')}>
-    Created By
+  <SortableTableHead
+    label="Created By"
+    columnId="created_by"
+    sortKey="created_by_account.name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('created_by')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('created_by')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('created_at') && (
-  <TableHead className="relative" {...getHeaderProps('created_at')}>
-    Created On
+  <SortableTableHead
+    label="Created On"
+    columnId="created_at"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('created_at')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   {isVisible('updated_by') && (
-  <TableHead className="relative" {...getHeaderProps('updated_by')}>
-    Last Updated By
+  <SortableTableHead
+    label="Last Updated By"
+    columnId="updated_by"
+    sortKey="updated_by_account.name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('updated_by')}
+  >
     <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
-  </TableHead>
+  </SortableTableHead>
 )}
                   <TableHead className="sticky-right-header">
                     Actions

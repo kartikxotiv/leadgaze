@@ -168,7 +168,12 @@ const getLeads = catchAsync(
     );
 
     if (statusId && statusId !== 'all') {
-      mainQuery = mainQuery.eq('status_id', statusId);
+      const statusIds = statusId.split(',').map((s) => s.trim()).filter(Boolean);
+      if (statusIds.length === 1) {
+        mainQuery = mainQuery.eq('status_id', statusIds[0]);
+      } else if (statusIds.length > 1) {
+        mainQuery = mainQuery.in('status_id', statusIds);
+      }
     }
 
     if (searchTerm) {

@@ -136,7 +136,7 @@ const getLeadsService = asyncHandlerClient(
     page?: number;
     limit?: number;
     searchTerm?: string;
-    statusId?: string;
+    statusId?: string | string[];
   }) => {
     const {
       workspaceId,
@@ -145,8 +145,9 @@ const getLeadsService = asyncHandlerClient(
       searchTerm = '',
       statusId = '',
     } = params;
+    const statusParam = Array.isArray(statusId) ? statusId.join(',') : statusId;
     const response = await ApiClient.get(
-      `/leads?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&statusId=${statusId}`,
+      `/leads?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&statusId=${statusParam}`,
     );
     // response.data = { message, data: [...], count }
     return {

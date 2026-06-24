@@ -52,6 +52,8 @@ import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 import { formatDate } from '@kit/shared/utils';
 import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 
 export function CoreEmailTemplatesTab({
@@ -76,6 +78,11 @@ export function CoreEmailTemplatesTab({
     (template: any) =>
       template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       template.subject.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<any>(
+    'core-email-templates-table',
+    filteredTemplates
   );
 
   const handleDelete = async (id: number) => {
@@ -117,18 +124,39 @@ export function CoreEmailTemplatesTab({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="relative" {...getHeaderProps('name')}>
-                  Name
+                <SortableTableHead
+                  label="Name"
+                  columnId="name"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                  className="relative"
+                  {...getHeaderProps('name')}
+                >
                   <span className="col-resize-handle" {...getResizeHandleProps('name')} />
-                </TableHead>
-                <TableHead className="relative" {...getHeaderProps('subject')}>
-                  Subject
+                </SortableTableHead>
+                <SortableTableHead
+                  label="Subject"
+                  columnId="subject"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                  className="relative"
+                  {...getHeaderProps('subject')}
+                >
                   <span className="col-resize-handle" {...getResizeHandleProps('subject')} />
-                </TableHead>
-                <TableHead className="relative" {...getHeaderProps('updated_at')}>
-                  Updated
+                </SortableTableHead>
+                <SortableTableHead
+                  label="Updated"
+                  columnId="updated_at"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                  className="relative"
+                  {...getHeaderProps('updated_at')}
+                >
                   <span className="col-resize-handle" {...getResizeHandleProps('updated_at')} />
-                </TableHead>
+                </SortableTableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -154,7 +182,7 @@ export function CoreEmailTemplatesTab({
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredTemplates.map((template: any) => (
+                sortedData.map((template: any) => (
                   <TableRow key={template.id}>
                     <TableCell className="font-medium">
                       {template.name}
