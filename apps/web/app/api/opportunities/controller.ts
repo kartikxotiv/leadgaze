@@ -9,11 +9,9 @@ import {
   successDataResponse,
 } from '../../../utils/response-handler';
 
-<<<<<<< HEAD
 import {
   buildOpportunityCurrencyFields,
 } from '@kit/shared/currency';
-=======
 const OPPORTUNITY_SORTABLE_COLUMNS: Record<string, { column: string; foreignTable?: string }> = {
   opportunity_name:     { column: 'opportunity_name' },
   amount:               { column: 'amount' },
@@ -33,7 +31,6 @@ const OPPORTUNITY_SORTABLE_COLUMNS: Record<string, { column: string; foreignTabl
   'created_by_account.name':     { column: 'name', foreignTable: 'accounts' },
   'updated_by_account.name':     { column: 'name', foreignTable: 'accounts' },
 };
->>>>>>> 150960b278ce92f8521a0a6f81f9626688073d98
 
 /**
  * GET /api/opportunities
@@ -372,6 +369,7 @@ export const createOpportunity = catchAsync(
         // Fetch latest exchange rate for USD -> oppCurrency
         const adminClient = getSupabaseServerAdminClient();
         const { data: rates } = await adminClient
+        .schema('core')
           .from('currency_exchange_rates')
           .select('*')
           .eq('base_currency', 'USD')

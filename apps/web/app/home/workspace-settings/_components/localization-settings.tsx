@@ -23,13 +23,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@kit/ui/select';
+import { Checkbox } from '@kit/ui/checkbox';
 import { toast } from 'sonner';
+import { X } from 'lucide-react';
 
 import {
   getWorkspacePreferencesService,
   updateWorkspacePreferencesService,
   type UpdatePreferencesPayload,
 } from '~/services/workspace-preferences.service';
+
+import {
+  getWorkspaceCurrenciesService,
+  addWorkspaceCurrencyService,
+  updateWorkspaceCurrencyService,
+  deleteWorkspaceCurrencyService,
+} from '~/services/workspace-currencies.service';
 
 // =====================================================
 // CONSTANTS
@@ -54,12 +63,12 @@ const COMMON_CURRENCIES = [
   { code: 'EUR', symbol: '\u20ac', label: 'EUR - Euro' },
   { code: 'GBP', symbol: '\u00a3', label: 'GBP - British Pound' },
   { code: 'INR', symbol: '\u20b9', label: 'INR - Indian Rupee' },
-  // { code: 'AED', symbol: 'AED', label: 'AED - UAE Dirham' },
-  // { code: 'CAD', symbol: 'CA$', label: 'CAD - Canadian Dollar' },
-  // { code: 'AUD', symbol: 'A$', label: 'AUD - Australian Dollar' },
-  // { code: 'JPY', symbol: '\u00a5', label: 'JPY - Japanese Yen' },
-  // { code: 'SGD', symbol: 'S$', label: 'SGD - Singapore Dollar' },
-  // { code: 'CHF', symbol: 'CHF', label: 'CHF - Swiss Franc' },
+  { code: 'AED', symbol: 'AED', label: 'AED - UAE Dirham' },
+  { code: 'CAD', symbol: 'CA$', label: 'CAD - Canadian Dollar' },
+  { code: 'AUD', symbol: 'A$', label: 'AUD - Australian Dollar' },
+  { code: 'JPY', symbol: '\u00a5', label: 'JPY - Japanese Yen' },
+  { code: 'SGD', symbol: 'S$', label: 'SGD - Singapore Dollar' },
+  { code: 'CHF', symbol: 'CHF', label: 'CHF - Swiss Franc' },
 ];
 
 // Timezone list - common IANA timezones
@@ -103,6 +112,7 @@ export function WorkspaceLocalizationSettings({
     dateFormat: 'MM-DD-YYYY',
     timeFormat: '12h',
     defaultCurrency: 'USD',
+    enabledCurrencies: ['USD'],
   });
 
   const [isDirty, setIsDirty] = useState(false);
@@ -114,6 +124,13 @@ export function WorkspaceLocalizationSettings({
     enabled: !!workspaceId,
   });
 
+  // Fetch enabled currencies
+  const { data: currenciesData, isLoading: isCurrenciesLoading } = useQuery({
+    queryKey: ['workspace-currencies', workspaceId],
+    queryFn: () => getWorkspaceCurrenciesService(workspaceId),
+    enabled: !!workspaceId,
+  });
+
   // Sync form with fetched data
   useEffect(() => {
     if (preferences) {
@@ -122,9 +139,20 @@ export function WorkspaceLocalizationSettings({
         dateFormat: preferences.date_format,
         timeFormat: preferences.time_format,
         defaultCurrency: preferences.default_currency,
+        enabledCurrencies: preferences.enabledCurrencies || ['USD'],
       });
     }
   }, [preferences]);
+
+  // Get list of currencies added to workspace for the default currency dropdown
+  const addedCurrencies = currenciesData?.map((c) => {
+    const currencyInfo = COMMON_CURRENCIES.find((cur) => cur.code === c.currency_code);
+    return {
+      ...c,
+      label: currencyInfo?.label || c.currency_code,
+      symbol: currencyInfo?.symbol || '',
+    };
+  });
 
   // Update mutation
   const updateMutation = useMutation({
@@ -149,6 +177,54 @@ export function WorkspaceLocalizationSettings({
     },
   });
 
+  // Add currency mutation
+  const addCurrencyMutation = useMutation({
+    mutationFn: (payload: {
+      workspace_id: string;
+      currency_code: string;
+      currency_symbol: string;
+      is_default?: boolean;
+    }) => addWorkspaceCurrencyService(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-currencies', workspaceId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-preferences', workspaceId],
+      });
+      toast.success('Currency added', {
+        description: 'The currency has been added to your workspace.',
+      });
+    },
+    onError: (error: any) => {
+      toast.error('Failed to add currency', {
+        description: error?.message || 'Something went wrong.',
+      });
+    },
+  });
+
+  // Delete currency mutation
+  const deleteCurrencyMutation = useMutation({
+    mutationFn: (currencyId: string) =>
+      deleteWorkspaceCurrencyService(currencyId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-currencies', workspaceId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-preferences', workspaceId],
+      });
+      toast.success('Currency removed', {
+        description: 'The currency has been removed from your workspace.',
+      });
+    },
+    onError: (error: any) => {
+      toast.error('Failed to remove currency', {
+        description: error?.message || 'Something went wrong.',
+      });
+    },
+  });
+
   const handleChange = (
     field: keyof WorkspaceLocalizationPreferences,
     value: string,
@@ -156,6 +232,65 @@ export function WorkspaceLocalizationSettings({
     setForm((prev) => ({ ...prev, [field]: value }));
     setIsDirty(true);
   };
+
+  const handleAddCurrency = (currencyCode: string) => {
+    const currencyInfo = COMMON_CURRENCIES.find(
+      (c) => c.code === currencyCode,
+    );
+    if (!currencyInfo) return;
+
+    addCurrencyMutation.mutate({
+      workspace_id: workspaceId,
+      currency_code: currencyCode,
+      currency_symbol: currencyInfo.symbol,
+      is_default: false,
+    });
+  };
+
+  const handleRemoveCurrency = (currencyId: string) => {
+    deleteCurrencyMutation.mutate(currencyId);
+  };
+
+  const handleSetDefaultCurrency = (currencyId: string, currencyCode: string) => {
+    // First, update the default currency preference
+    updateMutation.mutate({
+      workspace_id: workspaceId,
+      default_currency: currencyCode,
+    });
+    
+    // Also update the currency's is_default field in workspace_currencies
+    updateWorkspaceCurrencyMutation.mutate({
+      currencyId,
+      payload: { is_default: true },
+    });
+  };
+
+  // Update currency mutation
+  const updateWorkspaceCurrencyMutation = useMutation({
+    mutationFn: ({
+      currencyId,
+      payload,
+    }: {
+      currencyId: string;
+      payload: { is_default: boolean };
+    }) => updateWorkspaceCurrencyService(currencyId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-currencies', workspaceId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-preferences', workspaceId],
+      });
+      toast.success('Default currency updated', {
+        description: 'The default currency has been changed.',
+      });
+    },
+    onError: (error: any) => {
+      toast.error('Failed to update default currency', {
+        description: error?.message || 'Something went wrong.',
+      });
+    },
+  });
 
   const handleSave = () => {
     updateMutation.mutate({
@@ -280,14 +415,15 @@ export function WorkspaceLocalizationSettings({
       {/* Currency Settings */}
       <Card>
         <CardHeader className="p-4 pb-3">
-          <CardTitle className="mb-0 text-base">Default Currency</CardTitle>
+          <CardTitle className="mb-0 text-base">Currencies</CardTitle>
           <CardDescription>
-            Set the default currency for monetary values in this workspace.
+            Manage currencies enabled for this workspace.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 p-4 pt-0">
+          {/* Default Currency */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Currency</label>
+            <label className="text-sm font-medium">Default Currency</label>
             <Select
               value={form.defaultCurrency}
               onValueChange={(v) => handleChange('defaultCurrency', v)}
@@ -296,13 +432,111 @@ export function WorkspaceLocalizationSettings({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {COMMON_CURRENCIES.map((cur) => (
-                  <SelectItem key={cur.code} value={cur.code}>
-                    {cur.symbol} {cur.label}
+                {addedCurrencies && addedCurrencies.length > 0 ? (
+                  addedCurrencies.map((cur) => (
+                    <SelectItem key={cur.currency_code} value={cur.currency_code}>
+                      {cur.symbol} {cur.label}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="placeholder" disabled>
+                    No currencies added yet
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Enabled Currencies */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Enabled Currencies</label>
+            <div className="space-y-2">
+              {isCurrenciesLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading currencies...
+                </div>
+              ) : currenciesData && currenciesData.length > 0 ? (
+                currenciesData.map((currency) => {
+                  const currencyInfo = COMMON_CURRENCIES.find(
+                    (c) => c.code === currency.currency_code,
+                  );
+                  return (
+                    <div
+                      key={currency.id}
+                      className="flex items-center justify-between rounded-md border p-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={currency.is_default}
+                          onCheckedChange={() =>
+                            handleSetDefaultCurrency(
+                              currency.id,
+                              currency.currency_code,
+                            )
+                          }
+                          disabled={currency.is_default}
+                        />
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {currency.currency_code}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {currencyInfo?.label ||
+                              currency.currency_code}
+                          </span>
+                        </div>
+                      </div>
+                      {!currency.is_default && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveCurrency(currency.id)}
+                          disabled={deleteCurrencyMutation.isPending}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-muted-foreground text-sm">
+                  No currencies added yet. Add one below.
+                </div>
+              )}
+            </div>
+
+            {/* Add Currency Dropdown */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Add Currency</label>
+              <Select
+                onValueChange={(v) => handleAddCurrency(v)}
+                disabled={addCurrencyMutation.isPending}
+              >
+                <SelectTrigger className="w-full max-w-sm">
+                  <SelectValue placeholder="Select a currency to add" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COMMON_CURRENCIES.map((cur) => {
+                    const isAdded = currenciesData?.some(
+                      (c) => c.currency_code === cur.code,
+                    );
+                    return (
+                      <SelectItem
+                        key={cur.code}
+                        value={cur.code}
+                        disabled={isAdded}
+                      >
+                        {cur.symbol} {cur.label}
+                        {isAdded && ' (Added)'}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>

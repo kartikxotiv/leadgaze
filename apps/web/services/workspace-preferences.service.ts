@@ -8,6 +8,7 @@ export interface WorkspacePreferences {
   date_format: string;
   time_format: '12h' | '24h';
   default_currency: string;
+  enabledCurrencies: string[];
   created_at: string;
   updated_at: string;
 }

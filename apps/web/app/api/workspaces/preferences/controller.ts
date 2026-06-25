@@ -24,21 +24,35 @@ export const getWorkspacePreferences = catchAsync(
       );
     }
 
-    const { data, error } = await supabase
+    // Fetch workspace preferences
+    const { data: prefData, error: prefError } = await supabase
       .schema('core')
       .from('workspace_preferences')
       .select('*')
       .eq('workspace_id', workspaceId)
       .single();
 
-    if (error) {
+    if (prefError) {
       // If no row exists yet, return defaults
-      if (error.code === 'PGRST116') {
+      if (prefError.code === 'PGRST116') {
+        // Also fetch enabled currencies
+        const { data: currenciesData } = await supabase
+          .schema('core')
+          .from('workspace_currencies')
+          .select('currency_code')
+          .eq('workspace_id', workspaceId)
+          .eq('is_active', true)
+          .order('is_default', { ascending: false })
+          .order('currency_code', { ascending: true });
+
+        const enabledCurrencies = currenciesData?.map((c) => c.currency_code) || ['USD'];
+
         return successDataResponse({
           timezone: 'UTC',
           date_format: 'MM-DD-YYYY',
           time_format: '12h',
           default_currency: 'USD',
+          enabledCurrencies,
           workspace_id: workspaceId,
         });
       }
@@ -49,7 +63,26 @@ export const getWorkspacePreferences = catchAsync(
       );
     }
 
-    return successDataResponse(data);
+    // Fetch enabled currencies for this workspace
+    const { data: currenciesData, error: currenciesError } = await supabase
+      .schema('core')
+      .from('workspace_currencies')
+      .select('currency_code')
+      .eq('workspace_id', workspaceId)
+      .eq('is_active', true)
+      .order('is_default', { ascending: false })
+      .order('currency_code', { ascending: true });
+
+    if (currenciesError) {
+      console.error('Failed to fetch currencies:', currenciesError);
+    }
+
+    const enabledCurrencies = currenciesData?.map((c) => c.currency_code) || ['USD'];
+
+    return successDataResponse({
+      ...prefData,
+      enabledCurrencies,
+    });
   },
 );
 

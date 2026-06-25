@@ -168,6 +168,7 @@ export const updateOpportunity = catchAsync(
       try {
         const adminClient = getSupabaseServerAdminClient();
         const { data: rates } = await adminClient
+        .schema('core')
           .from('currency_exchange_rates')
           .select('*')
           .eq('base_currency', 'USD')

@@ -33,6 +33,7 @@ const DEFAULT_PREFERENCES: WorkspaceLocalizationPreferences = {
   dateFormat: 'MM-DD-YYYY',
   timeFormat: '12h',
   defaultCurrency: 'USD',
+  enabledCurrencies: ['USD'],
 };
 
 // =====================================================
@@ -45,26 +46,47 @@ export function LocalizationProvider({
   const { currentWorkspace } = useRBAC();
   const supabase = useSupabase();
 
-  // Fetch workspace preferences
+  // Fetch workspace preferences (including enabled currencies)
   const { data: preferences, isLoading } = useQuery({
     queryKey: ['workspace-preferences', currentWorkspace?.id],
     queryFn: async () => {
       if (!currentWorkspace?.id) return DEFAULT_PREFERENCES;
 
-      const { data, error } = await supabase
+      const supabase = useSupabase();
+
+      // Fetch workspace preferences
+      const { data: prefData, error: prefError } = await supabase
         .schema('core')
         .from('workspace_preferences')
         .select('timezone, date_format, time_format, default_currency')
         .eq('workspace_id', currentWorkspace.id)
         .single();
 
-      if (error || !data) return DEFAULT_PREFERENCES;
+      if (prefError || !prefData) return DEFAULT_PREFERENCES;
+
+      // Fetch enabled currencies for this workspace
+      const { data: currenciesData, error: currenciesError } = await supabase
+        .schema('core')
+        .from('workspace_currencies')
+        .select('currency_code')
+        .eq('workspace_id', currentWorkspace.id)
+        .eq('is_active', true)
+        .order('is_default', { ascending: false })
+        .order('currency_code', { ascending: true });
+
+      if (currenciesError) {
+        console.error('Failed to fetch workspace currencies:', currenciesError);
+        // Continue with default currencies if fetch fails
+      }
+
+      const enabledCurrencies = currenciesData?.map((c) => c.currency_code) || ['USD'];
 
       return {
-        timezone: data.timezone,
-        dateFormat: data.date_format,
-        timeFormat: data.time_format as '12h' | '24h',
-        defaultCurrency: data.default_currency,
+        timezone: prefData.timezone,
+        dateFormat: prefData.date_format,
+        timeFormat: prefData.time_format as '12h' | '24h',
+        defaultCurrency: prefData.default_currency,
+        enabledCurrencies,
       } satisfies WorkspaceLocalizationPreferences;
     },
     enabled: !!currentWorkspace?.id,

@@ -31,7 +31,7 @@ import type { Database } from '../../../lib/database.types';
 // CONFIGURATION
 // =====================================================
 
-const FRANKFURTER_API_BASE = 'https://api.frankfurter.dev';
+const FRANKFURTER_API_BASE = 'https://api.frankfurter.dev/v1';
 
 /**
  * Currencies to track. These are the most commonly used currencies
@@ -161,6 +161,7 @@ export class ExchangeRateSync {
     }));
 
     const { data, error } = await adminClient
+    .schema('core')
       .from('currency_exchange_rates')
       .insert(records)
       .select();
