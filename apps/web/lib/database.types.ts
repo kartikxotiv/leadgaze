@@ -6416,130 +6416,11 @@ export type Database = {
       }
       crm_opportunities: {
         Row: {
-<<<<<<< HEAD
-          account_id: string;
-          actual_close_date: string | null;
-          amount: number | null;
-          amount_original: number | null;
-          base_amount_usd: number | null;
-          campaign_id: string | null;
-          close_reason: string | null;
-          competitor: string | null;
-          created_at: string;
-          created_by: string | null;
-          created_from_lead_id: string | null;
-          currency: string | null;
-          currency_original: string | null;
-          custom_fields: Json | null;
-          deleted_at: string | null;
-          deleted_by: string | null;
-          description: string | null;
-          exchange_rate_date: string | null;
-          exchange_rate_to_usd: number | null;
-          expected_close_date: string | null;
-          expected_revenue: number | null;
-          id: string;
-          is_closed: boolean;
-          is_deleted: boolean;
-          is_won: boolean;
-          lead_source: string | null;
-          opportunity_name: string;
-          opportunity_type: string | null;
-          owner_id: string;
-          primary_contact_id: string | null;
-          priority: string | null;
-          probability: number | null;
-          stage_history: Json | null;
-          stage_id: string;
-          tags: Json | null;
-          updated_at: string;
-          updated_by: string | null;
-          workspace_id: string;
-        };
-        Insert: {
-          account_id: string;
-          actual_close_date?: string | null;
-          amount?: number | null;
-          amount_original?: number | null;
-          base_amount_usd?: number | null;
-          campaign_id?: string | null;
-          close_reason?: string | null;
-          competitor?: string | null;
-          created_at?: string;
-          created_by?: string | null;
-          created_from_lead_id?: string | null;
-          currency?: string | null;
-          currency_original?: string | null;
-          custom_fields?: Json | null;
-          deleted_at?: string | null;
-          deleted_by?: string | null;
-          description?: string | null;
-          exchange_rate_date?: string | null;
-          exchange_rate_to_usd?: number | null;
-          expected_close_date?: string | null;
-          expected_revenue?: number | null;
-          id?: string;
-          is_closed?: boolean;
-          is_deleted?: boolean;
-          is_won?: boolean;
-          lead_source?: string | null;
-          opportunity_name: string;
-          opportunity_type?: string | null;
-          owner_id: string;
-          primary_contact_id?: string | null;
-          priority?: string | null;
-          probability?: number | null;
-          stage_history?: Json | null;
-          stage_id: string;
-          tags?: Json | null;
-          updated_at?: string;
-          updated_by?: string | null;
-          workspace_id: string;
-        };
-        Update: {
-          account_id?: string;
-          actual_close_date?: string | null;
-          amount?: number | null;
-          amount_original?: number | null;
-          base_amount_usd?: number | null;
-          campaign_id?: string | null;
-          close_reason?: string | null;
-          competitor?: string | null;
-          created_at?: string;
-          created_by?: string | null;
-          created_from_lead_id?: string | null;
-          currency?: string | null;
-          currency_original?: string | null;
-          custom_fields?: Json | null;
-          deleted_at?: string | null;
-          deleted_by?: string | null;
-          description?: string | null;
-          exchange_rate_date?: string | null;
-          exchange_rate_to_usd?: number | null;
-          expected_close_date?: string | null;
-          expected_revenue?: number | null;
-          id?: string;
-          is_closed?: boolean;
-          is_deleted?: boolean;
-          is_won?: boolean;
-          lead_source?: string | null;
-          opportunity_name?: string;
-          opportunity_type?: string | null;
-          owner_id?: string;
-          primary_contact_id?: string | null;
-          priority?: string | null;
-          probability?: number | null;
-          stage_history?: Json | null;
-          stage_id?: string;
-          tags?: Json | null;
-          updated_at?: string;
-          updated_by?: string | null;
-          workspace_id?: string;
-        };
-=======
           account_id: string
           actual_close_date: string | null
           amount: number | null
+          amount_original: number | null
+          base_amount_usd: number | null
           campaign_id: string | null
           close_reason: string | null
           competitor: string | null
@@ -6547,10 +6428,13 @@ export type Database = {
           created_by: string | null
           created_from_lead_id: string | null
           currency: string | null
+          currency_original: string | null
           custom_fields: Json | null
           deleted_at: string | null
           deleted_by: string | null
           description: string | null
+          exchange_rate_date: string | null
+          exchange_rate_to_usd: number | null
           expected_close_date: string | null
           expected_revenue: number | null
           id: string
@@ -6575,6 +6459,8 @@ export type Database = {
           account_id: string
           actual_close_date?: string | null
           amount?: number | null
+          amount_original?: number | null
+          base_amount_usd?: number | null
           campaign_id?: string | null
           close_reason?: string | null
           competitor?: string | null
@@ -6582,10 +6468,13 @@ export type Database = {
           created_by?: string | null
           created_from_lead_id?: string | null
           currency?: string | null
+          currency_original?: string | null
           custom_fields?: Json | null
           deleted_at?: string | null
           deleted_by?: string | null
           description?: string | null
+          exchange_rate_date?: string | null
+          exchange_rate_to_usd?: number | null
           expected_close_date?: string | null
           expected_revenue?: number | null
           id?: string
@@ -6610,6 +6499,8 @@ export type Database = {
           account_id?: string
           actual_close_date?: string | null
           amount?: number | null
+          amount_original?: number | null
+          base_amount_usd?: number | null
           campaign_id?: string | null
           close_reason?: string | null
           competitor?: string | null
@@ -6617,10 +6508,13 @@ export type Database = {
           created_by?: string | null
           created_from_lead_id?: string | null
           currency?: string | null
+          currency_original?: string | null
           custom_fields?: Json | null
           deleted_at?: string | null
           deleted_by?: string | null
           description?: string | null
+          exchange_rate_date?: string | null
+          exchange_rate_to_usd?: number | null
           expected_close_date?: string | null
           expected_revenue?: number | null
           id?: string
@@ -6641,7 +6535,6 @@ export type Database = {
           updated_by?: string | null
           workspace_id?: string
         }
->>>>>>> 150960b278ce92f8521a0a6f81f9626688073d98
         Relationships: [
           {
             foreignKeyName: "crm_opportunities_account_id_fkey"
