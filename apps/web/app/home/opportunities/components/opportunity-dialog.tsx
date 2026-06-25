@@ -52,6 +52,8 @@ import {
   createOpportunityService,
   updateOpportunityService,
 } from '~/services/opportunities.service';
+import { getWorkspaceCurrenciesService, type WorkspaceCurrency } from '~/services/workspace-currencies.service';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { ManageableStatusSelect } from '../../_components/manageable-status-select';
 
 const formSchema = z.object({
@@ -89,6 +91,7 @@ export function OpportunityDialog({
 }: OpportunityDialogProps) {
   const queryClient = useQueryClient();
   const { currentWorkspace } = useRBAC();
+  const { formatCurrency } = useLocalization();
   const isEditMode = !!opportunity;
   const [openAccountCombobox, setOpenAccountCombobox] = useState(false);
   const [accountSearchQuery, setAccountSearchQuery] = useState('');
@@ -111,6 +114,13 @@ export function OpportunityDialog({
   });
 
   const accounts = accountsData.data;
+
+  // Fetch workspace currencies for the currency dropdown
+  const { data: workspaceCurrencies = [] } = useQuery({
+    queryKey: ['workspace-currencies', currentWorkspace?.id],
+    queryFn: () => getWorkspaceCurrenciesService(currentWorkspace!.id),
+    enabled: !!currentWorkspace?.id && isOpen,
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -142,7 +152,7 @@ export function OpportunityDialog({
           stage_id: opportunity.stage_id || '',
           amount: opportunity.amount ? String(opportunity.amount) : '',
           currency: opportunity.currency || 'USD',
-          probability: opportunity.probability
+      probability: opportunity.probability
             ? String(opportunity.probability)
             : '',
           expected_close_date: opportunity.expected_close_date
@@ -357,9 +367,23 @@ export function OpportunityDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Currency</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="USD" />
-                    </FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select currency" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {workspaceCurrencies.map((cur: WorkspaceCurrency) => (
+                          <SelectItem key={cur.currency_code} value={cur.currency_code}>
+                            {cur.currency_symbol} {cur.currency_code}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

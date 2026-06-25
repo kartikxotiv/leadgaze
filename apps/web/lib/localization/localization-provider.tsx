@@ -16,6 +16,8 @@ import {
   formatNumber as sharedFormatNumber,
 } from '@kit/shared/utils';
 
+import { convertFromUSD } from '@kit/shared/currency';
+
 import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 
@@ -102,6 +104,12 @@ export function LocalizationProvider({
         }),
 
       formatNumber: (val) => sharedFormatNumber(val),
+
+      convertCurrency: (baseAmountUsd, targetCurrency, rateToTarget) =>
+        sharedFormatCurrency({
+          value: convertFromUSD(baseAmountUsd, rateToTarget),
+          currencyCode: targetCurrency,
+        }),
     };
   }, [resolvedPreferences, isLoading]);
 

@@ -5948,6 +5948,8 @@ export type Database = {
           account_id: string;
           actual_close_date: string | null;
           amount: number | null;
+          amount_original: number | null;
+          base_amount_usd: number | null;
           campaign_id: string | null;
           close_reason: string | null;
           competitor: string | null;
@@ -5955,10 +5957,13 @@ export type Database = {
           created_by: string | null;
           created_from_lead_id: string | null;
           currency: string | null;
+          currency_original: string | null;
           custom_fields: Json | null;
           deleted_at: string | null;
           deleted_by: string | null;
           description: string | null;
+          exchange_rate_date: string | null;
+          exchange_rate_to_usd: number | null;
           expected_close_date: string | null;
           expected_revenue: number | null;
           id: string;
@@ -5983,6 +5988,8 @@ export type Database = {
           account_id: string;
           actual_close_date?: string | null;
           amount?: number | null;
+          amount_original?: number | null;
+          base_amount_usd?: number | null;
           campaign_id?: string | null;
           close_reason?: string | null;
           competitor?: string | null;
@@ -5990,10 +5997,13 @@ export type Database = {
           created_by?: string | null;
           created_from_lead_id?: string | null;
           currency?: string | null;
+          currency_original?: string | null;
           custom_fields?: Json | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
           description?: string | null;
+          exchange_rate_date?: string | null;
+          exchange_rate_to_usd?: number | null;
           expected_close_date?: string | null;
           expected_revenue?: number | null;
           id?: string;
@@ -6018,6 +6028,8 @@ export type Database = {
           account_id?: string;
           actual_close_date?: string | null;
           amount?: number | null;
+          amount_original?: number | null;
+          base_amount_usd?: number | null;
           campaign_id?: string | null;
           close_reason?: string | null;
           competitor?: string | null;
@@ -6025,10 +6037,13 @@ export type Database = {
           created_by?: string | null;
           created_from_lead_id?: string | null;
           currency?: string | null;
+          currency_original?: string | null;
           custom_fields?: Json | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
           description?: string | null;
+          exchange_rate_date?: string | null;
+          exchange_rate_to_usd?: number | null;
           expected_close_date?: string | null;
           expected_revenue?: number | null;
           id?: string;
