@@ -214,6 +214,11 @@ export function ServiceCloudCustomersPage({
     createTicketMutation.mutate();
   };
 
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab') || 'customers';
+
   if (isLoading)
     return (
       <div className="text-muted-foreground p-6 text-sm">
@@ -239,11 +244,6 @@ export function ServiceCloudCustomersPage({
       </TooltipContent>
     </Tooltip>
   ) : null;
-
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const tab = searchParams.get('tab') || 'customers';
 
   return (
     <>

@@ -72,7 +72,8 @@ export default function LeadsPage() {
   const customFields: { id: string; label: string }[] = [];
 
   const activeFilterCount =
-    selectedStatuses.length + selectedCreatedByIds.length;
+    (selectedStatuses.length > 0 ? 1 : 0) +
+    (selectedCreatedByIds.length > 0 ? 1 : 0);
 
   const columns = useMemo(
     () => [
@@ -175,6 +176,13 @@ export default function LeadsPage() {
     );
   }, [customFields, mergeNewColumns]);
 
+  // ── Table sorting (Phase 2: server-side) ───────────────────────────────────
+  const { sortColumn, sortDirection, toggleSort, sortState } = useTableSort<Lead>(
+    'leads',
+    [],
+    { mode: 'server', onSortChange: () => setCurrentPage(1), persistSort: false },
+  );
+
   const {
     data: leadsData = { data: [], count: 0, statusBreakdown: {} },
     isLoading,
@@ -189,6 +197,7 @@ export default function LeadsPage() {
       selectedStatuses,
       selectedCreatedByIds,
       pageSize,
+      sortState,
     ],
     queryFn: () =>
       getLeadsService({
@@ -197,6 +206,8 @@ export default function LeadsPage() {
         limit: pageSize,
         searchTerm: debouncedSearchTerm,
         statusId: selectedStatuses.length > 0 ? selectedStatuses : undefined,
+        sortColumn: sortColumn ?? undefined,
+        sortDirection: sortDirection ?? undefined,
       }),
     enabled: !!workspace?.id,
   });
@@ -233,18 +244,7 @@ export default function LeadsPage() {
     setCurrentPage(1);
   }, [debouncedSearchTerm, selectedStatuses, selectedCreatedByIds, pageSize]);
 
-  // ── Table sorting (Phase 1: client-side) ───────────────────────────────────
-  // To switch to server-side sorting later:
-  //   1. Set mode: 'server'
-  //   2. Add sortState to queryKey above
-  //   3. Pass sortColumn + sortDirection to getLeadsService()
-  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Lead>(
-    'leads',
-    filteredLeads,
-    { onSortChange: () => setCurrentPage(1) },
-  );
-
-  const paginatedLeads = sortedData;
+  const paginatedLeads = filteredLeads;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
   const showTableSkeleton = !workspace || isLoading;
 

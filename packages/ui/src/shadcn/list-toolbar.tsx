@@ -16,7 +16,7 @@ import {
 import { cn } from '../lib/utils';
 import { Button } from './button';
 import { Input } from './input';
-import { Popover, PopoverContent, PopoverTrigger } from './popover';
+import { Popover, PopoverContent, PopoverTrigger, PopoverClose } from './popover';
 import {
   Tooltip,
   TooltipContent,
@@ -177,6 +177,10 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
       const isSelected = group.selectedValue === value;
       group.onSelect(isSelected ? '' : value);
     }
+    // Close dropdown on selection based on user requirement
+    setOpenValueDropdown(null);
+    setDropdownPos(null);
+    setValueSearchTerm('');
   };
 
   const selectAllValues = (row: FilterRow) => {
@@ -346,7 +350,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 min-w-[90px] max-w-[120px] shrink-0 justify-between gap-1 text-xs font-medium"
+                              className="h-8 w-[130px] shrink-0 justify-between gap-1 text-xs font-medium"
                             >
                               <span className="truncate">
                                 {group?.label ?? 'Filter'}
@@ -388,27 +392,28 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                               </div>
                             )}
                             {filterGroups.map((g) => (
-                              <button
-                                key={g.key}
-                                data-filter-group-option
-                                data-label={g.label}
-                                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
-                                onClick={() =>
-                                  updateFilterRowGroup(row.id, g.key)
-                                }
-                              >
-                                {row.filterGroupKey === g.key && (
-                                  <Check className="h-3 w-3 shrink-0" />
-                                )}
-                                <span
-                                  className={cn(
-                                    'truncate primary-text-regular',
-                                    row.filterGroupKey !== g.key && 'pl-5',
-                                  )}
+                              <PopoverClose asChild key={g.key}>
+                                <button
+                                  data-filter-group-option
+                                  data-label={g.label}
+                                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                                  onClick={() =>
+                                    updateFilterRowGroup(row.id, g.key)
+                                  }
                                 >
-                                  {g.label}
-                                </span>
-                              </button>
+                                  {row.filterGroupKey === g.key && (
+                                    <Check className="h-3 w-3 shrink-0" />
+                                  )}
+                                  <span
+                                    className={cn(
+                                      'truncate primary-text-regular',
+                                      row.filterGroupKey !== g.key && 'pl-5',
+                                    )}
+                                  >
+                                    {g.label}
+                                  </span>
+                                </button>
+                              </PopoverClose>
                             ))}
                           </PopoverContent>
                         </Popover>
@@ -625,19 +630,6 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                       className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs hover:bg-gray-100 dark:hover:bg-gray-800"
                       onClick={() => toggleValue(activeRow, opt.value)}
                     >
-                      {/* Checkbox / radio indicator */}
-                      <span
-                        className={cn(
-                          'flex h-4 w-4 shrink-0 items-center justify-center rounded border',
-                          isSelected
-                            ? 'border-blue-500 bg-blue-500'
-                            : 'border-gray-300',
-                        )}
-                      >
-                        {isSelected && (
-                          <Check className="h-3 w-3 text-white" />
-                        )}
-                      </span>
                       {/* Color dot */}
                       {opt.color && (
                         <span
@@ -645,24 +637,13 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                           style={{ backgroundColor: opt.color }}
                         />
                       )}
-                      <span className="truncate">{opt.label}</span>
+                      <span className="truncate flex-1">{opt.label}</span>
+                      {isSelected && (
+                         <Check className="h-4 w-4 text-blue-600 shrink-0" />
+                      )}
                     </button>
                   );
                 })}
-              </div>
-
-              {/* Close button */}
-              <div className="border-t p-2">
-                <button
-                  className="w-full rounded-sm bg-gray-100 py-1 text-xs text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
-                  onClick={() => {
-                    setOpenValueDropdown(null);
-                    setValueSearchTerm('');
-                    setDropdownPos(null);
-                  }}
-                >
-                  Close
-                </button>
               </div>
             </div>
             </>,

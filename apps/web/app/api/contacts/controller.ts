@@ -9,6 +9,18 @@ import {
   successDataResponse,
 } from '../../../utils/response-handler';
 
+const CONTACT_SORTABLE_COLUMNS: Record<string, { column: string; foreignTable?: string }> = {
+  first_name:           { column: 'first_name' },
+  last_name:            { column: 'last_name' },
+  email:                { column: 'email' },
+  job_title:            { column: 'job_title' },
+  created_at:           { column: 'created_at' },
+  'account.account_name':        { column: 'account_name', foreignTable: 'crm_accounts' },
+  'owner.name':                  { column: 'name', foreignTable: 'accounts' },
+  'created_by_account.name':     { column: 'name', foreignTable: 'accounts' },
+  'updated_by_account.name':     { column: 'name', foreignTable: 'accounts' },
+};
+
 /**
  * GET /api/contacts
  * Fetch all contacts for a workspace
@@ -30,6 +42,8 @@ export const getContacts = catchAsync(
     const page = parseInt(url.searchParams.get('page') || '1', 10);
     const limit = parseInt(url.searchParams.get('limit') || '20', 10);
     const searchTerm = url.searchParams.get('searchTerm') || '';
+    const sortColumn = url.searchParams.get('sortColumn') || '';
+    const sortDirection = url.searchParams.get('sortDirection') || '';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -193,11 +207,16 @@ export const getContacts = catchAsync(
       data: contacts,
       error,
       count,
-    } = await query
-      .order('created_at', {
-        ascending: false,
-      })
-      .range(from, to);
+    } = await (CONTACT_SORTABLE_COLUMNS[sortColumn]
+      ? query.order(CONTACT_SORTABLE_COLUMNS[sortColumn].column, {
+          ascending: sortDirection === 'asc',
+          ...(CONTACT_SORTABLE_COLUMNS[sortColumn].foreignTable
+            ? { foreignTable: CONTACT_SORTABLE_COLUMNS[sortColumn].foreignTable }
+            : {}),
+          nullsFirst: false,
+        })
+      : query.order('created_at', { ascending: false })
+    ).range(from, to);
 
     if (error) {
       console.error('Get contacts error:', error);

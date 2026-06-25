@@ -153,19 +153,27 @@ export default function AccountsPage() {
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
+  const { sortColumn, sortDirection, toggleSort, sortState } = useTableSort<Account>(
+    'accounts',
+    [],
+    { mode: 'server', onSortChange: () => setCurrentPage(1) }
+  );
+
   const {
     data: accountsData = { data: [], count: 0 },
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: ['accounts', workspace?.id, currentPage, debouncedSearchTerm, pageSize],
+    queryKey: ['accounts', workspace?.id, currentPage, debouncedSearchTerm, pageSize, sortState],
     queryFn: () =>
       getAccountsService({
         workspaceId: workspace?.id || '',
         page: currentPage,
         limit: itemsPerPage,
         searchTerm: debouncedSearchTerm,
+        sortColumn: sortColumn ?? undefined,
+        sortDirection: sortDirection ?? undefined,
       }),
     enabled: !!workspace?.id,
   });
@@ -182,11 +190,7 @@ export default function AccountsPage() {
   const totalPages = Math.ceil(totalCount / itemsPerPage);
   const paginatedAccounts = accounts; // Data is already paginated from server
 
-  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Account>(
-    'accounts',
-    paginatedAccounts,
-    { onSortChange: () => setCurrentPage(1) }
-  );
+
 
   if (!workspace) {
     return <AccountsPageSkeleton />;
@@ -539,7 +543,7 @@ export default function AccountsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  sortedData.map(
+                  paginatedAccounts.map(
                     (account: Account, index: number) => (
                       <TableRow
                         key={account.id}

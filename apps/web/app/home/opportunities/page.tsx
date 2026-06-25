@@ -197,6 +197,12 @@ export default function OpportunitiesPage() {
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
+  const { sortColumn, sortDirection, toggleSort, sortState } = useTableSort<Opportunity>(
+    'opportunities',
+    [],
+    { mode: 'server', onSortChange: () => setCurrentPage(1) }
+  );
+
   const {
     data: opportunitiesData = {
       data: [],
@@ -216,6 +222,7 @@ export default function OpportunitiesPage() {
       selectedStage,
       selectedCreatedId,
       pageSize,
+      sortState,
     ],
     queryFn: () =>
       getOpportunitiesService({
@@ -224,6 +231,8 @@ export default function OpportunitiesPage() {
         limit: itemsPerPage,
         searchTerm: debouncedSearchTerm,
         stageId: selectedStage,
+        sortColumn: sortColumn ?? undefined,
+        sortDirection: sortDirection ?? undefined,
       }),
     enabled: !!workspace?.id,
   });
@@ -322,15 +331,9 @@ export default function OpportunitiesPage() {
     setSelectedCreatedId('all');
   };
 
-  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Opportunity>(
-    'opportunities',
-    filteredOpportunities,
-    { onSortChange: () => setCurrentPage(1) }
-  );
-
   // Pagination Logic
   const totalPages = Math.ceil(totalCount / itemsPerPage);
-  const paginatedOpportunities = sortedData;
+  const paginatedOpportunities = filteredOpportunities;
 
   if (!workspace) {
     return <OpportunitiesPageSkeleton />;
