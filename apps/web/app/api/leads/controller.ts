@@ -9,6 +9,25 @@ import {
   successDataResponse,
 } from '../../../utils/response-handler';
 
+const LEAD_SORTABLE_COLUMNS: Record<string, { column: string; foreignTable?: string }> = {
+  first_name:           { column: 'first_name' },
+  last_name:            { column: 'last_name' },
+  email:                { column: 'email' },
+  alt_email:            { column: 'alt_email' },
+  company_name:         { column: 'company_name' },
+  job_title:            { column: 'job_title' },
+  department:           { column: 'department' },
+  company_size:         { column: 'company_size' },
+  location:             { column: 'location' },
+  trigger:              { column: 'trigger' },
+  created_at:           { column: 'created_at' },
+  'status.status_name':          { column: 'status_name', foreignTable: 'entity_statuses' },
+  'source.source_name':          { column: 'source_name', foreignTable: 'lead_sources' },
+  'industry.industry_name':      { column: 'industry_name', foreignTable: 'crm_industries' },
+  'created_by_account.name':     { column: 'name', foreignTable: 'accounts' },
+  'updated_by_account.name':     { column: 'name', foreignTable: 'accounts' },
+};
+
 /**
  * GET /api/leads
  * Fetch all leads for a workspace
@@ -31,6 +50,8 @@ const getLeads = catchAsync(
     const searchTerm = url.searchParams.get('searchTerm') || '';
     const statusId = url.searchParams.get('statusId') || '';
     const debug = url.searchParams.get('debug') === '1';
+    const sortColumn = url.searchParams.get('sortColumn') || '';
+    const sortDirection = url.searchParams.get('sortDirection') || '';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -168,7 +189,12 @@ const getLeads = catchAsync(
     );
 
     if (statusId && statusId !== 'all') {
-      mainQuery = mainQuery.eq('status_id', statusId);
+      const statusIds = statusId.split(',').map((s) => s.trim()).filter(Boolean);
+      if (statusIds.length === 1) {
+        mainQuery = mainQuery.eq('status_id', statusIds[0]);
+      } else if (statusIds.length > 1) {
+        mainQuery = mainQuery.in('status_id', statusIds);
+      }
     }
 
     if (searchTerm) {
@@ -198,7 +224,16 @@ const getLeads = catchAsync(
     );
 
     const [mainResult, breakdownResult] = await Promise.all([
-      mainQuery.order('created_at', { ascending: false }).range(from, to),
+      (LEAD_SORTABLE_COLUMNS[sortColumn]
+        ? mainQuery.order(LEAD_SORTABLE_COLUMNS[sortColumn].column, {
+            ascending: sortDirection === 'asc',
+            ...(LEAD_SORTABLE_COLUMNS[sortColumn].foreignTable
+              ? { foreignTable: LEAD_SORTABLE_COLUMNS[sortColumn].foreignTable }
+              : {}),
+            nullsFirst: false,
+          })
+        : mainQuery.order('created_at', { ascending: false })
+      ).range(from, to),
       breakdownQuery,
     ]);
 

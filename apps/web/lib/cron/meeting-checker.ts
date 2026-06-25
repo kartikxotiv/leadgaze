@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { NotificationService } from './notification-service';
@@ -5,7 +6,9 @@ import { MEETING_REMINDER_INTERVALS } from './reminder-config';
 
 /**
  * Service to check for upcoming meetings and send reminder notifications
- * Uses batch processing for better performance
+ * Supports both:
+ *   - Legacy: crm_meetings + meeting_notifications_sent tables
+ *   - New: core.meetings + core.meeting_reminders tables
  */
 export class MeetingChecker {
   private static readonly BATCH_SIZE = 10;
@@ -21,34 +24,224 @@ export class MeetingChecker {
     try {
       console.log('[MeetingChecker] Starting meeting check...');
 
-      const now = new Date();
+      // Run legacy check and new core reminders check in parallel
+      const [legacyCount, coreRemindersCount] = await Promise.all([
+        MeetingChecker.checkLegacyMeetings(supabase),
+        MeetingChecker.checkCoreMeetingReminders(supabase),
+      ]);
 
-      // Process each reminder interval
-      for (const interval of MEETING_REMINDER_INTERVALS) {
-        try {
-          const sent = await this.checkIntervalAndNotify(
-            supabase,
-            interval.minutes,
-            interval.label,
-            now,
-          );
-          notificationCount += sent;
-        } catch (error) {
-          console.error(
-            `[MeetingChecker] Error checking ${interval.minutes}min interval:`,
-            error,
-          );
-        }
-      }
+      notificationCount = legacyCount + coreRemindersCount;
 
       console.log(
-        `[MeetingChecker] Sent ${notificationCount} meeting notifications`,
+        `[MeetingChecker] Sent ${notificationCount} meeting notifications (legacy: ${legacyCount}, core: ${coreRemindersCount})`,
       );
       return notificationCount;
     } catch (error) {
       console.error('[MeetingChecker] Fatal error in checkAndNotify:', error);
       return notificationCount;
     }
+  }
+
+  // ===========================================================================
+  // CORE MEETING REMINDERS (new meetings platform)
+  // ===========================================================================
+
+  /**
+   * Check core.meeting_reminders for pending reminders and send emails
+   * This handles the new meetings platform where reminders are stored with
+   * exact scheduled_at timestamps
+   */
+  private static async checkCoreMeetingReminders(
+    supabase: any,
+  ): Promise<number> {
+    let sent = 0;
+
+    try {
+      const now = new Date();
+
+      // Find pending reminders that are due (scheduled_at <= now)
+      const { data: reminders, error: remindersError } = await supabase
+        .schema('core')
+        .from('meeting_reminders')
+        .select('*, meeting:meetings(*)')
+        .eq('status', 'pending')
+        .lte('scheduled_at', now.toISOString())
+        .order('scheduled_at', { ascending: true })
+        .limit(50);
+
+      if (remindersError) {
+        console.error(
+          '[MeetingChecker] Error fetching core reminders:',
+          remindersError,
+        );
+        return 0;
+      }
+
+      if (!reminders || reminders.length === 0) {
+        return 0;
+      }
+
+      console.log(
+        `[MeetingChecker] Found ${reminders.length} pending core reminders`,
+      );
+
+      for (const reminder of reminders) {
+        try {
+          const meeting = (reminder as any).meeting;
+          if (!meeting) {
+            // Mark orphaned reminder as failed
+            await supabase
+              .schema('core')
+              .from('meeting_reminders')
+              .update({ status: 'failed' })
+              .eq('id', reminder.id);
+            continue;
+          }
+
+          // Skip cancelled meetings
+          if (meeting.status === 'cancelled' || meeting.is_deleted) {
+            await supabase
+              .schema('core')
+              .from('meeting_reminders')
+              .update({ status: 'cancelled' })
+              .eq('id', reminder.id);
+            continue;
+          }
+
+          // Get meeting participants
+          const { data: participants } = await supabase
+            .schema('core')
+            .from('meeting_participants')
+            .select('external_email, internal_user_id')
+            .eq('meeting_id', meeting.id);
+
+          // Build list of emails to notify
+          const emailsToNotify: string[] = [];
+
+          // Add participant emails
+          if (participants && participants.length > 0) {
+            for (const p of participants) {
+              if (p.external_email) {
+                emailsToNotify.push(p.external_email);
+              } else if (p.internal_user_id) {
+                const userEmail = await NotificationService.getUserEmail(
+                  p.internal_user_id,
+                );
+                if (userEmail) emailsToNotify.push(userEmail);
+              }
+            }
+          }
+
+          // Also notify the meeting host
+          if (meeting.host_user_id) {
+            const hostEmail = await NotificationService.getUserEmail(
+              meeting.host_user_id,
+            );
+            if (hostEmail && !emailsToNotify.includes(hostEmail)) {
+              emailsToNotify.push(hostEmail);
+            }
+          }
+
+          // Compute a human-readable interval label
+          const offsetMinutes = reminder.offset_minutes;
+          let intervalLabel = `${offsetMinutes} minutes before`;
+          if (offsetMinutes >= 60) {
+            const hours = Math.floor(offsetMinutes / 60);
+            intervalLabel =
+              hours === 1 ? '1 hour before' : `${hours} hours before`;
+          }
+          if (offsetMinutes >= 1440) {
+            const days = Math.floor(offsetMinutes / 1440);
+            intervalLabel = days === 1 ? '1 day before' : `${days} days before`;
+          }
+
+          // Send emails to all recipients
+          const sendResults = await Promise.allSettled(
+            emailsToNotify.map((email) =>
+              NotificationService.sendMeetingEmail({
+                to: email,
+                meetingTitle: meeting.title,
+                meetingDescription: meeting.description,
+                startTime: meeting.scheduled_start,
+                endTime: meeting.scheduled_end,
+                location: meeting.location,
+                meetingLink: meeting.meeting_url,
+                intervalLabel,
+              }),
+            ),
+          );
+
+          const allSucceeded = sendResults.every(
+            (r) => r.status === 'fulfilled' && r.value === true,
+          );
+
+          // Update reminder status
+          await supabase
+            .schema('core')
+            .from('meeting_reminders')
+            .update({
+              status: allSucceeded ? 'sent' : 'failed',
+              sent_at: allSucceeded ? new Date().toISOString() : null,
+            })
+            .eq('id', reminder.id);
+
+          if (allSucceeded) {
+            sent++;
+            console.log(
+              `[MeetingChecker] Sent core reminder for "${meeting.title}" (${intervalLabel}) to ${emailsToNotify.length} recipients`,
+            );
+          }
+        } catch (error) {
+          console.error(
+            `[MeetingChecker] Error processing core reminder ${reminder.id}:`,
+            error,
+          );
+          // Mark as failed
+          await supabase
+            .schema('core')
+            .from('meeting_reminders')
+            .update({ status: 'failed' })
+            .eq('id', reminder.id);
+        }
+      }
+    } catch (error) {
+      console.error(
+        '[MeetingChecker] Error in checkCoreMeetingReminders:',
+        error,
+      );
+    }
+
+    return sent;
+  }
+
+  // ===========================================================================
+  // LEGACY MEETING CHECK (crm_meetings table)
+  // ===========================================================================
+
+  private static async checkLegacyMeetings(supabase: any): Promise<number> {
+    let notificationCount = 0;
+
+    const now = new Date();
+
+    // Process each reminder interval
+    for (const interval of MEETING_REMINDER_INTERVALS) {
+      try {
+        const sent = await MeetingChecker.checkIntervalAndNotify(
+          supabase,
+          interval.minutes,
+          interval.label,
+          now,
+        );
+        notificationCount += sent;
+      } catch (error) {
+        console.error(
+          `[MeetingChecker] Error checking ${interval.minutes}min interval:`,
+          error,
+        );
+      }
+    }
+
+    return notificationCount;
   }
 
   /**

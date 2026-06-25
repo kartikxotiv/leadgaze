@@ -48,6 +48,8 @@ import {
 } from './page.data';
 import { StatTile } from './page.shared';
 import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 export function UpdateProfileDialog(props: {
   employee: SelfServiceEmployeeProfile;
@@ -387,6 +389,11 @@ export function SelfServicePayslipDetailsDialog(props: {
     | SelfServicePayslipDetail
     | undefined;
 
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<any>(
+    'hrms-self-service-payslip-details',
+    detail?.components || []
+  );
+
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[860px]">
@@ -432,26 +439,56 @@ export function SelfServicePayslipDetailsDialog(props: {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="relative" {...getHeaderProps('component')}>
-                      Component
+                    <SortableTableHead
+                      label="Component"
+                      columnId="component"
+                      sortKey="salary_component.name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('component')}
+                    >
                       <span className="col-resize-handle" {...getResizeHandleProps('component')} />
-                    </TableHead>
-                    <TableHead className="relative" {...getHeaderProps('type')}>
-                      Type
+                    </SortableTableHead>
+                    <SortableTableHead
+                      label="Type"
+                      columnId="type"
+                      sortKey="salary_component.type"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('type')}
+                    >
                       <span className="col-resize-handle" {...getResizeHandleProps('type')} />
-                    </TableHead>
-                    <TableHead className="relative" {...getHeaderProps('source')}>
-                      Source
+                    </SortableTableHead>
+                    <SortableTableHead
+                      label="Source"
+                      columnId="source"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('source')}
+                    >
                       <span className="col-resize-handle" {...getResizeHandleProps('source')} />
-                    </TableHead>
-                    <TableHead className="relative text-right" {...getHeaderProps('amount')}>
-                      Amount
+                    </SortableTableHead>
+                    <SortableTableHead
+                      label="Amount"
+                      columnId="amount"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative text-right"
+                      {...getHeaderProps('amount')}
+                    >
                       <span className="col-resize-handle" {...getResizeHandleProps('amount')} />
-                    </TableHead>
+                    </SortableTableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {detail.components.map((component) => (
+                  {sortedData.map((component: any) => (
                     <TableRow key={component.id}>
                       <TableCell className="font-medium">
                         {component.salary_component?.name ?? 'Component'}

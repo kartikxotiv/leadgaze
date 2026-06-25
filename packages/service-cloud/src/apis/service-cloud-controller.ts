@@ -237,8 +237,16 @@ export const getServiceCloudResourceController = catchAsync(
       query = query.in('id', assignedTicketIds);
     }
 
-    const { data, error: fetchError } = await query.order(config.orderBy, {
-      ascending: resource === 'ticket-priorities',
+    const sortColumn = url.searchParams.get('sortColumn');
+    const sortDirection = url.searchParams.get('sortDirection');
+
+    const finalSortColumn = sortColumn || config.orderBy;
+    const isAscending = sortColumn
+      ? sortDirection === 'asc'
+      : resource === 'ticket-priorities';
+
+    const { data, error: fetchError } = await query.order(finalSortColumn, {
+      ascending: isAscending,
     });
 
     if (fetchError) throw fetchError;

@@ -338,77 +338,119 @@ export function formatRelativeDate(
 export function convertCurrency(amount: number, rate: number): number {
   return Math.round(amount * rate * 100) / 100;
 }
-/**
- * Check if the code is running in a browser environment.
- */
-export function isBrowser() {
-  return typeof window !== 'undefined';
+
+
+export type CsvRow = string[];
+
+export function normalizeCsvHeader(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '')
+    .replace(/[^a-z0-9]/g, '');
 }
 
-/**
- * @name formatCurrency
- * @description Format the currency based on the currency code
- */
-export function formatCurrency(params: {
-  currencyCode: string;
-  locale: string;
-  value: string | number;
-}) {
-  return new Intl.NumberFormat(params.locale, {
-    style: 'currency',
-    currency: params.currencyCode,
-  }).format(Number(params.value));
-}
+export function parseCsv(text: string): CsvRow[] {
+  const rows: CsvRow[] = [];
+  let row: string[] = [];
+  let field = '';
+  let inQuotes = false;
 
-/**
- * @name parseDate
- * @description Safely parse a date value.
- * Date-only strings like "2024-01-15" are treated as LOCAL midnight (not UTC),
- * preventing off-by-one-day bugs in timezones ahead of UTC (e.g. IST +5:30).
- */
-function parseDate(date: string | Date): Date {
-  if (date instanceof Date) return date;
-  // ISO date-only: YYYY-MM-DD — parse as local midnight to avoid UTC offset shift
-  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return new Date(`${date}T00:00:00`);
+  const pushField = () => {
+    row.push(field);
+    field = '';
+  };
+
+  const pushRow = () => {
+    const hasContent = row.some((value) => value.length > 0) || field.length > 0;
+    if (hasContent) {
+      if (field.length > 0 || row.length > 0) {
+        pushField();
+      }
+      rows.push(row);
+    }
+    row = [];
+    field = '';
+  };
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    const nextChar = text[i + 1];
+
+    if (inQuotes) {
+      if (char === '"') {
+        if (nextChar === '"') {
+          field += '"';
+          i += 1;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += char;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inQuotes = true;
+      continue;
+    }
+
+    if (char === ',') {
+      pushField();
+      continue;
+    }
+
+    if (char === '\r') {
+      if (nextChar === '\n') {
+        i += 1;
+      }
+      pushRow();
+      continue;
+    }
+
+    if (char === '\n') {
+      pushRow();
+      continue;
+    }
+
+    field += char;
   }
-  return new Date(date);
+
+  if (field.length > 0 || row.length > 0) {
+    pushRow();
+  }
+
+  return rows;
 }
 
-/**
- * @name formatDate
- * @description Format a date string to MM-DD-YYYY
- */
-export function formatDate(date: string | Date | null | undefined): string {
-  if (!date) return '-';
-  const d = parseDate(date);
-  if (isNaN(d.getTime())) return '-';
-
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const year = d.getFullYear();
-
-  return `${month}-${day}-${year}`;
+export function stringifyCsv(rows: CsvRow[]) {
+  return rows
+    .map((row) =>
+      row
+        .map((value) => {
+          const normalized = value ?? '';
+          if (/[",\n\r]/.test(normalized) || /^\s|\s$/.test(normalized)) {
+            return `"${normalized.replace(/"/g, '""')}"`;
+          }
+          return normalized;
+        })
+        .join(','),
+    )
+    .join('\n');
 }
 
-// Alias for legacy usage – same output as formatDate
-export const formatDateOnly = formatDate;
+export function createCsvFile(
+  headers: string[],
+  rows: CsvRow[],
+  fileName: string,
+) {
+  const csvText = stringifyCsv([headers, ...rows]);
+  return new File([csvText], fileName, { type: 'text/csv;charset=utf-8' });
+}
 
-/**
- * @name formatDateTime
- * @description Format a date string to MM-DD-YYYY HH:mm
- */
-export function formatDateTime(date: string | Date | null | undefined): string {
-  if (!date) return '-';
-  const d = parseDate(date);
-  if (isNaN(d.getTime())) return '-';
-
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const year = d.getFullYear();
-
-  const hours = String(d.getHours()).padStart(2, '0');
-  const minutes = String(d.getMinutes()).padStart(2, '0');
-
-  return `${month}-${day}-${year} ${hours}:${minutes}`;
+export function buildFormDataFromCsvFile(file: File, fieldName = 'file') {
+  const formData = new FormData();
+  formData.append(fieldName, file);
+  return formData;
 }

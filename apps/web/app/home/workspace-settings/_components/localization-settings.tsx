@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@kit/ui/select';
-import { useToast } from '@kit/ui/use-toast';
+import { toast } from 'sonner';
 
 import {
   getWorkspacePreferencesService,
@@ -54,12 +54,12 @@ const COMMON_CURRENCIES = [
   { code: 'EUR', symbol: '\u20ac', label: 'EUR - Euro' },
   { code: 'GBP', symbol: '\u00a3', label: 'GBP - British Pound' },
   { code: 'INR', symbol: '\u20b9', label: 'INR - Indian Rupee' },
-  { code: 'AED', symbol: 'AED', label: 'AED - UAE Dirham' },
-  { code: 'CAD', symbol: 'CA$', label: 'CAD - Canadian Dollar' },
-  { code: 'AUD', symbol: 'A$', label: 'AUD - Australian Dollar' },
-  { code: 'JPY', symbol: '\u00a5', label: 'JPY - Japanese Yen' },
-  { code: 'SGD', symbol: 'S$', label: 'SGD - Singapore Dollar' },
-  { code: 'CHF', symbol: 'CHF', label: 'CHF - Swiss Franc' },
+  // { code: 'AED', symbol: 'AED', label: 'AED - UAE Dirham' },
+  // { code: 'CAD', symbol: 'CA$', label: 'CAD - Canadian Dollar' },
+  // { code: 'AUD', symbol: 'A$', label: 'AUD - Australian Dollar' },
+  // { code: 'JPY', symbol: '\u00a5', label: 'JPY - Japanese Yen' },
+  // { code: 'SGD', symbol: 'S$', label: 'SGD - Singapore Dollar' },
+  // { code: 'CHF', symbol: 'CHF', label: 'CHF - Swiss Franc' },
 ];
 
 // Timezone list - common IANA timezones
@@ -97,7 +97,6 @@ export function WorkspaceLocalizationSettings({
   workspaceId: string;
 }) {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   const [form, setForm] = useState<WorkspaceLocalizationPreferences>({
     timezone: 'UTC',
@@ -139,16 +138,13 @@ export function WorkspaceLocalizationSettings({
         queryKey: ['workspace-preferences-settings', workspaceId],
       });
       setIsDirty(false);
-      toast({
-        title: 'Preferences saved',
+      toast.success('Preferences saved', {
         description: 'Localization settings have been updated.',
       });
     },
     onError: (error: any) => {
-      toast({
-        title: 'Failed to save',
+      toast.error('Failed to save', {
         description: error?.message || 'Something went wrong.',
-        variant: 'destructive',
       });
     },
   });
