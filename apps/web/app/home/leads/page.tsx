@@ -72,7 +72,8 @@ export default function LeadsPage() {
   const customFields: { id: string; label: string }[] = [];
 
   const activeFilterCount =
-    selectedStatuses.length + selectedCreatedByIds.length;
+    (selectedStatuses.length > 0 ? 1 : 0) +
+    (selectedCreatedByIds.length > 0 ? 1 : 0);
 
   const columns = useMemo(
     () => [
