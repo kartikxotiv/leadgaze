@@ -145,31 +145,33 @@ export default function ContactsPage() {
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
+  const { sortColumn, sortDirection, toggleSort, sortState } = useTableSort<Contact>(
+    'contacts',
+    [],
+    { mode: 'server', onSortChange: () => setCurrentPage(1) }
+  );
+
   const {
     data: contactsData = { data: [], count: 0 },
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: ['contacts', workspace?.id, currentPage, debouncedSearchTerm, pageSize],
+    queryKey: ['contacts', workspace?.id, currentPage, debouncedSearchTerm, pageSize, sortState],
     queryFn: () =>
       getContactsService({
         workspaceId: workspace?.id || '',
         page: currentPage,
         limit: itemsPerPage,
         searchTerm: debouncedSearchTerm,
+        sortColumn: sortColumn ?? undefined,
+        sortDirection: sortDirection ?? undefined,
       }),
     enabled: !!workspace?.id,
   });
 
   const contacts = contactsData.data;
   const totalCount = contactsData.count;
-
-  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Contact>(
-    'contacts',
-    contacts,
-    { onSortChange: () => setCurrentPage(1) }
-  );
 
   // Reset to first page when search changes
   React.useEffect(() => {
@@ -178,7 +180,7 @@ export default function ContactsPage() {
 
   // Pagination Logic
   const totalPages = Math.ceil(totalCount / itemsPerPage);
-  const paginatedContacts = sortedData; // Data is already paginated from server
+  const paginatedContacts = contacts; // Data is already paginated from server
 
   if (!workspace) {
     return null;

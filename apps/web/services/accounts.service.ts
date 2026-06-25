@@ -64,10 +64,12 @@ const getAccountsService = asyncHandlerClient(
     page?: number;
     limit?: number;
     searchTerm?: string;
+    sortColumn?: string;
+    sortDirection?: 'asc' | 'desc' | null;
   }) => {
-    const { workspaceId, page = 1, limit = 20, searchTerm = '' } = params;
+    const { workspaceId, page = 1, limit = 20, searchTerm = '', sortColumn = '', sortDirection = '' } = params;
     const response = await ApiClient.get(
-      `/accounts?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}`,
+      `/accounts?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&sortColumn=${sortColumn}&sortDirection=${sortDirection || ''}`,
     );
     return {
       data: (response.data?.data || []) as Account[],

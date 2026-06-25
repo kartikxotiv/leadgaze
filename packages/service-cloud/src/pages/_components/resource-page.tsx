@@ -185,14 +185,26 @@ export function ServiceCloudResourcePage({
     }
   };
 
+  const { sortColumn, sortDirection, toggleSort, sortState } = useTableSort<ServiceCloudRecord>(
+    `sc-${resource}`,
+    [],
+    { mode: 'server', onSortChange: () => setCurrentPage(1) }
+  );
+
+  const queryParamsWithSort = useMemo(() => ({
+    ...queryParams,
+    ...(sortColumn ? { sortColumn } : {}),
+    ...(sortDirection ? { sortDirection } : {})
+  }), [queryParams, sortColumn, sortDirection]);
+
   const {
     data = [],
     isLoading,
     refetch,
   } = useQuery<ServiceCloudRecord[]>({
-    queryKey: ['service-cloud', resource, workspaceId, queryParams],
+    queryKey: ['service-cloud', resource, workspaceId, queryParamsWithSort, sortState],
     queryFn: () =>
-      getServiceCloudResourceService(resource, workspaceId, queryParams),
+      getServiceCloudResourceService(resource, workspaceId, queryParamsWithSort),
     enabled: Boolean(workspaceId),
   });
 
@@ -211,11 +223,9 @@ export function ServiceCloudResourcePage({
   const totalCount = filteredData.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
-  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<ServiceCloudRecord>(
-    `sc-${resource}`,
-    filteredData,
-    { onSortChange: () => setCurrentPage(1) }
-  );
+  // When mode='server', we don't need useTableSort to actually sort. We just use its state.
+  // We'll rename filteredData to sortedData for consistency with the rest of the component
+  const sortedData = filteredData;
 
   const paginatedData = useMemo(
     () =>

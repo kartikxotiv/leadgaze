@@ -119,7 +119,7 @@ export function useTableSort<T extends Record<string, any>>(
     defaultSortColumn = null,
     defaultSortDirection = 'asc',
     onSortChange,
-    persistSort = true,
+    persistSort = false,
   } = options;
 
   // Keep onSortChange in a ref so toggleSort never closes over a stale value
