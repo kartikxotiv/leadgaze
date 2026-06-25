@@ -25,6 +25,8 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
   const status = url.searchParams.get('status');
   const hostUserId = url.searchParams.get('hostUserId');
   const id = url.searchParams.get('id');
+  const includeParticipantMeetings = url.searchParams.get('includeParticipantMeetings');
+  const participantUserId = url.searchParams.get('participantUserId');
 
   if (!workspaceId) {
     return NextResponse.json(
@@ -36,6 +38,10 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
   const { supabase, user, error } =
     await assertCoreWorkspaceAccess(workspaceId);
   if (error || !user) return error!;
+
+  // Determine the user ID to filter by for participant meetings
+  // Use participantUserId if provided, otherwise fall back to current user
+  const userIdForParticipant = participantUserId || user.id;
 
   try {
     // If filtering by entity, first get matching meeting IDs
@@ -60,6 +66,50 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
       if (meetingIds && meetingIds.length === 0) {
         return successDataResponse('Meetings retrieved', id ? null : []);
       }
+    }
+
+    // If includeParticipantMeetings is true, also get meetings where user is a participant
+    const participantMeetingIds: string[] = [];
+    if (includeParticipantMeetings === 'true' && userIdForParticipant) {
+      const { data: participantData, error: participantError } = await (supabase as any)
+        .schema('core')
+        .from('meeting_participants')
+        .select('meeting_id')
+        .eq('workspace_id', workspaceId)
+        .eq('internal_user_id', userIdForParticipant);
+
+      if (!participantError && participantData) {
+        participantMeetingIds.push(...participantData.map((p: { meeting_id: string }) => p.meeting_id));
+      }
+
+      // Also add meetings where user is the host (host_user_id matches)
+      const { data: hostMeetingData } = await (supabase as any)
+        .schema('core')
+        .from('meetings')
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .eq('host_user_id', userIdForParticipant)
+        .eq('is_deleted', false);
+
+      if (hostMeetingData) {
+        participantMeetingIds.push(...hostMeetingData.map((m: { id: string }) => m.id));
+      }
+    }
+
+    // Merge participant meeting IDs with entity-based meeting IDs
+    if (participantMeetingIds.length > 0) {
+      if (meetingIds) {
+        // Combine both lists and deduplicate
+        meetingIds = [...new Set([...meetingIds, ...participantMeetingIds])];
+      } else {
+        meetingIds = [...new Set(participantMeetingIds)];
+      }
+    }
+
+    // If we have participant meetings but no entity filter, and meetingIds is empty after filtering,
+    // we should still include the participant meetings
+    if (includeParticipantMeetings === 'true' && !entityType && !entityId && participantMeetingIds.length > 0) {
+      meetingIds = [...new Set(participantMeetingIds)];
     }
 
     // Build main query
