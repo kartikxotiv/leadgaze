@@ -400,6 +400,27 @@ export default function LeadsPage() {
       persistSort: false,
     });
 
+  // Fetch team members
+  const { data: membersData } = useQuery({
+    queryKey: ['team-members', workspace?.id],
+    queryFn: () => getMembersService(workspace?.id || ''),
+    enabled: !!workspace?.id,
+  });
+  const members = (membersData?.data || []) as any[];
+
+  // Fetch lead statuses
+  const { data: statuses = [], isSuccess: isStatusesLoaded } = useQuery({
+    queryKey: ['lead-statuses', workspace?.id],
+    queryFn: () => getLeadStatusesService(workspace?.id || ''),
+    enabled: !!workspace?.id,
+  });
+
+  const defaultStatusIds = useMemo(() => {
+    return statuses
+      .filter((s: any) => s.status_key !== 'unqualified')
+      .map((s: any) => s.id);
+  }, [statuses]);
+
   // Fetch leads data
   const {
     data: leadsData = { data: [], count: 0, statusBreakdown: {} },
@@ -418,6 +439,7 @@ export default function LeadsPage() {
       sortState,
       computedCreatedOnDates,
       computedUpdatedOnDates,
+      defaultStatusIds,
     ],
     queryFn: () =>
       getLeadsService({
@@ -425,7 +447,7 @@ export default function LeadsPage() {
         page: currentPage,
         limit: pageSize,
         searchTerm: debouncedSearchTerm,
-        statusId: selectedStatuses.length > 0 ? selectedStatuses : undefined,
+        statusId: selectedStatuses.length > 0 ? selectedStatuses : defaultStatusIds,
         sortColumn: sortColumn ?? undefined,
         sortDirection: sortDirection ?? undefined,
         createdAtFrom: computedCreatedOnDates?.from ?? undefined,
@@ -433,22 +455,7 @@ export default function LeadsPage() {
         updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
         updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
       }),
-    enabled: !!workspace?.id,
-  });
-
-  // Fetch team members
-  const { data: membersData } = useQuery({
-    queryKey: ['team-members', workspace?.id],
-    queryFn: () => getMembersService(workspace?.id || ''),
-    enabled: !!workspace?.id,
-  });
-  const members = (membersData?.data || []) as any[];
-
-  // Fetch lead statuses
-  const { data: statuses = [] } = useQuery({
-    queryKey: ['lead-statuses', workspace?.id],
-    queryFn: () => getLeadStatusesService(workspace?.id || ''),
-    enabled: !!workspace?.id,
+    enabled: !!workspace?.id && isStatusesLoaded,
   });
 
   const leads = leadsData.data;
@@ -608,6 +615,11 @@ export default function LeadsPage() {
                 value: s.id,
                 label: s.status_name,
                 color: s.color,
+                badge: s.status_key === 'unqualified' ? (
+                  <span className="text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                    Closed
+                  </span>
+                ) : undefined,
               })),
               onSelectValues: setSelectedStatuses,
             },

@@ -60,7 +60,7 @@ export function DateRangePickerPanel({
           return (
             <button
               key={preset.value}
-              className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="flex w-full items-center justify-between px-3 py-2 text-left text-[12px] hover:bg-gray-100 dark:hover:bg-gray-800"
               onClick={() => handlePresetClick(preset.value)}
             >
               <span className={cn(isSelected && 'font-medium text-blue-600')}>{preset.label}</span>
@@ -70,7 +70,7 @@ export function DateRangePickerPanel({
         })}
         <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
         <button
-          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+          className="flex w-full items-center justify-between px-3 py-2 text-left text-[12px] hover:bg-gray-100 dark:hover:bg-gray-800"
           onClick={() => setView('calendar')}
         >
           <span className={cn(value?.preset === 'custom' && 'font-medium text-blue-600')}>Custom Date</span>
@@ -93,6 +93,7 @@ export function DateRangePickerPanel({
           mode="range"
           selected={tempRange}
           onSelect={setTempRange}
+          className="[&_button]:text-[12px]"
           initialFocus
         />
       </div>
