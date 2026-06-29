@@ -23,6 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from './tooltip';
+import { DateRangePickerPanel } from './date-range-picker-panel';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -34,16 +35,29 @@ export interface FilterOption {
   color?: string;
 }
 
+export interface DateRangeValue {
+  preset: 'today' | 'yesterday' | 'last_7_days' | 'this_month' | 'this_year' | 'custom' | null;
+  from: string | null;
+  to: string | null;
+}
+
 export interface FilterGroup {
   key: string;
   label: string;
+  type?: 'options' | 'date';
+  
+  // Options fields
   selectedValue?: string;
-  options: FilterOption[];
+  options?: FilterOption[];
   onSelect?: (value: string) => void;
   selectedLabel?: string;
-  /** Multi-select mode */
   selectedValues?: string[];
   onSelectValues?: (values: string[]) => void;
+
+  // Date fields
+  dateValue?: DateRangeValue | null;
+  onDateChange?: (value: DateRangeValue | null) => void;
+  dateLabel?: string;
 }
 
 export interface ToolbarAction {
@@ -167,7 +181,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
 
   const toggleValue = (row: FilterRow, value: string) => {
     const group = filterGroups.find((g) => g.key === row.filterGroupKey);
-    if (!group) return;
+    if (!group || group.type === 'date') return;
     if (group.selectedValues && group.onSelectValues) {
       const next = group.selectedValues.includes(value)
         ? group.selectedValues.filter((v) => v !== value)
@@ -185,7 +199,8 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
 
   const selectAllValues = (row: FilterRow) => {
     const group = filterGroups.find((g) => g.key === row.filterGroupKey);
-    if (group?.selectedValues && group.onSelectValues) {
+    if (group?.type === 'date') return;
+    if (group?.selectedValues && group.onSelectValues && group.options) {
       group.onSelectValues(group.options.map((o) => o.value));
     }
   };
@@ -193,7 +208,9 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
   const clearRowValues = (row: FilterRow) => {
     const group = filterGroups.find((g) => g.key === row.filterGroupKey);
     if (!group) return;
-    if (group.selectedValues && group.onSelectValues) {
+    if (group.type === 'date') {
+      group.onDateChange?.(null);
+    } else if (group.selectedValues && group.onSelectValues) {
       group.onSelectValues([]);
     } else if (group.onSelect) {
       group.onSelect('');
@@ -205,7 +222,25 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
 
   const getValueTriggerLabel = (group: FilterGroup | undefined): string => {
     if (!group) return 'Select option';
-    if (group.selectedValues) {
+    if (group.type === 'date') {
+      if (!group.dateValue) return 'Select date';
+      if (group.dateValue.preset === 'custom') {
+        const from = group.dateValue.from ? new Date(group.dateValue.from).toLocaleDateString() : '';
+        const to = group.dateValue.to ? new Date(group.dateValue.to).toLocaleDateString() : '';
+        if (from && to && from !== to) return `${from} - ${to}`;
+        return from || to || 'Select date';
+      }
+      const presets: Record<string, string> = {
+        today: 'Today',
+        yesterday: 'Yesterday',
+        last_7_days: 'Last 7 Days',
+        this_month: 'This Month',
+        this_year: 'This Year'
+      };
+      return presets[group.dateValue.preset || ''] || 'Select date';
+    }
+
+    if (group.selectedValues && group.options) {
       if (group.selectedValues.length === 0) return 'Select option';
       if (group.selectedValues.length === 1) {
         const opt = group.options.find(
@@ -215,7 +250,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
       }
       return `${group.selectedValues.length} selected`;
     }
-    if (group.selectedValue) {
+    if (group.selectedValue && group.options) {
       const opt = group.options.find((o) => o.value === group.selectedValue);
       return opt?.label ?? '1 selected';
     }
@@ -233,7 +268,9 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
   const handleClearAll = () => {
     onClearFilters?.();
     filterGroups.forEach((g) => {
-      if (g.selectedValues && g.onSelectValues) {
+      if (g.type === 'date') {
+        g.onDateChange?.(null);
+      } else if (g.selectedValues && g.onSelectValues) {
         g.onSelectValues([]);
       } else {
         g.onSelect?.('');
@@ -556,7 +593,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
           const activeGroup = getGroupForRow(activeRow);
           if (!activeGroup) return null;
           const isMulti = !!activeGroup.selectedValues;
-          const filtered = activeGroup.options.filter((opt) =>
+          const filtered = (activeGroup.options || []).filter((opt) =>
             opt.label.toLowerCase().includes(valueSearchTerm.toLowerCase()),
           );
 
@@ -583,68 +620,85 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                   position: 'fixed',
                   top: dropdownPos.top,
                   left: dropdownPos.left,
-                  width: dropdownPos.width,
+                  minWidth: dropdownPos.width,
                   zIndex: 9999,
                 }}
                 className="rounded-md border bg-white shadow-lg dark:bg-gray-900"
               >
               {/* Search */}
-              <div className="p-2">
-                <input
-                  type="text"
-                  placeholder="Search…"
-                  value={valueSearchTerm}
-                  onChange={(e) => setValueSearchTerm(e.target.value)}
-                  className="h-7 w-full rounded border border-gray-200 px-2 text-xs outline-none focus:ring-1 focus:ring-gray-300"
-                  autoFocus
+              {activeGroup.type === 'date' ? (
+                <DateRangePickerPanel
+                  value={activeGroup.dateValue || null}
+                  onChange={(val) => {
+                    activeGroup.onDateChange?.(val);
+                    setOpenValueDropdown(null);
+                    setDropdownPos(null);
+                  }}
+                  onClose={() => {
+                    setOpenValueDropdown(null);
+                    setDropdownPos(null);
+                  }}
                 />
-              </div>
+              ) : (
+                <>
+                  <div className="p-2">
+                    <input
+                      type="text"
+                      placeholder="Search…"
+                      value={valueSearchTerm}
+                      onChange={(e) => setValueSearchTerm(e.target.value)}
+                      className="h-7 w-full rounded border border-gray-200 px-2 text-xs outline-none focus:ring-1 focus:ring-gray-300"
+                      autoFocus
+                    />
+                  </div>
 
-              {/* Select All (multi-select only) */}
-              {isMulti && (
-                <div className="px-2 pb-1">
-                  <button
-                    className="text-xs text-blue-600 hover:underline"
-                    onClick={() => selectAllValues(activeRow)}
-                  >
-                    Select All
-                  </button>
-                </div>
+                  {/* Select All (multi-select only) */}
+                  {isMulti && (
+                    <div className="px-2 pb-1">
+                      <button
+                        className="text-xs text-blue-600 hover:underline"
+                        onClick={() => selectAllValues(activeRow)}
+                      >
+                        Select All
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Options list */}
+                  <div className="max-h-[200px] overflow-y-auto px-1 pb-1">
+                    {filtered.length === 0 && (
+                      <p className="px-2 py-3 text-center text-xs text-gray-400">
+                        No options
+                      </p>
+                    )}
+                    {filtered.map((opt) => {
+                      const isSelected = isMulti
+                        ? activeGroup.selectedValues!.includes(opt.value)
+                        : activeGroup.selectedValue === opt.value;
+
+                      return (
+                        <button
+                          key={opt.value}
+                          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs hover:bg-gray-100 dark:hover:bg-gray-800"
+                          onClick={() => toggleValue(activeRow, opt.value)}
+                        >
+                          {/* Color dot */}
+                          {opt.color && (
+                            <span
+                              className="h-2.5 w-2.5 shrink-0 rounded-full"
+                              style={{ backgroundColor: opt.color }}
+                            />
+                          )}
+                          <span className="truncate flex-1">{opt.label}</span>
+                          {isSelected && (
+                             <Check className="h-4 w-4 text-blue-600 shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
               )}
-
-              {/* Options list */}
-              <div className="max-h-[200px] overflow-y-auto px-1 pb-1">
-                {filtered.length === 0 && (
-                  <p className="px-2 py-3 text-center text-xs text-gray-400">
-                    No options
-                  </p>
-                )}
-                {filtered.map((opt) => {
-                  const isSelected = isMulti
-                    ? activeGroup.selectedValues!.includes(opt.value)
-                    : activeGroup.selectedValue === opt.value;
-
-                  return (
-                    <button
-                      key={opt.value}
-                      className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs hover:bg-gray-100 dark:hover:bg-gray-800"
-                      onClick={() => toggleValue(activeRow, opt.value)}
-                    >
-                      {/* Color dot */}
-                      {opt.color && (
-                        <span
-                          className="h-2.5 w-2.5 shrink-0 rounded-full"
-                          style={{ backgroundColor: opt.color }}
-                        />
-                      )}
-                      <span className="truncate flex-1">{opt.label}</span>
-                      {isSelected && (
-                         <Check className="h-4 w-4 text-blue-600 shrink-0" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
             </div>
             </>,
             document.body,

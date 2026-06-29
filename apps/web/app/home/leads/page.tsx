@@ -27,6 +27,7 @@ import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import { ListToolBar } from '@kit/ui/list-toolbar';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
@@ -62,6 +63,9 @@ export default function LeadsPage() {
   const [pageSize, setPageSize] = useState(15);
   const itemsPerPage = pageSize;
 
+  const { dateRange: createdOnRange, setDateRange: setCreatedOnRange, computedDates: computedCreatedOnDates, clearDateRange: clearCreatedOnRange } = useDateRangeFilter();
+  const { dateRange: updatedOnRange, setDateRange: setUpdatedOnRange, computedDates: computedUpdatedOnDates, clearDateRange: clearUpdatedOnRange } = useDateRangeFilter();
+
   // ─── Custom Fields (dynamic columns from API) ─────────────────────────────
   // When the backend is ready, replace the empty array with your query:
   // const { data: customFields = [] } = useQuery({
@@ -73,7 +77,9 @@ export default function LeadsPage() {
 
   const activeFilterCount =
     (selectedStatuses.length > 0 ? 1 : 0) +
-    (selectedCreatedByIds.length > 0 ? 1 : 0);
+    (selectedCreatedByIds.length > 0 ? 1 : 0) +
+    (createdOnRange ? 1 : 0) +
+    (updatedOnRange ? 1 : 0);
 
   const columns = useMemo(
     () => [
@@ -198,6 +204,8 @@ export default function LeadsPage() {
       selectedCreatedByIds,
       pageSize,
       sortState,
+      computedCreatedOnDates,
+      computedUpdatedOnDates,
     ],
     queryFn: () =>
       getLeadsService({
@@ -208,6 +216,10 @@ export default function LeadsPage() {
         statusId: selectedStatuses.length > 0 ? selectedStatuses : undefined,
         sortColumn: sortColumn ?? undefined,
         sortDirection: sortDirection ?? undefined,
+        createdAtFrom: computedCreatedOnDates?.from ?? undefined,
+        createdAtTo: computedCreatedOnDates?.to ?? undefined,
+        updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
+        updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
       }),
     enabled: !!workspace?.id,
   });
@@ -242,7 +254,7 @@ export default function LeadsPage() {
   // Reset to first page when search or filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, selectedStatuses, selectedCreatedByIds, pageSize]);
+  }, [debouncedSearchTerm, selectedStatuses, selectedCreatedByIds, pageSize, createdOnRange, updatedOnRange]);
 
   const paginatedLeads = filteredLeads;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
@@ -338,11 +350,33 @@ export default function LeadsPage() {
                   })),
                 onSelectValues: setSelectedCreatedByIds,
               },
+              {
+                key: 'created_on',
+                label: 'Created On',
+                type: 'date',
+                dateValue: createdOnRange,
+                onDateChange: (val) => {
+                  setCreatedOnRange(val);
+                  setCurrentPage(1);
+                },
+              },
+              {
+                key: 'updated_on',
+                label: 'Updated On',
+                type: 'date',
+                dateValue: updatedOnRange,
+                onDateChange: (val) => {
+                  setUpdatedOnRange(val);
+                  setCurrentPage(1);
+                },
+              },
             ]}
             activeFilterCount={activeFilterCount}
             onClearFilters={() => {
               setSelectedStatuses([]);
               setSelectedCreatedByIds([]);
+              clearCreatedOnRange();
+              clearUpdatedOnRange();
             }}
             actions={[
               // {
