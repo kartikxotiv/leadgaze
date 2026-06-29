@@ -83,7 +83,11 @@ export function useDynamicColumns({
   const queryClient = useQueryClient();
 
   // Fetch all entity fields
-  const { data: fields = [], isLoading: fieldsLoading } = useQuery({
+  const {
+    data: fields = [],
+    isLoading: fieldsLoading,
+    refetch: refetchFields,
+  } = useQuery({
     queryKey: ['entity-fields', workspaceId, entityType, productKey],
     queryFn: async () => {
       if (!workspaceId) return [];
@@ -296,6 +300,7 @@ export function useDynamicColumns({
     updatePreferences,
     updateFieldAccess,
     deleteField,
+    refetch: refetchFields,
     isLoading: fieldsLoading || preferencesLoading,
   };
 }
@@ -461,7 +466,8 @@ export function useUpdateFieldAccess() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ['entity-fields', variables.fieldId],
+        queryKey: ['entity-fields'],
+        exact: false,
       });
       queryClient.invalidateQueries({
         queryKey: ['field-access', variables.fieldId],
@@ -484,6 +490,7 @@ export function useCreateField() {
       field_type: string;
       description?: string;
       is_required?: boolean;
+      is_system?: boolean;
       settings?: Record<string, unknown>;
       access_type?: AccessType;
       access_members?: FieldAccessMember[];
@@ -499,7 +506,7 @@ export function useCreateField() {
           field_type: fieldData.field_type,
           description: fieldData.description ?? null,
           is_required: fieldData.is_required ?? false,
-          is_system: false,
+          is_system: fieldData.is_system ?? false,
           is_active: true,
           display_order: 9999,
           settings: fieldData.settings ?? {},
@@ -508,6 +515,7 @@ export function useCreateField() {
         .single();
 
       if (error) throw error;
+      console.debug('useCreateField result', { field, error });
 
       // Create access rule if specified
       if (fieldData.access_type && fieldData.access_type !== 'public') {
@@ -550,6 +558,42 @@ export function useCreateField() {
           variables.workspace_id,
           variables.entity_type,
         ],
+      });
+    },
+  });
+}
+
+export function useUpdateField() {
+  const queryClient = useQueryClient();
+  const supabase = getSupabaseBrowserClient<Database>();
+
+  return useMutation({
+    mutationFn: async (input: {
+      fieldId: string;
+      updates: Partial<{
+        field_label: string;
+        description: string | null;
+        is_required: boolean;
+        is_active: boolean;
+        settings: Record<string, unknown>;
+      }>;
+    }) => {
+      console.debug('useUpdateField.mutationFn called', { input });
+      const { data, error } = await coreDb(supabase)
+        .from('entity_fields')
+        .update(input.updates)
+        .eq('id', input.fieldId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      console.debug('useUpdateField result', { data });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['entity-fields'],
+        exact: false,
       });
     },
   });
