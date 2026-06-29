@@ -21,6 +21,9 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 
@@ -34,8 +37,8 @@ import { Account, getAccountsService } from '~/services/accounts.service';
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { CreateAccountDialog } from './components/create-account-dialog';
-import { formatDate } from '@kit/shared/utils';
 import { TablePagination } from '@kit/ui/table-pagination';
+import { useLocalization } from '~/lib/localization/localization-provider';
 
 function AccountsPageSkeleton() {
   return (
@@ -94,6 +97,7 @@ function AccountsPageSkeleton() {
 export default function AccountsPage() {
   const router = useRouter();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
+  const { formatDate } = useLocalization();
   const [searchTerm, setSearchTerm] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -144,7 +148,16 @@ export default function AccountsPage() {
       updated_by: false,
     });
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('accounts');
+
+
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  const { sortColumn, sortDirection, toggleSort, sortState } = useTableSort<Account>(
+    'accounts',
+    [],
+    { mode: 'server', onSortChange: () => setCurrentPage(1) }
+  );
 
   const {
     data: accountsData = { data: [], count: 0 },
@@ -152,13 +165,15 @@ export default function AccountsPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['accounts', workspace?.id, currentPage, debouncedSearchTerm, pageSize],
+    queryKey: ['accounts', workspace?.id, currentPage, debouncedSearchTerm, pageSize, sortState],
     queryFn: () =>
       getAccountsService({
         workspaceId: workspace?.id || '',
         page: currentPage,
         limit: itemsPerPage,
         searchTerm: debouncedSearchTerm,
+        sortColumn: sortColumn ?? undefined,
+        sortDirection: sortDirection ?? undefined,
       }),
     enabled: !!workspace?.id,
   });
@@ -174,6 +189,8 @@ export default function AccountsPage() {
   // Pagination Logic
   const totalPages = Math.ceil(totalCount / itemsPerPage);
   const paginatedAccounts = accounts; // Data is already paginated from server
+
+
 
   if (!workspace) {
     return <AccountsPageSkeleton />;
@@ -261,49 +278,223 @@ export default function AccountsPage() {
               <TableHeader>
                 <TableRow>
                   {isVisible('sno') && (
-                    <TableHead className="w-12 whitespace-nowrap">
-                      S. No.
-                    </TableHead>
-                  )}
+  <SortableTableHead
+    label="S. No."
+    columnId="sno"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    sortable={false}
+    className="relative w-12 whitespace-nowrap"
+    {...getHeaderProps('sno')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
+  </SortableTableHead>
+)}
                   {isVisible('name') && (
-                    <TableHead>Account Name</TableHead>
-                  )}
-                  {isVisible('website') && <TableHead>Website</TableHead>}
+  <SortableTableHead
+    label="Account Name"
+    columnId="name"
+    sortKey="account_name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('name')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('name')} />
+  </SortableTableHead>
+)}
+                  {isVisible('website') && (
+  <SortableTableHead
+    label="Website"
+    columnId="website"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    sortable={false}
+    className="relative"
+    {...getHeaderProps('website')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('website')} />
+  </SortableTableHead>
+)}
                   {isVisible('industry') && (
-                    <TableHead>Industry</TableHead>
-                  )}
-                  {isVisible('phone') && <TableHead>Phone</TableHead>}
+  <SortableTableHead
+    label="Industry"
+    columnId="industry"
+    sortKey="industry.industry_name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('industry')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('industry')} />
+  </SortableTableHead>
+)}
+                  {isVisible('phone') && (
+  <SortableTableHead
+    label="Phone"
+    columnId="phone"
+    sortKey="phone_number"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    sortable={false}
+    {...getHeaderProps('phone')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('phone')} />
+  </SortableTableHead>
+)}
                   {isVisible('company_size') && (
-                    <TableHead>Size</TableHead>
-                  )}
+  <SortableTableHead
+    label="Size"
+    columnId="company_size"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('company_size')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('company_size')} />
+  </SortableTableHead>
+)}
                   {isVisible('billing_street') && (
-                    <TableHead>Street</TableHead>
-                  )}
+  <SortableTableHead
+    label="Street"
+    columnId="billing_street"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('billing_street')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('billing_street')} />
+  </SortableTableHead>
+)}
                   {isVisible('billing_city') && (
-                    <TableHead>City</TableHead>
-                  )}
+  <SortableTableHead
+    label="City"
+    columnId="billing_city"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('billing_city')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('billing_city')} />
+  </SortableTableHead>
+)}
                   {isVisible('billing_state') && (
-                    <TableHead>State</TableHead>
-                  )}
+  <SortableTableHead
+    label="State"
+    columnId="billing_state"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('billing_state')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('billing_state')} />
+  </SortableTableHead>
+)}
                   {isVisible('billing_postal_code') && (
-                    <TableHead>Postal Code</TableHead>
-                  )}
+  <SortableTableHead
+    label="Postal Code"
+    columnId="billing_postal_code"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('billing_postal_code')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('billing_postal_code')} />
+  </SortableTableHead>
+)}
                   {isVisible('billing_country') && (
-                    <TableHead>Country</TableHead>
-                  )}
+  <SortableTableHead
+    label="Country"
+    columnId="billing_country"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('billing_country')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('billing_country')} />
+  </SortableTableHead>
+)}
                   {isVisible('description') && (
-                    <TableHead>Description</TableHead>
-                  )}
-                  {isVisible('owner') && <TableHead>Owner</TableHead>}
+  <SortableTableHead
+    label="Description"
+    columnId="description"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    sortable={false}
+    {...getHeaderProps('description')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('description')} />
+  </SortableTableHead>
+)}
+                  {isVisible('owner') && (
+  <SortableTableHead
+    label="Owner"
+    columnId="owner"
+    sortKey="owner.name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('owner')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('owner')} />
+  </SortableTableHead>
+)}
                   {isVisible('created_by') && (
-                    <TableHead>Created By</TableHead>
-                  )}
+  <SortableTableHead
+    label="Created By"
+    columnId="created_by"
+    sortKey="created_by_account.name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('created_by')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('created_by')} />
+  </SortableTableHead>
+)}
                   {isVisible('created_at') && (
-                    <TableHead>Created On</TableHead>
-                  )}
+  <SortableTableHead
+    label="Created On"
+    columnId="created_at"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('created_at')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
+  </SortableTableHead>
+)}
                   {isVisible('updated_by') && (
-                    <TableHead>Last Updated By</TableHead>
-                  )}
+  <SortableTableHead
+    label="Last Updated By"
+    columnId="updated_by"
+    sortKey="updated_by_account.name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('updated_by')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
+  </SortableTableHead>
+)}
                   <TableHead className="sticky-right-header">
                     Actions
                   </TableHead>

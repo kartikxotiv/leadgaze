@@ -34,7 +34,7 @@ import { toast } from 'sonner';
 
 import { CoreEmailComposeDialog } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
-import { formatDate, formatDateTime } from '@kit/shared/utils';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import {
   Accordion,
@@ -166,6 +166,7 @@ export default function LeadDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
+  const { formatDate, formatDateTime } = useLocalization();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -511,14 +512,20 @@ export default function LeadDetailsPage() {
                   <div className="flex items-center gap-1.5 text-xs text-gray-500">
                     <Clock className="h-3 w-3" />
                     <span>
-                      Created on{' '}
-                      {new Date(lead.created_at).toLocaleDateString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
+                      Created by {lead.created_by_account?.name || 'Unknown'} on {formatDate(lead.created_at)}
                     </span>
                   </div>
+                  {lead.updated_by && (
+                    <>
+                      <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          Updated by {lead.updated_by_account?.name || 'Unknown'} on {formatDate(lead.updated_at)}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </>
               }
               email={lead.email || undefined}
@@ -769,13 +776,13 @@ export default function LeadDetailsPage() {
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
                   <DetailInfoList>
-                    {lead.company_name && (
-                      <DetailInfoRow
-                        icon={<Building2 className="h-5 w-5" />}
-                        label="Company Name"
-                        value={lead.company_name}
-                      />
-                    )}
+
+                    <DetailInfoRow
+                      icon={<Building2 className="h-5 w-5" />}
+                      label="Company Name"
+                      value={lead.company_name || '-'}
+                    />
+
                     {/* {lead.job_title && (
                       <DetailInfoRow
                         icon={<Briefcase className="h-4 w-4" />}
@@ -783,36 +790,35 @@ export default function LeadDetailsPage() {
                         value={lead.job_title}
                       />
                     )} */}
-                    {lead.industry && (
-                      <DetailInfoRow
-                        icon={<Factory className="h-5 w-5" />}
-                        label="Industry"
-                        value={lead.industry.industry_name}
-                      />
-                    )}
-                    {lead.company_size && (
-                      <DetailInfoRow
-                        icon={<Users className="h-5 w-5" />}
-                        label="Company Size"
-                        value={lead.company_size}
-                      />
-                    )}
-                    {lead.company_website && (
-                      <DetailInfoRow
-                        icon={<Globe className="h-5 w-5" />}
-                        label="Website"
-                        value={
-                          <a
-                            href={lead.company_website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            {lead.company_website}
-                          </a>
-                        }
-                      />
-                    )}
+
+                    <DetailInfoRow
+                      icon={<Factory className="h-5 w-5" />}
+                      label="Industry"
+                      value={lead?.industry?.industry_name ?? '-'}
+                    />
+
+
+                    <DetailInfoRow
+                      icon={<Users className="h-5 w-5" />}
+                      label="Company Size"
+                      value={lead?.company_size || '-'}
+                    />
+
+
+                    <DetailInfoRow
+                      icon={<Globe className="h-5 w-5" />}
+                      label="Website"
+                      value={
+                        lead.company_website ? <a
+                          href={lead.company_website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {lead.company_website}
+                        </a> : '-'}
+                    />
+
                     {/* {lead.company_linkedin_url && (
                       <DetailInfoRow
                         icon={<Linkedin className="h-5 w-5" />}
@@ -860,86 +866,80 @@ export default function LeadDetailsPage() {
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
                   <DetailInfoList>
-                    {lead.email && (
-                      <DetailInfoRow
-                        icon={<Mail className="h-5 w-5" />}
-                        label="Email"
-                        value={
-                          <a
-                            href={`mailto:${lead.email}`}
-                            className="text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            {lead.email}
-                          </a>
-                        }
-                      />
-                    )}
-                    {lead.alt_email && (
-                      <DetailInfoRow
-                        icon={<Mail className="h-5 w-5" />}
-                        label="Alt Email"
-                        value={
-                          <a
-                            href={`mailto:${lead.alt_email}`}
-                            className="text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            {lead.alt_email}
-                          </a>
-                        }
-                      />
-                    )}
-                    {lead.phone_number && (
-                      <DetailInfoRow
-                        icon={<Phone className="h-5 w-5" />}
-                        label="Phone"
-                        value={
-                          <a href={`tel:${lead.phone_number}`}>
-                            {lead.phone_number}
-                          </a>
-                        }
-                      />
-                    )}
-                    {lead.mobile_number && (
-                      <DetailInfoRow
-                        icon={<Phone className="h-5 w-5" />}
-                        label="Mobile"
-                        value={
-                          <a href={`tel:${lead.mobile_number}`}>
-                            {lead.mobile_number}
-                          </a>
-                        }
-                      />
-                    )}
-                    {lead.location && (
-                      <DetailInfoRow
-                        icon={<MapPin className="h-5 w-5" />}
-                        label="Location"
-                        value={lead.location}
-                      />
-                    )}
-                    {lead.timezone && (
-                      <DetailInfoRow
-                        icon={<Clock className="h-5 w-5" />}
-                        label="Timezone"
-                        value={lead.timezone}
-                      />
-                    )}
-                    {lead.linkedin_url && (
-                      <DetailInfoRow
-                        icon={<Linkedin className="h-5 w-5" />}
-                        label="LinkedIn"
-                        value={
-                          <a
-                            href={lead.linkedin_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            {lead.linkedin_url}
-                          </a>
-                        }
-                      />
-                    )}
+
+                    <DetailInfoRow
+                      icon={<Mail className="h-5 w-5" />}
+                      label="Email"
+                      value={
+                        lead.email ? <a
+                          href={`mailto:${lead.email}`}
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {lead.email}
+                        </a> : '-'
+                      }
+                    />
+
+                    <DetailInfoRow
+                      icon={<Mail className="h-5 w-5" />}
+                      label="Alt Email"
+                      value={
+                        lead.alt_email ? <a
+                          href={`mailto:${lead.alt_email}`}
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {lead.alt_email}
+                        </a> : '-'
+                      }
+                    />
+
+                    <DetailInfoRow
+                      icon={<Phone className="h-5 w-5" />}
+                      label="Phone"
+                      value={
+                        lead.phone_number ? <a href={`tel:${lead.phone_number}`}>
+                          {lead.phone_number}
+                        </a> : '-'
+                      }
+                    />
+
+                    <DetailInfoRow
+                      icon={<Phone className="h-5 w-5" />}
+                      label="Mobile"
+                      value={
+                        lead.mobile_number ? <a href={`tel:${lead.mobile_number}`}>
+                          {lead.mobile_number}
+                        </a> : '-'
+                      }
+                    />
+
+                    <DetailInfoRow
+                      icon={<MapPin className="h-5 w-5" />}
+                      label="Location"
+                      value={lead.location || '-'}
+                    />
+
+                    <DetailInfoRow
+                      icon={<Clock className="h-5 w-5" />}
+                      label="Timezone"
+                      value={lead.timezone || '-'}
+                    />
+
+                    <DetailInfoRow
+                      icon={<Linkedin className="h-5 w-5" />}
+                      label="LinkedIn"
+                      value={
+                        lead.linkedin_url ? <a
+                          href={lead.linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {lead.linkedin_url}
+                        </a> : '-'
+                      }
+                    />
+
                   </DetailInfoList>
                 </AccordionContent>
               </AccordionItem>

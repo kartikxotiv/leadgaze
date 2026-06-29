@@ -49,6 +49,9 @@ import {
 } from '@kit/ui/table';
 import { TablePagination } from '@kit/ui/table-pagination';
 import { cn } from '@kit/ui/utils';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 import {
   type ServiceCloudRecord,
@@ -144,6 +147,7 @@ export function ServiceCloudResourcePage({
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize(`sc-${resource}`);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
@@ -181,14 +185,26 @@ export function ServiceCloudResourcePage({
     }
   };
 
+  const { sortColumn, sortDirection, toggleSort, sortState } = useTableSort<ServiceCloudRecord>(
+    `sc-${resource}`,
+    [],
+    { mode: 'server', onSortChange: () => setCurrentPage(1) }
+  );
+
+  const queryParamsWithSort = useMemo(() => ({
+    ...queryParams,
+    ...(sortColumn ? { sortColumn } : {}),
+    ...(sortDirection ? { sortDirection } : {})
+  }), [queryParams, sortColumn, sortDirection]);
+
   const {
     data = [],
     isLoading,
     refetch,
   } = useQuery<ServiceCloudRecord[]>({
-    queryKey: ['service-cloud', resource, workspaceId, queryParams],
+    queryKey: ['service-cloud', resource, workspaceId, queryParamsWithSort, sortState],
     queryFn: () =>
-      getServiceCloudResourceService(resource, workspaceId, queryParams),
+      getServiceCloudResourceService(resource, workspaceId, queryParamsWithSort),
     enabled: Boolean(workspaceId),
   });
 
@@ -206,10 +222,15 @@ export function ServiceCloudResourcePage({
   // Pagination derived values
   const totalCount = filteredData.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  // When mode='server', we don't need useTableSort to actually sort. We just use its state.
+  // We'll rename filteredData to sortedData for consistency with the rest of the component
+  const sortedData = filteredData;
+
   const paginatedData = useMemo(
     () =>
-      filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize),
-    [filteredData, currentPage, pageSize],
+      sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [sortedData, currentPage, pageSize],
   );
 
   const openCreate = () => {
@@ -279,6 +300,7 @@ export function ServiceCloudResourcePage({
       toast.error(error.message || `Failed to delete ${title}`);
     }
   };
+  const nonSortableColumns = ['Subject', 'Assignees', 'Phone', 'Website'];
 
   return (
     <>
@@ -326,10 +348,22 @@ export function ServiceCloudResourcePage({
               <TableHeader>
                 <TableRow>
                   {columns.map((column) => (
-                    <TableHead key={column.key}>{column.label}</TableHead>
+                    <SortableTableHead
+                      key={column.key}
+                      label={column.label}
+                      columnId={column.key}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      sortable={!nonSortableColumns.includes(column?.label)}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps(column.key)}
+                    >
+                      <span className="col-resize-handle" {...getResizeHandleProps(column.key)} />
+                    </SortableTableHead>
                   ))}
                   {canEdit || canDelete ? (
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="sticky-right-header text-right">Actions</TableHead>
                   ) : null}
                 </TableRow>
               </TableHeader>

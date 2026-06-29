@@ -56,6 +56,9 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 
@@ -71,7 +74,7 @@ import {
 import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { TablePagination } from '@kit/ui/table-pagination';
 
 function DocumentPageSkeleton() {
@@ -124,6 +127,7 @@ function DocumentPageSkeleton() {
 
 export default function DocumentPage() {
   const { currentWorkspace: workspace } = useRBAC();
+  const { formatDate } = useLocalization();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -169,6 +173,9 @@ export default function DocumentPage() {
       created_at: false,
       updated_by: false,
     });
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('documents');
+
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ['documents', workspace?.id],
@@ -305,10 +312,16 @@ export default function DocumentPage() {
     });
   }, [documents, searchTerm, typeFilter, entityTypeFilter]);
 
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Document>(
+    'documents',
+    filteredDocuments,
+    { onSortChange: () => setCurrentPage(1) }
+  );
+
   const paginatedDocs = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return filteredDocuments.slice(start, start + itemsPerPage);
-  }, [filteredDocuments, currentPage, itemsPerPage]);
+    return sortedData.slice(start, start + itemsPerPage);
+  }, [sortedData, currentPage, itemsPerPage]);
 
   const totalPages = Math.ceil(filteredDocuments.length / itemsPerPage);
   const totalCount = filteredDocuments.length;
@@ -494,19 +507,142 @@ export default function DocumentPage() {
               <TableHeader>
                 <TableRow>
                   {isVisible('sno') && (
-                    <TableHead className="w-12 whitespace-nowrap">
-                      S. No.
-                    </TableHead>
-                  )}
-                  {isVisible('name') && <TableHead>Name</TableHead>}
-                  {isVisible('type') && <TableHead>Type</TableHead>}
-                  {isVisible('size') && <TableHead>Size</TableHead>}
-                  {isVisible('uploader') && <TableHead>Uploaded By</TableHead>}
-                  {isVisible('entity') && <TableHead>Entity</TableHead>}
-                  {isVisible('last_modified') && <TableHead>Last Modified At</TableHead>}
-                  {isVisible('created_by') && <TableHead>Created By</TableHead>}
-                  {isVisible('created_at') && <TableHead>Created On</TableHead>}
-                  {isVisible('updated_by') && <TableHead>Last Updated By</TableHead>}
+  <SortableTableHead
+    label="S. No."
+    columnId="sno"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    sortable={false}
+    className="relative w-12 whitespace-nowrap"
+    {...getHeaderProps('sno')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
+  </SortableTableHead>
+)}
+                  {isVisible('name') && (
+  <SortableTableHead
+    label="Name"
+    columnId="name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    sortable={false}
+    className="relative"
+    {...getHeaderProps('name')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('name')} />
+  </SortableTableHead>
+)}
+                  {isVisible('type') && (
+  <SortableTableHead
+    label="Type"
+    columnId="type"
+    sortKey="file_type"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('type')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('type')} />
+  </SortableTableHead>
+)}
+                  {isVisible('size') && (
+  <SortableTableHead
+    label="Size"
+    columnId="size"
+    sortKey="size_bytes"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('size')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('size')} />
+  </SortableTableHead>
+)}
+                  {isVisible('uploader') && (
+  <SortableTableHead
+    label="Uploaded By"
+    columnId="uploader"
+    sortKey="created_by_user.name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('uploader')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('uploader')} />
+  </SortableTableHead>
+)}
+                  {isVisible('entity') && (
+  <SortableTableHead
+    label="Entity"
+    columnId="entity"
+    sortKey="entity_name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('entity')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('entity')} />
+  </SortableTableHead>
+)}
+                  {isVisible('last_modified') && (
+  <SortableTableHead
+    label="Last Modified At"
+    columnId="last_modified"
+    sortKey="updated_at"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('last_modified')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('last_modified')} />
+  </SortableTableHead>
+)}
+                  {isVisible('created_by') && (
+  <SortableTableHead
+    label="Created By"
+    columnId="created_by"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('created_by')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('created_by')} />
+  </SortableTableHead>
+)}
+                  {isVisible('created_at') && (
+  <SortableTableHead
+    label="Created On"
+    columnId="created_at"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('created_at')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
+  </SortableTableHead>
+)}
+                  {isVisible('updated_by') && (
+  <SortableTableHead
+    label="Last Updated By"
+    columnId="updated_by"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('updated_by')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
+  </SortableTableHead>
+)}
                   <TableHead className="sticky-right-header">Actions</TableHead>
                 </TableRow>
               </TableHeader>

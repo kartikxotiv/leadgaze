@@ -59,6 +59,8 @@ const getOpportunitiesService = asyncHandlerClient(
     limit?: number;
     searchTerm?: string;
     stageId?: string;
+    sortColumn?: string;
+    sortDirection?: 'asc' | 'desc' | null;
   }) => {
     const {
       workspaceId,
@@ -67,8 +69,10 @@ const getOpportunitiesService = asyncHandlerClient(
       limit = 20,
       searchTerm = '',
       stageId = '',
+      sortColumn = '',
+      sortDirection = '',
     } = params;
-    let url = `/opportunities?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&stageId=${stageId}`;
+    let url = `/opportunities?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&stageId=${stageId}&sortColumn=${sortColumn}&sortDirection=${sortDirection || ''}`;
     if (accountId) {
       url += `&accountId=${accountId}`;
     }

@@ -9,7 +9,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Loader2, Plus, Ticket, TicketIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '@kit/shared/localization';
 import { Button } from '@kit/ui/button';
 import {
   Dialog,
@@ -35,6 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
@@ -61,6 +62,7 @@ export function ServiceCloudCustomersPage({
 }: {
   workspaceId: string;
 }) {
+  const { formatDate } = useLocalization();
   const { canAccess, isLoading } = useServiceCloudPermissions(workspaceId);
   const canView = canAccess(
     SERVICE_CLOUD_MODULE_KEYS.customers,
@@ -95,6 +97,8 @@ export function ServiceCloudCustomersPage({
   // --- Customer Tickets Modal state & query ---
   const [ticketsModalCustomer, setTicketsModalCustomer] =
     useState<ServiceCloudRecord | null>(null);
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('sc-customer-tickets-modal');
 
   const { data: customerTickets = [], isLoading: isLoadingTickets } = useQuery<
     ServiceCloudRecord[]
@@ -210,6 +214,11 @@ export function ServiceCloudCustomersPage({
     createTicketMutation.mutate();
   };
 
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab') || 'customers';
+
   if (isLoading)
     return (
       <div className="text-muted-foreground p-6 text-sm">
@@ -235,11 +244,6 @@ export function ServiceCloudCustomersPage({
       </TooltipContent>
     </Tooltip>
   ) : null;
-
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const tab = searchParams.get('tab') || 'customers';
 
   return (
     <>
@@ -518,11 +522,26 @@ export function ServiceCloudCustomersPage({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Ticket #</TableHead>
-                      <TableHead>Subject</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Priority</TableHead>
-                      <TableHead>Created</TableHead>
+                      <TableHead className="relative" {...getHeaderProps('ticket_number')}>
+                        Ticket #
+                        <span className="col-resize-handle" {...getResizeHandleProps('ticket_number')} />
+                      </TableHead>
+                      <TableHead className="relative" {...getHeaderProps('subject')}>
+                        Subject
+                        <span className="col-resize-handle" {...getResizeHandleProps('subject')} />
+                      </TableHead>
+                      <TableHead className="relative" {...getHeaderProps('status')}>
+                        Status
+                        <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+                      </TableHead>
+                      <TableHead className="relative" {...getHeaderProps('priority')}>
+                        Priority
+                        <span className="col-resize-handle" {...getResizeHandleProps('priority')} />
+                      </TableHead>
+                      <TableHead className="relative" {...getHeaderProps('created')}>
+                        Created
+                        <span className="col-resize-handle" {...getResizeHandleProps('created')} />
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

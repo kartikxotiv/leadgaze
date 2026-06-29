@@ -34,7 +34,7 @@ import { toast } from 'sonner';
 
 import { CoreEmailComposeDialog } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import {
   Accordion,
@@ -165,6 +165,7 @@ export default function OpportunityDetailsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const id = params?.id as string;
+  const { formatDate, formatCurrency } = useLocalization();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
@@ -265,21 +266,21 @@ export default function OpportunityDetailsPage() {
         return [
           ...(contact.email
             ? [
-                {
-                  email: contact.email,
-                  name,
-                  label: 'Primary Email',
-                },
-              ]
+              {
+                email: contact.email,
+                name,
+                label: 'Primary Email',
+              },
+            ]
             : []),
           ...(contact.alt_email
             ? [
-                {
-                  email: contact.alt_email,
-                  name,
-                  label: 'Alt Email',
-                },
-              ]
+              {
+                email: contact.alt_email,
+                name,
+                label: 'Alt Email',
+              },
+            ]
             : []),
         ];
       }),
@@ -455,7 +456,7 @@ export default function OpportunityDetailsPage() {
                             className={cn(
                               'hover:bg-accent flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
                               opportunity.stage_id === stage.id &&
-                                'bg-accent font-medium',
+                              'bg-accent font-medium',
                             )}
                             onClick={async () => {
                               try {
@@ -641,17 +642,20 @@ export default function OpportunityDetailsPage() {
                   <div className="flex items-center gap-1.5 text-xs text-gray-500">
                     <Clock className="h-3 w-3" />
                     <span>
-                      Created on{' '}
-                      {new Date(opportunity.created_at).toLocaleDateString(
-                        undefined,
-                        {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        },
-                      )}
+                      Created by {opportunity.created_by_account?.name || 'Unknown'} on {formatDate(opportunity.created_at)}
                     </span>
                   </div>
+                  {opportunity.updated_by && (
+                    <>
+                      <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          Updated by {opportunity.updated_by_account?.name || 'Unknown'} on {formatDate(opportunity.updated_at)}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </>
               }
             />
@@ -887,18 +891,12 @@ export default function OpportunityDetailsPage() {
                     <DetailInfoRow
                       icon={<Wallet className="h-5 w-5" />}
                       label="Amount"
-                      value={new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: opportunity.currency || 'USD',
-                      }).format(opportunity.amount || 0)}
+                      value={formatCurrency(opportunity.amount || 0, opportunity.currency || 'USD')}
                     />
                     <DetailInfoRow
                       icon={<Target className="h-5 w-5" />}
                       label="Revenue"
-                      value={new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: opportunity.currency || 'USD',
-                      }).format(opportunity.expected_revenue || 0)}
+                      value={formatCurrency(opportunity.expected_revenue || 0, opportunity.currency || 'USD')}
                     />
                     <DetailInfoRow
                       icon={<Calendar className="h-5 w-5" />}
@@ -920,31 +918,30 @@ export default function OpportunityDetailsPage() {
                       value={
                         opportunity.priority
                           ? opportunity.priority.charAt(0).toUpperCase() +
-                            opportunity.priority.slice(1)
+                          opportunity.priority.slice(1)
                           : '-'
                       }
                     />
-                    {opportunity.lead_source && (
-                      <DetailInfoRow
-                        icon={<Tag className="h-5 w-5" />}
-                        label="Lead Source"
-                        value={opportunity.lead_source}
-                      />
-                    )}
-                    {opportunity.description && (
-                      <DetailInfoRow
-                        icon={<FileText className="h-5 w-5" />}
-                        label="Description"
-                        value={opportunity.description}
-                      />
-                    )}
-                    {opportunity.competitor && (
-                      <DetailInfoRow
-                        icon={<Target className="h-5 w-5" />}
-                        label="Competitor"
-                        value={opportunity.competitor}
-                      />
-                    )}
+
+                    <DetailInfoRow
+                      icon={<Tag className="h-5 w-5" />}
+                      label="Lead Source"
+                      value={opportunity.lead_source || '-'}
+                    />
+
+                    <DetailInfoRow
+                      icon={<FileText className="h-5 w-5" />}
+                      label="Description"
+                      value={opportunity.description || '-'}
+                    />
+
+
+                    <DetailInfoRow
+                      icon={<Target className="h-5 w-5" />}
+                      label="Competitor"
+                      value={opportunity.competitor || '-'}
+                    />
+
                   </DetailInfoList>
                 </AccordionContent>
               </AccordionItem>
@@ -1015,7 +1012,7 @@ export default function OpportunityDetailsPage() {
                     <DetailInfoRow
                       icon={<Calendar className="h-5 w-5" />}
                       label="Created At"
-                      value={formatDate(opportunity.created_at)}
+                      value={opportunity.created_at ? formatDate(opportunity.created_at) : '-'}
                     />
                     <DetailInfoRow
                       icon={<User className="h-5 w-5" />}
@@ -1029,7 +1026,7 @@ export default function OpportunityDetailsPage() {
                     <DetailInfoRow
                       icon={<Calendar className="h-5 w-5" />}
                       label="Updated"
-                      value={formatDate(opportunity.updated_at)}
+                      value={opportunity.updated_at ? formatDate(opportunity.updated_at) : '-'}
                     />
                   </DetailInfoList>
                 </AccordionContent>

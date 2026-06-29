@@ -58,6 +58,7 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
   DashboardMetrics,
@@ -74,6 +75,7 @@ import { Skeleton } from '@kit/ui/skeleton';
 
 export default function DashboardDemo() {
   const { currentWorkspace } = useRBAC();
+  const { formatCurrency } = useLocalization();
   const workspaceId = currentWorkspace?.id;
 
   const {
@@ -199,11 +201,7 @@ export default function DashboardDemo() {
                 className="hover:underline"
               >
                 <Figure>
-                  {new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                    maximumFractionDigits: 0,
-                  }).format(metrics.opportunities.totalAmount)}
+                  {formatCurrency(metrics.opportunities.totalAmount)}
                 </Figure>
               </Link>
             </div>
@@ -357,7 +355,7 @@ function PipelineOverview({ metrics }: { metrics: DashboardMetrics }) {
   const maxValue = Math.max(...stages.map((s) => s.value), 1);
 
   return (
-    <div className="max-h-[400px] space-y-6 p-6 xl:max-h-[300px] xl:space-y-4 xl:p-4 2xl:max-h-[400px] 2xl:space-y-6 2xl:p-6">
+    <div className="max-h-[400px] space-y-6 p-6 xl:max-h-[430px] xl:space-y-4 xl:p-4 2xl:max-h-[440px] 2xl:space-y-6 2xl:p-6 overflow-auto">
       {stages.map((stage, index) => (
         <div key={stage.label} className="flex flex-col gap-1.5">
           <div className="flex justify-between items-center">
@@ -381,6 +379,8 @@ function PipelineOverview({ metrics }: { metrics: DashboardMetrics }) {
 }
 
 function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
+  const { formatDate } = useLocalization();
+
   const formatDueDateShort = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -400,7 +400,7 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
     if (dayDiff > 1) return `In ${dayDiff} days`;
     if (dayDiff === -1) return 'Yesterday';
     if (dayDiff < -1) return 'Overdue';
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return formatDate(dateString);
   };
 
   const getTaskPriority = (task: DashboardTask) => {
@@ -414,7 +414,7 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
   const latestTasks = useMemo(() => tasks.slice(0, 3), [tasks]);
 
   return (
-    <div className="max-h-[500px] overflow-y-auto xl:max-h-[350px] 2xl:max-h-[500px]">
+    <div className="max-h-[400px] overflow-y-auto xl:max-h-[430px] 2xl:max-h-[440px] overflow-auto">
       {latestTasks.length === 0 ? (
             <div className="flex h-40 flex-col items-center justify-center text-slate-400">
               <FileText className="mb-2 h-8 w-8 opacity-20" />

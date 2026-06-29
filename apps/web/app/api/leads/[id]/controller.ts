@@ -76,6 +76,7 @@ const getLeadById = catchAsync(
           source:lead_sources(id, source_name, source_key, color, icon),
           owner:accounts!crm_leads_owner_id_fkey(id, email, name),
           created_by_account:accounts!crm_leads_created_by_fkey(id, email, name),
+          updated_by_account:accounts!crm_leads_updated_by_fkey(id, email, name),
           industry:crm_industries(id, industry_name)
         `,
       )
@@ -338,6 +339,7 @@ const updateLead = catchAsync(
         source:lead_sources(id, source_name, source_key, color, icon),
         owner:accounts!crm_leads_owner_id_fkey(id, email, name),
         created_by_account:accounts!crm_leads_created_by_fkey(id, email, name),
+        updated_by_account:accounts!crm_leads_updated_by_fkey(id, email, name),
         industry:crm_industries(id, industry_name)
       `,
       )

@@ -9,6 +9,23 @@ import {
   successDataResponse,
 } from '../../../utils/response-handler';
 
+const ACCOUNT_SORTABLE_COLUMNS: Record<string, { column: string; foreignTable?: string }> = {
+  account_name:         { column: 'account_name' },
+  website:              { column: 'website' },
+  phone_number:         { column: 'phone_number' },
+  company_size:         { column: 'company_size' },
+  billing_street:       { column: 'billing_street' },
+  billing_city:         { column: 'billing_city' },
+  billing_state:        { column: 'billing_state' },
+  billing_postal_code:  { column: 'billing_postal_code' },
+  billing_country:      { column: 'billing_country' },
+  created_at:           { column: 'created_at' },
+  'industry.industry_name':      { column: 'industry_name', foreignTable: 'crm_industries' },
+  'owner.name':                  { column: 'name', foreignTable: 'accounts' },
+  'created_by_account.name':     { column: 'name', foreignTable: 'accounts' },
+  'updated_by_account.name':     { column: 'name', foreignTable: 'accounts' },
+};
+
 /**
  * GET /api/accounts
  * Fetch all accounts for a workspace
@@ -28,6 +45,8 @@ export const getAccounts = catchAsync(
     const page = parseInt(url.searchParams.get('page') || '1', 10);
     const limit = parseInt(url.searchParams.get('limit') || '20', 10);
     const searchTerm = url.searchParams.get('searchTerm') || '';
+    const sortColumn = url.searchParams.get('sortColumn') || '';
+    const sortDirection = url.searchParams.get('sortDirection') || '';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -89,6 +108,7 @@ export const getAccounts = catchAsync(
           status:entity_statuses!crm_accounts_status_id_fkey(id, status_name, status_key, color, icon),
           owner:accounts!crm_accounts_owner_id_fkey(id, email, name),
           created_by_account:accounts!crm_accounts_created_by_fkey(id, email, name),
+          updated_by_account:accounts!crm_accounts_updated_by_fkey(id, email, name),
           industry:crm_industries(id, industry_name),
           account_type_relation:entity_statuses!entity_statuses_account_type_fkey(id, status_name, status_key, color, icon)
         `,
@@ -136,11 +156,16 @@ export const getAccounts = catchAsync(
       data: accounts,
       error,
       count,
-    } = await query
-      .order('created_at', {
-        ascending: false,
-      })
-      .range(from, to);
+    } = await (ACCOUNT_SORTABLE_COLUMNS[sortColumn]
+      ? query.order(ACCOUNT_SORTABLE_COLUMNS[sortColumn].column, {
+          ascending: sortDirection === 'asc',
+          ...(ACCOUNT_SORTABLE_COLUMNS[sortColumn].foreignTable
+            ? { foreignTable: ACCOUNT_SORTABLE_COLUMNS[sortColumn].foreignTable }
+            : {}),
+          nullsFirst: false,
+        })
+      : query.order('created_at', { ascending: false })
+    ).range(from, to);
 
     if (error) {
       console.error('Get accounts error:', error);

@@ -34,6 +34,7 @@ export const getAccountById = catchAsync(
           status:entity_statuses!crm_accounts_status_id_fkey(id, status_name, status_key, color, icon),
           industry:crm_industries(id, industry_name),
           owner:accounts!crm_accounts_owner_id_fkey(id, email, name),
+          created_by_account:accounts!crm_accounts_created_by_fkey(id, email, name),
           updated_by_account:accounts!crm_accounts_updated_by_fkey(id, email, name),
           account_type_relation:entity_statuses!entity_statuses_account_type_fkey(id, status_name, status_key, color, icon)
         `,
@@ -178,6 +179,7 @@ export const updateAccount = catchAsync(
           status:entity_statuses!crm_accounts_status_id_fkey(id, status_name, status_key, color, icon),
           industry:crm_industries(id, industry_name),
           owner:accounts!crm_accounts_owner_id_fkey(id, email, name),
+          created_by_account:accounts!crm_accounts_created_by_fkey(id, email, name),
           updated_by_account:accounts!crm_accounts_updated_by_fkey(id, email, name),
           account_type_relation:entity_statuses!entity_statuses_account_type_fkey(id, status_name, status_key, color, icon)
         `,

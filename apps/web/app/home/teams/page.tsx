@@ -22,6 +22,9 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { StatusFilterDropdown } from '@kit/ui/status-filter-dropdown';
 
@@ -79,6 +82,9 @@ export default function TeamsPage() {
       members: true,
     });
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('teams');
+
+
   // Fetch teams
   const {
     data: teamsData = [],
@@ -128,6 +134,11 @@ export default function TeamsPage() {
 
     return result;
   }, [teams, selectedStatus, debouncedSearchTerm]);
+
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Team>(
+    'teams',
+    filteredTeams,
+  );
 
   // Delete team mutation
   const deleteTeamMutation = useMutation({
@@ -251,16 +262,56 @@ export default function TeamsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {isVisible('name') && <TableHead>Team Name</TableHead>}
-                    {isVisible('description') && <TableHead>Description</TableHead>}
-                    {isVisible('members') && <TableHead>Members</TableHead>}
+                    {isVisible('name') && (
+  <SortableTableHead
+    label="Team Name"
+    columnId="name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    sortable={false}
+    className="relative"
+    {...getHeaderProps('name')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('name')} />
+  </SortableTableHead>
+)}
+                    {isVisible('description') && (
+  <SortableTableHead
+    label="Description"
+    columnId="description"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    sortable={false}
+    className="relative"
+    {...getHeaderProps('description')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('description')} />
+  </SortableTableHead>
+)}
+                    {isVisible('members') && (
+  <SortableTableHead
+    label="Members"
+    columnId="members"
+    sortKey="_count.members"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    sortable={false}
+    className="relative"
+    {...getHeaderProps('members')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('members')} />
+  </SortableTableHead>
+)}
                     <TableHead className="sticky-right-header text-right">
                       Actions
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredTeams.map((team: Team) => (
+                  {sortedData.map((team: Team) => (
                     <TableRow key={team.id}>
                       {isVisible('name') && (
                         <TableCell>

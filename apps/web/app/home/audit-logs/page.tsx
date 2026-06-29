@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { usePathname } from 'next/navigation';
-import { format } from 'date-fns';
 import { Eye } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
@@ -32,15 +31,20 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAuditLogsService } from '~/services/audit-logs.service';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 export default function AuditLogsPage() {
   const { currentWorkspace: workspace } = useRBAC();
+  const { formatDate, formatDateTime } = useLocalization();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const [selectedModule, setSelectedModule] = useState<string>('all');
@@ -76,6 +80,8 @@ export default function AuditLogsPage() {
       action: true,
       entity: true,
     });
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('audit-logs');
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: [
@@ -113,6 +119,11 @@ export default function AuditLogsPage() {
       (log.entity_name || '').toLowerCase().includes(term),
     );
   }, [data?.logs, debouncedSearchTerm]);
+
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<any>(
+    'audit-logs',
+    logs,
+  );
   const count = data?.count || 0;
   const totalPages = Math.ceil(count / itemsPerPage);
 
@@ -241,29 +252,76 @@ export default function AuditLogsPage() {
                     <TableHeader>
                       <TableRow className="border-b bg-muted/50 hover:bg-muted/50">
                         {isVisible('date_time') && (
-                          <TableHead className="w-[160px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
-                            Date & Time
-                          </TableHead>
+                          <SortableTableHead
+                            label="Date & Time"
+                            columnId="date_time"
+                            sortKey="created_at"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            className="relative w-[160px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            {...getHeaderProps('date_time')}
+                          >
+                            <span className="col-resize-handle" {...getResizeHandleProps('date_time')} />
+                          </SortableTableHead>
                         )}
                         {isVisible('actor') && (
-                          <TableHead className="w-[200px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
-                            Actor
-                          </TableHead>
+                          <SortableTableHead
+                            label="Actor"
+                            columnId="actor"
+                            sortKey="actor.name"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            sortable={false}
+                            className="relative w-[200px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            {...getHeaderProps('actor')}
+                          >
+                            <span className="col-resize-handle" {...getResizeHandleProps('actor')} />
+                          </SortableTableHead>
                         )}
                         {isVisible('module') && (
-                          <TableHead className="w-[140px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
-                            Module
-                          </TableHead>
+                          <SortableTableHead
+                            label="Module"
+                            columnId="module"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            sortable={false}
+                            className="relative w-[140px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            {...getHeaderProps('module')}
+                          >
+                            <span className="col-resize-handle" {...getResizeHandleProps('module')} />
+                          </SortableTableHead>
                         )}
                         {isVisible('action') && (
-                          <TableHead className="w-[120px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
-                            Action
-                          </TableHead>
+                          <SortableTableHead
+                            label="Action"
+                            columnId="action"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            sortable={false}
+                            className="relative w-[120px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            {...getHeaderProps('action')}
+                          >
+                            <span className="col-resize-handle" {...getResizeHandleProps('action')} />
+                          </SortableTableHead>
                         )}
                         {isVisible('entity') && (
-                          <TableHead className="w-full h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
-                            Entity
-                          </TableHead>
+                          <SortableTableHead
+                            label="Entity"
+                            columnId="entity"
+                            sortKey="entity_name"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            sortable={false}
+                            className="relative w-full h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            {...getHeaderProps('entity')}
+                          >
+                            <span className="col-resize-handle" {...getResizeHandleProps('entity')} />
+                          </SortableTableHead>
                         )}
                         <TableHead className="sticky-right-header w-[80px] h-11 text-xs uppercase tracking-wider font-semibold text-right whitespace-nowrap">
                           Details
@@ -308,7 +366,7 @@ export default function AuditLogsPage() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        logs.map((log: any) => (
+                        sortedData.map((log: any) => (
                           <TableRow
                             key={log.id}
                             className="group hover:bg-muted/30 transition-colors border-b last:border-0"
@@ -317,16 +375,15 @@ export default function AuditLogsPage() {
                               <TableCell className="py-3 align-middle">
                                 <div className="flex flex-col gap-0.5">
                                   <span className="text-sm font-medium">
-                                    {format(
-                                      new Date(log.created_at),
-                                      'MMM d, yyyy',
-                                    )}
+                                    {formatDate(log.created_at)}
                                   </span>
                                   <span className="text-muted-foreground text-xs font-normal">
-                                    {format(
-                                      new Date(log.created_at),
-                                      'hh:mm:ss a',
-                                    )}
+                                    {new Intl.DateTimeFormat(undefined, {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      second: '2-digit',
+                                      hour12: true,
+                                    }).format(new Date(log.created_at))}
                                   </span>
                                 </div>
                               </TableCell>

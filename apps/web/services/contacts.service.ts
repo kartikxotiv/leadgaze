@@ -62,6 +62,8 @@ const getContactsService = asyncHandlerClient(
     page?: number;
     limit?: number;
     searchTerm?: string;
+    sortColumn?: string;
+    sortDirection?: 'asc' | 'desc' | null;
   }) => {
     const {
       workspaceId,
@@ -69,8 +71,10 @@ const getContactsService = asyncHandlerClient(
       page = 1,
       limit = 20,
       searchTerm = '',
+      sortColumn = '',
+      sortDirection = '',
     } = params;
-    let url = `/contacts?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}`;
+    let url = `/contacts?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&sortColumn=${sortColumn}&sortDirection=${sortDirection || ''}`;
     if (accountId) {
       url += `&accountId=${accountId}`;
     }

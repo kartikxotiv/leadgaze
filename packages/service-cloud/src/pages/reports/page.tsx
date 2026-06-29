@@ -16,7 +16,8 @@ import {
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import { Skeleton } from '@kit/ui/skeleton';
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '@kit/shared/localization';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 
 import { getServiceCloudDashboardService } from '../../services';
 import {
@@ -44,6 +45,7 @@ export function ServiceCloudReportsPage({
 }: {
   workspaceId: string;
 }) {
+  const { formatDate } = useLocalization();
   const { canAccess, isLoading: isPermissionLoading } =
     useServiceCloudPermissions(workspaceId);
   const canView = canAccess(
@@ -163,7 +165,7 @@ export function ServiceCloudReportsPage({
             title="Ticket Status Distribution"
             description="How many tickets are currently sitting in each status."
           >
-            <div className="space-y-4 px-6 py-4">
+            <div className="space-y-4 px-6 py-4  max-h-[460px] overflow-auto">
               {statusBreakdown.length === 0 ? (
                 <EmptyReport label="No ticket statuses found." />
               ) : (
@@ -186,6 +188,7 @@ export function ServiceCloudReportsPage({
             hideHeaderBorder={true}
           >
             <ReportTable
+              tableKey="sc-report-customer-workload"
               headers={[
                 'Customer',
                 'Open',
@@ -232,6 +235,7 @@ export function ServiceCloudReportsPage({
             hideHeaderBorder={true}
           >
             <ReportTable
+              tableKey="sc-report-oldest-tickets"
               headers={['Ticket', 'Customer', 'Owner', 'Age', 'Due']}
               empty="No open tickets."
               rows={openTicketAging.map((ticket: any) => [
@@ -262,6 +266,7 @@ export function ServiceCloudReportsPage({
             hideHeaderBorder={true}
           >
             <ReportTable
+              tableKey="sc-report-time-logs"
               headers={['Ticket', 'Customer', 'Entries', 'Logged', 'Latest']}
               empty="No time entries logged yet."
               rows={timeByTicket.map((ticket: any) => [
@@ -297,7 +302,7 @@ export function ServiceCloudReportsPage({
             description="Open pressure by priority."
             hideHeaderBorder={true}
           >
-            <div className="px-6 py-4">
+            <div className="px-6 py-4 overflow-auto max-h-[380px]">
               {priorityBreakdown.length === 0 ? (
                 <EmptyReport label="No priority data." />
               ) : (
@@ -323,6 +328,7 @@ export function ServiceCloudReportsPage({
             hideHeaderBorder={true}
           >
             <ReportTable
+              tableKey="sc-report-assignee-workload"
               headers={['Agent', 'Open', 'Total', 'Logged']}
               empty="No assignee data."
               rows={assigneeWorkload
@@ -344,7 +350,7 @@ export function ServiceCloudReportsPage({
             description="Tickets consuming the most logged support time."
             hideHeaderBorder={true}
           >
-            <div className="space-y-4 px-6 py-4">
+            <div className="space-y-4 px-6 py-4 overflow-auto max-h-[320px]">
               {ticketTimeBreakdown.length === 0 ? (
                 <EmptyReport label="No logged ticket time yet." />
               ) : (
@@ -417,22 +423,27 @@ function MetricBar({
 }
 
 function ReportTable({
+  tableKey,
   headers,
   rows,
   empty,
 }: {
+  tableKey: string;
   headers: string[];
   rows: Array<Array<React.ReactNode>>;
   empty: string;
 }) {
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize(tableKey);
+
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-auto max-h-[350px]">
       <Table>
         <TableHeader className="text-left text-xs uppercase">
           <TableRow>
             {headers.map((header) => (
-              <TableHead key={header} className="p-3 font-medium">
+              <TableHead key={header} className="relative p-3 font-medium" {...getHeaderProps(header)}>
                 {header}
+                <span className="col-resize-handle" {...getResizeHandleProps(header)} />
               </TableHead>
             ))}
           </TableRow>
@@ -605,7 +616,7 @@ function ServiceCloudReportsSkeleton() {
               <Skeleton className="h-5 w-40" />
               <Skeleton className="mt-1 h-3 w-56" />
             </CardHeader>
-            <div className="overflow-x-auto">
+            <div className="overflow-auto max-h-[350px]">
               <div className="bg-muted/40 grid grid-cols-5 gap-3 border-b px-3 py-2">
                 {['Ticket', 'Customer', 'Entries', 'Logged', 'Latest'].map(
                   (h) => (

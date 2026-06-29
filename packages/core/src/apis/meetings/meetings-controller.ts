@@ -1,35 +1,1387 @@
-import { createCoreControllers } from '../_shared/core-crud';
+/**
+ * Core Meetings Controller
+ * Handles CRUD operations for meetings with full platform support
+ */
+import { NextResponse } from 'next/server';
 
-const meetings = createCoreControllers({
-  table: 'meetings',
-  relation: { table: 'meeting_relations', foreignKey: 'meeting_id' },
-  label: 'Meeting',
-  requiredCreateFields: ['workspace_id', 'entity_type', 'entity_id', 'title'],
-  defaultOrder: { column: 'start_time', ascending: false },
-  createPayload: (body, userId) => ({
-    workspace_id: body.workspace_id ?? body.workspaceId,
-    title: body.title,
-    description: body.description ?? null,
-    start_time: body.start_time ?? body.startTime ?? null,
-    end_time: body.end_time ?? body.endTime ?? null,
-    location: body.location ?? null,
-    status: body.status ?? 'scheduled',
-    created_by: userId,
-    updated_by: userId,
-  }),
-  updatePayload: (body, userId) => ({
-    title: body.title,
-    description: body.description,
-    start_time: body.start_time ?? body.startTime,
-    end_time: body.end_time ?? body.endTime,
-    location: body.location,
-    status: body.status,
-    updated_by: userId,
-  }),
+import { catchAsync, successDataResponse } from '../../utils/response-handler';
+import { assertCoreWorkspaceAccess } from '../_shared/workspace-access';
+
+// =============================================================================
+// MEETING CONTROLLERS
+// =============================================================================
+
+/**
+ * GET /api/core/meetings
+ * Fetch meetings with optional filters
+ */
+export const getMeetingsController = catchAsync(async ({ request }) => {
+  const url = new URL(request.url);
+  const workspaceId = url.searchParams.get('workspaceId');
+  const entityType = url.searchParams.get('entityType');
+  const entityId = url.searchParams.get('entityId');
+  const meetingType = url.searchParams.get('meetingType');
+  const provider = url.searchParams.get('provider');
+  const status = url.searchParams.get('status');
+  const hostUserId = url.searchParams.get('hostUserId');
+  const id = url.searchParams.get('id');
+  const includeParticipantMeetings = url.searchParams.get('includeParticipantMeetings');
+  const participantUserId = url.searchParams.get('participantUserId');
+
+  if (!workspaceId) {
+    return NextResponse.json(
+      { success: false, message: 'workspaceId query parameter is required' },
+      { status: 400 },
+    );
+  }
+
+  const { supabase, user, error } =
+    await assertCoreWorkspaceAccess(workspaceId);
+  if (error || !user) return error!;
+
+  // Determine the user ID to filter by for participant meetings
+  // Use participantUserId if provided, otherwise fall back to current user
+  const userIdForParticipant = participantUserId || user.id;
+
+  try {
+    // If filtering by entity, first get matching meeting IDs
+    let meetingIds: string[] | null = null;
+    if (entityType || entityId) {
+      let relQuery = (supabase as any)
+        .schema('core')
+        .from('meeting_relations')
+        .select('meeting_id')
+        .eq('workspace_id', workspaceId);
+
+      if (entityType) relQuery = relQuery.eq('entity_type', entityType);
+      if (entityId) relQuery = relQuery.eq('entity_id', entityId);
+
+      const { data: relData, error: relError } = await relQuery;
+      if (relError) throw relError;
+
+      const matchedIds = (relData ?? []).map(
+        (r: { meeting_id: string }) => r.meeting_id,
+      ) as string[];
+      meetingIds = [...new Set(matchedIds)];
+      if (meetingIds && meetingIds.length === 0) {
+        return successDataResponse('Meetings retrieved', id ? null : []);
+      }
+    }
+
+    // If includeParticipantMeetings is true, also get meetings where user is a participant
+    const participantMeetingIds: string[] = [];
+    if (includeParticipantMeetings === 'true' && userIdForParticipant) {
+      const { data: participantData, error: participantError } = await (supabase as any)
+        .schema('core')
+        .from('meeting_participants')
+        .select('meeting_id')
+        .eq('workspace_id', workspaceId)
+        .eq('internal_user_id', userIdForParticipant);
+
+      if (!participantError && participantData) {
+        participantMeetingIds.push(...participantData.map((p: { meeting_id: string }) => p.meeting_id));
+      }
+
+      // Also add meetings where user is the host (host_user_id matches)
+      const { data: hostMeetingData } = await (supabase as any)
+        .schema('core')
+        .from('meetings')
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .eq('host_user_id', userIdForParticipant)
+        .eq('is_deleted', false);
+
+      if (hostMeetingData) {
+        participantMeetingIds.push(...hostMeetingData.map((m: { id: string }) => m.id));
+      }
+    }
+
+    // Merge participant meeting IDs with entity-based meeting IDs
+    if (participantMeetingIds.length > 0) {
+      if (meetingIds) {
+        // Combine both lists and deduplicate
+        meetingIds = [...new Set([...meetingIds, ...participantMeetingIds])];
+      } else {
+        meetingIds = [...new Set(participantMeetingIds)];
+      }
+    }
+
+    // If we have participant meetings but no entity filter, and meetingIds is empty after filtering,
+    // we should still include the participant meetings
+    if (includeParticipantMeetings === 'true' && !entityType && !entityId && participantMeetingIds.length > 0) {
+      meetingIds = [...new Set(participantMeetingIds)];
+    }
+
+    // Build main query
+    let query = (supabase as any)
+      .schema('core')
+      .from('meetings')
+      .select('*')
+      .eq('workspace_id', workspaceId)
+      .eq('is_deleted', false);
+
+    if (id) query = query.eq('id', id).maybeSingle();
+    if (meetingIds) query = query.in('id', meetingIds);
+    if (meetingType) query = query.eq('meeting_type', meetingType);
+    if (provider) query = query.eq('provider', provider);
+    if (status) query = query.eq('status', status);
+    if (hostUserId) query = query.eq('host_user_id', hostUserId);
+
+    if (!id) {
+      query = query.order('scheduled_start', {
+        ascending: false,
+        nullsFirst: false,
+      });
+    }
+
+    const { data, error: fetchError } = await query;
+    if (fetchError) {
+      console.error('Fetch meetings error:', fetchError);
+      return NextResponse.json(
+        { success: false, message: 'Failed to retrieve meetings' },
+        { status: 500 },
+      );
+    }
+
+    if (!data) {
+      return successDataResponse('Meetings retrieved', id ? null : []);
+    }
+
+    // Get relations and participants for each meeting
+    const meetings = Array.isArray(data) ? data : [data];
+    const meetingIdsToFetch = meetings.map((m: { id: string }) => m.id);
+
+    if (meetingIdsToFetch.length > 0) {
+      // Fetch relations
+      const { data: relations } = await (supabase as any)
+        .schema('core')
+        .from('meeting_relations')
+        .select('*')
+        .in('meeting_id', meetingIdsToFetch);
+
+      // Fetch participants
+      const { data: participants } = await (supabase as any)
+        .schema('core')
+        .from('meeting_participants')
+        .select('*')
+        .in('meeting_id', meetingIdsToFetch);
+
+      // Collect all user IDs that need account lookups (cross-schema)
+      const userIds = new Set<string>();
+      meetings.forEach((m: { host_user_id?: string | null }) => {
+        if (m.host_user_id) userIds.add(m.host_user_id);
+      });
+      (participants ?? []).forEach(
+        (p: { internal_user_id?: string | null }) => {
+          if (p.internal_user_id) userIds.add(p.internal_user_id);
+        },
+      );
+
+      // Fetch accounts from public schema (cross-schema join not supported by PostgREST)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let accountsMap: Record<string, any> = {};
+      if (userIds.size > 0) {
+        const { data: accountsData } = await supabase
+          .from('accounts')
+          .select('id, name, email')
+          .in('id', Array.from(userIds));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (accountsData ?? []).forEach((a: any) => {
+          accountsMap[a.id] = a;
+        });
+      }
+
+      // Enrich participants with internal_user data
+      const enrichedParticipants = (participants ?? []).map((p: any) => ({
+        ...p,
+        internal_user: p.internal_user_id
+          ? (accountsMap[p.internal_user_id] ?? null)
+          : null,
+      }));
+
+      // Attach to meetings
+      const enrichedMeetings = meetings.map((meeting: any) => ({
+        ...meeting,
+        host: meeting.host_user_id
+          ? (accountsMap[meeting.host_user_id] ?? null)
+          : null,
+        relations: (relations ?? []).filter(
+          (r: { meeting_id: string }) => r.meeting_id === meeting.id,
+        ),
+        participants: enrichedParticipants.filter(
+          (p: { meeting_id: string }) => p.meeting_id === meeting.id,
+        ),
+        entity_type:
+          (relations ?? []).find(
+            (r: { meeting_id: string }) => r.meeting_id === meeting.id,
+          )?.entity_type ?? null,
+        entity_id:
+          (relations ?? []).find(
+            (r: { meeting_id: string }) => r.meeting_id === meeting.id,
+          )?.entity_id ?? null,
+      }));
+
+      return successDataResponse(
+        'Meetings retrieved',
+        Array.isArray(data) ? enrichedMeetings : (enrichedMeetings[0] ?? null),
+      );
+    }
+
+    return successDataResponse('Meetings retrieved', data);
+  } catch (fetchError) {
+    console.error('Fetch meetings error:', fetchError);
+    return NextResponse.json(
+      { success: false, message: 'Failed to retrieve meetings' },
+      { status: 500 },
+    );
+  }
 });
 
-export const getMeetingsController = meetings.get;
-export const createMeetingController = meetings.create;
-export const updateMeetingController = meetings.update;
-export const cancelMeetingController = meetings.update;
-export const deleteMeetingController = meetings.remove;
+/**
+ * POST /api/core/meetings
+ * Create a new meeting (logged or scheduled)
+ */
+export const createMeetingController = catchAsync(async ({ request }) => {
+  const body = await request.json().catch(() => null);
+  if (!body) {
+    return NextResponse.json(
+      { success: false, message: 'Invalid JSON body' },
+      { status: 400 },
+    );
+  }
+
+  const workspaceId = body.workspace_id ?? body.workspaceId;
+  if (!workspaceId) {
+    return NextResponse.json(
+      { success: false, message: 'workspace_id is required' },
+      { status: 400 },
+    );
+  }
+
+  if (!body.title) {
+    return NextResponse.json(
+      { success: false, message: 'title is required' },
+      { status: 400 },
+    );
+  }
+
+  const { supabase, user, error } =
+    await assertCoreWorkspaceAccess(workspaceId);
+  if (error || !user) return error!;
+
+  try {
+    // Build meeting payload
+    const meetingPayload: Record<string, unknown> = {
+      workspace_id: workspaceId,
+      meeting_type: body.meeting_type ?? body.meetingType ?? 'scheduled',
+      provider: body.provider ?? 'MANUAL',
+      title: body.title,
+      description: body.description ?? null,
+      status: body.status ?? 'scheduled',
+      scheduled_start:
+        body.scheduled_start ?? body.scheduledStart ?? body.start_time ?? null,
+      scheduled_end:
+        body.scheduled_end ?? body.scheduledEnd ?? body.end_time ?? null,
+      actual_start: body.actual_start ?? body.actualStart ?? null,
+      actual_end: body.actual_end ?? body.actualEnd ?? null,
+      timezone: body.timezone ?? 'UTC',
+      meeting_url: body.meeting_url ?? body.meetingUrl ?? null,
+      provider_event_id: body.provider_event_id ?? body.providerEventId ?? null,
+      provider_meeting_id:
+        body.provider_meeting_id ?? body.providerMeetingId ?? null,
+      host_user_id: body.host_user_id ?? body.hostUserId ?? user.id,
+      meeting_host_email_account_id:
+        body.meeting_host_email_account_id ??
+        body.meetingHostEmailAccountId ??
+        null,
+      location: body.location ?? null,
+      created_by: user.id,
+      updated_by: user.id,
+    };
+
+    // Insert meeting
+    const { data: meeting, error: meetingError } = await (supabase as any)
+      .schema('core')
+      .from('meetings')
+      .insert(meetingPayload)
+      .select('*')
+      .single();
+
+    if (meetingError) {
+      console.error('Create meeting error:', meetingError);
+      return NextResponse.json(
+        { success: false, message: 'Failed to create meeting' },
+        { status: 500 },
+      );
+    }
+
+    // Handle relations
+    const relations: Array<{ entity_type: string; entity_id: string }> = [];
+    if (body.entity_type && body.entity_id) {
+      relations.push({
+        entity_type: body.entity_type,
+        entity_id: body.entity_id,
+      });
+    }
+    if (Array.isArray(body.relations)) {
+      relations.push(
+        ...body.relations
+          .map(
+            (r: {
+              entity_type?: string;
+              entityType?: string;
+              entity_id?: string;
+              entityId?: string;
+            }) => ({
+              entity_type: r.entity_type ?? r.entityType,
+              entity_id: r.entity_id ?? r.entityId,
+            }),
+          )
+          .filter(
+            (r: { entity_type: string; entity_id: string }) =>
+              r.entity_type && r.entity_id,
+          ),
+      );
+    }
+
+    // Deduplicate relations
+    const uniqueRelations = [
+      ...new Map(
+        relations.map((r) => [`${r.entity_type}:${r.entity_id}`, r]),
+      ).values(),
+    ];
+
+    if (uniqueRelations.length > 0) {
+      const relationRows = uniqueRelations.map((rel) => ({
+        workspace_id: workspaceId,
+        meeting_id: meeting.id,
+        entity_type: rel.entity_type,
+        entity_id: rel.entity_id,
+      }));
+
+      await (supabase as any)
+        .schema('core')
+        .from('meeting_relations')
+        .insert(relationRows);
+    }
+
+    // Handle participants
+    if (Array.isArray(body.participants) && body.participants.length > 0) {
+      console.log(
+        '[createMeeting] Inserting participants:',
+        JSON.stringify(body.participants),
+      );
+      const participantRows = body.participants.map(
+        (p: {
+          participant_type?: string;
+          internal_user_id?: string;
+          external_email?: string;
+          display_name?: string;
+          is_host?: boolean;
+          response_status?: string;
+        }) => ({
+          workspace_id: workspaceId,
+          meeting_id: meeting.id,
+          participant_type: p.participant_type ?? 'INTERNAL',
+          internal_user_id: p.internal_user_id ?? null,
+          external_email: p.external_email ?? null,
+          display_name: p.display_name ?? null,
+          is_host: p.is_host ?? false,
+          response_status: p.response_status ?? 'PENDING',
+        }),
+      );
+
+      const { error: participantError } = await (supabase as any)
+        .schema('core')
+        .from('meeting_participants')
+        .insert(participantRows);
+
+      if (participantError) {
+        console.error('Insert participants error:', participantError);
+        // Don't fail the whole request, just log the error
+      } else {
+        console.log(
+          '[createMeeting] Successfully inserted',
+          participantRows.length,
+          'participants',
+        );
+      }
+    } else {
+      console.log(
+        '[createMeeting] No participants to insert. body.participants:',
+        body.participants,
+      );
+    }
+
+    // Handle reminders
+    if (Array.isArray(body.reminders) && body.reminders.length > 0) {
+      const meetingStartTime = meetingPayload.scheduled_start as string;
+      if (meetingStartTime) {
+        const reminderRows = body.reminders.map(
+          (r: { offset_minutes: number; channel?: string }) => {
+            const scheduledAt = new Date(
+              new Date(meetingStartTime).getTime() -
+                r.offset_minutes * 60 * 1000,
+            );
+            return {
+              workspace_id: workspaceId,
+              meeting_id: meeting.id,
+              offset_minutes: r.offset_minutes,
+              channel: r.channel ?? 'EMAIL',
+              scheduled_at: scheduledAt.toISOString(),
+              status: 'pending',
+            };
+          },
+        );
+
+        await (supabase as any)
+          .schema('core')
+          .from('meeting_reminders')
+          .insert(reminderRows);
+      }
+    }
+
+    // Fetch the complete meeting with relations
+    const { data: completeMeeting } = await (supabase as any)
+      .schema('core')
+      .from('meetings')
+      .select('*')
+      .eq('id', meeting.id)
+      .single();
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Meeting created successfully',
+        data: completeMeeting ?? meeting,
+      },
+      { status: 201 },
+    );
+  } catch (createError) {
+    console.error('Create meeting error:', createError);
+    return NextResponse.json(
+      { success: false, message: 'Failed to create meeting' },
+      { status: 500 },
+    );
+  }
+});
+
+/**
+ * PATCH /api/core/meetings
+ * Update a meeting (also syncs with Google Calendar if linked)
+ */
+export const updateMeetingController = catchAsync(async ({ request }) => {
+  const body = await request.json().catch(() => null);
+  const workspaceId = body?.workspace_id ?? body?.workspaceId;
+
+  if (!body?.id || !workspaceId) {
+    return NextResponse.json(
+      { success: false, message: 'id and workspace_id are required' },
+      { status: 400 },
+    );
+  }
+
+  const { supabase, user, error } =
+    await assertCoreWorkspaceAccess(workspaceId);
+  if (error || !user) return error!;
+
+  try {
+    // First, fetch the meeting to check if it's linked to Google Calendar
+    const { data: existingMeeting } = await (supabase as any)
+      .schema('core')
+      .from('meetings')
+      .select('provider_event_id, meeting_host_email_account_id, provider')
+      .eq('workspace_id', workspaceId)
+      .eq('id', body.id)
+      .eq('is_deleted', false)
+      .maybeSingle();
+
+    // If meeting is linked to Google Calendar, update it there too
+    if (
+      existingMeeting?.provider_event_id &&
+      existingMeeting?.meeting_host_email_account_id &&
+      existingMeeting?.provider === 'GOOGLE'
+    ) {
+      try {
+        // Get tokens for the account
+        const { data: tokens } = await (supabase as any)
+          .schema('core')
+          .from('integration_tokens')
+          .select('*')
+          .eq('account_id', existingMeeting.meeting_host_email_account_id)
+          .maybeSingle();
+
+        if (tokens?.access_token && tokens?.refresh_token) {
+          const { google } = await import('googleapis');
+          const oauth2Client = new google.auth.OAuth2(
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET,
+          );
+
+          oauth2Client.setCredentials({
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+            expiry_date: tokens.expires_at
+              ? new Date(tokens.expires_at).getTime()
+              : undefined,
+          });
+
+          // Refresh token if needed
+          const expiryTime = tokens.expires_at
+            ? new Date(tokens.expires_at).getTime()
+            : 0;
+          if (Date.now() >= expiryTime - 5 * 60 * 1000) {
+            const { credentials } = await oauth2Client.refreshAccessToken();
+            oauth2Client.setCredentials(credentials);
+          }
+
+          const calendar = google.calendar({
+            version: 'v3',
+            auth: oauth2Client,
+          });
+
+          // Build Google Calendar update payload
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const event: any = {};
+          if (body.title !== undefined) event.summary = body.title;
+          if (body.description !== undefined)
+            event.description = body.description;
+          if (body.scheduled_start || body.scheduledStart) {
+            event.start = {
+              dateTime: body.scheduled_start ?? body.scheduledStart,
+              timeZone: body.timezone ?? 'UTC',
+            };
+          }
+          if (body.scheduled_end || body.scheduledEnd) {
+            event.end = {
+              dateTime: body.scheduled_end ?? body.scheduledEnd,
+              timeZone: body.timezone ?? 'UTC',
+            };
+          }
+
+          // Update attendees if provided
+          if (body.attendees && Array.isArray(body.attendees)) {
+            event.attendees = body.attendees.map(
+              (a: { email: string; display_name?: string }) => ({
+                email: a.email,
+                displayName: a.display_name,
+              }),
+            );
+          }
+
+          // Only update if there's something to update
+          if (Object.keys(event).length > 0) {
+            await calendar.events.patch({
+              calendarId: 'primary',
+              eventId: existingMeeting.provider_event_id,
+              requestBody: event,
+              sendUpdates: body.send_invites !== false ? 'all' : 'none',
+            });
+          }
+        }
+      } catch (googleError) {
+        // Log error but continue with local update
+        console.error('Failed to update Google Calendar event:', googleError);
+      }
+    }
+
+    // If meeting is linked to Zoom, update it there too
+    if (
+      existingMeeting?.provider_event_id &&
+      existingMeeting?.meeting_host_email_account_id &&
+      existingMeeting?.provider === 'ZOOM'
+    ) {
+      try {
+        console.log(
+          '[Zoom Update] Fetching tokens for account:',
+          existingMeeting.meeting_host_email_account_id,
+        );
+        const { data: tokens } = await (supabase as any)
+          .schema('core')
+          .from('integration_tokens')
+          .select('*')
+          .eq('account_id', existingMeeting.meeting_host_email_account_id)
+          .maybeSingle();
+
+        console.log('[Zoom Update] Found tokens:', tokens ? 'yes' : 'no');
+
+        if (tokens?.access_token) {
+          const axios = (await import('axios')).default;
+          let accessToken = tokens.access_token;
+
+          // Refresh token if needed
+          const expiryTime = tokens.expires_at
+            ? new Date(tokens.expires_at).getTime()
+            : 0;
+          if (
+            Date.now() >= expiryTime - 5 * 60 * 1000 &&
+            tokens.refresh_token
+          ) {
+            console.log('[Zoom Update] Refreshing token...');
+            const { Buffer } = await import('node:buffer');
+            const params = new URLSearchParams({
+              grant_type: 'refresh_token',
+              refresh_token: tokens.refresh_token,
+            });
+            const tokenResp = await axios.post(
+              'https://zoom.us/oauth/token',
+              params.toString(),
+              {
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                  Authorization: `Basic ${Buffer.from(
+                    `${process.env.ZOOM_CLIENT_ID}:${process.env.ZOOM_CLIENT_SECRET}`,
+                  ).toString('base64')}`,
+                },
+              },
+            );
+            accessToken = tokenResp.data.access_token;
+
+            // Save the refreshed token back to the database
+            await (supabase as any)
+              .schema('core')
+              .from('integration_tokens')
+              .update({
+                access_token: accessToken,
+                expires_at: new Date(
+                  Date.now() + (tokenResp.data.expires_in ?? 3600) * 1000,
+                ).toISOString(),
+              })
+              .eq('account_id', existingMeeting.meeting_host_email_account_id);
+            console.log('[Zoom Update] Saved refreshed token');
+          }
+
+          // Build Zoom update payload
+          const updatePayload: Record<string, unknown> = {};
+          if (body.title !== undefined) updatePayload.topic = body.title;
+          if (body.description !== undefined)
+            updatePayload.agenda = body.description;
+          if (body.timezone !== undefined)
+            updatePayload.timezone = body.timezone;
+
+          if (body.scheduled_start || body.scheduledStart) {
+            const startTime = new Date(
+              body.scheduled_start ?? body.scheduledStart,
+            );
+            updatePayload.start_time = startTime
+              .toISOString()
+              .replace(/\.\d{3}Z$/, 'Z');
+
+            if (body.scheduled_end || body.scheduledEnd) {
+              const endTime = new Date(body.scheduled_end ?? body.scheduledEnd);
+              const durationMinutes = Math.ceil(
+                (endTime.getTime() - startTime.getTime()) / (1000 * 60),
+              );
+              updatePayload.duration = durationMinutes;
+            }
+          }
+
+          if (Object.keys(updatePayload).length > 0) {
+            console.log('[Zoom Update] Sending update to Zoom:', updatePayload);
+            await axios.patch(
+              `https://api.zoom.us/v2/meetings/${existingMeeting.provider_event_id}`,
+              updatePayload,
+              {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  'Content-Type': 'application/json',
+                },
+              },
+            );
+            console.log('[Zoom Update] Successfully updated meeting in Zoom');
+          }
+        }
+      } catch (zoomError) {
+        console.error(
+          '[Zoom Update] Failed to update Zoom meeting:',
+          zoomError,
+        );
+      }
+    }
+
+    const updatePayload: Record<string, unknown> = {
+      updated_by: user.id,
+    };
+
+    // Only include fields that are provided
+    if (body.title !== undefined) updatePayload.title = body.title;
+    if (body.description !== undefined)
+      updatePayload.description = body.description;
+    if (body.status !== undefined) updatePayload.status = body.status;
+    if (
+      body.scheduled_start !== undefined ||
+      body.scheduledStart !== undefined
+    ) {
+      updatePayload.scheduled_start =
+        body.scheduled_start ?? body.scheduledStart;
+    }
+    if (body.scheduled_end !== undefined || body.scheduledEnd !== undefined) {
+      updatePayload.scheduled_end = body.scheduled_end ?? body.scheduledEnd;
+    }
+    if (body.actual_start !== undefined || body.actualStart !== undefined) {
+      updatePayload.actual_start = body.actual_start ?? body.actualStart;
+    }
+    if (body.actual_end !== undefined || body.actualEnd !== undefined) {
+      updatePayload.actual_end = body.actual_end ?? body.actualEnd;
+    }
+    if (body.timezone !== undefined) updatePayload.timezone = body.timezone;
+    if (body.meeting_url !== undefined || body.meetingUrl !== undefined) {
+      updatePayload.meeting_url = body.meeting_url ?? body.meetingUrl;
+    }
+    if (body.host_user_id !== undefined || body.hostUserId !== undefined) {
+      updatePayload.host_user_id = body.host_user_id ?? body.hostUserId;
+    }
+    if (
+      body.meeting_host_email_account_id !== undefined ||
+      body.meetingHostEmailAccountId !== undefined
+    ) {
+      updatePayload.meeting_host_email_account_id =
+        body.meeting_host_email_account_id ?? body.meetingHostEmailAccountId;
+    }
+    if (body.location !== undefined) updatePayload.location = body.location;
+
+    const { data: meeting, error: updateError } = await (supabase as any)
+      .schema('core')
+      .from('meetings')
+      .update(updatePayload)
+      .eq('workspace_id', workspaceId)
+      .eq('id', body.id)
+      .select('*')
+      .single();
+
+    if (updateError) {
+      console.error('Update meeting error:', updateError);
+      return NextResponse.json(
+        { success: false, message: 'Failed to update meeting' },
+        { status: 500 },
+      );
+    }
+
+    // Handle participants update if provided
+    if (Array.isArray(body.participants)) {
+      // Delete existing participants
+      await (supabase as any)
+        .schema('core')
+        .from('meeting_participants')
+        .delete()
+        .eq('meeting_id', body.id);
+
+      // Insert new participants
+      if (body.participants.length > 0) {
+        const participantRows = body.participants.map(
+          (p: {
+            participant_type?: string;
+            internal_user_id?: string;
+            external_email?: string;
+            display_name?: string;
+            is_host?: boolean;
+            response_status?: string;
+          }) => ({
+            workspace_id: workspaceId,
+            meeting_id: body.id,
+            participant_type: p.participant_type ?? 'INTERNAL',
+            internal_user_id: p.internal_user_id ?? null,
+            external_email: p.external_email ?? null,
+            display_name: p.display_name ?? null,
+            is_host: p.is_host ?? false,
+            response_status: p.response_status ?? 'PENDING',
+          }),
+        );
+
+        await (supabase as any)
+          .schema('core')
+          .from('meeting_participants')
+          .insert(participantRows);
+      }
+    }
+
+    return successDataResponse('Meeting updated successfully', meeting);
+  } catch (updateError) {
+    console.error('Update meeting error:', updateError);
+    return NextResponse.json(
+      { success: false, message: 'Failed to update meeting' },
+      { status: 500 },
+    );
+  }
+});
+
+/**
+ * DELETE /api/core/meetings
+ * Soft delete a meeting (also syncs with Google Calendar if linked)
+ */
+export const deleteMeetingController = catchAsync(async ({ request }) => {
+  const url = new URL(request.url);
+  const id = url.searchParams.get('id');
+  const workspaceId = url.searchParams.get('workspaceId');
+
+  if (!id || !workspaceId) {
+    return NextResponse.json(
+      { success: false, message: 'id and workspaceId are required' },
+      { status: 400 },
+    );
+  }
+
+  const { supabase, user, error } =
+    await assertCoreWorkspaceAccess(workspaceId);
+  if (error || !user) return error!;
+
+  try {
+    // First, fetch the meeting to check if it's linked to Google Calendar
+    const { data: meeting } = await (supabase as any)
+      .schema('core')
+      .from('meetings')
+      .select('provider_event_id, meeting_host_email_account_id, provider')
+      .eq('workspace_id', workspaceId)
+      .eq('id', id)
+      .eq('is_deleted', false)
+      .maybeSingle();
+
+    // If meeting is linked to Google Calendar, delete it there too
+    if (
+      meeting?.provider_event_id &&
+      meeting?.meeting_host_email_account_id &&
+      meeting?.provider === 'GOOGLE'
+    ) {
+      try {
+        // Get tokens for the account
+        const { data: tokens } = await (supabase as any)
+          .schema('core')
+          .from('integration_tokens')
+          .select('*')
+          .eq('account_id', meeting.meeting_host_email_account_id)
+          .maybeSingle();
+
+        if (tokens?.access_token && tokens?.refresh_token) {
+          // Dynamically import google to avoid loading it for all requests
+          const { google } = await import('googleapis');
+          const oauth2Client = new google.auth.OAuth2(
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET,
+          );
+
+          oauth2Client.setCredentials({
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+            expiry_date: tokens.expires_at
+              ? new Date(tokens.expires_at).getTime()
+              : undefined,
+          });
+
+          // Refresh token if needed
+          const expiryTime = tokens.expires_at
+            ? new Date(tokens.expires_at).getTime()
+            : 0;
+          if (Date.now() >= expiryTime - 5 * 60 * 1000) {
+            const { credentials } = await oauth2Client.refreshAccessToken();
+            oauth2Client.setCredentials(credentials);
+          }
+
+          const calendar = google.calendar({
+            version: 'v3',
+            auth: oauth2Client,
+          });
+          await calendar.events.delete({
+            calendarId: 'primary',
+            eventId: meeting.provider_event_id,
+            sendUpdates: 'all',
+          });
+        }
+      } catch (googleError) {
+        // Log error but continue with local deletion
+        console.error('Failed to delete Google Calendar event:', googleError);
+      }
+    }
+
+    // If meeting is linked to Zoom, delete it there too
+    if (
+      meeting?.provider_event_id &&
+      meeting?.meeting_host_email_account_id &&
+      meeting?.provider === 'ZOOM'
+    ) {
+      try {
+        console.log(
+          '[Zoom Delete] Fetching tokens for account:',
+          meeting.meeting_host_email_account_id,
+        );
+        const { data: tokens } = await (supabase as any)
+          .schema('core')
+          .from('integration_tokens')
+          .select('*')
+          .eq('account_id', meeting.meeting_host_email_account_id)
+          .maybeSingle();
+
+        console.log(
+          '[Zoom Delete] Found tokens:',
+          tokens ? 'yes' : 'no',
+          'has access_token:',
+          !!tokens?.access_token,
+        );
+
+        if (tokens?.access_token) {
+          const axios = (await import('axios')).default;
+          let accessToken = tokens.access_token;
+
+          // Refresh token if needed
+          const expiryTime = tokens.expires_at
+            ? new Date(tokens.expires_at).getTime()
+            : 0;
+          if (
+            Date.now() >= expiryTime - 5 * 60 * 1000 &&
+            tokens.refresh_token
+          ) {
+            console.log('[Zoom Delete] Refreshing token...');
+            const { Buffer } = await import('node:buffer');
+            const params = new URLSearchParams({
+              grant_type: 'refresh_token',
+              refresh_token: tokens.refresh_token,
+            });
+            const tokenResp = await axios.post(
+              'https://zoom.us/oauth/token',
+              params.toString(),
+              {
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                  Authorization: `Basic ${Buffer.from(
+                    `${process.env.ZOOM_CLIENT_ID}:${process.env.ZOOM_CLIENT_SECRET}`,
+                  ).toString('base64')}`,
+                },
+              },
+            );
+            accessToken = tokenResp.data.access_token;
+            console.log('[Zoom Delete] Got new access token');
+
+            // Save the refreshed token back to the database
+            await (supabase as any)
+              .schema('core')
+              .from('integration_tokens')
+              .update({
+                access_token: accessToken,
+                expires_at: new Date(
+                  Date.now() + (tokenResp.data.expires_in ?? 3600) * 1000,
+                ).toISOString(),
+              })
+              .eq('account_id', meeting.meeting_host_email_account_id);
+          }
+
+          console.log(
+            '[Zoom Delete] Calling Zoom API to delete meeting:',
+            meeting.provider_event_id,
+          );
+          await axios.delete(
+            `https://api.zoom.us/v2/meetings/${meeting.provider_event_id}`,
+            { headers: { Authorization: `Bearer ${accessToken}` } },
+          );
+          console.log('[Zoom Delete] Successfully deleted meeting from Zoom');
+        }
+      } catch (zoomError) {
+        // Log error but continue with local deletion
+        console.error(
+          '[Zoom Delete] Failed to delete Zoom meeting:',
+          zoomError,
+        );
+      }
+    }
+
+    // Soft delete from database
+    const { error: deleteError } = await (supabase as any)
+      .schema('core')
+      .from('meetings')
+      .update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: user.id,
+      })
+      .eq('workspace_id', workspaceId)
+      .eq('id', id);
+
+    if (deleteError) {
+      console.error('Delete meeting error:', deleteError);
+      return NextResponse.json(
+        { success: false, message: 'Failed to delete meeting' },
+        { status: 500 },
+      );
+    }
+
+    return successDataResponse('Meeting deleted successfully', { id });
+  } catch (deleteError) {
+    console.error('Delete meeting error:', deleteError);
+    return NextResponse.json(
+      { success: false, message: 'Failed to delete meeting' },
+      { status: 500 },
+    );
+  }
+});
+
+// =============================================================================
+// PARTICIPANT CONTROLLERS
+// =============================================================================
+
+/**
+ * GET /api/core/meeting-participants
+ */
+export const getMeetingParticipantsController = catchAsync(
+  async ({ request }) => {
+    const url = new URL(request.url);
+    const workspaceId = url.searchParams.get('workspaceId');
+    const meetingId = url.searchParams.get('meetingId');
+
+    if (!workspaceId || !meetingId) {
+      return NextResponse.json(
+        { success: false, message: 'workspaceId and meetingId are required' },
+        { status: 400 },
+      );
+    }
+
+    const { supabase, error } = await assertCoreWorkspaceAccess(workspaceId);
+    if (error) return error;
+
+    const { data, error: fetchError } = await (supabase as any)
+      .schema('core')
+      .from('meeting_participants')
+      .select('*')
+      .eq('meeting_id', meetingId)
+      .order('is_host', { ascending: false });
+
+    if (fetchError) {
+      console.error('Fetch participants error:', fetchError);
+      return NextResponse.json(
+        { success: false, message: 'Failed to retrieve participants' },
+        { status: 500 },
+      );
+    }
+
+    // Enrich participants with internal_user data from public.accounts
+    const participants = (data ?? []) as Array<{
+      internal_user_id?: string | null;
+    }>;
+    const internalUserIds = participants
+      .map((p) => p.internal_user_id)
+      .filter((id): id is string => !!id);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let accountsById: Record<string, any> = {};
+    if (internalUserIds.length > 0) {
+      const { data: accts } = await supabase
+        .from('accounts')
+        .select('id, name, email')
+        .in('id', internalUserIds);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (accts ?? []).forEach((a: any) => {
+        accountsById[a.id] = a;
+      });
+    }
+
+    const enriched = participants.map((p) => ({
+      ...p,
+      internal_user: p.internal_user_id
+        ? (accountsById[p.internal_user_id] ?? null)
+        : null,
+    }));
+
+    return successDataResponse('Participants retrieved', enriched);
+  },
+);
+
+/**
+ * POST /api/core/meeting-participants
+ */
+export const addMeetingParticipantController = catchAsync(
+  async ({ request }) => {
+    const body = await request.json().catch(() => null);
+    const workspaceId = body?.workspace_id ?? body?.workspaceId;
+    const meetingId = body?.meeting_id ?? body?.meetingId;
+
+    if (!workspaceId || !meetingId) {
+      return NextResponse.json(
+        { success: false, message: 'workspace_id and meeting_id are required' },
+        { status: 400 },
+      );
+    }
+
+    const { supabase, error } = await assertCoreWorkspaceAccess(workspaceId);
+    if (error) return error;
+
+    const participantPayload = {
+      workspace_id: workspaceId,
+      meeting_id: meetingId,
+      participant_type: body.participant_type ?? 'INTERNAL',
+      internal_user_id: body.internal_user_id ?? null,
+      external_email: body.external_email ?? null,
+      display_name: body.display_name ?? null,
+      is_host: body.is_host ?? false,
+      response_status: body.response_status ?? 'PENDING',
+    };
+
+    const { data, error: insertError } = await (supabase as any)
+      .schema('core')
+      .from('meeting_participants')
+      .insert(participantPayload)
+      .select('*')
+      .single();
+
+    if (insertError) {
+      console.error('Add participant error:', insertError);
+      return NextResponse.json(
+        { success: false, message: 'Failed to add participant' },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json(
+      { success: true, message: 'Participant added', data },
+      { status: 201 },
+    );
+  },
+);
+
+/**
+ * PATCH /api/core/meeting-participants
+ */
+export const updateMeetingParticipantController = catchAsync(
+  async ({ request }) => {
+    const body = await request.json().catch(() => null);
+    const workspaceId = body?.workspace_id ?? body?.workspaceId;
+
+    if (!body?.id || !workspaceId) {
+      return NextResponse.json(
+        { success: false, message: 'id and workspace_id are required' },
+        { status: 400 },
+      );
+    }
+
+    const { supabase, error } = await assertCoreWorkspaceAccess(workspaceId);
+    if (error) return error;
+
+    const updatePayload: Record<string, unknown> = {};
+    if (body.response_status !== undefined)
+      updatePayload.response_status = body.response_status;
+    if (body.display_name !== undefined)
+      updatePayload.display_name = body.display_name;
+    if (body.is_host !== undefined) updatePayload.is_host = body.is_host;
+
+    const { data, error: updateError } = await (supabase as any)
+      .schema('core')
+      .from('meeting_participants')
+      .update(updatePayload)
+      .eq('id', body.id)
+      .select('*')
+      .single();
+
+    if (updateError) {
+      console.error('Update participant error:', updateError);
+      return NextResponse.json(
+        { success: false, message: 'Failed to update participant' },
+        { status: 500 },
+      );
+    }
+
+    return successDataResponse('Participant updated', data);
+  },
+);
+
+// =============================================================================
+// NOTE CONTROLLERS
+// =============================================================================
+
+/**
+ * GET /api/core/meeting-notes
+ */
+export const getMeetingNotesController = catchAsync(async ({ request }) => {
+  const url = new URL(request.url);
+  const workspaceId = url.searchParams.get('workspaceId');
+  const meetingId = url.searchParams.get('meetingId');
+
+  if (!workspaceId || !meetingId) {
+    return NextResponse.json(
+      { success: false, message: 'workspaceId and meetingId are required' },
+      { status: 400 },
+    );
+  }
+
+  const { supabase, error } = await assertCoreWorkspaceAccess(workspaceId);
+  if (error) return error;
+
+  const { data, error: fetchError } = await (supabase as any)
+    .schema('core')
+    .from('meeting_notes')
+    .select('*')
+    .eq('meeting_id', meetingId)
+    .eq('is_deleted', false)
+    .order('created_at', { ascending: false });
+
+  if (fetchError) {
+    console.error('Fetch notes error:', fetchError);
+    return NextResponse.json(
+      { success: false, message: 'Failed to retrieve notes' },
+      { status: 500 },
+    );
+  }
+
+  return successDataResponse('Notes retrieved', data ?? []);
+});
+
+/**
+ * POST /api/core/meeting-notes
+ */
+export const createMeetingNoteController = catchAsync(async ({ request }) => {
+  const body = await request.json().catch(() => null);
+  const workspaceId = body?.workspace_id ?? body?.workspaceId;
+  const meetingId = body?.meeting_id ?? body?.meetingId;
+
+  if (!workspaceId || !meetingId || !body?.content) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'workspace_id, meeting_id, and content are required',
+      },
+      { status: 400 },
+    );
+  }
+
+  const { supabase, user, error } =
+    await assertCoreWorkspaceAccess(workspaceId);
+  if (error || !user) return error!;
+
+  const { data, error: insertError } = await (supabase as any)
+    .schema('core')
+    .from('meeting_notes')
+    .insert({
+      workspace_id: workspaceId,
+      meeting_id: meetingId,
+      content: body.content,
+      note_type: body.note_type ?? 'note',
+      created_by: user.id,
+      updated_by: user.id,
+    })
+    .select('*')
+    .single();
+
+  if (insertError) {
+    console.error('Create note error:', insertError);
+    return NextResponse.json(
+      { success: false, message: 'Failed to create note' },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json(
+    { success: true, message: 'Note created', data },
+    { status: 201 },
+  );
+});
+
+/**
+ * PATCH /api/core/meeting-notes
+ */
+export const updateMeetingNoteController = catchAsync(async ({ request }) => {
+  const body = await request.json().catch(() => null);
+  const workspaceId = body?.workspace_id ?? body?.workspaceId;
+
+  if (!body?.id || !workspaceId) {
+    return NextResponse.json(
+      { success: false, message: 'id and workspace_id are required' },
+      { status: 400 },
+    );
+  }
+
+  const { supabase, user, error } =
+    await assertCoreWorkspaceAccess(workspaceId);
+  if (error || !user) return error!;
+
+  const { data, error: updateError } = await (supabase as any)
+    .schema('core')
+    .from('meeting_notes')
+    .update({
+      content: body.content,
+      note_type: body.note_type,
+      updated_by: user.id,
+    })
+    .eq('id', body.id)
+    .select('*')
+    .single();
+
+  if (updateError) {
+    console.error('Update note error:', updateError);
+    return NextResponse.json(
+      { success: false, message: 'Failed to update note' },
+      { status: 500 },
+    );
+  }
+
+  return successDataResponse('Note updated', data);
+});
+
+/**
+ * DELETE /api/core/meeting-notes
+ */
+export const deleteMeetingNoteController = catchAsync(async ({ request }) => {
+  const url = new URL(request.url);
+  const id = url.searchParams.get('id');
+  const workspaceId = url.searchParams.get('workspaceId');
+
+  if (!id || !workspaceId) {
+    return NextResponse.json(
+      { success: false, message: 'id and workspaceId are required' },
+      { status: 400 },
+    );
+  }
+
+  const { supabase, user, error } =
+    await assertCoreWorkspaceAccess(workspaceId);
+  if (error || !user) return error!;
+
+  const { error: deleteError } = await (supabase as any)
+    .schema('core')
+    .from('meeting_notes')
+    .update({
+      is_deleted: true,
+      deleted_at: new Date().toISOString(),
+      deleted_by: user.id,
+    })
+    .eq('id', id);
+
+  if (deleteError) {
+    console.error('Delete note error:', deleteError);
+    return NextResponse.json(
+      { success: false, message: 'Failed to delete note' },
+      { status: 500 },
+    );
+  }
+
+  return successDataResponse('Note deleted', { id });
+});
+// import { createCoreControllers } from '../_shared/core-crud';
+
+// const meetings = createCoreControllers({
+//   table: 'meetings',
+//   relation: { table: 'meeting_relations', foreignKey: 'meeting_id' },
+//   label: 'Meeting',
+//   requiredCreateFields: ['workspace_id', 'entity_type', 'entity_id', 'title'],
+//   defaultOrder: { column: 'start_time', ascending: false },
+//   createPayload: (body, userId) => ({
+//     workspace_id: body.workspace_id ?? body.workspaceId,
+//     title: body.title,
+//     description: body.description ?? null,
+//     start_time: body.start_time ?? body.startTime ?? null,
+//     end_time: body.end_time ?? body.endTime ?? null,
+//     location: body.location ?? null,
+//     status: body.status ?? 'scheduled',
+//     created_by: userId,
+//     updated_by: userId,
+//   }),
+//   updatePayload: (body, userId) => ({
+//     title: body.title,
+//     description: body.description,
+//     start_time: body.start_time ?? body.startTime,
+//     end_time: body.end_time ?? body.endTime,
+//     location: body.location,
+//     status: body.status,
+//     updated_by: userId,
+//   }),
+// });
+
+// export const getMeetingsController = meetings.get;
+// export const createMeetingController = meetings.create;
+// export const updateMeetingController = meetings.update;
+// export const cancelMeetingController = meetings.update;
+// export const deleteMeetingController = meetings.remove;

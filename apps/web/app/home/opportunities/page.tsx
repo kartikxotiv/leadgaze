@@ -10,8 +10,8 @@ import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
-import { formatDate } from '@kit/shared/utils';
 import { PageBody, PageHeader } from '@kit/ui/page';
+import { useLocalization } from '~/lib/localization/localization-provider';
 
 import { Skeleton } from '@kit/ui/skeleton';
 import {
@@ -23,6 +23,9 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 
@@ -131,6 +134,7 @@ function OpportunitiesPageSkeleton() {
 export default function OpportunitiesPage() {
   const router = useRouter();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
+  const { formatDate, formatCurrency } = useLocalization();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [selectedCreatedId, setSelectedCreatedId] = useState<string>('all');
@@ -188,7 +192,16 @@ export default function OpportunitiesPage() {
       updated_by: false,
     });
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('opportunities');
+
+
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  const { sortColumn, sortDirection, toggleSort, sortState } = useTableSort<Opportunity>(
+    'opportunities',
+    [],
+    { mode: 'server', onSortChange: () => setCurrentPage(1) }
+  );
 
   const {
     data: opportunitiesData = {
@@ -209,6 +222,7 @@ export default function OpportunitiesPage() {
       selectedStage,
       selectedCreatedId,
       pageSize,
+      sortState,
     ],
     queryFn: () =>
       getOpportunitiesService({
@@ -217,6 +231,8 @@ export default function OpportunitiesPage() {
         limit: itemsPerPage,
         searchTerm: debouncedSearchTerm,
         stageId: selectedStage,
+        sortColumn: sortColumn ?? undefined,
+        sortDirection: sortDirection ?? undefined,
       }),
     enabled: !!workspace?.id,
   });
@@ -407,27 +423,249 @@ export default function OpportunitiesPage() {
               <TableHeader>
                 <TableRow>
                   {isVisible('sno') && (
-                    <TableHead className="w-12 whitespace-nowrap">
-                      S. No.
-                    </TableHead>
-                  )}
-                  {isVisible('name') && <TableHead>Name</TableHead>}
-                  {isVisible('account') && <TableHead>Account</TableHead>}
-                  {isVisible('stage') && <TableHead>Stage</TableHead>}
-                  {isVisible('amount') && <TableHead>Amount</TableHead>}
-                  {isVisible('currency') && <TableHead>Currency</TableHead>}
-                  {isVisible('probability') && <TableHead>Probability</TableHead>}
-                  {isVisible('close_date') && <TableHead>Close Date</TableHead>}
-                  {isVisible('priority') && <TableHead>Priority</TableHead>}
-                  {isVisible('type') && <TableHead>Type</TableHead>}
-                  {isVisible('source') && <TableHead>Source</TableHead>}
-                  {isVisible('competitor') && <TableHead>Competitor</TableHead>}
-                  {isVisible('is_closed') && <TableHead>Closed</TableHead>}
-                  {isVisible('is_won') && <TableHead>Won</TableHead>}
-                  {isVisible('owner') && <TableHead>Owner</TableHead>}
-                  {isVisible('created_by') && <TableHead>Created By</TableHead>}
-                  {isVisible('created_at') && <TableHead>Created On</TableHead>}
-                  {isVisible('updated_by') && <TableHead>Last Updated By</TableHead>}
+  <SortableTableHead
+    label="S. No."
+    columnId="sno"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    sortable={false}
+    className="relative w-12 whitespace-nowrap"
+    {...getHeaderProps('sno')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
+  </SortableTableHead>
+)}
+                  {isVisible('name') && (
+  <SortableTableHead
+    label="Name"
+    columnId="name"
+    sortKey="opportunity_name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('name')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('name')} />
+  </SortableTableHead>
+)}
+                  {isVisible('account') && (
+  <SortableTableHead
+    label="Account"
+    columnId="account"
+    sortKey="account.account_name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('account')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('account')} />
+  </SortableTableHead>
+)}
+                  {isVisible('stage') && (
+  <SortableTableHead
+    label="Stage"
+    columnId="stage"
+    sortKey="stage.status_name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('stage')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('stage')} />
+  </SortableTableHead>
+)}
+                  {isVisible('amount') && (
+  <SortableTableHead
+    label="Amount"
+    columnId="amount"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('amount')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('amount')} />
+  </SortableTableHead>
+)}
+                  {isVisible('currency') && (
+  <SortableTableHead
+    label="Currency"
+    columnId="currency"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('currency')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('currency')} />
+  </SortableTableHead>
+)}
+                  {isVisible('probability') && (
+  <SortableTableHead
+    label="Probability"
+    columnId="probability"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('probability')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('probability')} />
+  </SortableTableHead>
+)}
+                  {isVisible('close_date') && (
+  <SortableTableHead
+    label="Close Date"
+    columnId="close_date"
+    sortKey="expected_close_date"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('close_date')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('close_date')} />
+  </SortableTableHead>
+)}
+                  {isVisible('priority') && (
+  <SortableTableHead
+    label="Priority"
+    columnId="priority"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('priority')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('priority')} />
+  </SortableTableHead>
+)}
+                  {isVisible('type') && (
+  <SortableTableHead
+    label="Type"
+    columnId="type"
+    sortKey="opportunity_type"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('type')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('type')} />
+  </SortableTableHead>
+)}
+                  {isVisible('source') && (
+  <SortableTableHead
+    label="Source"
+    columnId="source"
+    sortKey="lead_source"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('source')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('source')} />
+  </SortableTableHead>
+)}
+                  {isVisible('competitor') && (
+  <SortableTableHead
+    label="Competitor"
+    columnId="competitor"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('competitor')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('competitor')} />
+  </SortableTableHead>
+)}
+                  {isVisible('is_closed') && (
+  <SortableTableHead
+    label="Closed"
+    columnId="is_closed"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('is_closed')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('is_closed')} />
+  </SortableTableHead>
+)}
+                  {isVisible('is_won') && (
+  <SortableTableHead
+    label="Won"
+    columnId="is_won"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('is_won')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('is_won')} />
+  </SortableTableHead>
+)}
+                  {isVisible('owner') && (
+  <SortableTableHead
+    label="Owner"
+    columnId="owner"
+    sortKey="owner.name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('owner')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('owner')} />
+  </SortableTableHead>
+)}
+                  {isVisible('created_by') && (
+  <SortableTableHead
+    label="Created By"
+    columnId="created_by"
+    sortKey="created_by_account.name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('created_by')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('created_by')} />
+  </SortableTableHead>
+)}
+                  {isVisible('created_at') && (
+  <SortableTableHead
+    label="Created On"
+    columnId="created_at"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('created_at')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
+  </SortableTableHead>
+)}
+                  {isVisible('updated_by') && (
+  <SortableTableHead
+    label="Last Updated By"
+    columnId="updated_by"
+    sortKey="updated_by_account.name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('updated_by')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
+  </SortableTableHead>
+)}
                   <TableHead className="sticky-right-header">
                     Actions
                   </TableHead>
@@ -515,11 +753,7 @@ export default function OpportunitiesPage() {
                         )}
                         {isVisible('amount') && (
                           <TableCell className="text-muted-foreground">
-                            {new Intl.NumberFormat('en-US', {
-                              style: 'currency',
-                              currency: opportunity.currency || 'USD',
-                              maximumFractionDigits: 0,
-                            }).format(opportunity.amount || 0)}
+                            {formatCurrency(opportunity.amount || 0, opportunity.currency || 'USD')}
                           </TableCell>
                         )}
                         {isVisible('currency') && (

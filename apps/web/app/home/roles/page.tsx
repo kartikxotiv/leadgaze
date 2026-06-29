@@ -31,6 +31,9 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
@@ -82,6 +85,9 @@ export default function RolesPage() {
       status: true,
     });
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('roles');
+
+
   // Fetch roles filtered by current product/module
   const {
     data: roles = EMPTY_ROLES,
@@ -131,6 +137,11 @@ export default function RolesPage() {
     }
     return result;
   }, [orderedRoles, typeFilter, debouncedSearchTerm]);
+
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Role>(
+    'roles',
+    filteredRoles,
+  );
 
   // Reorder mutation
   const reorderRolesMutation = useMutation({
@@ -350,20 +361,81 @@ export default function RolesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {isVisible('role_name') && <TableHead>Role Name</TableHead>}
-                    {isVisible('role_key') && <TableHead>Role Key</TableHead>}
+                    {isVisible('role_name') && (
+  <SortableTableHead
+    label="Role Name"
+    columnId="role_name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('role_name')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('role_name')} />
+  </SortableTableHead>
+)}
+                    {isVisible('role_key') && (
+  <SortableTableHead
+    label="Role Key"
+    columnId="role_key"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('role_key')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('role_key')} />
+  </SortableTableHead>
+)}
                     {isVisible('hierarchy') && (
-                      <TableHead>Access Level</TableHead>
-                    )}
-                    {isVisible('type') && <TableHead>Type</TableHead>}
-                    {isVisible('status') && <TableHead>Status</TableHead>}
+  <SortableTableHead
+    label="Access Level"
+    columnId="hierarchy"
+    sortKey="hierarchy_level"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('hierarchy')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('hierarchy')} />
+  </SortableTableHead>
+)}
+                    {isVisible('type') && (
+  <SortableTableHead
+    label="Type"
+    columnId="type"
+    sortKey="is_system"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('type')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('type')} />
+  </SortableTableHead>
+)}
+                    {isVisible('status') && (
+  <SortableTableHead
+    label="Status"
+    columnId="status"
+    sortKey="is_active"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('status')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+  </SortableTableHead>
+)}
                     <TableHead className="sticky-right-header text-right">
                       Actions
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredRoles?.map((role: Role, index: number) => (
+                  {sortedData?.map((role: Role, index: number) => (
                     <TableRow
                       key={role.id}
                       className={draggedRoleIndex === index ? 'opacity-50' : ''}

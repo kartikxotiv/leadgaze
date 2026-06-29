@@ -151,23 +151,16 @@ export function usePermissionBasedNavigation() {
 
   // Separate into sales and team items
   const salesItems = useMemo(() => {
-    return filteredItems.filter(
-      (item) =>
-        [
-          'leads',
-          'contacts',
-          'accounts',
-          'opportunities',
-          'team_members',
-        ].includes(item.moduleKey) && item.path !== pathsConfig.app.teamMembers, // Members stays in team/settings
+    return filteredItems.filter((item) =>
+      ['leads', 'contacts', 'accounts', 'opportunities'].includes(
+        item.moduleKey,
+      ),
     );
   }, [filteredItems]);
 
   const teamItems = useMemo(() => {
-    return filteredItems.filter(
-      (item) =>
-        ['team_members', 'roles', 'audit_logs'].includes(item.moduleKey) &&
-        item.path !== pathsConfig.app.teams, // Teams moved to sales nav
+    return filteredItems.filter((item) =>
+      ['team_members', 'roles', 'audit_logs'].includes(item.moduleKey),
     );
   }, [filteredItems]);
 

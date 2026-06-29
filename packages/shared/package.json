@@ -13,7 +13,10 @@
     "./logger": "./src/logger/index.ts",
     "./utils": "./src/utils.ts",
     "./hooks": "./src/hooks/index.ts",
-    "./events": "./src/events/index.tsx"
+    "./events": "./src/events/index.tsx",
+    "./localization": "./src/localization/index.tsx",
+    "./currency": "./src/currency/index.ts",
+    "./date": "./src/date/date.service.ts"
   },
   "devDependencies": {
     "@kit/eslint-config": "workspace:*",
