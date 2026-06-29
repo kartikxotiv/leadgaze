@@ -5,6 +5,12 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '../../../lib/database.types';
 import {
+  filterLeadForRead,
+  filterLeadsForRead,
+  loadFieldPermissionContext,
+  validateLeadWritePayload,
+} from '../../../lib/field-permission';
+import {
   catchAsync,
   successDataResponse,
 } from '../../../utils/response-handler';
@@ -258,9 +264,19 @@ const getLeads = catchAsync(
       statusBreakdownMap[sid].count += 1;
     });
 
+    const fieldCtx = await loadFieldPermissionContext(supabase, {
+      workspaceId,
+      entityType: 'leads',
+      productKey: 'sales',
+      userId: user.id,
+      moduleKey: 'leads',
+    });
+
+    const filteredLeads = filterLeadsForRead(leads || [], fieldCtx);
+
     return NextResponse.json({
       message: 'Leads retrieved successfully',
-      data: leads || [],
+      data: filteredLeads,
       count: count || 0,
       statusBreakdown: statusBreakdownMap,
       ...(debug
@@ -340,36 +356,92 @@ const createLead = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
+    const fieldCtx = await loadFieldPermissionContext(supabase, {
+      workspaceId: workspace_id,
+      entityType: 'leads',
+      productKey: 'sales',
+      userId: user.id,
+      moduleKey: 'leads',
+    });
+
+    const { sanitized, rejected } = validateLeadWritePayload(
+      {
+        first_name,
+        last_name,
+        email,
+        alt_email,
+        phone_number,
+        mobile_number,
+        linkedin_url,
+        company_name,
+        company_website,
+        company_linkedin_url,
+        job_title,
+        department,
+        industry_id,
+        company_size,
+        annual_revenue,
+        location,
+        timezone,
+        status_id,
+        source_id,
+        trigger,
+        lead_score,
+        owner_id,
+        notes,
+        tags,
+        custom_fields,
+      },
+      fieldCtx,
+    );
+
+    if (rejected.length > 0) {
+      return NextResponse.json(
+        {
+          message: 'You do not have permission to set some fields',
+          rejectedFields: rejected,
+        },
+        { status: 403 },
+      );
+    }
+
+    if (!sanitized.first_name || !sanitized.status_id) {
+      return NextResponse.json(
+        { message: 'first_name and status_id are required' },
+        { status: 400 },
+      );
+    }
+
     // Create lead
     const { data: lead, error } = await supabase
       .from('crm_leads')
       .insert({
         workspace_id,
-        first_name,
-        last_name: last_name || null,
-        email: email || null,
-        alt_email: alt_email || null,
-        phone_number: phone_number || null,
-        mobile_number: mobile_number || null,
-        linkedin_url: linkedin_url || null,
-        company_name: company_name || null,
-        company_website: company_website || null,
-        company_linkedin_url: company_linkedin_url || null,
-        job_title: job_title || null,
-        department: department || null,
-        industry_id: industry_id || null,
-        company_size: company_size || null,
-        annual_revenue: annual_revenue || null,
-        location: location || null,
-        timezone: timezone || null,
-        status_id,
-        source_id: source_id || null,
-        trigger: trigger || null,
-        lead_score: lead_score || 0,
-        owner_id: owner_id || null,
-        notes: notes || null,
-        tags: tags || [],
-        custom_fields: custom_fields || {},
+        first_name: sanitized.first_name as string,
+        last_name: (sanitized.last_name as string) || null,
+        email: (sanitized.email as string) || null,
+        alt_email: (sanitized.alt_email as string) || null,
+        phone_number: (sanitized.phone_number as string) || null,
+        mobile_number: (sanitized.mobile_number as string) || null,
+        linkedin_url: (sanitized.linkedin_url as string) || null,
+        company_name: (sanitized.company_name as string) || null,
+        company_website: (sanitized.company_website as string) || null,
+        company_linkedin_url: (sanitized.company_linkedin_url as string) || null,
+        job_title: (sanitized.job_title as string) || null,
+        department: (sanitized.department as string) || null,
+        industry_id: (sanitized.industry_id as string) || null,
+        company_size: (sanitized.company_size as Database['public']['Tables']['crm_leads']['Insert']['company_size']) || null,
+        annual_revenue: (sanitized.annual_revenue as number) || null,
+        location: (sanitized.location as string) || null,
+        timezone: (sanitized.timezone as string) || null,
+        status_id: sanitized.status_id as string,
+        source_id: (sanitized.source_id as string) || null,
+        trigger: (sanitized.trigger as string) || null,
+        lead_score: (sanitized.lead_score as number) || 0,
+        owner_id: (sanitized.owner_id as string) || null,
+        notes: (sanitized.notes as string) || null,
+        tags: (sanitized.tags as string[]) || [],
+        custom_fields: ((sanitized.custom_fields as Record<string, unknown>) || {}) as Database['public']['Tables']['crm_leads']['Insert']['custom_fields'],
         created_by: user.id,
       })
       .select(
@@ -394,7 +466,7 @@ const createLead = catchAsync(
     return NextResponse.json(
       {
         message: 'Lead created successfully',
-        data: lead,
+        data: filterLeadForRead(lead, fieldCtx),
       },
       { status: 201 },
     );

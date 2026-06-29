@@ -1,10 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 
-import { cn } from '../lib/utils';
+import { ArrowDown, ArrowUp, ArrowUpDown, Pencil } from 'lucide-react';
+
 import type { SortDirection } from '../hooks/use-table-sort';
+import { cn } from '../lib/utils';
 import { TableHead } from './table';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -51,6 +52,12 @@ export interface SortableTableHeadProps
    * elements (resize handles) continue to work correctly.
    */
   children?: React.ReactNode;
+
+  /**
+   * Optional callback for an admin edit action. When provided, a pencil icon
+   * button appears on hover (top-right of the header cell).
+   */
+  onEditClick?: () => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -93,60 +100,59 @@ export const SortableTableHead: React.FC<SortableTableHeadProps> = ({
   className,
   children,
   style,
+  onEditClick,
   ...props
 }) => {
   const effectiveSortKey = sortKey ?? columnId;
   const isActive = sortable && sortColumn === effectiveSortKey;
-
   const SortIcon = isActive
     ? sortDirection === 'asc'
       ? ArrowUp
       : ArrowDown
     : ArrowUpDown;
 
-  // Non-sortable: render a plain TableHead with no interaction
-  if (!sortable) {
-    return (
-      <TableHead className={className} style={style} {...props}>
-        {label}
-        {children}
-      </TableHead>
-    );
-  }
-
   return (
     <TableHead
       className={cn(
-        'group/sort cursor-pointer select-none transition-colors duration-150',
+        'group/sort relative transition-colors duration-150 select-none',
+        sortable && 'cursor-pointer',
         isActive && 'bg-primary/[0.06] dark:bg-primary/[0.10]',
         className,
       )}
       style={style}
-      onClick={() => onSort(effectiveSortKey)}
+      onClick={sortable ? () => onSort(effectiveSortKey) : undefined}
+      aria-sort={sortable && isActive ? sortDirection : undefined}
       {...props}
     >
-      {/*
-        Label + sort icon in a flex row.
-        pr-4 keeps content clear of the absolutely-positioned resize handle
-        which sits at the far-right edge of the <th>.
-      */}
       <div className="flex items-center gap-1.5 pr-4">
         <span className="flex-1 truncate">{label}</span>
-        <SortIcon
-          className={cn(
-            'h-3 w-3 shrink-0 transition-all duration-200',
-            isActive
-              ? 'text-leadgaze-primary opacity-100'
-              : 'text-muted-foreground opacity-35',
-          )}
-        />
+        {sortable && (
+          <SortIcon
+            className={cn(
+              'h-3 w-3 shrink-0 transition-all duration-200',
+              isActive
+                ? 'text-leadgaze-primary opacity-100'
+                : 'text-muted-foreground opacity-35',
+            )}
+          />
+        )}
       </div>
-      {/*
-        Extra children (e.g. resize handle <span>) rendered outside the flex
-        row so they remain absolutely positioned relative to the <th>, not
-        the flex container.
-      */}
       {children}
+      {onEditClick && (
+        <div className="absolute top-1/2 right-5 -translate-y-1/2 opacity-0 transition-opacity group-hover/sort:opacity-100">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditClick();
+            }}
+            title="Edit column settings"
+            className="hover:bg-muted text-muted-foreground hover:text-foreground flex h-5 w-5 items-center justify-center rounded"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+        </div>
+      )}
     </TableHead>
   );
 };
