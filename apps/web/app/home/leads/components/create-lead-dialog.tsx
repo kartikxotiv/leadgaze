@@ -28,8 +28,12 @@ import { Separator } from '@kit/ui/separator';
 import { Textarea } from '@kit/ui/textarea';
 
 import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
+import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { createLeadService, getLeadStatusesService } from '~/services/leads.service';
+
+import { LeadCustomFieldInputs } from '~/components/leads/lead-custom-field-inputs';
+import { LeadFormField } from '~/components/leads/lead-form-field';
 
 import { IndustrySelect } from '../../_components/industry-select';
 import { LeadSourceSelect } from '../../_components/lead-source-select';
@@ -79,8 +83,14 @@ export default function CreateLeadDialog({
   onSuccess,
 }: CreateLeadDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
+  const { canEdit, editableCustomFields } = useFieldPermissions({
+    entityType: 'leads',
+    workspaceId: workspace?.id,
+    enabled: open && !!workspace?.id,
+  });
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
+  const [customFields, setCustomFields] = useState<Record<string, unknown>>({});
   const [formData, setFormData] = useState<FormDataState>({
     first_name: '',
     last_name: '',
@@ -207,6 +217,7 @@ export default function CreateLeadDialog({
       notes: '',
       lead_score: 0,
     });
+    setCustomFields({});
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -268,6 +279,7 @@ export default function CreateLeadDialog({
         trigger: formData.trigger,
         notes: formData.notes,
         lead_score: totalScore,
+        custom_fields: customFields,
       };
 
       await mutation.mutateAsync(payload);
@@ -309,6 +321,7 @@ export default function CreateLeadDialog({
               <Separator className="bg-gray-200 dark:bg-slate-800" />
 
               <div className="grid grid-cols-2 gap-4">
+                <LeadFormField formKey="first_name" canEdit={canEdit}>
                 <div>
                   <Label
                     htmlFor="first_name">
@@ -326,6 +339,8 @@ export default function CreateLeadDialog({
                     required
                   />
                 </div>
+                </LeadFormField>
+                <LeadFormField formKey="last_name" canEdit={canEdit}>
                 <div>
                   <Label
                     htmlFor="last_name">
@@ -342,9 +357,11 @@ export default function CreateLeadDialog({
                     className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
                   />
                 </div>
+                </LeadFormField>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+                <LeadFormField formKey="email" canEdit={canEdit}>
                 <div>
                   <Label
                     htmlFor="email">
@@ -360,6 +377,8 @@ export default function CreateLeadDialog({
                     className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
                   />
                 </div>
+                </LeadFormField>
+                <LeadFormField formKey="alt_email" canEdit={canEdit}>
                 <div>
                   <Label
                     htmlFor="alt_email">
@@ -377,6 +396,7 @@ export default function CreateLeadDialog({
                     className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
                   />
                 </div>
+                </LeadFormField>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -677,6 +697,7 @@ export default function CreateLeadDialog({
             </div>
 
             {/* Additional Notes Section */}
+            <LeadFormField formKey="notes" canEdit={canEdit}>
             <div className="space-y-4">
               <h3 className="primary-heading text-leadgaze-dark dark:text-white">
                 Additional Information
@@ -699,6 +720,16 @@ export default function CreateLeadDialog({
                 />
               </div>
             </div>
+            </LeadFormField>
+
+            <LeadCustomFieldInputs
+              fields={editableCustomFields}
+              values={customFields}
+              onChange={(key, value) =>
+                setCustomFields((prev) => ({ ...prev, [key]: value }))
+              }
+              canEdit={canEdit}
+            />
 
             {/* Form Actions (Hidden here, moved outside) */}
           </form>
