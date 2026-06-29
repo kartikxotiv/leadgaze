@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -42,6 +42,8 @@ import {
   Opportunity,
   updateOpportunityService,
 } from '~/services/opportunities.service';
+import { getWorkspaceCurrenciesService, type WorkspaceCurrency } from '~/services/workspace-currencies.service';
+import { useLocalization } from '~/lib/localization/localization-provider';
 
 const formSchema = z.object({
   opportunity_name: z.string().min(1, 'Opportunity Name is required'),
@@ -72,6 +74,14 @@ export function EditOpportunityDialog({
 }: EditOpportunityDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
+  const { formatCurrency } = useLocalization();
+
+  // Fetch workspace currencies for the currency dropdown
+  const { data: workspaceCurrencies = [] } = useQuery({
+    queryKey: ['workspace-currencies', workspace?.id],
+    queryFn: () => getWorkspaceCurrenciesService(workspace!.id),
+    enabled: !!workspace?.id && isOpen,
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -188,9 +198,23 @@ export function EditOpportunityDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Currency</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="USD" />
-                    </FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select currency" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {workspaceCurrencies.map((cur: WorkspaceCurrency) => (
+                          <SelectItem key={cur.currency_code} value={cur.currency_code}>
+                            {cur.currency_symbol} {cur.currency_code}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

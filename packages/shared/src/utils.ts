@@ -22,6 +22,8 @@ export interface WorkspaceLocalizationPreferences {
   timeFormat: '12h' | '24h';
   /** ISO 4217 currency code, e.g. 'USD', 'INR', 'EUR' */
   defaultCurrency: string;
+  /** List of enabled currency codes for this workspace */
+  enabledCurrencies: string[];
 }
 
 /** Options for date formatting */
