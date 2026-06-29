@@ -269,8 +269,8 @@ export function AddColumnModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-lg">
+        <DialogHeader className="border-b p-6 pb-4">
           <DialogTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
             Add New Column
@@ -280,7 +280,7 @@ export function AddColumnModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6 px-6 py-4 flex-1 overflow-y-auto">
           {/* Field Name */}
           <div className="space-y-2">
             <Label htmlFor="fieldLabel">Column Name *</Label>
@@ -542,7 +542,7 @@ export function AddColumnModal({
           )}
         </div>
 
-        <DialogFooter className="flex justify-between">
+        <DialogFooter className="mt-auto flex justify-between border-t p-6">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>

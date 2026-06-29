@@ -655,7 +655,7 @@ export default function AccountsPage() {
                   paginatedAccounts.map((account: Account, index: number) => (
                     <TableRow
                       key={account.id}
-                      className="hover:bg-muted/50 cursor-pointer"
+                      className="group hover:bg-muted/50 cursor-pointer"
                       onClick={() =>
                         router.push(`/home/sales/accounts/${account.id}`)
                       }

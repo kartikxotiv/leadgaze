@@ -629,7 +629,7 @@ export default function ContactsPage() {
                   paginatedContacts.map((contact: Contact, index: number) => (
                     <TableRow
                       key={contact.id}
-                      className="hover:bg-muted/50 cursor-pointer"
+                      className="group hover:bg-muted/50 cursor-pointer"
                       onClick={() =>
                         router.push(`/home/sales/contacts/${contact.id}`)
                       }
