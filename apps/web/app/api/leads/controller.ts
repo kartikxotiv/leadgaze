@@ -58,6 +58,10 @@ const getLeads = catchAsync(
     const debug = url.searchParams.get('debug') === '1';
     const sortColumn = url.searchParams.get('sortColumn') || '';
     const sortDirection = url.searchParams.get('sortDirection') || '';
+    const createdAtFrom = url.searchParams.get('createdAtFrom') || '';
+    const createdAtTo = url.searchParams.get('createdAtTo') || '';
+    const updatedAtFrom = url.searchParams.get('updatedAtFrom') || '';
+    const updatedAtTo = url.searchParams.get('updatedAtTo') || '';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -207,6 +211,11 @@ const getLeads = catchAsync(
       mainQuery = mainQuery.or(buildSearchOrFilter());
     }
 
+    if (createdAtFrom) mainQuery = mainQuery.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+    if (createdAtTo) mainQuery = mainQuery.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+    if (updatedAtFrom) mainQuery = mainQuery.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+    if (updatedAtTo) mainQuery = mainQuery.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
+
     // Pagination
     const from = (page - 1) * limit;
     const to = from + limit - 1;
@@ -223,6 +232,11 @@ const getLeads = catchAsync(
     if (searchTerm) {
       breakdownQuery = breakdownQuery.or(buildSearchOrFilter());
     }
+
+    if (createdAtFrom) breakdownQuery = breakdownQuery.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+    if (createdAtTo) breakdownQuery = breakdownQuery.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+    if (updatedAtFrom) breakdownQuery = breakdownQuery.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+    if (updatedAtTo) breakdownQuery = breakdownQuery.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
 
     // Run main + breakdown queries in parallel
     console.log(

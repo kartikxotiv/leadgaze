@@ -13,7 +13,6 @@ import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { CsvImportDialog } from '@kit/ui/csv-import-dialog';
 import { CustomTableContainer } from '@kit/ui/custom-table-container';
-import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
 import {
@@ -29,6 +28,8 @@ import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
+import { ListToolBar } from '@kit/ui/list-toolbar';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 
 import { AddColumnModal } from '~/components/leads/add-column-modal';
 import { ColumnEditModal } from '~/components/leads/column-edit-modal';
@@ -187,6 +188,8 @@ export default function LeadsPage() {
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
 
   const itemsPerPage = pageSize;
+  const { dateRange: createdOnRange, setDateRange: setCreatedOnRange, computedDates: computedCreatedOnDates, clearDateRange: clearCreatedOnRange } = useDateRangeFilter();
+  const { dateRange: updatedOnRange, setDateRange: setUpdatedOnRange, computedDates: computedUpdatedOnDates, clearDateRange: clearUpdatedOnRange } = useDateRangeFilter();
 
   const {
     canViewColumn,
@@ -262,7 +265,9 @@ export default function LeadsPage() {
 
   const activeFilterCount =
     (selectedStatuses.length > 0 ? 1 : 0) +
-    (selectedCreatedByIds.length > 0 ? 1 : 0);
+    (selectedCreatedByIds.length > 0 ? 1 : 0) +
+    (createdOnRange ? 1 : 0) +
+    (updatedOnRange ? 1 : 0);
 
   // Build complete columns list (system + custom)
   const columns = useMemo(() => {
@@ -365,6 +370,8 @@ export default function LeadsPage() {
       selectedCreatedByIds,
       pageSize,
       sortState,
+      computedCreatedOnDates,
+      computedUpdatedOnDates,
     ],
     queryFn: () =>
       getLeadsService({
@@ -375,6 +382,10 @@ export default function LeadsPage() {
         statusId: selectedStatuses.length > 0 ? selectedStatuses : undefined,
         sortColumn: sortColumn ?? undefined,
         sortDirection: sortDirection ?? undefined,
+        createdAtFrom: computedCreatedOnDates?.from ?? undefined,
+        createdAtTo: computedCreatedOnDates?.to ?? undefined,
+        updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
+        updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
       }),
     enabled: !!workspace?.id,
   });
@@ -411,7 +422,7 @@ export default function LeadsPage() {
   // Reset to first page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, selectedStatuses, selectedCreatedByIds, pageSize]);
+  }, [debouncedSearchTerm, selectedStatuses, selectedCreatedByIds, pageSize, createdOnRange, updatedOnRange]);
 
   const paginatedLeads = filteredLeads;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
@@ -528,48 +539,77 @@ export default function LeadsPage() {
                         ) as any
                       )?.user?.user_metadata?.full_name ?? '1 selected')
                     : `${selectedCreatedByIds.length} selected`,
-              options: members
-                .filter((m: any) => m.user_id)
-                .map((m: any) => ({
-                  value: m.user_id,
-                  label:
-                    m.user?.user_metadata?.full_name ||
-                    m.user?.email ||
-                    m.user_id,
-                })),
-              onSelectValues: setSelectedCreatedByIds,
-            },
-          ]}
-          activeFilterCount={activeFilterCount}
-          onClearFilters={() => {
-            setSelectedStatuses([]);
-            setSelectedCreatedByIds([]);
-          }}
-          actions={[
-            {
-              key: 'add',
-              label: 'New Lead',
-              icon: Plus,
-              onClick: () => setIsCreateDialogOpen(true),
-              show: canAccess('leads', 'create'),
-              buttonVariant: 'default',
-            },
-          ]}
-          columnVisibilitySlot={
-            <ColumnVisibilitySelector
-              columns={columns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
-            />
-          }
-        />
-      </div>
-
-      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
-          <CustomTableContainer
-            pagination={
+                options: members
+                  .filter((m: any) => m.user_id)
+                  .map((m: any) => ({
+                    value: m.user_id,
+                    label:
+                      m.user?.user_metadata?.full_name ||
+                      m.user?.email ||
+                      m.user_id,
+                  })),
+                onSelectValues: setSelectedCreatedByIds,
+              },
+              {
+                key: 'created_on',
+                label: 'Created On',
+                type: 'date',
+                dateValue: createdOnRange,
+                onDateChange: (val) => {
+                  setCreatedOnRange(val);
+                  setCurrentPage(1);
+                },
+              },
+              {
+                key: 'updated_on',
+                label: 'Updated On',
+                type: 'date',
+                dateValue: updatedOnRange,
+                onDateChange: (val) => {
+                  setUpdatedOnRange(val);
+                  setCurrentPage(1);
+                },
+              },
+            ]}
+            activeFilterCount={activeFilterCount}
+            onClearFilters={() => {
+              setSelectedStatuses([]);
+              setSelectedCreatedByIds([]);
+              clearCreatedOnRange();
+              clearUpdatedOnRange();
+            }}
+            actions={[
+              // {
+              //   key: 'import',
+              //   label: 'Import',
+              //   icon: FileUp,
+              //   onClick: () => setIsImportDialogOpen(true),
+              //   show: canAccess('leads', 'import'),
+              //   buttonVariant: 'outline',
+              // },
+              {
+                key: 'add',
+                label: 'New Lead',
+                icon: Plus,
+                onClick: () => setIsCreateDialogOpen(true),
+                show: canAccess('leads', 'create'),
+                buttonVariant: 'default',
+              },
+            ]}
+            columnVisibilitySlot={
+              <ColumnVisibilitySelector
+                columns={columns}
+                visibility={visibility}
+                onToggle={toggleVisibility}
+                onReset={reset}
+              />
+            }
+          />
+        </div>
+        
+        <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+            <CustomTableContainer pagination={
               <TablePagination
                 currentPage={currentPage}
                 totalPages={totalPages}
