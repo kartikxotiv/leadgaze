@@ -13,6 +13,7 @@ import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { CsvImportDialog } from '@kit/ui/csv-import-dialog';
 import { CustomTableContainer } from '@kit/ui/custom-table-container';
+import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
 import {
@@ -26,10 +27,9 @@ import {
 import { TablePagination } from '@kit/ui/table-pagination';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
-import { ListToolBar } from '@kit/ui/list-toolbar';
-import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 
 import { AddColumnModal } from '~/components/leads/add-column-modal';
 import { ColumnEditModal } from '~/components/leads/column-edit-modal';
@@ -40,7 +40,9 @@ import {
   type AccessType,
   type EntityField,
   type FieldAccessMember,
+  useCreateField,
   useDynamicColumns,
+  useUpdateField,
 } from '~/lib/hooks/use-dynamic-columns';
 import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
 import {
@@ -188,8 +190,18 @@ export default function LeadsPage() {
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
 
   const itemsPerPage = pageSize;
-  const { dateRange: createdOnRange, setDateRange: setCreatedOnRange, computedDates: computedCreatedOnDates, clearDateRange: clearCreatedOnRange } = useDateRangeFilter();
-  const { dateRange: updatedOnRange, setDateRange: setUpdatedOnRange, computedDates: computedUpdatedOnDates, clearDateRange: clearUpdatedOnRange } = useDateRangeFilter();
+  const {
+    dateRange: createdOnRange,
+    setDateRange: setCreatedOnRange,
+    computedDates: computedCreatedOnDates,
+    clearDateRange: clearCreatedOnRange,
+  } = useDateRangeFilter();
+  const {
+    dateRange: updatedOnRange,
+    setDateRange: setUpdatedOnRange,
+    computedDates: computedUpdatedOnDates,
+    clearDateRange: clearUpdatedOnRange,
+  } = useDateRangeFilter();
 
   const {
     canViewColumn,
@@ -216,6 +228,7 @@ export default function LeadsPage() {
     isLoading: fieldsLoading,
     updateFieldAccess,
     deleteField,
+    refetch: refetchEntityFields,
   } = useDynamicColumns({
     entityType: 'leads',
     workspaceId: workspace?.id,
@@ -223,6 +236,8 @@ export default function LeadsPage() {
     productKey,
     enabled: !!workspace?.id && !!user?.id,
   });
+  const createField = useCreateField();
+  const updateField = useUpdateField();
 
   // Custom fields filtered by FLS
   const customFields = visibleCustomFields;
@@ -237,7 +252,32 @@ export default function LeadsPage() {
 
   const openColumnEdit = (fieldKey: string) => {
     const existing = getEntityFieldByKey(fieldKey);
-    if (existing) setEditingField(existing);
+    if (existing) {
+      setEditingField(existing);
+      return;
+    }
+
+    const systemField = SYSTEM_FIELDS.find(
+      (field) => field.key === fieldKey || field.id === fieldKey,
+    );
+    if (!workspace?.id || !systemField) return;
+
+    setEditingField({
+      id: '',
+      workspace_id: workspace.id,
+      entity_type: 'leads',
+      field_key: systemField.key,
+      field_label: systemField.label,
+      field_type: 'text',
+      description: null,
+      is_system: true,
+      is_required: false,
+      is_active: true,
+      display_order: 0,
+      settings: {},
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as EntityField);
   };
 
   const trailingColumnCount = 1;
@@ -270,19 +310,25 @@ export default function LeadsPage() {
     (updatedOnRange ? 1 : 0);
 
   // Build complete columns list (system + custom)
-  const columns = useMemo(() => {
-    const systemCols = SYSTEM_FIELDS.map((f) => ({
+  const systemColumns = SYSTEM_FIELDS.map((f) => {
+    const entityField = allEntityFields.find(
+      (field) => field.field_key === f.key,
+    );
+    return {
       id: f.id,
-      label: f.label,
+      label: entityField?.field_label ?? f.label,
       required: true, // System fields are required
-    }));
-    const customCols = customFields.map((f) => ({
+    };
+  });
+
+  const columns = [
+    ...systemColumns,
+    ...customFields.map((f) => ({
       id: f.field_key,
       label: f.field_label,
       required: false,
-    }));
-    return [...systemCols, ...customCols];
-  }, [customFields]);
+    })),
+  ];
 
   // Import columns for CSV import
   const importColumns = useMemo(() => {
@@ -422,7 +468,14 @@ export default function LeadsPage() {
   // Reset to first page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, selectedStatuses, selectedCreatedByIds, pageSize, createdOnRange, updatedOnRange]);
+  }, [
+    debouncedSearchTerm,
+    selectedStatuses,
+    selectedCreatedByIds,
+    pageSize,
+    createdOnRange,
+    updatedOnRange,
+  ]);
 
   const paginatedLeads = filteredLeads;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
@@ -442,11 +495,44 @@ export default function LeadsPage() {
     },
   ) => {
     try {
+      if (!fieldId && editingField) {
+        await createField.mutateAsync({
+          workspace_id: workspace?.id || '',
+          entity_type: 'leads',
+          product_key: productKey,
+          field_key: editingField.field_key,
+          field_label:
+            updates.field_label !== undefined
+              ? updates.field_label
+              : editingField.field_label,
+          field_type: editingField.field_type || 'text',
+          description: editingField.description ?? '',
+          is_required: editingField.is_required,
+          is_system: true,
+          settings: editingField.settings || {},
+          access_type: updates.access_type || 'public',
+          access_members: updates.access_members,
+        });
+        setEditingField(null);
+        refetchEntityFields();
+        refetch();
+        return;
+      }
+
+      if (updates.field_label !== undefined) {
+        await updateField.mutateAsync({
+          fieldId,
+          updates: { field_label: updates.field_label },
+        });
+      }
+
       await updateFieldAccess.mutateAsync({
         fieldId,
         accessType: updates.access_type || 'public',
         members: updates.access_members,
       });
+      refetchEntityFields();
+      refetch();
     } catch (error) {
       console.error('Error updating field:', error);
     }
@@ -539,77 +625,78 @@ export default function LeadsPage() {
                         ) as any
                       )?.user?.user_metadata?.full_name ?? '1 selected')
                     : `${selectedCreatedByIds.length} selected`,
-                options: members
-                  .filter((m: any) => m.user_id)
-                  .map((m: any) => ({
-                    value: m.user_id,
-                    label:
-                      m.user?.user_metadata?.full_name ||
-                      m.user?.email ||
-                      m.user_id,
-                  })),
-                onSelectValues: setSelectedCreatedByIds,
+              options: members
+                .filter((m: any) => m.user_id)
+                .map((m: any) => ({
+                  value: m.user_id,
+                  label:
+                    m.user?.user_metadata?.full_name ||
+                    m.user?.email ||
+                    m.user_id,
+                })),
+              onSelectValues: setSelectedCreatedByIds,
+            },
+            {
+              key: 'created_on',
+              label: 'Created On',
+              type: 'date',
+              dateValue: createdOnRange,
+              onDateChange: (val) => {
+                setCreatedOnRange(val);
+                setCurrentPage(1);
               },
-              {
-                key: 'created_on',
-                label: 'Created On',
-                type: 'date',
-                dateValue: createdOnRange,
-                onDateChange: (val) => {
-                  setCreatedOnRange(val);
-                  setCurrentPage(1);
-                },
+            },
+            {
+              key: 'updated_on',
+              label: 'Updated On',
+              type: 'date',
+              dateValue: updatedOnRange,
+              onDateChange: (val) => {
+                setUpdatedOnRange(val);
+                setCurrentPage(1);
               },
-              {
-                key: 'updated_on',
-                label: 'Updated On',
-                type: 'date',
-                dateValue: updatedOnRange,
-                onDateChange: (val) => {
-                  setUpdatedOnRange(val);
-                  setCurrentPage(1);
-                },
-              },
-            ]}
-            activeFilterCount={activeFilterCount}
-            onClearFilters={() => {
-              setSelectedStatuses([]);
-              setSelectedCreatedByIds([]);
-              clearCreatedOnRange();
-              clearUpdatedOnRange();
-            }}
-            actions={[
-              // {
-              //   key: 'import',
-              //   label: 'Import',
-              //   icon: FileUp,
-              //   onClick: () => setIsImportDialogOpen(true),
-              //   show: canAccess('leads', 'import'),
-              //   buttonVariant: 'outline',
-              // },
-              {
-                key: 'add',
-                label: 'New Lead',
-                icon: Plus,
-                onClick: () => setIsCreateDialogOpen(true),
-                show: canAccess('leads', 'create'),
-                buttonVariant: 'default',
-              },
-            ]}
-            columnVisibilitySlot={
-              <ColumnVisibilitySelector
-                columns={columns}
-                visibility={visibility}
-                onToggle={toggleVisibility}
-                onReset={reset}
-              />
-            }
-          />
-        </div>
-        
-        <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
-            <CustomTableContainer pagination={
+            },
+          ]}
+          activeFilterCount={activeFilterCount}
+          onClearFilters={() => {
+            setSelectedStatuses([]);
+            setSelectedCreatedByIds([]);
+            clearCreatedOnRange();
+            clearUpdatedOnRange();
+          }}
+          actions={[
+            // {
+            //   key: 'import',
+            //   label: 'Import',
+            //   icon: FileUp,
+            //   onClick: () => setIsImportDialogOpen(true),
+            //   show: canAccess('leads', 'import'),
+            //   buttonVariant: 'outline',
+            // },
+            {
+              key: 'add',
+              label: 'New Lead',
+              icon: Plus,
+              onClick: () => setIsCreateDialogOpen(true),
+              show: canAccess('leads', 'create'),
+              buttonVariant: 'default',
+            },
+          ]}
+          columnVisibilitySlot={
+            <ColumnVisibilitySelector
+              columns={columns}
+              visibility={visibility}
+              onToggle={toggleVisibility}
+              onReset={reset}
+            />
+          }
+        />
+      </div>
+
+      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+          <CustomTableContainer
+            pagination={
               <TablePagination
                 currentPage={currentPage}
                 totalPages={totalPages}
@@ -626,7 +713,7 @@ export default function LeadsPage() {
           >
             <Table>
               <TableHeader>
-                <TableRow className="group/header">
+                <TableRow className="group">
                   {/* System columns */}
                   {SYSTEM_FIELDS.map((field) => {
                     if (!showColumn(field.id)) return null;
@@ -634,7 +721,10 @@ export default function LeadsPage() {
                     return (
                       <ColumnHeader
                         key={field.id}
-                        label={field.label}
+                        label={
+                          getEntityFieldByKey(field.key)?.field_label ??
+                          field.label
+                        }
                         columnId={field.id}
                         sortKey={field.sortKey ?? null}
                         sortColumn={sortColumn}
