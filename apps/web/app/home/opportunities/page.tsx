@@ -827,7 +827,7 @@ export default function OpportunitiesPage() {
                     (opportunity: Opportunity, index: number) => (
                       <TableRow
                         key={opportunity.id}
-                        className="hover:bg-muted/50 cursor-pointer"
+                        className="group hover:bg-muted/50 cursor-pointer"
                         onClick={() =>
                           router.push(
                             `/home/sales/opportunities/${opportunity.id}`,
