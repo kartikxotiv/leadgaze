@@ -17,6 +17,19 @@ export interface LocalizationContextType {
   formatCurrency: (value: number | string, currencyCode?: string) => string;
   /** Format a number using locale-aware formatting */
   formatNumber: (value: number) => string;
+  /**
+   * Convert and format an amount from one currency to another using base_amount_usd.
+   *
+   * @param baseAmountUsd - The amount in USD (from stored base_amount_usd)
+   * @param targetCurrency - The target ISO 4217 currency code
+   * @param rateToTarget - Historical or current exchange rate (1 USD = X target)
+   * @returns Formatted string in the target currency
+   */
+  convertCurrency: (
+    baseAmountUsd: number,
+    targetCurrency: string,
+    rateToTarget: number,
+  ) => string;
 }
 
 export const LocalizationContext = createContext<

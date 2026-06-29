@@ -27,6 +27,7 @@ export const getExchangeRates = catchAsync(
 
     // Get the latest rate for the pair
     const { data, error } = await supabase
+    .schema('core')
       .from('currency_exchange_rates')
       .select('*')
       .eq('base_currency', base.toUpperCase())
@@ -72,6 +73,7 @@ export const getAllExchangeRates = catchAsync(
 
     // Use a lateral join to get the latest rate per target currency
     const { data, error } = await supabase
+    .schema('core')
       .from('currency_exchange_rates')
       .select('*')
       .eq('base_currency', base.toUpperCase())

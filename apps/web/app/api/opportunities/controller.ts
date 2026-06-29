@@ -9,6 +9,9 @@ import {
   successDataResponse,
 } from '../../../utils/response-handler';
 
+import {
+  buildOpportunityCurrencyFields,
+} from '@kit/shared/currency';
 const OPPORTUNITY_SORTABLE_COLUMNS: Record<string, { column: string; foreignTable?: string }> = {
   opportunity_name:     { column: 'opportunity_name' },
   amount:               { column: 'amount' },
@@ -337,6 +340,7 @@ export const createOpportunity = catchAsync(
       stage_id,
       workspace_id,
       amount,
+      currency: currency_original,
       expected_close_date,
       probability,
       priority,
@@ -353,6 +357,41 @@ export const createOpportunity = catchAsync(
       );
     }
 
+    // =====================================================
+    // MULTI-CURRENCY: Resolve base_amount_usd
+    // =====================================================
+    let currencyFields = {};
+    const oppCurrency = currency_original || 'USD';
+    const oppAmount = amount || 0;
+
+    if (oppAmount && oppCurrency) {
+      try {
+        // Fetch latest exchange rate for USD -> oppCurrency
+        const adminClient = getSupabaseServerAdminClient();
+        const { data: rates } = await adminClient
+        .schema('core')
+          .from('currency_exchange_rates')
+          .select('*')
+          .eq('base_currency', 'USD')
+          .eq('target_currency', oppCurrency.toUpperCase())
+          .order('fetched_at', { ascending: false })
+          .limit(1);
+
+        if (rates && rates.length > 0) {
+          const rate = rates[0];
+          currencyFields = buildOpportunityCurrencyFields({
+            amount: oppAmount,
+            currency: oppCurrency,
+            exchangeRateToUsd: rate.exchange_rate,
+            rateDate: rate.fetched_at.split('T')[0],
+          });
+        }
+      } catch (rateError) {
+        console.error('Failed to fetch exchange rate:', rateError);
+        // Proceed without base_amount_usd if rate fetch fails
+      }
+    }
+
     const { data: opportunity, error } = await supabase
       .from('crm_opportunities')
       .insert({
@@ -360,7 +399,8 @@ export const createOpportunity = catchAsync(
         account_id,
         stage_id,
         opportunity_name,
-        amount: amount || 0,
+        amount: oppAmount,
+        currency: oppCurrency,
         expected_close_date: expected_close_date || null,
         probability: probability || null,
         priority: priority || null,
@@ -370,6 +410,7 @@ export const createOpportunity = catchAsync(
         competitor: competitor || null,
         owner_id: user.id,
         created_by: user.id,
+        ...currencyFields,
       })
       .select()
       .single();
