@@ -26,9 +26,13 @@ import { Separator } from '@kit/ui/separator';
 import { Textarea } from '@kit/ui/textarea';
 
 import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
+import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { Lead } from '~/services/leads.service';
 import ApiClient from '~/utils/axios-client';
+
+import { LeadCustomFieldInputs } from '~/components/leads/lead-custom-field-inputs';
+import { LeadFormField } from '~/components/leads/lead-form-field';
 
 import { IndustrySelect } from '../../_components/industry-select';
 import { LeadSourceSelect } from '../../_components/lead-source-select';
@@ -80,7 +84,13 @@ export default function EditLeadDialog({
   lead,
 }: EditLeadDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
+  const { canEdit, editableCustomFields } = useFieldPermissions({
+    entityType: 'leads',
+    workspaceId: workspace?.id,
+    enabled: open && !!workspace?.id,
+  });
   const [isLoading, setIsLoading] = useState(false);
+  const [customFields, setCustomFields] = useState<Record<string, unknown>>({});
   const [formData, setFormData] = useState<FormDataState>({
     first_name: '',
     last_name: '',
@@ -133,6 +143,7 @@ export default function EditLeadDialog({
         notes: lead.notes || '',
         lead_score: lead.lead_score || 0,
       });
+      setCustomFields((lead.custom_fields as Record<string, unknown>) || {});
     }
   }, [lead, open]);
 
@@ -250,6 +261,7 @@ export default function EditLeadDialog({
         trigger: formData.trigger,
         notes: formData.notes,
         lead_score: totalScore,
+        custom_fields: customFields,
       };
 
       await mutation.mutateAsync(payload);
@@ -627,6 +639,7 @@ export default function EditLeadDialog({
               </div>
 
               {/* Additional Information Section */}
+              <LeadFormField formKey="notes" canEdit={canEdit}>
               <div className="space-y-4">
                 <h3 className="primary-heading text-leadgaze-dark dark:text-white">
                   Additional Information
@@ -651,6 +664,16 @@ export default function EditLeadDialog({
                   />
                 </div>
               </div>
+              </LeadFormField>
+
+              <LeadCustomFieldInputs
+                fields={editableCustomFields}
+                values={customFields}
+                onChange={(key, value) =>
+                  setCustomFields((prev) => ({ ...prev, [key]: value }))
+                }
+                canEdit={canEdit}
+              />
             </div>
 
             {/* Form Actions */}
