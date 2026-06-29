@@ -84,7 +84,9 @@ export function AddColumnModal({
   const { currentWorkspace: workspace, user, canAccess } = useRBAC();
   const isOwner = workspace?.owner_id === user?.id;
   const isAdmin =
-    isOwner || canAccess('leads', 'admin') || canAccess('leads', 'update');
+    isOwner ||
+    canAccess(entityType, 'admin') ||
+    canAccess(entityType, 'update');
 
   // Generate field key from label
   const generateFieldKey = (label: string) => {

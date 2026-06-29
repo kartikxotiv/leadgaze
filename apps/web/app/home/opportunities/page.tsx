@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+
 import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
@@ -10,9 +11,9 @@ import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
+import CustomTableContainer from '@kit/ui/custom-table-container';
+import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
-import { useLocalization } from '~/lib/localization/localization-provider';
-
 import { Skeleton } from '@kit/ui/skeleton';
 import {
   Table,
@@ -22,14 +23,28 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { TablePagination } from '@kit/ui/table-pagination';
 import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useTableSort } from '@kit/ui/use-table-sort';
-import { SortableTableHead } from '@kit/ui/sortable-table-head';
-import { ListToolBar } from '@kit/ui/list-toolbar';
-import CustomTableContainer from '@kit/ui/custom-table-container';
+import { cn } from '@kit/ui/utils';
 
+import { AddColumnModal } from '~/components/leads/add-column-modal';
+import { ColumnEditModal } from '~/components/leads/column-edit-modal';
+import { ColumnHeader } from '~/components/leads/column-header';
 import { useDebounce } from '~/lib/hooks/use-debounce';
+import {
+  useCreateField,
+  useDynamicColumns,
+  useUpdateField,
+} from '~/lib/hooks/use-dynamic-columns';
+import type { AccessType, EntityField } from '~/lib/hooks/use-dynamic-columns';
+import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
+import {
+  useLeadsColumnPreferences,
+  useSyncColumnVisibilityToDb,
+} from '~/lib/hooks/use-leads-column-preferences';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
@@ -42,7 +57,6 @@ import { getMembersService } from '~/services/team-members.service';
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { OpportunityDialog } from './components/opportunity-dialog';
-import { TablePagination } from '@kit/ui/table-pagination';
 
 function PriorityBadge({ priority }: { priority: string | null | undefined }) {
   switch (priority?.toLowerCase()) {
@@ -102,14 +116,18 @@ function OpportunitiesPageSkeleton() {
                 <Table className="w-max min-w-full border-separate border-spacing-0 text-sm">
                   <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                     <TableRow>
-                      <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
+                      <TableHead className="w-12 whitespace-nowrap">
+                        S. No.
+                      </TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Account</TableHead>
                       <TableHead>Stage</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Close Date</TableHead>
                       <TableHead>Owner</TableHead>
-                      <TableHead className="sticky right-0 text-right">Actions</TableHead>
+                      <TableHead className="sticky right-0 text-right">
+                        Actions
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -133,7 +151,7 @@ function OpportunitiesPageSkeleton() {
 
 export default function OpportunitiesPage() {
   const router = useRouter();
-  const { currentWorkspace: workspace, canAccess } = useRBAC();
+  const { currentWorkspace: workspace, user, canAccess } = useRBAC();
   const { formatDate, formatCurrency } = useLocalization();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
@@ -142,36 +160,83 @@ export default function OpportunitiesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [opportunityToDelete, setOpportunityToDelete] =
     useState<Opportunity | null>(null);
+  const [editingField, setEditingField] = useState<EntityField | null>(null);
+  const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const itemsPerPage = pageSize;
 
-  const columns = useMemo(
+  const SYSTEM_FIELDS = useMemo(
     () => [
-      { id: 'sno', label: 'S. No.' },
-      { id: 'name', label: 'Name' },
-      { id: 'account', label: 'Account' },
-      { id: 'stage', label: 'Stage' },
-      { id: 'amount', label: 'Amount' },
-      { id: 'currency', label: 'Currency' },
-      { id: 'probability', label: 'Probability' },
-      { id: 'close_date', label: 'Close Date' },
-      { id: 'priority', label: 'Priority' },
-      { id: 'type', label: 'Type' },
-      { id: 'source', label: 'Source' },
-      { id: 'competitor', label: 'Competitor' },
-      { id: 'is_closed', label: 'Closed' },
-      { id: 'is_won', label: 'Won' },
-      { id: 'owner', label: 'Owner' },
-      { id: 'created_by', label: 'Created By' },
-      { id: 'created_at', label: 'Created On' },
-      { id: 'updated_by', label: 'Last Updated By' },
+      {
+        id: 'sno',
+        key: 'sno',
+        label: 'S. No.',
+        sortable: false,
+        width: 'w-12',
+      },
+      { id: 'name', key: 'name', label: 'Name', sortKey: 'opportunity_name' },
+      {
+        id: 'account',
+        key: 'account',
+        label: 'Account',
+        sortKey: 'account.account_name',
+      },
+      {
+        id: 'stage',
+        key: 'stage',
+        label: 'Stage',
+        sortKey: 'stage.status_name',
+      },
+      { id: 'amount', key: 'amount', label: 'Amount' },
+      { id: 'currency', key: 'currency', label: 'Currency' },
+      { id: 'probability', key: 'probability', label: 'Probability' },
+      {
+        id: 'close_date',
+        key: 'close_date',
+        label: 'Close Date',
+        sortKey: 'expected_close_date',
+      },
+      { id: 'priority', key: 'priority', label: 'Priority' },
+      { id: 'type', key: 'type', label: 'Type', sortKey: 'opportunity_type' },
+      { id: 'source', key: 'source', label: 'Source', sortKey: 'lead_source' },
+      { id: 'competitor', key: 'competitor', label: 'Competitor' },
+      { id: 'is_closed', key: 'is_closed', label: 'Closed' },
+      { id: 'is_won', key: 'is_won', label: 'Won' },
+      { id: 'owner', key: 'owner', label: 'Owner', sortKey: 'owner.name' },
+      {
+        id: 'created_by',
+        key: 'created_by',
+        label: 'Created By',
+        sortKey: 'created_by_account.name',
+      },
+      { id: 'created_at', key: 'created_at', label: 'Created On' },
+      {
+        id: 'updated_by',
+        key: 'updated_by',
+        label: 'Last Updated By',
+        sortKey: 'updated_by_account.name',
+      },
     ],
     [],
   );
 
-  const { visibility, toggleVisibility, isVisible, reset } =
-    useColumnVisibility('opportunities', {
+  const {
+    canViewColumn,
+    visibleCustomFields,
+    ctx: _fieldPermissionCtx,
+    isLoading: _fieldPermissionsLoading,
+  } = useFieldPermissions({
+    entityType: 'opportunities',
+    workspaceId: workspace?.id,
+    enabled: !!workspace?.id && !!user?.id,
+  });
+
+  const { mergedDefaults, persistVisibility } = useLeadsColumnPreferences({
+    entityType: 'opportunities',
+    workspaceId: workspace?.id,
+    userId: user?.id,
+    defaultVisibility: {
       sno: true,
       name: true,
       account: true,
@@ -190,18 +255,203 @@ export default function OpportunitiesPage() {
       created_by: false,
       created_at: false,
       updated_by: false,
-    });
+    },
+    enabled: !!workspace?.id && !!user?.id,
+  });
 
-  const { getHeaderProps, getResizeHandleProps } = useColumnResize('opportunities');
+  const {
+    fields: allEntityFields = [],
+    isLoading: _fieldsLoading,
+    updateFieldAccess,
+    deleteField,
+    refetch: refetchEntityFields,
+  } = useDynamicColumns({
+    entityType: 'opportunities',
+    workspaceId: workspace?.id,
+    userId: user?.id,
+    productKey: 'sales',
+    enabled: !!workspace?.id && !!user?.id,
+  });
+  const createField = useCreateField();
+  const updateField = useUpdateField();
 
+  const customFields = visibleCustomFields;
+
+  const getEntityFieldByKey = (key: string): EntityField | null =>
+    allEntityFields.find((f) => f.field_key === key) ?? null;
+
+  const systemColumns = SYSTEM_FIELDS.map((field) => {
+    const entityField = allEntityFields.find((f) => f.field_key === field.key);
+    return {
+      id: field.id,
+      label: entityField?.field_label ?? field.label,
+      required: true,
+    };
+  });
+
+  const columns = [
+    ...systemColumns,
+    ...customFields.map((field) => ({
+      id: field.field_key,
+      label: field.field_label,
+      required: false,
+    })),
+  ];
+
+  const { visibility, toggleVisibility, isVisible, reset, mergeNewColumns } =
+    useColumnVisibility('opportunities', mergedDefaults);
+
+  useSyncColumnVisibilityToDb(
+    visibility,
+    persistVisibility,
+    !!workspace?.id && !!user?.id,
+  );
+
+  React.useEffect(() => {
+    mergeNewColumns(
+      Object.fromEntries(customFields.map((cf) => [cf.field_key, true])),
+    );
+  }, [customFields, mergeNewColumns]);
+
+  const showColumn = useMemo(
+    () => (columnId: string) => isVisible(columnId) && canViewColumn(columnId),
+    [isVisible, canViewColumn],
+  );
+
+  const openColumnEdit = (fieldKey: string) => {
+    const existing = getEntityFieldByKey(fieldKey);
+    if (existing) {
+      setEditingField(existing);
+      return;
+    }
+
+    const systemField = SYSTEM_FIELDS.find((field) => field.key === fieldKey);
+    if (!workspace?.id || !systemField) return;
+
+    setEditingField({
+      id: '',
+      workspace_id: workspace.id,
+      entity_type: 'opportunities',
+      field_key: fieldKey,
+      field_label: systemField.label,
+      field_type: 'text',
+      description: null,
+      is_system: true,
+      is_required: false,
+      is_active: true,
+      display_order: 0,
+      settings: {},
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as EntityField);
+  };
+
+  const renderCustomFieldValue = (value: unknown) => {
+    if (value === undefined || value === null) {
+      return '-';
+    }
+    if (typeof value === 'object') {
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return '-';
+      }
+    }
+    return String(value);
+  };
+
+  const canAddColumn = useMemo(() => {
+    if (!workspace?.id || !user?.id) return false;
+    const isOwner = workspace.owner_id === user.id;
+    return (
+      isOwner ||
+      canAccess('opportunities', 'admin') ||
+      canAccess('opportunities', 'update') ||
+      canAccess('opportunities', 'create')
+    );
+  }, [workspace, user?.id, canAccess]);
+
+  const handleUpdateField = async (
+    fieldId: string,
+    updates: {
+      field_label?: string;
+      access_type?: AccessType;
+      access_members?: {
+        member_type: 'role' | 'user';
+        member_id: string;
+        can_view: boolean;
+        can_edit: boolean;
+      }[];
+    },
+  ) => {
+    try {
+      console.debug('handleUpdateField called', { fieldId, updates });
+      if (!fieldId && editingField) {
+        await createField.mutateAsync({
+          workspace_id: workspace?.id || '',
+          entity_type: 'opportunities',
+          product_key: 'sales',
+          field_key: editingField.field_key,
+          field_label:
+            updates.field_label !== undefined
+              ? updates.field_label
+              : editingField.field_label,
+          field_type: editingField.field_type || 'text',
+          description: editingField.description ?? '',
+          is_required: editingField.is_required,
+          is_system: true,
+          settings: editingField.settings || {},
+          access_type: updates.access_type || 'public',
+          access_members: updates.access_members,
+        });
+        console.debug('created field via createField for system field');
+        setEditingField(null);
+        refetchEntityFields();
+        refetch();
+        return;
+      }
+
+      if (updates.field_label !== undefined) {
+        const res = await updateField.mutateAsync({
+          fieldId,
+          updates: {
+            field_label: updates.field_label,
+          },
+        });
+        console.debug('updateField result', res);
+      }
+
+      await updateFieldAccess.mutateAsync({
+        fieldId,
+        accessType: updates.access_type || 'public',
+        members: updates.access_members,
+      });
+      setEditingField(null);
+      refetchEntityFields();
+      refetch();
+    } catch (error) {
+      console.error('Error updating field:', error);
+    }
+  };
+
+  const handleDeleteField = async (fieldId: string) => {
+    try {
+      await deleteField.mutateAsync({ fieldId });
+    } catch (error) {
+      console.error('Error deleting field:', error);
+    }
+  };
+
+  const { getHeaderProps, getResizeHandleProps } =
+    useColumnResize('opportunities');
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  const { sortColumn, sortDirection, toggleSort, sortState } = useTableSort<Opportunity>(
-    'opportunities',
-    [],
-    { mode: 'server', onSortChange: () => setCurrentPage(1) }
-  );
+  const { sortColumn, sortDirection, toggleSort, sortState } =
+    useTableSort<Opportunity>('opportunities', [], {
+      mode: 'server',
+      onSortChange: () => setCurrentPage(1),
+    });
 
   const {
     data: opportunitiesData = {
@@ -237,7 +487,9 @@ export default function OpportunitiesPage() {
     enabled: !!workspace?.id,
   });
 
-  const { data: stages = [] } = useQuery({
+  const { data: stages = [] } = useQuery<
+    Array<{ id: string; status_name: string; color?: string }>
+  >({
     queryKey: ['opportunity-stages', workspace?.id],
     queryFn: () => getOpportunityStatusesService(workspace?.id || ''),
     enabled: !!workspace?.id,
@@ -248,7 +500,17 @@ export default function OpportunitiesPage() {
     queryFn: () => getMembersService(workspace?.id || ''),
     enabled: !!workspace?.id,
   });
-  const members = (membersData?.data || []) as any[];
+  const members = useMemo(
+    () =>
+      (membersData?.data || []) as Array<{
+        user_id?: string;
+        user?: {
+          user_metadata?: { full_name?: string } | null;
+          email?: string | null;
+        };
+      }>,
+    [membersData],
+  );
 
   const totalCount = opportunitiesData.count;
 
@@ -272,15 +534,29 @@ export default function OpportunitiesPage() {
 
   // Filter groups for ListToolBar
   const filterGroups = useMemo(() => {
-    const stageOptions = stages.map((stage: any) => ({
+    const stageOptions: Array<{
+      value: string;
+      label: string;
+      color?: string;
+    }> = stages.map((stage) => ({
       value: stage.id,
       label: stage.status_name,
       color: stage.color,
     }));
 
-    const memberOptions = members
-      .filter((m: any) => m.user_id)
-      .map((member: any) => ({
+    const memberOptions: Array<{ value: string; label: string }> = members
+      .filter(
+        (
+          m,
+        ): m is {
+          user_id: string;
+          user?: {
+            user_metadata?: { full_name?: string } | null;
+            email?: string | null;
+          };
+        } => Boolean(m.user_id),
+      )
+      .map((member) => ({
         value: member.user_id,
         label:
           member.user?.user_metadata?.full_name ||
@@ -293,9 +569,10 @@ export default function OpportunitiesPage() {
         key: 'stage',
         label: 'Stage',
         selectedValue: selectedStage === 'all' ? '' : selectedStage,
-        selectedLabel: selectedStage === 'all'
-          ? 'All stages'
-          : stages.find((s: any) => s.id === selectedStage)?.status_name,
+        selectedLabel:
+          selectedStage === 'all'
+            ? 'All stages'
+            : stages.find((s) => s.id === selectedStage)?.status_name,
         options: stageOptions,
         onSelect: (val: string) => setSelectedStage(val || 'all'),
       },
@@ -303,16 +580,19 @@ export default function OpportunitiesPage() {
         key: 'created_by',
         label: 'Created By',
         selectedValue: selectedCreatedId === 'all' ? '' : selectedCreatedId,
-        selectedLabel: selectedCreatedId === 'all'
-          ? 'All members'
-          : (() => {
-              const member = members.find((m) => m.user_id === selectedCreatedId);
-              return (
-                member?.user?.user_metadata?.full_name ||
-                member?.user?.email ||
-                selectedCreatedId
-              );
-            })(),
+        selectedLabel:
+          selectedCreatedId === 'all'
+            ? 'All members'
+            : (() => {
+                const member = members.find(
+                  (m) => m.user_id === selectedCreatedId,
+                );
+                return (
+                  member?.user?.user_metadata?.full_name ||
+                  member?.user?.email ||
+                  selectedCreatedId
+                );
+              })(),
         options: memberOptions,
         onSelect: (val: string) => setSelectedCreatedId(val || 'all'),
       },
@@ -421,254 +701,87 @@ export default function OpportunitiesPage() {
           >
             <Table>
               <TableHeader>
-                <TableRow>
-                  {isVisible('sno') && (
-  <SortableTableHead
-    label="S. No."
-    columnId="sno"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    sortable={false}
-    className="relative w-12 whitespace-nowrap"
-    {...getHeaderProps('sno')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
-  </SortableTableHead>
-)}
-                  {isVisible('name') && (
-  <SortableTableHead
-    label="Name"
-    columnId="name"
-    sortKey="opportunity_name"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('name')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('name')} />
-  </SortableTableHead>
-)}
-                  {isVisible('account') && (
-  <SortableTableHead
-    label="Account"
-    columnId="account"
-    sortKey="account.account_name"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('account')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('account')} />
-  </SortableTableHead>
-)}
-                  {isVisible('stage') && (
-  <SortableTableHead
-    label="Stage"
-    columnId="stage"
-    sortKey="stage.status_name"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('stage')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('stage')} />
-  </SortableTableHead>
-)}
-                  {isVisible('amount') && (
-  <SortableTableHead
-    label="Amount"
-    columnId="amount"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('amount')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('amount')} />
-  </SortableTableHead>
-)}
-                  {isVisible('currency') && (
-  <SortableTableHead
-    label="Currency"
-    columnId="currency"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('currency')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('currency')} />
-  </SortableTableHead>
-)}
-                  {isVisible('probability') && (
-  <SortableTableHead
-    label="Probability"
-    columnId="probability"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('probability')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('probability')} />
-  </SortableTableHead>
-)}
-                  {isVisible('close_date') && (
-  <SortableTableHead
-    label="Close Date"
-    columnId="close_date"
-    sortKey="expected_close_date"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('close_date')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('close_date')} />
-  </SortableTableHead>
-)}
-                  {isVisible('priority') && (
-  <SortableTableHead
-    label="Priority"
-    columnId="priority"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('priority')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('priority')} />
-  </SortableTableHead>
-)}
-                  {isVisible('type') && (
-  <SortableTableHead
-    label="Type"
-    columnId="type"
-    sortKey="opportunity_type"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('type')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('type')} />
-  </SortableTableHead>
-)}
-                  {isVisible('source') && (
-  <SortableTableHead
-    label="Source"
-    columnId="source"
-    sortKey="lead_source"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('source')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('source')} />
-  </SortableTableHead>
-)}
-                  {isVisible('competitor') && (
-  <SortableTableHead
-    label="Competitor"
-    columnId="competitor"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('competitor')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('competitor')} />
-  </SortableTableHead>
-)}
-                  {isVisible('is_closed') && (
-  <SortableTableHead
-    label="Closed"
-    columnId="is_closed"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('is_closed')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('is_closed')} />
-  </SortableTableHead>
-)}
-                  {isVisible('is_won') && (
-  <SortableTableHead
-    label="Won"
-    columnId="is_won"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('is_won')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('is_won')} />
-  </SortableTableHead>
-)}
-                  {isVisible('owner') && (
-  <SortableTableHead
-    label="Owner"
-    columnId="owner"
-    sortKey="owner.name"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('owner')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('owner')} />
-  </SortableTableHead>
-)}
-                  {isVisible('created_by') && (
-  <SortableTableHead
-    label="Created By"
-    columnId="created_by"
-    sortKey="created_by_account.name"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('created_by')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('created_by')} />
-  </SortableTableHead>
-)}
-                  {isVisible('created_at') && (
-  <SortableTableHead
-    label="Created On"
-    columnId="created_at"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('created_at')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
-  </SortableTableHead>
-)}
-                  {isVisible('updated_by') && (
-  <SortableTableHead
-    label="Last Updated By"
-    columnId="updated_by"
-    sortKey="updated_by_account.name"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('updated_by')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
-  </SortableTableHead>
-)}
-                  <TableHead className="sticky-right-header">
-                    Actions
-                  </TableHead>
+                <TableRow className="group">
+                  {SYSTEM_FIELDS.map((field) => {
+                    if (!showColumn(field.id)) return null;
+                    const entityField = getEntityFieldByKey(field.key);
+                    return (
+                      <ColumnHeader
+                        key={field.id}
+                        label={entityField?.field_label ?? field.label}
+                        columnId={field.id}
+                        sortKey={field.sortKey ?? null}
+                        sortColumn={sortColumn}
+                        sortDirection={sortDirection}
+                        onSort={toggleSort}
+                        sortable={field.sortable !== false}
+                        className={cn('relative', field.width)}
+                        isAdmin={canAddColumn}
+                        field={entityField}
+                        onEditClick={
+                          canAddColumn
+                            ? () => openColumnEdit(field.key)
+                            : undefined
+                        }
+                        {...getHeaderProps(field.id)}
+                      >
+                        <span
+                          className="col-resize-handle"
+                          {...getResizeHandleProps(field.id)}
+                        />
+                      </ColumnHeader>
+                    );
+                  })}
+
+                  {customFields.map((field) => {
+                    if (!showColumn(field.field_key)) return null;
+                    return (
+                      <ColumnHeader
+                        key={field.id}
+                        columnId={field.field_key}
+                        label={field.field_label}
+                        field={field}
+                        sortColumn={sortColumn}
+                        sortDirection={sortDirection}
+                        onSort={toggleSort}
+                        sortable={true}
+                        isAdmin={canAddColumn}
+                        onEditClick={
+                          canAddColumn
+                            ? () => openColumnEdit(field.field_key)
+                            : undefined
+                        }
+                        onDeleteField={
+                          canAddColumn && !field.is_system
+                            ? handleDeleteField
+                            : undefined
+                        }
+                        {...getHeaderProps(field.field_key)}
+                      >
+                        <span
+                          className="col-resize-handle"
+                          {...getResizeHandleProps(field.field_key)}
+                        />
+                      </ColumnHeader>
+                    );
+                  })}
+
+                  {canAddColumn ? (
+                    <TableHead className="sticky-right-header bg-background z-10 w-12 px-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex h-8 w-full items-center justify-center gap-1 border-dashed text-xs font-medium"
+                        onClick={() => setAddColumnModalOpen(true)}
+                        title="Add Column"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span className="hidden sm:inline">Add</span>
+                      </Button>
+                    </TableHead>
+                  ) : (
+                    <TableHead className="sticky-right-header bg-background z-10 w-12" />
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -696,9 +809,8 @@ export default function OpportunitiesPage() {
                     <TableCell
                       colSpan={
                         visibility
-                          ? Object.values(visibility).filter(
-                              (v) => v !== false,
-                            ).length + 1
+                          ? Object.values(visibility).filter((v) => v !== false)
+                              .length + 1
                           : 7
                       }
                       className="h-24 text-center"
@@ -753,7 +865,10 @@ export default function OpportunitiesPage() {
                         )}
                         {isVisible('amount') && (
                           <TableCell className="text-muted-foreground">
-                            {formatCurrency(opportunity.amount || 0, opportunity.currency || 'USD')}
+                            {formatCurrency(
+                              opportunity.amount || 0,
+                              opportunity.currency || 'USD',
+                            )}
                           </TableCell>
                         )}
                         {isVisible('currency') && (
@@ -777,23 +892,18 @@ export default function OpportunitiesPage() {
                         )}
                         {isVisible('priority') && (
                           <TableCell className="text-muted-foreground">
-                            <PriorityBadge
-                              priority={opportunity.priority}
-                            />
+                            <PriorityBadge priority={opportunity.priority} />
                           </TableCell>
                         )}
                         {isVisible('type') && (
                           <TableCell className="text-muted-foreground capitalize">
-                            {opportunity.opportunity_type?.replace(
-                              '_',
-                              ' ',
-                            ) || '-'}
+                            {opportunity.opportunity_type?.replace('_', ' ') ||
+                              '-'}
                           </TableCell>
                         )}
                         {isVisible('source') && (
                           <TableCell className="text-muted-foreground capitalize">
-                            {opportunity.lead_source?.replace('_', ' ') ||
-                              '-'}
+                            {opportunity.lead_source?.replace('_', ' ') || '-'}
                           </TableCell>
                         )}
                         {isVisible('competitor') && (
@@ -837,15 +947,27 @@ export default function OpportunitiesPage() {
                               '-'}
                           </TableCell>
                         )}
-                        <TableCell className="bg-card sticky right-0 px-4 text-right">
+
+                        {customFields.map((field) =>
+                          showColumn(field.field_key) ? (
+                            <TableCell key={field.id}>
+                              {renderCustomFieldValue(
+                                (
+                                  opportunity as {
+                                    custom_fields?: Record<string, unknown>;
+                                  }
+                                ).custom_fields?.[field.field_key],
+                              )}
+                            </TableCell>
+                          ) : null,
+                        )}
+
+                        <TableCell className="bg-card group sticky right-0 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <EntityActionsDropdown
                               id={opportunity.id}
                               viewPath={`/home/sales/opportunities/${opportunity.id}`}
-                              canDelete={canAccess(
-                                'opportunities',
-                                'delete',
-                              )}
+                              canDelete={canAccess('opportunities', 'delete')}
                               onDelete={() => {
                                 setOpportunityToDelete(opportunity);
                                 setDeleteDialogOpen(true);
@@ -865,6 +987,40 @@ export default function OpportunitiesPage() {
         <OpportunityDialog
           isOpen={isCreateDialogOpen}
           onOpenChange={setIsCreateDialogOpen}
+        />
+
+        <AddColumnModal
+          open={addColumnModalOpen}
+          onOpenChange={setAddColumnModalOpen}
+          entityType="opportunities"
+          workspaceId={workspace?.id || ''}
+        />
+
+        <ColumnEditModal
+          open={Boolean(editingField)}
+          onOpenChange={(open) => {
+            if (!open) setEditingField(null);
+          }}
+          field={
+            editingField ??
+            ({
+              id: '',
+              field_key: '',
+              field_label: '',
+              field_type: 'text',
+              is_system: false,
+              settings: {},
+              workspace_id: workspace?.id || '',
+            } as EntityField)
+          }
+          onSave={(updates, accessType, members) =>
+            handleUpdateField(editingField?.id || '', {
+              ...updates,
+              access_type: accessType,
+              access_members: members,
+            })
+          }
+          onDelete={handleDeleteField}
         />
 
         <DeleteEntityDialog
