@@ -443,7 +443,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                                   )}
                                   <span
                                     className={cn(
-                                      'truncate primary-text-regular',
+                                      'truncate text-[12px] font-medium',
                                       row.filterGroupKey !== g.key && 'pl-5',
                                     )}
                                   >

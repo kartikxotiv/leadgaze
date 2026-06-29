@@ -103,7 +103,11 @@ export function ManageableStatusSelect({
                         className="h-2 w-2 shrink-0 rounded-full"
                         style={{ backgroundColor: found.color }}
                       />
-                      <span>{found.status_name}</span>
+                      <span>{found.status_name}</span> {found?.is_closed && (
+                  <span className="text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                    Closed
+                  </span>
+                )}
                     </div>
                   ) : (
                     defaultPlaceholder
@@ -121,7 +125,11 @@ export function ManageableStatusSelect({
                     className="h-2 w-2 shrink-0 rounded-full"
                     style={{ backgroundColor: status.color }}
                   />
-                  <span className="truncate">{status.status_name}</span>
+                  <span className="truncate">{status.status_name}</span> {status?.is_closed && (
+                  <span className="text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                    Closed
+                  </span>
+                )}
                 </div>
               </div>
             </SelectItem>
