@@ -33,6 +33,7 @@ export interface FilterOption {
   value: string;
   label: string;
   color?: string;
+  badge?: React.ReactNode;
 }
 
 export interface DateRangeValue {
@@ -137,9 +138,26 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
   React.useEffect(() => {
     if (isFilterOpen && !initialisedRef.current && filterGroups.length > 0) {
       initialisedRef.current = true;
-      rowIdCounter.current = 1;
-      const firstKey = filterGroups[0]!.key;
-      setFilterRows([{ id: 'row-0', filterGroupKey: firstKey }]);
+      
+      const activeGroups = filterGroups.filter((g) => {
+        if (g.type === 'date') return !!g.dateValue;
+        if (g.selectedValues) return g.selectedValues.length > 0;
+        return !!g.selectedValue;
+      });
+
+      if (activeGroups.length > 0) {
+        rowIdCounter.current = activeGroups.length;
+        setFilterRows(
+          activeGroups.map((g, index) => ({
+            id: `row-${index}`,
+            filterGroupKey: g.key,
+          }))
+        );
+      } else {
+        rowIdCounter.current = 1;
+        const firstKey = filterGroups[0]!.key;
+        setFilterRows([{ id: 'row-0', filterGroupKey: firstKey }]);
+      }
     }
     if (!isFilterOpen) {
       initialisedRef.current = false;
@@ -690,6 +708,9 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                             />
                           )}
                           <span className="truncate flex-1">{opt.label}</span>
+                          {opt.badge && (
+                            <span className="shrink-0">{opt.badge}</span>
+                          )}
                           {isSelected && (
                              <Check className="h-4 w-4 text-blue-600 shrink-0" />
                           )}
