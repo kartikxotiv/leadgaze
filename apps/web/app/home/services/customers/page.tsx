@@ -11,9 +11,26 @@ import {
   type EntityField,
   useCreateField,
   useDynamicColumns,
+  useUpdateField,
 } from '~/lib/hooks/use-dynamic-columns';
 import { useTeamMembers } from '~/lib/hooks/use-team-members';
 import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
+
+// System fields with proper labels (source of truth for fallback labels)
+const CUSTOMER_SYSTEM_FIELDS: Array<{ key: string; label: string }> = [
+  { key: 'name', label: 'Name' },
+  { key: 'email', label: 'Email' },
+  { key: 'phone', label: 'Phone' },
+  { key: 'job_title', label: 'Job Title' },
+];
+
+const ORGANIZATION_SYSTEM_FIELDS: Array<{ key: string; label: string }> = [
+  { key: 'name', label: 'Name' },
+  { key: 'website', label: 'Website' },
+  { key: 'industry', label: 'Industry' },
+  { key: 'email', label: 'Email' },
+  { key: 'phone', label: 'Phone' },
+];
 
 export default function ServiceCloudCustomersRoute() {
   const { currentWorkspace, canAccess, user } = useRBAC();
@@ -74,6 +91,7 @@ export default function ServiceCloudCustomersRoute() {
   });
 
   const createField = useCreateField();
+  const updateField = useUpdateField();
 
   // 4. Mappers
   const customCustomerColumns = useMemo(() => {
@@ -102,41 +120,53 @@ export default function ServiceCloudCustomersRoute() {
     setActiveEntityType(type);
     const fields = type === 'customers' ? customerFields : organizationFields;
     const existing = fields.find((f) => f.field_key === columnKey);
-    
+
     if (existing) {
       setEditingField(existing);
-    } else {
-      setEditingField({
-        id: '',
-        workspace_id: workspaceId!,
-        entity_type: type,
-        field_key: columnKey,
-        field_label: columnKey,
-        field_type: 'text',
-        description: null,
-        is_system: true,
-        is_required: false,
-        is_active: true,
-        display_order: 0,
-        settings: {},
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      } as EntityField);
+      return;
     }
+
+    // Fall back to SYSTEM_FIELDS for proper label
+    const systemFields = type === 'customers' ? CUSTOMER_SYSTEM_FIELDS : ORGANIZATION_SYSTEM_FIELDS;
+    const systemField = systemFields.find((f) => f.key === columnKey);
+
+    setEditingField({
+      id: '',
+      workspace_id: workspaceId!,
+      entity_type: type,
+      field_key: columnKey,
+      field_label: systemField?.label ?? columnKey,
+      field_type: 'text',
+      description: null,
+      is_system: true,
+      is_required: false,
+      is_active: true,
+      display_order: 0,
+      settings: {},
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as EntityField);
   };
 
-  const handleUpdateField = async (fieldId: string, updates: any) => {
+  const handleUpdateField = async (
+    fieldId: string,
+    updates: { field_label?: string; access_type?: string; access_members?: any[] },
+  ) => {
     if (!editingField) return;
     try {
       const type = editingField.entity_type as 'customers' | 'organizations';
+
       if (!fieldId) {
-        // System field config
+        // System field being configured for the first time — create it in DB
         await createField.mutateAsync({
           workspace_id: workspaceId || '',
           entity_type: type,
           product_key: productKey,
           field_key: editingField.field_key,
-          field_label: updates.field_label ?? editingField.field_label,
+          field_label:
+            updates.field_label !== undefined
+              ? updates.field_label
+              : editingField.field_label,
           field_type: editingField.field_type || 'text',
           description: editingField.description ?? '',
           is_required: editingField.is_required,
@@ -146,6 +176,14 @@ export default function ServiceCloudCustomersRoute() {
           access_members: updates.access_members,
         });
       } else {
+        // Update label in entity_fields if changed (same as leads page)
+        if (updates.field_label !== undefined) {
+          await updateField.mutateAsync({
+            fieldId,
+            updates: { field_label: updates.field_label },
+          });
+        }
+
         const updater = type === 'customers' ? updateCustomerFieldAccess : updateOrganizationFieldAccess;
         await updater.mutateAsync({
           fieldId,
@@ -153,6 +191,7 @@ export default function ServiceCloudCustomersRoute() {
           members: updates.access_members,
         });
       }
+
       setEditingField(null);
       type === 'customers' ? refetchCustomerFields() : refetchOrganizationFields();
     } catch (error) {
@@ -186,6 +225,8 @@ export default function ServiceCloudCustomersRoute() {
         onColumnEditClick={handleEditColumn}
         customCustomerColumns={customCustomerColumns}
         customOrganizationColumns={customOrganizationColumns}
+        systemCustomerFields={customerFields}
+        systemOrganizationFields={organizationFields}
       />
 
       <AddColumnModal
@@ -224,8 +265,22 @@ export default function ServiceCloudCustomersRoute() {
         }
         roles={moduleRoles}
         teamMembers={teamMembersForModal}
-        onSave={(updates, accessType, members) => handleUpdateField(editingField?.id || '', { ...updates, access_type: accessType, access_members: members })}
-        onDelete={handleDeleteField}
+        onSave={(updates, accessType, members) => {
+          handleUpdateField(editingField?.id || '', {
+            ...updates,
+            access_type: accessType,
+            access_members: members,
+          });
+          setEditingField(null);
+        }}
+        onDelete={
+          editingField && !editingField.is_system
+            ? () => {
+                handleDeleteField(editingField.id);
+                setEditingField(null);
+              }
+            : undefined
+        }
       />
     </>
   );

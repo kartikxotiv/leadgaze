@@ -11,9 +11,24 @@ import {
   type EntityField,
   useCreateField,
   useDynamicColumns,
+  useUpdateField,
 } from '~/lib/hooks/use-dynamic-columns';
 import { useTeamMembers } from '~/lib/hooks/use-team-members';
 import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
+
+// System fields with proper labels (source of truth for fallback labels)
+const SYSTEM_FIELDS: Array<{ key: string; label: string }> = [
+  { key: 'ticket_number', label: 'Ticket #' },
+  { key: 'subject', label: 'Subject' },
+  { key: 'assignees', label: 'Assignees' },
+  { key: 'status_id', label: 'Status' },
+  { key: 'priority_id', label: 'Priority' },
+  { key: 'category_id', label: 'Category' },
+  { key: 'customer', label: 'Customer' },
+  { key: 'created_at', label: 'Created' },
+  { key: 'updated_at', label: 'Updated' },
+  { key: 'description', label: 'Description' },
+];
 
 export default function ServiceCloudTicketsRoute() {
   const { currentWorkspace, canAccess, user } = useRBAC();
@@ -61,6 +76,7 @@ export default function ServiceCloudTicketsRoute() {
   });
 
   const createField = useCreateField();
+  const updateField = useUpdateField();
 
   // 4. Mappers
   const customColumns = useMemo(() => {
@@ -74,45 +90,53 @@ export default function ServiceCloudTicketsRoute() {
       }));
   }, [allEntityFields]);
 
+  // Look up entity_field record for a key (same pattern as leads)
+  const getEntityFieldByKey = (key: string): EntityField | null =>
+    allEntityFields.find((f) => f.field_key === key) ?? null;
+
   const handleEditColumn = (columnKey: string) => {
-    // Find the custom field or system field by key
-    const existing = allEntityFields.find((f) => f.field_key === columnKey);
+    const existing = getEntityFieldByKey(columnKey);
     if (existing) {
       setEditingField(existing);
-    } else {
-      // Mock system field for configuration
-      setEditingField({
-        id: '',
-        workspace_id: workspaceId!,
-        entity_type: entityType,
-        field_key: columnKey,
-        field_label: columnKey,
-        field_type: 'text',
-        description: null,
-        is_system: true,
-        is_required: false,
-        is_active: true,
-        display_order: 0,
-        settings: {},
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      } as EntityField);
+      return;
     }
+
+    // Fall back to SYSTEM_FIELDS for proper label (not raw key)
+    const systemField = SYSTEM_FIELDS.find((f) => f.key === columnKey);
+    setEditingField({
+      id: '',
+      workspace_id: workspaceId!,
+      entity_type: entityType,
+      field_key: columnKey,
+      field_label: systemField?.label ?? columnKey,
+      field_type: 'text',
+      description: null,
+      is_system: true,
+      is_required: false,
+      is_active: true,
+      display_order: 0,
+      settings: {},
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as EntityField);
   };
 
   const handleUpdateField = async (
     fieldId: string,
-    updates: any,
+    updates: { field_label?: string; access_type?: string; access_members?: any[] },
   ) => {
     try {
       if (!fieldId && editingField) {
-        // System field being configured for the first time
+        // System field being configured for the first time — create it in DB
         await createField.mutateAsync({
           workspace_id: workspaceId || '',
           entity_type: entityType,
           product_key: productKey,
           field_key: editingField.field_key,
-          field_label: updates.field_label ?? editingField.field_label,
+          field_label:
+            updates.field_label !== undefined
+              ? updates.field_label
+              : editingField.field_label,
           field_type: editingField.field_type || 'text',
           description: editingField.description ?? '',
           is_required: editingField.is_required,
@@ -124,6 +148,14 @@ export default function ServiceCloudTicketsRoute() {
         setEditingField(null);
         refetchEntityFields();
         return;
+      }
+
+      // Update label in entity_fields if changed (same as leads page)
+      if (updates.field_label !== undefined) {
+        await updateField.mutateAsync({
+          fieldId,
+          updates: { field_label: updates.field_label },
+        });
       }
 
       await updateFieldAccess.mutateAsync({
@@ -147,6 +179,7 @@ export default function ServiceCloudTicketsRoute() {
     }
   };
 
+
   if (!workspaceId) return <div>No workspace selected</div>;
 
   return (
@@ -157,6 +190,7 @@ export default function ServiceCloudTicketsRoute() {
         onColumnAddClick={() => setAddColumnModalOpen(true)}
         onColumnEditClick={handleEditColumn}
         customColumns={customColumns}
+        systemFields={allEntityFields}
       />
 
       <AddColumnModal
@@ -195,14 +229,22 @@ export default function ServiceCloudTicketsRoute() {
         }
         roles={moduleRoles}
         teamMembers={teamMembersForModal}
-        onSave={(updates, accessType, members) =>
+        onSave={(updates, accessType, members) => {
           handleUpdateField(editingField?.id || '', {
             ...updates,
             access_type: accessType,
             access_members: members,
-          })
+          });
+          setEditingField(null);
+        }}
+        onDelete={
+          editingField && !editingField.is_system
+            ? () => {
+                handleDeleteField(editingField.id);
+                setEditingField(null);
+              }
+            : undefined
         }
-        onDelete={handleDeleteField}
       />
     </>
   );

@@ -101,17 +101,20 @@ export function ServiceCloudTicketsPage({
   onColumnAddClick,
   onColumnEditClick,
   customColumns = [],
+  systemFields = [],
 }: {
   workspaceId: string;
   isAdmin?: boolean;
   onColumnAddClick?: () => void;
   onColumnEditClick?: (columnKey: string) => void;
   customColumns?: any[];
+  systemFields?: any[];
 }) {
   const { formatDate } = useLocalization();
   const [createOpen, setCreateOpen] = useState(false);
   const [assignedToMeOnly, setAssignedToMeOnly] = useState(false);
   const { canAccess, isLoading } = useServiceCloudPermissions(workspaceId);
+  const getLabel = (key: string, fallback: string) => systemFields.find((f: any) => f.field_key === key)?.field_label ?? fallback;
   const canView = canAccess(
     SERVICE_CLOUD_MODULE_KEYS.tickets,
     SERVICE_CLOUD_FEATURE_KEYS.view,
@@ -349,33 +352,33 @@ export function ServiceCloudTicketsPage({
           </div>
         }
         fields={[
-          { key: 'subject', label: 'Subject', required: true },
-          { key: 'description', label: 'Description' },
+          { key: 'subject', label: getLabel('subject', 'Subject'), required: true },
+          { key: 'description', label: getLabel('description', 'Description') },
           {
             key: 'status_id',
-            label: 'Status',
+            label: getLabel('status_id', 'Status'),
             type: 'select',
             required: true,
             options: statusOptions,
           },
           {
             key: 'priority_id',
-            label: 'Priority',
+            label: getLabel('priority_id', 'Priority'),
             type: 'select',
             options: priorityOptions,
           },
           {
             key: 'category_id',
-            label: 'Category',
+            label: getLabel('category_id', 'Category'),
             type: 'select',
             options: categoryOptions,
           },
         ]}
         columns={[
-          { key: 'ticket_number', label: 'Ticket #' },
+          { key: 'ticket_number', label: getLabel('ticket_number', 'Ticket #') },
           {
             key: 'subject',
-            label: 'Subject',
+            label: getLabel('subject', 'Subject'),
             render: (ticket) => (
               <Link
                 href={`/home/services/tickets/${ticket.id}`}
@@ -387,12 +390,12 @@ export function ServiceCloudTicketsPage({
           },
           {
             key: 'assignees',
-            label: 'Assignees',
+            label: getLabel('assignees', 'Assignees'),
             render: (ticket) => <AssigneeStack assignees={ticket.assignees} />,
           },
           {
             key: 'status_id',
-            label: 'Status',
+            label: getLabel('status_id', 'Status'),
             render: (ticket) => (
               <StatusBadge
                 value={statusById.get(ticket.status_id)?.name as string}
@@ -402,7 +405,7 @@ export function ServiceCloudTicketsPage({
           },
           {
             key: 'priority_id',
-            label: 'Priority',
+            label: getLabel('priority_id', 'Priority'),
             render: (ticket) => (
               <StatusBadge
                 value={priorityById.get(ticket.priority_id)?.name as string}
@@ -412,7 +415,7 @@ export function ServiceCloudTicketsPage({
           },
           {
             key: 'created_at',
-            label: 'Created',
+            label: getLabel('created_at', 'Created'),
             render: (ticket) =>
               ticket.created_at ? formatDate(ticket.created_at) : '-',
           },

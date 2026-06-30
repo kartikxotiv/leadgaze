@@ -126,9 +126,9 @@ export function useDynamicColumns({
       }
 
       // Map nested members to top-level access_members for compatibility with EntityField interface
-      return (data ?? []).map((field) => ({
+      return (data ?? []).map((field: any) => ({
         ...field,
-        access_members: (Array.isArray(field.access_rule) ? field.access_rule[0]?.members : (field.access_rule as any)?.members) || [],
+        access_members: (Array.isArray(field.access_rule) ? field.access_rule[0]?.members : field.access_rule?.members) || [],
       })) as unknown as EntityField[];
     },
     enabled: enabled && !!workspaceId,
