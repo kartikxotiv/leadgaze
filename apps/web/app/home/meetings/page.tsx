@@ -85,6 +85,7 @@ import { Textarea } from '@kit/ui/textarea';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useTableSort } from '@kit/ui/use-table-sort';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
@@ -1688,6 +1689,18 @@ export default function MeetingsPage() {
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
+  const {
+    dateRange: createdOnRange,
+    setDateRange: setCreatedOnRange,
+    computedDates: computedCreatedOnDates,
+    clearDateRange: clearCreatedOnRange,
+  } = useDateRangeFilter();
+  const {
+    dateRange: updatedOnRange,
+    setDateRange: setUpdatedOnRange,
+    computedDates: computedUpdatedOnDates,
+    clearDateRange: clearUpdatedOnRange,
+  } = useDateRangeFilter();
 
   const columns = useMemo(
     () => [
@@ -1803,7 +1816,7 @@ export default function MeetingsPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedTypes, selectedStatuses, pageSize]);
+  }, [searchTerm, selectedTypes, selectedStatuses, pageSize, createdOnRange, updatedOnRange]);
 
   const filteredMeetings = useMemo(() => {
     return meetings.filter((meeting: CoreMeeting) => {
@@ -1816,9 +1829,26 @@ export default function MeetingsPage() {
       const matchesStatus =
         selectedStatuses.length === 0 ||
         selectedStatuses.includes(meeting.status);
-      return matchesSearch && matchesType && matchesStatus;
+
+      let matchesCreated = true;
+      if (computedCreatedOnDates?.from) {
+        const createdDate = new Date(meeting.created_at).getTime();
+        const from = new Date(computedCreatedOnDates.from).getTime();
+        const to = computedCreatedOnDates.to ? new Date(computedCreatedOnDates.to).getTime() : new Date().getTime();
+        matchesCreated = createdDate >= from && createdDate <= to;
+      }
+      
+      let matchesUpdated = true;
+      if (computedUpdatedOnDates?.from) {
+        const updatedDate = new Date(meeting.updated_at || meeting.created_at).getTime();
+        const from = new Date(computedUpdatedOnDates.from).getTime();
+        const to = computedUpdatedOnDates.to ? new Date(computedUpdatedOnDates.to).getTime() : new Date().getTime();
+        matchesUpdated = updatedDate >= from && updatedDate <= to;
+      }
+
+      return matchesSearch && matchesType && matchesStatus && matchesCreated && matchesUpdated;
     });
-  }, [meetings, searchTerm, selectedTypes, selectedStatuses]);
+  }, [meetings, searchTerm, selectedTypes, selectedStatuses, computedCreatedOnDates, computedUpdatedOnDates]);
 
   const { sortColumn, sortDirection, toggleSort, sortedData } =
     useTableSort<CoreMeeting>('meetings', filteredMeetings, {
@@ -1897,11 +1927,33 @@ export default function MeetingsPage() {
               })),
               onSelectValues: setSelectedStatuses,
             },
+            {
+              key: 'created_on',
+              label: 'Created On',
+              type: 'date',
+              dateValue: createdOnRange,
+              onDateChange: (val) => {
+                setCreatedOnRange(val);
+                setCurrentPage(1);
+              },
+            },
+            {
+              key: 'updated_on',
+              label: 'Updated On',
+              type: 'date',
+              dateValue: updatedOnRange,
+              onDateChange: (val) => {
+                setUpdatedOnRange(val);
+                setCurrentPage(1);
+              },
+            },
           ]}
-          activeFilterCount={selectedTypes.length + selectedStatuses.length}
+          activeFilterCount={selectedTypes.length + selectedStatuses.length + (createdOnRange ? 1 : 0) + (updatedOnRange ? 1 : 0)}
           onClearFilters={() => {
             setSelectedTypes([]);
             setSelectedStatuses([]);
+            clearCreatedOnRange();
+            clearUpdatedOnRange();
           }}
           actions={[
             {
