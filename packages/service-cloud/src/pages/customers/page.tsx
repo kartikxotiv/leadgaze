@@ -59,8 +59,22 @@ import {
 
 export function ServiceCloudCustomersPage({
   workspaceId,
+  isAdmin = false,
+  onColumnAddClick,
+  onColumnEditClick,
+  customCustomerColumns = [],
+  customOrganizationColumns = [],
+  systemCustomerFields = [],
+  systemOrganizationFields = [],
 }: {
   workspaceId: string;
+  isAdmin?: boolean;
+  onColumnAddClick?: (type: 'customers' | 'organizations') => void;
+  onColumnEditClick?: (columnKey: string, type: 'customers' | 'organizations') => void;
+  customCustomerColumns?: any[];
+  customOrganizationColumns?: any[];
+  systemCustomerFields?: any[];
+  systemOrganizationFields?: any[];
 }) {
   const { formatDate } = useLocalization();
   const { canAccess, isLoading } = useServiceCloudPermissions(workspaceId);
@@ -245,6 +259,12 @@ export function ServiceCloudCustomersPage({
     </Tooltip>
   ) : null;
 
+  const getCustomerLabel = (key: string, fallback: string) =>
+    systemCustomerFields.find((f: any) => f.field_key === key)?.field_label ?? fallback;
+
+  const getOrganizationLabel = (key: string, fallback: string) =>
+    systemOrganizationFields.find((f: any) => f.field_key === key)?.field_label ?? fallback;
+
   return (
     <>
       <Tabs
@@ -266,17 +286,20 @@ export function ServiceCloudCustomersPage({
             canCreate={canCreate}
             canEdit={canEdit}
             canDelete={canDelete}
+            isAdmin={isAdmin}
+            onColumnAddClick={onColumnAddClick ? () => onColumnAddClick('customers') : undefined}
+            onColumnEditClick={onColumnEditClick ? (key) => onColumnEditClick(key, 'customers') : undefined}
             toolbar={newTicketToolbar}
             fields={[
-              { key: 'name', label: 'Name', required: true },
-              { key: 'email', label: 'Email', type: 'email' },
-              { key: 'phone', label: 'Phone' },
-              { key: 'job_title', label: 'Job Title' },
+              { key: 'name', label: getCustomerLabel('name', 'Name'), required: true },
+              { key: 'email', label: getCustomerLabel('email', 'Email'), type: 'email' },
+              { key: 'phone', label: getCustomerLabel('phone', 'Phone') },
+              { key: 'job_title', label: getCustomerLabel('job_title', 'Job Title') },
             ]}
             columns={[
               {
                 key: 'name',
-                label: 'Name',
+                label: getCustomerLabel('name', 'Name'),
                 render: (customer) => (
                   <button
                     type="button"
@@ -287,9 +310,10 @@ export function ServiceCloudCustomersPage({
                   </button>
                 ),
               },
-              { key: 'email', label: 'Email' },
-              { key: 'phone', label: 'Phone' },
-              { key: 'job_title', label: 'Job Title' },
+              { key: 'email', label: getCustomerLabel('email', 'Email') },
+              { key: 'phone', label: getCustomerLabel('phone', 'Phone') },
+              { key: 'job_title', label: getCustomerLabel('job_title', 'Job Title') },
+              ...customCustomerColumns,
             ]}
           />
         </TabsContent>
@@ -303,19 +327,23 @@ export function ServiceCloudCustomersPage({
             canCreate={canCreate}
             canEdit={canEdit}
             canDelete={canDelete}
+            isAdmin={isAdmin}
+            onColumnAddClick={onColumnAddClick ? () => onColumnAddClick('organizations') : undefined}
+            onColumnEditClick={onColumnEditClick ? (key) => onColumnEditClick(key, 'organizations') : undefined}
             fields={[
-              { key: 'name', label: 'Name', required: true },
-              { key: 'website', label: 'Website' },
-              { key: 'industry', label: 'Industry' },
-              { key: 'email', label: 'Email', type: 'email' },
-              { key: 'phone', label: 'Phone' },
+              { key: 'name', label: getOrganizationLabel('name', 'Name'), required: true },
+              { key: 'website', label: getOrganizationLabel('website', 'Website') },
+              { key: 'industry', label: getOrganizationLabel('industry', 'Industry') },
+              { key: 'email', label: getOrganizationLabel('email', 'Email'), type: 'email' },
+              { key: 'phone', label: getOrganizationLabel('phone', 'Phone') },
             ]}
             columns={[
-              { key: 'name', label: 'Name' },
-              { key: 'website', label: 'Website' },
-              { key: 'industry', label: 'Industry' },
-              { key: 'email', label: 'Email' },
-              { key: 'phone', label: 'Phone' },
+              { key: 'name', label: getOrganizationLabel('name', 'Name') },
+              { key: 'website', label: getOrganizationLabel('website', 'Website') },
+              { key: 'industry', label: getOrganizationLabel('industry', 'Industry') },
+              { key: 'email', label: getOrganizationLabel('email', 'Email') },
+              { key: 'phone', label: getOrganizationLabel('phone', 'Phone') },
+              ...customOrganizationColumns,
             ]}
           />
         </TabsContent>

@@ -88,15 +88,26 @@ export default function RolesPage() {
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('roles');
 
 
+  const { sortColumn, sortDirection, toggleSort, sortState } = useTableSort<Role>(
+    'roles',
+    [],
+    { mode: 'server' }
+  );
+
   // Fetch roles filtered by current product/module
   const {
     data: roles = EMPTY_ROLES,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['workspaceRoles', currentWorkspace?.id, productKey],
+    queryKey: ['workspaceRoles', currentWorkspace?.id, productKey, sortState],
     queryFn: async () => {
-      const res = await getRolesService(currentWorkspace?.id || '', productKey);
+      const res = await getRolesService(
+        currentWorkspace?.id || '',
+        productKey,
+        sortColumn || undefined,
+        sortDirection || undefined
+      );
       return res?.data || [];
     },
     enabled: !!currentWorkspace?.id,
@@ -138,10 +149,11 @@ export default function RolesPage() {
     return result;
   }, [orderedRoles, typeFilter, debouncedSearchTerm]);
 
-  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Role>(
-    'roles',
-    filteredRoles,
-  );
+  // Determine if drag and drop should be disabled
+  const isDragDisabled =
+    (sortColumn !== null && sortColumn !== 'hierarchy_level') ||
+    typeFilter !== 'all' ||
+    !!debouncedSearchTerm;
 
   // Reorder mutation
   const reorderRolesMutation = useMutation({
@@ -164,12 +176,7 @@ export default function RolesPage() {
   // Sync state when data fetches
   useEffect(() => {
     if (Array.isArray(roles)) {
-      setOrderedRoles(
-        [...roles].sort(
-          (a: Role, b: Role) =>
-            (b.hierarchy_level || 0) - (a.hierarchy_level || 0),
-        ),
-      );
+      setOrderedRoles(roles);
     }
   }, [roles]);
 
@@ -435,11 +442,11 @@ export default function RolesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sortedData?.map((role: Role, index: number) => (
+                  {filteredRoles?.map((role: Role, index: number) => (
                     <TableRow
                       key={role.id}
                       className={draggedRoleIndex === index ? 'opacity-50' : ''}
-                      draggable={canAccess('roles', 'edit')}
+                      draggable={!isDragDisabled && canAccess('roles', 'edit')}
                       onDragStart={(e) => handleDragStart(e, index)}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDrop={(e) => handleDrop(e)}

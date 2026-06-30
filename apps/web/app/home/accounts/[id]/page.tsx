@@ -86,6 +86,7 @@ import { LogCallDialog } from '../../leads/components/log-call-dialog';
 import { OpportunityDialog } from '../../opportunities/components/opportunity-dialog';
 import { AccountAssignees } from '../components/account-assignees';
 import { EditAccountDialog } from '../components/edit-account-dialog';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 
 function AccountDetailsSkeleton() {
   return (
@@ -572,8 +573,11 @@ export default function AccountDetailsPage() {
               </TabsContent>
 
               <TabsContent value="activity">
-                <Card>
-                  <CardContent className="pt-6">
+                <CardWidgetContainer
+                    title="Activity"
+                    hideHeaderBorder={true}
+                    icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}>
+                  <CardContent className="px-6 py-3">
                     <div className="space-y-2">
                       <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
                         <div className="h-2 w-2 rounded-full bg-green-500" />
@@ -602,7 +606,7 @@ export default function AccountDetailsPage() {
                         )}
                     </div>
                   </CardContent>
-                </Card>
+                </CardWidgetContainer>
               </TabsContent>
             </Tabs>
 

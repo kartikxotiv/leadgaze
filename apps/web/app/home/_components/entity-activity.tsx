@@ -90,7 +90,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
   const [editingReminder, setEditingReminder] = useState<any>(null);
 
   const { data: reminders = [], isLoading } = useQuery({
-    queryKey: ['reminders', entityType, entityId],
+    queryKey: ['reminders', entityType, entityId, workspace?.id],
     queryFn: () => {
       if (!workspace?.id) return [];
       return getRemindersService(workspace.id, entityType, entityId);
@@ -114,7 +114,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       setIsOpen(false);
       setFormData({ title: '', due_date: '', priority: 'medium' });
       queryClient.invalidateQueries({
-        queryKey: ['reminders', entityType, entityId],
+        queryKey: ['reminders', entityType, entityId, workspace?.id],
       });
       queryClient.invalidateQueries({
         queryKey: ['reminders'],
@@ -132,7 +132,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       setEditingReminder(null);
       setFormData({ title: '', due_date: '', priority: 'medium' });
       queryClient.invalidateQueries({
-        queryKey: ['reminders', entityType, entityId],
+        queryKey: ['reminders', entityType, entityId, workspace?.id],
       });
       queryClient.invalidateQueries({
         queryKey: ['reminders'],
@@ -146,7 +146,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
     onSuccess: () => {
       toast.success('Reminder deleted');
       queryClient.invalidateQueries({
-        queryKey: ['reminders', entityType, entityId],
+        queryKey: ['reminders', entityType, entityId, workspace?.id],
       });
       queryClient.invalidateQueries({
         queryKey: ['reminders'],
@@ -301,16 +301,21 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                   </span>
                 }
                 metadata={
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-x-3 gap-y-1">
                     {reminder.due_date && (
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {formatDate(reminder.due_date)}
+                        Due: {formatDate(reminder.due_date)}
                       </span>
                     )}
-                    {reminder.created_by_user && (
-                      <span>by {reminder.created_by_user.name}</span>
-                    )}
+                    <span>
+                      Created by {reminder.created_by_user?.name || 'Unknown'} on {formatDate(reminder.created_at)}
+                    </span>
+                    {/* {reminder.updated_by && reminder.updated_by_user && (
+                      <span>
+                        Updated by {reminder.updated_by_user.name || 'Unknown'} on {formatDate(reminder.updated_at!)}
+                      </span>
+                    )} */}
                     {reminder.entity_type !== entityType && (
                         <span className="text-blue-600 dark:text-blue-400">
                           From {reminder.entity_type.charAt(0).toUpperCase() + reminder.entity_type.slice(1)}{reminder.entity_name ? `: ${reminder.entity_name}` : ''}
@@ -914,14 +919,24 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
                   </div>
                 }
                 metadata={
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="flex items-center gap-1">
                       <CalendarIcon className="h-3 w-3" />
                       {formatMeetingDate(meeting)}
                     </span>
                     {meeting.host && (
-                      <span>by {meeting.host.name || meeting.host.email}</span>
+                      <span>
+                        Created by {meeting.host.name || meeting.host.email || 'Unknown'} on {formatDate(meeting.created_at)}
+                      </span>
                     )}
+                    {!meeting.host && (
+                      <span>Created on {formatDate(meeting.created_at)}</span>
+                    )}
+                    {/* {meeting.updated_by && (
+                      <span>
+                        Updated on {formatDate(meeting.updated_at)}
+                      </span>
+                    )} */}
                     {meeting.entity_type && meeting.entity_type !== entityType && (
                       <span className="text-blue-600 dark:text-blue-400">
                         From {meeting.entity_type.charAt(0).toUpperCase() + meeting.entity_type.slice(1)}
@@ -985,7 +1000,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
   const [newName, setNewName] = useState('');
 
   const { data: documents = [], isLoading } = useQuery({
-    queryKey: ['documents', entityType, entityId],
+    queryKey: ['documents', entityType, entityId, workspace?.id],
     queryFn: () => {
       if (!workspace?.id) return [];
       return getDocumentsService(workspace.id, entityType, entityId);
@@ -1006,7 +1021,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
       setIsOpen(false);
       setFile(null);
       queryClient.invalidateQueries({
-        queryKey: ['documents', entityType, entityId],
+        queryKey: ['documents', entityType, entityId, workspace?.id],
       });
       queryClient.invalidateQueries({
         queryKey: ['documents'],
@@ -1024,7 +1039,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
       setEditingDoc(null);
       setNewName('');
       queryClient.invalidateQueries({
-        queryKey: ['documents', entityType, entityId],
+        queryKey: ['documents', entityType, entityId, workspace?.id],
       });
       queryClient.invalidateQueries({
         queryKey: ['documents'],
@@ -1038,7 +1053,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
     onSuccess: () => {
       toast.success('Document deleted');
       queryClient.invalidateQueries({
-        queryKey: ['documents', entityType, entityId],
+        queryKey: ['documents', entityType, entityId, workspace?.id],
       });
       queryClient.invalidateQueries({
         queryKey: ['documents'],
@@ -1156,12 +1171,14 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                   </span>
                 }
                 metadata={
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-x-3 gap-y-1">
                     <span>
-                      {formatDate(doc.created_at)}
+                      Created by {doc.created_by_user?.name || 'Unknown'} on {formatDate(doc.created_at)}
                     </span>
-                    {doc.created_by_user && (
-                      <span>by {doc.created_by_user.name}</span>
+                    {doc.updated_by && doc.updated_by_user && (
+                      <span>
+                        Updated by {doc.updated_by_user.name || 'Unknown'} on {formatDate(doc.updated_at)}
+                      </span>
                     )}
                     {doc.entity_name && doc.entity_type !== entityType && (
                       <span className="text-blue-600 dark:text-blue-400">

@@ -31,9 +31,10 @@ import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
 
-import { AddColumnModal } from '~/components/leads/add-column-modal';
-import { ColumnEditModal } from '~/components/leads/column-edit-modal';
-import { ColumnHeader } from '~/components/leads/column-header';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
+import { ColumnEditModal } from '@kit/ui/column-edit-modal';
+import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
+import { ColumnHeader } from '@kit/ui/column-header';
 import { filterExportColumns } from '~/lib/field-permission';
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import {
@@ -52,7 +53,7 @@ import {
 import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
-import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
 import { getModuleKeyFromPath } from '~/lib/rbac/route-module-map';
 import {
   getLeadStatusesService,
@@ -60,6 +61,7 @@ import {
 } from '~/services/leads.service';
 import { Lead } from '~/services/leads.service';
 import { getMembersService } from '~/services/team-members.service';
+import { useTeamMembers } from '~/lib/hooks/use-team-members';
 
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
@@ -400,13 +402,24 @@ export default function LeadsPage() {
       persistSort: false,
     });
 
-  // Fetch team members
+  // Fetch team members (also passed to ColumnEditModal for FLS user selection)
   const { data: membersData } = useQuery({
     queryKey: ['team-members', workspace?.id],
     queryFn: () => getMembersService(workspace?.id || ''),
     enabled: !!workspace?.id,
   });
   const members = (membersData?.data || []) as any[];
+
+  // Fetch roles (passed to ColumnEditModal for FLS role selection)
+  const { data: moduleRoles = [] } = useModuleRoles(productKey);
+
+  // Fetch team members filtered by product key (for ColumnEditModal FLS user selection)
+  const { data: teamMembersData } = useTeamMembers({
+    workspaceId: workspace?.id,
+    productKey,
+    enabled: !!workspace?.id,
+  });
+  const teamMembersForModal = teamMembersData?.data ?? [];
 
   // Fetch lead statuses
   const { data: statuses = [], isSuccess: isStatusesLoaded } = useQuery({
@@ -1102,9 +1115,18 @@ export default function LeadsPage() {
           open={addColumnModalOpen}
           onOpenChange={setAddColumnModalOpen}
           entityType="leads"
-          productKey={productKey}
-          workspaceId={workspace?.id || ''}
-          onSuccess={() => {
+          roles={moduleRoles}
+          teamMembers={teamMembersForModal}
+          isAdmin={canAddColumn}
+          isSubmitting={createField.isPending}
+          onSubmit={async (payload) => {
+            await createField.mutateAsync({
+              ...payload,
+              workspace_id: workspace?.id || '',
+              product_key: productKey,
+              entity_type: 'leads',
+            });
+            refetchEntityFields();
             refetch();
           }}
         />
@@ -1116,8 +1138,9 @@ export default function LeadsPage() {
             onOpenChange={(open) => {
               if (!open) setEditingField(null);
             }}
-            field={editingField}
-            productKey={productKey}
+            field={editingField as ColumnEditFieldShape}
+            roles={moduleRoles}
+            teamMembers={teamMembersForModal}
             onSave={(updates, accessType, members) => {
               handleUpdateField(editingField.id, {
                 ...updates,
