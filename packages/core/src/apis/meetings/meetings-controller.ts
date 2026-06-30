@@ -25,8 +25,11 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
   const status = url.searchParams.get('status');
   const hostUserId = url.searchParams.get('hostUserId');
   const id = url.searchParams.get('id');
-  const includeParticipantMeetings = url.searchParams.get('includeParticipantMeetings');
+  const includeParticipantMeetings = url.searchParams.get(
+    'includeParticipantMeetings',
+  );
   const participantUserId = url.searchParams.get('participantUserId');
+  const view = url.searchParams.get('view') || 'my';
 
   if (!workspaceId) {
     return NextResponse.json(
@@ -44,45 +47,63 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
   const userIdForParticipant = participantUserId || user.id;
 
   try {
-    // If filtering by entity, first get matching meeting IDs
+    // Check if user is the workspace owner
+    const { data: workspace } = await supabase
+      .from('workspaces')
+      .select('owner_id')
+      .eq('id', workspaceId)
+      .single();
+
+    const isWorkspaceOwner = workspace?.owner_id === user.id;
+
+    // Check if user is an admin
+    const { data: member } = await supabase
+      .from('workspace_members')
+      .select(`
+        role:workspace_roles!workspace_members_role_id_fkey(
+          role_key,
+          hierarchy_level
+        )
+      `)
+      .eq('workspace_id', workspaceId)
+      .eq('user_id', user.id)
+      .eq('status', 'accepted')
+      .maybeSingle();
+
+    const roleData = Array.isArray(member?.role) ? member.role[0] : member?.role;
+    const userLevel = roleData?.hierarchy_level ?? 0;
+    const isAdmin = roleData?.role_key === 'admin' || userLevel >= 100;
+
+    const shouldShowAll = (isWorkspaceOwner || isAdmin) && view === 'team';
+
+    // Get all meeting IDs the user is associated with (as creator, host, or participant)
     let meetingIds: string[] | null = null;
-    if (entityType || entityId) {
-      let relQuery = (supabase as any)
-        .schema('core')
-        .from('meeting_relations')
-        .select('meeting_id')
-        .eq('workspace_id', workspaceId);
 
-      if (entityType) relQuery = relQuery.eq('entity_type', entityType);
-      if (entityId) relQuery = relQuery.eq('entity_id', entityId);
+    if (!shouldShowAll) {
+      const userAssociatedMeetingIds = new Set<string>();
 
-      const { data: relData, error: relError } = await relQuery;
-      if (relError) throw relError;
-
-      const matchedIds = (relData ?? []).map(
-        (r: { meeting_id: string }) => r.meeting_id,
-      ) as string[];
-      meetingIds = [...new Set(matchedIds)];
-      if (meetingIds && meetingIds.length === 0) {
-        return successDataResponse('Meetings retrieved', id ? null : []);
-      }
-    }
-
-    // If includeParticipantMeetings is true, also get meetings where user is a participant
-    const participantMeetingIds: string[] = [];
-    if (includeParticipantMeetings === 'true' && userIdForParticipant) {
-      const { data: participantData, error: participantError } = await (supabase as any)
+      // 1. Participant meetings (matches user ID or user email)
+      let participantQuery = (supabase as any)
         .schema('core')
         .from('meeting_participants')
         .select('meeting_id')
-        .eq('workspace_id', workspaceId)
-        .eq('internal_user_id', userIdForParticipant);
+        .eq('workspace_id', workspaceId);
 
-      if (!participantError && participantData) {
-        participantMeetingIds.push(...participantData.map((p: { meeting_id: string }) => p.meeting_id));
+      if (user.email) {
+        participantQuery = participantQuery.or(`internal_user_id.eq.${userIdForParticipant},external_email.eq.${user.email}`);
+      } else {
+        participantQuery = participantQuery.eq('internal_user_id', userIdForParticipant);
       }
 
-      // Also add meetings where user is the host (host_user_id matches)
+      const { data: participantData } = await participantQuery;
+
+      if (participantData) {
+        participantData.forEach((p: { meeting_id: string }) =>
+          userAssociatedMeetingIds.add(p.meeting_id),
+        );
+      }
+
+      // 2. Host meetings
       const { data: hostMeetingData } = await (supabase as any)
         .schema('core')
         .from('meetings')
@@ -92,24 +113,75 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
         .eq('is_deleted', false);
 
       if (hostMeetingData) {
-        participantMeetingIds.push(...hostMeetingData.map((m: { id: string }) => m.id));
+        hostMeetingData.forEach((m: { id: string }) =>
+          userAssociatedMeetingIds.add(m.id),
+        );
       }
-    }
 
-    // Merge participant meeting IDs with entity-based meeting IDs
-    if (participantMeetingIds.length > 0) {
-      if (meetingIds) {
-        // Combine both lists and deduplicate
-        meetingIds = [...new Set([...meetingIds, ...participantMeetingIds])];
+      // 3. Creator meetings
+      const { data: createdMeetingData } = await (supabase as any)
+        .schema('core')
+        .from('meetings')
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .eq('created_by', userIdForParticipant)
+        .eq('is_deleted', false);
+
+      if (createdMeetingData) {
+        createdMeetingData.forEach((m: { id: string }) =>
+          userAssociatedMeetingIds.add(m.id),
+        );
+      }
+
+      const associatedIds = Array.from(userAssociatedMeetingIds);
+
+      // If filtering by entity, we intersect entity meetings with user associated meetings
+      if (entityType || entityId) {
+        let relQuery = (supabase as any)
+          .schema('core')
+          .from('meeting_relations')
+          .select('meeting_id')
+          .eq('workspace_id', workspaceId);
+
+        if (entityType) relQuery = relQuery.eq('entity_type', entityType);
+        if (entityId) relQuery = relQuery.eq('entity_id', entityId);
+
+        const { data: relData, error: relError } = await relQuery;
+        if (relError) throw relError;
+
+        const matchedIds = (relData ?? []).map(
+          (r: { meeting_id: string }) => r.meeting_id,
+        ) as string[];
+
+        meetingIds = matchedIds.filter((mid) => userAssociatedMeetingIds.has(mid));
       } else {
-        meetingIds = [...new Set(participantMeetingIds)];
+        meetingIds = associatedIds;
       }
-    }
 
-    // If we have participant meetings but no entity filter, and meetingIds is empty after filtering,
-    // we should still include the participant meetings
-    if (includeParticipantMeetings === 'true' && !entityType && !entityId && participantMeetingIds.length > 0) {
-      meetingIds = [...new Set(participantMeetingIds)];
+      // If associated meeting list is empty, return empty results immediately
+      if (!meetingIds || meetingIds.length === 0) {
+        return successDataResponse('Meetings retrieved', id ? null : []);
+      }
+    } else {
+      // For workspace owner / admin viewing all meetings, only filter by entity if requested
+      if (entityType || entityId) {
+        let relQuery = (supabase as any)
+          .schema('core')
+          .from('meeting_relations')
+          .select('meeting_id')
+          .eq('workspace_id', workspaceId);
+
+        if (entityType) relQuery = relQuery.eq('entity_type', entityType);
+        if (entityId) relQuery = relQuery.eq('entity_id', entityId);
+
+        const { data: relData, error: relError } = await relQuery;
+        if (relError) throw relError;
+
+        meetingIds = Array.from(new Set((relData ?? []).map((r: { meeting_id: string }) => r.meeting_id))) as string[];
+        if (meetingIds.length === 0) {
+          return successDataResponse('Meetings retrieved', id ? null : []);
+        }
+      }
     }
 
     // Build main query
@@ -387,7 +459,7 @@ export const createMeetingController = catchAsync(async ({ request }) => {
           external_email: p.external_email ?? null,
           display_name: p.display_name ?? null,
           is_host: p.is_host ?? false,
-          response_status: p.response_status ?? 'PENDING',
+          response_status: 'ACCEPTED',
         }),
       );
 
@@ -784,7 +856,7 @@ export const updateMeetingController = catchAsync(async ({ request }) => {
             external_email: p.external_email ?? null,
             display_name: p.display_name ?? null,
             is_host: p.is_host ?? false,
-            response_status: p.response_status ?? 'PENDING',
+            response_status: 'ACCEPTED',
           }),
         );
 
@@ -1109,7 +1181,7 @@ export const addMeetingParticipantController = catchAsync(
       external_email: body.external_email ?? null,
       display_name: body.display_name ?? null,
       is_host: body.is_host ?? false,
-      response_status: body.response_status ?? 'PENDING',
+      response_status: 'ACCEPTED',
     };
 
     const { data, error: insertError } = await (supabase as any)
