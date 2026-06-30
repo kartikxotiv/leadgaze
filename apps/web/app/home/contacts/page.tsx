@@ -28,9 +28,10 @@ import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
 
-import { AddColumnModal } from '~/components/leads/add-column-modal';
-import { ColumnEditModal } from '~/components/leads/column-edit-modal';
-import { ColumnHeader } from '~/components/leads/column-header';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
+import { ColumnEditModal } from '@kit/ui/column-edit-modal';
+import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
+import { ColumnHeader } from '@kit/ui/column-header';
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import {
   useCreateField,
@@ -45,7 +46,8 @@ import {
 } from '~/lib/hooks/use-leads-column-preferences';
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
-import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
+import { useTeamMembers } from '~/lib/hooks/use-team-members';
 import { Contact, getContactsService } from '~/services/contacts.service';
 
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
@@ -384,6 +386,15 @@ export default function ContactsPage() {
       mode: 'server',
       onSortChange: () => setCurrentPage(1),
     });
+
+  // Fetch roles and team members for ColumnEditModal (FLS configuration)
+  const { data: moduleRoles = [] } = useModuleRoles('sales');
+  const { data: teamMembersData } = useTeamMembers({
+    workspaceId: workspace?.id,
+    productKey: 'sales',
+    enabled: !!workspace?.id,
+  });
+  const teamMembersForModal = teamMembersData?.data ?? [];
 
   const {
     data: contactsData = { data: [], count: 0 },
@@ -753,7 +764,20 @@ export default function ContactsPage() {
           open={addColumnModalOpen}
           onOpenChange={setAddColumnModalOpen}
           entityType="contacts"
-          workspaceId={workspace?.id || ''}
+          roles={moduleRoles}
+          teamMembers={teamMembersForModal}
+          isAdmin={canAddColumn}
+          isSubmitting={createField.isPending}
+          onSubmit={async (payload) => {
+            await createField.mutateAsync({
+              ...payload,
+              workspace_id: workspace?.id || '',
+              product_key: 'sales',
+              entity_type: 'contacts',
+            });
+            refetchEntityFields();
+            refetch();
+          }}
         />
 
         <ColumnEditModal
@@ -762,17 +786,17 @@ export default function ContactsPage() {
             if (!open) setEditingField(null);
           }}
           field={
-            editingField ??
+            (editingField ??
             ({
               id: '',
               field_key: '',
               field_label: '',
-              field_type: 'text',
               is_system: false,
-              settings: {},
               workspace_id: workspace?.id || '',
-            } as EntityField)
+            } as EntityField)) as ColumnEditFieldShape
           }
+          roles={moduleRoles}
+          teamMembers={teamMembersForModal}
           onSave={(updates, accessType, members) =>
             handleUpdateField(editingField?.id || '', {
               ...updates,

@@ -51,7 +51,7 @@ import { TablePagination } from '@kit/ui/table-pagination';
 import { cn } from '@kit/ui/utils';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useTableSort } from '@kit/ui/use-table-sort';
-import { SortableTableHead } from '@kit/ui/sortable-table-head';
+import { ColumnHeader } from '@kit/ui/column-header';
 
 import {
   type ServiceCloudRecord,
@@ -88,6 +88,16 @@ export type ResourceColumn = {
   key: string;
   label: string;
   render?: (record: ServiceCloudRecord) => React.ReactNode;
+  /**
+   * Optional sort key when the sort field differs from the column key.
+   * e.g. key='status_id' but sortKey='status.name'
+   */
+  sortKey?: string;
+  /**
+   * When true, a lock icon is displayed next to the column label in the header
+   * to indicate field-level security (access is restricted to certain members).
+   */
+  accessRestricted?: boolean;
 };
 
 export type ResourceUniqueField = {
@@ -113,6 +123,20 @@ type ResourcePageProps = {
   createLabel?: string;
   /** Label shown in the pagination bar, e.g. "tickets", "customers". Defaults to the resource name. */
   entityLabel?: string;
+  /**
+   * When true, a pencil edit button appears on column header hover (same as leads page).
+   * Requires `onColumnEditClick` to handle the edit action.
+   */
+  isAdmin?: boolean;
+  /**
+   * Called when the admin pencil icon is clicked on a column header.
+   * Receives the column key so the parent can open an edit modal.
+   */
+  onColumnEditClick?: (columnKey: string) => void;
+  /**
+   * Called when the admin '+' add column button is clicked.
+   */
+  onColumnAddClick?: () => void;
 };
 
 function getInitialForm(
@@ -142,6 +166,9 @@ export function ServiceCloudResourcePage({
   toolbar,
   createLabel,
   entityLabel,
+  isAdmin = false,
+  onColumnEditClick,
+  onColumnAddClick,
 }: ResourcePageProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -348,22 +375,54 @@ export function ServiceCloudResourcePage({
               <TableHeader>
                 <TableRow>
                   {columns.map((column) => (
-                    <SortableTableHead
+                    <ColumnHeader
                       key={column.key}
                       label={column.label}
                       columnId={column.key}
+                      sortKey={column.sortKey}
                       sortColumn={sortColumn}
                       sortDirection={sortDirection}
                       sortable={!nonSortableColumns.includes(column?.label)}
                       onSort={toggleSort}
                       className="relative"
+                      isAdmin={isAdmin}
+                      onEditClick={
+                        isAdmin && onColumnEditClick
+                          ? () => onColumnEditClick(column.key)
+                          : undefined
+                      }
+                      field={
+                        column.accessRestricted
+                          ? {
+                              id: column.key,
+                              field_key: column.key,
+                              is_system: true,
+                              access_rule: { access_type: 'private' },
+                            }
+                          : null
+                      }
                       {...getHeaderProps(column.key)}
                     >
                       <span className="col-resize-handle" {...getResizeHandleProps(column.key)} />
-                    </SortableTableHead>
+                    </ColumnHeader>
                   ))}
                   {canEdit || canDelete ? (
-                    <TableHead className="sticky-right-header text-right">Actions</TableHead>
+                    isAdmin && onColumnAddClick ? (
+                      <TableHead className="sticky-right-header bg-background z-10 w-12 px-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex h-8 w-full items-center justify-center gap-1 border-dashed text-xs font-medium"
+                          onClick={onColumnAddClick}
+                          title="Add Column"
+                        >
+                          <Plus className="h-4 w-4" />
+                          <span className="hidden sm:inline">Add</span>
+                        </Button>
+                      </TableHead>
+                    ) : (
+                      <TableHead className="sticky-right-header text-right">Actions</TableHead>
+                    )
                   ) : null}
                 </TableRow>
               </TableHeader>

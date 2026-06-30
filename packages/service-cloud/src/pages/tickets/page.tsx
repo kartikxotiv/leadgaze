@@ -97,8 +97,16 @@ function AssigneeStack({ assignees = [] }: { assignees?: any[] }) {
 
 export function ServiceCloudTicketsPage({
   workspaceId,
+  isAdmin = false,
+  onColumnAddClick,
+  onColumnEditClick,
+  customColumns = [],
 }: {
   workspaceId: string;
+  isAdmin?: boolean;
+  onColumnAddClick?: () => void;
+  onColumnEditClick?: (columnKey: string) => void;
+  customColumns?: any[];
 }) {
   const { formatDate } = useLocalization();
   const [createOpen, setCreateOpen] = useState(false);
@@ -296,6 +304,9 @@ export function ServiceCloudTicketsPage({
         canCreate={false}
         canEdit={canEdit}
         canDelete={canDelete}
+        isAdmin={isAdmin}
+        onColumnAddClick={onColumnAddClick}
+        onColumnEditClick={onColumnEditClick}
         queryParams={assignedToMeOnly ? { assignedToMe: 'true' } : {}}
         toolbar={
           <div className="flex items-center gap-2">
@@ -405,6 +416,7 @@ export function ServiceCloudTicketsPage({
             render: (ticket) =>
               ticket.created_at ? formatDate(ticket.created_at) : '-',
           },
+          ...customColumns,
         ]}
       />
 

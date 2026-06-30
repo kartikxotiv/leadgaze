@@ -128,7 +128,7 @@ export function useDynamicColumns({
       // Map nested members to top-level access_members for compatibility with EntityField interface
       return (data ?? []).map((field) => ({
         ...field,
-        access_members: field.access_rule?.members || [],
+        access_members: (Array.isArray(field.access_rule) ? field.access_rule[0]?.members : (field.access_rule as any)?.members) || [],
       })) as unknown as EntityField[];
     },
     enabled: enabled && !!workspaceId,
@@ -156,7 +156,7 @@ export function useDynamicColumns({
         throw error;
       }
 
-      return data?.preferences as ColumnPreference | null;
+      return (data?.preferences as unknown as ColumnPreference) ?? null;
     },
     enabled: enabled && !!workspaceId && !!userId,
   });
@@ -510,7 +510,7 @@ export function useCreateField() {
           is_active: true,
           display_order: 9999,
           settings: fieldData.settings ?? {},
-        })
+        } as any)
         .select()
         .single();
 
@@ -581,7 +581,7 @@ export function useUpdateField() {
       console.debug('useUpdateField.mutationFn called', { input });
       const { data, error } = await coreDb(supabase)
         .from('entity_fields')
-        .update(input.updates)
+        .update(input.updates as any)
         .eq('id', input.fieldId)
         .select()
         .single();

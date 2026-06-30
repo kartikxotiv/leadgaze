@@ -59,8 +59,18 @@ import {
 
 export function ServiceCloudCustomersPage({
   workspaceId,
+  isAdmin = false,
+  onColumnAddClick,
+  onColumnEditClick,
+  customCustomerColumns = [],
+  customOrganizationColumns = [],
 }: {
   workspaceId: string;
+  isAdmin?: boolean;
+  onColumnAddClick?: (type: 'customers' | 'organizations') => void;
+  onColumnEditClick?: (columnKey: string, type: 'customers' | 'organizations') => void;
+  customCustomerColumns?: any[];
+  customOrganizationColumns?: any[];
 }) {
   const { formatDate } = useLocalization();
   const { canAccess, isLoading } = useServiceCloudPermissions(workspaceId);
@@ -266,6 +276,9 @@ export function ServiceCloudCustomersPage({
             canCreate={canCreate}
             canEdit={canEdit}
             canDelete={canDelete}
+            isAdmin={isAdmin}
+            onColumnAddClick={onColumnAddClick ? () => onColumnAddClick('customers') : undefined}
+            onColumnEditClick={onColumnEditClick ? (key) => onColumnEditClick(key, 'customers') : undefined}
             toolbar={newTicketToolbar}
             fields={[
               { key: 'name', label: 'Name', required: true },
@@ -290,6 +303,7 @@ export function ServiceCloudCustomersPage({
               { key: 'email', label: 'Email' },
               { key: 'phone', label: 'Phone' },
               { key: 'job_title', label: 'Job Title' },
+              ...customCustomerColumns,
             ]}
           />
         </TabsContent>
@@ -303,6 +317,9 @@ export function ServiceCloudCustomersPage({
             canCreate={canCreate}
             canEdit={canEdit}
             canDelete={canDelete}
+            isAdmin={isAdmin}
+            onColumnAddClick={onColumnAddClick ? () => onColumnAddClick('organizations') : undefined}
+            onColumnEditClick={onColumnEditClick ? (key) => onColumnEditClick(key, 'organizations') : undefined}
             fields={[
               { key: 'name', label: 'Name', required: true },
               { key: 'website', label: 'Website' },
@@ -316,6 +333,7 @@ export function ServiceCloudCustomersPage({
               { key: 'industry', label: 'Industry' },
               { key: 'email', label: 'Email' },
               { key: 'phone', label: 'Phone' },
+              ...customOrganizationColumns,
             ]}
           />
         </TabsContent>
