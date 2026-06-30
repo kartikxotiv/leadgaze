@@ -52,8 +52,6 @@ export function LocalizationProvider({
     queryFn: async () => {
       if (!currentWorkspace?.id) return DEFAULT_PREFERENCES;
 
-      const supabase = useSupabase();
-
       // Fetch workspace preferences
       const { data: prefData, error: prefError } = await supabase
         .schema('core')

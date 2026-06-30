@@ -56,7 +56,7 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
   const [editingNote, setEditingNote] = useState<Note | null>(null);
 
   const { data: notes = [], isLoading } = useQuery({
-    queryKey: ['notes', entityType, entityId],
+    queryKey: ['notes', entityType, entityId, workspace?.id],
     queryFn: () => {
       if (!workspace?.id) return [];
       return getNotesService(workspace.id, entityType, entityId);
@@ -77,7 +77,7 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
       setIsOpen(false);
       setNewNoteContent('');
       queryClient.invalidateQueries({
-        queryKey: ['notes', entityType, entityId],
+        queryKey: ['notes', entityType, entityId, workspace?.id],
       });
       queryClient.invalidateQueries({
         queryKey: ['notes', workspace?.id],
@@ -95,7 +95,7 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
       setEditingNote(null);
       setNewNoteContent('');
       queryClient.invalidateQueries({
-        queryKey: ['notes', entityType, entityId],
+        queryKey: ['notes', entityType, entityId, workspace?.id],
       });
       queryClient.invalidateQueries({
         queryKey: ['notes', workspace?.id],
@@ -109,7 +109,7 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
     onSuccess: () => {
       toast.success('Note deleted');
       queryClient.invalidateQueries({
-        queryKey: ['notes', entityType, entityId],
+        queryKey: ['notes', entityType, entityId, workspace?.id],
       });
       queryClient.invalidateQueries({
         queryKey: ['notes', workspace?.id],
@@ -221,11 +221,15 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
                   </p>
                 }
                 metadata={
-                  <div className="flex flex-wrap gap-2">
-                    <span>{formatDate(note.created_at)}</span>
-                    {note.created_by_user && (
-                      <span>by {note.created_by_user.name}</span>
-                    )}
+                  <div className="flex flex-wrap gap-x-3 gap-y-1">
+                    <span>
+                      Created by {note.created_by_user?.name || 'Unknown'} on {formatDate(note.created_at)}
+                    </span>
+                    {/* {note.updated_by && note.updated_by_user && (
+                      <span>
+                        Updated by {note.updated_by_user.name || 'Unknown'} on {formatDate(note.updated_at!)}
+                      </span>
+                    )} */}
                     {note.entity_type !== entityType && (
                       <span className="text-blue-600 dark:text-blue-400">
                         From{' '}
