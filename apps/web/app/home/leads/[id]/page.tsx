@@ -14,6 +14,7 @@ import {
   Calendar,
   ChevronDown,
   Clock,
+  Download,
   Edit2,
   Factory,
   FileStack,
@@ -90,6 +91,7 @@ import { ConvertLeadDialog } from '../components/convert-lead-dialog';
 import EditLeadDialog from '../components/edit-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
 import { LogCallDialog } from '../components/log-call-dialog';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 
 function LeadDetailsSkeleton() {
   return (
@@ -680,8 +682,11 @@ export default function LeadDetailsPage() {
               </TabsContent>
 
               <TabsContent value="activity">
-                <Card>
-                  <CardContent className="pt-6">
+                <CardWidgetContainer
+                      title="Activity"
+                      hideHeaderBorder={true}
+                      icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}>
+                  <CardContent className="px-6 py-3">
                     <div className="space-y-2">
                       <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
                         <div className="h-2 w-2 rounded-full bg-green-500" />
@@ -710,7 +715,7 @@ export default function LeadDetailsPage() {
                         )}
                     </div>
                   </CardContent>
-                </Card>
+                </CardWidgetContainer>
               </TabsContent>
             </Tabs>
 

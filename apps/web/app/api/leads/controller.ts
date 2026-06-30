@@ -15,23 +15,39 @@ import {
   successDataResponse,
 } from '../../../utils/response-handler';
 
-const LEAD_SORTABLE_COLUMNS: Record<string, { column: string; foreignTable?: string }> = {
-  first_name:           { column: 'first_name' },
-  last_name:            { column: 'last_name' },
-  email:                { column: 'email' },
-  alt_email:            { column: 'alt_email' },
-  company_name:         { column: 'company_name' },
-  job_title:            { column: 'job_title' },
-  department:           { column: 'department' },
-  company_size:         { column: 'company_size' },
-  location:             { column: 'location' },
-  trigger:              { column: 'trigger' },
-  created_at:           { column: 'created_at' },
-  'status.status_name':          { column: 'status_name', foreignTable: 'entity_statuses' },
-  'source.source_name':          { column: 'source_name', foreignTable: 'lead_sources' },
-  'industry.industry_name':      { column: 'industry_name', foreignTable: 'crm_industries' },
-  'created_by_account.name':     { column: 'name', foreignTable: 'accounts' },
-  'updated_by_account.name':     { column: 'name', foreignTable: 'accounts' },
+// Direct columns: sorted at DB level via .order()
+const LEAD_DIRECT_SORT_COLUMNS: Record<string, string> = {
+  first_name:   'first_name',
+  last_name:    'last_name',
+  email:        'email',
+  alt_email:    'alt_email',
+  company_name: 'company_name',
+  job_title:    'job_title',
+  department:   'department',
+  company_size: 'company_size',
+  location:     'location',
+  trigger:      'trigger',
+  created_at:   'created_at',
+};
+
+// Relational columns: sorted in Node.js after fetch because Supabase's
+// foreignTable in .order() only sorts nested rows, NOT the parent rows.
+// The accessor is a dot-path into the fetched lead object.
+const LEAD_RELATIONAL_SORT_COLUMNS: Record<string, string> = {
+  'status.status_name':      'status.status_name',
+  'source.source_name':      'source.source_name',
+  'industry.industry_name':  'industry.industry_name',
+  'created_by_account.name': 'created_by_account.name',
+  'updated_by_account.name': 'updated_by_account.name',
+};
+
+// Helper to read a dot-path value from an object
+const getNestedValue = (obj: Record<string, unknown>, path: string): string => {
+  const value = path.split('.').reduce<unknown>((acc, key) => {
+    if (acc && typeof acc === 'object') return (acc as Record<string, unknown>)[key];
+    return undefined;
+  }, obj);
+  return typeof value === 'string' ? value.toLowerCase() : '';
 };
 
 /**
@@ -243,21 +259,37 @@ const getLeads = catchAsync(
       `[LEADS API] Executing parallel queries for user ${user.id} in workspace ${workspaceId}`,
     );
 
+    const isRelationalSort = !!LEAD_RELATIONAL_SORT_COLUMNS[sortColumn];
+    const isDirectSort = !!LEAD_DIRECT_SORT_COLUMNS[sortColumn];
+
+    // For relational sorts: fetch ALL matching rows (no .range()), sort in Node.js,
+    // then slice. Supabase's foreignTable in .order() only sorts nested children
+    // — it does NOT sort the parent crm_leads rows.
+    // For direct sorts: apply .order() + .range() at DB level (efficient).
+    // For no sort: use default created_at DESC + .range().
+    let finalMainQuery;
+    if (isDirectSort) {
+      finalMainQuery = mainQuery
+        .order(LEAD_DIRECT_SORT_COLUMNS[sortColumn]!, {
+          ascending: sortDirection === 'asc',
+          nullsFirst: false,
+        })
+        .range(from, to);
+    } else if (isRelationalSort) {
+      // No .range() — we need all rows to sort correctly, then slice in Node
+      finalMainQuery = mainQuery.order('created_at', { ascending: false });
+    } else {
+      finalMainQuery = mainQuery
+        .order('created_at', { ascending: false })
+        .range(from, to);
+    }
+
     const [mainResult, breakdownResult] = await Promise.all([
-      (LEAD_SORTABLE_COLUMNS[sortColumn]
-        ? mainQuery.order(LEAD_SORTABLE_COLUMNS[sortColumn].column, {
-            ascending: sortDirection === 'asc',
-            ...(LEAD_SORTABLE_COLUMNS[sortColumn].foreignTable
-              ? { foreignTable: LEAD_SORTABLE_COLUMNS[sortColumn].foreignTable }
-              : {}),
-            nullsFirst: false,
-          })
-        : mainQuery.order('created_at', { ascending: false })
-      ).range(from, to),
+      finalMainQuery,
       breakdownQuery,
     ]);
 
-    const { data: leads, error, count } = mainResult;
+    const { data: leadsRaw, error, count } = mainResult;
     if (error) {
       console.error('Get leads error:', error);
       throw error;
@@ -286,7 +318,24 @@ const getLeads = catchAsync(
       moduleKey: 'leads',
     });
 
-    const filteredLeads = filterLeadsForRead(leads || [], fieldCtx);
+    // For relational sorts: sort in Node.js and slice for current page
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    let sortedLeads: any[] = leadsRaw || [];
+    if (isRelationalSort && LEAD_RELATIONAL_SORT_COLUMNS[sortColumn]) {
+      const accessor = LEAD_RELATIONAL_SORT_COLUMNS[sortColumn]!;
+      const ascending = sortDirection === 'asc';
+      sortedLeads = [...sortedLeads].sort((a, b) => {
+        const aVal = getNestedValue(a, accessor);
+        const bVal = getNestedValue(b, accessor);
+        if (aVal < bVal) return ascending ? -1 : 1;
+        if (aVal > bVal) return ascending ? 1 : -1;
+        return 0;
+      });
+      sortedLeads = sortedLeads.slice(from, to + 1);
+    }
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+
+    const filteredLeads = filterLeadsForRead(sortedLeads, fieldCtx);
 
     return NextResponse.json({
       message: 'Leads retrieved successfully',

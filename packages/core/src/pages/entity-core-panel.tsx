@@ -31,7 +31,8 @@ import {
   sendEmailService,
   uploadDocumentService,
 } from '../services';
-import { formatCoreDateTime } from '../utils';
+import { useLocalization } from '@kit/shared/localization';
+
 
 type CoreEntityPanelProps = {
   workspaceId: string;
@@ -90,6 +91,7 @@ export function CoreEntityPanel(props: CoreEntityPanelProps) {
 
 function NotesPanel(props: CoreEntityPanelProps) {
   const queryClient = useQueryClient();
+  const { formatDateTime } = useLocalization();
   const [note, setNote] = useState('');
   const queryKey = ['core', 'notes', props.workspaceId, props.entityType, props.entityId];
   const { data: notes = [] } = useQuery<any[]>({ queryKey, queryFn: () => getNotesService(props.workspaceId, props.entityType, props.entityId), enabled: !!props.workspaceId && !!props.entityId });
@@ -103,13 +105,14 @@ function NotesPanel(props: CoreEntityPanelProps) {
         <Textarea placeholder="Add context, decisions, or next steps" value={note} onChange={(event) => setNote(event.target.value)} />
         <div className="flex justify-end"><Button disabled={!note.trim() || createMutation.isPending} onClick={() => createMutation.mutate({ ...entityPayload(props), note })}><Plus className="mr-2 h-4 w-4" /> Add Note</Button></div>
       </div>
-      <List empty="No notes yet.">{notes.map((item) => <Row key={item.id} title={item.note} meta={formatCoreDateTime(item.created_at)} onDelete={() => deleteMutation.mutate(item.id)} />)}</List>
+      <List empty="No notes yet.">{notes.map((item) => <Row key={item.id} title={item.note} meta={formatDateTime(item.created_at)} onDelete={() => deleteMutation.mutate(item.id)} />)}</List>
     </section>
   );
 }
 
 function MeetingsPanel(props: CoreEntityPanelProps) {
   const queryClient = useQueryClient();
+  const { formatDateTime } = useLocalization();
   const [form, setForm] = useState({ title: '', description: '', start_time: '', end_time: '', location: '' });
   const queryKey = ['core', 'meetings', props.workspaceId, props.entityType, props.entityId];
   const { data: meetings = [] } = useQuery<any[]>({ queryKey, queryFn: () => getMeetingsService(props.workspaceId, props.entityType, props.entityId), enabled: !!props.workspaceId && !!props.entityId });
@@ -126,13 +129,14 @@ function MeetingsPanel(props: CoreEntityPanelProps) {
         <div className="sm:col-span-2"><Field label="Description"><Textarea value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} /></Field></div>
         <div className="flex justify-end sm:col-span-2"><Button disabled={!form.title || createMutation.isPending} onClick={() => createMutation.mutate({ ...entityPayload(props), ...form, start_time: form.start_time || null, end_time: form.end_time || null, location: form.location || null, description: form.description || null })}><Plus className="mr-2 h-4 w-4" /> Add Meeting</Button></div>
       </div>
-      <List empty="No meetings scheduled.">{meetings.map((item) => <Row key={item.id} title={item.title} meta={`${item.status} · ${formatCoreDateTime(item.start_time)}`} description={item.description} onDelete={() => deleteMutation.mutate(item.id)} />)}</List>
+      <List empty="No meetings scheduled.">{meetings.map((item) => <Row key={item.id} title={item.title} meta={`${item.status} · ${formatDateTime(item.start_time)}`} description={item.description} onDelete={() => deleteMutation.mutate(item.id)} />)}</List>
     </section>
   );
 }
 
 function EmailsPanel(props: CoreEntityPanelProps) {
   const queryClient = useQueryClient();
+  const { formatDateTime } = useLocalization();
   const [form, setForm] = useState({ to_email: '', subject: '', body: '' });
   const queryKey = ['core', 'emails', props.workspaceId, props.entityType, props.entityId];
   const { data: emails = [] } = useQuery<any[]>({ queryKey, queryFn: () => getEmailsService(props.workspaceId, props.entityType, props.entityId), enabled: !!props.workspaceId && !!props.entityId });
@@ -148,7 +152,7 @@ function EmailsPanel(props: CoreEntityPanelProps) {
         <Field label="Body"><Textarea value={form.body} onChange={(event) => setForm((prev) => ({ ...prev, body: event.target.value }))} placeholder="Email body" /></Field>
         <div className="flex justify-end"><Button disabled={!form.to_email || !form.subject || !form.body || sendMutation.isPending} onClick={() => sendMutation.mutate({ ...entityPayload(props), ...form })}><Plus className="mr-2 h-4 w-4" /> Log Email</Button></div>
       </div>
-      <List empty="No emails logged.">{emails.map((item) => <Row key={item.id} title={item.subject} meta={`${item.to_email} · ${item.status} · ${formatCoreDateTime(item.sent_at)}`} description={item.body} />)}</List>
+      <List empty="No emails logged.">{emails.map((item) => <Row key={item.id} title={item.subject} meta={`${item.to_email} · ${item.status} · ${formatDateTime(item.sent_at)}`} description={item.body} />)}</List>
     </section>
   );
 }
@@ -189,12 +193,14 @@ function DocumentsPanel(props: CoreEntityPanelProps) {
 }
 
 function ActivitiesPanel(props: CoreEntityPanelProps) {
+  const { formatDateTime } = useLocalization();
   const { data: activities = [] } = useQuery<any[]>({ queryKey: ['core', 'activities', props.workspaceId, props.entityType, props.entityId], queryFn: () => getActivitiesService(props.workspaceId, props.entityType, props.entityId), enabled: !!props.workspaceId && !!props.entityId });
-  return <List empty="No activities logged.">{activities.map((item) => <Row key={item.id} title={item.title} meta={`${item.activity_type} · ${formatCoreDateTime(item.created_at)}`} description={item.description} />)}</List>;
+  return <List empty="No activities logged.">{activities.map((item) => <Row key={item.id} title={item.title} meta={`${item.activity_type} · ${formatDateTime(item.created_at)}`} description={item.description} />)}</List>;
 }
 
 function RemindersPanel(props: CoreEntityPanelProps) {
   const queryClient = useQueryClient();
+  const { formatDateTime } = useLocalization();
   const [form, setForm] = useState({ title: '', description: '', due_at: '', priority: 'medium' });
   const queryKey = ['core', 'reminders', props.workspaceId, props.entityType, props.entityId];
   const { data: reminders = [] } = useQuery<any[]>({ queryKey, queryFn: () => getRemindersService(props.workspaceId, props.entityType, props.entityId), enabled: !!props.workspaceId && !!props.entityId });
@@ -211,7 +217,7 @@ function RemindersPanel(props: CoreEntityPanelProps) {
         <div className="sm:col-span-2"><Field label="Description"><Textarea value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} /></Field></div>
         <div className="flex justify-end sm:col-span-2"><Button disabled={!form.title || createMutation.isPending} onClick={() => createMutation.mutate({ ...entityPayload(props), ...form, due_at: form.due_at || null, description: form.description || null })}><Plus className="mr-2 h-4 w-4" /> Add Follow-Up</Button></div>
       </div>
-      <List empty="No follow-ups scheduled.">{reminders.map((item) => <Row key={item.id} title={item.title} meta={`${item.priority} · ${formatCoreDateTime(item.due_at)}`} description={item.description} badge={item.status} onDelete={() => deleteMutation.mutate(item.id)} action={item.status !== 'completed' ? <Button variant="ghost" size="sm" onClick={() => completeMutation.mutate(item.id)}><Check className="h-4 w-4" /></Button> : null} />)}</List>
+      <List empty="No follow-ups scheduled.">{reminders.map((item) => <Row key={item.id} title={item.title} meta={`${item.priority} · ${formatDateTime(item.due_at)}`} description={item.description} badge={item.status} onDelete={() => deleteMutation.mutate(item.id)} action={item.status !== 'completed' ? <Button variant="ghost" size="sm" onClick={() => completeMutation.mutate(item.id)}><Check className="h-4 w-4" /></Button> : null} />)}</List>
     </section>
   );
 }

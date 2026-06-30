@@ -9,21 +9,35 @@ import {
   successDataResponse,
 } from '../../../utils/response-handler';
 
-const ACCOUNT_SORTABLE_COLUMNS: Record<string, { column: string; foreignTable?: string }> = {
-  account_name:         { column: 'account_name' },
-  website:              { column: 'website' },
-  phone_number:         { column: 'phone_number' },
-  company_size:         { column: 'company_size' },
-  billing_street:       { column: 'billing_street' },
-  billing_city:         { column: 'billing_city' },
-  billing_state:        { column: 'billing_state' },
-  billing_postal_code:  { column: 'billing_postal_code' },
-  billing_country:      { column: 'billing_country' },
-  created_at:           { column: 'created_at' },
-  'industry.industry_name':      { column: 'industry_name', foreignTable: 'crm_industries' },
-  'owner.name':                  { column: 'name', foreignTable: 'accounts' },
-  'created_by_account.name':     { column: 'name', foreignTable: 'accounts' },
-  'updated_by_account.name':     { column: 'name', foreignTable: 'accounts' },
+// Direct columns: sorted at DB level
+const ACCOUNT_DIRECT_SORT_COLUMNS: Record<string, string> = {
+  account_name:         'account_name',
+  website:              'website',
+  phone_number:         'phone_number',
+  company_size:         'company_size',
+  billing_street:       'billing_street',
+  billing_city:         'billing_city',
+  billing_state:        'billing_state',
+  billing_postal_code:  'billing_postal_code',
+  billing_country:      'billing_country',
+  created_at:           'created_at',
+};
+
+// Relational columns: sorted in Node.js after fetch.
+// Supabase's foreignTable in .order() only sorts nested children, NOT parent rows.
+const ACCOUNT_RELATIONAL_SORT_COLUMNS: Record<string, string> = {
+  'industry.industry_name':      'industry.industry_name',
+  'owner.name':                  'owner.name',
+  'created_by_account.name':     'created_by_account.name',
+  'updated_by_account.name':     'updated_by_account.name',
+};
+
+const getNestedValue = (obj: Record<string, unknown>, path: string): string => {
+  const value = path.split('.').reduce<unknown>((acc, key) => {
+    if (acc && typeof acc === 'object') return (acc as Record<string, unknown>)[key];
+    return undefined;
+  }, obj);
+  return typeof value === 'string' ? value.toLowerCase() : '';
 };
 
 /**
@@ -152,29 +166,50 @@ export const getAccounts = catchAsync(
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    const {
-      data: accounts,
-      error,
-      count,
-    } = await (ACCOUNT_SORTABLE_COLUMNS[sortColumn]
-      ? query.order(ACCOUNT_SORTABLE_COLUMNS[sortColumn].column, {
+    const isRelationalSort = !!ACCOUNT_RELATIONAL_SORT_COLUMNS[sortColumn];
+    const isDirectSort = !!ACCOUNT_DIRECT_SORT_COLUMNS[sortColumn];
+
+    let finalQuery;
+    if (isDirectSort) {
+      finalQuery = query
+        .order(ACCOUNT_DIRECT_SORT_COLUMNS[sortColumn]!, {
           ascending: sortDirection === 'asc',
-          ...(ACCOUNT_SORTABLE_COLUMNS[sortColumn].foreignTable
-            ? { foreignTable: ACCOUNT_SORTABLE_COLUMNS[sortColumn].foreignTable }
-            : {}),
           nullsFirst: false,
         })
-      : query.order('created_at', { ascending: false })
-    ).range(from, to);
+        .range(from, to);
+    } else if (isRelationalSort) {
+      // Fetch all rows so we can sort in Node.js, then slice
+      finalQuery = query.order('created_at', { ascending: false });
+    } else {
+      finalQuery = query.order('created_at', { ascending: false }).range(from, to);
+    }
+
+    const { data: accountsRaw, error, count } = await finalQuery;
 
     if (error) {
       console.error('Get accounts error:', error);
       throw error;
     }
 
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    let sortedAccounts: any[] = accountsRaw || [];
+    if (isRelationalSort && ACCOUNT_RELATIONAL_SORT_COLUMNS[sortColumn]) {
+      const accessor = ACCOUNT_RELATIONAL_SORT_COLUMNS[sortColumn]!;
+      const ascending = sortDirection === 'asc';
+      sortedAccounts = [...sortedAccounts].sort((a, b) => {
+        const aVal = getNestedValue(a, accessor);
+        const bVal = getNestedValue(b, accessor);
+        if (aVal < bVal) return ascending ? -1 : 1;
+        if (aVal > bVal) return ascending ? 1 : -1;
+        return 0;
+      });
+      sortedAccounts = sortedAccounts.slice(from, to + 1);
+    }
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+
     return NextResponse.json({
       message: 'Accounts retrieved successfully',
-      data: accounts || [],
+      data: sortedAccounts,
       count: count || 0,
     });
   },
