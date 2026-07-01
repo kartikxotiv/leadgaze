@@ -70,6 +70,10 @@ export const getOpportunities = catchAsync(
     const stageId = url.searchParams.get('stageId') || '';
     const sortColumn = url.searchParams.get('sortColumn') || '';
     const sortDirection = url.searchParams.get('sortDirection') || '';
+    const createdAtFrom = url.searchParams.get('createdAtFrom') || '';
+    const createdAtTo = url.searchParams.get('createdAtTo') || '';
+    const updatedAtFrom = url.searchParams.get('updatedAtFrom') || '';
+    const updatedAtTo = url.searchParams.get('updatedAtTo') || '';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -194,6 +198,11 @@ export const getOpportunities = catchAsync(
         .eq('workspace_id', workspaceId)
         .eq('is_deleted', false),
     );
+
+    if (createdAtFrom) mainQuery = mainQuery.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+    if (createdAtTo) mainQuery = mainQuery.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+    if (updatedAtFrom) mainQuery = mainQuery.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+    if (updatedAtTo) mainQuery = mainQuery.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
 
     if (accountId) {
       mainQuery = mainQuery.eq('account_id', accountId);

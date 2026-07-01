@@ -26,6 +26,7 @@ import {
 import { TablePagination } from '@kit/ui/table-pagination';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
 
@@ -167,6 +168,18 @@ export default function OpportunitiesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const itemsPerPage = pageSize;
+  const {
+    dateRange: createdOnRange,
+    setDateRange: setCreatedOnRange,
+    computedDates: computedCreatedOnDates,
+    clearDateRange: clearCreatedOnRange,
+  } = useDateRangeFilter();
+  const {
+    dateRange: updatedOnRange,
+    setDateRange: setUpdatedOnRange,
+    computedDates: computedUpdatedOnDates,
+    clearDateRange: clearUpdatedOnRange,
+  } = useDateRangeFilter();
 
   const SYSTEM_FIELDS = useMemo(
     () => [
@@ -484,6 +497,8 @@ export default function OpportunitiesPage() {
       selectedCreatedId,
       pageSize,
       sortState,
+      computedCreatedOnDates,
+      computedUpdatedOnDates,
     ],
     queryFn: () =>
       getOpportunitiesService({
@@ -494,6 +509,10 @@ export default function OpportunitiesPage() {
         stageId: selectedStage,
         sortColumn: sortColumn ?? undefined,
         sortDirection: sortDirection ?? undefined,
+        createdAtFrom: computedCreatedOnDates?.from ?? undefined,
+        createdAtTo: computedCreatedOnDates?.to ?? undefined,
+        updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
+        updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
       }),
     enabled: !!workspace?.id,
   });
@@ -528,7 +547,7 @@ export default function OpportunitiesPage() {
   // Reset to first page when search or filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, selectedStage, selectedCreatedId, pageSize]);
+  }, [debouncedSearchTerm, selectedStage, selectedCreatedId, pageSize, createdOnRange, updatedOnRange]);
 
   // Client-side filtering for Created By if not supported by API
   const filteredOpportunities = useMemo(() => {
@@ -607,19 +626,43 @@ export default function OpportunitiesPage() {
         options: memberOptions,
         onSelect: (val: string) => setSelectedCreatedId(val || 'all'),
       },
+      {
+        key: 'created_on',
+        label: 'Created On',
+        type: 'date',
+        dateValue: createdOnRange,
+        onDateChange: (val) => {
+          setCreatedOnRange(val);
+          setCurrentPage(1);
+        },
+      },
+      {
+        key: 'updated_on',
+        label: 'Updated On',
+        type: 'date',
+        dateValue: updatedOnRange,
+        onDateChange: (val) => {
+          setUpdatedOnRange(val);
+          setCurrentPage(1);
+        },
+      },
     ];
-  }, [stages, selectedStage, members, selectedCreatedId]);
+  }, [stages, selectedStage, members, selectedCreatedId, createdOnRange, updatedOnRange]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (selectedStage !== 'all') count++;
     if (selectedCreatedId !== 'all') count++;
+    if (createdOnRange) count++;
+    if (updatedOnRange) count++;
     return count;
-  }, [selectedStage, selectedCreatedId]);
+  }, [selectedStage, selectedCreatedId, createdOnRange, updatedOnRange]);
 
   const handleClearFilters = () => {
     setSelectedStage('all');
     setSelectedCreatedId('all');
+    clearCreatedOnRange();
+    clearUpdatedOnRange();
   };
 
   // Pagination Logic

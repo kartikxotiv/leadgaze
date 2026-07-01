@@ -190,6 +190,24 @@ export const getServiceCloudResourceController = catchAsync(
       query = query.eq('is_deleted', false);
     }
 
+    const createdAtFrom = url.searchParams.get('createdAtFrom');
+    const createdAtTo = url.searchParams.get('createdAtTo');
+    const updatedAtFrom = url.searchParams.get('updatedAtFrom');
+    const updatedAtTo = url.searchParams.get('updatedAtTo');
+
+    if (createdAtFrom) {
+      query = query.gte('created_at', createdAtFrom);
+    }
+    if (createdAtTo) {
+      query = query.lte('created_at', createdAtTo);
+    }
+    if (updatedAtFrom) {
+      query = query.gte('updated_at', updatedAtFrom);
+    }
+    if (updatedAtTo) {
+      query = query.lte('updated_at', updatedAtTo);
+    }
+
     if (id) {
       const { data, error: fetchError } = await query
         .eq('id', id)

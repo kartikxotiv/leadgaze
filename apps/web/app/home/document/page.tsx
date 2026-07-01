@@ -58,6 +58,7 @@ import {
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useTableSort } from '@kit/ui/use-table-sort';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
@@ -135,6 +136,18 @@ export default function DocumentPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const itemsPerPage = pageSize;
+  const {
+    dateRange: createdOnRange,
+    setDateRange: setCreatedOnRange,
+    computedDates: computedCreatedOnDates,
+    clearDateRange: clearCreatedOnRange,
+  } = useDateRangeFilter();
+  const {
+    dateRange: updatedOnRange,
+    setDateRange: setUpdatedOnRange,
+    computedDates: computedUpdatedOnDates,
+    clearDateRange: clearUpdatedOnRange,
+  } = useDateRangeFilter();
 
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -272,7 +285,7 @@ export default function DocumentPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, typeFilter, entityTypeFilter, pageSize]);
+  }, [searchTerm, typeFilter, entityTypeFilter, pageSize, createdOnRange, updatedOnRange]);
 
   const getFileTypeCategory = (fileType: string): string => {
     const t = (fileType || '').toLowerCase();
@@ -308,9 +321,25 @@ export default function DocumentPage() {
         entityTypeFilter === 'all' ||
         doc.entity_type?.toLowerCase() === entityTypeFilter.toLowerCase();
 
-      return matchesSearch && matchesType && matchesEntityType;
+      let matchesCreated = true;
+      if (computedCreatedOnDates?.from) {
+        const createdDate = new Date(doc.created_at).getTime();
+        const from = new Date(computedCreatedOnDates.from).getTime();
+        const to = computedCreatedOnDates.to ? new Date(computedCreatedOnDates.to).getTime() : new Date().getTime();
+        matchesCreated = createdDate >= from && createdDate <= to;
+      }
+      
+      let matchesUpdated = true;
+      if (computedUpdatedOnDates?.from) {
+        const updatedDate = new Date(doc.updated_at || doc.created_at).getTime();
+        const from = new Date(computedUpdatedOnDates.from).getTime();
+        const to = computedUpdatedOnDates.to ? new Date(computedUpdatedOnDates.to).getTime() : new Date().getTime();
+        matchesUpdated = updatedDate >= from && updatedDate <= to;
+      }
+
+      return matchesSearch && matchesType && matchesEntityType && matchesCreated && matchesUpdated;
     });
-  }, [documents, searchTerm, typeFilter, entityTypeFilter]);
+  }, [documents, searchTerm, typeFilter, entityTypeFilter, computedCreatedOnDates, computedUpdatedOnDates]);
 
   const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Document>(
     'documents',
@@ -419,19 +448,43 @@ export default function DocumentPage() {
         ],
         onSelect: (val: string) => setEntityTypeFilter(val || 'all'),
       },
+      {
+        key: 'created_on',
+        label: 'Created On',
+        type: 'date',
+        dateValue: createdOnRange,
+        onDateChange: (val) => {
+          setCreatedOnRange(val);
+          setCurrentPage(1);
+        },
+      },
+      {
+        key: 'updated_on',
+        label: 'Updated On',
+        type: 'date',
+        dateValue: updatedOnRange,
+        onDateChange: (val) => {
+          setUpdatedOnRange(val);
+          setCurrentPage(1);
+        },
+      },
     ];
-  }, [typeFilter, entityTypeFilter]);
+  }, [typeFilter, entityTypeFilter, createdOnRange, updatedOnRange]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (typeFilter !== 'all') count++;
     if (entityTypeFilter !== 'all') count++;
+    if (createdOnRange) count++;
+    if (updatedOnRange) count++;
     return count;
-  }, [typeFilter, entityTypeFilter]);
+  }, [typeFilter, entityTypeFilter, createdOnRange, updatedOnRange]);
 
   const handleClearFilters = () => {
     setTypeFilter('all');
     setEntityTypeFilter('all');
+    clearCreatedOnRange();
+    clearUpdatedOnRange();
   };
 
   if (!workspace) {

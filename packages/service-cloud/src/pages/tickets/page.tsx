@@ -5,7 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Check, Filter, Loader2, Plus } from 'lucide-react';
+import { Check, User, Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useLocalization } from '@kit/shared/localization';
@@ -30,6 +30,7 @@ import {
 } from '@kit/ui/select';
 import { Textarea } from '@kit/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 
 import {
   type ServiceCloudRecord,
@@ -131,6 +132,49 @@ export function ServiceCloudTicketsPage({
     SERVICE_CLOUD_MODULE_KEYS.tickets,
     SERVICE_CLOUD_FEATURE_KEYS.delete,
   );
+
+  const {
+    dateRange: createdOnRange,
+    setDateRange: setCreatedOnRange,
+    computedDates: computedCreatedOnDates,
+    clearDateRange: clearCreatedOnRange,
+  } = useDateRangeFilter();
+  const {
+    dateRange: updatedOnRange,
+    setDateRange: setUpdatedOnRange,
+    computedDates: computedUpdatedOnDates,
+    clearDateRange: clearUpdatedOnRange,
+  } = useDateRangeFilter();
+
+  const activeFilterCount =
+    (assignedToMeOnly ? 1 : 0) +
+    (createdOnRange ? 1 : 0) +
+    (updatedOnRange ? 1 : 0);
+
+  const filterGroups = [
+    {
+      key: 'created_on',
+      label: 'Created On',
+      type: 'date',
+      dateValue: createdOnRange,
+      onDateChange: setCreatedOnRange,
+    },
+    {
+      key: 'updated_on',
+      label: 'Updated On',
+      type: 'date',
+      dateValue: updatedOnRange,
+      onDateChange: setUpdatedOnRange,
+    },
+  ];
+
+  const queryParams = {
+    ...(assignedToMeOnly ? { assignedToMe: 'true' } : {}),
+    ...(computedCreatedOnDates?.from ? { createdAtFrom: computedCreatedOnDates.from } : {}),
+    ...(computedCreatedOnDates?.to ? { createdAtTo: computedCreatedOnDates.to } : {}),
+    ...(computedUpdatedOnDates?.from ? { updatedAtFrom: computedUpdatedOnDates.from } : {}),
+    ...(computedUpdatedOnDates?.to ? { updatedAtTo: computedUpdatedOnDates.to } : {}),
+  };
 
   // Optimized: single API call fetches statuses + priorities + categories in parallel on server
   const { data: lookups } = useQuery({
@@ -310,7 +354,14 @@ export function ServiceCloudTicketsPage({
         isAdmin={isAdmin}
         onColumnAddClick={onColumnAddClick}
         onColumnEditClick={onColumnEditClick}
-        queryParams={assignedToMeOnly ? { assignedToMe: 'true' } : {}}
+        queryParams={queryParams}
+        filterGroups={filterGroups}
+        activeFilterCount={activeFilterCount}
+        onClearFilters={() => {
+          setAssignedToMeOnly(false);
+          clearCreatedOnRange();
+          clearUpdatedOnRange();
+        }}
         toolbar={
           <div className="flex items-center gap-2">
             <Tooltip>
@@ -324,7 +375,7 @@ export function ServiceCloudTicketsPage({
                   {assignedToMeOnly ? (
                     <Check className="h-4 w-4" />
                   ) : (
-                    <Filter className="h-4 w-4" />
+                    <User className="h-4 w-4" />
                   )}
                 </Button>
               </TooltipTrigger>

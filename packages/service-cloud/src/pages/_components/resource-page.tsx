@@ -120,6 +120,9 @@ type ResourcePageProps = {
   emptyLabel?: string;
   queryParams?: Record<string, string>;
   toolbar?: React.ReactNode;
+  filterGroups?: any[];
+  activeFilterCount?: number;
+  onClearFilters?: () => void;
   createLabel?: string;
   /** Label shown in the pagination bar, e.g. "tickets", "customers". Defaults to the resource name. */
   entityLabel?: string;
@@ -164,6 +167,9 @@ export function ServiceCloudResourcePage({
   emptyLabel = 'No records found.',
   queryParams = {},
   toolbar,
+  filterGroups,
+  activeFilterCount,
+  onClearFilters,
   createLabel,
   entityLabel,
   isAdmin = false,
@@ -337,6 +343,10 @@ export function ServiceCloudResourcePage({
           searchPlaceholder={`Search ${title.toLowerCase()}...`}
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
+          showFilter={!!filterGroups && filterGroups.length > 0}
+          filterGroups={filterGroups}
+          activeFilterCount={activeFilterCount}
+          onClearFilters={onClearFilters}
           statusSlot={toolbar}
           actions={
             canCreate
