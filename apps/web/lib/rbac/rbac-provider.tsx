@@ -9,6 +9,13 @@ import { useQuery } from '@tanstack/react-query';
 import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { useUser } from '@kit/supabase/hooks/use-user';
 
+// Minimal shape from useUser() — JwtPayload augmented with id = sub
+interface AuthUser {
+  id: string;
+  email?: string;
+  [key: string]: unknown;
+}
+
 interface Permission {
   module: string;
   feature: string;
@@ -40,6 +47,7 @@ interface Workspace {
 interface RBACContextType {
   workspaces: Workspace[];
   currentWorkspace: Workspace | null;
+  user: AuthUser | null | undefined;
   selectWorkspace: (workspaceId: string) => void;
   hasPermission: (
     module: string,
@@ -159,9 +167,9 @@ export function RBACProvider({ children }: { children: ReactNode }) {
       ? localStorage.getItem('currentWorkspaceId')
       : null);
 
-  const currentWorkspace =
-    workspaces.find((w) => w.id === currentWorkspaceIdFinal) ||
-    (workspaces.length === 1 ? workspaces[0] : null);
+  const currentWorkspace: Workspace | null =
+    workspaces.find((w) => w.id === currentWorkspaceIdFinal) ??
+    (workspaces.length === 1 ? workspaces[0] ?? null : null);
 
   // Sync back to state and localStorage if we picked a default
   React.useEffect(() => {
@@ -252,6 +260,7 @@ export function RBACProvider({ children }: { children: ReactNode }) {
       value={{
         workspaces,
         currentWorkspace,
+        user: user ? { ...user, id: (user as { id?: string; sub?: string }).id ?? (user as { sub?: string }).sub ?? '' } : user,
         selectWorkspace,
         hasPermission,
         canAccess,
@@ -270,4 +279,65 @@ export function useRBAC() {
     throw new Error('useRBAC must be used within RBACProvider');
   }
   return context;
+}
+
+// Hook to fetch all workspace roles (for role-based field access)
+export function useWorkspaceRoles() {
+  const { currentWorkspace } = useRBAC();
+  const supabase = useSupabase();
+
+  return useQuery({
+    queryKey: ['workspaceRoles', currentWorkspace?.id],
+    queryFn: async () => {
+      if (!currentWorkspace?.id) return [];
+
+      const { data, error } = await supabase
+        .from('workspace_roles')
+        .select('id, role_key, role_name, hierarchy_level, is_system, is_active')
+        .eq('workspace_id', currentWorkspace.id)
+        .eq('is_active', true)
+        .order('hierarchy_level', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching workspace roles:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    enabled: !!currentWorkspace?.id,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+}
+
+// Fetch workspace roles scoped to a product (sales, service_cloud, hrms, etc.).
+// Used for field-level access control selectors so only roles from the current
+// product module are shown — not roles from other products in the workspace.
+export function useModuleRoles(productKey: string) {
+  const { currentWorkspace } = useRBAC();
+  const supabase = useSupabase();
+
+  return useQuery({
+    queryKey: ['productRoles', currentWorkspace?.id, productKey],
+    queryFn: async () => {
+      if (!currentWorkspace?.id || !productKey) return [];
+
+      const { data, error } = await supabase
+        .from('workspace_roles')
+        .select('id, role_key, role_name, hierarchy_level, is_system, is_active, product_key')
+        .eq('workspace_id', currentWorkspace.id)
+        .eq('is_active', true)
+        .eq('product_key', productKey)
+        .order('hierarchy_level', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching product roles:', error);
+        throw error;
+      }
+
+      return data ?? [];
+    },
+    enabled: !!currentWorkspace?.id && !!productKey,
+    staleTime: 5 * 60 * 1000,
+  });
 }

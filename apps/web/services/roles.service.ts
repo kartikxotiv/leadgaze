@@ -50,9 +50,16 @@ interface ModuleFeature {
 }
 
 const getRolesService = asyncHandlerClient(
-  async (workspaceId: string, productKey?: string) => {
+  async (
+    workspaceId: string,
+    productKey?: string,
+    sortColumn?: string,
+    sortDirection?: string,
+  ) => {
     const params = new URLSearchParams({ workspaceId });
     if (productKey) params.set('productKey', productKey);
+    if (sortColumn) params.set('sortColumn', sortColumn);
+    if (sortDirection) params.set('sortDirection', sortDirection);
     const response = await ApiClient.get(`/roles?${params.toString()}`);
     return response.data;
   },

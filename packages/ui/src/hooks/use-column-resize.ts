@@ -268,6 +268,10 @@ export function useColumnResize(
 
         startResize(columnId, e, thEl, currentWidth);
       },
+      onClick: (e: React.MouseEvent<HTMLElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+      },
     }),
     [columnWidths, startResize],
   );

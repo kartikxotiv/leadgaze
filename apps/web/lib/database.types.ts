@@ -6008,6 +6008,251 @@ export type Database = {
           },
         ]
       }
+      entity_fields: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          entity_type: string
+          field_key: string
+          field_label: string
+          field_type: string
+          id: string
+          is_active: boolean
+          is_required: boolean
+          is_system: boolean
+          product_key: string
+          settings: Json
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          entity_type: string
+          field_key: string
+          field_label: string
+          field_type: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          is_system?: boolean
+          product_key?: string
+          settings?: Json
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          entity_type?: string
+          field_key?: string
+          field_label?: string
+          field_type?: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          is_system?: boolean
+          product_key?: string
+          settings?: Json
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_fields_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      field_access_rules: {
+        Row: {
+          access_type: string
+          created_at: string
+          field_id: string
+          id: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          access_type: string
+          created_at?: string
+          field_id: string
+          id?: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          access_type?: string
+          created_at?: string
+          field_id?: string
+          id?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_access_rules_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "entity_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "field_access_rules_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      field_access_members: {
+        Row: {
+          can_edit: boolean
+          can_view: boolean
+          created_at: string
+          field_access_rule_id: string
+          id: string
+          member_id: string
+          member_type: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          can_edit?: boolean
+          can_view?: boolean
+          created_at?: string
+          field_access_rule_id: string
+          id?: string
+          member_id: string
+          member_type: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          can_edit?: boolean
+          can_view?: boolean
+          created_at?: string
+          field_access_rule_id?: string
+          id?: string
+          member_id?: string
+          member_type?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_access_members_field_access_rule_id_fkey"
+            columns: ["field_access_rule_id"]
+            isOneToOne: false
+            referencedRelation: "field_access_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "field_access_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_column_preferences: {
+        Row: {
+          entity_type: string
+          id: string
+          preferences: Json
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          entity_type: string
+          id?: string
+          preferences?: Json
+          updated_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          entity_type?: string
+          id?: string
+          preferences?: Json
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_column_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_column_preferences_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_field_values: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: string
+          field_id: string
+          id: string
+          updated_at: string
+          value: Json | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          field_id: string
+          id?: string
+          updated_at?: string
+          value?: Json | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          field_id?: string
+          id?: string
+          updated_at?: string
+          value?: Json | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_field_values_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "entity_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_field_values_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_leads: {
         Row: {
           alt_email: string | null

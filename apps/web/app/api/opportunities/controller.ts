@@ -12,24 +12,38 @@ import {
 import {
   buildOpportunityCurrencyFields,
 } from '@kit/shared/currency';
-const OPPORTUNITY_SORTABLE_COLUMNS: Record<string, { column: string; foreignTable?: string }> = {
-  opportunity_name:     { column: 'opportunity_name' },
-  amount:               { column: 'amount' },
-  currency:             { column: 'currency' },
-  probability:          { column: 'probability' },
-  expected_close_date:  { column: 'expected_close_date' },
-  priority:             { column: 'priority' },
-  opportunity_type:     { column: 'opportunity_type' },
-  lead_source:          { column: 'lead_source' },
-  competitor:           { column: 'competitor' },
-  is_closed:            { column: 'is_closed' },
-  is_won:               { column: 'is_won' },
-  created_at:           { column: 'created_at' },
-  'account.account_name':        { column: 'account_name', foreignTable: 'crm_accounts' },
-  'stage.status_name':           { column: 'status_name', foreignTable: 'entity_statuses' },
-  'owner.name':                  { column: 'name', foreignTable: 'accounts' },
-  'created_by_account.name':     { column: 'name', foreignTable: 'accounts' },
-  'updated_by_account.name':     { column: 'name', foreignTable: 'accounts' },
+// Direct columns: sorted at DB level
+const OPPORTUNITY_DIRECT_SORT_COLUMNS: Record<string, string> = {
+  opportunity_name:     'opportunity_name',
+  amount:               'amount',
+  currency:             'currency',
+  probability:          'probability',
+  expected_close_date:  'expected_close_date',
+  priority:             'priority',
+  opportunity_type:     'opportunity_type',
+  lead_source:          'lead_source',
+  competitor:           'competitor',
+  is_closed:            'is_closed',
+  is_won:               'is_won',
+  created_at:           'created_at',
+};
+
+// Relational columns: sorted in Node.js after fetch.
+// Supabase's foreignTable in .order() only sorts nested children, NOT parent rows.
+const OPPORTUNITY_RELATIONAL_SORT_COLUMNS: Record<string, string> = {
+  'account.account_name':        'account.account_name',
+  'stage.status_name':           'stage.status_name',
+  'owner.name':                  'owner.name',
+  'created_by_account.name':     'created_by_account.name',
+  'updated_by_account.name':     'updated_by_account.name',
+};
+
+const getNestedValue = (obj: Record<string, unknown>, path: string): string => {
+  const value = path.split('.').reduce<unknown>((acc, key) => {
+    if (acc && typeof acc === 'object') return (acc as Record<string, unknown>)[key];
+    return undefined;
+  }, obj);
+  return typeof value === 'string' ? value.toLowerCase() : '';
 };
 
 /**
@@ -215,21 +229,30 @@ export const getOpportunities = catchAsync(
     }
 
     // Run main + breakdown queries in parallel
+    const isRelationalSort = !!OPPORTUNITY_RELATIONAL_SORT_COLUMNS[sortColumn];
+    const isDirectSort = !!OPPORTUNITY_DIRECT_SORT_COLUMNS[sortColumn];
+
+    let finalMainQuery;
+    if (isDirectSort) {
+      finalMainQuery = mainQuery
+        .order(OPPORTUNITY_DIRECT_SORT_COLUMNS[sortColumn]!, {
+          ascending: sortDirection === 'asc',
+          nullsFirst: false,
+        })
+        .range(from, to);
+    } else if (isRelationalSort) {
+      // Fetch all rows so we can sort in Node.js, then slice
+      finalMainQuery = mainQuery.order('created_at', { ascending: false });
+    } else {
+      finalMainQuery = mainQuery.order('created_at', { ascending: false }).range(from, to);
+    }
+
     const [mainResult, breakdownResult] = await Promise.all([
-      (OPPORTUNITY_SORTABLE_COLUMNS[sortColumn]
-        ? mainQuery.order(OPPORTUNITY_SORTABLE_COLUMNS[sortColumn].column, {
-            ascending: sortDirection === 'asc',
-            ...(OPPORTUNITY_SORTABLE_COLUMNS[sortColumn].foreignTable
-              ? { foreignTable: OPPORTUNITY_SORTABLE_COLUMNS[sortColumn].foreignTable }
-              : {}),
-            nullsFirst: false,
-          })
-        : mainQuery.order('created_at', { ascending: false })
-      ).range(from, to),
+      finalMainQuery,
       breakdownQuery,
     ]);
 
-    const { data: opportunities, error, count } = mainResult;
+    const { data: opportunitiesRaw, error, count } = mainResult;
     if (error) {
       console.error('Get opportunities error:', error);
       throw error;
@@ -240,6 +263,22 @@ export const getOpportunities = catchAsync(
       console.error('Get stage breakdown error:', breakdownError);
       throw breakdownError;
     }
+
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    let sortedOpportunities: any[] = opportunitiesRaw || [];
+    if (isRelationalSort && OPPORTUNITY_RELATIONAL_SORT_COLUMNS[sortColumn]) {
+      const accessor = OPPORTUNITY_RELATIONAL_SORT_COLUMNS[sortColumn]!;
+      const ascending = sortDirection === 'asc';
+      sortedOpportunities = [...sortedOpportunities].sort((a, b) => {
+        const aVal = getNestedValue(a, accessor);
+        const bVal = getNestedValue(b, accessor);
+        if (aVal < bVal) return ascending ? -1 : 1;
+        if (aVal > bVal) return ascending ? 1 : -1;
+        return 0;
+      });
+      sortedOpportunities = sortedOpportunities.slice(from, to + 1);
+    }
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     const stageBreakdownMap: Record<
       string,
@@ -263,7 +302,7 @@ export const getOpportunities = catchAsync(
 
     return NextResponse.json({
       message: 'Opportunities retrieved successfully',
-      data: opportunities || [],
+      data: sortedOpportunities,
       count: count || 0,
       totalAmount,
       stageBreakdown: stageBreakdownMap,
