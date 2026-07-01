@@ -26,6 +26,8 @@ import { CountrySelect } from './_components/CountrySelect';
 import { LogoUploader } from './_components/LogoUploader';
 import { DashboardPreview } from './_components/DashboardPreview';
 
+import { Footer, persistBillingCountry } from '../_components/footer';
+
 import pathsConfig from '~/config/paths.config';
 // eslint-disable-line @typescript-eslint/no-unused-vars
 import { useWorkspaceCheck } from '~/lib/rbac/use-workspace-check';
@@ -58,7 +60,7 @@ export default function WorkspaceSetupPage() {
   const [error, setError] = useState('');
   const [step, setStep] = useState<'info' | 'create' | 'heard' | 'customize' | 'final_placeholder'>('info');
 
-  const slug = workspaceName.toLowerCase().replace(/[\s0-9]+/g, '-').replace(/[^a-z-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  const slug = workspaceName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
 
   useEffect(() => {
     if (logoFile) {
@@ -202,6 +204,9 @@ export default function WorkspaceSetupPage() {
       (window as any)._onboardingIsSubscribed = isSubscribed;
       (window as any)._onboardingCompanyName = workspaceName;
       
+      // Persist the billing country so the Footer reflects it on all subsequent steps
+      persistBillingCountry(billingCountry);
+      
       setStep('heard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -315,7 +320,8 @@ export default function WorkspaceSetupPage() {
 
   if (step === 'create' || step === 'heard' || step === 'customize' || step === 'final_placeholder') {
     return (
-      <div className="flex min-h-screen bg-white dark:bg-[#111317]">
+      <>
+        <div className="flex min-h-screen bg-white dark:bg-[#111317]">
         {/* Left Preview Side */}
         <div className="hidden lg:block lg:w-1/2 relative bg-[var(--color-leadgaze-primary)] overflow-hidden">
            <DashboardPreview companyName={workspaceName} slug={slug} logoUrl={logoPreviewUrl} />
@@ -576,6 +582,8 @@ export default function WorkspaceSetupPage() {
           </div>
         </div>
       </div>
+      <Footer />
+      </>
     );
   }
 
@@ -720,6 +728,7 @@ export default function WorkspaceSetupPage() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }
