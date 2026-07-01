@@ -58,6 +58,10 @@ export const getContacts = catchAsync(
     const searchTerm = url.searchParams.get('searchTerm') || '';
     const sortColumn = url.searchParams.get('sortColumn') || '';
     const sortDirection = url.searchParams.get('sortDirection') || '';
+    const createdAtFrom = url.searchParams.get('createdAtFrom') || '';
+    const createdAtTo = url.searchParams.get('createdAtTo') || '';
+    const updatedAtFrom = url.searchParams.get('updatedAtFrom') || '';
+    const updatedAtTo = url.searchParams.get('updatedAtTo') || '';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -126,6 +130,11 @@ export const getContacts = catchAsync(
       )
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
+
+    if (createdAtFrom) query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+    if (createdAtTo) query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+    if (updatedAtFrom) query = query.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+    if (updatedAtTo) query = query.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
 
     // Apply hierarchy-based visibility filtering
     if (

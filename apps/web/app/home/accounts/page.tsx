@@ -26,6 +26,7 @@ import {
 import { TablePagination } from '@kit/ui/table-pagination';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
 
@@ -125,6 +126,18 @@ export default function AccountsPage() {
   const [pageSize, setPageSize] = useState(15);
   const itemsPerPage = pageSize;
   const { data: user } = useUser();
+  const {
+    dateRange: createdOnRange,
+    setDateRange: setCreatedOnRange,
+    computedDates: computedCreatedOnDates,
+    clearDateRange: clearCreatedOnRange,
+  } = useDateRangeFilter();
+  const {
+    dateRange: updatedOnRange,
+    setDateRange: setUpdatedOnRange,
+    computedDates: computedUpdatedOnDates,
+    clearDateRange: clearUpdatedOnRange,
+  } = useDateRangeFilter();
 
   const SYSTEM_FIELDS = useMemo(
     () => [
@@ -429,6 +442,8 @@ export default function AccountsPage() {
       debouncedSearchTerm,
       pageSize,
       sortState,
+      computedCreatedOnDates,
+      computedUpdatedOnDates,
     ],
     queryFn: () =>
       getAccountsService({
@@ -438,6 +453,10 @@ export default function AccountsPage() {
         searchTerm: debouncedSearchTerm,
         sortColumn: sortColumn ?? undefined,
         sortDirection: sortDirection ?? undefined,
+        createdAtFrom: computedCreatedOnDates?.from ?? undefined,
+        createdAtTo: computedCreatedOnDates?.to ?? undefined,
+        updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
+        updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
       }),
     enabled: !!workspace?.id,
   });
@@ -448,7 +467,7 @@ export default function AccountsPage() {
   // Reset to first page when search changes
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, pageSize]);
+  }, [debouncedSearchTerm, pageSize, createdOnRange, updatedOnRange]);
 
   // Pagination Logic
   const totalPages = Math.ceil(totalCount / itemsPerPage);
@@ -497,6 +516,36 @@ export default function AccountsPage() {
           searchPlaceholder="Search by account name..."
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
+          showFilter
+          filterGroups={[
+            {
+              key: 'created_on',
+              label: 'Created On',
+              type: 'date',
+              dateValue: createdOnRange,
+              onDateChange: (val) => {
+                setCreatedOnRange(val);
+                setCurrentPage(1);
+              },
+            },
+            {
+              key: 'updated_on',
+              label: 'Updated On',
+              type: 'date',
+              dateValue: updatedOnRange,
+              onDateChange: (val) => {
+                setUpdatedOnRange(val);
+                setCurrentPage(1);
+              },
+            },
+          ]}
+          activeFilterCount={
+            (createdOnRange ? 1 : 0) + (updatedOnRange ? 1 : 0)
+          }
+          onClearFilters={() => {
+            clearCreatedOnRange();
+            clearUpdatedOnRange();
+          }}
           actions={[
             {
               key: 'add',

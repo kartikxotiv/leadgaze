@@ -324,9 +324,6 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
           </div>
         )}
 
-        {/* ── Status filter slot ────────────────────────────────────────────── */}
-        {statusSlot}
-
         {/* ── Filter button + popover ──────────────────────────────────────── */}
         {showFilter && (
           <Popover open={isFilterOpen} onOpenChange={handleFilterOpenChange}>
@@ -565,6 +562,9 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
             </PopoverContent>
           </Popover>
         )}
+
+        {/* ── Status filter slot ────────────────────────────────────────────── */}
+        {statusSlot}
 
         {/* ── Action buttons ───────────────────────────────────────────────── */}
         {visibleActions.map((action) => {

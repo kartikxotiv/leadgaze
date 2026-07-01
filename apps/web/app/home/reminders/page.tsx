@@ -61,6 +61,7 @@ import {
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useTableSort } from '@kit/ui/use-table-sort';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import { Skeleton } from '@kit/ui/skeleton';
 import { ListToolBar } from '@kit/ui/list-toolbar';
@@ -144,6 +145,18 @@ export default function RemindersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const itemsPerPage = pageSize;
+  const {
+    dateRange: createdOnRange,
+    setDateRange: setCreatedOnRange,
+    computedDates: computedCreatedOnDates,
+    clearDateRange: clearCreatedOnRange,
+  } = useDateRangeFilter();
+  const {
+    dateRange: updatedOnRange,
+    setDateRange: setUpdatedOnRange,
+    computedDates: computedUpdatedOnDates,
+    clearDateRange: clearUpdatedOnRange,
+  } = useDateRangeFilter();
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -291,7 +304,7 @@ export default function RemindersPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, priorityFilter, statusFilter, pageSize]);
+  }, [searchTerm, priorityFilter, statusFilter, pageSize, createdOnRange, updatedOnRange]);
 
   const filteredReminders = useMemo(() => {
     return reminders.filter((reminder: Reminder) => {
@@ -319,11 +332,27 @@ export default function RemindersPage() {
         ((!dateRange.from || reminderDate >= dateRange.from) &&
           (!dateRange.to || reminderDate <= dateRange.to));
 
+      let matchesCreated = true;
+      if (computedCreatedOnDates?.from) {
+        const createdDate = new Date(reminder.created_at).getTime();
+        const from = new Date(computedCreatedOnDates.from).getTime();
+        const to = computedCreatedOnDates.to ? new Date(computedCreatedOnDates.to).getTime() : new Date().getTime();
+        matchesCreated = createdDate >= from && createdDate <= to;
+      }
+      
+      let matchesUpdated = true;
+      if (computedUpdatedOnDates?.from) {
+        const updatedDate = new Date(reminder.updated_at || reminder.created_at).getTime();
+        const from = new Date(computedUpdatedOnDates.from).getTime();
+        const to = computedUpdatedOnDates.to ? new Date(computedUpdatedOnDates.to).getTime() : new Date().getTime();
+        matchesUpdated = updatedDate >= from && updatedDate <= to;
+      }
+
       return (
-        matchesSearch && matchesPriority && matchesStatus && matchesDateRange
+        matchesSearch && matchesPriority && matchesStatus && matchesDateRange && matchesCreated && matchesUpdated
       );
     });
-  }, [reminders, searchTerm, priorityFilter, statusFilter, dateRange]);
+  }, [reminders, searchTerm, priorityFilter, statusFilter, dateRange, computedCreatedOnDates, computedUpdatedOnDates]);
 
   const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Reminder>(
     'reminders',
@@ -567,21 +596,45 @@ export default function RemindersPage() {
           </div>
         ),
       },
+      {
+        key: 'created_on',
+        label: 'Created On',
+        type: 'date',
+        dateValue: createdOnRange,
+        onDateChange: (val) => {
+          setCreatedOnRange(val);
+          setCurrentPage(1);
+        },
+      },
+      {
+        key: 'updated_on',
+        label: 'Updated On',
+        type: 'date',
+        dateValue: updatedOnRange,
+        onDateChange: (val) => {
+          setUpdatedOnRange(val);
+          setCurrentPage(1);
+        },
+      },
     ];
-  }, [statusFilter, priorityFilter, dateRange]);
+  }, [statusFilter, priorityFilter, dateRange, createdOnRange, updatedOnRange]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (statusFilter !== 'all') count++;
     if (priorityFilter !== 'all') count++;
     if (dateRange.from || dateRange.to) count++;
+    if (createdOnRange) count++;
+    if (updatedOnRange) count++;
     return count;
-  }, [statusFilter, priorityFilter, dateRange]);
+  }, [statusFilter, priorityFilter, dateRange, createdOnRange, updatedOnRange]);
 
   const handleClearFilters = () => {
     setStatusFilter('all');
     setPriorityFilter('all');
     setDateRange({ from: undefined, to: undefined });
+    clearCreatedOnRange();
+    clearUpdatedOnRange();
   };
 
   if (!workspace) {
