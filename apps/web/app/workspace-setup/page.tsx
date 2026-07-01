@@ -238,7 +238,7 @@ export default function WorkspaceSetupPage() {
               size="lg"
               className="h-12 w-full gap-2 bg-[linear-gradient(135deg,var(--color-leadgaze-primary)_0%,#283BA4_100%)] text-sm font-semibold text-white shadow-[var(--color-leadgaze-primary)]/25 shadow-lg hover:shadow-[var(--color-leadgaze-primary)]/30 hover:shadow-xl"
             >
-              Create Your Workspace
+              Start Your Journey
               <ArrowRight className="h-4 w-4" />
             </Button>
 
