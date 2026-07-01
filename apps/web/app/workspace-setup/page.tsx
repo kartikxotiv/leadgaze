@@ -56,7 +56,7 @@ export default function WorkspaceSetupPage() {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [step, setStep] = useState<'info' | 'create' | 'heard' | 'customize' | 'final_placeholder'>('customize');
+  const [step, setStep] = useState<'info' | 'create' | 'heard' | 'customize' | 'final_placeholder'>('info');
 
   const slug = workspaceName.toLowerCase().replace(/[\s0-9]+/g, '-').replace(/[^a-z-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
 
@@ -70,30 +70,69 @@ export default function WorkspaceSetupPage() {
     }
   }, [logoFile]);
 
-  // Fetch products immediately when user lands
+  // On mount: fetch products + detect existing onboarding state to resume the correct step
   useEffect(() => {
-    const fetchProducts = async () => {
+    const init = async () => {
+      // 1. Always load products (needed on customize step)
       try {
-        const response = await fetch('/api/subscriptions/products');
-        const result = await response.json();
-        if (result.success && result.data) {
-          setProducts(result.data);
-        }
+        const resp = await fetch('/api/subscriptions/products');
+        const result = await resp.json();
+        if (result.success && result.data) setProducts(result.data);
       } catch (err) {
         console.error('Failed to fetch products', err);
       }
+
+      // 2. Check if the user already has an in-progress workspace
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user?.id) return;
+
+        const { data: memberRow } = await supabase
+          .from('workspace_members')
+          .select('workspace_id, workspaces!inner(id, name, company_id, is_onboarding_finished, companies(heard_about_us))')
+          .eq('user_id', session.user.id)
+          .eq('status', 'accepted')
+          .limit(1)
+          .maybeSingle();
+
+        if (!memberRow) return; // Totally new user — stay on 'info'
+
+        const workspace = (memberRow.workspaces as any);
+        if (!workspace) return;
+
+        // Workspace exists but onboarding already finished — redirect away
+        if (workspace.is_onboarding_finished) {
+          router.push(pathsConfig.app.home);
+          return;
+        }
+
+        // Persist IDs so subsequent steps don't recreate records
+        (window as any)._onboardingWorkspaceId = workspace.id;
+        if (workspace.company_id) {
+          (window as any)._onboardingCompanyId = workspace.company_id;
+        }
+        // Pre-fill the workspace name from existing data
+        if (workspace.name) setWorkspaceName(workspace.name);
+
+        // Decide which step to resume
+        const company = workspace.companies;
+        if (workspace.company_id && company?.heard_about_us?.length > 0) {
+          // Company created + heard_about_us answered → go to customize
+          setStep('customize');
+        } else if (workspace.company_id) {
+          // Company created but heard_about_us not answered → go to heard
+          setStep('heard');
+        }
+        // else: no company yet → stay on 'info' (default)
+      } catch (err) {
+        console.error('Failed to check onboarding state:', err);
+      }
     };
-    fetchProducts();
+
+    init();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const { hasWorkspace, isLoading: isCheckLoading } = useWorkspaceCheck();
-
-  // If user already has a workspace, redirect to home
-  useEffect(() => {
-    if (hasWorkspace === true && !isCheckLoading) {
-      router.push(pathsConfig.app.home);
-    }
-  }, [hasWorkspace, isCheckLoading, router]);
 
   const handleCreateCompany = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -171,7 +210,7 @@ export default function WorkspaceSetupPage() {
     }
   };
 
-  const handleHeardSubmit = async (e?: React.FormEvent, skip: boolean = false) => {
+    const handleHeardSubmit = async (e?: React.FormEvent, skip: boolean = false) => {
     if (e) e.preventDefault();
     setLoading(true);
 
@@ -179,9 +218,6 @@ export default function WorkspaceSetupPage() {
       const companyId = (window as any)._onboardingCompanyId;
       const finalHeardAbout = [...heardAbout];
       if (heardAbout.includes('Other') && otherText.trim()) {
-        // Find index of 'Other' and replace it with the custom text or just append it
-        // We will just append the custom text and remove 'Other' from DB storage for cleaner data,
-        // or keep both. Let's filter out 'Other' and add the custom text.
         const filtered = finalHeardAbout.filter(item => item !== 'Other');
         filtered.push(otherText.trim());
         
@@ -216,9 +252,49 @@ export default function WorkspaceSetupPage() {
   const handleCustomizeSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setLoading(true);
-    // Will be handled when user asks for final creation
-    setLoading(false);
-    setStep('final_placeholder');
+    setError('');
+    
+    try {
+      const workspaceId = (window as any)._onboardingWorkspaceId;
+      
+      if (!workspaceId) {
+        throw new Error('Workspace ID not found. Please try again.');
+      }
+
+      const response = await fetch(`/api/workspaces/${workspaceId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_preferences: selectedProducts,
+          is_onboarding_finished: true
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update workspace');
+      }
+      
+      // Map product_key to app route
+      const productRouteMap: Record<string, string> = {
+        sales: '/home/sales',
+        hrms: '/home/hrms',
+        inventory: '/home/inventory',
+        service_cloud: '/home/services',
+        funds: '/home/funds',
+      };
+
+      const firstSelectedId = selectedProducts[0];
+      const firstProduct = products.find(p => p.id === firstSelectedId);
+      const redirectRoute = firstProduct?.product_key
+        ? (productRouteMap[firstProduct.product_key] ?? pathsConfig.app.home)
+        : pathsConfig.app.home;
+
+      router.push(`${redirectRoute}?welcome=1`);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to update workspace. Please try again.');
+      setLoading(false);
+    }
   };
 
   const heardOptions = [
@@ -471,6 +547,12 @@ export default function WorkspaceSetupPage() {
                       
                     </div>
                   </div>
+
+                  {error && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-3 mt-4">
+                      <p className="text-sm text-red-600">{error}</p>
+                    </div>
+                  )}
 
                   <div className="pt-2">
                     <Button
