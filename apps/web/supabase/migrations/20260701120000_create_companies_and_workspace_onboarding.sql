@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS public.companies (
   heard_about_us      TEXT[] DEFAULT '{}'::text[],
 
   -- Metadata
-  created_by          UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_by          UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
