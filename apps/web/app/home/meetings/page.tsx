@@ -247,6 +247,14 @@ function formatMeetingTime(start?: string | null, end?: string | null): string {
   return `${dateStr}, ${timeStr} – ${endTimeStr}`;
 }
 
+// Get current datetime in format required by datetime-local input (YYYY-MM-DDTHH:mm)
+function getCurrentDateTimeLocal(): string {
+  const now = new Date();
+  const offset = now.getTimezoneOffset();
+  const localDate = new Date(now.getTime() - offset * 60 * 1000);
+  return localDate.toISOString().slice(0, 16);
+}
+
 function getProviderBadge(provider: MeetingProvider) {
   switch (provider) {
     case 'GOOGLE':
@@ -542,6 +550,14 @@ function CreateMeetingDialog({
               channel: 'EMAIL' as const,
             })),
           });
+        } catch (error) {
+          console.error(
+            '[createMeeting] Google meeting creation failed:',
+            error,
+          );
+          throw new Error(
+            'Due to integration error, meeting was not created. Please try again or contact the support team.',
+          );
         } finally {
           setIsCreatingGoogleMeeting(false);
         }
@@ -589,6 +605,11 @@ function CreateMeetingDialog({
               channel: 'EMAIL' as const,
             })),
           });
+        } catch (error) {
+          console.error('[createMeeting] Zoom meeting creation failed:', error);
+          throw new Error(
+            'Due to integration error, meeting was not created. Please try again or contact the support team.',
+          );
         } finally {
           setIsCreatingZoomMeeting(false);
         }
@@ -819,6 +840,7 @@ function CreateMeetingDialog({
                 <Input
                   type="datetime-local"
                   step="60"
+                  min={getCurrentDateTimeLocal()}
                   value={scheduledStart}
                   onChange={(e) => setScheduledStart(e.target.value)}
                   className="h-11"
@@ -1265,6 +1287,7 @@ function EditMeetingDialog({
               <Input
                 type="datetime-local"
                 step="60"
+                min={getCurrentDateTimeLocal()}
                 value={scheduledStart}
                 onChange={(e) => setScheduledStart(e.target.value)}
                 className="h-11"
@@ -1681,7 +1704,7 @@ function MeetingDetailsDialog({
 // =============================================================================
 
 export default function MeetingsPage() {
-  const { currentWorkspace: workspace } = useRBAC();
+  const { currentWorkspace: workspace, user } = useRBAC();
   const queryClient = useQueryClient();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -1689,6 +1712,7 @@ export default function MeetingsPage() {
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
+  const [viewFilter, setViewFilter] = useState<'my' | 'team'>('my');
   const {
     dateRange: createdOnRange,
     setDateRange: setCreatedOnRange,
@@ -1701,6 +1725,15 @@ export default function MeetingsPage() {
     computedDates: computedUpdatedOnDates,
     clearDateRange: clearUpdatedOnRange,
   } = useDateRangeFilter();
+
+  const isAdmin = useMemo(() => {
+    if (!workspace) return false;
+    return (
+      workspace.owner_id === user?.id ||
+      workspace.role?.role_key === 'admin' ||
+      (workspace.role?.hierarchy_level ?? 0) >= 100
+    );
+  }, [workspace, user]);
 
   const columns = useMemo(
     () => [
@@ -1739,14 +1772,35 @@ export default function MeetingsPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   const { data: meetings = [], isLoading } = useQuery({
-    queryKey: ['meetings', workspace?.id],
+    queryKey: ['meetings', workspace?.id, viewFilter],
     queryFn: () => {
       if (!workspace?.id) return [];
       // Include meetings where current user is a participant or host
-      return getMeetingsService(workspace.id, undefined, undefined, undefined, true);
+      return getMeetingsService(
+        workspace.id,
+        undefined,
+        undefined,
+        undefined,
+        true,
+        undefined,
+        viewFilter,
+      );
     },
     enabled: !!workspace?.id,
   });
+
+  const meetingViewStatuses = useMemo(
+    () => [
+      { id: 'team', status_name: "Team Members' Meetings", color: '#3b82f6' },
+    ],
+    [],
+  );
+
+  const meetingViewBreakdown = useMemo(() => {
+    return {
+      team: { count: viewFilter === 'team' ? meetings.length : 0 },
+    };
+  }, [meetings, viewFilter]);
 
   const { data: integrationAccounts = [] } = useQuery({
     queryKey: ['integration-accounts', workspace?.id],
@@ -1882,16 +1936,20 @@ export default function MeetingsPage() {
 
       <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
         <ListToolBar
-          // statusSlot={
-          //   <StatusFilterDropdown
-          //     statuses={meetingStatuses}
-          //     selectedStatuses={selectedStatuses}
-          //     onStatusesChange={setSelectedStatuses}
-          //     statusBreakdown={statusBreakdown}
-          //     totalCount={meetings.length}
-          //     allLabel="All Meetings"
-          //   />
-          // }
+          statusSlot={
+            isAdmin ? (
+              <StatusFilterDropdown
+                statuses={meetingViewStatuses}
+                selectedStatus={viewFilter === 'my' ? 'all' : 'team'}
+                onStatusChange={(id) =>
+                  setViewFilter(id === 'all' ? 'my' : 'team')
+                }
+                statusBreakdown={meetingViewBreakdown}
+                totalCount={viewFilter === 'my' ? meetings.length : 0}
+                allLabel="My Meetings"
+              />
+            ) : undefined
+          }
           showSearch
           searchPlaceholder="Search meetings..."
           searchValue={searchTerm}
@@ -2256,6 +2314,20 @@ export default function MeetingsPage() {
                                   <Pencil className="mr-2 h-4 w-4" />
                                   Edit
                                 </DropdownMenuItem>
+                                {meeting.meeting_url &&
+                                  meeting.status === 'scheduled' && (
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        window.open(
+                                          meeting.meeting_url as string,
+                                          '_blank',
+                                        );
+                                      }}
+                                    >
+                                      <ExternalLink className="mr-2 h-4 w-4" />
+                                      Join Meeting
+                                    </DropdownMenuItem>
+                                  )}
                                 {meeting.status === 'scheduled' && (
                                   <DropdownMenuItem
                                     onClick={() =>

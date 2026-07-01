@@ -1445,12 +1445,24 @@ async function getZoomAccessToken(
   supabase: any,
   accountId: string,
 ): Promise<string | null> {
-  const { data: tokens } = await supabase
+  console.log('[getZoomAccessToken] Fetching tokens for accountId:', accountId);
+  const { data: tokens, error } = await supabase
     .schema('core')
     .from('integration_tokens')
     .select('*')
     .eq('account_id', accountId)
     .single();
+
+  if (error) {
+    console.error('[getZoomAccessToken] Error fetching tokens:', error);
+    return null;
+  }
+
+  console.log('[getZoomAccessToken] Tokens found:', {
+    hasAccessToken: !!tokens?.access_token,
+    hasRefreshToken: !!tokens?.refresh_token,
+    expiresAt: tokens?.expires_at,
+  });
 
   if (!tokens?.access_token) return null;
 
@@ -1458,13 +1470,28 @@ async function getZoomAccessToken(
     ? new Date(tokens.expires_at).getTime()
     : 0;
 
+  console.log('[getZoomAccessToken] Token expiry check:', {
+    currentTime: Date.now(),
+    expiryTime,
+    isExpired: Date.now() >= expiryTime - 5 * 60 * 1000,
+  });
+
   if (Date.now() >= expiryTime - 5 * 60 * 1000) {
-    if (!tokens.refresh_token) return null;
+    console.log(
+      '[getZoomAccessToken] Token expired or about to expire, refreshing...',
+    );
+    if (!tokens.refresh_token) {
+      console.log('[getZoomAccessToken] No refresh token available');
+      return null;
+    }
     const refreshed = await refreshZoomTokens(
       supabase,
       accountId,
       tokens.refresh_token,
     );
+    console.log('[getZoomAccessToken] Refresh result:', {
+      success: !!refreshed?.accessToken,
+    });
     return refreshed?.accessToken ?? null;
   }
 
@@ -1480,7 +1507,13 @@ export const createZoomMeetingController = catchAsync(async ({ request }) => {
   const workspaceId = body?.workspace_id ?? body?.workspaceId;
   const accountId = body?.account_id ?? body?.accountId;
 
+  console.log(
+    '[createZoomMeeting] Request body:',
+    JSON.stringify(body, null, 2),
+  );
+
   if (!workspaceId || !accountId) {
+    console.log('[createZoomMeeting] Missing workspaceId or accountId');
     return NextResponse.json(
       { success: false, message: 'workspace_id and account_id are required' },
       { status: 400 },
@@ -1488,6 +1521,11 @@ export const createZoomMeetingController = catchAsync(async ({ request }) => {
   }
 
   if (!body?.title || !body?.start_time || !body?.end_time) {
+    console.log('[createZoomMeeting] Missing required fields:', {
+      hasTitle: !!body?.title,
+      hasStartTime: !!body?.start_time,
+      hasEndTime: !!body?.end_time,
+    });
     return NextResponse.json(
       {
         success: false,
@@ -1498,16 +1536,28 @@ export const createZoomMeetingController = catchAsync(async ({ request }) => {
   }
 
   const { supabase, error } = await assertCoreWorkspaceAccess(workspaceId);
-  if (error) return error;
+  if (error) {
+    console.log('[createZoomMeeting] Workspace access error:', error);
+    return error;
+  }
 
   try {
+    console.log(
+      '[createZoomMeeting] Getting Zoom access token for accountId:',
+      accountId,
+    );
     const accessToken = await getZoomAccessToken(supabase, accountId);
     if (!accessToken) {
+      console.log(
+        '[createZoomMeeting] No access token retrieved for accountId:',
+        accountId,
+      );
       return NextResponse.json(
         { success: false, message: 'No valid tokens found for Zoom account' },
         { status: 400 },
       );
     }
+    console.log('[createZoomMeeting] Access token retrieved successfully');
 
     const axios = (await import('axios')).default;
 
@@ -1517,6 +1567,14 @@ export const createZoomMeetingController = catchAsync(async ({ request }) => {
     const durationMinutes = Math.ceil(
       (endTime.getTime() - startTime.getTime()) / (1000 * 60),
     );
+
+    console.log('[createZoomMeeting] Creating meeting payload:', {
+      topic: body.title,
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+      durationMinutes,
+      timezone: body.timezone ?? 'UTC',
+    });
 
     const meetingPayload: Record<string, unknown> = {
       topic: body.title,
@@ -1537,6 +1595,7 @@ export const createZoomMeetingController = catchAsync(async ({ request }) => {
       meetingPayload.agenda = body.description;
     }
 
+    console.log('[createZoomMeeting] Sending request to Zoom API...');
     const response = await axios.post(
       'https://api.zoom.us/v2/users/me/meetings',
       meetingPayload,
@@ -1548,6 +1607,10 @@ export const createZoomMeetingController = catchAsync(async ({ request }) => {
       },
     );
 
+    console.log(
+      '[createZoomMeeting] Zoom API response:',
+      JSON.stringify(response.data, null, 2),
+    );
     const meetingData = response.data;
 
     // Add registrants/attendees if provided
