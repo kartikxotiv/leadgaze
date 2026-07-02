@@ -11,6 +11,11 @@ export function useSignOut() {
 
   return useMutation({
     mutationFn: () => {
+      try {
+        localStorage.removeItem('leadgaze_billing_country');
+      } catch {
+        // ignore (e.g. private browsing mode)
+      }
       return client.auth.signOut();
     },
   });
