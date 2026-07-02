@@ -65,6 +65,8 @@ import {
 } from '~/lib/permissions/use-permissions';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
+import { useDynamicColumns } from '~/lib/hooks/use-dynamic-columns';
 import { type Contact, getContactsService } from '~/services/contacts.service';
 import {
   getOpportunityByIdService,
@@ -192,6 +194,32 @@ export default function OpportunityDetailsPage() {
 
   const { currentWorkspace, canAccess: rbacCanAccess } = useRBAC();
   const canManageEmail = rbacCanAccess('emails', 'manage_email');
+  const { data: user } = useUser();
+  const { canView } = useFieldPermissions({
+    entityType: 'opportunities',
+    workspaceId: currentWorkspace?.id,
+    enabled: !!currentWorkspace?.id,
+  });
+
+  const { fields = [] } = useDynamicColumns({
+    entityType: 'opportunities',
+    workspaceId: currentWorkspace?.id,
+    userId: user?.id,
+    enabled: !!currentWorkspace?.id,
+  });
+
+  const customFieldsToShow = useMemo(() => {
+    if (!opportunity) return [];
+    const oppCustom = (opportunity.custom_fields as Record<string, unknown>) || {};
+    return fields.filter(
+      (f) =>
+        !f.is_system &&
+        canView(f.field_key) &&
+        oppCustom[f.field_key] !== undefined &&
+        oppCustom[f.field_key] !== null &&
+        oppCustom[f.field_key] !== '',
+    );
+  }, [fields, canView, opportunity]);
 
   // Page-level assign modal (works even when accordion is collapsed)
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -287,7 +315,6 @@ export default function OpportunityDetailsPage() {
     [accountContacts],
   );
 
-  const { data: user } = useUser();
   const editPermission = usePermissionDetail('opportunities', 'edit');
   const canEdit = useCanAccessData(
     editPermission,
@@ -891,17 +918,17 @@ export default function OpportunityDetailsPage() {
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
                   <DetailInfoList>
-                    <DetailInfoRow
+                    {canView('amount') && <DetailInfoRow
                       icon={<Wallet className="h-5 w-5" />}
                       label="Amount"
                       value={formatCurrency(opportunity.amount || 0, opportunity.currency || 'USD')}
-                    />
-                    <DetailInfoRow
+                    />}
+                    {canView('amount') && <DetailInfoRow
                       icon={<Target className="h-5 w-5" />}
                       label="Revenue"
                       value={formatCurrency(opportunity.expected_revenue || 0, opportunity.currency || 'USD')}
-                    />
-                    <DetailInfoRow
+                    />}
+                    {canView('expected_close_date') && <DetailInfoRow
                       icon={<Calendar className="h-5 w-5" />}
                       label="Close Date"
                       value={
@@ -909,13 +936,13 @@ export default function OpportunityDetailsPage() {
                           ? formatDate(opportunity.expected_close_date)
                           : '-'
                       }
-                    />
-                    <DetailInfoRow
+                    />}
+                    {canView('probability') && <DetailInfoRow
                       icon={<CheckCircle className="h-5 w-5" />}
                       label="Probability"
                       value={`${opportunity.probability}%`}
-                    />
-                    <DetailInfoRow
+                    />}
+                    {canView('priority') && <DetailInfoRow
                       icon={<Flag className="h-5 w-5" />}
                       label="Priority"
                       value={
@@ -924,30 +951,59 @@ export default function OpportunityDetailsPage() {
                           opportunity.priority.slice(1)
                           : '-'
                       }
-                    />
+                    />}
 
-                    <DetailInfoRow
+                    {canView('lead_source') && <DetailInfoRow
                       icon={<Tag className="h-5 w-5" />}
                       label="Lead Source"
                       value={opportunity.lead_source || '-'}
-                    />
+                    />}
 
-                    <DetailInfoRow
+                    {canView('description') && <DetailInfoRow
                       icon={<FileText className="h-5 w-5" />}
                       label="Description"
                       value={opportunity.description || '-'}
-                    />
+                    />}
 
 
-                    <DetailInfoRow
+                    {canView('competitor') && <DetailInfoRow
                       icon={<Target className="h-5 w-5" />}
                       label="Competitor"
                       value={opportunity.competitor || '-'}
-                    />
+                    />}
 
                   </DetailInfoList>
                 </AccordionContent>
               </AccordionItem>
+
+              {/* Additional Data (Custom Fields) */}
+              {customFieldsToShow.length > 0 && (
+                <AccordionItem
+                  value="additional"
+                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                >
+                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                      <FileText className="text-leadgaze-dark h-4 w-4 dark:text-white" />
+                      Additional Data
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <DetailInfoList>
+                      {customFieldsToShow.map((field) => {
+                        const val = (opportunity.custom_fields as Record<string, unknown>)?.[field.field_key];
+                        return (
+                          <DetailInfoRow
+                            key={field.id}
+                            label={field.field_label}
+                            value={val === true ? 'Yes' : val === false ? 'No' : String(val ?? '-')}
+                          />
+                        );
+                      })}
+                    </DetailInfoList>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
 
               {/* Assigned Team Members */}
               {currentWorkspace?.id && (
