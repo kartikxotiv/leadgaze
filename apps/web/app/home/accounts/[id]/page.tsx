@@ -64,6 +64,8 @@ import {
 } from '~/lib/permissions/use-permissions';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
+import { useDynamicColumns } from '~/lib/hooks/use-dynamic-columns';
 import {
   assignAccountToUser,
   getAccountAssignees,
@@ -167,6 +169,43 @@ export default function AccountDetailsPage() {
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const canManageEmail = canAccess('emails', 'manage_email');
   const rbacCanAccess = canAccess;
+  const { data: user } = useUser();
+
+  const {
+    data: account,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['account', id],
+    queryFn: () => getAccountByIdService(id),
+    enabled: !!id,
+  });
+
+  const { canView } = useFieldPermissions({
+    entityType: 'accounts',
+    workspaceId: workspace?.id,
+    enabled: !!workspace?.id,
+  });
+
+  const { fields = [] } = useDynamicColumns({
+    entityType: 'accounts',
+    workspaceId: workspace?.id,
+    userId: user?.id,
+    enabled: !!workspace?.id,
+  });
+
+  const customFieldsToShow = useMemo(() => {
+    if (!account) return [];
+    const accountCustom = (account.custom_fields as Record<string, unknown>) || {};
+    return fields.filter(
+      (f) =>
+        !f.is_system &&
+        canView(f.field_key) &&
+        accountCustom[f.field_key] !== undefined &&
+        accountCustom[f.field_key] !== null &&
+        accountCustom[f.field_key] !== '',
+    );
+  }, [fields, canView, account]);
 
   // Page-level assign modal (works even when accordion is collapsed)
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -205,15 +244,7 @@ export default function AccountDetailsPage() {
     },
   });
 
-  const {
-    data: account,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['account', id],
-    queryFn: () => getAccountByIdService(id),
-    enabled: !!id,
-  });
+
 
   const workspaceId = account?.workspace_id;
 
@@ -257,7 +288,6 @@ export default function AccountDetailsPage() {
     [contacts],
   );
 
-  const { data: user } = useUser();
   const editPermission = usePermissionDetail('accounts', 'edit');
   const canEdit = useCanAccessData(editPermission, account?.owner_id, user?.id);
 
@@ -675,7 +705,7 @@ export default function AccountDetailsPage() {
                 <AccordionContent className="px-4 pb-4">
                   <DetailInfoList>
 
-                    <DetailInfoRow
+                    {canView('phone') && <DetailInfoRow
                       icon={<Phone className="h-5 w-5" />}
                       label="Phone"
                       value={
@@ -686,22 +716,22 @@ export default function AccountDetailsPage() {
                           {account.phone_number}
                         </a>) : '-'
                       }
-                    />
+                    />}
 
 
-                    <DetailInfoRow
+                    {canView('employee_count') && <DetailInfoRow
                       icon={<Users className="h-5 w-5" />}
                       label="Employees"
                       value={(account.company_size || account.employee_count) ? (account.company_size || account.employee_count) : '-'}
-                    />
+                    />}
 
-                    <DetailInfoRow
+                    {canView('annual_revenue') && <DetailInfoRow
                       icon={<DollarSign className="h-5 w-5" />}
                       label="Revenue"
                       value={formatCurrency(account.annual_revenue, 'USD')}
-                    />
+                    />}
 
-                    <DetailInfoRow
+                    {canView('account_type') && <DetailInfoRow
                       icon={<Tag className="h-5 w-5" />}
                       label="Type"
                       value={
@@ -709,10 +739,10 @@ export default function AccountDetailsPage() {
                           {account.account_type_relation.status_name}
                         </span>) : '-'
                       }
-                    />
+                    />}
 
 
-                    <DetailInfoRow
+                    {canView('linkedin') && <DetailInfoRow
                       icon={<Linkedin className="h-5 w-5" />}
                       label="LinkedIn"
                       value={
@@ -725,68 +755,87 @@ export default function AccountDetailsPage() {
                           {account.linkedin_url}
                         </a>) : '-'
                       }
-                    />
+                    />}
 
 
-                    <DetailInfoRow
+                    {canView('description') && <DetailInfoRow
                       icon={<FileText className="h-5 w-5" />}
                       label="Description"
                       value={account.description || '-'}
-                    />
+                    />}
 
 
-                    <DetailInfoRow
+                    {canView('billing_street') && <DetailInfoRow
                       icon={<MapPin className="h-5 w-5" />}
                       label="Billing"
                       value={billingAddress || '-'}
-                    />
+                    />}
 
-                    <DetailInfoRow
+                    {canView('shipping_street') && <DetailInfoRow
                       icon={<MapPin className="h-5 w-5" />}
                       label="Shipping"
                       value={shippingAddress || '-'}
-                    />
+                    />}
 
                   </DetailInfoList>
                 </AccordionContent>
               </AccordionItem>
+
+              {/* Additional Data (Custom Fields) */}
+              {customFieldsToShow.length > 0 && (
+                <AccordionItem
+                  value="additional"
+                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                >
+                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                      <FileText className="text-leadgaze-dark h-4 w-4 dark:text-white" />
+                      Additional Data
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <DetailInfoList>
+                      {customFieldsToShow.map((field) => {
+                        const val = (account.custom_fields as Record<string, unknown>)?.[field.field_key];
+                        return (
+                          <DetailInfoRow
+                            key={field.id}
+                            label={field.field_label}
+                            value={val === true ? 'Yes' : val === false ? 'No' : String(val ?? '-')}
+                          />
+                        );
+                      })}
+                    </DetailInfoList>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
 
               {/* Contacts */}
               <AccordionItem
                 value="contacts"
                 className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
               >
-                <AccordionTrigger
-                  hideChevron
-                  className="px-4 py-3 hover:no-underline"
-                >
-                  <div className="flex w-full justify-between">
+                <div className="flex items-center justify-between px-4 py-3">
+                  <AccordionTrigger className="hover:no-underline">
                     <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
                       <Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                       Contacts
                     </span>
-                    {rbacCanAccess('accounts', 'add_contact') && (
-                      <Button
-                        size="sm"
-                        className="mr-3 ml-2 shrink-0 gap-2"
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsContactDialogOpen(true);
-                        }}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add Contact
-                      </Button>
-                    )}
-                  </div>
-                  <ChevronDown
-                    className={cn(
-                      'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
-                      openAccordion === 'contacts' && 'rotate-180',
-                    )}
-                  />
-                </AccordionTrigger>
+                  </AccordionTrigger>
+                  {rbacCanAccess('accounts', 'add_contact') && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsContactDialogOpen(true);
+                      }}
+                      className="focus-visible:ring-ring inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 py-1 gap-2 shrink-0"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Add Contact</span>
+                    </button>
+                  )}
+                </div>
                 <AccordionContent className="px-4 pb-4">
                   {rbacCanAccess('accounts', 'view_contacts') ? (
                     contacts && contacts.length > 0 ? (
@@ -849,35 +898,25 @@ export default function AccountDetailsPage() {
                 value="opportunities"
                 className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
               >
-                <AccordionTrigger
-                  hideChevron
-                  className="px-4 py-3 hover:no-underline"
-                >
-                  <div className="flex w-full justify-between">
+                <div className="flex items-center justify-between px-4 py-3">
+                  <AccordionTrigger className="hover:no-underline">
                     <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
                       <Briefcase className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                       Opportunities
                     </span>
-                    <Button
-                      size="sm"
-                      className="mr-3 ml-2 shrink-0 gap-2"
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsOpportunityDialogOpen(true);
-                      }}
-                    >
-                      <Plus className="h-4 w-4" />
-                      New Opportunity
-                    </Button>
-                  </div>
-                  <ChevronDown
-                    className={cn(
-                      'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
-                      openAccordion === 'opportunities' && 'rotate-180',
-                    )}
-                  />
-                </AccordionTrigger>
+                  </AccordionTrigger>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsOpportunityDialogOpen(true);
+                    }}
+                    className="focus-visible:ring-ring inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 py-1 gap-2 shrink-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>New Opportunity</span>
+                  </button>
+                </div>
                 <AccordionContent className="px-4 pb-4">
                   {rbacCanAccess('accounts', 'view_opportunities') ? (
                     opportunities && opportunities.length > 0 ? (
@@ -945,35 +984,25 @@ export default function AccountDetailsPage() {
                   value="assignees"
                   className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
                 >
-                  <AccordionTrigger
-                    hideChevron
-                    className="px-4 py-3 hover:no-underline"
-                  >
-                    <div className="flex w-full justify-between">
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <AccordionTrigger className="hover:no-underline">
                       <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
                         <Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                         Assigned Members
                       </span>
-                      <Button
-                        size="sm"
-                        className="mr-3 ml-2 shrink-0 gap-2"
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsAssignModalOpen(true);
-                        }}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Assign Member
-                      </Button>
-                    </div>
-                    <ChevronDown
-                      className={cn(
-                        'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
-                        openAccordion === 'assignees' && 'rotate-180',
-                      )}
-                    />
-                  </AccordionTrigger>
+                    </AccordionTrigger>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsAssignModalOpen(true);
+                      }}
+                      className="focus-visible:ring-ring inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 py-1 gap-2 shrink-0"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Assign Member</span>
+                    </button>
+                  </div>
                   <AccordionContent className="px-4 pb-4">
                     <AccountAssignees
                       accountId={id}

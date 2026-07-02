@@ -121,7 +121,15 @@ export const SortableTableHead: React.FC<SortableTableHeadProps> = ({
       )}
       style={style}
       onClick={sortable ? () => onSort(effectiveSortKey) : undefined}
-      aria-sort={sortable && isActive ? sortDirection : undefined}
+      aria-sort={
+        sortable && isActive
+          ? sortDirection === 'asc'
+            ? 'ascending'
+            : sortDirection === 'desc'
+              ? 'descending'
+              : 'none'
+          : undefined
+      }
       {...props}
     >
       <div className="flex items-center gap-1.5 pr-4">

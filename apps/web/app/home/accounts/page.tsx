@@ -277,6 +277,10 @@ export default function AccountsPage() {
   );
 
   React.useEffect(() => {
+    mergeNewColumns(mergedDefaults);
+  }, [mergedDefaults, mergeNewColumns]);
+
+  React.useEffect(() => {
     mergeNewColumns(
       Object.fromEntries(customFields.map((cf) => [cf.field_key, true])),
     );
@@ -671,17 +675,17 @@ export default function AccountsPage() {
                         router.push(`/home/sales/accounts/${account.id}`)
                       }
                     >
-                      {isVisible('sno') && (
+                      {showColumn('sno') && (
                         <TableCell className="text-muted-foreground w-12">
                           {(currentPage - 1) * itemsPerPage + index + 1}
                         </TableCell>
                       )}
-                      {isVisible('name') && (
+                      {showColumn('name') && (
                         <TableCell className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
                           <span>{account.account_name}</span>
                         </TableCell>
                       )}
-                      {isVisible('website') && (
+                      {showColumn('website') && (
                         <TableCell className="">
                           {account.website ? (
                             <a
@@ -701,72 +705,72 @@ export default function AccountsPage() {
                           )}
                         </TableCell>
                       )}
-                      {isVisible('industry') && (
+                      {showColumn('industry') && (
                         <TableCell className="">
                           {account.industry?.industry_name || '-'}
                         </TableCell>
                       )}
-                      {isVisible('phone') && (
+                      {showColumn('phone') && (
                         <TableCell className="">
                           {account.phone_number || '-'}
                         </TableCell>
                       )}
-                      {isVisible('company_size') && (
+                      {showColumn('company_size') && (
                         <TableCell className="">
                           {account.company_size || '-'}
                         </TableCell>
                       )}
-                      {isVisible('billing_street') && (
+                      {showColumn('billing_street') && (
                         <TableCell className="">
                           {account.billing_street || '-'}
                         </TableCell>
                       )}
-                      {isVisible('billing_city') && (
+                      {showColumn('billing_city') && (
                         <TableCell className="">
                           {account.billing_city || '-'}
                         </TableCell>
                       )}
-                      {isVisible('billing_state') && (
+                      {showColumn('billing_state') && (
                         <TableCell className="">
                           {account.billing_state || '-'}
                         </TableCell>
                       )}
-                      {isVisible('billing_postal_code') && (
+                      {showColumn('billing_postal_code') && (
                         <TableCell className="">
                           {account.billing_postal_code || '-'}
                         </TableCell>
                       )}
-                      {isVisible('billing_country') && (
+                      {showColumn('billing_country') && (
                         <TableCell className="">
                           {account.billing_country || '-'}
                         </TableCell>
                       )}
-                      {isVisible('description') && (
+                      {showColumn('description') && (
                         <TableCell className="max-w-[200px] truncate">
                           {(account as unknown as { description?: string })
                             .description || '-'}
                         </TableCell>
                       )}
-                      {isVisible('owner') && (
+                      {showColumn('owner') && (
                         <TableCell className="">
                           {account.owner?.name || '-'}
                         </TableCell>
                       )}
-                      {isVisible('created_by') && (
+                      {showColumn('created_by') && (
                         <TableCell className="">
                           {account.created_by_account?.name ||
                             account.created_by ||
                             '-'}
                         </TableCell>
                       )}
-                      {isVisible('created_at') && (
+                      {showColumn('created_at') && (
                         <TableCell className="">
                           {account.created_at
                             ? formatDate(account.created_at)
                             : '-'}
                         </TableCell>
                       )}
-                      {isVisible('updated_by') && (
+                      {showColumn('updated_by') && (
                         <TableCell className="">
                           {account.updated_by_account?.name ||
                             account.updated_by ||

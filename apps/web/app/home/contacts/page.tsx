@@ -645,73 +645,73 @@ export default function ContactsPage() {
                         router.push(`/home/sales/contacts/${contact.id}`)
                       }
                     >
-                      {isVisible('sno') && (
+                      {showColumn('sno') && (
                         <TableCell className="text-muted-foreground w-12">
                           {(currentPage - 1) * itemsPerPage + index + 1}
                         </TableCell>
                       )}
-                      {isVisible('name') && (
+                      {showColumn('name') && (
                         <TableCell className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
                           <span>
                             {contact.first_name} {contact.last_name || ''}
                           </span>
                         </TableCell>
                       )}
-                      {isVisible('first_name') && (
+                      {showColumn('first_name') && (
                         <TableCell className="">
                           {contact.first_name || '-'}
                         </TableCell>
                       )}
-                      {isVisible('last_name') && (
+                      {showColumn('last_name') && (
                         <TableCell className="">
                           {contact.last_name || '-'}
                         </TableCell>
                       )}
-                      {isVisible('job_title') && (
+                      {showColumn('job_title') && (
                         <TableCell className="">
                           {contact.job_title || '-'}
                         </TableCell>
                       )}
-                      {isVisible('email') && (
+                      {showColumn('email') && (
                         <TableCell className="text-muted-foreground">
                           {contact.email || '-'}
                         </TableCell>
                       )}
-                      {isVisible('phone') && (
+                      {showColumn('phone') && (
                         <TableCell className="">
                           {contact.phone_number || '-'}
                         </TableCell>
                       )}
-                      {isVisible('account') && (
+                      {showColumn('account') && (
                         <TableCell className="">
                           {contact.account?.account_name || '-'}
                         </TableCell>
                       )}
-                      {isVisible('notes') && (
+                      {showColumn('notes') && (
                         <TableCell className="max-w-[200px] truncate">
                           {contact.notes || '-'}
                         </TableCell>
                       )}
-                      {isVisible('owner') && (
+                      {showColumn('owner') && (
                         <TableCell className="">
                           {contact.owner?.name || '-'}
                         </TableCell>
                       )}
-                      {isVisible('created_by') && (
+                      {showColumn('created_by') && (
                         <TableCell className="">
                           {contact.created_by_account?.name ||
                             contact.created_by ||
                             '-'}
                         </TableCell>
                       )}
-                      {isVisible('created_at') && (
+                      {showColumn('created_at') && (
                         <TableCell className="">
                           {contact.created_at
                             ? formatDate(contact.created_at)
                             : '-'}
                         </TableCell>
                       )}
-                      {isVisible('updated_by') && (
+                      {showColumn('updated_by') && (
                         <TableCell className="">
                           {contact.updated_by_account?.name ||
                             contact.updated_by ||

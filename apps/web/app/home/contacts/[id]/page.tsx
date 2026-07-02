@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -59,6 +59,8 @@ import {
 } from '~/lib/permissions/use-permissions';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
+import { useDynamicColumns } from '~/lib/hooks/use-dynamic-columns';
 import {
   assignContactToUser,
   getContactAssignees,
@@ -157,6 +159,43 @@ export default function ContactDetailsPage() {
 
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const canManageEmail = canAccess('emails', 'manage_email');
+  const { data: user } = useUser();
+
+  const {
+    data: contact,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['contact', id],
+    queryFn: () => getContactByIdService(id),
+    enabled: !!id,
+  });
+
+  const { canView } = useFieldPermissions({
+    entityType: 'contacts',
+    workspaceId: workspace?.id,
+    enabled: !!workspace?.id,
+  });
+
+  const { fields = [] } = useDynamicColumns({
+    entityType: 'contacts',
+    workspaceId: workspace?.id,
+    userId: user?.id,
+    enabled: !!workspace?.id,
+  });
+
+  const customFieldsToShow = useMemo(() => {
+    if (!contact) return [];
+    const contactCustom = (contact.custom_fields as Record<string, unknown>) || {};
+    return fields.filter(
+      (f) =>
+        !f.is_system &&
+        canView(f.field_key) &&
+        contactCustom[f.field_key] !== undefined &&
+        contactCustom[f.field_key] !== null &&
+        contactCustom[f.field_key] !== '',
+    );
+  }, [fields, canView, contact]);
 
   // Page-level assign modal (works even when accordion is collapsed)
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -195,17 +234,6 @@ export default function ContactDetailsPage() {
     },
   });
 
-  const {
-    data: contact,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['contact', id],
-    queryFn: () => getContactByIdService(id),
-    enabled: !!id,
-  });
-
-  const { data: user } = useUser();
   const editPermission = usePermissionDetail('contacts', 'edit');
   const canEdit = useCanAccessData(editPermission, contact?.owner_id, user?.id);
 
@@ -511,9 +539,9 @@ export default function ContactDetailsPage() {
 
               <TabsContent value="activity">
                 <CardWidgetContainer
-                    title="Activity"
-                    hideHeaderBorder={true}
-                    icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}>
+                  title="Activity"
+                  hideHeaderBorder={true}
+                  icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}>
                   <CardContent className="px-6 py-3">
                     <div className="space-y-2">
                       <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
@@ -612,7 +640,7 @@ export default function ContactDetailsPage() {
                 <AccordionContent className="px-4 pb-4">
                   <DetailInfoList>
 
-                    <DetailInfoRow
+                    {canView('email') && <DetailInfoRow
                       icon={<Mail className="h-5 w-5" />}
                       label="Email"
                       value={
@@ -623,9 +651,9 @@ export default function ContactDetailsPage() {
                           {contact.email}
                         </a>) : '-'
                       }
-                    />
+                    />}
 
-                    <DetailInfoRow
+                    {canView('alt_email') && <DetailInfoRow
                       icon={<Mail className="h-5 w-5" />}
                       label="Alt Email"
                       value={
@@ -636,9 +664,9 @@ export default function ContactDetailsPage() {
                           {contact.alt_email}
                         </a>) : '-'
                       }
-                    />
+                    />}
 
-                    <DetailInfoRow
+                    {canView('phone') && <DetailInfoRow
                       icon={<Phone className="h-5 w-5" />}
                       label="Phone"
                       value={
@@ -649,9 +677,9 @@ export default function ContactDetailsPage() {
                           {contact.phone_number}
                         </a>) : '-'
                       }
-                    />
+                    />}
 
-                    <DetailInfoRow
+                    {canView('mobile') && <DetailInfoRow
                       icon={<Phone className="h-5 w-5" />}
                       label="Mobile"
                       value={
@@ -662,9 +690,9 @@ export default function ContactDetailsPage() {
                           {contact.mobile_number}
                         </a>) : '-'
                       }
-                    />
+                    />}
 
-                    <DetailInfoRow
+                    {canView('alt_phone') && <DetailInfoRow
                       icon={<Phone className="h-5 w-5" />}
                       label="Alt Phone"
                       value={
@@ -675,29 +703,29 @@ export default function ContactDetailsPage() {
                           {contact.alt_phone}
                         </a>) : '-'
                       }
-                    />
+                    />}
 
-                    <DetailInfoRow
+                    {canView('language') && <DetailInfoRow
                       icon={<Globe className="h-5 w-5" />}
                       label="Language"
                       value={contact.language || '-'}
-                    />
+                    />}
 
 
-                    <DetailInfoRow
+                    {(canView('location') || canView('timezone')) && <DetailInfoRow
                       icon={<MapPin className="h-5 w-5" />}
                       label="Location"
                       value={(contact.location || contact.timezone) ? ([contact.location, contact.timezone]
                         .filter(Boolean)
                         .join(' • ')) : '-'}
-                    />
+                    />}
 
-                    <DetailInfoRow
+                    {canView('department') && <DetailInfoRow
                       icon={<FileText className="h-5 w-5" />}
                       label="Department"
                       value={contact.department || '-'}
-                    />
-                    <DetailInfoRow
+                    />}
+                    {canView('linkedin') && <DetailInfoRow
                       icon={<Linkedin className="h-5 w-5" />}
                       label="LinkedIn"
                       value={
@@ -709,13 +737,13 @@ export default function ContactDetailsPage() {
                         >
                           {contact.linkedin_url}
                         </a>) : '-'}
-                    />
+                    />}
 
-                    <DetailInfoRow
+                    {canView('notes') && <DetailInfoRow
                       icon={<FileText className="h-5 w-5" />}
                       label="Notes"
                       value={contact.notes || '-'}
-                    />
+                    />}
                   </DetailInfoList>
                 </AccordionContent>
               </AccordionItem>
@@ -750,41 +778,60 @@ export default function ContactDetailsPage() {
                 </AccordionItem>
               )}
 
+              {/* Additional Data (Custom Fields) */}
+              {customFieldsToShow.length > 0 && (
+                <AccordionItem
+                  value="additional"
+                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                >
+                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                      <FileText className="text-leadgaze-dark h-4 w-4 dark:text-white" />
+                      Additional Data
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <DetailInfoList>
+                      {customFieldsToShow.map((field) => {
+                        const val = (contact.custom_fields as Record<string, unknown>)?.[field.field_key];
+                        return (
+                          <DetailInfoRow
+                            key={field.id}
+                            label={field.field_label}
+                            value={val === true ? 'Yes' : val === false ? 'No' : String(val ?? '-')}
+                          />
+                        );
+                      })}
+                    </DetailInfoList>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
+
               {/* Assigned Team Members */}
               {workspace?.id && (
                 <AccordionItem
                   value="assignees"
                   className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
                 >
-                  <AccordionTrigger
-                    hideChevron
-                    className="px-4 py-3 hover:no-underline"
-                  >
-                    <div className="flex w-full justify-between">
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <AccordionTrigger className="hover:no-underline">
                       <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
                         <Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                         Assigned Members
                       </span>
-                      <Button
-                        size="sm"
-                        className="mr-3 ml-2 shrink-0 gap-2"
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsAssignModalOpen(true);
-                        }}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Assign Member
-                      </Button>
-                    </div>
-                    <ChevronDown
-                      className={cn(
-                        'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
-                        openAccordion === 'assignees' && 'rotate-180',
-                      )}
-                    />
-                  </AccordionTrigger>
+                    </AccordionTrigger>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsAssignModalOpen(true);
+                      }}
+                      className="focus-visible:ring-ring inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 py-1 gap-2 shrink-0"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Assign Member</span>
+                    </button>
+                  </div>
                   <AccordionContent className="px-4 pb-4">
                     <ContactAssignees
                       contactId={id}
