@@ -11,6 +11,8 @@ import pathsConfig from '~/config/paths.config';
 import { createI18nServerInstance } from '~/lib/i18n/i18n.server';
 import { withI18n } from '~/lib/i18n/with-i18n';
 
+import { Footer } from '../../_components/footer';
+
 export const generateMetadata = async () => {
   const i18n = await createI18nServerInstance();
 
@@ -181,6 +183,7 @@ async function SignUpPage({ searchParams }: SignUpPageProps) {
             <span>Your data is secure and encrypted</span>
           </div>
         </div>
+        <Footer />
       </section>
     </div>
   );

@@ -99,3 +99,18 @@ CREATE INDEX IF NOT EXISTS idx_workspaces_onboarding_pending
 -- Index for company FK
 CREATE INDEX IF NOT EXISTS idx_workspaces_company_id
   ON public.workspaces(company_id);
+
+-- 5. Storage Bucket for companies logo
+
+INSERT INTO storage.buckets (id, name, public)
+
+VALUES ('companies-logo', 'companies-logo', true)
+
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage bucket for companies logo
+
+CREATE POLICY "companies-logo_public_policy"
+ON storage.objects FOR ALL TO anon, authenticated, service_role
+USING (bucket_id = 'companies-logo')
+WITH CHECK (bucket_id = 'companies-logo');
