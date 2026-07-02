@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { formatDate } from '@kit/shared/utils';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
@@ -58,6 +57,7 @@ import { Textarea } from '@kit/ui/textarea';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useTableSort } from '@kit/ui/use-table-sort';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import { Skeleton } from '@kit/ui/skeleton';
 import { ListToolBar } from '@kit/ui/list-toolbar';
@@ -76,6 +76,7 @@ import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
 import { TablePagination } from '@kit/ui/table-pagination';
+import { useLocalization } from '@kit/shared/localization';
 
 function NotesPageSkeleton() {
   return (
@@ -132,6 +133,18 @@ export default function NotesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const itemsPerPage = pageSize;
+  const {
+    dateRange: createdOnRange,
+    setDateRange: setCreatedOnRange,
+    computedDates: computedCreatedOnDates,
+    clearDateRange: clearCreatedOnRange,
+  } = useDateRangeFilter();
+  const {
+    dateRange: updatedOnRange,
+    setDateRange: setUpdatedOnRange,
+    computedDates: computedUpdatedOnDates,
+    clearDateRange: clearUpdatedOnRange,
+  } = useDateRangeFilter();
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newNoteContent, setNewNoteContent] = useState('');
@@ -141,6 +154,7 @@ export default function NotesPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [editContent, setEditContent] = useState('');
+  const { formatDate } = useLocalization();
 
   const noteColumns = useMemo(
     () => [
@@ -269,7 +283,7 @@ export default function NotesPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, categoryFilter, pageSize]);
+  }, [searchTerm, categoryFilter, pageSize, createdOnRange, updatedOnRange]);
 
   const filteredNotes = useMemo(() => {
     return notes.filter((note: Note) => {
@@ -281,9 +295,25 @@ export default function NotesPage() {
         categoryFilter === 'all' ||
         note.entity_type?.toLowerCase() === categoryFilter.toLowerCase();
 
-      return matchesSearch && matchesCategory;
+      let matchesCreated = true;
+      if (computedCreatedOnDates?.from) {
+        const createdDate = new Date(note.created_at).getTime();
+        const from = new Date(computedCreatedOnDates.from).getTime();
+        const to = computedCreatedOnDates.to ? new Date(computedCreatedOnDates.to).getTime() : new Date().getTime();
+        matchesCreated = createdDate >= from && createdDate <= to;
+      }
+      
+      let matchesUpdated = true;
+      if (computedUpdatedOnDates?.from) {
+        const updatedDate = new Date(note.updated_at || note.created_at).getTime();
+        const from = new Date(computedUpdatedOnDates.from).getTime();
+        const to = computedUpdatedOnDates.to ? new Date(computedUpdatedOnDates.to).getTime() : new Date().getTime();
+        matchesUpdated = updatedDate >= from && updatedDate <= to;
+      }
+
+      return matchesSearch && matchesCategory && matchesCreated && matchesUpdated;
     });
-  }, [notes, searchTerm, categoryFilter]);
+  }, [notes, searchTerm, categoryFilter, computedCreatedOnDates, computedUpdatedOnDates]);
 
   const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Note>(
     'notes',
@@ -385,8 +415,28 @@ export default function NotesPage() {
         ],
         onSelect: (val: string) => setCategoryFilter(val || 'all'),
       },
+      {
+        key: 'created_on',
+        label: 'Created On',
+        type: 'date',
+        dateValue: createdOnRange,
+        onDateChange: (val) => {
+          setCreatedOnRange(val);
+          setCurrentPage(1);
+        },
+      },
+      {
+        key: 'updated_on',
+        label: 'Updated On',
+        type: 'date',
+        dateValue: updatedOnRange,
+        onDateChange: (val) => {
+          setUpdatedOnRange(val);
+          setCurrentPage(1);
+        },
+      },
     ];
-  }, [categoryFilter]);
+  }, [categoryFilter, createdOnRange, updatedOnRange]);
 
   if (!workspace) {
     return <NotesPageSkeleton />;
@@ -411,8 +461,16 @@ export default function NotesPage() {
           showFilter
           filterLabel="Show Filters"
           filterGroups={filterGroups}
-          activeFilterCount={categoryFilter !== 'all' ? 1 : 0}
-          onClearFilters={() => setCategoryFilter('all')}
+          activeFilterCount={
+            (categoryFilter !== 'all' ? 1 : 0) +
+            (createdOnRange ? 1 : 0) +
+            (updatedOnRange ? 1 : 0)
+          }
+          onClearFilters={() => {
+            setCategoryFilter('all');
+            clearCreatedOnRange();
+            clearUpdatedOnRange();
+          }}
           actions={[
             {
               key: 'add',

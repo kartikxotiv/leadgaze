@@ -39,6 +39,7 @@ import { useColumnResize } from '@kit/ui/use-column-resize';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 
 import {
   type ServiceCloudRecord,
@@ -98,6 +99,47 @@ export function ServiceCloudCustomersPage({
     SERVICE_CLOUD_MODULE_KEYS.tickets,
     SERVICE_CLOUD_FEATURE_KEYS.create,
   );
+
+  const {
+    dateRange: createdOnRange,
+    setDateRange: setCreatedOnRange,
+    computedDates: computedCreatedOnDates,
+    clearDateRange: clearCreatedOnRange,
+  } = useDateRangeFilter();
+  const {
+    dateRange: updatedOnRange,
+    setDateRange: setUpdatedOnRange,
+    computedDates: computedUpdatedOnDates,
+    clearDateRange: clearUpdatedOnRange,
+  } = useDateRangeFilter();
+
+  const activeFilterCount =
+    (createdOnRange ? 1 : 0) +
+    (updatedOnRange ? 1 : 0);
+
+  const filterGroups = [
+    {
+      key: 'created_on',
+      label: 'Created On',
+      type: 'date',
+      dateValue: createdOnRange,
+      onDateChange: setCreatedOnRange,
+    },
+    {
+      key: 'updated_on',
+      label: 'Updated On',
+      type: 'date',
+      dateValue: updatedOnRange,
+      onDateChange: setUpdatedOnRange,
+    },
+  ];
+
+  const queryParams = {
+    ...(computedCreatedOnDates?.from ? { createdAtFrom: computedCreatedOnDates.from } : {}),
+    ...(computedCreatedOnDates?.to ? { createdAtTo: computedCreatedOnDates.to } : {}),
+    ...(computedUpdatedOnDates?.from ? { updatedAtFrom: computedUpdatedOnDates.from } : {}),
+    ...(computedUpdatedOnDates?.to ? { updatedAtTo: computedUpdatedOnDates.to } : {}),
+  };
 
   // --- Create Ticket from Customer state ---
   const [createOpen, setCreateOpen] = useState(false);
@@ -289,6 +331,13 @@ export function ServiceCloudCustomersPage({
             isAdmin={isAdmin}
             onColumnAddClick={onColumnAddClick ? () => onColumnAddClick('customers') : undefined}
             onColumnEditClick={onColumnEditClick ? (key) => onColumnEditClick(key, 'customers') : undefined}
+            queryParams={queryParams}
+            filterGroups={filterGroups}
+            activeFilterCount={activeFilterCount}
+            onClearFilters={() => {
+              clearCreatedOnRange();
+              clearUpdatedOnRange();
+            }}
             toolbar={newTicketToolbar}
             fields={[
               { key: 'name', label: getCustomerLabel('name', 'Name'), required: true },
@@ -330,6 +379,13 @@ export function ServiceCloudCustomersPage({
             isAdmin={isAdmin}
             onColumnAddClick={onColumnAddClick ? () => onColumnAddClick('organizations') : undefined}
             onColumnEditClick={onColumnEditClick ? (key) => onColumnEditClick(key, 'organizations') : undefined}
+            queryParams={queryParams}
+            filterGroups={filterGroups}
+            activeFilterCount={activeFilterCount}
+            onClearFilters={() => {
+              clearCreatedOnRange();
+              clearUpdatedOnRange();
+            }}
             fields={[
               { key: 'name', label: getOrganizationLabel('name', 'Name'), required: true },
               { key: 'website', label: getOrganizationLabel('website', 'Website') },

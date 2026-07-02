@@ -84,6 +84,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
@@ -1709,9 +1710,24 @@ export default function MeetingsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>(
+    [],
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const [viewFilter, setViewFilter] = useState<'my' | 'team'>('my');
+  const {
+    dateRange: createdOnRange,
+    setDateRange: setCreatedOnRange,
+    computedDates: computedCreatedOnDates,
+    clearDateRange: clearCreatedOnRange,
+  } = useDateRangeFilter();
+  const {
+    dateRange: updatedOnRange,
+    setDateRange: setUpdatedOnRange,
+    computedDates: computedUpdatedOnDates,
+    clearDateRange: clearUpdatedOnRange,
+  } = useDateRangeFilter();
 
   const isAdmin = useMemo(() => {
     if (!workspace) return false;
@@ -1757,6 +1773,22 @@ export default function MeetingsPage() {
     null,
   );
   const [isEditOpen, setIsEditOpen] = useState(false);
+
+  // Fetch team members (for Created By filter dropdown)
+  const { data: membersData } = useQuery({
+    queryKey: ['team-members', workspace?.id],
+    queryFn: async () => {
+      if (!workspace?.id) return [];
+      const response = await fetch(
+        `/api/team-members?workspaceId=${workspace.id}`,
+      );
+      if (!response.ok) throw new Error('Failed to fetch members');
+      const data = await response.json();
+      return data.data || [];
+    },
+    enabled: !!workspace?.id,
+  });
+  const members = (membersData || []) as any[];
 
   const { data: meetings = [], isLoading } = useQuery({
     queryKey: ['meetings', workspace?.id, viewFilter],
@@ -1857,22 +1889,86 @@ export default function MeetingsPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedTypes, selectedStatuses, pageSize]);
+  }, [
+    searchTerm,
+    selectedTypes,
+    selectedStatuses,
+    selectedCreatedByIds,
+    pageSize,
+    createdOnRange,
+    updatedOnRange,
+  ]);
 
   const filteredMeetings = useMemo(() => {
-    return meetings.filter((meeting: CoreMeeting) => {
-      const matchesSearch =
-        meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        meeting.description?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType =
-        selectedTypes.length === 0 ||
-        selectedTypes.includes(meeting.meeting_type);
-      const matchesStatus =
-        selectedStatuses.length === 0 ||
-        selectedStatuses.includes(meeting.status);
-      return matchesSearch && matchesType && matchesStatus;
-    });
-  }, [meetings, searchTerm, selectedTypes, selectedStatuses]);
+    let result = meetings;
+
+    // Search filter
+    if (searchTerm) {
+      result = result.filter((meeting: CoreMeeting) => {
+        const matchesSearch =
+          meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          meeting.description?.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesSearch;
+      });
+    }
+
+    // Type filter
+    if (selectedTypes.length > 0) {
+      result = result.filter((meeting: CoreMeeting) =>
+        selectedTypes.includes(meeting.meeting_type),
+      );
+    }
+
+    // Status filter
+    if (selectedStatuses.length > 0) {
+      result = result.filter((meeting: CoreMeeting) =>
+        selectedStatuses.includes(meeting.status),
+      );
+    }
+
+    // Created By filter (client-side since API doesn't support this directly)
+    if (selectedCreatedByIds.length > 0) {
+      result = result.filter((meeting: CoreMeeting) =>
+        selectedCreatedByIds.includes(meeting.created_by ?? ''),
+      );
+    }
+
+    // Created On range filter
+    if (computedCreatedOnDates?.from) {
+      result = result.filter((meeting: CoreMeeting) => {
+        const createdDate = new Date(meeting.created_at).getTime();
+        const from = new Date(computedCreatedOnDates.from!).getTime();
+        const to = computedCreatedOnDates.to
+          ? new Date(computedCreatedOnDates.to).getTime()
+          : new Date().getTime();
+        return createdDate >= from && createdDate <= to;
+      });
+    }
+
+    // Updated On range filter
+    if (computedUpdatedOnDates?.from) {
+      result = result.filter((meeting: CoreMeeting) => {
+        const updatedDate = new Date(
+          meeting.updated_at || meeting.created_at,
+        ).getTime();
+        const from = new Date(computedUpdatedOnDates.from!).getTime();
+        const to = computedUpdatedOnDates.to
+          ? new Date(computedUpdatedOnDates.to).getTime()
+          : new Date().getTime();
+        return updatedDate >= from && updatedDate <= to;
+      });
+    }
+
+    return result;
+  }, [
+    meetings,
+    searchTerm,
+    selectedTypes,
+    selectedStatuses,
+    selectedCreatedByIds,
+    computedCreatedOnDates,
+    computedUpdatedOnDates,
+  ]);
 
   const { sortColumn, sortDirection, toggleSort, sortedData } =
     useTableSort<CoreMeeting>('meetings', filteredMeetings, {
@@ -1906,20 +2002,6 @@ export default function MeetingsPage() {
 
       <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
         <ListToolBar
-          statusSlot={
-            isAdmin ? (
-              <StatusFilterDropdown
-                statuses={meetingViewStatuses}
-                selectedStatus={viewFilter === 'my' ? 'all' : 'team'}
-                onStatusChange={(id) =>
-                  setViewFilter(id === 'all' ? 'my' : 'team')
-                }
-                statusBreakdown={meetingViewBreakdown}
-                totalCount={viewFilter === 'my' ? meetings.length : 0}
-                allLabel="My Meetings"
-              />
-            ) : undefined
-          }
           showSearch
           searchPlaceholder="Search meetings..."
           searchValue={searchTerm}
@@ -1955,11 +2037,65 @@ export default function MeetingsPage() {
               })),
               onSelectValues: setSelectedStatuses,
             },
+            {
+              key: 'created_by',
+              label: 'Created By',
+              selectedValues: selectedCreatedByIds,
+              selectedLabel:
+                selectedCreatedByIds.length === 0
+                  ? 'All members'
+                  : selectedCreatedByIds.length === 1
+                    ? ((
+                        members.find(
+                          (m: any) => m.user_id === selectedCreatedByIds[0],
+                        ) as any
+                      )?.user?.user_metadata?.full_name ?? '1 selected')
+                    : `${selectedCreatedByIds.length} selected`,
+              options: members
+                .filter((m: any) => m.user_id)
+                .map((m: any) => ({
+                  value: m.user_id,
+                  label:
+                    m.user?.user_metadata?.full_name ||
+                    m.user?.email ||
+                    m.user_id,
+                })),
+              onSelectValues: setSelectedCreatedByIds,
+            },
+            {
+              key: 'created_on',
+              label: 'Created On',
+              type: 'date',
+              dateValue: createdOnRange,
+              onDateChange: (val) => {
+                setCreatedOnRange(val);
+                setCurrentPage(1);
+              },
+            },
+            {
+              key: 'updated_on',
+              label: 'Updated On',
+              type: 'date',
+              dateValue: updatedOnRange,
+              onDateChange: (val) => {
+                setUpdatedOnRange(val);
+                setCurrentPage(1);
+              },
+            },
           ]}
-          activeFilterCount={selectedTypes.length + selectedStatuses.length}
+          activeFilterCount={
+            selectedTypes.length +
+            selectedStatuses.length +
+            (selectedCreatedByIds.length > 0 ? 1 : 0) +
+            (createdOnRange ? 1 : 0) +
+            (updatedOnRange ? 1 : 0)
+          }
           onClearFilters={() => {
             setSelectedTypes([]);
             setSelectedStatuses([]);
+            setSelectedCreatedByIds([]);
+            clearCreatedOnRange();
+            clearUpdatedOnRange();
           }}
           actions={[
             {

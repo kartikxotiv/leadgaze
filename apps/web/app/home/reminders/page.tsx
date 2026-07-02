@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+
 import Link from 'next/link';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -21,11 +22,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '@kit/shared/localization';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Calendar } from '@kit/ui/calendar';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
+import CustomTableContainer from '@kit/ui/custom-table-container';
 import {
   Dialog,
   DialogContent,
@@ -40,8 +42,8 @@ import {
 } from '@kit/ui/dropdown-menu';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
+import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
-
 import { RadioGroup, RadioGroupItem } from '@kit/ui/radio-group';
 import {
   Select,
@@ -50,6 +52,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@kit/ui/select';
+import { Skeleton } from '@kit/ui/skeleton';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import {
   Table,
   TableBody,
@@ -58,13 +62,11 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { TablePagination } from '@kit/ui/table-pagination';
 import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
-import { SortableTableHead } from '@kit/ui/sortable-table-head';
-import { Skeleton } from '@kit/ui/skeleton';
-import { ListToolBar } from '@kit/ui/list-toolbar';
-import CustomTableContainer from '@kit/ui/custom-table-container';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
@@ -78,7 +80,6 @@ import {
 import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
-import { TablePagination } from '@kit/ui/table-pagination';
 
 function RemindersPageSkeleton() {
   return (
@@ -99,16 +100,20 @@ function RemindersPageSkeleton() {
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-6 pb-6">
         <div className="flex min-h-0 flex-1 flex-col px-4 lg:px-8">
           <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
-            <Table className="w-max min-w-full border-separate border-spacing-0 caption-bottom text-sm">
+            <Table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
               <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                 <TableRow>
-                  <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
+                  <TableHead className="w-12 whitespace-nowrap">
+                    S. No.
+                  </TableHead>
                   <TableHead>Reminder Title</TableHead>
                   <TableHead>Due Date</TableHead>
                   <TableHead>Priority</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Entity</TableHead>
-                  <TableHead className="sticky right-0 text-right">Actions</TableHead>
+                  <TableHead className="sticky right-0 text-right">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -144,10 +149,23 @@ export default function RemindersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const itemsPerPage = pageSize;
+  const {
+    dateRange: createdOnRange,
+    setDateRange: setCreatedOnRange,
+    computedDates: computedCreatedOnDates,
+    clearDateRange: clearCreatedOnRange,
+  } = useDateRangeFilter();
+  const {
+    dateRange: updatedOnRange,
+    setDateRange: setUpdatedOnRange,
+    computedDates: computedUpdatedOnDates,
+    clearDateRange: clearUpdatedOnRange,
+  } = useDateRangeFilter();
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
+  const { formatDate } = useLocalization();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -188,7 +206,6 @@ export default function RemindersPage() {
     });
 
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('reminders');
-
 
   const { data: reminders = [], isLoading } = useQuery({
     queryKey: ['reminders', workspace?.id],
@@ -291,7 +308,14 @@ export default function RemindersPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, priorityFilter, statusFilter, pageSize]);
+  }, [
+    searchTerm,
+    priorityFilter,
+    statusFilter,
+    pageSize,
+    createdOnRange,
+    updatedOnRange,
+  ]);
 
   const filteredReminders = useMemo(() => {
     return reminders.filter((reminder: Reminder) => {
@@ -319,17 +343,51 @@ export default function RemindersPage() {
         ((!dateRange.from || reminderDate >= dateRange.from) &&
           (!dateRange.to || reminderDate <= dateRange.to));
 
+      let matchesCreated = true;
+      if (computedCreatedOnDates?.from) {
+        const createdDate = new Date(reminder.created_at).getTime();
+        const from = new Date(computedCreatedOnDates.from).getTime();
+        const to = computedCreatedOnDates.to
+          ? new Date(computedCreatedOnDates.to).getTime()
+          : new Date().getTime();
+        matchesCreated = createdDate >= from && createdDate <= to;
+      }
+
+      let matchesUpdated = true;
+      if (computedUpdatedOnDates?.from) {
+        const updatedDate = new Date(
+          reminder.updated_at || reminder.created_at,
+        ).getTime();
+        const from = new Date(computedUpdatedOnDates.from).getTime();
+        const to = computedUpdatedOnDates.to
+          ? new Date(computedUpdatedOnDates.to).getTime()
+          : new Date().getTime();
+        matchesUpdated = updatedDate >= from && updatedDate <= to;
+      }
+
       return (
-        matchesSearch && matchesPriority && matchesStatus && matchesDateRange
+        matchesSearch &&
+        matchesPriority &&
+        matchesStatus &&
+        matchesDateRange &&
+        matchesCreated &&
+        matchesUpdated
       );
     });
-  }, [reminders, searchTerm, priorityFilter, statusFilter, dateRange]);
+  }, [
+    reminders,
+    searchTerm,
+    priorityFilter,
+    statusFilter,
+    dateRange,
+    computedCreatedOnDates,
+    computedUpdatedOnDates,
+  ]);
 
-  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Reminder>(
-    'reminders',
-    filteredReminders,
-    { onSortChange: () => setCurrentPage(1) }
-  );
+  const { sortColumn, sortDirection, toggleSort, sortedData } =
+    useTableSort<Reminder>('reminders', filteredReminders, {
+      onSortChange: () => setCurrentPage(1),
+    });
 
   const paginatedReminders = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -478,9 +536,10 @@ export default function RemindersPage() {
         key: 'status',
         label: 'Status',
         selectedValue: statusFilter === 'all' ? '' : statusFilter,
-        selectedLabel: statusFilter === 'all'
-          ? 'All statuses'
-          : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1),
+        selectedLabel:
+          statusFilter === 'all'
+            ? 'All statuses'
+            : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1),
         options: [
           { value: 'pending', label: 'Pending' },
           { value: 'completed', label: 'Completed' },
@@ -491,9 +550,10 @@ export default function RemindersPage() {
         key: 'priority',
         label: 'Priority',
         selectedValue: priorityFilter === 'all' ? '' : priorityFilter,
-        selectedLabel: priorityFilter === 'all'
-          ? 'All priorities'
-          : priorityFilter.charAt(0).toUpperCase() + priorityFilter.slice(1),
+        selectedLabel:
+          priorityFilter === 'all'
+            ? 'All priorities'
+            : priorityFilter.charAt(0).toUpperCase() + priorityFilter.slice(1),
         options: [
           { value: 'high', label: 'High' },
           { value: 'medium', label: 'Medium' },
@@ -504,10 +564,11 @@ export default function RemindersPage() {
       {
         key: 'date_range',
         label: 'Date Range',
-        selectedValue: (dateRange.from || dateRange.to) ? 'range' : '',
-        selectedLabel: (dateRange.from || dateRange.to)
-          ? `${dateRange.from?.toLocaleDateString() || ''} - ${dateRange.to?.toLocaleDateString() || ''}`
-          : 'All time',
+        selectedValue: dateRange.from || dateRange.to ? 'range' : '',
+        selectedLabel:
+          dateRange.from || dateRange.to
+            ? `${dateRange.from?.toLocaleDateString() || ''} - ${dateRange.to?.toLocaleDateString() || ''}`
+            : 'All time',
         options: [],
         onSelect: () => {},
         customContent: (
@@ -519,9 +580,7 @@ export default function RemindersPage() {
                 to: dateRange.to,
               }}
               onSelect={(range) => {
-                const to = range?.to
-                  ? new Date(range.to)
-                  : undefined;
+                const to = range?.to ? new Date(range.to) : undefined;
                 if (to) {
                   to.setHours(23, 59, 59, 999);
                 }
@@ -567,21 +626,45 @@ export default function RemindersPage() {
           </div>
         ),
       },
+      {
+        key: 'created_on',
+        label: 'Created On',
+        type: 'date',
+        dateValue: createdOnRange,
+        onDateChange: (val) => {
+          setCreatedOnRange(val);
+          setCurrentPage(1);
+        },
+      },
+      {
+        key: 'updated_on',
+        label: 'Updated On',
+        type: 'date',
+        dateValue: updatedOnRange,
+        onDateChange: (val) => {
+          setUpdatedOnRange(val);
+          setCurrentPage(1);
+        },
+      },
     ];
-  }, [statusFilter, priorityFilter, dateRange]);
+  }, [statusFilter, priorityFilter, dateRange, createdOnRange, updatedOnRange]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (statusFilter !== 'all') count++;
     if (priorityFilter !== 'all') count++;
     if (dateRange.from || dateRange.to) count++;
+    if (createdOnRange) count++;
+    if (updatedOnRange) count++;
     return count;
-  }, [statusFilter, priorityFilter, dateRange]);
+  }, [statusFilter, priorityFilter, dateRange, createdOnRange, updatedOnRange]);
 
   const handleClearFilters = () => {
     setStatusFilter('all');
     setPriorityFilter('all');
     setDateRange({ from: undefined, to: undefined });
+    clearCreatedOnRange();
+    clearUpdatedOnRange();
   };
 
   if (!workspace) {
@@ -598,7 +681,7 @@ export default function RemindersPage() {
       </div>
 
       {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2 pt-2">
+      <div className="w-full max-w-full min-w-0 shrink-0 border-b pt-2 pb-2">
         <ListToolBar
           showSearch
           searchPlaceholder="Search by task title..."
@@ -662,141 +745,171 @@ export default function RemindersPage() {
               <TableHeader>
                 <TableRow>
                   {isVisible('sno') && (
-  <SortableTableHead
-    label="S. No."
-    columnId="sno"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    sortable={false}
-    className="relative w-12 whitespace-nowrap"
-    {...getHeaderProps('sno')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="S. No."
+                      columnId="sno"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      sortable={false}
+                      className="relative w-12 whitespace-nowrap"
+                      {...getHeaderProps('sno')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('sno')}
+                      />
+                    </SortableTableHead>
+                  )}
                   {isVisible('title') && (
-  <SortableTableHead
-    label="Task Title"
-    columnId="title"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('title')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('title')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="Task Title"
+                      columnId="title"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('title')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('title')}
+                      />
+                    </SortableTableHead>
+                  )}
                   {isVisible('description') && (
-  <SortableTableHead
-    label="Description"
-    columnId="description"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    sortable={false}
-    {...getHeaderProps('description')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('description')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="Description"
+                      columnId="description"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      sortable={false}
+                      {...getHeaderProps('description')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('description')}
+                      />
+                    </SortableTableHead>
+                  )}
                   {isVisible('priority') && (
-  <SortableTableHead
-    label="Priority"
-    columnId="priority"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('priority')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('priority')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="Priority"
+                      columnId="priority"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('priority')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('priority')}
+                      />
+                    </SortableTableHead>
+                  )}
                   {isVisible('due_date') && (
-  <SortableTableHead
-    label="Due Date"
-    columnId="due_date"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('due_date')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('due_date')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="Due Date"
+                      columnId="due_date"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('due_date')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('due_date')}
+                      />
+                    </SortableTableHead>
+                  )}
                   {isVisible('status') && (
-  <SortableTableHead
-    label="Status"
-    columnId="status"
-    sortKey="is_completed"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('status')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('status')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="Status"
+                      columnId="status"
+                      sortKey="is_completed"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('status')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('status')}
+                      />
+                    </SortableTableHead>
+                  )}
                   {isVisible('entity') && (
-  <SortableTableHead
-    label="Entity"
-    columnId="entity"
-    sortKey="entity_name"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('entity')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('entity')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="Entity"
+                      columnId="entity"
+                      sortKey="entity_name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('entity')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('entity')}
+                      />
+                    </SortableTableHead>
+                  )}
                   {isVisible('created_by') && (
-  <SortableTableHead
-    label="Created By"
-    columnId="created_by"
-    sortKey="created_by_user.name"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('created_by')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('created_by')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="Created By"
+                      columnId="created_by"
+                      sortKey="created_by_user.name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('created_by')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('created_by')}
+                      />
+                    </SortableTableHead>
+                  )}
                   {isVisible('created_at') && (
-  <SortableTableHead
-    label="Created On"
-    columnId="created_at"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('created_at')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="Created On"
+                      columnId="created_at"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('created_at')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('created_at')}
+                      />
+                    </SortableTableHead>
+                  )}
                   {isVisible('updated_by') && (
-  <SortableTableHead
-    label="Last Updated By"
-    columnId="updated_by"
-    sortKey="updated_by_user.name"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('updated_by')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="Last Updated By"
+                      columnId="updated_by"
+                      sortKey="updated_by_user.name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('updated_by')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('updated_by')}
+                      />
+                    </SortableTableHead>
+                  )}
                   <TableHead className="sticky-right-header">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -809,7 +922,9 @@ export default function RemindersPage() {
                           className="h-[52px] px-4 py-2"
                           colSpan={
                             visibility
-                              ? Object.values(visibility).filter((v) => v !== false).length + 1
+                              ? Object.values(visibility).filter(
+                                  (v) => v !== false,
+                                ).length + 1
                               : 7
                           }
                         >
@@ -821,10 +936,7 @@ export default function RemindersPage() {
                 ) : paginatedReminders.length > 0 ? (
                   paginatedReminders.map(
                     (reminder: Reminder, index: number) => (
-                      <TableRow
-                        key={reminder.id}
-                        className="hover:bg-muted/50"
-                      >
+                      <TableRow key={reminder.id} className="hover:bg-muted/50">
                         {isVisible('sno') && (
                           <TableCell className="text-muted-foreground w-12">
                             {(currentPage - 1) * itemsPerPage + index + 1}
@@ -857,7 +969,7 @@ export default function RemindersPage() {
                         {isVisible('due_date') && (
                           <TableCell className="text-muted-foreground">
                             {reminder.due_date
-                              ? formatDueDateShort(reminder.due_date)
+                              ? formatDate(reminder.due_date)
                               : '-'}
                           </TableCell>
                         )}
@@ -923,21 +1035,21 @@ export default function RemindersPage() {
                                 className="gap-2 text-red-500"
                                 onClick={() => handleDelete(reminder.id)}
                               >
-                                <Trash2 className="h-4 w-4" /> Delete
-                                Reminder
+                                <Trash2 className="h-4 w-4" /> Delete Reminder
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
                       </TableRow>
-                    )
+                    ),
                   )
                 ) : (
                   <TableRow>
                     <TableCell
                       colSpan={
                         visibility
-                          ? Object.values(visibility).filter((v) => v !== false).length + 1
+                          ? Object.values(visibility).filter((v) => v !== false)
+                              .length + 1
                           : 10
                       }
                       className="text-muted-foreground h-24 text-center"
@@ -954,11 +1066,11 @@ export default function RemindersPage() {
 
       {/* Create Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-[600px]">
+        <DialogContent className="flex max-h-[90vh] max-w-[600px] flex-col p-0">
           <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Add New Reminder</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
             <div className="space-y-4">
               <Label>Associate with</Label>
               <RadioGroup
@@ -1099,7 +1211,7 @@ export default function RemindersPage() {
               </div>
             </div>
           </div>
-          <div className="border-t p-6 mt-auto">
+          <div className="mt-auto border-t p-6">
             <Button
               onClick={handleCreate}
               disabled={

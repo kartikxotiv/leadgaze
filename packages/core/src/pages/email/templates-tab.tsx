@@ -50,10 +50,10 @@ import {
 } from '../../services/email-templates.service';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
-import { formatDate } from '@kit/shared/utils';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { SortableTableHead } from '@kit/ui/sortable-table-head';
+import { useLocalization } from '@kit/shared/localization';
 
 
 export function CoreEmailTemplatesTab({
@@ -67,6 +67,7 @@ export function CoreEmailTemplatesTab({
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
 
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('core-email-templates-table');
+  const { formatDate } = useLocalization();
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['core-email-templates', workspaceId],
