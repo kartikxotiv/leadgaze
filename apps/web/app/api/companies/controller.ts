@@ -35,14 +35,14 @@ export const createCompany = catchAsync(
       );
     }
 
-    return successDataResponse(company, 'Company created successfully');
+    return successDataResponse('Company created successfully', company);
   }
 );
 
 export const updateCompany = catchAsync(
-  async ({ request, params }: { request: NextRequest; params: { id: string } }) => {
+  async ({ request, params }: { request: NextRequest; params?: Record<string, string> }) => {
     const supabase = getSupabaseServerClient();
-    const companyId = params.id;
+    const companyId = params?.id;
     const body = await request.json();
     
     if (!companyId) {
@@ -64,6 +64,6 @@ export const updateCompany = catchAsync(
       );
     }
 
-    return successDataResponse(company, 'Company updated successfully');
+    return successDataResponse('Company updated successfully', company);
   }
 );

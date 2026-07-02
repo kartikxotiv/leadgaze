@@ -155,8 +155,8 @@ export function RBACProvider({ children }: { children: ReactNode }) {
       return workspacesData;
     },
     enabled: !!user?.id,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
+    staleTime: 30 * 1000, // 30 s — explicit invalidation happens on sign-out / workspace switch
+    refetchOnWindowFocus: false,
   });
 
   const isLoading = isUserLoading || isWorkspacesLoading;

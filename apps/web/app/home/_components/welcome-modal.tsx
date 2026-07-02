@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Button } from '@kit/ui/button';
+import { RocketIcon } from 'lucide-react';
 
 export function WelcomeModal() {
   const searchParams = useSearchParams();
@@ -25,17 +26,15 @@ export function WelcomeModal() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-white/40 backdrop-blur-[1px] animate-in fade-in duration-300"
       onClick={() => setOpen(false)}
     >
       <div
-        className="relative mx-4 w-full max-w-md rounded-2xl bg-[#111317] border border-white/10 shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden"
+        className="relative mx-4 w-full max-w-md rounded-2xl bg-white border border-white/10 shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
-      >
-        {/* Glowing accent top bar */}
-        <div className="h-1 w-full bg-gradient-to-r from-[#3953E7] via-[#6B7FFF] to-[#3953E7]" />
-
-        <div className="px-8 py-10 text-center">
+      >        
+        
+        <div className="px-7 py-10 text-center">
           {/* Logo mark */}
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#3953E7] shadow-lg shadow-[#3953E7]/30">
             <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -43,28 +42,28 @@ export function WelcomeModal() {
             </svg>
           </div>
 
-          <h2 className="mb-3 text-2xl font-bold text-white">
+          <h2 className="mb-3 text-2xl font-bold text-leadgaze-dark">
             Welcome to Leadgaze!
           </h2>
 
-          <p className="mb-2 text-sm leading-relaxed text-slate-400">
+          <p className="mb-2 text-sm leading-relaxed text-leadgaze-muted">
             We&apos;ve set up your workspace and activated a{' '}
-            <span className="font-semibold text-white">free 7-day trial</span>{' '}
+            <span className="font-semibold text-leadgaze-primary">free 7-day trial</span>{' '}
             so you can explore everything Leadgaze has to offer.
           </p>
 
-          <p className="mb-8 text-sm text-slate-500">
+          <p className="mb-8 text-sm text-leadgaze-muted">
             After your trial ends, you can choose a plan that fits your team.
           </p>
 
           <Button
             onClick={() => setOpen(false)}
-            className="w-full bg-[#3953E7] hover:bg-[#283BA4] text-white font-semibold rounded-xl py-2.5 transition-all shadow-lg shadow-[#3953E7]/25 hover:shadow-[#3953E7]/40"
+            className="w-full bg-leadgaze-primary text-white font-semibold rounded-xl py-2.5 transition-all shadow-lg"
           >
-            Start Exploring
+            Start Exploring <RocketIcon className="ml-2 h-4 w-4 mt-1" />
           </Button>
 
-          <p className="mt-4 text-xs text-slate-600">
+          <p className="mt-4 text-xs text-leadgaze-muted">
             You can manage your subscription anytime in Workspace Settings.
           </p>
         </div>

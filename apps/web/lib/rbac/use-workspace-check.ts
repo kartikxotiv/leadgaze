@@ -19,6 +19,7 @@ export function useWorkspaceCheck() {
   const {
     data: workspaceCheckData,
     isLoading: isWorkspaceLoading,
+    isFetching: isWorkspaceFetching,
     isError,
     refetch,
   } = useQuery({
@@ -46,16 +47,22 @@ export function useWorkspaceCheck() {
       return { hasWorkspace, isOnboardingFinished };
     },
     enabled: !!user?.id,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
+    staleTime: 30 * 1000, // 30 s — set synchronously via setQueryData after onboarding
+    refetchOnWindowFocus: false,
   });
 
-  const isLoading = isUserLoading || (!!user?.id && isWorkspaceLoading);
+  // isLoading  = true only on the very first fetch (no cached data yet)
+  // isFetching = true also during background refetches (e.g. after invalidation)
+  // We treat both as "loading" so the redirect effect never fires on stale data.
+  const isLoading =
+    isUserLoading || (!!user?.id && (isWorkspaceLoading || isWorkspaceFetching));
 
   const hasWorkspace = workspaceCheckData?.hasWorkspace ?? false;
   const isOnboardingFinished = workspaceCheckData?.isOnboardingFinished ?? true;
 
   useEffect(() => {
+    // Never redirect while any fetch is in flight — stale data may still be
+    // in cache from a previous page, causing false-negative redirects.
     if (isLoading || isError || !user?.id) return;
 
     // No workspace at all → go create one

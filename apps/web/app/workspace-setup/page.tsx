@@ -60,6 +60,10 @@ export default function WorkspaceSetupPage() {
   const [error, setError] = useState('');
   const [step, setStep] = useState<'info' | 'create' | 'heard' | 'customize' | 'final_placeholder'>('info');
 
+  // Onboarding IDs — set from DB on resume, or from API response on first creation
+  const [onboardingWorkspaceId, setOnboardingWorkspaceId] = useState('');
+  const [onboardingCompanyId, setOnboardingCompanyId] = useState('');
+
   const slug = workspaceName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
 
   useEffect(() => {
@@ -109,11 +113,9 @@ export default function WorkspaceSetupPage() {
           return;
         }
 
-        // Persist IDs so subsequent steps don't recreate records
-        (window as any)._onboardingWorkspaceId = workspace.id;
-        if (workspace.company_id) {
-          (window as any)._onboardingCompanyId = workspace.company_id;
-        }
+        // Restore IDs into state so subsequent steps work correctly
+        setOnboardingWorkspaceId(workspace.id);
+        if (workspace.company_id) setOnboardingCompanyId(workspace.company_id);
         // Pre-fill the workspace name from existing data
         if (workspace.name) setWorkspaceName(workspace.name);
 
@@ -197,16 +199,34 @@ export default function WorkspaceSetupPage() {
       }
 
       const { data: companyData } = await response.json();
-      
-      // Navigate to next step
-      // Store companyId and isSubscribed somewhere if needed for final workspace creation
-      (window as any)._onboardingCompanyId = companyData.id;
-      (window as any)._onboardingIsSubscribed = isSubscribed;
-      (window as any)._onboardingCompanyName = workspaceName;
-      
+
+      // Create the workspace and link it to the newly created company
+      const workspaceResponse = await fetch('/api/workspaces', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: workspaceName,
+          owner_id: user?.id,
+          company_id: companyData.id,
+          is_subscribed_for_updates: isSubscribed,
+          is_onboarding_finished: false,
+        }),
+      });
+
+      if (!workspaceResponse.ok) {
+        const workspaceError = await workspaceResponse.json();
+        throw new Error(workspaceError.message || 'Failed to create workspace');
+      }
+
+      const { data: workspaceData } = await workspaceResponse.json();
+
+      // Store IDs in React state for subsequent steps
+      setOnboardingCompanyId(companyData.id);
+      setOnboardingWorkspaceId(workspaceData.id);
+
       // Persist the billing country so the Footer reflects it on all subsequent steps
       persistBillingCountry(billingCountry);
-      
+
       setStep('heard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -219,34 +239,23 @@ export default function WorkspaceSetupPage() {
     if (e) e.preventDefault();
     setLoading(true);
 
-    if (!skip) {
-      const companyId = (window as any)._onboardingCompanyId;
-      const finalHeardAbout = [...heardAbout];
-      if (heardAbout.includes('Other') && otherText.trim()) {
-        const filtered = finalHeardAbout.filter(item => item !== 'Other');
-        filtered.push(otherText.trim());
-        
-        if (companyId && filtered.length > 0) {
-          try {
-            await fetch(`/api/companies/${companyId}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ heard_about_us: filtered }),
-            });
-          } catch (err) {
-            console.error('Failed to update company:', err);
-          }
+    if (!skip && onboardingCompanyId) {
+      // Build the final array: replace the 'Other' token with the custom text
+      // (if filled in), otherwise keep the label as-is.
+      const finalHeardAbout = heardAbout
+        .map((item) => (item === 'Other' && otherText.trim() ? otherText.trim() : item))
+        .filter((item) => item !== 'Other' || otherText.trim()); // drop bare 'Other' if no text
+
+      if (finalHeardAbout.length > 0) {
+        try {
+          await fetch(`/api/companies/${onboardingCompanyId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ heard_about_us: finalHeardAbout }),
+          });
+        } catch (err) {
+          console.error('Failed to update company heard_about_us:', err);
         }
-      } else if (companyId && finalHeardAbout.length > 0) {
-         try {
-            await fetch(`/api/companies/${companyId}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ heard_about_us: finalHeardAbout }),
-            });
-          } catch (err) {
-            console.error('Failed to update company:', err);
-          }
       }
     }
 
@@ -254,14 +263,15 @@ export default function WorkspaceSetupPage() {
     setStep('customize');
   };
 
+
   const handleCustomizeSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setLoading(true);
     setError('');
     
     try {
-      const workspaceId = (window as any)._onboardingWorkspaceId;
-      
+      const workspaceId = onboardingWorkspaceId;
+
       if (!workspaceId) {
         throw new Error('Workspace ID not found. Please try again.');
       }
@@ -278,8 +288,26 @@ export default function WorkspaceSetupPage() {
       if (!response.ok) {
         throw new Error('Failed to update workspace');
       }
-      
-      // Map product_key to app route
+
+      // IMPORTANT: Use setQueryData (not invalidateQueries) for the workspace-check
+      // cache. invalidateQueries triggers an async background refetch — during that
+      // refetch the old stale data { isOnboardingFinished: false } remains in cache.
+      // When /home/sales mounts and useWorkspaceCheck's useEffect fires, it reads the
+      // stale value and immediately redirects back to /workspace-setup.
+      //
+      // setQueryData writes the correct value synchronously into the cache before
+      // navigation, so the next page sees is_onboarding_finished = true from the start.
+      queryClient.setQueryData(
+        ['userHasWorkspace', user?.id],
+        { hasWorkspace: true, isOnboardingFinished: true },
+      );
+
+      // Invalidate (but don't await) userWorkspaces so RBACProvider refetches fresh
+      // workspace data in the background once we land on the next page.
+      queryClient.invalidateQueries({ queryKey: ['userWorkspaces'] });
+
+      // Map product_key → concrete app route. We always redirect to a specific
+      // product page so the user never hits /org/home's initialization loop.
       const productRouteMap: Record<string, string> = {
         sales: '/home/sales',
         hrms: '/home/hrms',
@@ -290,9 +318,10 @@ export default function WorkspaceSetupPage() {
 
       const firstSelectedId = selectedProducts[0];
       const firstProduct = products.find(p => p.id === firstSelectedId);
+      // Prefer the first selected product route; fall back to the module selector.
       const redirectRoute = firstProduct?.product_key
-        ? (productRouteMap[firstProduct.product_key] ?? pathsConfig.app.home)
-        : pathsConfig.app.home;
+        ? (productRouteMap[firstProduct.product_key] ?? '/org/home')
+        : '/org/home';
 
       router.push(`${redirectRoute}?welcome=1`);
     } catch (err) {
@@ -410,7 +439,7 @@ export default function WorkspaceSetupPage() {
                     type="submit"
                     disabled={loading || !workspaceName.trim() || !billingCountry}
                     size="lg"
-                    className="h-12 w-full gap-2 bg-[linear-gradient(135deg,var(--color-leadgaze-primary)_0%,#283BA4_100%)] text-sm font-semibold text-white shadow-[var(--color-leadgaze-primary)]/25 shadow-lg hover:shadow-[var(--color-leadgaze-primary)]/30 hover:shadow-xl disabled:opacity-50 disabled:shadow-none rounded-lg"
+                    className="w-full gap-2 bg-[linear-gradient(135deg,var(--color-leadgaze-primary)_0%,#283BA4_100%)] text-sm font-semibold text-white shadow-[var(--color-leadgaze-primary)]/25 shadow-lg hover:shadow-[var(--color-leadgaze-primary)]/30 hover:shadow-xl disabled:opacity-50 disabled:shadow-none rounded-lg"
                   >
                     {loading ? (
                       <>
@@ -588,147 +617,141 @@ export default function WorkspaceSetupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f9fafb] px-4 py-12">
-      {/* Subtle background decoration */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 -right-32 h-96 w-96 rounded-full bg-[var(--color-leadgaze-primary)] opacity-[0.04] blur-3xl" />
-        <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-[var(--color-leadgaze-primary)] opacity-[0.04] blur-3xl" />
-        {/* Grid pattern */}
-        <div
-          className="absolute inset-0 opacity-[0.015]"
-          style={{
-            backgroundImage:
-              'linear-gradient(var(--color-leadgaze-primary) 1px, transparent 1px), linear-gradient(90deg, var(--color-leadgaze-primary) 1px, transparent 1px)',
-            backgroundSize: '60px 60px',
-          }}
-        />
-      </div>
+    <div className="flex min-h-screen">
+      {step === 'info' && (
+        // ─── Information Step: Full-screen 50/50 split ────────────
+        <>
+          {/* ── Left Panel: Blue sidebar (50%) ── */}
+          <div className="flex-1 min-h-screen bg-[linear-gradient(160deg,var(--color-leadgaze-primary)_0%,#283BA4_100%)] flex flex-col px-12 py-16 text-white lg:flex xl:px-16">
+            {/* Logo */}
+            <div className="mb-12">
+              <Image
+                src="/images/leadgaze-logo-white.png"
+                alt="Leadgaze"
+                width={140}
+                height={48}
+                className="h-9 w-auto brightness-0 invert"
+                priority
+              />
+            </div>
 
-      <div className="relative w-full max-w-[28rem]">
-        {/* Logo & Brand */}
-        <div className="mb-8 flex flex-col items-center gap-2">
-          <Image
-            src="/images/lead-gaze-logo-main-screen.png"
-            alt="Leadgaze"
-            width={180}
-            height={60}
-            className="h-12 w-auto"
-            priority
-          />
-        </div>
-
-        {step === 'info' && (
-          // ─── Information Step ─────────────────────────────────
-          <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6 duration-500">
-            {/* Hero */}
-            <div className="text-center">
-              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--color-leadgaze-primary)_0%,#283BA4_100%)] shadow-[var(--color-leadgaze-primary)]/20 shadow-lg">
-                <Briefcase className="h-7 w-7 text-white" />
-              </div>
-              <h1 className="text-[1.75rem] font-bold tracking-tight text-slate-800">
-                Welcome to Leadgaze
+            <div className="mb-10">
+              <h1 className="text-[2.5rem] font-bold leading-tight text-white mb-4">
+                Welcome to<br />Leadgaze
               </h1>
-              <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                Your all-in-one platform for Sales, HR, and Service operations.
-                Create a workspace to get started.
+              <p className="text-base leading-relaxed text-blue-100/80 max-w-sm">
+                Your all-in-one platform for Sales, HR, and Service operations. Select your primary workspace to get started.
               </p>
             </div>
 
-            {/* Module cards */}
-            <div className="grid grid-cols-3 gap-3">
+            {/* Module list rows */}
+            <div className="flex flex-col gap-1 max-w-sm">
               {[
                 {
                   icon: TrendingUp,
-                  title: 'Sales\nCRM',
-                  desc: 'Leads, deals & pipeline',
+                  title: 'Sales CRM',
+                  desc: 'Leads, deals & pipeline management',
                 },
                 {
                   icon: Users,
                   title: 'HRMS',
-                  desc: 'People & operations',
+                  desc: 'People, payroll & operations',
                 },
                 {
                   icon: Headphones,
-                  title: 'Service\nCloud',
-                  desc: 'Tickets & support',
+                  title: 'Service Cloud',
+                  desc: 'Tickets, support & resolution',
                 },
-              ].map((item) => {
+              ].map((item, idx) => {
                 const Icon = item.icon;
                 return (
-                  <div
-                    key={item.title}
-                    className="group rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm transition-all hover:border-[var(--color-leadgaze-primary)]/20 hover:shadow-md"
-                  >
-                    <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-leadgaze-primary)]/8 text-[var(--color-leadgaze-primary)] transition-colors group-hover:bg-[var(--color-leadgaze-primary)]/12">
-                      <Icon className="h-5 w-5" />
+                  <div key={item.title}>
+                    <div className="flex items-center gap-4 py-4">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-white">{item.title}</p>
+                        <p className="text-xs text-blue-100/70 mt-0.5">{item.desc}</p>
+                      </div>
                     </div>
-                    <p className="text-xs leading-tight font-medium whitespace-pre-line text-leadgaze-dark dark:text-white">
-                      {item.title}
-                    </p>
-                    <p className="mt-1 text-[10px] text-slate-400 dark:text-white">
-                      {item.desc}
-                    </p>
+                    {idx < 2 && <div className="h-px bg-white/10" />}
                   </div>
                 );
               })}
             </div>
+          </div>
 
-            {/* Benefits list */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h3 className="mb-4 text-sm font-semibold text-slate-800">
-                Everything you need, unified
-              </h3>
-              <div className="space-y-3">
+          {/* ── Right Panel: Features + CTA (50%) ── */}
+          <div className="flex-1 flex flex-col justify-center px-8 lg:px-16 xl:px-24 bg-white dark:bg-[#111317]">
+            <div className="w-full max-w-md mx-auto">
+              {/* Header */}
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-slate-800">Everything you need, unified</h2>
+                <p className="text-sm text-slate-500 mt-2">A complete suite designed to scale with your business.</p>
+              </div>
+
+              {/* Feature cards */}
+              <div className="flex flex-col gap-4">
                 {[
                   {
+                    icon: TrendingUp,
                     title: 'Sales Pipeline & CRM',
-                    desc: 'Manage leads, contacts, and close deals faster',
+                    desc: 'Track every lead from first contact to close with automated workflows.',
                   },
                   {
-                    title: 'HR & Workforce Management',
-                    desc: 'Onboard employees, track leave, and manage teams',
+                    icon: Users,
+                    title: 'HR & Workforce',
+                    desc: 'Manage your entire team, leave requests, and performance in one place.',
                   },
                   {
-                    title: 'Service & Support Cloud',
-                    desc: 'Handle tickets, SLAs, and customer support',
+                    icon: Headphones,
+                    title: 'Service & Support',
+                    desc: 'Provide world-class support with unified ticket management systems.',
                   },
                   {
+                    icon: Briefcase,
                     title: 'Role-Based Access & Collaboration',
-                    desc: 'Invite your team with granular permissions per module',
+                    desc: 'Invite your team with granular permissions per module.',
                   },
-                ].map((item) => (
-                  <div key={item.title} className="flex items-start gap-3">
-                    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                      <Check className="h-3 w-3" strokeWidth={3} />
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div
+                      key={item.title}
+                      className="flex items-start gap-4 border border-slate-200 bg-white p-4 transition-all hover:border-[var(--color-leadgaze-primary)]/30 hover:shadow-md h-[98px]"
+                    >
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-leadgaze-primary)]/8 text-[var(--color-leadgaze-primary)]">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">{item.title}</p>
+                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">{item.desc}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-leadgaze-dark dark:text-white">
-                        {item.title}
-                      </p>
-                      <p className="text-xs text-slate-400 dark:text-white">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
+              </div>
+
+              {/* CTA */}
+              <div className="mt-8 gap-4 flex flex-col">
+                <Button
+                  onClick={() => setStep('create')}
+                  size="lg"
+                  className="w-full gap-2 text-sm font-semibold text-white hover:border-none"
+                >
+                  Start Your Journey
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+                <p className="text-center text-xs text-slate-400">
+                  You can create additional workspaces later in settings
+                </p>
               </div>
             </div>
-
-            {/* CTA */}
-            <Button
-              onClick={() => setStep('create')}
-              size="lg"
-              className="h-12 w-full gap-2 bg-[linear-gradient(135deg,var(--color-leadgaze-primary)_0%,#283BA4_100%)] text-sm font-semibold text-white shadow-[var(--color-leadgaze-primary)]/25 shadow-lg hover:shadow-[var(--color-leadgaze-primary)]/30 hover:shadow-xl"
-            >
-              Start Your Journey
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-
-            <p className="text-center text-xs text-slate-400">
-              You can create additional workspaces later in settings
-            </p>
           </div>
-        )}
-      </div>
-      <Footer />
+          <Footer />
+        </>
+      )}
     </div>
   );
 }

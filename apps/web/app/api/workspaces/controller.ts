@@ -21,7 +21,8 @@ const createNewWorkspace = catchAsync(
       owner_id,
       company_id,
       product_preferences,
-      is_subscribed_for_updates
+      is_subscribed_for_updates,
+      is_onboarding_finished,
     } = await request.json();
 
     // Validate input
@@ -55,7 +56,7 @@ const createNewWorkspace = catchAsync(
         company_id: company_id || null,
         product_preferences: product_preferences || {},
         is_subscribed_for_updates: is_subscribed_for_updates ?? true,
-        is_onboarding_finished: true,
+        is_onboarding_finished: is_onboarding_finished ?? false,
       })
       .select()
       .single();
@@ -239,7 +240,7 @@ const createNewWorkspace = catchAsync(
     // Create 7-day trial seats for all modules (owner gets access to everything)
     await createTrialSeats(workspace.id, userId);
 
-    return successDataResponse(workspace, 'Workspace created successfully');
+    return successDataResponse('Workspace created successfully', workspace);
   },
 );
 
@@ -348,7 +349,7 @@ const updateWorkspace = catchAsync(
       );
     }
 
-    return successDataResponse(workspace, 'Workspace updated successfully');
+    return successDataResponse('Workspace updated successfully', workspace);
   },
 );
 

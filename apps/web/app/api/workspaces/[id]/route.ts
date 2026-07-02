@@ -3,7 +3,8 @@ import { updateWorkspace } from '../controller';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  return updateWorkspace({ request, params });
+  const resolvedParams = await params;
+  return updateWorkspace({ request, params: resolvedParams });
 }

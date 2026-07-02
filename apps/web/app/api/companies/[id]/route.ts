@@ -4,7 +4,8 @@ import { updateCompany } from '../controller';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  return updateCompany({ request, params });
+  const resolvedParams = await params;
+  return updateCompany({ request, params: resolvedParams });
 }
