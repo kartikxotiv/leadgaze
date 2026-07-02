@@ -30,7 +30,6 @@ import {
   type WorkspaceSubscriptionStatus,
   getWorkspaceSubscriptionService,
 } from '@kit/core/services';
-import { formatDate } from '@kit/shared/utils';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
@@ -66,6 +65,7 @@ import {
   getWorkspaceSeatsService,
   updateSeatsViaStripeService,
 } from '~/services/subscription.service';
+import { useLocalization } from '@kit/shared/localization';
 
 // ─── Constants ───────────────────────────────────────────────────
 
@@ -226,6 +226,7 @@ export default function OrgSubscriptionPage({
       window.history.replaceState({}, '', '/org/subscription');
     }
   }, [searchParams, workspaceId, queryClient]);
+  const { formatDate } = useLocalization();
 
   const { data: subscriptionStatus } = useQuery<WorkspaceSubscriptionStatus>({
     queryKey: ['workspace-subscription', workspaceId],

@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { formatDate } from '@kit/shared/utils';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
@@ -77,6 +76,7 @@ import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
 import { TablePagination } from '@kit/ui/table-pagination';
+import { useLocalization } from '@kit/shared/localization';
 
 function NotesPageSkeleton() {
   return (
@@ -154,6 +154,7 @@ export default function NotesPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [editContent, setEditContent] = useState('');
+  const { formatDate } = useLocalization();
 
   const noteColumns = useMemo(
     () => [
