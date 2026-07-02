@@ -16,7 +16,14 @@ const createNewWorkspace = catchAsync(
     params?: Record<string, string>;
   }) => {
     const supabase = getSupabaseServerClient() as any;
-    const { name, owner_id } = await request.json();
+    const { 
+      name, 
+      owner_id,
+      company_id,
+      product_preferences,
+      is_subscribed_for_updates,
+      is_onboarding_finished,
+    } = await request.json();
 
     // Validate input
     if (!name || !owner_id) {
@@ -46,6 +53,10 @@ const createNewWorkspace = catchAsync(
         owner_id,
         is_active: true,
         created_by: userId,
+        company_id: company_id || null,
+        product_preferences: product_preferences || {},
+        is_subscribed_for_updates: is_subscribed_for_updates ?? true,
+        is_onboarding_finished: is_onboarding_finished ?? false,
       })
       .select()
       .single();
@@ -229,7 +240,7 @@ const createNewWorkspace = catchAsync(
     // Create 7-day trial seats for all modules (owner gets access to everything)
     await createTrialSeats(workspace.id, userId);
 
-    return successDataResponse(workspace, 'Workspace created successfully');
+    return successDataResponse('Workspace created successfully', workspace);
   },
 );
 
@@ -304,4 +315,42 @@ async function createTrialSeats(workspaceId: string, ownerUserId: string) {
   }
 }
 
-export { createNewWorkspace };
+
+const updateWorkspace = catchAsync(
+  async ({
+    request,
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient() as any;
+    const body = await request.json();
+    
+    if (!params?.id) {
+      return NextResponse.json(
+        { message: 'Workspace ID is required' },
+        { status: 400 },
+      );
+    }
+
+    const { data: workspace, error } = await supabase
+      .from('workspaces')
+      .update(body)
+      .eq('id', params.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Workspace update error:', error);
+      return NextResponse.json(
+        { message: 'Failed to update workspace' },
+        { status: 500 },
+      );
+    }
+
+    return successDataResponse('Workspace updated successfully', workspace);
+  },
+);
+
+export { createNewWorkspace, updateWorkspace };

@@ -16,7 +16,8 @@
     "./events": "./src/events/index.tsx",
     "./localization": "./src/localization/index.tsx",
     "./currency": "./src/currency/index.ts",
-    "./date": "./src/date/date.service.ts"
+    "./date": "./src/date/date.service.ts",
+    "./countries": "./src/countries/index.ts"
   },
   "devDependencies": {
     "@kit/eslint-config": "workspace:*",

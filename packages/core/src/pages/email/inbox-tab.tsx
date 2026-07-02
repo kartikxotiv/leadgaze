@@ -4,7 +4,7 @@ import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { formatDate } from '@kit/shared/utils';
+
 import {
   ChevronLeft,
   ChevronRight,
@@ -40,6 +40,7 @@ import {
 import { CoreEmailComposeDialog } from './compose-dialog';
 import { CoreEmailDetailDialog } from './email-detail-dialog';
 import { CoreEmailReplyDialog } from './reply-dialog';
+import { useLocalization } from '@kit/shared/localization';
 
 function recipientText(email: any) {
   if (Array.isArray(email.to_emails) && email.to_emails.length > 0) {
@@ -75,6 +76,7 @@ export function CoreInboxTab({
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const limit = 25;
   const offset = (page - 1) * limit;
+  const { formatDate } = useLocalization();
 
   const { data: accounts = [] } = useQuery({
     queryKey: ['core-email-accounts', workspaceId],

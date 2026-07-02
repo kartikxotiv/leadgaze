@@ -139,7 +139,7 @@ export default function HomePage() {
 
 function ModuleSelectorPage() {
   const router = useRouter();
-  const { currentWorkspace } = useRBAC();
+  const { currentWorkspace, isLoading: isRBACLoading } = useRBAC();
   const workspaceId = currentWorkspace?.id ?? '';
   const { data: authUser } = useUser();
   const queryClient = useQueryClient();
@@ -151,13 +151,16 @@ function ModuleSelectorPage() {
       currentWorkspace.owner_id === authUser.id,
   );
 
-  const { data, isLoading } = useQuery<WorkspaceSubscriptionStatus>({
+  const { data, isLoading: isSubLoading } = useQuery<WorkspaceSubscriptionStatus>({
     queryKey: ['workspace-subscription', workspaceId],
     queryFn: () => getWorkspaceSubscriptionService(workspaceId),
-    enabled: Boolean(workspaceId),
+    enabled: Boolean(workspaceId) && !isRBACLoading,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 30,
   });
+
+  // True loading = RBAC is still fetching OR (RBAC done, workspace found, subscription still fetching)
+  const isLoading = isRBACLoading || (Boolean(workspaceId) && isSubLoading);
 
   const { data: assignmentsData } = useQuery({
     queryKey: ['user-seat-assignments', workspaceId],
@@ -192,7 +195,17 @@ function ModuleSelectorPage() {
   // Auto-redirect logic
   useEffect(() => {
     const handleRedirect = async () => {
-      if (isLoading || !data) return;
+      // Wait until RBAC is done loading
+      if (isRBACLoading) return;
+
+      // If RBAC loaded but there's still no workspace, stop the page loader.
+      // WorkspaceCheckWrapper above us will show the appropriate error/redirect.
+      if (!workspaceId) {
+        setIsPageLoading(false);
+        return;
+      }
+
+      if (isSubLoading || !data) return;
       if (!data.is_subscription_valid && data.is_trial_expired) return;
 
       const savedModule =
@@ -227,7 +240,7 @@ function ModuleSelectorPage() {
     };
 
     handleRedirect();
-  }, [data, isLoading, enabledModules, router, workspaceId, queryClient]);
+  }, [data, isLoading, isRBACLoading, isSubLoading, workspaceId, enabledModules, router, queryClient]);
 
   useEffect(() => {
     if (!enabledModules.length && !workspaceId) return;
